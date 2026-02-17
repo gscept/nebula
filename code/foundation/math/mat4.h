@@ -803,7 +803,7 @@ ortholh(scalar w, scalar h, scalar zn, scalar zf)
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(0.0f, 0.0, -dist * (zf + zn), 1.0f);
+    m.r[3] = vec4(0.0f, 0.0, -dist * zn, 1.0f);
     return m;
 }
 
@@ -818,7 +818,7 @@ orthorh(scalar w, scalar h, scalar zn, scalar zf)
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(0.0f, 0.0, dist * (zf + zn), 1.0f);
+    m.r[3] = vec4(0.0f, 0.0, dist * zn, 1.0f);
     return m;
 }
 
@@ -833,7 +833,7 @@ orthooffcenterlh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
     scalar divheight = 1.0f / (t - b);
     scalar dist = 1.0f / (zf - zn);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
-    m.r[1] = vec4(0.0f, -2.0f * divheight, 0.0f, 0.0f);
+    m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
     m.r[3] = vec4(-(r+l) * divwidth, - (t+b) * divheight, -dist *  zn, 1.0f);
     return m;
@@ -850,7 +850,7 @@ orthooffcenterrh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
     scalar divheight = 1.0f / (t - b);
     scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
-    m.r[1] = vec4(0.0f, -2.0f * divheight, 0.0f, 0.0f);
+    m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
     m.r[3] = vec4(-(l+r) * divwidth, - (t+b) * divheight, dist * zn, 1.0f);
     return m;

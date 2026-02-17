@@ -234,6 +234,31 @@ GLFWDisplayDevice::GetAdapterInfo(Adapter::Code adapter)
     return emptyAdapterInfo;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FixedArray<CoreGraphics::Monitor>
+GLFWDisplayDevice::GetMonitors()
+{
+    int count;
+    GLFWmonitor** glfwMonitors = glfwGetMonitors(&count);
+    Util::FixedArray<CoreGraphics::Monitor> monitors(count);
+    for (int i = 0; i < count; i++)
+    {
+        CoreGraphics::Monitor monitor;
+        const GLFWvidmode* mode = glfwGetVideoMode(glfwMonitors[i]);
+        monitor.width = mode->width;
+        monitor.height = mode->height;
+        monitor.refreshRate = mode->refreshRate;
+        monitor.redBits = mode->redBits;
+        monitor.greenBits = mode->greenBits;
+        monitor.blueBits = mode->blueBits;
+        monitors[i] = monitor;
+    }
+    return monitors;
+}
+
 //------------------------------------------------------------------------------
 /**
     translate keycode

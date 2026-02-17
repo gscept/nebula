@@ -46,6 +46,9 @@ public:
     /// get general info about display adapter
     CoreGraphics::AdapterInfo GetAdapterInfo(CoreGraphics::Adapter::Code adapter);
 
+    /// Get list of monitors
+    Util::FixedArray<CoreGraphics::Monitor> GetMonitors();
+
     /// translate glfw keycodes to nebula ones
     static Input::Key::Code TranslateKeyCode(int inkey);
 

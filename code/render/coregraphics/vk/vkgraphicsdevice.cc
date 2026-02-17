@@ -1995,6 +1995,33 @@ WaitAndClearPendingCommands()
 /**
 */
 void
+BeginWindowResize()
+{
+    state.resizing = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+IsWindowResizing()
+{
+    return state.resizing;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EndWindowResize()
+{
+    state.resizing = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 DelayedDeleteBuffer(const BufferId id)
 {
     Threading::CriticalScope scope(&delayedDeleteSection);

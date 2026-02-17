@@ -30,9 +30,9 @@ extern WindowId CurrentWindow;
 struct WindowCreateInfo
 {
     CoreGraphics::DisplayMode mode;
-    Util::StringAtom title;
-    Util::StringAtom icon;
-    CoreGraphics::AntiAliasQuality::Code aa;
+    Util::StringAtom title = nullptr;
+    Util::StringAtom icon = nullptr;
+    CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None;
     bool resizable : 1;
     bool decorated : 1;
     bool fullscreen : 1;
@@ -48,6 +48,12 @@ void DestroyWindow(const WindowId id);
 
 /// resize window
 void WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight);
+/// Get window size
+Math::int2 WindowGetSize(const WindowId id);
+/// Set window position
+void WindowReposition(const WindowId id, int x, int y);
+/// Get window position
+Math::int2 WindowGetPosition(const WindowId id);
 /// set title for window
 void WindowSetTitle(const WindowId id, const Util::String& title);
 /// Set window icon

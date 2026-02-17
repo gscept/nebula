@@ -62,7 +62,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
-    mat4 proj = orthorh(viewport.width(), viewport.height(), -1.0f, +1.0f);
+    mat4 proj = orthooffcenterrh(data->DisplayPos.x - data->DisplaySize.x/2, data->DisplayPos.x + data->DisplaySize.x/2, data->DisplayPos.y + data->DisplaySize.y/2, data->DisplayPos.y - data->DisplaySize.y/2, -1.0f, +1.0f);
 
     // if buffers are too small, create new buffers
     if (data->TotalVtxCount > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
@@ -180,7 +180,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             else
             {
                 // setup scissor rect
-                Math::rectangle<int> scissorRect((int)command->ClipRect.x, (int)command->ClipRect.y, (int)command->ClipRect.z, (int)command->ClipRect.w);
+                Math::rectangle<int> scissorRect((int)command->ClipRect.x - data->DisplayPos.x, (int)command->ClipRect.y - data->DisplayPos.y, (int)command->ClipRect.z - data->DisplayPos.x, (int)command->ClipRect.w - data->DisplayPos.y);
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
                 ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
 
@@ -400,6 +400,9 @@ ImguiContext::Create()
 #endif
                 ImGui::Render();
                 ImguiDrawFunction(cmdBuf, viewport);
+                
+                ImGui::UpdatePlatformWindows();
+                ImGui::RenderPlatformWindowsDefault();
             });
     }
     else
@@ -587,6 +590,91 @@ ImguiContext::Create()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
+
+#ifdef IMGUI_HAS_VIEWPORT
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+
+    struct ImGuiWindowHandle
+    {
+        CoreGraphics::WindowId wnd;
+    };
+
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    platform_io.Platform_CreateWindow = [](ImGuiViewport* vp)
+    {
+        CoreGraphics::WindowCreateInfo windowInfo;
+        windowInfo.mode = CoreGraphics::DisplayMode(vp->Pos.x, vp->Pos.y, vp->Size.x, vp->Size.y);
+        windowInfo.title = "ImGUI Window";
+        windowInfo.fullscreen = false;
+        windowInfo.resizable = true;
+        windowInfo.vsync = false;
+        windowInfo.decorated = true;
+        CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(windowInfo);
+        ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
+        wndHandle->wnd = wnd;
+        vp->PlatformHandle = reinterpret_cast<void*>(wndHandle);
+    };
+    platform_io.Platform_DestroyWindow = [](ImGuiViewport* vp)
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::DestroyWindow(wndHandle->wnd);
+    };
+    platform_io.Platform_GetWindowPos = [](ImGuiViewport* vp) -> ImVec2
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        Math::int2 pos = CoreGraphics::WindowGetPosition(wndHandle->wnd);
+        return ImVec2(pos.x, pos.y);
+    };
+    platform_io.Platform_SetWindowPos = [](ImGuiViewport* vp, ImVec2 pos)
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::WindowReposition(wndHandle->wnd, pos.x, pos.y);
+    };
+    platform_io.Platform_GetWindowSize = [](ImGuiViewport* vp) -> ImVec2
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        Math::int2 size = CoreGraphics::WindowGetSize(wndHandle->wnd);
+        return ImVec2(size.x, size.y);
+    };
+    platform_io.Platform_SetWindowSize = [](ImGuiViewport* vp, ImVec2 size)
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::WindowResize(wndHandle->wnd, size.x, size.y);
+    };
+    platform_io.Platform_SetWindowTitle = [](ImGuiViewport* vp, const char* str)
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::WindowSetTitle(wndHandle->wnd, Util::String(str));
+    };
+    platform_io.Platform_ShowWindow = [](ImGuiViewport* vp)
+    {
+
+    };
+
+    const auto& monitors = CoreGraphics::DisplayDevice::Instance()->GetMonitors();
+    SizeT xOffset = 0, yOffset = 0;
+    for (const auto& monitor : monitors)
+    {
+        ImGuiPlatformMonitor imguiMonitor;
+        imguiMonitor.DpiScale = mode.GetContentScale();
+        imguiMonitor.MainSize = ImVec2(monitor.width, monitor.height);
+        imguiMonitor.MainPos = ImVec2(xOffset, yOffset);
+        imguiMonitor.WorkPos = imguiMonitor.MainPos;
+        imguiMonitor.WorkSize = imguiMonitor.MainSize;
+        xOffset += monitor.width;
+        yOffset += monitor.height;
+        platform_io.Monitors.push_back(imguiMonitor);
+    }
+
+    CoreGraphics::WindowId mainWnd = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
+
+    ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
+    wndHandle->wnd = mainWnd;
+    platform_io.Viewports[0]->PlatformHandle = reinterpret_cast<void*>(wndHandle);
+    
 #endif
 
     // load default font

@@ -190,6 +190,15 @@ DisplayDeviceBase::GetAdapterInfo(Adapter::Code adapter)
 //------------------------------------------------------------------------------
 /**
 */
+Util::FixedArray<CoreGraphics::Monitor>
+DisplayDeviceBase::GetMonitors()
+{
+    return Util::FixedArray<CoreGraphics::Monitor>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::WindowId
 DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa)
 {

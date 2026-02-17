@@ -22,6 +22,15 @@
 #include "util/blob.h"
 #include "coregraphics/window.h"
 
+namespace CoreGraphics
+{
+struct Monitor
+{
+    SizeT width, height;
+    SizeT redBits, greenBits, blueBits;
+    SizeT refreshRate;
+};
+}
 //------------------------------------------------------------------------------
 namespace Base
 {
@@ -61,6 +70,9 @@ public:
     CoreGraphics::DisplayMode GetCurrentAdapterDisplayMode(CoreGraphics::Adapter::Code adapter);
     /// get general info about display adapter
     CoreGraphics::AdapterInfo GetAdapterInfo(CoreGraphics::Adapter::Code adapter);
+
+    /// Get list of monitors
+    Util::FixedArray<CoreGraphics::Monitor> GetMonitors();
 
     /// set display adapter (make sure adapter exists!)
     void SetAdapter(CoreGraphics::Adapter::Code a);
