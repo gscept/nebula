@@ -450,6 +450,13 @@ class FullscreenEffectDefinition:
 
         file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.gplb");'.format(self.shader))
         file.WriteLine('CoreGraphics::ShaderProgramId prog = CoreGraphics::ShaderGetProgram(shad, CoreGraphics::ShaderFeatureMask("{}"));'.format(self.mask))
+        file.WriteLine('if (FullScreenEffect_{}_Pipeline != CoreGraphics::InvalidPipelineId)'.format(self.name))
+        file.WriteLine('{')
+        file.IncreaseIndent()
+        file.WriteLine('CoreGraphics::DestroyGraphicsPipeline(FullScreenEffect_{}_Pipeline);'.format(self.name))
+        file.WriteLine('CoreGraphics::DestroyResourceTable(FullScreenEffect_{}_ResourceTable);'.format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine('}')
         file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
         file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
         file.WriteLine('{}::{}::STRUCT state;'.format(self.namespace, self.constantBlockName))
