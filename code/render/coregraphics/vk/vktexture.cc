@@ -706,7 +706,7 @@ DeleteTexture(const TextureId id)
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)
-            CoreGraphics::DelayedFreeMemory(allocs[i]);
+            CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(allocs[i]) : CoreGraphics::DelayedFreeMemory(allocs[i]);
         allocs.Clear();
 
         // clear all pages
@@ -720,7 +720,7 @@ DeleteTexture(const TextureId id)
                 {
                     if (pages[pageIdx].alloc.mem != VK_NULL_HANDLE)
                     {
-                        CoreGraphics::DelayedFreeMemory(pages[pageIdx].alloc);
+                        CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(pages[pageIdx].alloc) : CoreGraphics::DelayedFreeMemory(pages[pageIdx].alloc);
                         pages[pageIdx].alloc.mem = VK_NULL_HANDLE;
                         pages[pageIdx].alloc.offset = 0;
                     }
@@ -735,7 +735,7 @@ DeleteTexture(const TextureId id)
     }
     else if (loadInfo.alias == CoreGraphics::InvalidTextureId && loadInfo.mem.mem != VK_NULL_HANDLE)
     {
-        CoreGraphics::DelayedFreeMemory(loadInfo.mem);
+        CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(loadInfo.mem) : CoreGraphics::DelayedFreeMemory(loadInfo.mem);
         loadInfo.mem = CoreGraphics::Alloc{};
     }
 

@@ -155,6 +155,7 @@ struct GraphicsDeviceState
     bool renderWireframe : 1;
     bool visualizeMipMaps : 1;
     bool enableValidation : 1;
+    bool resizing : 1;
     IndexT currentFrameIndex = 0;
 
     _declare_counter(NumImageBytesAllocated);
@@ -298,6 +299,12 @@ void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
 void WaitAndClearPendingCommands();
+/// Set state to resize
+void BeginWindowResize();
+/// Get if resizing
+bool IsWindowResizing();
+/// End window resizing
+void EndWindowResize();
 
 /// Add buffer to delete queue
 void DelayedDeleteBuffer(const CoreGraphics::BufferId id);
