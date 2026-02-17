@@ -40,10 +40,6 @@ VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 VkCommandBuffer GetMainBuffer(const CoreGraphics::QueueType queue);
 /// get final rendering semaphore
 VkSemaphore GetRenderingSemaphore();
-/// get final rendering semaphore
-VkSemaphore GetBackbufferSemaphore();
-/// get the present fence
-VkFence GetPresentFence();
 
 /// Add VkBuffer for late delete
 void DelayedDeleteVkBuffer(const VkDevice dev, const VkBuffer buf);

@@ -613,6 +613,8 @@ ImguiContext::Create()
         windowInfo.vsync = false;
         windowInfo.decorated = true;
         CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(windowInfo);
+        Graphics::GraphicsServer::Instance()->AddWindow(wnd);
+
         ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
         wndHandle->wnd = wnd;
         vp->PlatformHandle = reinterpret_cast<void*>(wndHandle);
@@ -620,6 +622,7 @@ ImguiContext::Create()
     platform_io.Platform_DestroyWindow = [](ImGuiViewport* vp)
     {
         ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        Graphics::GraphicsServer::Instance()->RemoveWindow(wndHandle->wnd);
         CoreGraphics::DestroyWindow(wndHandle->wnd);
     };
     platform_io.Platform_GetWindowPos = [](ImGuiViewport* vp) -> ImVec2

@@ -17,12 +17,15 @@ enum
     Swapchain_Surface,
     Swapchain_Swapchain,
     Swapchain_CurrentBackbuffer,
+    Swapchain_DisplaySemaphores,
+    Swapchain_PresentFences,
     Swapchain_DisplayMode,
     Swapchain_Images,
     Swapchain_ImageViews,
     Swapchain_Queue,
     Swapchain_QueueType,
-    Swapchain_CommandPool
+    Swapchain_CommandPool,
+    Swapchain_SwapInfo
 };
 
 typedef Ids::IdAllocator<
@@ -30,12 +33,15 @@ typedef Ids::IdAllocator<
     VkSurfaceKHR,
     VkSwapchainKHR,
     uint,
+    Util::FixedArray<CoreGraphics::SemaphoreId>,
+    Util::FixedArray<CoreGraphics::FenceId>,
     CoreGraphics::DisplayMode,
     Util::Array<VkImage>,
     Util::Array<VkImageView>,
     VkQueue,
     CoreGraphics::QueueType,
-    CoreGraphics::CmdBufferPoolId
+    CoreGraphics::CmdBufferPoolId,
+    CoreGraphics::SwapInfo
 > SwapchainAllocator;
 extern SwapchainAllocator swapchainAllocator;
 

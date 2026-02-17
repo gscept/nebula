@@ -8,6 +8,8 @@
 #include "coregraphics/vk/vkcommandbuffer.h"
 #include "coregraphics/vk/vktexture.h"
 #include "vkswapchain.h"
+#include "vksemaphore.h"
+#include "vkfence.h"
 
 namespace Vulkan
 {
@@ -32,6 +34,8 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     VkQueue& queue = swapchainAllocator.Get<Swapchain_Queue>(id);
     Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id);
     Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id);
+    Util::FixedArray<SemaphoreId>& displaySemaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id);
+    Util::FixedArray<FenceId>& presentFences = swapchainAllocator.Get<Swapchain_PresentFences>(id);
     CoreGraphics::QueueType& queueType = swapchainAllocator.Get<Swapchain_QueueType>(id);
     swapchainAllocator.Set<Swapchain_DisplayMode>(id, info.displayMode);
     VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), info.window, nullptr, &surface);
@@ -122,6 +126,25 @@ CreateSwapchain(const SwapchainCreateInfo& info)
 
     // use at least as many swap images as we have buffered frames, if we don't have enough, the swap chain creation will fail
     uint32_t numSwapchainImages = Math::max(surfCaps.minImageCount, Math::min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount));
+
+#ifdef CreateSemaphore
+#pragma push_macro("CreateSemaphore")
+#undef CreateSemaphore
+#endif
+
+    displaySemaphores.Resize(numSwapchainImages);
+    presentFences.Resize(numSwapchainImages);
+    for (uint i = 0; i < displaySemaphores.Size(); i++)
+    {
+        presentFences[i] = CreateFence({ true });
+        displaySemaphores[i] = CreateSemaphore({
+#if NEBULA_GRAPHICS_DEBUG
+            .name = "Present",
+#endif
+            .type = SemaphoreType::Binary });
+    }
+
+#pragma pop_macro("CreateSemaphore")
 
     // create a transform
     VkSurfaceTransformFlagBitsKHR transform;
@@ -252,11 +275,17 @@ DestroySwapchain(const SwapchainId id)
     VkDevice dev = swapchainAllocator.Get<Swapchain_Device>(id.id);
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id.id);
+    Util::FixedArray<SemaphoreId>& semaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
 
     uint32_t i;
     for (i = 0; i < views.Size(); i++)
     {
         vkDestroyImageView(dev, views[i], nullptr);
+    }
+
+    for (i = 0; i < semaphores.Size(); i++)
+    {
+        CoreGraphics::DestroySemaphore(semaphores[i]);
     }
 
     // destroy swapchain last
@@ -272,10 +301,12 @@ SwapchainSwap(const SwapchainId id)
     VkDevice dev = swapchainAllocator.Get<Swapchain_Device>(id.id);
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     uint& currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
+    Util::FixedArray<CoreGraphics::SemaphoreId>& semaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
+    Util::FixedArray<CoreGraphics::FenceId>& fences = swapchainAllocator.Get<Swapchain_PresentFences>(id.id);
 
     // get present fence and be sure it is finished before getting the next image
-    VkFence fence = Vulkan::GetPresentFence();
-    VkSemaphore sem = Vulkan::GetBackbufferSemaphore();
+    VkFence fence = Vulkan::FenceGetVk(fences[currentBackbuffer]);
+    VkSemaphore sem = Vulkan::SemaphoreGetVk(semaphores[currentBackbuffer]);
     VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
     if (res == VK_ERROR_DEVICE_LOST)
         Vulkan::DeviceLost();
@@ -443,6 +474,43 @@ SwapchainPresent(const SwapchainId id)
 #if NEBULA_GRAPHICS_DEBUG
     CoreGraphics::QueueEndMarker(queueType);
 #endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SemaphoreId
+SwapchainGetCurrentSemaphore(const SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::FenceId
+SwapchainGetCurrentFence(const SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_PresentFences>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SwapchainSetSwapInfo(const SwapchainId id, const SwapInfo& swap)
+{
+    swapchainAllocator.Set<Swapchain_SwapInfo>(id.id, swap);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SwapInfo&
+SwapchainGetSwapInfo(const SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_SwapInfo>(id.id);
 }
 
 } // namespace CoreGraphics

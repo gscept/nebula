@@ -139,6 +139,7 @@ GraphicsFeatureUnit::OnActivate()
         true
     };
     this->wnd = CreateWindow(wndInfo);
+    Graphics::GraphicsServer::Instance()->AddWindow(this->wnd);
 
     CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
 

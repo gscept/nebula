@@ -25,6 +25,9 @@ namespace CoreGraphics
 ID_24_8_TYPE(WindowId);
 struct TextureId;
 struct SwapchainId;
+struct CmdBufferId;
+struct TextureId;
+
 
 extern WindowId CurrentWindow;
 struct WindowCreateInfo

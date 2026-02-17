@@ -124,9 +124,7 @@ struct GraphicsDeviceState
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
-    Util::FixedArray<CoreGraphics::FenceId> presentFences;
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
-    Util::FixedArray<CoreGraphics::SemaphoreId> backbufferFinishedSemaphores;
 
     uint globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
@@ -336,7 +334,7 @@ IndexT GetQueueIndex(const QueueType queue);
 const Util::Set<uint32_t>& GetQueueIndices();
 
 /// Finish current frame
-void FinishFrame(IndexT frameIndex);
+void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::FenceId>& presentFences);
 /// Progress to next frame
 void NewFrame();
 

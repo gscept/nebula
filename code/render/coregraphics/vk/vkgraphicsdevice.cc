@@ -448,24 +448,6 @@ GetRenderingSemaphore()
 //------------------------------------------------------------------------------
 /**
 */
-VkSemaphore
-GetBackbufferSemaphore()
-{
-    return SemaphoreGetVk(state.backbufferFinishedSemaphores[state.currentBufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkFence
-GetPresentFence()
-{
-    return FenceGetVk(state.presentFences[state.currentBufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 DelayedDeleteVkBuffer(const VkDevice dev, const VkBuffer buf)
 {
@@ -1259,18 +1241,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #undef CreateSemaphore
 #endif
 
-    state.presentFences.Resize(info.numBufferedFrames);
     state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
-    state.backbufferFinishedSemaphores.Resize(info.numBufferedFrames);
     for (i = 0; i < info.numBufferedFrames; i++)
     {
-        state.presentFences[i] = CreateFence({true});
         state.renderingFinishedSemaphores[i] = CreateSemaphore({
-#if NEBULA_GRAPHICS_DEBUG
-            .name = "Present",
-#endif
-            .type = SemaphoreType::Binary });
-        state.backbufferFinishedSemaphores[i] = CreateSemaphore({
 #if NEBULA_GRAPHICS_DEBUG
             .name = "Present",
 #endif
@@ -1479,10 +1453,7 @@ DestroyGraphicsDevice()
     IndexT i;
     for (i = 0; i < state.renderingFinishedSemaphores.Size(); i++)
     {
-        FenceWait(state.presentFences[i], UINT64_MAX);
-        DestroyFence(state.presentFences[i]);
         DestroySemaphore(state.renderingFinishedSemaphores[i]);
-        DestroySemaphore(state.backbufferFinishedSemaphores[i]);
     }
 
 #if NEBULA_VULKAN_DEBUG
@@ -1910,9 +1881,8 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 /**
 */
 void
-FinishFrame(IndexT frameIndex)
+FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::FenceId>& presentFences)
 {
-    VkFence fence = GetPresentFence();
     if (state.currentFrameIndex != frameIndex)
     {
         _end_counter(state.GraphicsDeviceNumComputes);
@@ -1921,10 +1891,13 @@ FinishFrame(IndexT frameIndex)
         state.currentFrameIndex = frameIndex;
     }
 
-    state.queueHandler.AppendWaitSemaphore(
-        GraphicsQueueType,
-        SemaphoreGetVk(state.backbufferFinishedSemaphores[state.currentBufferedFrameIndex])
-    );
+    for (auto& sem : backbufferSemaphores)
+    {
+        state.queueHandler.AppendWaitSemaphore(
+            GraphicsQueueType,
+            SemaphoreGetVk(sem)
+        );
+    }
 
     // Signal rendering finished semaphore just before submitting graphics queue
     state.queueHandler.AppendSignalSemaphore(
@@ -1954,7 +1927,10 @@ FinishFrame(IndexT frameIndex)
         state.sparseImageBinds.Clear();
     }
 
-    state.queueHandler.InsertFence(CoreGraphics::QueueType::GraphicsQueueType, fence);
+    for (const auto& fence : presentFences)
+    {
+        state.queueHandler.InsertFence(CoreGraphics::QueueType::GraphicsQueueType, FenceGetVk(fence));
+    }
 }
 
 //------------------------------------------------------------------------------
