@@ -35,7 +35,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id);
     Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id);
     Util::FixedArray<SemaphoreId>& displaySemaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id);
-    Util::FixedArray<FenceId>& presentFences = swapchainAllocator.Get<Swapchain_PresentFences>(id);
+    Util::FixedArray<SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id);
     CoreGraphics::QueueType& queueType = swapchainAllocator.Get<Swapchain_QueueType>(id);
     swapchainAllocator.Set<Swapchain_DisplayMode>(id, info.displayMode);
     VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), info.window, nullptr, &surface);
@@ -132,11 +132,16 @@ CreateSwapchain(const SwapchainCreateInfo& info)
 #undef CreateSemaphore
 #endif
 
-    displaySemaphores.Resize(numSwapchainImages);
-    presentFences.Resize(numSwapchainImages);
+    displaySemaphores.Resize(CoreGraphics::GetNumBufferedFrames());
+    renderingSemaphores.Resize(CoreGraphics::GetNumBufferedFrames());
     for (uint i = 0; i < displaySemaphores.Size(); i++)
     {
-        presentFences[i] = CreateFence({ true });
+        renderingSemaphores[i] = CreateSemaphore({
+#if NEBULA_GRAPHICS_DEBUG
+            .name = "WaitForRendering",
+#endif
+            .type = SemaphoreType::Binary });
+
         displaySemaphores[i] = CreateSemaphore({
 #if NEBULA_GRAPHICS_DEBUG
             .name = "Present",
@@ -249,6 +254,25 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         };
         res = vkCreateImageView(dev, &backbufferViewInfo, nullptr, &views[i]);
         n_assert(res == VK_SUCCESS);
+
+        VkDebugUtilsObjectNameInfoEXT info =
+        {
+            VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            nullptr,
+            VK_OBJECT_TYPE_IMAGE,
+            (uint64_t)images[i],
+            "Swap Chain Image"
+        };
+        VkDevice dev = GetCurrentDevice();
+        VkResult res = VkDebugObjectName(dev, &info);
+        n_assert(res == VK_SUCCESS);
+
+        info.objectHandle = (uint64_t)views[i];
+        info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+        Util::String str = Util::String::Sprintf("%s - View", "Swap Chain Image");
+        info.pObjectName = str.AsCharPtr();
+        res = VkDebugObjectName(dev, &info);
+        n_assert(res == VK_SUCCESS);
     }
     currentBackbuffer = 0;
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
@@ -302,20 +326,12 @@ SwapchainSwap(const SwapchainId id)
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     uint& currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
     Util::FixedArray<CoreGraphics::SemaphoreId>& semaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
-    Util::FixedArray<CoreGraphics::FenceId>& fences = swapchainAllocator.Get<Swapchain_PresentFences>(id.id);
 
     // get present fence and be sure it is finished before getting the next image
-    VkFence fence = Vulkan::FenceGetVk(fences[currentBackbuffer]);
-    VkSemaphore sem = Vulkan::SemaphoreGetVk(semaphores[currentBackbuffer]);
-    VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
-    if (res == VK_ERROR_DEVICE_LOST)
-        Vulkan::DeviceLost();
-    n_assert(res == VK_SUCCESS);
-    res = vkResetFences(dev, 1, &fence);
-    n_assert(res == VK_SUCCESS);
+    VkSemaphore sem = Vulkan::SemaphoreGetVk(semaphores[CoreGraphics::GetBufferedFrameIndex()]);
 
     // get the next image
-    res = vkAcquireNextImageKHR(dev, swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &currentBackbuffer);
+    VkResult res = vkAcquireNextImageKHR(dev, swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &currentBackbuffer);
     switch (res)
     {
         case VK_SUCCESS:
@@ -346,6 +362,7 @@ SwapchainAllocateCmds(const SwapchainId id)
     CoreGraphics::CmdBufferCreateInfo bufInfo;
     bufInfo.pool = pool;
     bufInfo.name = "Swap";
+    bufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
     return CoreGraphics::CreateCmdBuffer(bufInfo);
 }
 
@@ -358,11 +375,14 @@ SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, cons
     const uint currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
     const DisplayMode& displayMode = swapchainAllocator.Get<Swapchain_DisplayMode>(id.id);
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(source);
+    dims.width = Math::min(dims.width, displayMode.GetWidth());
+    dims.height = Math::min(dims.height, displayMode.GetHeight());
     VkImageBlit blit;
     blit.srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1 };
     blit.dstSubresource = blit.srcSubresource;
     blit.srcOffsets[0] = {0, 0, 0};
-    blit.srcOffsets[1] = {(int)displayMode.GetWidth(), (int)displayMode.GetHeight(), 1};
+    blit.srcOffsets[1] = {(int)dims.width, (int)dims.height, 1};
     blit.dstOffsets[0] = {0, 0, 0};
     blit.dstOffsets[1] = blit.srcOffsets[1];
 
@@ -436,10 +456,12 @@ SwapchainPresent(const SwapchainId id)
     const VkQueue& queue = swapchainAllocator.Get<Swapchain_Queue>(id.id);
     const CoreGraphics::QueueType queueType = swapchainAllocator.Get<Swapchain_QueueType>(id.id);
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
+    const Util::FixedArray<CoreGraphics::SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id);
 
+    CoreGraphics::SemaphoreId sem = renderingSemaphores[CoreGraphics::GetBufferedFrameIndex()];
     VkSemaphore semaphores[] =
     {
-        Vulkan::GetRenderingSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
+        SemaphoreGetVk(sem) // this will be the final semaphore of the graphics command buffer that finishes the frame
     };
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -480,7 +502,7 @@ SwapchainPresent(const SwapchainId id)
 /**
 */
 CoreGraphics::SemaphoreId
-SwapchainGetCurrentSemaphore(const SwapchainId id)
+SwapchainGetCurrentDisplaySemaphore(const SwapchainId id)
 {
     return swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
 }
@@ -488,10 +510,10 @@ SwapchainGetCurrentSemaphore(const SwapchainId id)
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::FenceId
-SwapchainGetCurrentFence(const SwapchainId id)
+CoreGraphics::SemaphoreId
+SwapchainGetCurrentPresentSemaphore(const SwapchainId id)
 {
-    return swapchainAllocator.Get<Swapchain_PresentFences>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
+    return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
 }
 
 //------------------------------------------------------------------------------

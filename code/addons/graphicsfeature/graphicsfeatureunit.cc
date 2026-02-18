@@ -378,7 +378,10 @@ GraphicsFeatureUnit::OnEndFrame()
     // Finish up the frame and present the current framebuffer
     this->gfxServer->EndFrame();
     N_MARKER_BEGIN(Present, App);
-    CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowPresent(window, App::GameApplication::FrameIndex);
+    
     N_MARKER_END();
 
     // Trigger a new frame
@@ -386,7 +389,8 @@ GraphicsFeatureUnit::OnEndFrame()
     this->inputServer->EndFrame();
 
     // Do potential new-frame stuff for window, such as resize
-    CoreGraphics::WindowNewFrame(this->wnd);
+    //for (const auto& window : windows)
+        //CoreGraphics::WindowNewFrame(window);
 }
 
 //------------------------------------------------------------------------------

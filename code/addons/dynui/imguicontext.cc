@@ -40,9 +40,8 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, ImDrawData* data)
 {
-    ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
     ImGuiIO& io = ImGui::GetIO();
     int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
@@ -399,10 +398,7 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
                 ImGui::Render();
-                ImguiDrawFunction(cmdBuf, viewport);
-                
-                ImGui::UpdatePlatformWindows();
-                ImGui::RenderPlatformWindowsDefault();
+                ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
             });
     }
     else
@@ -421,7 +417,7 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
                 ImGui::Render();
-                ImguiDrawFunction(cmdBuf, viewport);
+                ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
             });
     }
 
@@ -655,6 +651,10 @@ ImguiContext::Create()
     platform_io.Platform_ShowWindow = [](ImGuiViewport* vp)
     {
 
+    };
+    platform_io.Renderer_RenderWindow = [](ImGuiViewport* vp, void* render_arg)
+    {
+        vp->DrawData;
     };
 
     const auto& monitors = CoreGraphics::DisplayDevice::Instance()->GetMonitors();
@@ -1001,6 +1001,9 @@ void
 ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
 {
     ImGui::EndFrame();
+                    
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
 }
 
 } // namespace Dynui

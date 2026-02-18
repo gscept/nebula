@@ -334,7 +334,7 @@ IndexT GetQueueIndex(const QueueType queue);
 const Util::Set<uint32_t>& GetQueueIndices();
 
 /// Finish current frame
-void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::FenceId>& presentFences);
+void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores);
 /// Progress to next frame
 void NewFrame();
 

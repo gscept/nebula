@@ -21,6 +21,7 @@ ID_24_8_TYPE(SwapchainId);
 struct SwapInfo
 {
     void (*syncFunc)(CoreGraphics::CmdBufferId) = nullptr;
+    Math::rectangle<int> viewport;
     CoreGraphics::TextureId swapSource;
     CoreGraphics::SubmissionWaitEvent submission;
 };
@@ -49,9 +50,9 @@ void SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf,
 /// Present
 void SwapchainPresent(const SwapchainId id);
 /// Get present semaphore for the current backbuffer
-CoreGraphics::SemaphoreId SwapchainGetCurrentSemaphore(const SwapchainId id);
+CoreGraphics::SemaphoreId SwapchainGetCurrentDisplaySemaphore(const SwapchainId id);
 /// Get the present fence for the current backbuffer
-CoreGraphics::FenceId SwapchainGetCurrentFence(const SwapchainId id);
+CoreGraphics::SemaphoreId SwapchainGetCurrentPresentSemaphore(const SwapchainId id);
 
 /// Set window swap info
 void SwapchainSetSwapInfo(const SwapchainId id, const SwapInfo& swap);

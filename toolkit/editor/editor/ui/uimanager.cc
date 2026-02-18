@@ -175,14 +175,35 @@ UIManager::OnActivate()
             Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
             FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
 
-            CoreGraphics::SwapInfo swapInfo;
-            swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-            {
-                FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-            };
-            swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;
-            swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
-            CoreGraphics::SwapchainSetSwapInfo(swapchain, swapInfo);
+            CoreGraphics::SwapchainSwap(swapchain);
+            CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+            // Allocate command buffer to run swap
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            beginInfo.submitOnce = true;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
+            FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+            CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_editorframe::Export_EditorBuffer.tex);
+
+            CoreGraphics::CmdEndMarker(cmdBuf);
+            CoreGraphics::CmdFinishQueries(cmdBuf);
+            CoreGraphics::CmdEndRecord(cmdBuf);
+            auto submission = CoreGraphics::SubmitCommandBuffers(
+                { cmdBuf }
+                , queue
+                , { FrameScript_editorframe::Submission_EditorUI }
+    #if NEBULA_GRAPHICS_DEBUG
+                , "Swap"
+    #endif
+
+            );
+            CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
+
         }
     });
     IO::URI userEditorIni = IO::URI(editorUIPath);

@@ -1881,7 +1881,7 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 /**
 */
 void
-FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::FenceId>& presentFences)
+FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores)
 {
     if (state.currentFrameIndex != frameIndex)
     {
@@ -1899,11 +1899,14 @@ FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& bac
         );
     }
 
-    // Signal rendering finished semaphore just before submitting graphics queue
-    state.queueHandler.AppendSignalSemaphore(
-        GraphicsQueueType,
-        SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
-    );
+    for (auto& sem : renderingSemaphores)
+    {
+        // Signal rendering finished semaphore just before submitting graphics queue
+        state.queueHandler.AppendSignalSemaphore(
+            GraphicsQueueType,
+            SemaphoreGetVk(sem)
+        );
+    }
 
     state.queueHandler.FlushSubmissions(nullptr);
 
@@ -1925,11 +1928,6 @@ FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& bac
         state.queueHandler.FlushSparseBinds(nullptr);
         state.sparseBufferBinds.Clear();
         state.sparseImageBinds.Clear();
-    }
-
-    for (const auto& fence : presentFences)
-    {
-        state.queueHandler.InsertFence(CoreGraphics::QueueType::GraphicsQueueType, FenceGetVk(fence));
     }
 }
 

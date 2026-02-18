@@ -618,50 +618,26 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    Util::Array<CoreGraphics::SemaphoreId> windowSemaphores;
-    Util::Array<CoreGraphics::FenceId> presentFences;
+    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
+
+    // Wait for previous present
+    //CoreGraphics::FenceId fence = CoreGraphics::GetPresentFence();
+    //bool result = CoreGraphics::FenceWaitAndReset(fence, UINT64_MAX);
+    //n_assert(result);
+
     for (auto& wnd : this->windows)
     {
         CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
-        const CoreGraphics::SwapInfo& swapInfo = SwapchainGetSwapInfo(swapchain);
-        CoreGraphics::SemaphoreId sem = CoreGraphics::SwapchainGetCurrentSemaphore(swapchain);
-        CoreGraphics::FenceId fence = CoreGraphics::SwapchainGetCurrentFence(swapchain);
-        windowSemaphores.Append(sem);
-        presentFences.Append(fence);
-        CoreGraphics::SwapchainSwap(swapchain);
-        CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
-        n_assert_msg(swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
 
-        // Allocate command buffer to run swap
-        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
-        CoreGraphics::CmdBufferBeginInfo beginInfo;
-        beginInfo.submitDuringPass = false;
-        beginInfo.resubmittable = false;
-        beginInfo.submitOnce = true;
-        CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
-        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+        CoreGraphics::SemaphoreId displaySemaphore = CoreGraphics::SwapchainGetCurrentDisplaySemaphore(swapchain);
+        CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
+        displaySemaphores.Append(displaySemaphore);
+        presentSemaphores.Append(presentSemaphore);
 
-        swapInfo.syncFunc(cmdBuf);
-        CoreGraphics::SwapchainCopy(swapchain, cmdBuf, swapInfo.swapSource);
-
-        CoreGraphics::CmdEndMarker(cmdBuf);
-        CoreGraphics::CmdFinishQueries(cmdBuf);
-        CoreGraphics::CmdEndRecord(cmdBuf);
-
-        auto submission = CoreGraphics::SubmitCommandBuffers(
-            { cmdBuf }
-            , queue
-            , { swapInfo.submission }
-#if NEBULA_GRAPHICS_DEBUG
-            , "Swap"
-#endif
-
-        );
-        CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
     }
 
     // Finish submissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex, windowSemaphores, presentFences);
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, presentSemaphores);
 }
 
 //------------------------------------------------------------------------------

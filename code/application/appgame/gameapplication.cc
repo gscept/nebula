@@ -26,7 +26,7 @@
 namespace App
 {
 __ImplementSingleton(App::GameApplication);
-IndexT GameApplication::FrameIndex = -1;
+IndexT GameApplication::FrameIndex = 1;
 bool GameApplication::editorEnabled = false;
 
 using namespace Util;
