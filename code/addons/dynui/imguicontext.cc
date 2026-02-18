@@ -32,6 +32,17 @@ using namespace Input;
 namespace Dynui
 {
 
+
+IndexT VertexBufferOffset = 0;
+IndexT IndexBufferOffset = 0;
+
+IndexT VertexOffset = 0;
+IndexT IndexOffset = 0;
+IndexT PrimitiveIndexOffset = 0;
+
+SizeT TotalVerticesThisFrame = 0;
+SizeT TotalIndicesThisFrame = 0;
+
 ImguiContext::ImguiState ImguiContext::state;
 static Core::CVar* ui_opacity;
 
@@ -63,15 +74,17 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     // create orthogonal matrix
     mat4 proj = orthooffcenterrh(data->DisplayPos.x, data->DisplayPos.x + data->DisplaySize.x, data->DisplayPos.y + data->DisplaySize.y, data->DisplayPos.y, 0.0f, +1.0f);
 
+    TotalVerticesThisFrame += data->TotalVtxCount;
+    TotalIndicesThisFrame += data->TotalIdxCount;
     // if buffers are too small, create new buffers
-    if (data->TotalVtxCount > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
+    if (TotalVerticesThisFrame > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
     {
         CoreGraphics::BufferUnmap(ImguiContext::state.vbos[currentBuffer]);
         CoreGraphics::DestroyBuffer(ImguiContext::state.vbos[currentBuffer]);
 
         CoreGraphics::BufferCreateInfo vboInfo;
         vboInfo.name = "ImGUI VBO"_atm;
-        vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
+        vboInfo.size = Math::roundtopow2(TotalVerticesThisFrame);
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(ImguiContext::state.vlo);
         vboInfo.mode = CoreGraphics::HostCached;
         vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
@@ -81,14 +94,14 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         ImguiContext::state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(ImguiContext::state.vbos[currentBuffer]);
     }
 
-    if (data->TotalIdxCount > CoreGraphics::BufferGetSize(ImguiContext::state.ibos[currentBuffer]))
+    if (TotalIndicesThisFrame > CoreGraphics::BufferGetSize(ImguiContext::state.ibos[currentBuffer]))
     {
         CoreGraphics::BufferUnmap(ImguiContext::state.ibos[currentBuffer]);
         CoreGraphics::DestroyBuffer(ImguiContext::state.ibos[currentBuffer]);
 
         CoreGraphics::BufferCreateInfo iboInfo;
         iboInfo.name = "ImGUI IBO"_atm;
-        iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
+        iboInfo.size = Math::roundtopow2(TotalIndicesThisFrame);
         iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
         iboInfo.mode = CoreGraphics::HostCached;
         iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
@@ -145,10 +158,6 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint bits = 0xF;
     };
 
-    IndexT vertexOffset = 0;
-    IndexT indexOffset = 0;
-    IndexT vertexBufferOffset = 0;
-    IndexT indexBufferOffset = 0;
 
     IndexT i;
     for (i = 0; i < data->CmdListsCount; i++)
@@ -161,14 +170,14 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);                    // using 16 bit indices
 
         // if we render too many vertices, we will simply assert, but should never happen really
-        n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.vbos[currentBuffer]));
-        n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.ibos[currentBuffer]));
+        n_assert(VertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.vbos[currentBuffer]));
+        n_assert(IndexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.ibos[currentBuffer]));
 
-        // wait for previous draws to finish...
-        Memory::Copy(vertexBuffer, ImguiContext::state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
-        Memory::Copy(indexBuffer, ImguiContext::state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
+        Memory::Copy(vertexBuffer, ImguiContext::state.vertexPtrs[currentBuffer] + VertexBufferOffset, vertexBufferSize);
+        Memory::Copy(indexBuffer, ImguiContext::state.indexPtrs[currentBuffer] + IndexBufferOffset, indexBufferSize);
         IndexT j;
         IndexT primitiveIndexOffset = 0;
+
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
         {
             const ImDrawCmd* command = &commandList->CmdBuffer[j];
@@ -228,8 +237,8 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 // setup primitive
                 CoreGraphics::PrimitiveGroup primitive;
                 primitive.SetNumIndices(command->ElemCount);
-                primitive.SetBaseIndex(primitiveIndexOffset + indexOffset);
-                primitive.SetBaseVertex(vertexOffset);
+                primitive.SetBaseIndex(primitiveIndexOffset + IndexOffset);
+                primitive.SetBaseVertex(VertexOffset);
 
                 // prepare render device and draw
                 CoreGraphics::CmdDraw(cmdBuf, primitive);
@@ -240,16 +249,14 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         }
 
         // bump vertices
-        vertexOffset += commandList->VtxBuffer.size();
-        indexOffset += commandList->IdxBuffer.size();
+        VertexOffset += commandList->VtxBuffer.size();
+        IndexOffset += commandList->IdxBuffer.size();
 
         // lock buffers
-        vertexBufferOffset += vertexBufferSize;
-        indexBufferOffset += indexBufferSize;
+        VertexBufferOffset += vertexBufferSize;
+        IndexBufferOffset += indexBufferSize;
     }
 
-    CoreGraphics::BufferFlush(ImguiContext::state.vbos[currentBuffer]);
-    CoreGraphics::BufferFlush(ImguiContext::state.ibos[currentBuffer]);
 }
 
 //------------------------------------------------------------------------------
@@ -404,6 +411,8 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
+
+
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
                 if (userData == nullptr)
@@ -424,6 +433,9 @@ ImguiContext::Create()
                             platform_io.Renderer_RenderWindow(viewport, &data);
                     }
                 }
+                IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+                CoreGraphics::BufferFlush(ImguiContext::state.vbos[currentBuffer]);
+                CoreGraphics::BufferFlush(ImguiContext::state.ibos[currentBuffer]);
             });
     }
     else
@@ -441,6 +453,7 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
+
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
                 if (userData == nullptr)
@@ -461,6 +474,10 @@ ImguiContext::Create()
                             platform_io.Renderer_RenderWindow(viewport, &data);
                     }
                 }
+
+                IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+                CoreGraphics::BufferFlush(ImguiContext::state.vbos[currentBuffer]);
+                CoreGraphics::BufferFlush(ImguiContext::state.ibos[currentBuffer]);
             });
     }
 
@@ -1037,6 +1054,13 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
     ImGui::NewFrame();
 
+    TotalIndicesThisFrame = 0;
+    TotalVerticesThisFrame = 0;
+    VertexBufferOffset = 0;
+    IndexBufferOffset = 0;
+    VertexOffset = 0;
+    IndexOffset = 0;
+    PrimitiveIndexOffset = 0;
 }
 
 //------------------------------------------------------------------------------
