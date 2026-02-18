@@ -829,13 +829,10 @@ __forceinline mat4
 orthooffcenterlh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
-    scalar divwidth = 1.0f / (r - l);
-    scalar divheight = 1.0f / (t - b);
-    scalar dist = 1.0f / (zf - zn);
-    m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
-    m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(-(r+l) * divwidth, - (t+b) * divheight, -dist *  zn, 1.0f);
+    m.r[0] = vec4(2.0f / (r-l), 0.0f, 0.0f, 0.0f);
+    m.r[1] = vec4(0.0f, 2.0f / (t-b), 0.0f, 0.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 1.0f / (zf-zn), 0.0f);
+    m.r[3] = vec4((l + r) / (l - r), (t + b) / (b - t), zn / (zn - zf), 1.0f);
     return m;
 }
 
@@ -846,13 +843,10 @@ __forceinline mat4
 orthooffcenterrh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
-    scalar divwidth = 1.0f / (r - l);
-    scalar divheight = 1.0f / (t - b);
-    scalar dist = 1.0f / (zn - zf);
-    m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
-    m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(-(l+r) * divwidth, - (t+b) * divheight, dist * zn, 1.0f);
+    m.r[0] = vec4(2.0f / (r-l), 0.0f, 0.0f, 0.0f);
+    m.r[1] = vec4(0.0f, 2.0f / (t-b), 0.0f, 0.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 1 / (zn-zf), 0.0f);
+    m.r[3] = vec4((l + r) / (l - r), (t + b) / (b - t), zn / (zn-zf), 1.0f);
     return m;
 }
 

@@ -82,7 +82,6 @@ vsMain(
 {
     const pos = f32x4(position, 0, 1);    
     var projPos = ImGUI.TextProjectionModel * pos;
-    projPos.xy -= f32x2(1.0f);
     vertexExportCoordinates(projPos);
     Color = color;
     UV = uv;

@@ -61,7 +61,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
-    mat4 proj = orthooffcenterrh(data->DisplayPos.x - data->DisplaySize.x/2, data->DisplayPos.x + data->DisplaySize.x/2, data->DisplayPos.y + data->DisplaySize.y/2, data->DisplayPos.y - data->DisplaySize.y/2, -1.0f, +1.0f);
+    mat4 proj = orthooffcenterrh(data->DisplayPos.x, data->DisplayPos.x + data->DisplaySize.x, data->DisplayPos.y + data->DisplaySize.y, data->DisplayPos.y, 0.0f, +1.0f);
 
     // if buffers are too small, create new buffers
     if (data->TotalVtxCount > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
@@ -632,9 +632,9 @@ ImguiContext::Create()
 #endif
 
 #ifdef IMGUI_HAS_VIEWPORT
-    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    //io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-    //io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 
     struct ImGuiWindowHandle
     {
@@ -650,7 +650,7 @@ ImguiContext::Create()
         windowInfo.fullscreen = false;
         windowInfo.resizable = true;
         windowInfo.vsync = false;
-        windowInfo.decorated = true;
+        windowInfo.decorated = false;
         windowInfo.userData = &vp->ID;
         CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(windowInfo);
         Graphics::GraphicsServer::Instance()->AddWindow(wnd);
