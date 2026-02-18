@@ -620,11 +620,6 @@ GraphicsServer::EndFrame()
 
     Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
 
-    // Wait for previous present
-    //CoreGraphics::FenceId fence = CoreGraphics::GetPresentFence();
-    //bool result = CoreGraphics::FenceWaitAndReset(fence, UINT64_MAX);
-    //n_assert(result);
-
     for (auto& wnd : this->windows)
     {
         CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
