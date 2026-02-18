@@ -346,6 +346,13 @@ ImguiContext::~ImguiContext()
 
 }
 
+struct ImGuiSecondaryWindowData
+{
+    CoreGraphics::CmdBufferId buf;
+    Math::rectangle<int> viewport;
+    ImGuiID id;
+}; 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -398,7 +405,25 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
                 ImGui::Render();
-                ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
+                if (userData == nullptr)
+                {
+                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                }
+                else
+                {
+                    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                    ImGuiSecondaryWindowData data;
+                    data.buf = cmdBuf;
+                    data.viewport = viewport;
+                    data.id = *static_cast<ImGuiID*>(userData);
+                    for (int i = 1; i < platform_io.Viewports.Size; i++)
+                    {
+                        ImGuiViewport* viewport = platform_io.Viewports[i];
+                        if (viewport->ID == data.id)
+                            platform_io.Renderer_RenderWindow(viewport, &data);
+                    }
+                }
             });
     }
     else
@@ -417,7 +442,25 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
                 ImGui::Render();
-                ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
+                if (userData == nullptr)
+                {
+                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                }
+                else
+                {
+                    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                    ImGuiSecondaryWindowData data;
+                    data.buf = cmdBuf;
+                    data.viewport = viewport;
+                    data.id = *static_cast<ImGuiID*>(userData);
+                    for (int i = 1; i < platform_io.Viewports.Size; i++)
+                    {
+                        ImGuiViewport* viewport = platform_io.Viewports[i];
+                        if (viewport->ID == data.id)
+                            platform_io.Renderer_RenderWindow(viewport, &data);
+                    }
+                }
             });
     }
 
@@ -589,9 +632,9 @@ ImguiContext::Create()
 #endif
 
 #ifdef IMGUI_HAS_VIEWPORT
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    //io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+    //io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 
     struct ImGuiWindowHandle
     {
@@ -608,6 +651,7 @@ ImguiContext::Create()
         windowInfo.resizable = true;
         windowInfo.vsync = false;
         windowInfo.decorated = true;
+        windowInfo.userData = &vp->ID;
         CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(windowInfo);
         Graphics::GraphicsServer::Instance()->AddWindow(wnd);
 
@@ -654,7 +698,8 @@ ImguiContext::Create()
     };
     platform_io.Renderer_RenderWindow = [](ImGuiViewport* vp, void* render_arg)
     {
-        vp->DrawData;
+        ImGuiSecondaryWindowData* data = static_cast<ImGuiSecondaryWindowData*>(render_arg);
+        ImguiDrawFunction(data->buf, data->viewport, vp->DrawData);
     };
 
     const auto& monitors = CoreGraphics::DisplayDevice::Instance()->GetMonitors();
@@ -1003,7 +1048,6 @@ ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
     ImGui::EndFrame();
                     
     ImGui::UpdatePlatformWindows();
-    ImGui::RenderPlatformWindowsDefault();
 }
 
 } // namespace Dynui

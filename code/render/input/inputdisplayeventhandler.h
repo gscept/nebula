@@ -2,7 +2,7 @@
 
 //------------------------------------------------------------------------------
 /**
-    @class OpenGL4::GLFWInputDisplayEventHandler
+    @class Input::InputDisplayEventHandler
   
     Translates DisplayEvents that are relevant for the input system
     into InputEvents.
@@ -13,11 +13,11 @@
 #include "coregraphics/displayeventhandler.h"
 
 //------------------------------------------------------------------------------
-namespace GLFW
+namespace Input
 {
-class GLFWInputDisplayEventHandler : public CoreGraphics::DisplayEventHandler
+class InputDisplayEventHandler : public CoreGraphics::DisplayEventHandler
 {
-    __DeclareClass(GLFWInputDisplayEventHandler);
+    __DeclareClass(InputDisplayEventHandler);
 public:
     /// called when an event happens
     virtual bool HandleEvent(const CoreGraphics::DisplayEvent& event);

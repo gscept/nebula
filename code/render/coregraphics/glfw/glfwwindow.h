@@ -32,7 +32,7 @@ enum
     GLFW_SetupInfo,
     GLFW_ResizeInfo,
     GLFW_Swapchain,
-    GLFW_SwapInfo
+    GLFW_UserData
 };
 
 typedef Ids::IdAllocator<
@@ -42,7 +42,7 @@ typedef Ids::IdAllocator<
     , WindowCreateInfo
     , ResizeInfo
     , SwapchainId
-    , SwapInfo
+    , void*
 > GLFWWindowAllocatorType;
 extern GLFWWindowAllocatorType glfwWindowAllocator;
 } // namespace CoreGraphics

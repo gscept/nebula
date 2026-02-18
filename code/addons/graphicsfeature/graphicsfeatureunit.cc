@@ -133,6 +133,7 @@ GraphicsFeatureUnit::OnActivate()
         this->title,
         "icon.png",
         CoreGraphics::AntiAliasQuality::None,
+        nullptr,
         true,
         true,
         false,
@@ -331,7 +332,6 @@ GraphicsFeatureUnit::OnBeginFrame()
     this->inputServer->BeginFrame();
 
     CoreGraphics::WindowPollEvents();
-    CoreGraphics::WindowMakeCurrent(this->wnd);
     this->inputServer->OnFrame();
 
     this->gfxServer->RunPreLogic();

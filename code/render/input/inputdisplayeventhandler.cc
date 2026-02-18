@@ -3,13 +3,13 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "input/glfw/glfwinputdisplayeventhandler.h"
+#include "input/inputdisplayeventhandler.h"
 #include "input/inputserver.h"
 #include "input/inputevent.h"
 
-namespace GLFW
+namespace Input
 {
-__ImplementClass(GLFW::GLFWInputDisplayEventHandler, 'WIEH', CoreGraphics::DisplayEventHandler);
+__ImplementClass(Input::InputDisplayEventHandler, 'WIEH', CoreGraphics::DisplayEventHandler);
 
 using namespace Input;
 using namespace CoreGraphics;
@@ -18,14 +18,17 @@ using namespace CoreGraphics;
 /**
 */
 bool
-GLFWInputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
+InputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     InputEvent inputEvent;
     InputServer* inputServer = InputServer::Instance();
     switch (displayEvent.GetEventCode())
     {
         case DisplayEvent::CloseRequested:
-            inputServer->SetQuitRequested(true);
+
+            // Close app if window is the default one
+            if (displayEvent.GetWindowId().id == 0)
+                inputServer->SetQuitRequested(true);
             break;
 
         case DisplayEvent::WindowMinimized:
@@ -107,4 +110,4 @@ GLFWInputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
     return false;
 }
     
-} // namespace GLFW
+} // namespace Input

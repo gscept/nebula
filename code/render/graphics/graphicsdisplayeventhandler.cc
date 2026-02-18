@@ -3,16 +3,16 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "graphics/glfw/glfwgraphicsdisplayeventhandler.h"
+#include "graphics/graphicsdisplayeventhandler.h"
 #include "graphics/graphicsserver.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkpipelinedatabase.h"
 #endif
 
-namespace GLFW
+namespace Graphics
 {
-__ImplementClass(GLFW::GLFWGraphicsDisplayEventHandler, 'WGEH', CoreGraphics::DisplayEventHandler);
+__ImplementClass(Graphics::GraphicsDisplayEventHandler, 'WGEH', CoreGraphics::DisplayEventHandler);
 
 using namespace Input;
 using namespace CoreGraphics;
@@ -21,7 +21,7 @@ using namespace CoreGraphics;
 /**
 */
 bool
-GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
+GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     Ptr<Graphics::GraphicsServer> graphicsServer = Graphics::GraphicsServer::Instance();
 #if __VULKAN__
@@ -29,6 +29,16 @@ GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 #endif
     switch (displayEvent.GetEventCode())
     {
+        case DisplayEvent::CloseRequested:
+        {
+            CoreGraphics::WindowId wnd = displayEvent.GetWindowId();
+            if (wnd.id != 0)
+            {
+                Graphics::GraphicsServer::Instance()->RemoveWindow(displayEvent.GetWindowId());
+                CoreGraphics::DestroyWindow(displayEvent.GetWindowId());
+                return true;
+            }
+        }
         case DisplayEvent::WindowResized:
         {
             // Invalidate pipelines

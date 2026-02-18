@@ -285,6 +285,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     WindowId id = windowId;
     glfwWindowAllocator.Set<GLFW_SetupInfo>(windowId, info);
     glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { .newWidth = 0, .newHeight = 0, .done = true, .vsync = info.vsync });
+    glfwWindowAllocator.Set<GLFW_UserData>(windowId, info.userData);
 
     GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
     n_assert(monitor);
@@ -571,6 +572,15 @@ WindowSetCursorLocked(const WindowId id, bool b)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     glfwSetInputMode(wnd, GLFW_CURSOR, b ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+WindowGetUserData(const WindowId id)
+{
+    return glfwWindowAllocator.Get<GLFW_UserData>(id.id);
 }
 
 //------------------------------------------------------------------------------

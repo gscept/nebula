@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class GLFW::GLFWGraphicsDisplayEventHandler
+    @class Graphics::GraphicsDisplayEventHandler
   
     Handles DisplayEvents that are relevant for the graphics system
         
@@ -11,11 +11,11 @@
 #include "coregraphics/displayeventhandler.h"
 
 //------------------------------------------------------------------------------
-namespace GLFW
+namespace Graphics
 {
-class GLFWGraphicsDisplayEventHandler : public CoreGraphics::DisplayEventHandler
+class GraphicsDisplayEventHandler : public CoreGraphics::DisplayEventHandler
 {
-    __DeclareClass(GLFWGraphicsDisplayEventHandler);
+    __DeclareClass(GraphicsDisplayEventHandler);
 public:
     /// called when an event happens
     virtual bool HandleEvent(const CoreGraphics::DisplayEvent& event);

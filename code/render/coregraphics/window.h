@@ -36,6 +36,7 @@ struct WindowCreateInfo
     Util::StringAtom title = nullptr;
     Util::StringAtom icon = nullptr;
     CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None;
+    void* userData = nullptr;
     bool resizable : 1;
     bool decorated : 1;
     bool fullscreen : 1;
@@ -75,6 +76,9 @@ void WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b);
 void WindowSetCursorVisible(const WindowId id, bool b);
 /// set if the cursor should be locked to the window
 void WindowSetCursorLocked(const WindowId id, bool b);
+
+/// Get user data associated with window
+void* WindowGetUserData(const WindowId id);
 
 /// get display mode from window
 const CoreGraphics::DisplayMode WindowGetDisplayMode(const WindowId id);

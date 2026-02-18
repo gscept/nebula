@@ -13,8 +13,8 @@
 #include "coregraphics/base/displaydevicebase.h"
 #include "util/array.h"
 #include "threading/thread.h"
-#include "input/glfw/glfwinputdisplayeventhandler.h"
-#include "graphics/glfw/glfwgraphicsdisplayeventhandler.h"
+#include "input/inputdisplayeventhandler.h"
+#include "graphics/graphicsdisplayeventhandler.h"
 
 namespace GLFW
 {
@@ -53,8 +53,8 @@ public:
     static Input::Key::Code TranslateKeyCode(int inkey);
 
 protected:
-    Ptr<GLFWInputDisplayEventHandler> inputEventHandler;
-    Ptr<GLFWGraphicsDisplayEventHandler> graphicsEventHandler;
+    Ptr<Input::InputDisplayEventHandler> inputEventHandler;
+    Ptr<Graphics::GraphicsDisplayEventHandler> graphicsEventHandler;
     friend class GLFWWindow;
 
     friend class OGL4RenderDevice;
