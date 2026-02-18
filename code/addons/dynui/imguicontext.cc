@@ -713,6 +713,11 @@ ImguiContext::Create()
     {
 
     };
+    platform_io.Platform_SetWindowFocus = [](ImGuiViewport* vp)
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::WindowTakeFocus(wndHandle->wnd);
+    };
     platform_io.Renderer_RenderWindow = [](ImGuiViewport* vp, void* render_arg)
     {
         ImGuiSecondaryWindowData* data = static_cast<ImGuiSecondaryWindowData*>(render_arg);

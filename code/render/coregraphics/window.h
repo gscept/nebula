@@ -76,6 +76,8 @@ void WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b);
 void WindowSetCursorVisible(const WindowId id, bool b);
 /// set if the cursor should be locked to the window
 void WindowSetCursorLocked(const WindowId id, bool b);
+/// Focus window
+void WindowTakeFocus(const WindowId id);
 
 /// Get user data associated with window
 void* WindowGetUserData(const WindowId id);

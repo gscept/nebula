@@ -370,6 +370,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     swapCreate.window = wnd;
     SwapchainId swapchain = CoreGraphics::CreateSwapchain(swapCreate);
 
+
     glfwWindowAllocator.Set<GLFW_SwapFrame>(windowId, 0);
     glfwWindowAllocator.Set<GLFW_Window>(windowId, wnd);
     glfwWindowAllocator.Set<GLFW_Swapchain>(windowId, swapchain);
@@ -572,6 +573,16 @@ WindowSetCursorLocked(const WindowId id, bool b)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     glfwSetInputMode(wnd, GLFW_CURSOR, b ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowTakeFocus(const WindowId id)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwFocusWindow(wnd);
 }
 
 //------------------------------------------------------------------------------
