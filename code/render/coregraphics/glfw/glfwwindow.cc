@@ -636,7 +636,7 @@ WindowNewFrame(const WindowId id)
         CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
         CoreGraphics::DestroySwapchain(swapchain);
 
-        CoreGraphics::BeginWindowResize();
+        //CoreGraphics::BeginWindowResize();
 
         GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
         CoreGraphics::SwapchainCreateInfo newSwapInfo;
@@ -648,7 +648,7 @@ WindowNewFrame(const WindowId id)
         // notify event listeners we resized
         GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
 
-        CoreGraphics::EndWindowResize();
+        //CoreGraphics::EndWindowResize();
     }
 }
 
