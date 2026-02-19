@@ -751,7 +751,8 @@ ImguiContext::Create()
     };
     platform_io.Platform_ShowWindow = [](ImGuiViewport* vp)
     {
-
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        CoreGraphics::WindowShow(wndHandle->wnd);
     };
     platform_io.Platform_SetWindowFocus = [](ImGuiViewport* vp)
     {

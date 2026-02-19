@@ -64,6 +64,8 @@ void WindowSetTitle(const WindowId id, const Util::String& title);
 void WindowSetIcon(const WindowId id, const Util::String& icon);
 /// make window 'current'
 void WindowMakeCurrent(const WindowId id);
+/// Show window
+void WindowShow(const WindowId id);
 /// present window
 void WindowPresent(const WindowId id, const IndexT frameIndex);
 /// poll events for window

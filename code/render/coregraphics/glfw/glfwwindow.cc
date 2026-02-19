@@ -607,6 +607,16 @@ WindowMakeCurrent(const WindowId id)
 /**
 */
 void
+WindowShow(const WindowId id)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwShowWindow(wnd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 WindowPresent(const WindowId id, const IndexT frameIndex)
 {
     IndexT& frame = glfwWindowAllocator.Get<GLFW_SwapFrame>(id.id);
