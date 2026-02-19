@@ -110,7 +110,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
-    mat4 proj = orthooffcenterrh(data->DisplayPos.x, data->DisplayPos.x + data->DisplaySize.x, data->DisplayPos.y + data->DisplaySize.y, data->DisplayPos.y, 0.0f, +1.0f);
+    mat4 proj = orthooffcenterrh(data->DisplayPos.x, data->DisplayPos.x + viewport.width(), data->DisplayPos.y + viewport.height(), data->DisplayPos.y, 0.0f, +1.0f);
 
     TotalVerticesThisFrame += data->TotalVtxCount;
     TotalIndicesThisFrame += data->TotalIdxCount;
@@ -452,6 +452,9 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
 
+                ImGuiIO& io = ImGui::GetIO();
+                CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
+                io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
@@ -493,6 +496,10 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
+
+                ImGuiIO& io = ImGui::GetIO();
+                CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
+                io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
@@ -1084,8 +1091,7 @@ ImguiContext::ResetKeyDownState()
 void
 ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    io.DisplaySize = ImVec2((float)width, (float)height);
+
 }
 
 //------------------------------------------------------------------------------
