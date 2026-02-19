@@ -23,7 +23,8 @@
 
 namespace CoreGraphics
 {
-WindowId CurrentWindow;
+WindowId CurrentWindow = CoreGraphics::InvalidWindowId;
+WindowId MainWindow = CoreGraphics::InvalidWindowId;
 GLFWWindowAllocatorType glfwWindowAllocator(0x00FFFFFF);
 
 }
@@ -412,6 +413,17 @@ namespace CoreGraphics
 using namespace Vulkan;
 #endif
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+const WindowId
+CreateMainWindow(const WindowCreateInfo& info)
+{
+    n_assert(MainWindow == CoreGraphics::InvalidWindowId);
+    MainWindow = GLFW::InternalSetupFunction(info, nullptr, false);
+    return MainWindow;
+}
 
 //------------------------------------------------------------------------------
 /**

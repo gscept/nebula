@@ -30,6 +30,7 @@ struct TextureId;
 
 
 extern WindowId CurrentWindow;
+extern WindowId MainWindow;
 struct WindowCreateInfo
 {
     CoreGraphics::DisplayMode mode;
@@ -43,6 +44,8 @@ struct WindowCreateInfo
     bool vsync : 1;
 };
 
+/// create the main window
+const WindowId CreateMainWindow(const WindowCreateInfo& info);
 /// create new window
 const WindowId CreateWindow(const WindowCreateInfo& info);
 /// embed window in another window

@@ -139,7 +139,7 @@ GraphicsFeatureUnit::OnActivate()
         false,
         true
     };
-    this->mainWindow = CreateWindow(wndInfo);
+    this->mainWindow = CreateMainWindow(wndInfo);
     Graphics::GraphicsServer::Instance()->AddWindow(this->mainWindow);
 
     CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->mainWindow);
