@@ -98,8 +98,8 @@ GraphicsServer::Open()
             64_MB,                  // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        .maxOcclusionQueries = 0x1000,
-        .maxTimestampQueries = 0x400,
+        .maxOcclusionQueries = 0x100000,
+        .maxTimestampQueries = 0x40000,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = args.GetBoolFlag("-gfxvalidation"),
@@ -302,34 +302,22 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
     bool ret = false;
     const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wndId);
 
-    SizeT maxWidth = Math::max(this->maxWindowWidth, mode.GetWidth()), maxHeight = Math::max(this->maxWindowHeight, mode.GetHeight());
-    for (const auto& window : this->windows)
-    {
-        if (window != wndId)
-        {
-            // Only trigger further display resizing if any dimensions are larger
-            const CoreGraphics::DisplayMode windowMode = CoreGraphics::WindowGetDisplayMode(window);
-            maxWidth = Math::max(windowMode.GetWidth(), mode.GetWidth());
-            maxHeight = Math::max(windowMode.GetHeight(), mode.GetHeight());
-        }
-    }
-
     // Only resize if bigger
-    if (this->maxWindowWidth < maxWidth || this->maxWindowHeight < maxHeight)
+    if (this->maxWindowWidth < mode.GetWidth() || this->maxWindowHeight < mode.GetHeight())
     {
-        this->maxWindowWidth = maxWidth;
-        this->maxWindowHeight = maxHeight;
+        this->maxWindowWidth = Math::max(mode.GetWidth(), this->maxWindowWidth);
+        this->maxWindowHeight = Math::max(mode.GetHeight(), this->maxWindowHeight);
         CoreGraphics::WaitAndClearPendingCommands();
 
         // First, call the resize callback to trigger an update of the frame scripts
         if (this->resizeCall != nullptr)
-            this->resizeCall(maxWidth, maxHeight);
+            this->resizeCall(this->maxWindowWidth, this->maxWindowHeight);
 
         for (IndexT i = 0; i < this->contexts.Size(); ++i)
         {
             if (this->contexts[i]->OnWindowResized != nullptr)
             {
-                this->contexts[i]->OnWindowResized(wndId.id, maxWidth, maxHeight);
+                this->contexts[i]->OnWindowResized(wndId.id, this->maxWindowWidth, this->maxWindowHeight);
             }
         }
         ret = true;
@@ -376,10 +364,15 @@ GraphicsServer::AddWindow(const CoreGraphics::WindowId window)
     n_assert(this->windows.Find(window) == nullptr);
     this->windows.Append(window);
 
-    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
-    this->maxWindowWidth = Math::max(mode.GetWidth(), this->maxWindowWidth);
-    this->maxWindowHeight = Math::max(mode.GetHeight(), this->maxWindowHeight);
-    //this->OnWindowResized(window);
+    // Don't resize if it's the main window
+    if (window != CoreGraphics::MainWindow)
+        this->OnWindowResized(window);
+    else
+    {
+        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+        this->maxWindowWidth = mode.GetWidth();
+        this->maxWindowHeight = mode.GetHeight();
+    }
 }
 
 //------------------------------------------------------------------------------
