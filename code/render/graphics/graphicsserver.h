@@ -136,7 +136,7 @@ public:
     void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
     
     /// call when the window has been resized
-    void OnWindowResized(CoreGraphics::WindowId wndId);
+    bool OnWindowResized(CoreGraphics::WindowId wndId);
 
 private:
 

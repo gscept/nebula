@@ -168,6 +168,9 @@ VkPipelineDatabase::GetCompiledPipeline()
         this->ct4->initial
         )
     {
+        // If we are set to invalidate pipelines, delete the old pipeline prior to creating
+        if (this->ct4->pipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(this->dev, this->ct4->pipeline, nullptr);
         this->ct4->pipeline = this->CreatePipeline(this->currentPass, this->currentSubpass, this->currentShaderProgram, this->currentInputAssembly, this->currentShaderInfo);
 
         // DAG path is created, so set entire path to not initial
@@ -359,8 +362,8 @@ VkPipelineDatabase::RecreatePipelines()
                 for (l = 0; l < t3->children.Size(); l++)
                 {
                     Tier4Node* t4 = t3->children.ValueAtIndex(l);
-                    vkDestroyPipeline(this->dev, t4->pipeline, nullptr);
-                    t4->pipeline = VK_NULL_HANDLE;
+
+                    // Set the tree to initial to provoke a new pipeline
                     t1->initial = t2->initial = t3->initial = t4->initial = true;
                 }
             }

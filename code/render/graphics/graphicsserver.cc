@@ -296,9 +296,10 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
+    bool ret = false;
     const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wndId);
 
     SizeT maxWidth = Math::max(this->maxWindowWidth, mode.GetWidth()), maxHeight = Math::max(this->maxWindowHeight, mode.GetHeight());
@@ -313,21 +314,28 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
         }
     }
 
-    this->maxWindowWidth = maxWidth;
-    this->maxWindowHeight = maxHeight;
-    CoreGraphics::WaitAndClearPendingCommands();
-
-    // First, call the resize callback to trigger an update of the frame scripts
-    if (this->resizeCall != nullptr)
-        this->resizeCall(maxWidth, maxHeight);
-
-    for (IndexT i = 0; i < this->contexts.Size(); ++i)
+    // Only resize if bigger
+    if (this->maxWindowWidth < maxWidth || this->maxWindowHeight < maxHeight)
     {
-        if (this->contexts[i]->OnWindowResized != nullptr)
+        this->maxWindowWidth = maxWidth;
+        this->maxWindowHeight = maxHeight;
+        CoreGraphics::WaitAndClearPendingCommands();
+
+        // First, call the resize callback to trigger an update of the frame scripts
+        if (this->resizeCall != nullptr)
+            this->resizeCall(maxWidth, maxHeight);
+
+        for (IndexT i = 0; i < this->contexts.Size(); ++i)
         {
-            this->contexts[i]->OnWindowResized(wndId.id, maxWidth, maxHeight);
+            if (this->contexts[i]->OnWindowResized != nullptr)
+            {
+                this->contexts[i]->OnWindowResized(wndId.id, maxWidth, maxHeight);
+            }
         }
+        ret = true;
     }
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
