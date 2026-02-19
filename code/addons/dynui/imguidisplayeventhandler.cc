@@ -38,6 +38,25 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             }
             break;
         }
+        case DisplayEvent::WindowResized:
+        {
+            CoreGraphics::WindowId wnd = displayEvent.GetWindowId();
+            ImGuiID* id = static_cast<ImGuiID*>(CoreGraphics::WindowGetUserData(wnd));
+            if (wnd.id != 0)
+            {
+                ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                for (uint i = 0; i < platform_io.Viewports.Size; i++)
+                {
+                    ImGuiViewport* viewport = platform_io.Viewports[i];
+                    if (viewport->ID == *id)
+                    {
+                        viewport->PlatformRequestResize = true;
+                        return true;
+                    }
+                }
+            }
+            break;
+        }
     }
     return false;
 }
