@@ -227,8 +227,8 @@ Viewport::Render()
     
     this->lastViewportImagePositionAbsolute = { imagePosition.x, imagePosition.y };
     this->lastViewportImageSizeAbsolute = { imageSize.x, imageSize.y };
-    this->lastViewportImagePosition = { imagePosition.x / dims.width, imagePosition.y / dims.height };
-    this->lastViewportImageSize = { imageSize.x / dims.width, imageSize.y / dims.height };
+    this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
+    this->lastViewportImageSize = { imageSize.x, imageSize.y };
 
     auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
     view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
