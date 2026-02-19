@@ -170,6 +170,7 @@ private:
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
 
     Util::Array<CoreGraphics::WindowId> windows;
+    SizeT maxWindowWidth, maxWindowHeight;
 
     bool isOpen;
 };

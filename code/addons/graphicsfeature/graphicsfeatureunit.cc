@@ -389,8 +389,8 @@ GraphicsFeatureUnit::OnEndFrame()
     this->inputServer->EndFrame();
 
     // Do potential new-frame stuff for window, such as resize
-    for (const auto& window : windows)
-        CoreGraphics::WindowNewFrame(window);
+    //for (const auto& window : windows)
+        //CoreGraphics::WindowNewFrame(window);
 }
 
 //------------------------------------------------------------------------------

@@ -38,6 +38,7 @@ GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
                 CoreGraphics::DestroyWindow(displayEvent.GetWindowId());
                 return true;
             }
+            break;
         }
         case DisplayEvent::WindowResized:
         {
@@ -52,6 +53,7 @@ GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         default:
             return false;
     }
+    return false;
 }
     
 } // namespace GLFW

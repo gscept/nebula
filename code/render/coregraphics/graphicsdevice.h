@@ -124,10 +124,9 @@ struct GraphicsDeviceState
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
-    Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
-
     uint globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
+    Util::FixedArray<bool> inflightFrames;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;

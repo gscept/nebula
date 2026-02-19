@@ -439,15 +439,6 @@ GetMemoryProperties()
 //------------------------------------------------------------------------------
 /**
 */
-VkSemaphore
-GetRenderingSemaphore()
-{
-    return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 DelayedDeleteVkBuffer(const VkDevice dev, const VkBuffer buf)
 {
@@ -1234,25 +1225,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         state.globalConstantBuffer[i] = CreateBuffer(gfxCboInfo);
     }
 
+    state.inflightFrames.Resize(info.numBufferedFrames);
+    state.inflightFrames.Fill(false);
+
     state.maxNumBufferedFrames = info.numBufferedFrames;
-
-#ifdef CreateSemaphore
-#pragma push_macro("CreateSemaphore")
-#undef CreateSemaphore
-#endif
-
-    state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
-    for (i = 0; i < info.numBufferedFrames; i++)
-    {
-        state.renderingFinishedSemaphores[i] = CreateSemaphore({
-#if NEBULA_GRAPHICS_DEBUG
-            .name = "Present",
-#endif
-            .type = SemaphoreType::Binary });
-    }
-
-#pragma pop_macro("CreateSemaphore")
-
 
     // Setup "special" command buffers
     CoreGraphics::CmdBufferPoolCreateInfo setupResourcePoolInfo;
@@ -1449,12 +1425,6 @@ DestroyGraphicsDevice()
     }
 
     state.database.Discard();
-
-    IndexT i;
-    for (i = 0; i < state.renderingFinishedSemaphores.Size(); i++)
-    {
-        DestroySemaphore(state.renderingFinishedSemaphores[i]);
-    }
 
 #if NEBULA_VULKAN_DEBUG
     if (state.enableValidation)
@@ -1909,6 +1879,7 @@ FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& bac
     }
 
     state.queueHandler.FlushSubmissions(nullptr);
+    state.inflightFrames[state.currentBufferedFrameIndex] = true;
 
     if (!state.sparseBufferBinds.IsEmpty() || !state.sparseImageBinds.IsEmpty())
     {
@@ -1954,13 +1925,17 @@ WaitAndClearPendingCommands()
 
     for (int buffer = 0; buffer < state.maxNumBufferedFrames; buffer++)
     {
-        state.currentBufferedFrameIndex = buffer;
-        Vulkan::ClearPending();
-
-        // Reset queries
-        for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
+        // Only clear frames in flight
+        if (state.inflightFrames[buffer])
         {
-            state.queries[buffer].queryFreeCount[i] = 0;
+            state.currentBufferedFrameIndex = buffer;
+            Vulkan::ClearPending();
+
+            // Reset queries
+            for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
+            {
+                state.queries[buffer].queryFreeCount[i] = 0;
+            }
         }
     }
 }
@@ -2416,6 +2391,7 @@ NewFrame()
 
     // Cleanup resources
     Vulkan::ClearPending();
+    state.inflightFrames[state.currentBufferedFrameIndex] = false; // Flag this frame as being written to
 
     // Reset queries
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
