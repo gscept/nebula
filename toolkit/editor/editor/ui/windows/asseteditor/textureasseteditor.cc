@@ -21,7 +21,7 @@ struct TextureEditorItemData
 void 
 TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
-    ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont);
     ImGui::Text(item->name.Value());
     ImGui::PopFont();
     auto itemData = (TextureEditorItemData*)item->data;
@@ -31,7 +31,7 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     CoreGraphics::TextureIdLock _0(tex);
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tex);
     CoreGraphics::TextureType type = CoreGraphics::TextureGetType(tex);
-    ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont);
     switch (type)
     {
         case CoreGraphics::Texture1D:

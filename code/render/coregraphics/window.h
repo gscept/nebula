@@ -36,7 +36,7 @@ struct WindowCreateInfo
     Util::StringAtom title = nullptr;
     Util::StringAtom icon = nullptr;
     CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None;
-    void* userData = nullptr;
+    void* userData = nullptr; // Setting user data implicitly states that another system owns and manages this window
     bool resizable : 1;
     bool decorated : 1;
     bool fullscreen : 1;

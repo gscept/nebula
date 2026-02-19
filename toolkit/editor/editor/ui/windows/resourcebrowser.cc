@@ -42,7 +42,7 @@ ResourceBrowser::Run(SaveMode save)
         static int current = -1;
         if (ImGui::BeginChild("List", ImVec2{ 0, 0 }, false, ImGuiWindowFlags_NoScrollbar))
         {
-            ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+            ImGui::PushFont(Dynui::ImguiBoldFont);
             ImGui::Text("Textures");
             ImGui::PopFont();
             if (ImGui::BeginTable("Textures###Table", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY))

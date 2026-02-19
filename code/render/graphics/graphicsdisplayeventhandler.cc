@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  glfwgraphicsdisplayeventhandler.cc
+//  graphicsdisplayeventhandler.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
@@ -34,9 +34,14 @@ GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             CoreGraphics::WindowId wnd = displayEvent.GetWindowId();
             if (wnd.id != 0)
             {
-                Graphics::GraphicsServer::Instance()->RemoveWindow(displayEvent.GetWindowId());
-                CoreGraphics::DestroyWindow(displayEvent.GetWindowId());
-                return true;
+                // If the window has user data, assume it's being managed elsewhere
+                void* userData = CoreGraphics::WindowGetUserData(wnd);
+                if (userData == nullptr)
+                {
+                    Graphics::GraphicsServer::Instance()->RemoveWindow(displayEvent.GetWindowId());
+                    CoreGraphics::DestroyWindow(displayEvent.GetWindowId());
+                    return true;
+                }
             }
             break;
         }

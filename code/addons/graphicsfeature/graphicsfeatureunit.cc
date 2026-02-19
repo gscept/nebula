@@ -139,10 +139,10 @@ GraphicsFeatureUnit::OnActivate()
         false,
         true
     };
-    this->wnd = CreateWindow(wndInfo);
-    Graphics::GraphicsServer::Instance()->AddWindow(this->wnd);
+    this->mainWindow = CreateWindow(wndInfo);
+    Graphics::GraphicsServer::Instance()->AddWindow(this->mainWindow);
 
-    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->mainWindow);
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
@@ -173,7 +173,7 @@ GraphicsFeatureUnit::OnActivate()
         .maxNumAllowedInstances = 0xFFFF,
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
-    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
+    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->mainWindow);
 
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
@@ -309,7 +309,7 @@ GraphicsFeatureUnit::OnDeactivate()
     Dynui::ImguiContext::Discard();
     TBUI::TBUIContext::Discard();
     FeatureUnit::OnDeactivate();
-    DestroyWindow(this->wnd);
+    DestroyWindow(this->mainWindow);
     this->gfxServer->DiscardStage(this->defaultStage);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();

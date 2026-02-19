@@ -27,7 +27,7 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
             for (IndexT j = 0; j < groups.Size(); j++)
             {
-                ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+                ImGui::PushFont(Dynui::ImguiBoldFont);
                 ImGui::Text(Util::Format("Primitive Group %d", j).AsCharPtr());
                 ImGui::PopFont();
 
