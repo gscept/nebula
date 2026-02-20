@@ -452,10 +452,6 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
 
-                ImGuiIO& io = ImGui::GetIO();
-                CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
-                io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
-
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
                 if (userData == nullptr)
@@ -496,10 +492,6 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
-
-                ImGuiIO& io = ImGui::GetIO();
-                CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
-                io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 
                 ImGui::Render();
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
@@ -1101,6 +1093,9 @@ void
 ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
+
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
+    io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
 
     io.DeltaTime = ctx.frameTime;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
