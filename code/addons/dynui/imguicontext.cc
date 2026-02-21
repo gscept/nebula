@@ -453,7 +453,7 @@ ImguiContext::Create()
 #endif
 
                 ImGui::Render();
-                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
+                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
                 if (userData == nullptr)
                 {
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
@@ -494,7 +494,7 @@ ImguiContext::Create()
 #endif
 
                 ImGui::Render();
-                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::CurrentWindow);
+                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
                 if (userData == nullptr)
                 {
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
@@ -562,7 +562,7 @@ ImguiContext::Create()
     }
 
     // get display mode, this will be our default size
-    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
+    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(MainWindow);
 
     float scaleFactor = mode.GetContentScale();
     // setup Imgui
@@ -691,6 +691,7 @@ ImguiContext::Create()
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 
     struct ImGuiWindowHandle
     {
@@ -702,6 +703,7 @@ ImguiContext::Create()
     {
         CoreGraphics::WindowCreateInfo windowInfo;
         windowInfo.mode = CoreGraphics::DisplayMode(vp->Pos.x, vp->Pos.y, vp->Size.x, vp->Size.y);
+        windowInfo.mode.SetContentScale(vp->DpiScale);
         windowInfo.title = "ImGUI Window";
         windowInfo.fullscreen = false;
         windowInfo.resizable = true;
@@ -758,6 +760,11 @@ ImguiContext::Create()
         ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
         CoreGraphics::WindowTakeFocus(wndHandle->wnd);
     };
+    platform_io.Platform_GetWindowFocus = [](ImGuiViewport* vp) -> bool
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        return CoreGraphics::FocusWindow == wndHandle->wnd;
+    };
     platform_io.Renderer_RenderWindow = [](ImGuiViewport* vp, void* render_arg)
     {
         ImGuiSecondaryWindowData* data = static_cast<ImGuiSecondaryWindowData*>(render_arg);
@@ -785,7 +792,7 @@ ImguiContext::Create()
     wndHandle->wnd = mainWnd;
     platform_io.Viewports[0]->PlatformHandle = reinterpret_cast<void*>(wndHandle);
     
-#endif
+#endif // IMGUI_HAS_VIEWPORT
 
     // load default font
     ImFontConfig config;
@@ -1017,6 +1024,7 @@ bool
 ImguiContext::HandleInput(const Input::InputEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
+    Math::int2 pos = CoreGraphics::WindowGetPosition(CoreGraphics::FocusWindow);
     switch (event.GetType())
     {
     case InputEvent::KeyDown:
@@ -1041,14 +1049,11 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
         }
         return io.WantTextInput;
     }
-    case InputEvent::MouseMove:
-        io.MousePos = ImVec2(event.GetAbsMousePos().x, event.GetAbsMousePos().y);
-        return io.WantCaptureMouse;
     case InputEvent::MouseButtonDown:
-        io.MouseDown[event.GetMouseButton()] = true;
+        io.AddMouseButtonEvent(event.GetMouseButton(), true);
         return io.WantCaptureMouse;
     case InputEvent::MouseButtonUp:
-        io.MouseDown[event.GetMouseButton()] = false;
+        io.AddMouseButtonEvent(event.GetMouseButton(), false);
         return false;                                   // not a bug, this allows keys to be let go even if we are over the UI
     case InputEvent::MouseWheelForward:
         io.MouseWheel = 1;

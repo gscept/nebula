@@ -172,7 +172,7 @@ UIManager::OnActivate()
             CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
             CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(window);
 
-            CoreGraphics::WindowMakeCurrent(window);
+            CoreGraphics::UpdatingWindow = window;
 
             Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
             FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);

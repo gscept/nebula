@@ -29,7 +29,8 @@ struct CmdBufferId;
 struct TextureId;
 
 
-extern WindowId CurrentWindow;
+extern WindowId UpdatingWindow;
+extern WindowId FocusWindow;
 extern WindowId MainWindow;
 struct WindowCreateInfo
 {
@@ -48,8 +49,6 @@ struct WindowCreateInfo
 const WindowId CreateMainWindow(const WindowCreateInfo& info);
 /// create new window
 const WindowId CreateWindow(const WindowCreateInfo& info);
-/// embed window in another window
-const WindowId EmbedWindow(const Util::Blob& windowData);
 /// destroy window
 void DestroyWindow(const WindowId id);
 
@@ -65,8 +64,6 @@ Math::int2 WindowGetPosition(const WindowId id);
 void WindowSetTitle(const WindowId id, const Util::String& title);
 /// Set window icon
 void WindowSetIcon(const WindowId id, const Util::String& icon);
-/// make window 'current'
-void WindowMakeCurrent(const WindowId id);
 /// Show window
 void WindowShow(const WindowId id);
 /// present window

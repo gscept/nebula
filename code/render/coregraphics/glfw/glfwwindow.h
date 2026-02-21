@@ -66,6 +66,8 @@ void CloseFunc(const CoreGraphics::WindowId& id);
 void FocusFunc(const CoreGraphics::WindowId& id, int focus);
 /// window resize
 void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
+/// Window move
+void MoveFunc(const CoreGraphics::WindowId& id, int x, int y);
 
 /// declare static key function as friend
 void staticKeyFunc(GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -90,6 +92,6 @@ void EnableCallbacks(const CoreGraphics::WindowId& id);
 void DisableCallbacks(const CoreGraphics::WindowId& id);
 
 /// internal setup function, either does embedding or ordinary opening
-const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
+const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info);
 
 }
