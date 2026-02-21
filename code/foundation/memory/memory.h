@@ -87,11 +87,11 @@ TYPE*
 ArrayAllocStack(size_t size)
 {
     TYPE* buffer = (TYPE*)(N_ThreadLocalMiniHeap.heap + N_ThreadLocalMiniHeap.iterator);
-    N_ThreadLocalMiniHeap.iterator += size * sizeof(TYPE);
-    
+    const size_t bytes = size * sizeof(TYPE);
+        
     // Bounds check. This can never be disabled, as we might go OOB, which can
     // cause buffer overflows and other security issues.
-    if (N_ThreadLocalMiniHeap.iterator >= N_ThreadLocalMiniHeap.capacity)
+    if (N_ThreadLocalMiniHeap.iterator + bytes >= N_ThreadLocalMiniHeap.capacity)
     {
         // If you run into this error, you're using too much stack memory.
         // Consider using a separate allocator!
@@ -106,6 +106,7 @@ ArrayAllocStack(size_t size)
             ::new(&buffer[i]) TYPE;
         }
     }
+    N_ThreadLocalMiniHeap.iterator += bytes;
     return buffer;
 }
 
