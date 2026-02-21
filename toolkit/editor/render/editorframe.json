@@ -46,7 +46,7 @@
                             "attachments": [
                                 {
                                     "name": "EditorBuffer",
-                                    "flags": "Clear|Store"
+                                    "flags": "Store"
                                 }
                             ],
                             "subpasses": [
