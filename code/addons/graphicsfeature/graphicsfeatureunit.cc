@@ -203,6 +203,7 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_default::Initialize(windowWidth, windowHeight);
         Graphics::SetupBufferConstants();
         FrameScript_default::SetupPipelines();
+        FrameScript_shadows::SetupPipelines();
 #if WITH_NEBULA_EDITOR
         if (App::GameApplication::IsEditorEnabled())
         {
