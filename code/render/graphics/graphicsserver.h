@@ -91,6 +91,8 @@ public:
     void AddWindow(const CoreGraphics::WindowId window);
     /// Remove window
     void RemoveWindow(const CoreGraphics::WindowId window);
+    /// Check if window is present
+    bool HasWindow(const CoreGraphics::WindowId window) const;
     /// Get windows
     const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
 

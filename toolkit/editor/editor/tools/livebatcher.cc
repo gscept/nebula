@@ -23,7 +23,7 @@ class LiveBatcherThread : public Threading::Thread
     {
         while (!this->ThreadStopRequested())
         {
-            this->jobQueue.WaitTimeout(500);
+            this->jobQueue.Wait();
             this->waitEvent.Reset();
 
             this->jobQueue.DequeueAll(this->curWorkRequests);
@@ -81,6 +81,7 @@ LiveBatcher::Setup()
 void 
 LiveBatcher::Discard()
 {
+    livebatcherState.batchThread->jobQueue.Signal();
     livebatcherState.batchThread->Stop();
     livebatcherState.outputStream = nullptr;
     livebatcherState.batchThread = nullptr;
