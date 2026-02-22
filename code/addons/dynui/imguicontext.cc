@@ -1024,7 +1024,6 @@ bool
 ImguiContext::HandleInput(const Input::InputEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
-    Math::int2 pos = CoreGraphics::WindowGetPosition(CoreGraphics::FocusWindow);
     switch (event.GetType())
     {
     case InputEvent::KeyDown:
