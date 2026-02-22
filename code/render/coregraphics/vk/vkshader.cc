@@ -359,16 +359,24 @@ ShaderSetup(
                 cbo.num = variable->arraySizes[0];
             cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             bool slotUsed = false;
-            if (variable->binding != 0xFFFFFFFF)
-            {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                if (variable->binding != 0xFFFFFFFF)
                 {
-                    UpdateOccupancy(numPerStageUniformBuffers, slotUsed, cbo.visibility);
+                    const uint32_t b = variable->binding;
+                    if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
+                    {
+                        bool occupiesNewBinding = !bindingTable[b];
+                        bindingTable[b] = true;
+
+                        if (occupiesNewBinding)
+                        {
+                            UpdateOccupancy(numPerStageUniformBuffers, slotUsed, cbo.visibility);
+                        }
+                    }
+                    else
+                    {
+                        n_error("variable->binding out of range for %s", variable->name);
+                    }
                 }
-            }
             resourceSlotMapping.Add(variable->name, variable->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
             numsets = Math::max(numsets, variable->group + 1);
@@ -437,16 +445,24 @@ ShaderSetup(
             samp.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             samp.sampler = CoreGraphics::InvalidSamplerId;
             bool slotUsed = false;
-            if (variable->binding != 0xFFFFFFFF)
-            {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                if (variable->binding != 0xFFFFFFFF)
                 {
-                    UpdateOccupancy(numPerStageSamplers, slotUsed, samp.visibility);
+                    const uint32_t b = variable->binding;
+                    if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
+                    {
+                        bool occupiesNewBinding = !bindingTable[b];
+                        bindingTable[b] = true;
+
+                        if (occupiesNewBinding)
+                        {
+                            UpdateOccupancy(numPerStageSamplers, slotUsed, samp.visibility);
+                        }
+                    }
+                    else
+                    {
+                        n_error("variable->binding out of range for %s", variable->name);
+                    }
                 }
-            }
             resourceSlotMapping.Add(variable->name, variable->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
             numsets = Math::max(numsets, variable->group + 1);
@@ -464,16 +480,24 @@ ShaderSetup(
             bool slotUsed = false;
 
 
-            if (variable->binding != 0xFFFFFFFF)
-            {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                if (variable->binding != 0xFFFFFFFF)
                 {
-                    UpdateOccupancy(numPerStageSampledImages, slotUsed, tex.visibility);
+                    const uint32_t b = variable->binding;
+                    if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
+                    {
+                        bool occupiesNewBinding = !bindingTable[b];
+                        bindingTable[b] = true;
+
+                        if (occupiesNewBinding)
+                        {
+                            UpdateOccupancy(numPerStageSampledImages, slotUsed, tex.visibility);
+                        }
+                    }
+                    else
+                    {
+                        n_error("variable->binding out of range for %s", variable->name);
+                    }
                 }
-            }
             resourceSlotMapping.Add(variable->name, variable->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
             numsets = Math::max(numsets, variable->group + 1);
@@ -489,16 +513,24 @@ ShaderSetup(
                 tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
             bool slotUsed = false;
-            if (variable->binding != 0xFFFFFFFF)
-            {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                if (variable->binding != 0xFFFFFFFF)
                 {
-                    UpdateOccupancy(numPerStageStorageImages, slotUsed, tex.visibility);
+                    const uint32_t b = variable->binding;
+                    if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
+                    {
+                        bool occupiesNewBinding = !bindingTable[b];
+                        bindingTable[b] = true;
+
+                        if (occupiesNewBinding)
+                        {
+                            UpdateOccupancy(numPerStageStorageImages, slotUsed, tex.visibility);
+                        }
+                    }
+                    else
+                    {
+                        n_error("variable->binding out of range for %s", variable->name);
+                    }
                 }
-            }
             resourceSlotMapping.Add(variable->name, variable->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
             numsets = Math::max(numsets, variable->group + 1);
@@ -517,12 +549,20 @@ ShaderSetup(
 
             if (variable->binding != 0xFFFFFFFF)
             {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                const uint32_t b = variable->binding;
+                if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
                 {
-                    UpdateOccupancy(numPerStageInputAttachments, slotUsed, tex.visibility);
+                    bool occupiesNewBinding = !bindingTable[b];
+                    bindingTable[b] = true;
+
+                    if (occupiesNewBinding)
+                    {
+                        UpdateOccupancy(numPerStageInputAttachments, slotUsed, tex.visibility);
+                    }
+                }
+                else
+                {
+                    n_error("variable->binding out of range for %s", variable->name);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -538,16 +578,24 @@ ShaderSetup(
             bvh.num = 1;
             bool slotUsed = false;
 
-            if (variable->binding != 0xFFFFFFFF)
-            {
-                bool occupiesNewBinding = !bindingTable[variable->binding];
-                bindingTable[variable->binding] = true;
-
-                if (occupiesNewBinding)
+                if (variable->binding != 0xFFFFFFFF)
                 {
-                    UpdateOccupancy(numPerStageAccelerationStructures, slotUsed, bvh.visibility);
+                    const uint32_t b = variable->binding;
+                    if (b < (sizeof(bindingTable)/sizeof(bindingTable[0])))
+                    {
+                        bool occupiesNewBinding = !bindingTable[b];
+                        bindingTable[b] = true;
+
+                        if (occupiesNewBinding)
+                        {
+                            UpdateOccupancy(numPerStageAccelerationStructures, slotUsed, bvh.visibility);
+                        }
+                    }
+                    else
+                    {
+                        n_error("variable->binding out of range for %s", variable->name);
+                    }
                 }
-            }
             resourceSlotMapping.Add(variable->name, variable->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
             numsets = Math::max(numsets, variable->group + 1);
@@ -745,6 +793,8 @@ CreateShader(const GPULangShaderCreateInfo& info)
 
     for (auto& set : reflectionInfo.uniformBuffersPerSet)
     {
+        if (set.IsEmpty()) continue;
+        
         set.SortWithFunc(
             [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
             {
