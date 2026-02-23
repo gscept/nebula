@@ -25,7 +25,7 @@ __ImplementClass(Presentation::Navigation, 'PtNa', Presentation::BaseWindow);
 */
 Navigation::Navigation()
 {
-    // empty
+    this->additionalFlags = ImGuiWindowFlags_(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
 //------------------------------------------------------------------------------
