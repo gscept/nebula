@@ -40,10 +40,10 @@ struct MeshCreateInfo
     Resources::ResourceName name;
     Util::StackArray<VertexStream, 4> streams;
     SizeT indexBufferOffset;
-    BufferId indexBuffer;
-    IndexType::Code indexType;
-    VertexLayoutId vertexLayout;
-    CoreGraphics::PrimitiveTopology::Code topology;
+    BufferId indexBuffer = CoreGraphics::InvalidBufferId;
+    IndexType::Code indexType = IndexType::None;
+    VertexLayoutId vertexLayout = CoreGraphics::InvalidVertexLayoutId;
+    CoreGraphics::PrimitiveTopology::Code topology = CoreGraphics::PrimitiveTopology::InvalidPrimitiveTopology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
 

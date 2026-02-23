@@ -24,6 +24,9 @@ CreateMesh(const MeshCreateInfo& info)
 {
     Ids::Id32 id = meshAllocator.Alloc();
 
+    n_assert(info.indexType == IndexType::Index16 || info.indexType == IndexType::Index32);
+    n_assert(info.topology != CoreGraphics::PrimitiveTopology::InvalidPrimitiveTopology);
+
     // Thing is, we just allocated this index so we own it right now
     meshAllocator.Set<Mesh_Name>(id, info.name);
     __Mesh internals{
