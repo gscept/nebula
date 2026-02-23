@@ -516,23 +516,4 @@ SwapchainGetCurrentPresentSemaphore(const SwapchainId id)
     return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SwapchainSetSwapInfo(const SwapchainId id, const SwapInfo& swap)
-{
-    swapchainAllocator.Set<Swapchain_SwapInfo>(id.id, swap);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-const SwapInfo&
-SwapchainGetSwapInfo(const SwapchainId id)
-{
-    return swapchainAllocator.Get<Swapchain_SwapInfo>(id.id);
-}
-
 } // namespace CoreGraphics

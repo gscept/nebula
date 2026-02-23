@@ -25,7 +25,6 @@ enum
     Swapchain_Queue,
     Swapchain_QueueType,
     Swapchain_CommandPool,
-    Swapchain_SwapInfo
 };
 
 typedef Ids::IdAllocator<
@@ -40,8 +39,7 @@ typedef Ids::IdAllocator<
     Util::Array<VkImageView>,
     VkQueue,
     CoreGraphics::QueueType,
-    CoreGraphics::CmdBufferPoolId,
-    CoreGraphics::SwapInfo
+    CoreGraphics::CmdBufferPoolId
 > SwapchainAllocator;
 extern SwapchainAllocator swapchainAllocator;
 
