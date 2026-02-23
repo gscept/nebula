@@ -299,10 +299,6 @@ InternalSetupFunction(const WindowCreateInfo& info)
     n_assert(monitor);
     
     // get original window, if this is the first window, then the parent window will simply be nullptr
-    GLFWwindow* wnd = nullptr;
-    const CoreGraphics::WindowId origWindow = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
-    if (origWindow.index != Ids::InvalidId32) wnd = glfwWindowAllocator.Get<GLFW_Window>(origWindow.id);
-
     CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
     mode = info.mode;
 
@@ -333,7 +329,7 @@ InternalSetupFunction(const WindowCreateInfo& info)
     glfwWindowHint(GLFW_FOCUSED, GL_FALSE);
 
     // create window
-    wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, nullptr);
+    GLFWwindow* wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, nullptr);
 
     if (!info.fullscreen)   glfwSetWindowPos(wnd, info.mode.GetXPos(), info.mode.GetYPos());
     else                    WindowApplyFullscreen(id, Adapter::Primary, true);
