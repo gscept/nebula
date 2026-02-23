@@ -25,6 +25,7 @@
 #include "posteffects/histogramcontext.h"
 #include "posteffects/downsamplingcontext.h"
 #include "physicsinterface.h"
+#include "coregraphics/swapchain.h"
 
 #include "frame/default.h"
 #include "frame/shadows.h"
@@ -122,9 +123,9 @@ SimpleViewerApplication::Open()
         CoreGraphics::WindowCreateInfo wndInfo =
         {
             CoreGraphics::DisplayMode{ 100, 100, width, height },
-            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false, false
+            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, nullptr, true, true, false, false
         };
-        this->wnd = CreateWindow(wndInfo);
+        this->wnd = CreateMainWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
         CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
@@ -193,14 +194,37 @@ SimpleViewerApplication::Open()
         });
         this->gfxServer->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
         {
-            Graphics::GraphicsServer::SwapInfo swapInfo;
-             swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-             {
-                 FrameScript_default::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-             };
-             swapInfo.submission = FrameScript_default::Submission_Scene;
-             swapInfo.swapSource = FrameScript_default::Export_ColorBuffer.tex;
-             Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo); 
+            CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
+            CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(CoreGraphics::MainWindow);
+
+            CoreGraphics::SwapchainSwap(swapchain);
+            CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+            // Allocate command buffer to run swap
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            beginInfo.submitOnce = true;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
+            FrameScript_default::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+            CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_default::Export_ColorBuffer.tex);
+
+            CoreGraphics::CmdEndMarker(cmdBuf);
+            CoreGraphics::CmdFinishQueries(cmdBuf);
+            CoreGraphics::CmdEndRecord(cmdBuf);
+            auto submission = CoreGraphics::SubmitCommandBuffers(
+                { cmdBuf }
+                , queue
+                , { FrameScript_default::Submission_Scene }
+#if NEBULA_GRAPHICS_DEBUG
+                , "Swap"
+#endif
+
+            );
+            CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
         });
         this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight)
         {
