@@ -714,7 +714,6 @@ ImguiContext::Create()
         windowInfo.userData = &vp->ID;
         CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(windowInfo);
         Graphics::GraphicsServer::Instance()->AddWindow(wnd);
-        CoreGraphics::WindowTakeFocus(wnd);
         ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
         wndHandle->wnd = wnd;
         vp->PlatformHandle = reinterpret_cast<void*>(wndHandle);

@@ -250,6 +250,10 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
     {
 
     });
+    glfwSetCursorEnterCallback(window, [](GLFWwindow* window, int entered)
+    {
+      
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -325,6 +329,8 @@ InternalSetupFunction(const WindowCreateInfo& info)
 
     glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GL_FALSE);
+    glfwWindowHint(GLFW_FOCUSED, GL_FALSE);
 
     // create window
     wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, nullptr);
@@ -413,6 +419,7 @@ CreateMainWindow(const WindowCreateInfo& info)
 {
     n_assert(MainWindow == CoreGraphics::InvalidWindowId);
     MainWindow = GLFW::InternalSetupFunction(info);
+    CoreGraphics::WindowTakeFocus(MainWindow);
     FocusWindow = MainWindow;
     return MainWindow;
 }
@@ -424,7 +431,6 @@ const WindowId
 CreateWindow(const WindowCreateInfo& info)
 {
     WindowId ret = GLFW::InternalSetupFunction(info);
-    FocusWindow = ret;
     return ret;
 }
 
