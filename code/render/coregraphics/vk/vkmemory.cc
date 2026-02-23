@@ -176,6 +176,7 @@ MemoryPool::DestroyBlock(DeviceMemory mem)
         vkUnmapMemory(dev, mem);
     }
     vkFreeMemory(dev, mem, nullptr);
+    this->heap->space += this->blockSize;
 }
 
 } // namespace CoreGraphics
