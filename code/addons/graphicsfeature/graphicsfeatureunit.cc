@@ -330,6 +330,13 @@ GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
 
+    // Do potential new-frame stuff for window, such as resize
+    N_MARKER_BEGIN(ResizeWindows, App)
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowNewFrame(window);
+    N_MARKER_END()
+
     this->inputServer->BeginFrame();
 
     CoreGraphics::WindowPollEvents();
@@ -389,9 +396,6 @@ GraphicsFeatureUnit::OnEndFrame()
     this->gfxServer->NewFrame();
     this->inputServer->EndFrame();
 
-    // Do potential new-frame stuff for window, such as resize
-    for (const auto& window : windows)
-        CoreGraphics::WindowNewFrame(window);
 }
 
 //------------------------------------------------------------------------------

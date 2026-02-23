@@ -164,21 +164,23 @@ Profiler::Run(SaveMode save)
     if (this->captureWorstFrame)
     {
         this->currentFrameTime = Graphics::GraphicsServer::Instance()->GetFrameTime();
-        this->averageFrameTime += this->currentFrameTime;
-        this->frametimeHistory.Append(this->currentFrameTime);
-        if (this->frametimeHistory.Size() > 120)
-            this->frametimeHistory.EraseFront();
-
-        if (Graphics::GraphicsServer::Instance()->GetFrameIndex() % 35 == 0)
-        {
-            this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
-            this->averageFrameTime = 0.0f;
-        }
+        
         if (this->worstFrameTime < this->currentFrameTime)
         {
+            this->averageFrameTime += this->currentFrameTime;
+            this->frametimeHistory.Append(this->currentFrameTime);
+            if (this->frametimeHistory.Size() > 120)
+                this->frametimeHistory.EraseFront();
+
+            this->prevAverageFrameTime = this->currentFrameTime;
+
             this->worstFrameTime = this->currentFrameTime;
             this->ProfilingContexts = Profiling::ProfilingGetContexts();
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        }
+        else
+        {
+            this->currentFrameTime = this->worstFrameTime;
         }
     }
     else if (!this->pauseProfiling)
