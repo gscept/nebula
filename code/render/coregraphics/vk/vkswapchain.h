@@ -7,6 +7,7 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "coregraphics/swapchain.h"
 #include "ids/idallocator.h"
 namespace Vulkan
 {
@@ -42,5 +43,12 @@ typedef Ids::IdAllocator<
     CoreGraphics::CmdBufferPoolId
 > SwapchainAllocator;
 extern SwapchainAllocator swapchainAllocator;
+
+/// Get vulkan device
+VkDevice SwapchainGetVkDevice(const CoreGraphics::SwapchainId id);
+/// Get vulkan swapchain
+VkSwapchainKHR SwapchainGetVkSwapchain(const CoreGraphics::SwapchainId id);
+/// Get vulkan image views
+const Util::Array<VkImageView>& SwapchainGetVkImageViews(const CoreGraphics::SwapchainId id);
 
 } // namespace Vulkan

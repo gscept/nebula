@@ -654,6 +654,7 @@ WindowNewFrame(const WindowId id)
         newSwapInfo.displayMode = mode;
         newSwapInfo.vsync = info.vsync;
         newSwapInfo.window = wnd;
+        newSwapInfo.oldSwapchain = swapchain;
         glfwWindowAllocator.Set<GLFW_Swapchain>(id.id, CoreGraphics::CreateSwapchain(newSwapInfo));
 
         // notify event listeners we resized

@@ -23,6 +23,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
 #include "memory/arenaallocator.h"
+#include "coregraphics/pipeline.h"
 
 namespace Vulkan
 {
@@ -63,6 +64,23 @@ public:
     void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// Set input assembly
     void SetInputAssembly(const CoreGraphics::InputAssemblyKey key);
+    /// Get if there is a pipeline associated with the current state
+    CoreGraphics::PipelineId GetPipeline(
+        const CoreGraphics::PassId pass
+        , const uint32_t subpass
+        , const CoreGraphics::ShaderProgramId program
+        , const CoreGraphics::InputAssemblyKey inputAssembly
+        , const VkGraphicsPipelineCreateInfo& shaderInfo);
+    /// Inject pipeline, used for pipelines created outside of the database
+    void CachePipeline(
+        const CoreGraphics::PassId pass
+        , const uint32_t subpass
+        , const CoreGraphics::ShaderProgramId program
+        , const CoreGraphics::InputAssemblyKey inputAssembly
+        , const VkGraphicsPipelineCreateInfo& shaderInfo
+        , CoreGraphics::PipelineId pipeline);
+    /// Invalidate a pipeline
+    void InvalidatePipeline(const CoreGraphics::PipelineId pipeline);
     /// gets pipeline if it already exists, or creates if exists
     VkPipeline GetCompiledPipeline();
     /// Gets the pipeline associated with a set of state, or returns a previously created one
@@ -72,14 +90,6 @@ public:
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo);
-    /// Create pipeline
-    VkPipeline CreatePipeline(
-        const CoreGraphics::PassId pass
-        , const uint32_t subpass
-        , const CoreGraphics::ShaderProgramId program
-        , const CoreGraphics::InputAssemblyKey inputAssembly
-        , const VkGraphicsPipelineCreateInfo& shaderInfo
-    );
     /// resets all iterators
     void Reset();
 
@@ -125,7 +135,7 @@ private:
     };
     struct Tier4Node : public BaseNode
     {
-        VkPipeline pipeline = VK_NULL_HANDLE;
+        CoreGraphics::PipelineId pipeline = CoreGraphics::InvalidPipelineId;
     };
 
     Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;

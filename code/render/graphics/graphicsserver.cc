@@ -307,7 +307,6 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
     {
         this->maxWindowWidth = Math::max(mode.GetWidth(), this->maxWindowWidth);
         this->maxWindowHeight = Math::max(mode.GetHeight(), this->maxWindowHeight);
-        CoreGraphics::WaitAndClearPendingCommands();
 
         // First, call the resize callback to trigger an update of the frame scripts
         if (this->resizeCall != nullptr)

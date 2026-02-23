@@ -15,6 +15,33 @@ namespace Vulkan
 {
 SwapchainAllocator swapchainAllocator;
 
+//------------------------------------------------------------------------------
+/**
+*/
+VkDevice
+SwapchainGetVkDevice(const CoreGraphics::SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_Device>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSwapchainKHR
+SwapchainGetVkSwapchain(const CoreGraphics::SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<VkImageView>&
+SwapchainGetVkImageViews(const CoreGraphics::SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_ImageViews>(id.id);
+}
+
 }
 namespace CoreGraphics
 {
@@ -158,6 +185,9 @@ CreateSwapchain(const SwapchainCreateInfo& info)
 
     VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     n_assert((usageFlags & surfCaps.supportedUsageFlags) != 0);
+    VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE;
+    if (info.oldSwapchain != CoreGraphics::InvalidSwapchainId)
+        oldSwapchain = CoreGraphics::SwapchainGetVkSwapchain(info.oldSwapchain);
     VkSwapchainCreateInfoKHR swapchainInfo =
     {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -177,7 +207,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         swapchainPresentMode,
         VK_TRUE,
-        VK_NULL_HANDLE
+        oldSwapchain
     };
 
     VkBool32 canPresent;
@@ -295,25 +325,27 @@ CreateSwapchain(const SwapchainCreateInfo& info)
 void
 DestroySwapchain(const SwapchainId id)
 {
-    CoreGraphics::WaitAndClearPendingCommands();
-    VkDevice dev = swapchainAllocator.Get<Swapchain_Device>(id.id);
-    const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
-    Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id.id);
-    Util::FixedArray<SemaphoreId>& semaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
-
-    uint32_t i;
-    for (i = 0; i < views.Size(); i++)
+    Util::FixedArray<SemaphoreId>& displaySemaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
+    for (SizeT i = 0; i < displaySemaphores.Size(); i++)
     {
-        vkDestroyImageView(dev, views[i], nullptr);
+        CoreGraphics::DelayedDeleteSemaphore(displaySemaphores[i]);
     }
+    displaySemaphores.Clear();
 
-    for (i = 0; i < semaphores.Size(); i++)
+    Util::FixedArray<SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id);
+    for (SizeT i = 0; i < renderingSemaphores.Size(); i++)
     {
-        CoreGraphics::DestroySemaphore(semaphores[i]);
+        CoreGraphics::DelayedDeleteSemaphore(renderingSemaphores[i]);
     }
+    renderingSemaphores.Clear();
+
+    CoreGraphics::DelayedDeleteSwapchain(id);
+
+    swapchainAllocator.Get<Swapchain_Images>(id.id).Clear();
+    swapchainAllocator.Get<Swapchain_ImageViews>(id.id).Clear();
 
     // destroy swapchain last
-    vkDestroySwapchainKHR(dev, swapchain, nullptr);
+    swapchainAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

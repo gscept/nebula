@@ -23,6 +23,8 @@
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vktextureview.h"
 #include "coregraphics/vk/vkaccelerationstructure.h"
+#include "coregraphics/vk/vkswapchain.h"
+#include "coregraphics/vk/vkpipeline.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 
@@ -99,9 +101,13 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
             , Util::Array<NvidiaAftermathCheckpoint
             #endif
             >>> commandBuffers;
+        Util::Array<Util::Tuple<VkDevice, VkCommandPool>> commandPools;
         Util::Array<Util::Tuple<VkDevice, VkDescriptorPool, VkDescriptorSet, uint*>> resourceTables;
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
         Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
+        Util::Array<Util::Tuple<VkDevice, VkSemaphore>> semaphores;
+        Util::Array<Util::Tuple<VkDevice, VkSwapchainKHR, Util::Array<VkImageView>>> swapchains;
+        Util::Array<Util::Tuple<VkDevice, VkPipeline>> pipelines;
         Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
@@ -506,6 +512,42 @@ GetOrCreatePipeline(
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::PipelineId
+PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    return state.database.GetPipeline(pass, subpass, program, inputAssembly, info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CachePipeline(
+    CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::ShaderProgramId program
+    , const CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& info
+    , const CoreGraphics::PipelineId pipeline)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    state.database.CachePipeline(pass, subpass, program, inputAssembly, info, pipeline);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InvalidatePipeline(const CoreGraphics::PipelineId id)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    state.database.InvalidatePipeline(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
@@ -554,6 +596,12 @@ ClearPending()
     }
     pendingDeletes.commandBuffers.Clear();
 
+    for (auto& [dev, pool] : pendingDeletes.commandPools)
+    {
+        vkDestroyCommandPool(dev, pool, nullptr);
+    }
+    pendingDeletes.commandPools.Clear();
+
     for (const auto& [dev, buf] : pendingDeletes.buffers)
     {
         n_assert(dev != nullptr);
@@ -594,6 +642,26 @@ ClearPending()
         vkDestroyAccelerationStructureKHR(dev, as, nullptr);
     }
     pendingDeletes.ases.Clear();
+
+    for (const auto& [dev, sem] : pendingDeletes.semaphores)
+    {
+        vkDestroySemaphore(dev, sem, nullptr);
+    }
+    pendingDeletes.semaphores.Clear();
+
+    for (const auto& [dev, swapchain, views] : pendingDeletes.swapchains)
+    {
+        for (const auto& view : views)
+            vkDestroyImageView(dev, view, nullptr);
+        vkDestroySwapchainKHR(dev, swapchain, nullptr);
+    }
+    pendingDeletes.swapchains.Clear();
+
+    for (const auto& [dev, pipeline] : pendingDeletes.pipelines)
+    {
+        vkDestroyPipeline(dev, pipeline, nullptr);
+    }
+    pendingDeletes.pipelines.Clear();
 
     for (const auto& alloc : pendingDeletes.allocs)
     {
@@ -2027,6 +2095,19 @@ DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id)
 /**
 */
 void
+DelayedDeleteCommandBufferPool(const CoreGraphics::CmdBufferPoolId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CmdBufferPoolGetVkDevice(id);
+    VkCommandPool pool = CmdBufferPoolGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].commandPools.Append(Util::MakeTuple(dev, pool));
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 DelayedFreeMemory(const CoreGraphics::Alloc alloc)
 {
     Threading::CriticalScope scope(&delayedDeleteSection);
@@ -2084,6 +2165,43 @@ DelayedDeleteTlas(const CoreGraphics::TlasId id)
     VkDevice dev = CoreGraphics::TlasGetVkDevice(id);
     VkAccelerationStructureKHR as = TlasGetVk(id);
     state.pendingDeletes[state.currentBufferedFrameIndex].ases.Append(Util::MakeTuple(dev, as));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteSemaphore(const CoreGraphics::SemaphoreId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::SemaphoreGetVkDevice(id);
+    VkSemaphore sem = CoreGraphics::SemaphoreGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].semaphores.Append(Util::MakeTuple(dev, sem));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteSwapchain(const CoreGraphics::SwapchainId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::SwapchainGetVkDevice(id);
+    VkSwapchainKHR swap = CoreGraphics::SwapchainGetVkSwapchain(id);
+    const Util::Array<VkImageView>& views = CoreGraphics::SwapchainGetVkImageViews(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].swapchains.Append(Util::MakeTuple(dev, swap, views));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeletePipeline(const CoreGraphics::PipelineId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::PipelineGetVkDevice(id);
+    VkPipeline pipe = CoreGraphics::PipelineGetVkPipeline(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].pipelines.Append(Util::MakeTuple(dev, pipe));
 }
 
 //------------------------------------------------------------------------------

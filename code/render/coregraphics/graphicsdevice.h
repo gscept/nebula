@@ -311,6 +311,8 @@ void DelayedDeleteTexture(const CoreGraphics::TextureId id);
 void DelayedDeleteTextureView(const CoreGraphics::TextureViewId id);
 /// Add command buffer to late deletion
 void DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id);
+/// Add command buffer pool to late deletion
+void DelayedDeleteCommandBufferPool(const CoreGraphics::CmdBufferPoolId id);
 /// Add memory allocation to delete queue
 void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 /// Add a descriptor set to delete queue
@@ -321,6 +323,12 @@ void DelayedDeletePass(const CoreGraphics::PassId id);
 void DelayedDeleteBlas(const CoreGraphics::BlasId id);
 /// Add a tlas for delayed delete
 void DelayedDeleteTlas(const CoreGraphics::TlasId id);
+/// Add a semaphore for late deletion
+void DelayedDeleteSemaphore(const CoreGraphics::SemaphoreId id);
+/// Add a swapchain for late deletion
+void DelayedDeleteSwapchain(const CoreGraphics::SwapchainId id);
+/// Add a pipeline for late deletion
+void DelayedDeletePipeline(const CoreGraphics::PipelineId id);
 
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);

@@ -9,9 +9,30 @@
 #include "vkpipeline.h"
 #include "vktypes.h"
 #include "vkgraphicsdevice.h"
+#include "vkpass.h"
 namespace Vulkan
 {
+
 Ids::IdAllocator<Pipeline> pipelineAllocator;
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkDevice
+PipelineGetVkDevice(const CoreGraphics::PipelineId id)
+{
+    return pipelineAllocator.Get<0>(id.id).dev;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPipeline
+PipelineGetVkPipeline(const CoreGraphics::PipelineId id)
+{
+    return pipelineAllocator.Get<0>(id.id).pipeline;
+}
 };
 
 namespace CoreGraphics
@@ -24,9 +45,6 @@ using namespace Vulkan;
 PipelineId
 CreateGraphicsPipeline(const PipelineCreateInfo& info)
 {
-    Ids::Id32 ret = pipelineAllocator.Alloc();
-    Pipeline& obj = pipelineAllocator.Get<0>(ret);
-
     VkGraphicsPipelineCreateInfo shaderInfo;
     VkShaderProgramRuntimeInfo& programInfo = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
 
@@ -41,6 +59,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     blendInfo.logicOpEnable = programInfo.colorBlendInfo.logicOpEnable;
     blendInfo.pAttachments = programInfo.colorBlendAttachments;
     memcpy(blendInfo.blendConstants, programInfo.colorBlendInfo.blendConstants, sizeof(programInfo.colorBlendInfo.blendConstants));
+    blendInfo.attachmentCount = PassGetNumSubpassAttachments(info.pass, info.subpass);
 
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
     multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -52,6 +71,25 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     multisampleInfo.minSampleShading = programInfo.multisampleInfo.minSampleShading;
     multisampleInfo.sampleShadingEnable = programInfo.multisampleInfo.sampleShadingEnable;
     multisampleInfo.pSampleMask = programInfo.multisampleInfo.pSampleMask;
+
+    VkPipelineVertexInputStateCreateInfo dummyVertexInput{};
+    dummyVertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    dummyVertexInput.pNext = nullptr;
+    dummyVertexInput.flags = 0x0;
+
+    VkPipelineInputAssemblyStateCreateInfo inputInfo{};
+    inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputInfo.pNext = nullptr;
+    inputInfo.flags = 0x0;
+    inputInfo.topology = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
+    inputInfo.primitiveRestartEnable = info.inputAssembly.primRestart;
+
+    InputAssemblyKey translatedKey;
+    translatedKey.topo = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
+    translatedKey.primRestart = info.inputAssembly.primRestart;
+
+    VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(info.pass);
+    VkRenderPassBeginInfo passBeginInfo = PassGetVkRenderPassBeginInfo(info.pass);
 
     shaderInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     shaderInfo.pNext = nullptr;
@@ -67,20 +105,46 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     shaderInfo.layout = programInfo.layout;
     shaderInfo.stageCount = programInfo.stageCount;
     shaderInfo.pStages = programInfo.graphicsShaderInfos;
-    shaderInfo.pVertexInputState = nullptr;
-    shaderInfo.pInputAssemblyState = nullptr;
-    shaderInfo.pViewportState = nullptr;
+    shaderInfo.pVertexInputState = &dummyVertexInput;
+    shaderInfo.pInputAssemblyState = &inputInfo;
+    shaderInfo.pViewportState = passInfo.pViewportState;
+    shaderInfo.renderPass = passBeginInfo.renderPass;
+    shaderInfo.subpass = info.subpass;
 
-    // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics
-    InputAssemblyKey translatedKey;
-    translatedKey.topo = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
-    translatedKey.primRestart = info.inputAssembly.primRestart;
-    VkPipeline pipeline = Vulkan::GetOrCreatePipeline(info.pass, info.subpass, info.shader, translatedKey, shaderInfo);
+    if (!info.ignoreCache)
+    {
+        CoreGraphics::PipelineId cachedPipeline = Vulkan::PipelineExists(info.pass, info.subpass, info.shader, translatedKey, shaderInfo);
+        if (cachedPipeline == CoreGraphics::InvalidPipelineId)
+        {
+            Ids::Id32 ret = pipelineAllocator.Alloc();
+            Pipeline& obj = pipelineAllocator.Get<0>(ret);
+            obj.dev = Vulkan::GetCurrentDevice();
 
-    obj.pipeline = pipeline;
-    obj.layout = programInfo.layout;
-    obj.pass = info.pass;
-    return PipelineId{ ret };
+            VkResult res = vkCreateGraphicsPipelines(obj.dev, Vulkan::GetPipelineCache(), 1, &shaderInfo, nullptr, &obj.pipeline);
+            n_assert(res == VK_SUCCESS);
+            obj.layout = programInfo.layout;
+            obj.pass = info.pass;
+
+            Vulkan::CachePipeline(info.pass, info.subpass, info.shader, translatedKey, shaderInfo, ret);
+            return PipelineId{ ret };
+        }
+        else
+        {
+            return cachedPipeline;
+        }
+    }
+    else
+    {
+        Ids::Id32 ret = pipelineAllocator.Alloc();
+        Pipeline& obj = pipelineAllocator.Get<0>(ret);
+        obj.dev = Vulkan::GetCurrentDevice();
+
+        VkResult res = vkCreateGraphicsPipelines(obj.dev, Vulkan::GetPipelineCache(), 1, &shaderInfo, nullptr, &obj.pipeline);
+        n_assert(res == VK_SUCCESS);
+        obj.layout = programInfo.layout;
+        obj.pass = info.pass;
+        return PipelineId{ ret };
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -89,10 +153,8 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
 void
 DestroyGraphicsPipeline(const PipelineId pipeline)
 {
-    Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id);
-    obj.pipeline = VK_NULL_HANDLE;
-    obj.layout = VK_NULL_HANDLE;
-    obj.pass = CoreGraphics::InvalidPassId;
+    CoreGraphics::InvalidatePipeline(pipeline);
+    CoreGraphics::DelayedDeletePipeline(pipeline);
     pipelineAllocator.Dealloc(pipeline.id);
 }
 
