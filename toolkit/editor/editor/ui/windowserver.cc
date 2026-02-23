@@ -12,6 +12,12 @@
 #include "input/inputserver.h"
 #include "input/keyboard.h"
 #include "windows/scriptedwindow.h"
+#include "io/filedialog.h"
+#include "editor/entityloader.h"
+#include "editor/editor.h"
+#include "editor/commandmanager.h"
+#include "editor/editor.h"
+#include "editor/cmds.h"
 
 using namespace Util;
 
@@ -46,7 +52,101 @@ WindowServer::RunAll()
     //List all windows in windows menu
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("Window"))
+        if (ImGui::BeginMenu("    File    "))
+        {
+            if (ImGui::MenuItem("Load", "Ctrl+O"))
+            {
+                static Util::String localpath = IO::URI("proj:").LocalPath();
+                Util::String path;
+                if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, { "*.json" }, path))
+                {
+                    Ptr<Editor::EntityLoader> loader = Editor::EntityLoader::Create();
+                    loader->SetWorld(Editor::state.editorWorld);
+                    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+                    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+                    if (reader->Open())
+                    {
+                        loader->LoadJsonLevel(reader);
+                    }
+                    reader->Close();
+                }
+            }
+            if (ImGui::MenuItem("Save", "Ctrl+S"))
+            {
+                Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive);
+            }
+
+            if (ImGui::MenuItem("Save All", "Ctrl+Shift+S"))
+            {
+                Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("    Edit    "))
+        {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
+            {
+                Edit::CommandManager::Undo();
+            }
+            if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z"))
+            {
+                Edit::CommandManager::Redo();
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("    Create    "))
+        {
+            if (ImGui::MenuItem("Entity", "Ctrl+C"))
+            {
+                Presentation::WindowServer::Instance()->GetWindow("Create Object")->Open() = true;
+            }
+            if (ImGui::BeginMenu("Light"))
+            {
+                if (ImGui::MenuItem("Point Light"))
+                {
+                    Edit::CommandManager::BeginMacro("Create point light", true);
+                    Editor::Entity newEntity = Edit::CreateEntity("PointLight");
+                    Edit::SetSelection({ newEntity });
+                    Edit::CommandManager::EndMacro();
+                }
+                if (ImGui::MenuItem("Spot Light"))
+                {
+                    Edit::CommandManager::BeginMacro("Create spot light", true);
+                    Editor::Entity newEntity = Edit::CreateEntity("SpotLight");
+                    Edit::SetSelection({ newEntity });
+                    Edit::CommandManager::EndMacro();
+                }
+                if (ImGui::MenuItem("Area Light"))
+                {
+                    Edit::CommandManager::BeginMacro("Create area light", true);
+                    Editor::Entity newEntity = Edit::CreateEntity("AreaLight");
+                    Edit::SetSelection({ newEntity });
+                    Edit::CommandManager::EndMacro();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("    Game    "))
+        {
+            if (ImGui::MenuItem("Play", "Ctrl+P"))
+            {
+                Editor::PlayGame();
+            }
+            if (ImGui::MenuItem("Pause", "Ctrl+Shift+P"))
+            {
+                Editor::PauseGame();
+            }
+            if (ImGui::MenuItem("Stop", "Ctrl+S"))
+            {
+                Editor::StopGame();
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("    Window    "))
         {
             if (ImGui::BeginMenu("Show"))
             {
@@ -80,19 +180,21 @@ WindowServer::RunAll()
 
                 ImGui::EndMenu();
             }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Commands"))
-        {
-            for (SizeT i = 0; i < this->commands.Size(); i++)
+
+            if (ImGui::BeginMenu("Shortcuts"))
             {
-                auto const& shortcutStr = this->commands.ValueAtIndex(i).shortcut;
-                const char* shortcut = shortcutStr.IsEmpty() ? NULL : shortcutStr.AsCharPtr();
-                if (ImGui::MenuItem(this->commands.ValueAtIndex(i).label.AsCharPtr(), shortcut))
+                for (SizeT i = 0; i < this->commands.Size(); i++)
                 {
-                    this->commands.ValueAtIndex(i).func();
+                    auto const& shortcutStr = this->commands.ValueAtIndex(i).shortcut;
+                    const char* shortcut = shortcutStr.IsEmpty() ? NULL : shortcutStr.AsCharPtr();
+                    if (ImGui::MenuItem(this->commands.ValueAtIndex(i).label.AsCharPtr(), shortcut))
+                    {
+                        this->commands.ValueAtIndex(i).func();
+                    }
                 }
+                ImGui::EndMenu();
             }
+
             ImGui::EndMenu();
         }
 

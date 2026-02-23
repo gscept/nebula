@@ -84,6 +84,8 @@ fips_dir(editor)
                 environment.h
                 console.cc
                 console.h
+				createobjectwindow.cc
+				createobjectwindow.h
                 scriptedwindow.cc
                 scriptedwindow.h
                 scene.cc
