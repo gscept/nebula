@@ -1338,7 +1338,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
-    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
+    uploadInfo.byteSize = Memory::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
@@ -1812,7 +1812,7 @@ AllocateConstantBufferMemory(uint size)
     n_assert(sub.allowConstantAllocation);
 
     // Calculate aligned upper bound
-    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Memory::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
@@ -2295,7 +2295,7 @@ FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations)
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
             range.offset = allocations[i].offset; //uploadBuffer.interval.start;
-            range.size = Math::align(allocations[i].size, CoreGraphics::MemoryRangeGranularity);// (DeviceSize)size;
+            range.size = Memory::align(allocations[i].size, CoreGraphics::MemoryRangeGranularity);// (DeviceSize)size;
             range.memory = BufferGetVkMemory(state.uploadBuffer);
         }
 
