@@ -54,6 +54,7 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     ImVec2 remainder = ImGui::GetContentRegionAvail();
     float ratio = dims.height / float(dims.width);
+    itemData->image->texture.nebulaHandle = tex;
     ImGui::Image(&itemData->image->texture, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1,1,1,1 }, ImVec4{ 0,0,0,1 });
 
     ImGui::Text("Width: %d", dims.width);
