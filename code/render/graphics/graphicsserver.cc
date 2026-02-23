@@ -389,16 +389,6 @@ GraphicsServer::RemoveWindow(const CoreGraphics::WindowId window)
 //------------------------------------------------------------------------------
 /**
 */
-bool
-GraphicsServer::HasWindow(const CoreGraphics::WindowId window) const
-{
-    auto it = this->windows.Find(window);
-    return it != nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const Util::Array<CoreGraphics::WindowId>&
 GraphicsServer::GetWindows() const
 {

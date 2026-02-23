@@ -396,7 +396,13 @@ struct ImGuiSecondaryWindowData
     CoreGraphics::CmdBufferId buf;
     Math::rectangle<int> viewport;
     ImGuiID id;
-}; 
+};
+
+
+struct ImGuiWindowHandle
+{
+    CoreGraphics::WindowId wnd;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -693,10 +699,6 @@ ImguiContext::Create()
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
     //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 
-    struct ImGuiWindowHandle
-    {
-        CoreGraphics::WindowId wnd;
-    };
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_CreateWindow = [](ImGuiViewport* vp)
@@ -869,7 +871,18 @@ ImguiContext::Discard()
     Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
     state.inputHandler = nullptr;
 
+    CoreGraphics::DisplayDevice::Instance()->RemoveEventHandler(state.displayEventHandler.upcast<CoreGraphics::DisplayEventHandler>());
+    state.displayEventHandler = nullptr;
+
     CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
+
+#ifdef IMGUI_HAS_VIEWPORT
+    /// The main window is handled by nebula
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    delete static_cast<ImGuiWindowHandle*>(platform_io.Viewports[0]->PlatformHandle);
+    platform_io.Viewports[0]->PlatformWindowCreated = false;
+    platform_io.Viewports[0]->PlatformHandle = nullptr;
+#endif
     ImGui::DestroyContext();
 }
 

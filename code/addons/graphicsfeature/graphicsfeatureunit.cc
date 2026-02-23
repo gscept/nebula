@@ -310,12 +310,7 @@ GraphicsFeatureUnit::OnDeactivate()
     Dynui::ImguiContext::Discard();
     TBUI::TBUIContext::Discard();
     FeatureUnit::OnDeactivate();
-    if (Graphics::GraphicsServer::Instance()->HasWindow(this->mainWindow))
-    {
-        Graphics::GraphicsServer::Instance()->RemoveWindow(this->mainWindow);
-        CoreGraphics::DestroyWindow(this->mainWindow);
-        this->mainWindow = CoreGraphics::InvalidWindowId;
-    }
+    CoreGraphics::DestroyWindow(this->mainWindow);
     this->gfxServer->DiscardStage(this->defaultStage);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
