@@ -89,10 +89,6 @@ public:
 
     /// create a new window
     CoreGraphics::WindowId SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None);
-    /// get the 'main' window, if none exists, returns NULL
-    CoreGraphics::WindowId GetMainWindow() const;
-    /// get the current window
-    const CoreGraphics::WindowId GetCurrentWindow() const;
     /// get window using index, where 0 is the default window
     const CoreGraphics::WindowId GetWindow(IndexT index) const;
     /// get all windows as an array
@@ -164,16 +160,6 @@ inline const bool
 DisplayDeviceBase::IsFullscreen() const
 {
     return this->isFullscreen;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline CoreGraphics::WindowId
-DisplayDeviceBase::GetMainWindow() const
-{
-    if (this->windows.Size() >= 1) return this->windows[0];
-    else                          return NULL;
 }
 
 //------------------------------------------------------------------------------

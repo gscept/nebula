@@ -787,10 +787,8 @@ ImguiContext::Create()
         platform_io.Monitors.push_back(imguiMonitor);
     }
 
-    CoreGraphics::WindowId mainWnd = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
-
     ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
-    wndHandle->wnd = mainWnd;
+    wndHandle->wnd = CoreGraphics::MainWindow;
     platform_io.Viewports[0]->PlatformHandle = reinterpret_cast<void*>(wndHandle);
     
 #endif // IMGUI_HAS_VIEWPORT
