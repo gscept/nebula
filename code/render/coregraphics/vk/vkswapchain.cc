@@ -354,6 +354,7 @@ DestroySwapchain(const SwapchainId id)
 void
 SwapchainSwap(const SwapchainId id)
 {
+    N_SCOPE(Swap, CoreGraphics)
     VkDevice dev = swapchainAllocator.Get<Swapchain_Device>(id.id);
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     uint& currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);

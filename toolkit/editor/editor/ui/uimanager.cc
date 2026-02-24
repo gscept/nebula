@@ -181,7 +181,9 @@ UIManager::OnActivate()
             CoreGraphics::UpdatingWindow = window;
 
             Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
+            N_MARKER_BEGIN(RenderUI, Editor)
             FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
+            N_MARKER_END()
 
             CoreGraphics::SwapchainSwap(swapchain);
             CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);

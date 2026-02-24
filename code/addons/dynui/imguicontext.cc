@@ -457,15 +457,18 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
-
+                N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
+                N_MARKER_END()
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
                 if (userData == nullptr)
                 {
+                    N_SCOPE(Draw, ImGUI)
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 else
                 {
+                    N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                     ImGuiSecondaryWindowData data;
                     data.buf = cmdBuf;
@@ -477,6 +480,7 @@ ImguiContext::Create()
                         if (viewport->ID == data.id)
                             platform_io.Renderer_RenderWindow(viewport, &data);
                     }
+                    N_MARKER_END()
                 }
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
                 CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
@@ -498,15 +502,18 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
-
+                N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
+                N_MARKER_END()
                 void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
                 if (userData == nullptr)
                 {
+                    N_SCOPE(Draw, ImGUI)
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 else
                 {
+                    N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                     ImGuiSecondaryWindowData data;
                     data.buf = cmdBuf;
@@ -518,8 +525,8 @@ ImguiContext::Create()
                         if (viewport->ID == data.id)
                             platform_io.Renderer_RenderWindow(viewport, &data);
                     }
+                    N_MARKER_END()
                 }
-
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
                 CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
                 CoreGraphics::BufferFlush(state.ibos[currentBuffer]);

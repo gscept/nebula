@@ -339,8 +339,13 @@ GraphicsFeatureUnit::OnBeginFrame()
 
     this->inputServer->BeginFrame();
 
+    N_MARKER_BEGIN(PollWindows, CoreGraphics)
     CoreGraphics::WindowPollEvents();
+    N_MARKER_END()
+
+    N_MARKER_BEGIN(Input, Input)
     this->inputServer->OnFrame();
+    N_MARKER_END()
 
     this->gfxServer->RunPreLogic();
 

@@ -219,6 +219,7 @@ GameServer::OnBeginFrame()
 
     _start_timer(GameServerOnBeginFrame);
 
+    N_MARKER_BEGIN(FeaturesBeginFrame, Game)
     // trigger game features to at the beginning of a frame
     IndexT i;
     SizeT num = this->gameFeatures.Size();
@@ -226,23 +227,28 @@ GameServer::OnBeginFrame()
     {
         this->gameFeatures[i]->OnBeginFrame();
     }
+    N_MARKER_END()
 
+    N_MARKER_BEGIN(FeaturesBeforeViews, Game)
     // trigger game features to at the beginning of a frame
     for (i = 0; i < num; i++)
     {
         this->gameFeatures[i]->OnBeforeViews();
     }
+    N_MARKER_END()
 
+    N_MARKER_BEGIN(WorldPrefilterProcessors, Game)
     // check if caches are valid
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-
         if (this->state.worlds[worldIndex] != nullptr)
         {
             this->state.worlds[worldIndex]->PrefilterProcessors();
         }
     }
+    N_MARKER_END()
 
+    N_MARKER_BEGIN(WorldBeginFrame, Game)
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
@@ -251,6 +257,7 @@ GameServer::OnBeginFrame()
             w->BeginFrame();
         }
     }
+    N_MARKER_END()
 
     Game::ReleaseDatasets();
 

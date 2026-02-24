@@ -256,6 +256,8 @@ GameApplication::StepFrame()
     this->httpServerProxy->HandlePendingRequests();
 #endif
 
+    N_SCOPE(StepFrame, Game)
+
     Jobs2::JobNewFrame();
 
     // trigger core server
