@@ -9,6 +9,7 @@ namespace Profiling
 {
 
 Util::Array<ProfilingContext> profilingContexts;
+Util::Array<ProfilingContext> profilingContextsLastFrame;
 Util::Array<Threading::CriticalSection*> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 Threading::CriticalSection categoryLock;
@@ -90,6 +91,7 @@ ProfilingNewFrame()
     for (IndexT i = 0; i < profilingContexts.Size(); i++)
     {
         Threading::CriticalScope lock(contextMutexes[i]);
+        profilingContextsLastFrame[i] = profilingContexts[i];
         n_assert(profilingContexts[i].scopes.IsEmpty());
         profilingContexts[i].topLevelScopes.Clear();
         profilingContexts[i].timer.Reset();
@@ -117,6 +119,7 @@ ProfilingRegisterThread()
     Threading::CriticalScope lock(&categoryLock);
     ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
     profilingContexts.Append(ProfilingContext());
+    profilingContextsLastFrame.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
     contextMutexes.Append(new Threading::CriticalSection);
 }
@@ -128,10 +131,10 @@ const Util::Array<ProfilingScope>&
 ProfilingGetScopes(Threading::ThreadId thread)
 {
 #if NEBULA_DEBUG
-    n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
+    n_assert(profilingContextsLastFrame[thread].topLevelScopes.IsEmpty());
 #endif
     Threading::CriticalScope lock(&categoryLock);
-    return profilingContexts[thread].topLevelScopes;
+    return profilingContextsLastFrame[thread].topLevelScopes;
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +143,7 @@ ProfilingGetScopes(Threading::ThreadId thread)
 const Util::Array<ProfilingContext>
 ProfilingGetContexts()
 {
-    return profilingContexts;
+    return profilingContextsLastFrame;
 }
 
 //------------------------------------------------------------------------------
