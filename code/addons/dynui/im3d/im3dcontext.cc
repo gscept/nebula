@@ -139,7 +139,7 @@ Im3dContext::Create()
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     imState.inputHandler = Im3dInputHandler::Create();
-    //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
+    Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
     // allocate im3d shader
     imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.gplb");
@@ -442,7 +442,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
-    Math::vec2 mousePos = Math::vec2::divide(mouse->GetScreenPosition() - imState.viewPortPosition, imState.viewPortSize);
+    Math::vec2 mousePos = Math::vec2::divide(mouse->GetPixelPosition() - imState.viewPortPosition, imState.viewPortSize);
     
     mousePos *= 2.0f;
     mousePos -= Math::vec2(1.0f, 1.0f);

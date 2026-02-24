@@ -212,6 +212,8 @@ Viewport::Render()
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 viewportPos = ImGui::GetWindowViewport()->Pos;
+    ImVec2 localWindowPos = ImVec2 {windowPos.x - viewportPos.x, windowPos.y - viewportPos.y};
 
     ImVec2 imageSize = {(float)space.x, (float)space.y};
     imageSize.x = Math::max(imageSize.x, 1.0f);
@@ -223,9 +225,10 @@ Viewport::Render()
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
     ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), uv);
 
-    ImVec2 imagePosition = { cursorPos.x + windowPos.x, cursorPos.y + windowPos.y };
+    ImVec2 elementPos = ImGui::GetItemRectMin();
+    ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };
     
-    this->lastViewportImagePositionAbsolute = { imagePosition.x, imagePosition.y };
+    this->lastViewportImagePositionAbsolute = { elementPos.x, elementPos.y };
     this->lastViewportImageSizeAbsolute = { imageSize.x, imageSize.y };
     this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
     this->lastViewportImageSize = { imageSize.x, imageSize.y };
