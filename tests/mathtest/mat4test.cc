@@ -268,32 +268,44 @@ Mat4Test::Run()
                                   vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
     // ortholh
     tmp = ortholh(1280.0f, 1024.0f, 0.1f, 100.0f);
-    VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,      0.0f,       0.0f, 0.0f),
-                                  vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
-                                  vec4(      0.0f,      0.0f,   0.01001f, 0.0f),
-                                  vec4(      0.0f,      0.0f, -1.002002f, 1.0f))));
+    Math::point pnt(-640, 512, 0.1f);
+    Math::point projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(-1.0f, 1.0f, 0.0f, 0.0f), Math::vec4(0.0001f)));
 
+    pnt = Math::point(640, -512, 100.0f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(1.0f, -1.0f, 1.0f, 0.0f), Math::vec4(0.0001f)));
+    
     // orthorh
     tmp = orthorh(1280.0f, 1024.0f, 0.1f, 100.0f);
-    VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,      0.0f,       0.0f, 0.0f),
-                                  vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
-                                  vec4(      0.0f,      0.0f,  -0.01001f, 0.0f),
-                                  vec4(      0.0f,      0.0f, -1.002002f, 1.0f))));
+    pnt = Math::point(-640, 512, -0.1f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(-1.0f, 1.0f, 0.0f, 0.0f), Math::vec4(0.0001f)));
+
+    pnt = Math::point(640, -512, -100.0f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(1.0f, -1.0f, 1.0f, 0.0f), Math::vec4(0.0001f)));
 
     // orthooffcenterlh
-    tmp = orthooffcenterlh(100.0f, 1380.0f, 1224.0f, 200.0f, 0.1f, 1000.0f);
-    VERIFY(matnearequal(tmp, mat4(vec4(0.001562,   0.000000,  0.000000, 0.000000),
-                                  vec4(0.000000,  -0.001953,  0.000000, 0.000000),
-                                  vec4(0.000000,   0.000000,  0.001000, 0.000000),
-                                  vec4(-1.156250, -1.390625, -0.000100, 1.000000))));
+    tmp = orthooffcenterlh(100.0f, 1280.0f, 200.0f, 1024.0f, 0.1f, 100.0f);
+    pnt = Math::point(100.0f, 200.0f, 0.1f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(-1.0f, 1.0f, 0.0f, 0.0f), Math::vec4(0.0001f)));
+
+    pnt = Math::point(1280.0f, 1024.0f, 100.0f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(1.0f, -1.0f, 1.0f, 0.0f), Math::vec4(0.0001f)));
 
     // orthooffcenterrh
-    tmp = orthooffcenterrh(100.0f, 1380.0f, 1224.0f, 200.0f, 0.1f, 1000.0f);
-    VERIFY(matnearequal(tmp, mat4(vec4(0.001562,   0.000000,  0.000000, 0.000000),
-                                  vec4(0.000000,  -0.001953,  0.000000, 0.000000),
-                                  vec4(0.000000,   0.000000, -0.001000, 0.000000),
-                                  vec4(-1.156250, -1.390625, -0.000100, 1.000000))));
+    tmp = orthooffcenterrh(100.0f, 1280.0f, 200.0f, 1024.0f, 0.1f, 100.0f);
+    pnt = Math::point(100.0f, 200.0f, -0.1f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(-1.0f, 1.0f, 0.0f, 0.0f), Math::vec4(0.0001f)));
 
+    pnt = Math::point(1280.0f, 1024.0f, -100.0f);
+    projected = tmp * pnt;
+    VERIFY(nearequal3(projected, Math::vec4(1.0f, -1.0f, 1.0f, 0.0f), Math::vec4(0.0001f)));
+    
     // perspfovlh
     tmp = perspfovlh(70.0f, 3.0f/4.0f, 0.1f, 50.0f);
     VERIFY(matnearequal(tmp, mat4(vec4( 2.814039f,     0.0f,      0.0f, 0.0f),
