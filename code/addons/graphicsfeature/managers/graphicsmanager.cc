@@ -168,6 +168,7 @@ DeregisterDDGIVolume(Graphics::GraphicsEntityId gfxId)
 void
 GraphicsManager::OnDecay()
 {
+    N_MARKER_BEGIN(GraphicsManagerOnDecay, Game);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
     // Decay models
@@ -217,6 +218,7 @@ GraphicsManager::OnDecay()
         DDGIVolume* volume = ddgiVolumeData + i;
         DeregisterDDGIVolume(volume->graphicsEntityId);
     }
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
