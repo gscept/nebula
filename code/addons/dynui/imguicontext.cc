@@ -227,6 +227,10 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             {
                 // setup scissor rect
                 Math::rectangle<int> scissorRect((int)command->ClipRect.x - data->DisplayPos.x, (int)command->ClipRect.y - data->DisplayPos.y, (int)command->ClipRect.z - data->DisplayPos.x, (int)command->ClipRect.w - data->DisplayPos.y);
+                scissorRect.left = Math::max(0, scissorRect.left);
+                scissorRect.top = Math::max(0, scissorRect.top);
+                scissorRect.right = Math::min(data->DisplaySize.x, scissorRect.right);
+                scissorRect.bottom = Math::min(data->DisplaySize.y, scissorRect.bottom);
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
                 ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
 
