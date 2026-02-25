@@ -32,6 +32,7 @@
 #include "window.h"
 #include "editor/tools/selectioncontext.h"
 #include "editor/cmds.h"
+#include "coregraphics/swapchain.h"
 
 #include "frame/default.h"
 #include "frame/editorframe.h"
@@ -170,18 +171,50 @@ UIManager::OnActivate()
     {
         FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
-        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
-        Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
-        FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
 
-        Graphics::GraphicsServer::SwapInfo swapInfo;
-        swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-    	{
+        const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+        for (const auto& window : windows)
+        {
+            CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+            CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(window);
+
+            CoreGraphics::UpdatingWindow = window;
+
+            Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
+            N_MARKER_BEGIN(RenderUI, Editor)
+            FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
+            N_MARKER_END()
+
+            CoreGraphics::SwapchainSwap(swapchain);
+            CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+            // Allocate command buffer to run swap
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            beginInfo.submitOnce = true;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
             FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-        };
-        swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;
-        swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
-        Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo);
+            CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_editorframe::Export_EditorBuffer.tex);
+
+            CoreGraphics::CmdEndMarker(cmdBuf);
+            CoreGraphics::CmdFinishQueries(cmdBuf);
+            CoreGraphics::CmdEndRecord(cmdBuf);
+            auto submission = CoreGraphics::SubmitCommandBuffers(
+                { cmdBuf }
+                , queue
+                , { FrameScript_editorframe::Submission_EditorUI }
+    #if NEBULA_GRAPHICS_DEBUG
+                , "Swap"
+    #endif
+
+            );
+            CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
+
+        }
     });
     IO::URI userEditorIni = IO::URI(editorUIPath);
     Util::String path = userEditorIni.LocalPath();

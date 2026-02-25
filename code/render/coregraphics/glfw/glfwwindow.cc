@@ -23,7 +23,10 @@
 
 namespace CoreGraphics
 {
-WindowId CurrentWindow;
+
+WindowId UpdatingWindow = CoreGraphics::InvalidWindowId;
+WindowId FocusWindow = CoreGraphics::InvalidWindowId;
+WindowId MainWindow = CoreGraphics::InvalidWindowId;
 GLFWWindowAllocatorType glfwWindowAllocator(0x00FFFFFF);
 
 }
@@ -116,23 +119,24 @@ MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mo
     Input::MouseButton::Code but;
     switch (button)
     {
-    case GLFW_MOUSE_BUTTON_LEFT:
-        but = Input::MouseButton::LeftButton;
-        break;
-    case GLFW_MOUSE_BUTTON_RIGHT:
-        but = Input::MouseButton::RightButton;
-        break;
-    case GLFW_MOUSE_BUTTON_MIDDLE:
-        but = Input::MouseButton::MiddleButton;
-        break;
-    default:
-        return;
+        case GLFW_MOUSE_BUTTON_LEFT:
+            but = Input::MouseButton::LeftButton;
+            break;
+        case GLFW_MOUSE_BUTTON_RIGHT:
+            but = Input::MouseButton::RightButton;
+            break;
+        case GLFW_MOUSE_BUTTON_MIDDLE:
+            but = Input::MouseButton::MiddleButton;
+            break;
+        default:
+            return;
     }
 
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
     double x, y;
     glfwGetCursorPos(wnd, &x, &y);
+    Math::int2 windowPos = CoreGraphics::WindowGetPosition(id);
 
     vec2 pos;
     pos.set((float)x / float(mode.GetWidth()), (float)y / float(mode.GetHeight()));
@@ -148,8 +152,8 @@ MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos)
     const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
     vec2 absMousePos((float)xpos, (float)ypos);
     vec2 pos;
-    pos.set((float)xpos / float(mode.GetWidth()), (float)ypos / float(mode.GetHeight()));
-    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, absMousePos, pos));
+    pos.set(((float)xpos) / float(mode.GetWidth()), (float)(ypos) / float(mode.GetHeight()));
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, id, absMousePos, pos));
 }
 
 //------------------------------------------------------------------------------
@@ -182,6 +186,7 @@ FocusFunc(const CoreGraphics::WindowId& id, int focus)
     if (focus)
     {
         GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::SetFocus, id));
+        CoreGraphics::FocusWindow = id;
     }
     else
     {
@@ -226,6 +231,11 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
         CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
         ResizeFunc(*id, width, height);
     });
+    glfwSetWindowPosCallback(window, [](GLFWwindow* window, int x, int y)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        MoveFunc(*id, x, y);
+    });
     glfwSetScrollCallback(window, [](GLFWwindow * window, double xs, double ys)
     {
         CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
@@ -239,6 +249,10 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
     glfwSetDropCallback(window, [](GLFWwindow* window, int path_count, const char* paths[])
     {
 
+    });
+    glfwSetCursorEnterCallback(window, [](GLFWwindow* window, int entered)
+    {
+      
     });
 }
 
@@ -264,7 +278,7 @@ DisableCallbacks(const CoreGraphics::WindowId & id)
 /**
 */
 const WindowId
-InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData, bool embed)
+InternalSetupFunction(const WindowCreateInfo& info)
 {
     glfwWindowHint(GLFW_RED_BITS, 8);
     glfwWindowHint(GLFW_GREEN_BITS, 8);
@@ -279,15 +293,12 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     WindowId id = windowId;
     glfwWindowAllocator.Set<GLFW_SetupInfo>(windowId, info);
     glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { .newWidth = 0, .newHeight = 0, .done = true, .vsync = info.vsync });
+    glfwWindowAllocator.Set<GLFW_UserData>(windowId, info.userData);
 
     GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
     n_assert(monitor);
     
     // get original window, if this is the first window, then the parent window will simply be nullptr
-    GLFWwindow* wnd = nullptr;
-    const CoreGraphics::WindowId origWindow = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
-    if (origWindow.index != Ids::InvalidId32) wnd = glfwWindowAllocator.Get<GLFW_Window>(origWindow.id);
-
     CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
     mode = info.mode;
 
@@ -298,61 +309,44 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     // scale window according to platform dpi
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
     float xScale, yScale;
-    glfwGetMonitorContentScale(monitor, &xScale, &yScale);
-    float contentScale = Math::max(xScale, yScale);
-    mode.SetWidth(info.mode.GetWidth() * contentScale);
-    mode.SetHeight(info.mode.GetHeight() * contentScale);
-    mode.SetContentScale(contentScale);
+
+    if (mode.GetContentScale() == 1.0f)
+    {
+        glfwGetMonitorContentScale(monitor, &xScale, &yScale);
+        float contentScale = Math::max(xScale, yScale);
+        mode.SetWidth(info.mode.GetWidth() * contentScale);
+        mode.SetHeight(info.mode.GetHeight() * contentScale);
+        mode.SetContentScale(contentScale);
+    }
 
     // set user pointer to this window
     WindowId* ptr = new WindowId;
     *ptr = id;
-    if (embed)
+
+    glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GL_FALSE);
+    glfwWindowHint(GLFW_FOCUSED, GL_FALSE);
+
+    // create window
+    GLFWwindow* wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, nullptr);
+
+    if (!info.fullscreen)   glfwSetWindowPos(wnd, info.mode.GetXPos(), info.mode.GetYPos());
+    else                    WindowApplyFullscreen(id, Adapter::Primary, true);
+
+    // set user pointer to this window
+    glfwSetWindowUserPointer(wnd, ptr);
+    glfwSetWindowTitle(wnd, info.title.Value());
+    if (info.icon.IsValid())
     {
-        n_error("FIXME, createwindowfromalien not implemented yet");
-#if 0
-        // create window using our Qt window as child
-        wnd = glfwCreateWindowFromAlien(windowData.GetPtr(), wnd);
-        glfwMakeContextCurrent(wnd);
-
-        // get actual window size
-        int height, width;
-        glfwGetWindowSize(wnd, &width, &height);
-
-        // update display mode
-        mode.SetWidth(width);
-        mode.SetHeight(height);
-        mode.SetAspectRatio(width / float(height));
-
-        glfwSetWindowUserPointer(wnd, ptr);
-#endif
-    }
-    else
-    {
-        //FIXME resize is broken currently, forcibly disabling it
-        glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
-        glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
-
-        // create window
-        wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, wnd);
-
-        if (!info.fullscreen)   glfwSetWindowPos(wnd, info.mode.GetXPos(), info.mode.GetYPos());
-        else                    WindowApplyFullscreen(id, Adapter::Primary, true);
-
-        // set user pointer to this window
-        glfwSetWindowUserPointer(wnd, ptr);
-        glfwSetWindowTitle(wnd, info.title.Value());
-        if (info.icon.IsValid())
-        {
-            int x, y, channels;
-            stbi_uc* icon = stbi_load(info.icon.Value(), &x, &y, &channels, 4);
-            GLFWimage img;
-            img.height = y;
-            img.width = x;
-            img.pixels = icon;
-            glfwSetWindowIcon(wnd, 1, &img);
-            free(icon);
-        }
+        int x, y, channels;
+        stbi_uc* icon = stbi_load(info.icon.Value(), &x, &y, &channels, 4);
+        GLFWimage img;
+        img.height = y;
+        img.width = x;
+        img.pixels = icon;
+        glfwSetWindowIcon(wnd, 1, &img);
+        free(icon);
     }
 
     glfwSwapInterval(info.vsync ? CoreGraphics::GetNumBufferedFrames() : 0);
@@ -363,6 +357,8 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     swapCreate.window = wnd;
     SwapchainId swapchain = CoreGraphics::CreateSwapchain(swapCreate);
 
+
+    glfwWindowAllocator.Set<GLFW_SwapFrame>(windowId, 0);
     glfwWindowAllocator.Set<GLFW_Window>(windowId, wnd);
     glfwWindowAllocator.Set<GLFW_Swapchain>(windowId, swapchain);
 
@@ -371,8 +367,6 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 
     // enable callbacks
     GLFW::EnableCallbacks(id);
-
-    DisplayDevice::Instance()->MakeWindowCurrent(id);
     return id;
 }
 
@@ -393,6 +387,15 @@ ResizeFunc(const CoreGraphics::WindowId& id, int width, int height)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MoveFunc(const CoreGraphics::WindowId& id, int x, int y)
+{
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowMoved, id, Math::vec2(x, y), Math::vec2(0, 0)));
+}
+
 
 } // namespace GLFW
 
@@ -408,18 +411,23 @@ using namespace Vulkan;
 /**
 */
 const WindowId
-CreateWindow(const WindowCreateInfo& info)
+CreateMainWindow(const WindowCreateInfo& info)
 {
-    return GLFW::InternalSetupFunction(info, nullptr, false);
+    n_assert(MainWindow == CoreGraphics::InvalidWindowId);
+    MainWindow = GLFW::InternalSetupFunction(info);
+    CoreGraphics::WindowTakeFocus(MainWindow);
+    FocusWindow = MainWindow;
+    return MainWindow;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const WindowId
-EmbedWindow(const Util::Blob& windowData)
+CreateWindow(const WindowCreateInfo& info)
 {
-    return GLFW::InternalSetupFunction(WindowCreateInfo(), windowData, true);
+    WindowId ret = GLFW::InternalSetupFunction(info);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -450,6 +458,40 @@ WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     glfwSetWindowSize(wnd, newWidth, newHeight);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::int2
+WindowGetSize(const WindowId id)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    Math::int2 ret;
+    glfwGetWindowSize(wnd, &ret.x, &ret.y);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowReposition(const WindowId id, int x, int y)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwSetWindowPos(wnd, x, y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::int2
+WindowGetPosition(const WindowId id)
+{
+    Math::int2 ret;
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwGetWindowPos(wnd, &ret.x, &ret.y);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -536,9 +578,29 @@ WindowSetCursorLocked(const WindowId id, bool b)
 /**
 */
 void
-WindowMakeCurrent(const WindowId id)
+WindowTakeFocus(const WindowId id)
 {
-    CurrentWindow = id;
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwFocusWindow(wnd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+WindowGetUserData(const WindowId id)
+{
+    return glfwWindowAllocator.Get<GLFW_UserData>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowShow(const WindowId id)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    glfwShowWindow(wnd);
 }
 
 //------------------------------------------------------------------------------
@@ -585,15 +647,22 @@ WindowNewFrame(const WindowId id)
         CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
         CoreGraphics::DestroySwapchain(swapchain);
 
+        //CoreGraphics::BeginWindowResize();
+
+        N_MARKER_BEGIN(CreateSwapchain, Window)
         GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
         CoreGraphics::SwapchainCreateInfo newSwapInfo;
         newSwapInfo.displayMode = mode;
         newSwapInfo.vsync = info.vsync;
         newSwapInfo.window = wnd;
+        newSwapInfo.oldSwapchain = swapchain;
         glfwWindowAllocator.Set<GLFW_Swapchain>(id.id, CoreGraphics::CreateSwapchain(newSwapInfo));
+        N_MARKER_END()
 
         // notify event listeners we resized
         GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
+
+        //CoreGraphics::EndWindowResize();
     }
 }
 

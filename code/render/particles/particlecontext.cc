@@ -150,6 +150,7 @@ ParticleContext::Create()
     meshInfo.primitiveGroups.Append(group);
     meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
     meshInfo.vertexLayout = emitterLayout;
+    meshInfo.indexType = CoreGraphics::IndexType::Index16;
     ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 
     // setup particle geometry buffer

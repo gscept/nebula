@@ -269,6 +269,10 @@ SetupTexture(const TextureId id)
     if (HasFlags(loadInfo.usage, TextureUsage::Render))
         usage |= (AnyBits(bits, ImageBits::DepthBits | ImageBits::StencilBits) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
+    // Add transfer dst bit if we need to clear the texture
+    if (loadInfo.clear)
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
     VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
     VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
     VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
@@ -605,9 +609,6 @@ SetupTexture(const TextureId id)
 const TextureId
 CreateTexture(const TextureCreateInfo& info)
 {
-    if (info.windowRelative)
-        n_assert(info.type == CoreGraphics::Texture2D);
-
     /// during the load-phase, we can safetly get the structs
     Ids::Id32 id = textureAllocator.Alloc();
 
@@ -643,7 +644,6 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.clear = adjustedInfo.clear;
     loadInfo.clearColorF4 = adjustedInfo.clearColorF4;
     loadInfo.defaultLayout = adjustedInfo.defaultLayout;
-    loadInfo.windowRelative = adjustedInfo.windowRelative;
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
@@ -706,7 +706,7 @@ DeleteTexture(const TextureId id)
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)
-            CoreGraphics::DelayedFreeMemory(allocs[i]);
+            CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(allocs[i]) : CoreGraphics::DelayedFreeMemory(allocs[i]);
         allocs.Clear();
 
         // clear all pages
@@ -720,7 +720,7 @@ DeleteTexture(const TextureId id)
                 {
                     if (pages[pageIdx].alloc.mem != VK_NULL_HANDLE)
                     {
-                        CoreGraphics::DelayedFreeMemory(pages[pageIdx].alloc);
+                        CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(pages[pageIdx].alloc) : CoreGraphics::DelayedFreeMemory(pages[pageIdx].alloc);
                         pages[pageIdx].alloc.mem = VK_NULL_HANDLE;
                         pages[pageIdx].alloc.offset = 0;
                     }
@@ -735,7 +735,7 @@ DeleteTexture(const TextureId id)
     }
     else if (loadInfo.alias == CoreGraphics::InvalidTextureId && loadInfo.mem.mem != VK_NULL_HANDLE)
     {
-        CoreGraphics::DelayedFreeMemory(loadInfo.mem);
+        CoreGraphics::IsWindowResizing() ? CoreGraphics::FreeMemory(loadInfo.mem) : CoreGraphics::DelayedFreeMemory(loadInfo.mem);
         loadInfo.mem = CoreGraphics::Alloc{};
     }
 
@@ -880,37 +880,6 @@ TextureGetStencilBindlessHandle(const CoreGraphics::TextureId id)
     Ids::Id32 stencil = textureAllocator.ConstGet<Texture_LoadInfo>(id.id).stencilExtension;
     n_assert(stencil != Ids::InvalidId32);
     return textureStencilExtensionAllocator.ConstGet<TextureExtension_StencilBind>(stencil);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TextureWindowResized(const TextureId id)
-{
-    __Lock(textureAllocator, id.id);
-    VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
-    VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
-
-    if (loadInfo.windowRelative)
-    {
-        uint tmp = runtimeInfo.bind;
-        runtimeInfo.bind = 0xFFFFFFFF;
-        DeleteTexture(id);
-
-        // if the window has been resized, we need to update our dimensions based on relative size
-        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(loadInfo.window);
-        loadInfo.width = mode.GetWidth() * loadInfo.relativeDims.width;
-        loadInfo.height = mode.GetHeight() * loadInfo.relativeDims.height;
-        loadInfo.depth = 1;
-
-        runtimeInfo.bind = tmp;
-        SetupTexture(id);
-
-#if NEBULA_GRAPHICS_DEBUG
-        ObjectSetName(id, loadInfo.name.Value());
-#endif
-    }
 }
 
 //------------------------------------------------------------------------------

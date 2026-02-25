@@ -37,7 +37,6 @@ CameraContext::Create()
 {
     __CreateContext();
 
-    __bundle.OnWindowResized = CameraContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
@@ -140,24 +139,6 @@ CameraContext::GetSettings(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_Settings>(cid.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-CameraContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
-{
-    Util::Array<CameraSettings>& settings = cameraAllocator.GetArray<Camera_Settings>();
-    IndexT i;
-    for (i = 0; i < settings.Size(); i++)
-    {
-        CameraSettings& setting = settings[i];
-
-        setting.SetupPerspectiveFov(setting.GetFov(), width / float(height), setting.GetZNear(), setting.GetZFar());
-        cameraAllocator.GetArray<Camera_Projection>()[i] = setting.GetProjTransform();
-    }
-
 }
 
 //------------------------------------------------------------------------------

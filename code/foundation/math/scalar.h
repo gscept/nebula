@@ -736,42 +736,6 @@ mostsignificant(unsigned int val)
 
 //------------------------------------------------------------------------------
 /**
-*/
-__forceinline unsigned int
-align(unsigned int alignant, unsigned int alignment)
-{
-    return (alignant + alignment - 1) & ~(alignment - 1);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline uintptr_t
-alignptr(uintptr_t alignant, uintptr_t alignment)
-{
-    return (alignant + alignment - 1) & ~(alignment - 1);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline unsigned int
-align_down(unsigned int alignant, unsigned int alignment)
-{
-    return (alignant / alignment * alignment);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline uintptr_t
-align_downptr(uintptr_t alignant, uintptr_t alignment)
-{
-    return (alignant / alignment * alignment);
-}
-
-//------------------------------------------------------------------------------
-/**
     Integer division with rounding
 */
 __forceinline unsigned int

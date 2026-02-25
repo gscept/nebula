@@ -244,11 +244,17 @@ class LocalTextureDefinition:
             file.WriteLine('info.name = "{}";'.format(self.name))
             file.WriteLine("info.type = CoreGraphics::{};".format(self.type))
             file.WriteLine("info.format = CoreGraphics::PixelFormat::Code::{};".format(self.format))
-            file.WriteLine("info.width = {} * frameWidth;".format(self.relativeSize[0]))
-            file.WriteLine("info.height = {} * frameHeight;".format(self.relativeSize[1]))
+            file.WriteLine("info.width = Math::ceil({} * frameWidth);".format(self.relativeSize[0]))
+            file.WriteLine("info.height = Math::ceil({} * frameHeight);".format(self.relativeSize[1]))
             file.WriteLine("info.usage = {};".format(self.usage))
             file.WriteLine("info.mips = {};".format("CoreGraphics::TextureAutoMips" if self.mips == "auto" else self.mips))
             file.WriteLine("info.layers = {};".format(self.layers))
+            if self.depthFormat or self.stencilFormat:
+                file.WriteLine("info.clearDepthStencil.depth = 1.0f;")
+                file.WriteLine("info.clearDepthStencil.stencil = 0.0f;")
+            else:
+                file.WriteLine("info.clearColorF4 = Math::float4{ 0.0f, 0.0f, 0.0f, 1.0f };")
+            file.WriteLine("info.clear = true;")
             file.WriteLine("Textures[(uint)TextureIndex::{}] = CoreGraphics::CreateTexture(info);".format(self.name))
             file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(info.format);".format(self.name, self.name))
             file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = CoreGraphics::PipelineStage::InvalidStage;".format(self.name))
@@ -367,11 +373,13 @@ class SubgraphDefinition:
         file.IncreaseIndent()
         file.WriteLine("SubgraphPipelines_{}(Pass_{}, {});".format(self.name, self.p.name, self.subp.index))
         file.DecreaseIndent()
+        file.WriteLine("#ifdef NEBULA_DEBUG")
         file.WriteLine("else")
         file.IncreaseIndent()
         global framescriptName
         file.WriteLine('n_warning("[Frame Script {}] No registered pipeline creation callback is registered for {}\\n");'.format(framescriptName, self.name))
         file.DecreaseIndent()
+        file.WriteLine("#endif")
 
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
@@ -450,6 +458,13 @@ class FullscreenEffectDefinition:
 
         file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.gplb");'.format(self.shader))
         file.WriteLine('CoreGraphics::ShaderProgramId prog = CoreGraphics::ShaderGetProgram(shad, CoreGraphics::ShaderFeatureMask("{}"));'.format(self.mask))
+        file.WriteLine('if (FullScreenEffect_{}_Pipeline != CoreGraphics::InvalidPipelineId)'.format(self.name))
+        file.WriteLine('{')
+        file.IncreaseIndent()
+        file.WriteLine('CoreGraphics::DestroyGraphicsPipeline(FullScreenEffect_{}_Pipeline);'.format(self.name))
+        file.WriteLine('CoreGraphics::DestroyResourceTable(FullScreenEffect_{}_ResourceTable);'.format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine('}')
         file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
         file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
         file.WriteLine('{}::{}::STRUCT state;'.format(self.namespace, self.constantBlockName))

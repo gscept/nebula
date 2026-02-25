@@ -40,6 +40,11 @@ struct ImguiTextureId
     uint splat : 1 = 0;
 };
 
+extern ImFont* ImguiNormalFont;
+extern ImFont* ImguiSmallFont;
+extern ImFont* ImguiBoldFont;
+extern ImFont* ImguiItFont;
+
 class ImguiContext : public Graphics::GraphicsContext
 {
     __DeclarePluginContext();
@@ -69,44 +74,6 @@ public:
 
     /// called after frame
     static void EndFrame(const Graphics::FrameContext& ctx);
-
-    struct ImguiState
-    {
-        CoreGraphics::ShaderId uiShader;
-        CoreGraphics::ShaderProgramId prog;
-        CoreGraphics::PipelineId pipeline;
-
-#if WITH_NEBULA_EDITOR
-        CoreGraphics::PipelineId editorPipeline;
-#endif
-
-        ImguiTextureId fontTexture;
-        //CoreGraphics::TextureId fontTexture;
-
-        Util::FixedArray<CoreGraphics::BufferId> vbos;
-        Util::FixedArray<CoreGraphics::BufferId> ibos;
-        CoreGraphics::VertexLayoutId vlo;
-
-        IndexT textProjectionConstant;
-        IndexT packedTextureInfo;
-        IndexT rangeMinConstant;
-        IndexT rangeMaxConstant;
-        IndexT colorMaskConstant;
-        CoreGraphics::ResourceTableId resourceTable;
-        //Ptr<CoreGraphics::BufferLock> vboBufferLock;
-        //Ptr<CoreGraphics::BufferLock> iboBufferLock;
-        Util::FixedArray<byte*> vertexPtrs;
-        Util::FixedArray<byte*> indexPtrs;
-
-        ImFont* normalFont;
-        ImFont* smallFont;
-        ImFont* boldFont;
-        ImFont* itFont;
-
-        Ptr<ImguiInputHandler> inputHandler;
-        bool dockOverViewport;
-    };
-    static ImguiState state;
 
 private:
     static void RecoverImGuiContextErrors();

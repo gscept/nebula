@@ -170,24 +170,24 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
         fallback = CoreGraphics::White1DArray;
         break;
     case CoreGraphics::Texture2D:
-        fallback = CoreGraphics::White2D;
         var = Shared::Textures2D::BINDING;
+        fallback = CoreGraphics::White2D;
         break;
     case CoreGraphics::Texture2DArray:
-        fallback = CoreGraphics::White2DArray;
         var = Shared::Textures2DArray::BINDING;
+        fallback = CoreGraphics::White2DArray;
         break;
     case CoreGraphics::Texture3D:
-        fallback = CoreGraphics::White3D;
         var = Shared::Textures3D::BINDING;
+        fallback = CoreGraphics::White3D;
         break;
     case CoreGraphics::TextureCube:
-        fallback = CoreGraphics::WhiteCube;
         var = Shared::TexturesCube::BINDING;
+        fallback = CoreGraphics::WhiteCube;
         break;
     case CoreGraphics::TextureCubeArray:
-        fallback = CoreGraphics::WhiteCubeArray;
         var = Shared::TexturesCubeArray::BINDING;
+        fallback = CoreGraphics::WhiteCubeArray;
         break;
     default: n_error("unhandled enum"); break;
     }    

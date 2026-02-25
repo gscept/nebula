@@ -54,6 +54,10 @@ public:
     /// default constructor
     InputEvent();
 
+    /// Set window
+    ///void SetWindow(const CoreGraphics::WindowId window);
+    /// Get window
+    ///const CoreGraphics::WindowId GetWindow() const;
     /// set event type
     void SetType(Type t);
     /// get event type
@@ -91,6 +95,7 @@ private:
     Char character;
     IndexT deviceIndex;
     MouseButton::Code mouseButton;
+    //CoreGraphics::WindowId window;
     Math::vec2 absMousePos;
     Math::vec2 normMousePos;
 };
@@ -108,6 +113,24 @@ InputEvent::InputEvent() :
 {
     // empty
 }
+
+/////------------------------------------------------------------------------------
+////**
+///*/
+///inline void
+///InputEvent::SetWindow(const CoreGraphics::WindowId wnd)
+///{
+///    this->window = wnd;
+///}
+///
+/////------------------------------------------------------------------------------
+////**
+///*/
+///inline const CoreGraphics::WindowId
+///InputEvent::GetWindow() const
+///{
+///    return this->window;
+///}
 
 //------------------------------------------------------------------------------
 /**

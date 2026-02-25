@@ -124,12 +124,9 @@ struct GraphicsDeviceState
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
-    Util::FixedArray<CoreGraphics::FenceId> presentFences;
-    Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
-    Util::FixedArray<CoreGraphics::SemaphoreId> backbufferFinishedSemaphores;
-
     uint globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
+    Util::FixedArray<bool> inflightFrames;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
@@ -155,6 +152,7 @@ struct GraphicsDeviceState
     bool renderWireframe : 1;
     bool visualizeMipMaps : 1;
     bool enableValidation : 1;
+    bool resizing : 1;
     IndexT currentFrameIndex = 0;
 
     _declare_counter(NumImageBytesAllocated);
@@ -298,6 +296,12 @@ void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
 void WaitAndClearPendingCommands();
+/// Set state to resize
+void BeginWindowResize();
+/// Get if resizing
+bool IsWindowResizing();
+/// End window resizing
+void EndWindowResize();
 
 /// Add buffer to delete queue
 void DelayedDeleteBuffer(const CoreGraphics::BufferId id);
@@ -307,6 +311,8 @@ void DelayedDeleteTexture(const CoreGraphics::TextureId id);
 void DelayedDeleteTextureView(const CoreGraphics::TextureViewId id);
 /// Add command buffer to late deletion
 void DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id);
+/// Add command buffer pool to late deletion
+void DelayedDeleteCommandBufferPool(const CoreGraphics::CmdBufferPoolId id);
 /// Add memory allocation to delete queue
 void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 /// Add a descriptor set to delete queue
@@ -317,6 +323,12 @@ void DelayedDeletePass(const CoreGraphics::PassId id);
 void DelayedDeleteBlas(const CoreGraphics::BlasId id);
 /// Add a tlas for delayed delete
 void DelayedDeleteTlas(const CoreGraphics::TlasId id);
+/// Add a semaphore for late deletion
+void DelayedDeleteSemaphore(const CoreGraphics::SemaphoreId id);
+/// Add a swapchain for late deletion
+void DelayedDeleteSwapchain(const CoreGraphics::SwapchainId id);
+/// Add a pipeline for late deletion
+void DelayedDeletePipeline(const CoreGraphics::PipelineId id);
 
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);
@@ -329,7 +341,7 @@ IndexT GetQueueIndex(const QueueType queue);
 const Util::Set<uint32_t>& GetQueueIndices();
 
 /// Finish current frame
-void FinishFrame(IndexT frameIndex);
+void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores);
 /// Progress to next frame
 void NewFrame();
 

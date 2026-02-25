@@ -33,55 +33,6 @@ using namespace Input;
 namespace Im3d
 {
 
-class Im3dInputHandler : public Input::InputHandler
-{
-    __DeclareClass(Im3dInputHandler);
-public:
-    /// constructor
-    Im3dInputHandler() {}
-    /// destructor
-    virtual ~Im3dInputHandler() {}
-
-    /// capture input to this event handler
-    virtual void BeginCapture()
-    {
-        Input::InputServer::Instance()->ObtainMouseCapture(this);
-        Input::InputServer::Instance()->ObtainKeyboardCapture(this);
-    }
-    /// end input capturing to this event handler
-    virtual void EndCapture()
-    {
-        Input::InputServer::Instance()->ReleaseMouseCapture(this);
-        Input::InputServer::Instance()->ReleaseKeyboardCapture(this);
-    }
-
-protected:
-
-    /// called when an input event should be processed
-    virtual bool OnEvent(const Input::InputEvent& inputEvent)
-    {
-        switch (inputEvent.GetType())
-        {
-#ifndef _DEBUG
-        case Input::InputEvent::AppObtainFocus:
-        case Input::InputEvent::AppLoseFocus:
-#endif
-        case Input::InputEvent::Reset:
-            this->OnReset();
-            break;
-
-        default:
-            return Im3dContext::HandleInput(inputEvent);
-        }
-        return false;
-    }
-
-private:
-    
-};
-
-__ImplementClass(Im3d::Im3dInputHandler, 'IM3H', Input::InputHandler);
-
 
 struct Im3dState
 {
@@ -105,7 +56,6 @@ struct Im3dState
     float cellSize = 1.0f;
     Math::vec4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Math::vec2 gridOffset{ 0, 0 };
-    Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;
     Math::vec2 viewPortPosition{ 0.0f, 0.0f };
@@ -137,9 +87,6 @@ void
 Im3dContext::Create()
 {
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-    imState.inputHandler = Im3dInputHandler::Create();
-    //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
     // allocate im3d shader
     imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.gplb");
@@ -205,8 +152,6 @@ Im3dContext::Create()
 void
 Im3dContext::Discard()
 {
-    Input::InputServer::Instance()->RemoveInputHandler(imState.inputHandler.upcast<InputHandler>());
-    imState.inputHandler = nullptr;
     CoreGraphics::BufferUnmap(imState.vbo);
 
     CoreGraphics::DestroyBuffer(imState.vbo);
@@ -442,7 +387,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
-    Math::vec2 mousePos = Math::vec2::divide(mouse->GetScreenPosition() - imState.viewPortPosition, imState.viewPortSize);
+    Math::vec2 mousePos = Math::vec2::divide(mouse->GetPixelPosition() - imState.viewPortPosition, imState.viewPortSize);
     
     mousePos *= 2.0f;
     mousePos -= Math::vec2(1.0f, 1.0f);

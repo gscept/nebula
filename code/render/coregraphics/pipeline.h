@@ -21,6 +21,7 @@ struct PipelineCreateInfo
     CoreGraphics::PassId pass;
     uint subpass;
     CoreGraphics::InputAssemblyKey inputAssembly;
+    bool ignoreCache = false;
 };
 
 /// Create new pipeline

@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 #include "vkpipelinedatabase.h"
+#include "vkpipeline.h"
 #include "vkpass.h"
 #include "vktypes.h"
 
@@ -65,8 +66,8 @@ VkPipelineDatabase::Discard()
                 for (l = 0; l < t3->children.Size(); l++)
                 {
                     Tier4Node* t4 = t3->children.ValueAtIndex(l);
-                    vkDestroyPipeline(this->dev, t4->pipeline, nullptr);
-                    t4->pipeline = VK_NULL_HANDLE;
+                    CoreGraphics::DestroyGraphicsPipeline(t4->pipeline);
+                    t4->pipeline = CoreGraphics::InvalidPipelineId;
                 }
             }
         }
@@ -156,6 +157,58 @@ VkPipelineDatabase::SetInputAssembly(const CoreGraphics::InputAssemblyKey key)
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::PipelineId
+VkPipelineDatabase::GetPipeline(
+    const CoreGraphics::PassId pass
+    , const uint32_t subpass
+    , const CoreGraphics::ShaderProgramId program
+    , const CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& shaderInfo)
+{
+    this->SetPass(pass);
+    this->SetSubpass(subpass);
+    this->SetShader(program, shaderInfo);
+    this->SetInputAssembly(inputAssembly);
+    if (!this->ct1->initial && !this->ct2->initial && !this->ct3->initial && !this->ct4->initial)
+    {
+        return this->ct4->pipeline;
+    }
+    return CoreGraphics::InvalidPipelineId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkPipelineDatabase::CachePipeline(
+    const CoreGraphics::PassId pass
+    , const uint32_t subpass
+    , const CoreGraphics::ShaderProgramId program
+    , const CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& shaderInfo
+    , CoreGraphics::PipelineId pipeline
+)
+{
+    this->SetPass(pass);
+    this->SetSubpass(subpass);
+    this->SetShader(program, shaderInfo);
+    this->SetInputAssembly(inputAssembly);
+    n_assert(this->ct4->initial);
+    this->ct4->pipeline = pipeline;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkPipelineDatabase::InvalidatePipeline(const CoreGraphics::PipelineId pipeline)
+{
+    // Hmm, this is hard actually, we have to walk the entire tree and find the pipeline, then set it to initial
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 VkPipeline
 VkPipelineDatabase::GetCompiledPipeline()
 {
@@ -168,13 +221,25 @@ VkPipelineDatabase::GetCompiledPipeline()
         this->ct4->initial
         )
     {
-        this->ct4->pipeline = this->CreatePipeline(this->currentPass, this->currentSubpass, this->currentShaderProgram, this->currentInputAssembly, this->currentShaderInfo);
+        // If we are set to invalidate pipelines, delete the old pipeline prior to creating
+        if (this->ct4->pipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(ct4->pipeline);
+
+        CoreGraphics::PipelineCreateInfo pipeInfo;
+        pipeInfo.inputAssembly = this->currentInputAssembly;
+        pipeInfo.shader = this->currentShaderProgram;
+        pipeInfo.pass = this->currentPass;
+        pipeInfo.subpass = this->currentSubpass;
+        pipeInfo.ignoreCache = true;
+        this->ct4->pipeline = CoreGraphics::CreateGraphicsPipeline(pipeInfo);
+
+        //this->CreatePipeline(this->currentPass, this->currentSubpass, this->currentShaderProgram, this->currentInputAssembly, this->currentShaderInfo);
 
         // DAG path is created, so set entire path to not initial
         this->ct1->initial = this->ct2->initial = this->ct3->initial = this->ct4->initial = false;
     }
 
-    this->currentPipeline = this->ct4->pipeline;
+    this->currentPipeline = Vulkan::PipelineGetVkPipeline(this->ct4->pipeline);
     return this->currentPipeline;
 }
 
@@ -196,59 +261,6 @@ VkPipelineDatabase::GetCompiledPipeline(
     return this->GetCompiledPipeline();
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-VkPipeline
-VkPipelineDatabase::CreatePipeline(const CoreGraphics::PassId pass, const uint32_t subpass, const CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& shaderInfo)
-{
-    // get other fragment from framebuffer
-    VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(pass);
-    VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
-    VkRenderPassBeginInfo renderPassInfo = PassGetVkRenderPassBeginInfo(pass);
-    colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(pass, subpass);
-    passInfo.pViewportState = &PassGetVkViewportInfo(pass, subpass);
-
-    VkPipelineVertexInputStateCreateInfo dummyVertexInput{};
-    dummyVertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    dummyVertexInput.pNext = nullptr;
-    dummyVertexInput.flags = 0x0;
-    VkPipelineInputAssemblyStateCreateInfo inputInfo{};
-    inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputInfo.pNext = nullptr;
-    inputInfo.flags = 0x0;
-    inputInfo.topology = (VkPrimitiveTopology)inputAssembly.topo;
-    inputInfo.primitiveRestartEnable = inputAssembly.primRestart;
-
-    // use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
-    VkGraphicsPipelineCreateInfo info =
-    {
-        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        NULL,
-        0,
-        shaderInfo.stageCount,
-        shaderInfo.pStages,
-        &dummyVertexInput,
-        &inputInfo,
-        shaderInfo.pTessellationState,
-        passInfo.pViewportState,
-        shaderInfo.pRasterizationState,
-        shaderInfo.pMultisampleState,
-        shaderInfo.pDepthStencilState,
-        &colorBlendInfo,
-        shaderInfo.pDynamicState,
-        shaderInfo.layout,
-        renderPassInfo.renderPass,
-        subpass,
-        VK_NULL_HANDLE,
-        -1
-    };
-
-    VkPipeline pipeline;
-    VkResult res = vkCreateGraphicsPipelines(this->dev, this->cache, 1, &info, NULL, &pipeline);
-    n_assert(res == VK_SUCCESS);
-    return pipeline;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -359,8 +371,8 @@ VkPipelineDatabase::RecreatePipelines()
                 for (l = 0; l < t3->children.Size(); l++)
                 {
                     Tier4Node* t4 = t3->children.ValueAtIndex(l);
-                    vkDestroyPipeline(this->dev, t4->pipeline, nullptr);
-                    t4->pipeline = VK_NULL_HANDLE;
+
+                    // Set the tree to initial to provoke a new pipeline
                     t1->initial = t2->initial = t3->initial = t4->initial = true;
                 }
             }

@@ -156,7 +156,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     auto itemData = (const MaterialEditorItemData*)item->data;
-    ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont);
     ImGui::Text(materialTemplate->name);
     ImGui::PopFont();
 

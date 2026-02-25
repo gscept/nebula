@@ -40,9 +40,12 @@ __ImplementSingleton(Graphics::GraphicsServer);
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsServer::GraphicsServer() :
-    resizeCall(nullptr)
-    ,isOpen(false)
+GraphicsServer::GraphicsServer()
+    : resizeCall(nullptr)
+    , isOpen(false)
+    , maxWindowHeight(0)
+    , maxWindowWidth(0)
+
 {
     __ConstructSingleton;
 }
@@ -95,8 +98,8 @@ GraphicsServer::Open()
             64_MB,                  // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        .maxOcclusionQueries = 0x1000,
-        .maxTimestampQueries = 0x400,
+        .maxOcclusionQueries = 0x100000,
+        .maxTimestampQueries = 0x40000,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = args.GetBoolFlag("-gfxvalidation"),
@@ -293,24 +296,33 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
-    CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+    bool ret = false;
+    const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wndId);
 
-    CoreGraphics::WaitAndClearPendingCommands();
-
-    // First, call the resize callback to trigger an update of the frame scripts
-    if (this->resizeCall != nullptr)
-        this->resizeCall(mode.GetWidth(), mode.GetHeight());
-
-    for (IndexT i = 0; i < this->contexts.Size(); ++i)
+    // Only resize if bigger
+    if (this->maxWindowWidth < mode.GetWidth() || this->maxWindowHeight < mode.GetHeight())
     {
-        if (this->contexts[i]->OnWindowResized != nullptr)
+        this->maxWindowWidth = Math::max(mode.GetWidth(), this->maxWindowWidth);
+        this->maxWindowHeight = Math::max(mode.GetHeight(), this->maxWindowHeight);
+
+        // First, call the resize callback to trigger an update of the frame scripts
+        if (this->resizeCall != nullptr)
+            this->resizeCall(this->maxWindowWidth, this->maxWindowHeight);
+
+        for (IndexT i = 0; i < this->contexts.Size(); ++i)
         {
-            this->contexts[i]->OnWindowResized(wndId.id, mode.GetWidth(), mode.GetHeight());
+            if (this->contexts[i]->OnWindowResized != nullptr)
+            {
+                this->contexts[i]->OnWindowResized(wndId.id, this->maxWindowWidth, this->maxWindowHeight);
+            }
         }
+        ret = true;
     }
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -340,6 +352,46 @@ bool
 GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 {
     return this->entityPool.IsValid(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::AddWindow(const CoreGraphics::WindowId window)
+{
+    n_assert(this->windows.Find(window) == nullptr);
+    this->windows.Append(window);
+
+    // Don't resize if it's the main window
+    if (window != CoreGraphics::MainWindow)
+        this->OnWindowResized(window);
+    else
+    {
+        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+        this->maxWindowWidth = mode.GetWidth();
+        this->maxWindowHeight = mode.GetHeight();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RemoveWindow(const CoreGraphics::WindowId window)
+{
+    auto it = this->windows.Find(window);
+    n_assert(it != nullptr);
+    this->windows.Erase(it);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CoreGraphics::WindowId>&
+GraphicsServer::GetWindows() const
+{
+    return this->windows;
 }
 
 //------------------------------------------------------------------------------
@@ -556,10 +608,12 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
+    N_MARKER_BEGIN(ViewPreFrameCallbacks, Graphics)
     for (auto& cb : this->preViewCallbacks)
     {
         cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
     }
+    N_MARKER_END()
 
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
@@ -574,10 +628,12 @@ GraphicsServer::Render()
         this->currentView = nullptr;
     }
 
+    N_MARKER_BEGIN(ViewPostFrameCallbacks, Graphics)
     for (auto& cb : this->postViewCallbacks)
     {
         cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
     }
+    N_MARKER_END()
 }
 
 //------------------------------------------------------------------------------
@@ -588,42 +644,21 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    n_assert_msg(this->swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
+    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
 
-    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
-    CoreGraphics::SwapchainSwap(swapchain);
-    CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+    for (auto& wnd : this->windows)
+    {
+        CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
 
-    // Allocate command buffer to run swap
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
-    CoreGraphics::CmdBufferBeginInfo beginInfo;
-    beginInfo.submitDuringPass = false;
-    beginInfo.resubmittable = false;
-    beginInfo.submitOnce = true;
-    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+        CoreGraphics::SemaphoreId displaySemaphore = CoreGraphics::SwapchainGetCurrentDisplaySemaphore(swapchain);
+        CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
+        displaySemaphores.Append(displaySemaphore);
+        presentSemaphores.Append(presentSemaphore);
 
-    this->swapInfo.syncFunc(cmdBuf);
-    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, this->swapInfo.swapSource);
+    }
 
-    CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::CmdFinishQueries(cmdBuf);
-    CoreGraphics::CmdEndRecord(cmdBuf);
-
-    auto submission = CoreGraphics::SubmitCommandBuffers(
-        {cmdBuf}
-        , queue
-        , { this->swapInfo.submission }
-#if NEBULA_GRAPHICS_DEBUG
-        , "Swap"
-#endif
-
-    );
-    CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
-
-
-    // Finish submuissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
+    // Finish submissions
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, presentSemaphores);
 }
 
 //------------------------------------------------------------------------------

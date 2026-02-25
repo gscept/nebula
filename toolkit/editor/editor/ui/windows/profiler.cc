@@ -164,28 +164,30 @@ Profiler::Run(SaveMode save)
     if (this->captureWorstFrame)
     {
         this->currentFrameTime = Graphics::GraphicsServer::Instance()->GetFrameTime();
-        this->averageFrameTime += this->currentFrameTime;
-        this->frametimeHistory.Append(this->currentFrameTime);
-        if (this->frametimeHistory.Size() > 120)
-            this->frametimeHistory.EraseFront();
-
-        if (Graphics::GraphicsServer::Instance()->GetFrameIndex() % 35 == 0)
-        {
-            this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
-            this->averageFrameTime = 0.0f;
-        }
+        
         if (this->worstFrameTime < this->currentFrameTime)
         {
+            this->averageFrameTime += this->currentFrameTime;
+            this->frametimeHistory.Append(1.0f / this->currentFrameTime);
+            if (this->frametimeHistory.Size() > 120)
+                this->frametimeHistory.EraseFront();
+
+            this->prevAverageFrameTime = this->currentFrameTime;
+
             this->worstFrameTime = this->currentFrameTime;
             this->ProfilingContexts = Profiling::ProfilingGetContexts();
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        }
+        else
+        {
+            this->currentFrameTime = this->worstFrameTime;
         }
     }
     else if (!this->pauseProfiling)
     {
         this->currentFrameTime = Graphics::GraphicsServer::Instance()->GetFrameTime();
         this->averageFrameTime += this->currentFrameTime;
-        this->frametimeHistory.Append(this->currentFrameTime);
+        this->frametimeHistory.Append(1.0f / this->currentFrameTime);
         if (this->frametimeHistory.Size() > 120)
             this->frametimeHistory.EraseFront();
 
@@ -202,7 +204,7 @@ Profiler::Run(SaveMode save)
     if (!this->frametimeHistory.IsEmpty())
     {
         ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
-        ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, { ImGui::GetContentRegionAvail().x, 90 });
+        ImGui::PlotHistogram("####FrameTimes", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, "Frame", FLT_MIN, FLT_MAX, { ImGui::GetContentRegionAvail().x, 90 });
         ImGui::Separator();
         ImGui::Checkbox("Fixed FPS", &this->profileFixedFps);
         if (this->profileFixedFps)
@@ -213,20 +215,21 @@ Profiler::Run(SaveMode save)
     }
 
 #if NEBULA_ENABLE_PROFILING
-    if (ImGui::CollapsingHeader("Profiler"))
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+    if (ImGui::BeginTabBar("Profiler###Views"))
     {
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        ImVec2 start = ImGui::GetCursorScreenPos();
-        ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
-        static float timeWindow = 1.0f;
-        ImGui::SliderFloat("Time window", &timeWindow, 1.0f, 1000.0f);
-        if (ImGui::CollapsingHeader("Timeline"))
+        if (ImGui::BeginTabItem("Timeline"))
         {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 start = ImGui::GetCursorScreenPos();
+            ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
+            static float timeWindow = 1.0f;
+            ImGui::SliderFloat("Time window", &timeWindow, 1.0f, 1000.0f);
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
             {
                 if (ImGui::CollapsingHeader(ctx.threadName.Value(), ImGuiTreeNodeFlags_DefaultOpen))
                 {
-                    ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+                    ImGui::PushFont(Dynui::ImguiSmallFont);
 
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     canvasSize.x *= timeWindow;
@@ -256,7 +259,7 @@ Profiler::Run(SaveMode save)
             }
             if (ImGui::CollapsingHeader("GPU"))
             {
-                ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+                ImGui::PushFont(Dynui::ImguiSmallFont);
 
                 ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                 ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -297,10 +300,11 @@ Profiler::Run(SaveMode save)
                 ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
                 ImGui::PopFont();
             }
+            ImGui::EndTabItem();
         }
-        if (ImGui::CollapsingHeader("Memory"))
+        if (ImGui::BeginTabItem("Memory"))
         {
-            ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+            ImGui::PushFont(Dynui::ImguiSmallFont);
 
             Util::Dictionary<const char*, uint64_t> counters = Profiling::ProfilingGetCounters();
             for (IndexT i = 0; i < counters.Size(); i++)
@@ -341,8 +345,12 @@ Profiler::Run(SaveMode save)
             }
 
             ImGui::PopFont();
+
+            ImGui::EndTabItem();
         }
+        ImGui::EndTabBar();
     }
+    ImGui::PopStyleVar();
 #endif //NEBULA_ENABLE_PROFILING
 }
 

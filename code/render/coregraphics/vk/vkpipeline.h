@@ -16,6 +16,7 @@ struct Pipeline
 {
     VkPipeline pipeline;
     VkPipelineLayout layout;
+    VkDevice dev;
 
     // Pass needed for pass related resource tables
     CoreGraphics::PassId pass;
@@ -27,4 +28,10 @@ enum
 };
 
 extern Ids::IdAllocator<Pipeline> pipelineAllocator;
+
+/// Get device used to create pipeline
+VkDevice PipelineGetVkDevice(const CoreGraphics::PipelineId id);
+/// Get vk pipeline
+VkPipeline PipelineGetVkPipeline(const CoreGraphics::PipelineId id);
+
 } // namespace Vulkan

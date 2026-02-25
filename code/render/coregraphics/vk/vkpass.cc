@@ -715,8 +715,19 @@ DestroyPass(const PassId id)
     DestroyBuffer(runtimeInfo.passBlockBuffer);
     runtimeInfo.passDescriptorSet = ResourceTableId::Invalid();
     runtimeInfo.passBlockBuffer = BufferId::Invalid();
+    loadInfo.attachments.Clear();
+    loadInfo.attachmentClears.Clear();
+    loadInfo.attachmentFlags.Clear();
+    loadInfo.attachmentIsDepthStencil.Clear();
+    loadInfo.subpasses.Clear();
+    loadInfo.rects.Clear();
+    loadInfo.viewports.Clear();
+    loadInfo.clearValues.Clear();
+    passAllocator.Get<Pass_SubpassAttachments>(id.id).Clear();
+    runtimeInfo.subpassPipelineInfo.Clear();
 
     DelayedDeletePass(id);
+    passAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

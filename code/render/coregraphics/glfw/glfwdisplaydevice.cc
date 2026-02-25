@@ -53,11 +53,11 @@ GLFWDisplayDevice::Open()
     if (DisplayDeviceBase::Open())
     {
         // setup event handler for input when we created the display
-        this->inputEventHandler = GLFWInputDisplayEventHandler::Create();
+        this->inputEventHandler = Input::InputDisplayEventHandler::Create();
         this->AttachEventHandler(this->inputEventHandler.upcast<DisplayEventHandler>());
 
         // setup event handler for graphics related events, such as resizing, minimizing etc.
-        this->graphicsEventHandler = GLFWGraphicsDisplayEventHandler::Create();
+        this->graphicsEventHandler = Graphics::GraphicsDisplayEventHandler::Create();
         this->AttachEventHandler(this->graphicsEventHandler.upcast<DisplayEventHandler>());
         return true;
     }
@@ -232,6 +232,31 @@ GLFWDisplayDevice::GetAdapterInfo(Adapter::Code adapter)
 {
     AdapterInfo emptyAdapterInfo;
     return emptyAdapterInfo;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FixedArray<CoreGraphics::Monitor>
+GLFWDisplayDevice::GetMonitors()
+{
+    int count;
+    GLFWmonitor** glfwMonitors = glfwGetMonitors(&count);
+    Util::FixedArray<CoreGraphics::Monitor> monitors(count);
+    for (int i = 0; i < count; i++)
+    {
+        CoreGraphics::Monitor monitor;
+        const GLFWvidmode* mode = glfwGetVideoMode(glfwMonitors[i]);
+        monitor.width = mode->width;
+        monitor.height = mode->height;
+        monitor.refreshRate = mode->refreshRate;
+        monitor.redBits = mode->redBits;
+        monitor.greenBits = mode->greenBits;
+        monitor.blueBits = mode->blueBits;
+        monitors[i] = monitor;
+    }
+    return monitors;
 }
 
 //------------------------------------------------------------------------------

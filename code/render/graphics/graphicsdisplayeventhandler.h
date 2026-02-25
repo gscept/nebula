@@ -1,23 +1,21 @@
 #pragma once
-
 //------------------------------------------------------------------------------
 /**
-    @class OpenGL4::GLFWInputDisplayEventHandler
+    @class Graphics::GraphicsDisplayEventHandler
   
-    Translates DisplayEvents that are relevant for the input system
-    into InputEvents.
+    Handles DisplayEvents that are relevant for the graphics system
         
     @copyright
-    (C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/displayeventhandler.h"
 
 //------------------------------------------------------------------------------
-namespace GLFW
+namespace Graphics
 {
-class GLFWInputDisplayEventHandler : public CoreGraphics::DisplayEventHandler
+class GraphicsDisplayEventHandler : public CoreGraphics::DisplayEventHandler
 {
-    __DeclareClass(GLFWInputDisplayEventHandler);
+    __DeclareClass(GraphicsDisplayEventHandler);
 public:
     /// called when an event happens
     virtual bool HandleEvent(const CoreGraphics::DisplayEvent& event);

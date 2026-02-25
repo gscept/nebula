@@ -205,8 +205,8 @@ CreateBuffer(const BufferCreateInfo& info)
                     VkMappedMemoryRange range;
                     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
                     range.pNext = nullptr;
-                    range.offset = Math::align_down(alloc.offset, CoreGraphics::MemoryRangeGranularity);
-                    range.size = Math::align(alloc.size, CoreGraphics::MemoryRangeGranularity);
+                    range.offset = Memory::align_down(alloc.offset, CoreGraphics::MemoryRangeGranularity);
+                    range.size = Memory::align(alloc.size, CoreGraphics::MemoryRangeGranularity);
                     range.memory = alloc.mem;
                     VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
                     n_assert(res == VK_SUCCESS);
