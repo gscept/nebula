@@ -121,7 +121,6 @@ struct TextureCreateInfo
         , samples(1)
         , clear(false)
         , clearColorF4{0,0,0,0}
-        , windowRelative(false)
         , bindless(true)
         , sparse(false)
         , allowCast(false)
@@ -148,7 +147,6 @@ struct TextureCreateInfo
         Math::int4 clearColorI4;
         DepthStencilClear clearDepthStencil;
     };
-    bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
     bool bindless : 1;
     bool sparse : 1;                            // use sparse memory
     bool allowCast : 1;                         // Allow view to cast format, also enables access modes not available for original format
@@ -212,9 +210,6 @@ const CoreGraphics::ImageLayout TextureGetDefaultLayout(const TextureId id);
 uint TextureGetBindlessHandle(const TextureId id);
 /// get bindless texture handle
 uint TextureGetStencilBindlessHandle(const TextureId id);
-
-/// If texture is bound to the window resolution, reset the internal texture without mucking with the texture id
-void TextureWindowResized(const TextureId id);
 
 /// generate mipmaps for texture
 void TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id);

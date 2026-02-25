@@ -87,14 +87,12 @@ public:
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
 
-    struct SwapInfo
-    {
-        void (*syncFunc)(CoreGraphics::CmdBufferId) = nullptr;
-        CoreGraphics::TextureId swapSource = CoreGraphics::InvalidTextureId;
-        CoreGraphics::SubmissionWaitEvent submission;
-    };
-    /// Setup the swap info
-    void SetSwapInfo(const SwapInfo& info);
+    /// Add window to update
+    void AddWindow(const CoreGraphics::WindowId window);
+    /// Remove window
+    void RemoveWindow(const CoreGraphics::WindowId window);
+    /// Get windows
+    const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
 
     /// create a new stage
     Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
@@ -138,7 +136,7 @@ public:
     void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
     
     /// call when the window has been resized
-    void OnWindowResized(CoreGraphics::WindowId wndId);
+    bool OnWindowResized(CoreGraphics::WindowId wndId);
 
 private:
 
@@ -171,7 +169,8 @@ private:
     Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
 
-    SwapInfo swapInfo;
+    Util::Array<CoreGraphics::WindowId> windows;
+    SizeT maxWindowWidth, maxWindowHeight;
 
     bool isOpen;
 };
@@ -257,15 +256,6 @@ inline void
 GraphicsServer::SetResizeCall(void(*func)(const SizeT windowWidth, const SizeT windowHeight))
 {
     this->resizeCall = func;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::SetSwapInfo(const SwapInfo& info)
-{
-    this->swapInfo = info;
 }
 
 //------------------------------------------------------------------------------

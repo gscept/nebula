@@ -133,14 +133,16 @@ GraphicsFeatureUnit::OnActivate()
         this->title,
         "icon.png",
         CoreGraphics::AntiAliasQuality::None,
+        nullptr,
         true,
         true,
         false,
         true
     };
-    this->wnd = CreateWindow(wndInfo);
+    this->mainWindow = CreateMainWindow(wndInfo);
+    Graphics::GraphicsServer::Instance()->AddWindow(this->mainWindow);
 
-    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->mainWindow);
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
@@ -171,7 +173,7 @@ GraphicsFeatureUnit::OnActivate()
         .maxNumAllowedInstances = 0xFFFF,
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
-    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
+    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->mainWindow);
 
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
@@ -201,6 +203,7 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_default::Initialize(windowWidth, windowHeight);
         Graphics::SetupBufferConstants();
         FrameScript_default::SetupPipelines();
+        FrameScript_shadows::SetupPipelines();
 #if WITH_NEBULA_EDITOR
         if (App::GameApplication::IsEditorEnabled())
         {
@@ -307,7 +310,7 @@ GraphicsFeatureUnit::OnDeactivate()
     Dynui::ImguiContext::Discard();
     TBUI::TBUIContext::Discard();
     FeatureUnit::OnDeactivate();
-    DestroyWindow(this->wnd);
+    CoreGraphics::DestroyWindow(this->mainWindow);
     this->gfxServer->DiscardStage(this->defaultStage);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
@@ -327,11 +330,22 @@ GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
 
+    // Do potential new-frame stuff for window, such as resize
+    N_MARKER_BEGIN(ResizeWindows, App)
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowNewFrame(window);
+    N_MARKER_END()
+
     this->inputServer->BeginFrame();
 
+    N_MARKER_BEGIN(PollWindows, CoreGraphics)
     CoreGraphics::WindowPollEvents();
-    CoreGraphics::WindowMakeCurrent(this->wnd);
+    N_MARKER_END()
+
+    N_MARKER_BEGIN(Input, Input)
     this->inputServer->OnFrame();
+    N_MARKER_END()
 
     this->gfxServer->RunPreLogic();
 
@@ -377,15 +391,16 @@ GraphicsFeatureUnit::OnEndFrame()
     // Finish up the frame and present the current framebuffer
     this->gfxServer->EndFrame();
     N_MARKER_BEGIN(Present, App);
-    CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowPresent(window, App::GameApplication::FrameIndex);
+    
     N_MARKER_END();
 
     // Trigger a new frame
     this->gfxServer->NewFrame();
     this->inputServer->EndFrame();
 
-    // Do potential new-frame stuff for window, such as resize
-    CoreGraphics::WindowNewFrame(this->wnd);
 }
 
 //------------------------------------------------------------------------------

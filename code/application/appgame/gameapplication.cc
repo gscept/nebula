@@ -26,7 +26,7 @@
 namespace App
 {
 __ImplementSingleton(App::GameApplication);
-IndexT GameApplication::FrameIndex = -1;
+IndexT GameApplication::FrameIndex = 1;
 bool GameApplication::editorEnabled = false;
 
 using namespace Util;
@@ -248,13 +248,15 @@ GameApplication::StepFrame()
 {
     _start_timer(GameApplicationFrameTimeAll);
 
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingNewFrame();
+#endif
+
 #if __NEBULA_HTTP__
     this->httpServerProxy->HandlePendingRequests();
 #endif
 
-#if NEBULA_ENABLE_PROFILING
-    Profiling::ProfilingNewFrame();
-#endif
+    N_SCOPE(StepFrame, Game)
 
     Jobs2::JobNewFrame();
 

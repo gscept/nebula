@@ -56,7 +56,7 @@ CameraManager::RegisterView(Ptr<Graphics::View> const& view)
     if (view->GetCamera() != Graphics::GraphicsEntityId::Invalid())
         n_warning("WARNING: View already has a camera entity assigned which is being overridden!\n");
 
-    auto displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
+    auto displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
 
     Graphics::CameraContext::RegisterEntity(data.gid);
     Graphics::CameraContext::SetLODCamera(data.gid);

@@ -284,32 +284,35 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
     Partition* part = this->firstActivePartition;
     while (part != nullptr)
     {
-        // Very important that this is sorted, since we defragment by swapping values.
-        // This means i.e. if we swap index 1 before 2, and index 2 is also in the
-        // reeids array, we won't be able to clean it up because we cannot keep track if it's been moved.
-        part->freeIds.QuickSort();
-
-        // Pack arrays
-        while (part->freeIds.Size() != 0)
+        if (part->freeIds.Size() > 0)
         {
-            index = part->freeIds.Back();
-            part->freeIds.EraseBack();
+            // Very important that this is sorted, since we defragment by swapping values.
+            // This means i.e. if we swap index 1 before 2, and index 2 is also in the
+            // reeids array, we won't be able to clean it up because we cannot keep track if it's been moved.
+            part->freeIds.QuickSort();
 
-            if (index >= part->numRows)
+            // Pack arrays
+            while (part->freeIds.Size() != 0)
             {
-                // This might happen if we've swapped out an instance that is also in the freeids array.
-                // Just ignore it, since its new index should already be added to the array.
-                continue;
+                index = part->freeIds.Back();
+                part->freeIds.EraseBack();
+
+                if (index >= part->numRows)
+                {
+                    // This might happen if we've swapped out an instance that is also in the freeids array.
+                    // Just ignore it, since its new index should already be added to the array.
+                    continue;
+                }
+
+                lastIndex = part->numRows - 1;
+                if (index != lastIndex)
+                    moveCallback(part, RowId {part->partitionId, lastIndex}, RowId {part->partitionId, index});
+                part->EraseSwapIndex(index);
+                ++numErased;
             }
 
-            lastIndex = part->numRows - 1;
-            if (index != lastIndex)
-                moveCallback(part, RowId {part->partitionId, lastIndex}, RowId {part->partitionId, index});
-            part->EraseSwapIndex(index);
-            ++numErased;
+            part->freeIds.Clear();
         }
-
-        part->freeIds.Clear();
 
         part->modifiedRows.Clear();
 

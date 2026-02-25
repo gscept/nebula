@@ -25,7 +25,7 @@ __ImplementClass(Presentation::Physics, 'PtPh', Presentation::BaseWindow);
 */
 Physics::Physics()
 {
-    // empty
+    this->additionalFlags = ImGuiWindowFlags_(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
 //------------------------------------------------------------------------------

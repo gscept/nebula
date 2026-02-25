@@ -25,35 +25,47 @@ namespace CoreGraphics
 ID_24_8_TYPE(WindowId);
 struct TextureId;
 struct SwapchainId;
+struct CmdBufferId;
+struct TextureId;
 
-extern WindowId CurrentWindow;
+
+extern WindowId UpdatingWindow;
+extern WindowId FocusWindow;
+extern WindowId MainWindow;
 struct WindowCreateInfo
 {
     CoreGraphics::DisplayMode mode;
-    Util::StringAtom title;
-    Util::StringAtom icon;
-    CoreGraphics::AntiAliasQuality::Code aa;
+    Util::StringAtom title = nullptr;
+    Util::StringAtom icon = nullptr;
+    CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None;
+    void* userData = nullptr; // Setting user data implicitly states that another system owns and manages this window
     bool resizable : 1;
     bool decorated : 1;
     bool fullscreen : 1;
     bool vsync : 1;
 };
 
+/// create the main window
+const WindowId CreateMainWindow(const WindowCreateInfo& info);
 /// create new window
 const WindowId CreateWindow(const WindowCreateInfo& info);
-/// embed window in another window
-const WindowId EmbedWindow(const Util::Blob& windowData);
 /// destroy window
 void DestroyWindow(const WindowId id);
 
 /// resize window
 void WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight);
+/// Get window size
+Math::int2 WindowGetSize(const WindowId id);
+/// Set window position
+void WindowReposition(const WindowId id, int x, int y);
+/// Get window position
+Math::int2 WindowGetPosition(const WindowId id);
 /// set title for window
 void WindowSetTitle(const WindowId id, const Util::String& title);
 /// Set window icon
 void WindowSetIcon(const WindowId id, const Util::String& icon);
-/// make window 'current'
-void WindowMakeCurrent(const WindowId id);
+/// Show window
+void WindowShow(const WindowId id);
 /// present window
 void WindowPresent(const WindowId id, const IndexT frameIndex);
 /// poll events for window
@@ -66,6 +78,11 @@ void WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b);
 void WindowSetCursorVisible(const WindowId id, bool b);
 /// set if the cursor should be locked to the window
 void WindowSetCursorLocked(const WindowId id, bool b);
+/// Focus window
+void WindowTakeFocus(const WindowId id);
+
+/// Get user data associated with window
+void* WindowGetUserData(const WindowId id);
 
 /// get display mode from window
 const CoreGraphics::DisplayMode WindowGetDisplayMode(const WindowId id);

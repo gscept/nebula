@@ -72,7 +72,7 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
 
     if (mouse->ButtonDown(Input::MouseButton::Code::LeftButton))
     {
-        this->translation.mousePosOnStart = mouse->GetScreenPosition();
+        this->translation.mousePosOnStart = mouse->GetPixelPosition();
     }
 
     if (!this->translation.dragTimer.Running() && SelectionContext::IsPaused())
@@ -83,7 +83,7 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
     // Only start translating if the mouse has moved more that a small distance
     if (!this->translation.dragTimer.Running())
     {
-        float mouseDistance = (mouse->GetScreenPosition() - this->translation.mousePosOnStart).length();
+        float mouseDistance = (mouse->GetPixelPosition() - this->translation.mousePosOnStart).length();
         if (mouseDistance > 0.0015f && mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
         {
             this->translation.dragTimer.Reset();
@@ -92,7 +92,7 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
         }
     }
 
-    Math::vec2 mousePos = mouse->GetScreenPosition();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
     mousePos -= viewport->lastViewportImagePosition;
     mousePos = { mousePos.x / viewport->lastViewportImageSize.x, mousePos.y / viewport->lastViewportImageSize.y };
 

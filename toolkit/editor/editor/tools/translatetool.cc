@@ -65,7 +65,6 @@ TranslateTool::Render(Presentation::Modules::Viewport* viewport)
     auto const& selection = SelectionContext::Selection();
 
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
-    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Im3d::Im3dContext::SetViewportRect(viewport->lastViewportImagePosition, viewport->lastViewportImageSize);
    
     if (!this->translation.isDirty)

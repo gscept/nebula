@@ -13,6 +13,8 @@ fips_files(
     imguiinputhandler.h
     imguicontext.cc
     imguicontext.h
+	imguidisplayeventhandler.cc
+	imguidisplayeventhandler.h
 )
 
 fips_dir(imgui/shaders)

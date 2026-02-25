@@ -143,7 +143,8 @@ CreateCmdBufferPool(const CmdBufferPoolCreateInfo& info)
 void
 DestroyCmdBufferPool(const CmdBufferPoolId pool)
 {
-    vkDestroyCommandPool(commandBufferPools.Get<CommandBufferPool_VkDevice>(pool.id), commandBufferPools.Get<CommandBufferPool_VkCommandPool>(pool.id), nullptr);
+    CoreGraphics::DelayedDeleteCommandBufferPool(pool);
+    commandBufferPools.Dealloc(pool.id);
 }
 
 //------------------------------------------------------------------------------
@@ -437,7 +438,7 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkPrimitiveTopology comp = VkTypes::AsVkPrimitiveType(topo);
-    pipelineBundle.inputAssembly.topo = comp;
+    pipelineBundle.inputAssembly.topo = topo;
     pipelineBundle.inputAssembly.primRestart = false;
     vkCmdSetPrimitiveTopology(cmdBuf, comp);
     vkCmdSetPrimitiveRestartEnable(cmdBuf, false);

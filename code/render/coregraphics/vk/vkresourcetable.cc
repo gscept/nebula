@@ -285,7 +285,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -330,7 +330,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(tex.slot | uint64_t(tex.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -342,7 +342,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -385,7 +385,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(tex.slot | uint64_t(tex.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -397,7 +397,7 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -425,7 +425,7 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(tex.slot | uint64_t(tex.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -437,7 +437,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -465,7 +465,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(tex.slot | uint64_t(tex.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -477,7 +477,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -505,7 +505,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(tex.slot | uint64_t(tex.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -518,7 +518,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(buf.slot != InvalidIndex);
 
@@ -553,7 +553,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     inf.buf = buff;
     inf.write = write;
     inf.type = WriteType::Buffer;
-    infoList.Append(inf);
+    infoList.Emplace(buf.slot | uint64_t(buf.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -565,7 +565,7 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(buf.slot != InvalidIndex);
 
@@ -599,7 +599,7 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
     inf.buf = buff;
     inf.write = write;
     inf.type = WriteType::Buffer;
-    infoList.Append(inf);
+    infoList.Emplace(buf.slot | uint64_t(buf.index) << 32) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -611,7 +611,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(samp.slot != InvalidIndex);
 
@@ -639,7 +639,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
     inf.img = img;
     inf.write = write;
     inf.type = WriteType::Image;
-    infoList.Append(inf);
+    infoList.Emplace(samp.slot) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -651,8 +651,7 @@ ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTa
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
-
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
     n_assert(tlas.slot != InvalidIndex);
 
     VkWriteDescriptorSet write;
@@ -671,7 +670,7 @@ ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTa
     inf.tlas = Vulkan::TlasGetVk(tlas.tlas);
     inf.write = write;
     inf.type = WriteType::Tlas;
-    infoList.Append(inf);
+    infoList.Emplace(tlas.slot) = inf;
 }
 
 //------------------------------------------------------------------------------
@@ -693,42 +692,44 @@ ResourceTableCommitChanges(const ResourceTableId id)
 
     // resource tables are blocked, add to pending write queue
     Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
-    Util::Array<WriteInfo, 16>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::HashTable<uint64_t, WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
     Util::Array<VkCopyDescriptorSet, 4>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id);
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id);
 
     // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
     // we need to re-assign the pointers, but thankfully they have values from before
-    IndexT i;
-    for (i = 0; i < infoList.Size(); i++)
+    auto it = infoList.Begin();
+    while (it != infoList.End())
     {
-        switch (infoList[i].type)
+        auto& item = it.val;
+        switch (item->type)
         {
             case WriteType::Image:
-                infoList[i].write.pImageInfo = &infoList[i].img;
+                item->write.pImageInfo = &item->img;
                 break;
             case WriteType::Buffer:
-                infoList[i].write.pBufferInfo = &infoList[i].buf;
+                item->write.pBufferInfo = &item->buf;
                 break;
             case WriteType::TexelBuffer:
-                infoList[i].write.pTexelBufferView = &infoList[i].tex;
+                item->write.pTexelBufferView = &item->tex;
                 break;
             case WriteType::Tlas:
             {
-                infoList[i].tlasWrite = VkWriteDescriptorSetAccelerationStructureKHR
+                item->tlasWrite = VkWriteDescriptorSetAccelerationStructureKHR
                 {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
                     .pNext = nullptr,
                     .accelerationStructureCount = 1,
-                    .pAccelerationStructures = &(infoList[i].tlas)
+                    .pAccelerationStructures = &(item->tlas)
                 };
-                infoList[i].write.pNext = &infoList[i].tlasWrite;
+                item->write.pNext = &item->tlasWrite;
                 break;
             }
         }
-        vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
+        vkUpdateDescriptorSets(dev, 1, &item->write, 0, nullptr);
+        it++;
     }
-    infoList.Free();
+    infoList.Clear();
 
     // Do copies
     if (copies.Size() > 0)
@@ -742,7 +743,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
 /**
 */
 void
-AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding>& bindings, const VkDescriptorSetLayoutBinding& binding)
+AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding, 128, 128>& bindings, const VkDescriptorSetLayoutBinding& binding)
 {
     IndexT index = bindings.FindIndex(binding.binding);
     if (index != InvalidIndex)
@@ -808,7 +809,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayout_PoolSizes>(id);
 
     dev = Vulkan::GetCurrentDevice();
-    Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+    Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding, 128, 128> bindings;
 
     //------------------------------------------------------------------------------
     /**
@@ -1046,7 +1047,6 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 
     if (inputAttachmentSize.descriptorCount > 0)
         poolSizes.Append(inputAttachmentSize);
-
 
     // Create layout
     if (bindings.Size() > 0)

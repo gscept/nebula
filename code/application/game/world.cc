@@ -819,6 +819,12 @@ World::ExecuteAddComponentCommands()
         return (arg1 > arg2) - (arg1 < arg2);
     };
 
+    if (this->addStagedQueue.Size() == 0)
+    {
+        // early out if there are no staged components to add
+        // avoid unnecessary sorting and iterating
+        return;
+    }
     this->addStagedQueue.QuickSortWithFunc(sortFunc);
 
     auto* currentCmd = this->addStagedQueue.Begin();
@@ -853,6 +859,11 @@ World::ExecuteRemoveComponentCommands()
         return (arg1 > arg2) - (arg1 < arg2);
     };
 
+    if (this->removeComponentQueue.Size() == 0)
+    {
+        // early out
+        return;
+    }
     this->removeComponentQueue.QuickSortWithFunc(sortFunc);
 
     auto* currentCmd = this->removeComponentQueue.Begin();

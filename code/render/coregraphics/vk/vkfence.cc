@@ -111,7 +111,7 @@ FenceWaitAndReset(const FenceId id, const uint64_t time)
         res = vkResetFences(dev, 1, &fence);
         n_assert(res == VK_SUCCESS);
     }
-    return res == VK_SUCCESS || res == VK_TIMEOUT;
+    return res == VK_SUCCESS;
 }
 
 } // namespace CoreGraphics

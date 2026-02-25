@@ -105,13 +105,18 @@ void
 SSAOContext::Setup()
 {
     using namespace CoreGraphics;
+
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_Depth());
     CoreGraphics::TextureCreateInfo tinfo;
     tinfo.name = "HBAO-Internal0"_atm;
     tinfo.tag = "system"_atm;
     tinfo.type = Texture2D;
     tinfo.format = PixelFormat::R16G16F;
-    tinfo.windowRelative = true;
     tinfo.usage = TextureUsage::ReadWrite;
+    tinfo.width = dims.width;
+    tinfo.height = dims.height;
+    tinfo.clear = true;
+    tinfo.clearColorF4 = Math::float4{ 0, 0, 0, 0 };
 
     ssaoState.internalTargets[0] = CreateTexture(tinfo);
     tinfo.name = "HBAO-Internal1";
@@ -315,8 +320,25 @@ void
 SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
 {
     using namespace CoreGraphics;
-    TextureWindowResized(ssaoState.internalTargets[0]);
-    TextureWindowResized(ssaoState.internalTargets[1]);
+
+    CoreGraphics::DestroyTexture(ssaoState.internalTargets[0]);
+    CoreGraphics::DestroyTexture(ssaoState.internalTargets[1]);
+
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_Depth());
+    CoreGraphics::TextureCreateInfo tinfo;
+    tinfo.name = "HBAO-Internal0"_atm;
+    tinfo.tag = "system"_atm;
+    tinfo.type = Texture2D;
+    tinfo.format = PixelFormat::R16G16F;
+    tinfo.usage = TextureUsage::ReadWrite;
+    tinfo.width = dims.width;
+    tinfo.height = dims.height;
+    tinfo.clear = true;
+    tinfo.clearColorF4 = Math::float4{ 0, 0, 0, 0 };
+
+    ssaoState.internalTargets[0] = CreateTexture(tinfo);
+    tinfo.name = "HBAO-Internal1";
+    ssaoState.internalTargets[1] = CreateTexture(tinfo);
 
     FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
     FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));

@@ -654,7 +654,7 @@ inline void
 PinnedArray<MAX_ALLOCS, TYPE>::Fit()
 {
     // The start offset of the memory has to be aligned to the page size
-    SizeT numUsedBytes = Math::align(this->count * sizeof(TYPE), System::PageSize);
+    SizeT numUsedBytes = Memory::align(this->count * sizeof(TYPE), System::PageSize);
     SizeT numNeededPages = numUsedBytes / System::PageSize;
     SizeT numUsedPages = this->capacity * sizeof(TYPE) / System::PageSize;
     SizeT numFreeablePages = numUsedPages - numNeededPages;
@@ -706,7 +706,7 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
     if (this->elements == nullptr)
     {
         SizeT pageSize = System::PageSize;
-        SizeT reservationSize = Math::align(MAX_ALLOCS * sizeof(TYPE), pageSize);
+        SizeT reservationSize = Memory::align(MAX_ALLOCS * sizeof(TYPE), pageSize);
         this->elements = (TYPE*)Memory::AllocVirtual(reservationSize);
     }
 
@@ -716,7 +716,7 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
     SizeT totalByteSize = newCapacity * sizeof(TYPE);
 
     // Rounded up to the page size so we don't waste memory we allocate anyways
-    SizeT totalBytesNeeded = Math::align(totalByteSize, pageSize);
+    SizeT totalBytesNeeded = Memory::align(totalByteSize, pageSize);
 
 #if NEBULA_DEBUG
     if (totalBytesNeeded > MAX_ALLOCS * sizeof(TYPE))
@@ -725,11 +725,11 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
     }
 #endif
     SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
-    SizeT offset = Math::align(this->capacity * sizeof(TYPE), pageSize);
+    SizeT offset = Memory::align(this->capacity * sizeof(TYPE), pageSize);
     if (totalBytesNeeded > offset)
     {
         // The amount of bytes we need to commit is the difference between the new and the old capacity
-        SizeT commitSize = Math::align((roundedUpNewCapacity - this->capacity) * sizeof(TYPE), pageSize);
+        SizeT commitSize = Memory::align((roundedUpNewCapacity - this->capacity) * sizeof(TYPE), pageSize);
         this->capacity = roundedUpNewCapacity;
         
         Memory::CommitVirtual(((byte*)this->elements) + offset, commitSize);

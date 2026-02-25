@@ -72,9 +72,9 @@ VisibilityTest::Run()
     CoreGraphics::WindowCreateInfo wndInfo =
     {
         CoreGraphics::DisplayMode{ 100, 100, 1024, 768 },
-        "Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
+        "Render test!", "", CoreGraphics::AntiAliasQuality::None, nullptr, true, true, false
     };
-    CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
+    CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
     Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
     Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);

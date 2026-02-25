@@ -50,40 +50,6 @@ void
 Toolbar::Run(SaveMode save)
 {
     const ImVec2 buttonSize = {32,32};
-
-    if (ImGui::Button("Save")) 
-    {
-        static Util::String localpath = IO::URI("proj:").LocalPath();
-        Util::String path;
-        if (IO::FileDialog::SaveFile("Select Nebula Level", localpath, { "*.json" }, path))
-            Editor::SaveEntities(path.AsCharPtr());
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Load"))
-    {
-        static Util::String localpath = IO::URI("proj:").LocalPath();
-        Util::String path;
-        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, {"*.json"}, path))
-        {
-            Ptr<Editor::EntityLoader> loader = Editor::EntityLoader::Create();
-            loader->SetWorld(Editor::state.editorWorld);
-            Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-            reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
-            if (reader->Open())
-            {
-                loader->LoadJsonLevel(reader);
-            }
-            reader->Close();
-        }
-    }
-
-    IMGUI_VERTICAL_SEPARATOR;
-
-    if (ImGui::Button("Undo")) { Edit::CommandManager::Undo(); }
-    ImGui::SameLine();
-    if (ImGui::Button("Redo")) { Edit::CommandManager::Redo(); }
-    
-    IMGUI_VERTICAL_SEPARATOR;
     
     static const char* selected = "Empty";
     ImGui::PushItemWidth(300);

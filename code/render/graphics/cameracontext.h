@@ -50,9 +50,6 @@ public:
     /// get settings
     static const CameraSettings& GetSettings(const Graphics::GraphicsEntityId id);
 
-    /// called if the window size has changed
-    static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
-
     /// get the LOD camera
     static Graphics::GraphicsEntityId GetLODCamera();
     /// set the LOD camera

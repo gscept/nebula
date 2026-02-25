@@ -1933,7 +1933,7 @@ uint
 Upload(TerrainContext::TerrainInstanceInfo& instance, T* data, uint size, uint alignment)
 {
     uint& offset = instance.indirectionUploadOffsets[CoreGraphics::GetBufferedFrameIndex()];
-    uint uploadOffset = Math::align(offset, alignment);
+    uint uploadOffset = Memory::align(offset, alignment);
     CoreGraphics::BufferUpdateArray(instance.indirectionUploadBuffers.Buffer(), data, size, offset);
     offset = uploadOffset + size * sizeof(T);
     return uploadOffset;

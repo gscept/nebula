@@ -738,7 +738,7 @@ TerrainEditor::Run(SaveMode save)
                     for (int i = 0; i < 4; i++)
                     {
                         ImGui::BeginGroup();
-                        ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+                        ImGui::PushFont(Dynui::ImguiBoldFont);
                         ImGui::Text(labels[i]);
                         ImGui::PopFont();
                         for (int j = 0; j < 3; j++)

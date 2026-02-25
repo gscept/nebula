@@ -9,6 +9,8 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/config.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/commandbuffer.h"
+#include "coregraphics/texture.h"
 #include "ids/idallocator.h"
 
 namespace CoreGraphics
@@ -22,6 +24,7 @@ struct SwapchainCreateInfo
     bool vsync;
     GLFWwindow* window;
     CoreGraphics::QueueType preferredQueue = CoreGraphics::GraphicsQueueType;
+    CoreGraphics::SwapchainId oldSwapchain = CoreGraphics::InvalidSwapchainId;
 };
 
 /// Create swapchain
@@ -39,5 +42,9 @@ CoreGraphics::CmdBufferId SwapchainAllocateCmds(const SwapchainId id);
 void SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId source);
 /// Present
 void SwapchainPresent(const SwapchainId id);
+/// Get present semaphore for the current backbuffer
+CoreGraphics::SemaphoreId SwapchainGetCurrentDisplaySemaphore(const SwapchainId id);
+/// Get the present fence for the current backbuffer
+CoreGraphics::SemaphoreId SwapchainGetCurrentPresentSemaphore(const SwapchainId id);
 
 } // namespace CoreGraphics

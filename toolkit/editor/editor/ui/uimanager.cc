@@ -22,6 +22,7 @@
 #include "windows/settings.h"
 #include "windows/profiler.h"
 #include "windows/terraineditor/terraineditor.h"
+#include "windows/createobjectwindow.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
@@ -31,6 +32,7 @@
 #include "window.h"
 #include "editor/tools/selectioncontext.h"
 #include "editor/cmds.h"
+#include "coregraphics/swapchain.h"
 
 #include "frame/default.h"
 #include "frame/editorframe.h"
@@ -112,18 +114,23 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
+    windowServer->RegisterWindow("Presentation::CreateObjectWindow", "Create Object", "Editor");
 
-    UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
-    UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");
-    UI::Icons::stop          = NLoadIcon("systex:icon_stop.dds");
-    UI::Icons::environment   = NLoadIcon("systex:icon_environment.dds");
-    UI::Icons::game          = NLoadIcon("systex:icon_game.dds");
-    UI::Icons::light         = NLoadIcon("systex:icon_light.dds");
+    UI::Icons::play          = NLoadIcon("tex:editor/icon_play.dds");
+    UI::Icons::pause         = NLoadIcon("tex:editor/icon_pause.dds");
+    UI::Icons::stop          = NLoadIcon("tex:editor/icon_stop.dds");
+    UI::Icons::environment   = NLoadIcon("tex:editor/icon_environment.dds");
+    UI::Icons::game          = NLoadIcon("tex:editor/icon_game.dds");
+    UI::Icons::light         = NLoadIcon("tex:editor/icon_light.dds");
     
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
+    windowServer->RegisterCommand([]() { Editor::PlayGame(); }, "Play", "Ctrl+P", "Game");
+    windowServer->RegisterCommand([]() { Editor::PauseGame(); }, "Pause", "Ctrl+Shift+P", "Game");
+    windowServer->RegisterCommand([]() { Editor::StopGame(); }, "Stop", "Ctrl+S", "Game");
+    windowServer->RegisterCommand([]() { Presentation::WindowServer::Instance()->GetWindow("Create Object")->Open() = true; }, "Create Object", "Ctrl+C", "Create");
     
     windowServer->RegisterCommand([]()
     {
@@ -164,18 +171,50 @@ UIManager::OnActivate()
     {
         FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
-        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
-        Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
-        FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
 
-        Graphics::GraphicsServer::SwapInfo swapInfo;
-        swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-    	{
+        const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+        for (const auto& window : windows)
+        {
+            CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+            CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(window);
+
+            CoreGraphics::UpdatingWindow = window;
+
+            Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
+            N_MARKER_BEGIN(RenderUI, Editor)
+            FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
+            N_MARKER_END()
+
+            CoreGraphics::SwapchainSwap(swapchain);
+            CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+            // Allocate command buffer to run swap
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            beginInfo.submitOnce = true;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
             FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-        };
-        swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;
-        swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
-        Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo);
+            CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_editorframe::Export_EditorBuffer.tex);
+
+            CoreGraphics::CmdEndMarker(cmdBuf);
+            CoreGraphics::CmdFinishQueries(cmdBuf);
+            CoreGraphics::CmdEndRecord(cmdBuf);
+            auto submission = CoreGraphics::SubmitCommandBuffers(
+                { cmdBuf }
+                , queue
+                , { FrameScript_editorframe::Submission_EditorUI }
+    #if NEBULA_GRAPHICS_DEBUG
+                , "Swap"
+    #endif
+
+            );
+            CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
+
+        }
     });
     IO::URI userEditorIni = IO::URI(editorUIPath);
     Util::String path = userEditorIni.LocalPath();

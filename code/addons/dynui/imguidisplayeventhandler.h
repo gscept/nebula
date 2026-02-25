@@ -1,21 +1,21 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class GLFW::GLFWGraphicsDisplayEventHandler
-  
-    Handles DisplayEvents that are relevant for the graphics system
-        
+    @class Dynui::ImguiDisplayEventHandler
+
+    Handles display events such that ImGui is made aware of them
+
     @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
-*/    
+*/
 #include "coregraphics/displayeventhandler.h"
 
 //------------------------------------------------------------------------------
-namespace GLFW
+namespace Dynui
 {
-class GLFWGraphicsDisplayEventHandler : public CoreGraphics::DisplayEventHandler
+class ImguiDisplayEventHandler : public CoreGraphics::DisplayEventHandler
 {
-    __DeclareClass(GLFWGraphicsDisplayEventHandler);
+    __DeclareClass(ImguiDisplayEventHandler);
 public:
     /// called when an event happens
     virtual bool HandleEvent(const CoreGraphics::DisplayEvent& event);

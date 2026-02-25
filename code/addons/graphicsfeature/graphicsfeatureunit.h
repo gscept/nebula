@@ -82,7 +82,7 @@ private:
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
-    CoreGraphics::WindowId wnd;
+    CoreGraphics::WindowId mainWindow;
 
     Ptr<Game::Manager> graphicsManager;
     Ptr<Game::Manager> cameraManager;
@@ -109,9 +109,9 @@ inline void
 GraphicsFeatureUnit::SetWindowTitle(const Util::StringAtom& title)
 {
     this->title = title;
-    if (this->wnd != CoreGraphics::InvalidWindowId)
+    if (this->mainWindow != CoreGraphics::InvalidWindowId)
     {
-        CoreGraphics::WindowSetTitle(this->wnd, title.AsString());
+        CoreGraphics::WindowSetTitle(this->mainWindow, title.AsString());
     }
 }
 

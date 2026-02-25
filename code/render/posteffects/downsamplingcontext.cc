@@ -187,6 +187,7 @@ DownsamplingContext::Setup()
     uint dispatchX = DispatchSize(dims.width);
     uint dispatchY = DispatchSize(dims.height);
 
+    // This should not be the entire buffer, but instead update per-frame to account for the actual viewport being used
     DownsampleCsLight::DownsampleUniforms::STRUCT constants;
     constants.Mips = mips - 1;
     constants.NumGroups = dispatchX * dispatchY;

@@ -28,7 +28,9 @@ typedef Ids::IdAllocator<
 > VkSemaphoreAllocator;
 extern VkSemaphoreAllocator semaphoreAllocator;
 
-/// get vulkan sampler
+/// Get vulkan semaphore
 VkSemaphore SemaphoreGetVk(const CoreGraphics::SemaphoreId& id);
+/// Get vulkan device
+VkDevice SemaphoreGetVkDevice(const CoreGraphics::SemaphoreId& id);
 
 } // namespace Vulkan

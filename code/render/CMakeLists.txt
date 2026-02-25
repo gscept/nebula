@@ -435,6 +435,8 @@ ENDIF()
 				globalconstants.h
                 graphicscontext.cc
                 graphicscontext.h
+                graphicsdisplayeventhandler.cc
+                graphicsdisplayeventhandler.h
                 graphicsentity.h
                 graphicsserver.cc
                 graphicsserver.h
@@ -443,16 +445,11 @@ ENDIF()
                 view.cc
                 view.h
             )
-        fips_dir(graphics/glfw)
-                fips_files(
-                    glfwgraphicsdisplayeventhandler.h
-                    glfwgraphicsdisplayeventhandler.cc
-                )
 
-        fips_dir(input/glfw GROUP "input/glfw")
+        fips_dir(input GROUP "input")
             fips_files(
-                glfwinputdisplayeventhandler.cc
-                glfwinputdisplayeventhandler.h
+                inputdisplayeventhandler.cc
+                inputdisplayeventhandler.h
             )
 
     fips_dir(lighting)

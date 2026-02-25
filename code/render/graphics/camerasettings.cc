@@ -18,7 +18,7 @@ using namespace CoreGraphics;
 */
 CameraSettings::CameraSettings()
 {
-    DisplayMode mode = WindowGetDisplayMode(CoreGraphics::CurrentWindow);
+    DisplayMode mode = WindowGetDisplayMode(CoreGraphics::MainWindow);
     this->SetupPerspectiveFov(Math::deg2rad(60.0f), mode.GetHeight() / (float)mode.GetWidth(), 0.1f, 2500.0f);
 }
 
