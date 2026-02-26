@@ -742,6 +742,7 @@ DeleteTexture(const TextureId id)
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
     if (runtimeInfo.bind != 0xFFFFFFFF)
         Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+    runtimeInfo.bind = 0xFFFFFFFF;
     CoreGraphics::DelayedDeleteTexture(id);
     runtimeInfo.view = VK_NULL_HANDLE;
     loadInfo.img = VK_NULL_HANDLE;
