@@ -596,7 +596,7 @@ void GraphicsServer::RunPostLogic()
     }
 
     // Consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(true);
+    //CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -671,7 +671,7 @@ GraphicsServer::NewFrame()
     CoreGraphics::NewFrame();
 
     // Consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(false);
+    //CoreGraphics::ResourceTableBlock(false);
 }
 
 } // namespace Graphics
