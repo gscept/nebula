@@ -122,10 +122,10 @@ struct GraphicsContextFunctionBundle
     void(*OnDiscardView)(const Ptr<Graphics::View>& view);
     void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
-    void(*OnWindowResized)(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    void(*OnViewportResized)(const uint framescriptHash, SizeT width, SizeT height);
 
     GraphicsContextFunctionBundle() : OnRenderDebug(nullptr), OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), 
-        OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr)
+        OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnViewportResized(nullptr)
     {
     };
 };

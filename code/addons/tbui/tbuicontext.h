@@ -73,7 +73,7 @@ private:
     static void Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex );
 
     /// called if the window size has changed
-    static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);
 
     static TBUIRenderer* renderer;
     static TBUIFileInterface fileInterface;

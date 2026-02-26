@@ -201,7 +201,6 @@ GraphicsFeatureUnit::OnActivate()
     });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
         Graphics::SetupBufferConstants();
-        FrameScript_shadows::SetupPipelines();
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);

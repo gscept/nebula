@@ -289,6 +289,9 @@ void FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations);
 /// Queue uploads to flush and free at immediate submit
 void EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocations);
 
+/// Invoke a flush of all graphics pipelines
+void InvalidateGraphicsPipelineCache();
+
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 

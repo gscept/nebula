@@ -68,7 +68,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ClusterContext::OnRenderDebug;
 #endif
-    __bundle.OnWindowResized = ClusterContext::WindowResized;
+    __bundle.OnViewportResized = ClusterContext::Resize;
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -79,19 +79,19 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.window = window;
     state.zNear = ZNear;
     state.zFar = ZFar;
-    CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(state.window);
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
 
-    state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), ClusterSubdivsX);
-    state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), ClusterSubdivsY);
+    state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterSubdivsX);
+    state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterSubdivsY);
     state.clusterDimensions[2] = ClusterSubdivsZ;
 
     state.zDistribution = ZFar / ZNear;
     state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
     state.zInvBias = -(float(state.clusterDimensions[2]) * Math::log2(ZNear) / Math::log2(state.zDistribution));
-    state.xResolution = displayMode.GetWidth();
-    state.yResolution = displayMode.GetHeight();
-    state.invXResolution = 1.0f / displayMode.GetWidth();
-    state.invYResolution = 1.0f / displayMode.GetHeight();
+    state.xResolution = dims.width;
+    state.yResolution = dims.height;
+    state.invXResolution = 1.0f / dims.width;
+    state.invYResolution = 1.0f / dims.height;
 
     BufferCreateInfo rwb3Info;
     rwb3Info.name = "ClusterAABBBuffer";
@@ -190,23 +190,23 @@ ClusterContext::OnRenderDebug(uint32_t flags)
 /**
 */
 void
-ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
+ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
-    if (id == state.window)
+    if (framescriptHash == FrameScript_default::ID)
     {
-        CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(id);
+        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
 
-        state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), ClusterSubdivsX);
-        state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), ClusterSubdivsY);
+        state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterSubdivsX);
+        state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterSubdivsY);
         state.clusterDimensions[2] = ClusterSubdivsZ;
 
         state.zDistribution = state.zFar / state.zNear;
         state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
         state.zInvBias = -(float(state.clusterDimensions[2]) * Math::log2(state.zNear) / Math::log2(state.zDistribution));
-        state.xResolution = displayMode.GetWidth();
-        state.yResolution = displayMode.GetHeight();
-        state.invXResolution = 1.0f / displayMode.GetWidth();
-        state.invYResolution = 1.0f / displayMode.GetHeight();
+        state.xResolution = dims.width;
+        state.yResolution = dims.height;
+        state.invXResolution = 1.0f / dims.width;
+        state.invYResolution = 1.0f / dims.height;
 
         CoreGraphics::DestroyBuffer(state.clusterBuffer);
 
@@ -220,12 +220,13 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         state.clusterBuffer = CreateBuffer(rwb3Info);
         FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
 
-
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
             CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+            ResourceTableSetRWBuffer(
+                frameResourceTable, {state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0}
+            );
             ResourceTableCommitChanges(frameResourceTable);
         }
     }

@@ -38,7 +38,7 @@ public:
     static void UpdateConstants();
 
     /// Handle window resize
-    static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 
 private:
 

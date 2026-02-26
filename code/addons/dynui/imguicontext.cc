@@ -412,7 +412,7 @@ ImguiContext::Create()
 {
     ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0", "Global UI opacity (0..1)");
 
-    __bundle.OnWindowResized = ImguiContext::OnWindowResized;
+    __bundle.OnViewportResized = ImguiContext::OnViewportResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     state.dockOverViewport = false;
@@ -1102,7 +1102,7 @@ ImguiContext::ResetKeyDownState()
 /**
 */
 void
-ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+ImguiContext::OnViewportResized(const uint framescriptHash, SizeT width, SizeT height)
 {
 
 }

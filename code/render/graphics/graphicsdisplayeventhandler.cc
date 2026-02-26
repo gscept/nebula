@@ -48,11 +48,11 @@ GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         case DisplayEvent::WindowResized:
         {
             // Run all contexts resize calls
-            if (graphicsServer->OnWindowResized(displayEvent.GetWindowId()))
-            {
-                // Invalidate pipelines because passes have changed
-                pipelineDatabase->RecreatePipelines();
-            }
+            //if (graphicsServer->OnWindowResized(displayEvent.GetWindowId()))
+            //{
+            //    // Invalidate pipelines because passes have changed
+            //    pipelineDatabase->RecreatePipelines();
+            //}
 
             return true;
         }

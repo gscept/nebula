@@ -77,7 +77,7 @@ SSAOContext::Create()
 {
     __CreatePluginContext();
 
-    __bundle.OnWindowResized = SSAOContext::WindowResized;
+    __bundle.OnViewportResized = SSAOContext::Resize;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
@@ -317,48 +317,67 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
 /**
 */
 void
-SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
+SSAOContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
-    using namespace CoreGraphics;
-
-    CoreGraphics::DestroyTexture(ssaoState.internalTargets[0]);
-    CoreGraphics::DestroyTexture(ssaoState.internalTargets[1]);
-
-    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_Depth());
-    CoreGraphics::TextureCreateInfo tinfo;
-    tinfo.name = "HBAO-Internal0"_atm;
-    tinfo.tag = "system"_atm;
-    tinfo.type = Texture2D;
-    tinfo.format = PixelFormat::R16G16F;
-    tinfo.usage = TextureUsage::ReadWrite;
-    tinfo.width = dims.width;
-    tinfo.height = dims.height;
-    tinfo.clear = true;
-    tinfo.clearColorF4 = Math::float4{ 0, 0, 0, 0 };
-
-    ssaoState.internalTargets[0] = CreateTexture(tinfo);
-    tinfo.name = "HBAO-Internal1";
-    ssaoState.internalTargets[1] = CreateTexture(tinfo);
-
-    FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
-    FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
-
-    IndexT i;
-    for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
+    if (framescriptHash == FrameScript_default::ID)
     {
-        // setup hbao table
-        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[0], HbaoCs::HBAO0::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[1], HbaoCs::HBAO1::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.hbaoTable[i]);
+        using namespace CoreGraphics;
 
-        // setup blur table
-        ResourceTableSetTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[1], HbaoblurCs::HBAOX::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[0], HbaoblurCs::HBAORG::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.blurTableX[i]);
+        CoreGraphics::DestroyTexture(ssaoState.internalTargets[0]);
+        CoreGraphics::DestroyTexture(ssaoState.internalTargets[1]);
 
-        ResourceTableSetTexture(ssaoState.blurTableY[i], { ssaoState.internalTargets[0], HbaoblurCs::HBAOY::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.blurTableY[i], { FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::HBAOR::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.blurTableY[i]);
+        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_Depth());
+        CoreGraphics::TextureCreateInfo tinfo;
+        tinfo.name = "HBAO-Internal0"_atm;
+        tinfo.tag = "system"_atm;
+        tinfo.type = Texture2D;
+        tinfo.format = PixelFormat::R16G16F;
+        tinfo.usage = TextureUsage::ReadWrite;
+        tinfo.width = dims.width;
+        tinfo.height = dims.height;
+        tinfo.clear = true;
+        tinfo.clearColorF4 = Math::float4 {0, 0, 0, 0};
+
+        ssaoState.internalTargets[0] = CreateTexture(tinfo);
+        tinfo.name = "HBAO-Internal1";
+        ssaoState.internalTargets[1] = CreateTexture(tinfo);
+
+        FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
+        FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
+
+        IndexT i;
+        for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
+        {
+            // setup hbao table
+            ResourceTableSetRWTexture(
+                ssaoState.hbaoTable[i], {ssaoState.internalTargets[0], HbaoCs::HBAO0::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetRWTexture(
+                ssaoState.hbaoTable[i], {ssaoState.internalTargets[1], HbaoCs::HBAO1::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableCommitChanges(ssaoState.hbaoTable[i]);
+
+            // setup blur table
+            ResourceTableSetTexture(
+                ssaoState.blurTableX[i],
+                {ssaoState.internalTargets[1], HbaoblurCs::HBAOX::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetRWTexture(
+                ssaoState.blurTableX[i],
+                {ssaoState.internalTargets[0], HbaoblurCs::HBAORG::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableCommitChanges(ssaoState.blurTableX[i]);
+
+            ResourceTableSetTexture(
+                ssaoState.blurTableY[i],
+                {ssaoState.internalTargets[0], HbaoblurCs::HBAOY::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetRWTexture(
+                ssaoState.blurTableY[i],
+                {FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::HBAOR::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableCommitChanges(ssaoState.blurTableY[i]);
+        }
     }
 }
 

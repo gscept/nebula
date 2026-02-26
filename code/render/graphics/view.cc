@@ -81,15 +81,16 @@ View::UpdateConstants()
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
     // run the actual script
     if (this->func != nullptr)
     {
         N_SCOPE(ViewExecute, Graphics);
-        this->func(this->viewport, frameIndex, bufferIndex);
+        return this->func(this->viewport, frameIndex, bufferIndex);
     }
+    return false;
 }
 
 

@@ -192,7 +192,7 @@ TBUIContext::Create()
     }
 
     n_assert(FrameSync::FrameSyncTimer::HasInstance());
-    __bundle.OnWindowResized = TBUIContext::OnWindowResized;
+    __bundle.OnViewportResized = TBUIContext::OnViewportResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     if (!tb::tb_core_is_initialized())
     {
@@ -377,7 +377,7 @@ TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
 /**
 */
 void
-TBUIContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+TBUIContext::OnViewportResized(const uint framescriptHash, SizeT width, SizeT height)
 {
     for (auto& view : views)
     {

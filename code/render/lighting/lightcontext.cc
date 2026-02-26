@@ -127,7 +127,7 @@ LightContext::Create()
     Core::CVarCreate(Core::CVarType::CVar_Int, "r_shadow_debug", "0", "Show shadowmap framescript inspector [0,1]");
 #endif
 
-    __bundle.OnWindowResized = LightContext::WindowResized;
+    __bundle.OnViewportResized = LightContext::Resize;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = LightContext::OnRenderDebug;
 #endif
@@ -1303,23 +1303,48 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 /**
 */
 void
-LightContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+LightContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
-    // If window has resized, we need to update the resource table
-    ResourceTableSetRWTexture(clusterState.resourceTable, { FrameScript_default::Texture_LightBuffer(), LightsCluster::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    if (framescriptHash == FrameScript_default::ID)
+    {
+        // If window has resized, we need to update the resource table
+        ResourceTableSetRWTexture(
+            clusterState.resourceTable,
+            {FrameScript_default::Texture_LightBuffer(), LightsCluster::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId}
+        );
 
 #ifdef CLUSTERED_LIGHTING_DEBUG
-    ResourceTableSetRWTexture(clusterState.resourceTable, { FrameScript_default::Texture_LightDebugBuffer(), LightsCluster::DebugOutput::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(
+            clusterState.resourceTable,
+            {FrameScript_default::Texture_LightDebugBuffer(),
+             LightsCluster::DebugOutput::BINDING,
+             0,
+             CoreGraphics::InvalidSamplerId}
+        );
 #endif
-    ResourceTableCommitChanges(clusterState.resourceTable);
+        ResourceTableCommitChanges(clusterState.resourceTable);
 
-    for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
-    {
-        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(combineState.resourceTables[i]);
+        for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
+        {
+            ResourceTableSetRWTexture(
+                combineState.resourceTables[i],
+                {FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetTexture(
+                combineState.resourceTables[i],
+                {FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetTexture(
+                combineState.resourceTables[i],
+                {FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId}
+            );
+            ResourceTableSetTexture(
+                combineState.resourceTables[i],
+                {FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId
+                }
+            );
+            ResourceTableCommitChanges(combineState.resourceTables[i]);
+        }
     }
 }
 

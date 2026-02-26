@@ -312,13 +312,6 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
         if (this->resizeCall != nullptr)
             this->resizeCall(this->maxWindowWidth, this->maxWindowHeight);
 
-        for (IndexT i = 0; i < this->contexts.Size(); ++i)
-        {
-            if (this->contexts[i]->OnWindowResized != nullptr)
-            {
-                this->contexts[i]->OnWindowResized(wndId.id, this->maxWindowWidth, this->maxWindowHeight);
-            }
-        }
         ret = true;
     }
 
@@ -420,7 +413,7 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
+GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
     Ptr<View> view = View::Create();
@@ -624,7 +617,25 @@ GraphicsServer::Render()
             continue;
 
         this->currentView = view;
-        view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
+        if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
+        {
+            Math::rectangle<int> viewport = view->GetViewport();
+
+            // First, call the resize callback to trigger an update of the frame scripts
+            if (this->resizeCall != nullptr)
+            {
+                this->resizeCall(viewport.width(), viewport.height());
+            }
+            for (IndexT i = 0; i < this->contexts.Size(); ++i)
+            {
+                if (this->contexts[i]->OnViewportResized != nullptr)
+                {
+                    this->contexts[i]->OnViewportResized(FrameScript_default::ID, viewport.width(), viewport.height());
+                }
+            }
+
+            CoreGraphics::InvalidateGraphicsPipelineCache();
+        }
         this->currentView = nullptr;
     }
 
