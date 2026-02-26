@@ -30,11 +30,11 @@ public:
 
     /// Update constants
     void UpdateConstants();
-    /// render through view
-    void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+    /// render through view, returns true if framescript needs resizing
+    bool Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
     /// Set run function
-    void SetFrameScript(void(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
+    void SetFrameScript(bool(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
     /// Set viewport
     void SetViewport(const Math::rectangle<int>& rect);
     /// Get viewport
@@ -62,7 +62,7 @@ private:
     friend class GraphicsServer;
 
     Math::rectangle<int> viewport;
-    void (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
+    bool (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
     GraphicsEntityId camera;
     Ptr<Stage> stage;
     bool enabled;
@@ -135,7 +135,7 @@ View::Disable()
 /**
 */
 inline void
-View::SetFrameScript(void(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex))
+View::SetFrameScript(bool(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex))
 {
     this->func = func;
 }

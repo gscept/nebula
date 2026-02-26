@@ -154,75 +154,82 @@ BloomContext::Setup()
 /**
 */
 void
-BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+BloomContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
-    using namespace CoreGraphics;
-    TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
-
-    for (auto& view : bloomState.lightBufferViews)
+    if (framescriptHash == FrameScript_default::ID)
     {
-        DestroyTextureView(view);
-    }
-    bloomState.lightBufferViews.Clear();
+        using namespace CoreGraphics;
+        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
 
-    for (auto& view : bloomState.intermediateBloomBufferViews)
-    {
-        DestroyTextureView(view);
-    }
-    bloomState.intermediateBloomBufferViews.Clear();
-    DestroyTexture(bloomState.intermediateBloomTexture);
+        for (auto& view : bloomState.lightBufferViews)
+        {
+            DestroyTextureView(view);
+        }
+        bloomState.lightBufferViews.Clear();
 
-    uint mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
+        for (auto& view : bloomState.intermediateBloomBufferViews)
+        {
+            DestroyTextureView(view);
+        }
+        bloomState.intermediateBloomBufferViews.Clear();
+        DestroyTexture(bloomState.intermediateBloomTexture);
 
-    bloomState.lightBufferViews.Resize(mips);
-    for (IndexT i = 0; i < mips; i++)
-    {
-        TextureViewCreateInfo inf;
-        inf.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
-        inf.startMip = i;
-        inf.numMips = 1;
-        inf.tex = FrameScript_default::Texture_LightBuffer();
-        bloomState.lightBufferViews[i] = CreateTextureView(inf);
-    }
+        uint mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
 
-    CoreGraphics::TextureCreateInfo intermediateTextureInfo;
-    intermediateTextureInfo.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
-    intermediateTextureInfo.width = dims.width;
-    intermediateTextureInfo.height = dims.height;
-    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
-    intermediateTextureInfo.mips = CoreGraphics::TextureAutoMips;
-    bloomState.intermediateBloomTexture = CoreGraphics::CreateTexture(intermediateTextureInfo);
-    bloomState.intermediateBloomBufferViews.Resize(mips);
-    for (IndexT i = 0; i < mips; i++)
-    {
-        TextureViewCreateInfo inf;
-        inf.format = intermediateTextureInfo.format;
-        inf.startMip = i;
-        inf.numMips = 1;
-        inf.tex = bloomState.intermediateBloomTexture;
-        bloomState.intermediateBloomBufferViews[i] = CreateTextureView(inf);
-    }
+        bloomState.lightBufferViews.Resize(mips);
+        for (IndexT i = 0; i < mips; i++)
+        {
+            TextureViewCreateInfo inf;
+            inf.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
+            inf.startMip = i;
+            inf.numMips = 1;
+            inf.tex = FrameScript_default::Texture_LightBuffer();
+            bloomState.lightBufferViews[i] = CreateTextureView(inf);
+        }
 
-    Bloom::BloomUniforms::STRUCT uniforms;
-    uniforms.Mips = mips;
-    for (IndexT i = 0; i < mips; i++)
-    {
-        uniforms.Resolutions[i][0] = dims.width >> i;
-        uniforms.Resolutions[i][1] = dims.height >> i;
-        uniforms.Resolutions[i][2] = 1.0f / (dims.width >> i);
-        uniforms.Resolutions[i][3] = 1.0f / (dims.height >> i);
-    }
-    BufferUpdate(bloomState.constants, uniforms);
+        CoreGraphics::TextureCreateInfo intermediateTextureInfo;
+        intermediateTextureInfo.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
+        intermediateTextureInfo.width = dims.width;
+        intermediateTextureInfo.height = dims.height;
+        intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+        intermediateTextureInfo.mips = CoreGraphics::TextureAutoMips;
+        bloomState.intermediateBloomTexture = CoreGraphics::CreateTexture(intermediateTextureInfo);
+        bloomState.intermediateBloomBufferViews.Resize(mips);
+        for (IndexT i = 0; i < mips; i++)
+        {
+            TextureViewCreateInfo inf;
+            inf.format = intermediateTextureInfo.format;
+            inf.startMip = i;
+            inf.numMips = 1;
+            inf.tex = bloomState.intermediateBloomTexture;
+            bloomState.intermediateBloomBufferViews[i] = CreateTextureView(inf);
+        }
 
-    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
-    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
-    for (IndexT i = 0; i < mips; i++)
-    {
-        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
+        Bloom::BloomUniforms::STRUCT uniforms;
+        uniforms.Mips = mips;
+        for (IndexT i = 0; i < mips; i++)
+        {
+            uniforms.Resolutions[i][0] = dims.width >> i;
+            uniforms.Resolutions[i][1] = dims.height >> i;
+            uniforms.Resolutions[i][2] = 1.0f / (dims.width >> i);
+            uniforms.Resolutions[i][3] = 1.0f / (dims.height >> i);
+        }
+        BufferUpdate(bloomState.constants, uniforms);
+
+        ResourceTableSetTexture(bloomState.resourceTable, {FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING});
+        ResourceTableSetRWTexture(
+            bloomState.resourceTable, {FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING}
+        );
+        for (IndexT i = 0; i < mips; i++)
+        {
+            ResourceTableSetRWTexture(
+                bloomState.resourceTable, {bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i}
+            );
+        }
+        ResourceTableSetTexture(bloomState.resourceTable, {bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING});
+        ResourceTableSetConstantBuffer(bloomState.resourceTable, {bloomState.constants, Bloom::BloomUniforms::BINDING});
+        ResourceTableCommitChanges(bloomState.resourceTable);
     }
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::BloomUniforms::BINDING });
-    ResourceTableCommitChanges(bloomState.resourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -232,7 +239,7 @@ void
 BloomContext::Create()
 {
     __CreatePluginContext();
-    __bundle.OnWindowResized = BloomContext::WindowResized;
+    __bundle.OnViewportResized = BloomContext::Resize;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;

@@ -2439,6 +2439,15 @@ EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocatio
 /**
 */
 void
+InvalidateGraphicsPipelineCache()
+{
+    state.database.RecreatePipelines();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64_t* data, const uint64_t& offset)
 {
     const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;

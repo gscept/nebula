@@ -14,6 +14,13 @@ import genutil as util
 import IDLC
 import IDLC.filewriter
 
+def fnv1a(s: str) -> int:
+    hash_ = 0x811C9DC5  # FNV offset basis
+    for b in s.encode("utf-8"):
+        hash_ ^= b
+        hash_ = (hash_ * 0x01000193) & 0xFFFFFFFF  # 32-bit overflow
+    return hash_
+
 def Error(object, msg):
     print('[Frame Script Compiler] error({}): {}'.format(object, msg))
     sys.exit(-1)
@@ -1256,6 +1263,9 @@ class FrameScriptGenerator:
                         sub = SubmissionDefinition(self, imp)
                         self.submissions.append(sub)
 
+    
+
+
     #------------------------------------------------------------------------------
     ##
     #
@@ -1280,6 +1290,8 @@ class FrameScriptGenerator:
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
         file.WriteLine("")
+
+        file.WriteLine("extern uint ID;")
 
         file.WriteLine("enum class TextureIndex")
         file.WriteLine("{")
@@ -1341,9 +1353,11 @@ class FrameScriptGenerator:
         for submission in self.submissions:
             file.WriteLine("extern CoreGraphics::SubmissionWaitEvent Submission_{};".format(submission.name))
 
+        file.WriteLine("extern int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("extern int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         file.WriteLine("/// Execute FrameScript_{}".format(self.name))
-        file.WriteLine("void Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);")
+        file.WriteLine("bool Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);")
 
         file.WriteLine("}} // namespace FrameScript_{}".format(self.name))
 
@@ -1372,6 +1386,7 @@ class FrameScriptGenerator:
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
+        file.WriteLine("uint ID = {};".format(fnv1a(self.name)))
 
         for submission in self.submissions:
             file.WriteLine("CoreGraphics::SubmissionWaitEvent Submission_{};".format(submission.name))
@@ -1390,6 +1405,8 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::QueueType BufferCurrentQueues[(uint)BufferIndex::Num] = {};")
 
+        file.WriteLine("int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         for extern in self.externs:
             extern.FormatExtern(file, self)
@@ -1503,6 +1520,8 @@ class FrameScriptGenerator:
         file.WriteLine("Initialize(const uint frameWidth, const uint frameHeight)")
         file.WriteLine("{")
         file.IncreaseIndent()
+        file.WriteLine("FrameScript_{}_Width = frameWidth;".format(self.name))
+        file.WriteLine("FrameScript_{}_Height = frameHeight;".format(self.name))
         file.WriteLine("InitializeTextures(frameWidth, frameHeight);")
         file.WriteLine("InitializeSubmissions();")
         file.DecreaseIndent()
@@ -1524,10 +1543,19 @@ class FrameScriptGenerator:
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
-        file.WriteLine("void")
+        file.WriteLine("bool")
         file.WriteLine("Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex)")
         file.WriteLine("{")
         file.IncreaseIndent()
+        file.WriteLine("bool didResize = false;")
+        file.WriteLine("if (viewport.width() > FrameScript_{}_Width || viewport.height() > FrameScript_{}_Height)".format(self.name, self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("Initialize(Math::max(viewport.width(), FrameScript_{}_Width), Math::max(viewport.height(), FrameScript_{}_Height));".format(self.name, self.name))
+        file.WriteLine("InitializePipelines();")
+        file.WriteLine("didResize = true;")
+        file.DecreaseIndent()
+        file.WriteLine("}")
         file.WriteLine("const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
         for submission in self.submissions:
             if submission.lastSubmit:
@@ -1537,6 +1565,7 @@ class FrameScriptGenerator:
 
         for exportTexture in self.exportTextures:
             file.WriteLine("Export_{} = {{ .index = (uint)TextureIndex::{}, .tex = Textures[(uint)TextureIndex::{}], .stage = TextureCurrentStage[(uint)TextureIndex::{}] }};".format(exportTexture.name, exportTexture.name, exportTexture.name, exportTexture.name))
+        file.WriteLine("return didResize;")
         file.DecreaseIndent()
         file.WriteLine("}")
 

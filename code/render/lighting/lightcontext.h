@@ -140,7 +140,7 @@ public:
     /// run framescript when visibility is done
     static void RunFrameScriptJobs(const Graphics::FrameContext& ctx);
     /// React to window resize event
-    static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 #ifndef PUBLIC_BUILD
     /// render debug
     static void OnRenderDebug(uint32_t flags);

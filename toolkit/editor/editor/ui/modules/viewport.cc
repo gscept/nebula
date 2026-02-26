@@ -93,7 +93,7 @@ Viewport::Render()
 {
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("Camera"))
+        if (ImGui::BeginMenu("    Camera    "))
         {
             if (ImGui::MenuItem(
                     "Perspective", (const char*)0, this->camera.GetProjectionMode() == Editor::Camera::ProjectionMode::PERSPECTIVE
@@ -171,7 +171,7 @@ Viewport::Render()
 
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Frame"))
+        if (ImGui::BeginMenu("    Frame    "))
         {
             if (ImGui::MenuItem("Textured + Lit", NULL, this->renderMode == TexturedLit))
             {

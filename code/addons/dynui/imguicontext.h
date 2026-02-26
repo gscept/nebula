@@ -68,7 +68,7 @@ public:
     static void ResetKeyDownState();
 
     /// called if the window size has changed
-    static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);
     /// called before frame
     static void NewFrame(const Graphics::FrameContext& ctx);
 

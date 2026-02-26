@@ -66,7 +66,7 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
+    Ptr<View> CreateView(const Util::StringAtom& name, bool(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// Get view by name

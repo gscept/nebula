@@ -64,7 +64,7 @@ void
 HistogramContext::Create()
 {
     __CreatePluginContext();
-    __bundle.OnWindowResized = HistogramContext::WindowResized;
+    __bundle.OnViewportResized = HistogramContext::Resize;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
@@ -285,19 +285,17 @@ HistogramContext::UpdateConstants()
 /**
 */
 void
-HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+HistogramContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
-    CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
-    CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
+    if (framescriptHash == FrameScript_default::ID)
     {
-        source,
-        HistogramCs::ColorSource::BINDING,
-        0,
-        CoreGraphics::InvalidSamplerId,
-        false,
-        false
-    });
-    CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
+        CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
+        CoreGraphics::ResourceTableSetTexture(
+            histogramState.histogramResourceTable,
+            {source, HistogramCs::ColorSource::BINDING, 0, CoreGraphics::InvalidSamplerId, false, false}
+        );
+        CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
+    }
 }
 
 } // namespace PostEffects
