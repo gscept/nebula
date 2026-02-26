@@ -1341,6 +1341,8 @@ class FrameScriptGenerator:
         for submission in self.submissions:
             file.WriteLine("extern CoreGraphics::SubmissionWaitEvent Submission_{};".format(submission.name))
 
+        file.WriteLine("extern int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("extern int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         file.WriteLine("/// Execute FrameScript_{}".format(self.name))
         file.WriteLine("void Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);")
@@ -1390,6 +1392,8 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::QueueType BufferCurrentQueues[(uint)BufferIndex::Num] = {};")
 
+        file.WriteLine("int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         for extern in self.externs:
             extern.FormatExtern(file, self)
@@ -1503,6 +1507,8 @@ class FrameScriptGenerator:
         file.WriteLine("Initialize(const uint frameWidth, const uint frameHeight)")
         file.WriteLine("{")
         file.IncreaseIndent()
+        file.WriteLine("FrameScript_{}_Width = frameWidth;".format(self.name))
+        file.WriteLine("FrameScript_{}_Height = frameHeight;".format(self.name))
         file.WriteLine("InitializeTextures(frameWidth, frameHeight);")
         file.WriteLine("InitializeSubmissions();")
         file.DecreaseIndent()
@@ -1528,6 +1534,13 @@ class FrameScriptGenerator:
         file.WriteLine("Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex)")
         file.WriteLine("{")
         file.IncreaseIndent()
+        file.WriteLine("if (viewport.width() > FrameScript_{}_Width || viewport.height() > FrameScript_{}_Height)".format(self.name, self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("Initialize(Math::max(viewport.width(), FrameScript_{}_Width), Math::max(viewport.height(), FrameScript_{}_Height));".format(self.name, self.name))
+        file.WriteLine("InitializePipelines();")
+        file.DecreaseIndent()
+        file.WriteLine("}")
         file.WriteLine("const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
         for submission in self.submissions:
             if submission.lastSubmit:

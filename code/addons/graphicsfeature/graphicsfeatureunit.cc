@@ -200,17 +200,8 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
     });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
-        FrameScript_default::Initialize(windowWidth, windowHeight);
         Graphics::SetupBufferConstants();
-        FrameScript_default::SetupPipelines();
         FrameScript_shadows::SetupPipelines();
-#if WITH_NEBULA_EDITOR
-        if (App::GameApplication::IsEditorEnabled())
-        {
-            FrameScript_editorframe::Initialize(windowWidth, windowHeight);
-            FrameScript_editorframe::SetupPipelines();
-        }
-#endif
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
