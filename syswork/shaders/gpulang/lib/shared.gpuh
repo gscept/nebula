@@ -260,7 +260,7 @@ const CLUSTER_GI_VOLUME_BIT = 0x100u;
 
 
 // set a fixed number of cluster entries
-const NUM_CLUSTER_ENTRIES = 16384;
+const NUM_CLUSTER_ENTRIES = 65535;
 
 struct ClusterAABB
 {
