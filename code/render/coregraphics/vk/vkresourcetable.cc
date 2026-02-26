@@ -1052,7 +1052,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     if (bindings.Size() > 0)
     {
         Util::FixedArray<VkDescriptorBindingFlags> flags(bindings.Size());
-        flags.Fill(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+        flags.Fill(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
         VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags =
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
