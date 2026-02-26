@@ -17,9 +17,9 @@
 namespace Clustering
 {
 
-static const SizeT ClusterSubdivsX = 64;
-static const SizeT ClusterSubdivsY = 64;
-static const SizeT ClusterSubdivsZ = 24;
+static const SizeT ClusterBlockSizeX = 64;
+static const SizeT ClusterBlockSizeY = 64;
+static const SizeT ClusterBlockSizeZ = 24;
 
 struct
 {
@@ -81,9 +81,11 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.zFar = ZFar;
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
 
-    state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterSubdivsX);
-    state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterSubdivsY);
-    state.clusterDimensions[2] = ClusterSubdivsZ;
+    state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterBlockSizeX);
+    state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterBlockSizeY);
+    state.clusterDimensions[2] = ClusterBlockSizeZ;
+
+    n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] < ClusterGenerate::NUM_CLUSTER_ENTRIES);
 
     state.zDistribution = ZFar / ZNear;
     state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
@@ -116,9 +118,9 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     {
         CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
 
-        state.clusterDimensions[0] = Math::divandroundup(viewport.width(), ClusterSubdivsX);
-        state.clusterDimensions[1] = Math::divandroundup(viewport.height(), ClusterSubdivsY);
-        state.clusterDimensions[2] = ClusterSubdivsZ;
+        state.clusterDimensions[0] = Math::divandroundup(viewport.width(), ClusterBlockSizeX);
+        state.clusterDimensions[1] = Math::divandroundup(viewport.height(), ClusterBlockSizeY);
+        state.clusterDimensions[2] = ClusterBlockSizeZ;
 
         state.xResolution = viewport.width();
         state.yResolution = viewport.height();
@@ -170,8 +172,8 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
     state.uniforms.NumCells[0] = state.clusterDimensions[0];
     state.uniforms.NumCells[1] = state.clusterDimensions[1];
     state.uniforms.NumCells[2] = state.clusterDimensions[2];
-    state.uniforms.BlockSize[0] = ClusterSubdivsX;
-    state.uniforms.BlockSize[1] = ClusterSubdivsY;
+    state.uniforms.BlockSize[0] = ClusterBlockSizeX;
+    state.uniforms.BlockSize[1] = ClusterBlockSizeY;
 
     // update constant buffer, probably super unnecessary since these values never change
     BufferUpdate(state.constantBuffer, state.uniforms);
@@ -196,9 +198,10 @@ ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
     {
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
 
-        state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterSubdivsX);
-        state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterSubdivsY);
-        state.clusterDimensions[2] = ClusterSubdivsZ;
+        state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterBlockSizeX);
+        state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterBlockSizeY);
+        state.clusterDimensions[2] = ClusterBlockSizeZ;
+        n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] < ClusterGenerate::NUM_CLUSTER_ENTRIES);
 
         state.zDistribution = state.zFar / state.zNear;
         state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
