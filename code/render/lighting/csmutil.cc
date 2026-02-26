@@ -50,12 +50,12 @@ CSMUtil::~CSMUtil()
 void 
 ComputeFrustumPoints( float cascadeBegin, float cascadeEnd, const float aspect, const float fov, Math::vec4* frustumCorners )
 {
-    float tanHalfHFOV = tanf((fov * aspect) / 2.0f);
-    float tanHalfVFOV = tanf(fov / 2.0f);
-    float xNear = cascadeBegin * tanHalfHFOV;
-    float xFar = cascadeEnd * tanHalfHFOV;
+    float tanHalfVFOV = 2 * tanf(fov / 2.0f);
     float yNear = cascadeBegin * tanHalfVFOV;
     float yFar = cascadeEnd * tanHalfVFOV;
+    float xNear = yNear * aspect;
+    float xFar = yFar * aspect;
+    
 
     // frustum corners in projection space
     frustumCorners[0].set( xNear,  yNear, -cascadeBegin, 1.0f);
