@@ -104,7 +104,7 @@ GraphicsServer::Open()
         .numBufferedFrames = 3,
         .enableValidation = args.GetBoolFlag("-gfxvalidation"),
         .features = {
-            .enableRayTracing = !args.GetBoolFlag("-disableraytracing"),
+            .enableRayTracing = args.GetBoolFlag("-enableraytracing"),
             .enableMeshShaders = !args.GetBoolFlag("-disablemeshshaders"),
             .enableVariableRateShading = !args.GetBoolFlag("-disablevariablerateshading"),
 #if NEBULA_GRAPHICS_DEBUG
