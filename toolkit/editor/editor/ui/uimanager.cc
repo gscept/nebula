@@ -252,9 +252,11 @@ UIManager::OnDeactivate()
 void
 UIManager::OnBeginFrame()
 {
+    N_MARKER_BEGIN(ImGuiBeginFrame, Toolkit);
     windowServer->Update();
     ImGui::DockSpaceOverViewport();
     windowServer->RunAll();
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
@@ -263,6 +265,7 @@ UIManager::OnBeginFrame()
 void
 UIManager::OnFrame()
 {
+    N_MARKER_BEGIN(ImGuiOnFrame, Toolkit);
     if (this->delayedImguiLoad)
     {
         this->delayedImguiLoad = false;
@@ -273,7 +276,7 @@ UIManager::OnFrame()
             ImGui::LoadIniSettingsFromDisk(path.c_str());
         }
     }
-
+    N_MARKER_END();
 }
 //------------------------------------------------------------------------------
 /**

@@ -225,7 +225,9 @@ GameServer::OnBeginFrame()
     SizeT num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
+        N_MARKER_DYN_BEGIN(this->gameFeatures[i]->GetClassName().AsCharPtr(), Game);
         this->gameFeatures[i]->OnBeginFrame();
+        N_MARKER_END();
     }
     N_MARKER_END()
 
@@ -233,7 +235,9 @@ GameServer::OnBeginFrame()
     // trigger game features to at the beginning of a frame
     for (i = 0; i < num; i++)
     {
+        N_MARKER_DYN_BEGIN(this->gameFeatures[i]->GetClassName().AsCharPtr(), Game);
         this->gameFeatures[i]->OnBeforeViews();
+        N_MARKER_END();
     }
     N_MARKER_END()
 
@@ -281,9 +285,12 @@ GameServer::OnFrame()
     // call trigger functions on game features
     IndexT i;
     SizeT num = this->gameFeatures.Size();
+    N_MARKER_BEGIN(GameServerOnFrame, Game)
     for (i = 0; i < num; i++)
     {
+        N_MARKER_DYN_BEGIN(this->gameFeatures[i]->GetClassName().AsCharPtr(), Game);
         this->gameFeatures[i]->OnFrame();
+        N_MARKER_END();
     }
 
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
@@ -296,7 +303,7 @@ GameServer::OnFrame()
     }
 
     Game::ReleaseDatasets();
-
+    N_MARKER_END();
     _stop_timer(GameServerOnFrame);
 }
 
@@ -313,9 +320,12 @@ GameServer::OnEndFrame()
 
     IndexT i;
     SizeT numFeatureUnits = this->gameFeatures.Size();
+    N_MARKER_BEGIN(GameServerOnEndFrame, Game);
     for (i = 0; i < numFeatureUnits; i++)
     {
+        N_MARKER_DYN_BEGIN(this->gameFeatures[i]->GetClassName().AsCharPtr(), Game);
         this->gameFeatures[i]->OnEndFrame();
+        N_MARKER_END();
     }
 
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
@@ -328,11 +338,11 @@ GameServer::OnEndFrame()
     }
 
     Game::ReleaseDatasets();
-
+    N_MARKER_END();
     _start_timer(GameServerManageEntities);
 
     n_assert(GameServer::HasInstance());
-
+    N_MARKER_BEGIN(ManageEntities, Game);
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
@@ -341,13 +351,19 @@ GameServer::OnEndFrame()
             world->ManageEntities();
         }
     }
+    N_MARKER_END();
     _stop_timer(GameServerManageEntities);
 
+    N_MARKER_BEGIN(DecayFeatures, Game);
     for (i = 0; i < numFeatureUnits; i++)
     {
+        N_MARKER_DYN_BEGIN(this->gameFeatures[i]->GetClassName().AsCharPtr(), Game);
         this->gameFeatures[i]->OnDecay();
+        N_MARKER_END();
     }
+    N_MARKER_END();
 
+    N_MARKER_BEGIN(DecayWorlds, Game);
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
@@ -357,6 +373,7 @@ GameServer::OnEndFrame()
         }
     }
 
+    N_MARKER_END();
     _stop_timer(GameServerOnEndFrame);
 }
 
