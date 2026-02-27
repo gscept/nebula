@@ -133,6 +133,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     state.raytracingTestOutputTable = CoreGraphics::ShaderCreateResourceTable(raygenShader, NEBULA_SYSTEM_GROUP);
     state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline(shaderMappings);
 
+    n_assert(LightGridCs::NUM_CLUSTER_ENTRIES >= NUM_GRID_CELLS * NUM_GRID_CELLS * NUM_GRID_CELLS);
     CoreGraphics::BufferCreateInfo gridBufferInfo;
     gridBufferInfo.name = "RaytracingAABBGrid";
     gridBufferInfo.size = NUM_GRID_CELLS * NUM_GRID_CELLS * NUM_GRID_CELLS;

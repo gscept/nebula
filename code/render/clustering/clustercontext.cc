@@ -84,8 +84,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterBlockSizeX);
     state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterBlockSizeY);
     state.clusterDimensions[2] = ClusterBlockSizeZ;
-
-    n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] < ClusterGenerate::NUM_CLUSTER_ENTRIES);
+    n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] <= ClusterGenerate::NUM_CLUSTER_ENTRIES);
 
     state.zDistribution = ZFar / ZNear;
     state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
@@ -201,7 +200,7 @@ ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
         state.clusterDimensions[0] = Math::divandroundup(dims.width, ClusterBlockSizeX);
         state.clusterDimensions[1] = Math::divandroundup(dims.height, ClusterBlockSizeY);
         state.clusterDimensions[2] = ClusterBlockSizeZ;
-        n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] < ClusterGenerate::NUM_CLUSTER_ENTRIES);
+        n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] <= ClusterGenerate::NUM_CLUSTER_ENTRIES);
 
         state.zDistribution = state.zFar / state.zNear;
         state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
