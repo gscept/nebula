@@ -206,6 +206,7 @@ WindowServer::RunAll()
     {
         auto it = this->windows[i];
         
+        N_SCOPE_DYN(it->name.AsCharPtr(), UI)
         if (it->Open())
         {
             if (it->usesCustomWindowPadding)
