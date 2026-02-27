@@ -228,6 +228,25 @@ LiveBatcherWindow::Run(SaveMode save)
             ImGui::EndChild();
         }
     }
+    else
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        static const char* EmptyString = "Log empty";
+        float sizeX = ImGui::CalcTextSize(EmptyString).x + style.FramePadding.x * 2.0f;
+        float availX = ImGui::GetContentRegionAvail().x;
+        float sizeY = ImGui::CalcTextSize(EmptyString).y + style.FramePadding.y * 2.0f;
+        float availY = ImGui::GetContentRegionAvail().y;
+
+        float off = (availX - sizeX) * 0.5f;
+        if (off > 0.0f)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+        off = (availY - sizeY) * 0.5f;
+        if (off > 0.0f)
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + off);
+
+        ImGui::Text(EmptyString);
+    }
 }
 
 //------------------------------------------------------------------------------
