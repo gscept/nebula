@@ -136,7 +136,7 @@ RayGen(ray_payload payload : LightResponsePayload) void
         probeWorldPosition = DDGIProbeWorldPosition(probeIndex, VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing);
     }
     
-    const probeRayDirection = DDGIGetProbeDirection(rayIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options); 
+    var probeRayDirection = DDGIGetProbeDirection(rayIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options); 
 
     const MaxDistance = 10000.0f;
     payload.bits = 0x0u;

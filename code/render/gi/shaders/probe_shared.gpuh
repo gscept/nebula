@@ -62,7 +62,60 @@ group(SYSTEM_GROUP) uniform VolumeConstants : *VolumeData;
 //------------------------------------------------------------------------------
 /**
 */
-DDGIGetProbeDirection(rayIndex : i32, rotation : f32x4x4, options : u32) f32x3
+DDGIProbeHash(index : u32) u32
+{
+	var hash = index;
+	hash ^= hash >> 16;
+	hash *= 0x85ebca6b;
+	hash ^= hash >> 13;
+	hash *= 0xc2b2ae35;
+	hash ^= hash >> 16;
+	return hash;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeHashToFloat(hash : u32) f32
+{
+    return f32(hash) * (1.0 / 4294967296.0); // 1 / 2^32
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeHashToVec(hash : u32) f32x3
+{
+    const u = DDGIProbeHashToFloat(DDGIProbeHash(hash));
+    const v = DDGIProbeHashToFloat(DDGIProbeHash(hash + 1u));
+
+    const z = 1.0 - 2.0 * u;
+    const r = sqrt(max(0.0, 1.0 - z * z));
+    const phi = 6.28318530718 * v;
+
+    return f32x3(
+        r * cos(phi),
+        r * sin(phi),
+        z
+    );
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeRandomRotation(index : u32, dir : f32x3) f32x3
+{
+	const hash = DDGIProbeHash(index);
+	const randomDirection = DDGIProbeHashToVec(hash);
+	const randomAngle = DDGIProbeHashToFloat(DDGIProbeHash(hash + 17u)) * 6.28318530718; // 2 * pi
+	const quat = QuatFromAxisAngle(randomDirection, randomAngle);
+	return QuatRotateVector(quat, dir);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIGetProbeDirection(rayIndex : i32, probeIndex : u32, rotation : f32x4x4, options : u32) f32x3
 {
     var direction : f32x3;
     if ((options & (RELOCATION_OPTION | CLASSIFICATION_OPTION)) != 0)
@@ -74,6 +127,8 @@ DDGIGetProbeDirection(rayIndex : i32, rotation : f32x4x4, options : u32) f32x3
         {
             return direction;
         }
+
+		direction = DDGIProbeRandomRotation(probeIndex, direction);
     }
     else
     {

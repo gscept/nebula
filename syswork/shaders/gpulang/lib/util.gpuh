@@ -674,3 +674,21 @@ noise(p : f32x2) f32
 }
 
 //------------------------------------------------------------------------------
+/**
+*/
+QuatFromAxisAngle(axis : f32x3, angle : f32) f32x4
+{
+	const halfAngle : f32 = angle * 0.5f;
+	const s : f32 = sin(halfAngle);
+	return f32x4(axis * s, cos(halfAngle));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+QuatRotateVector(q : f32x4, v : f32x3) f32x3
+{
+	const qv : f32x3 = q.xyz;
+	const t : f32 = 2.0f * dot(qv, v);
+	return v + (t * qv) + (cross(qv, v) * 2.0f * q.w);
+}

@@ -191,7 +191,7 @@ Blend(mode : FinalizeMode) void
             const value = LoadRadiance(i32x2(rayIndex, probeIndex), mode);
             if (mode == FinalizeMode.Radiance) { Radiance[rayIndex] = value.xyz; }
             Distance[rayIndex] = value.w;
-            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
         }
     }
 	memoryBarrierWorkgroup();

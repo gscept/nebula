@@ -100,13 +100,13 @@ ProbeRelocationAndClassify() void
         var fulloffset = f32x3(1e27);
         if (closestBackfaceIndex != -1 && (f32(backfaceCount) / numRays) > VolumeConstants.BackfaceThreshold)
         {
-            const closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options));
+            var closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options));
             fulloffset = currentOffset + closestBackfaceDirection * (VolumeConstants.ProbeDistanceScale + 1.0f);
         }
         else if (closestFrontfaceDistance < VolumeConstants.MinFrontfaceDistance)
         {
-            const closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options);
-            var farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            var closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            var farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
             
             if (dot(closestFrontfaceDirection, farthestFrontfaceDirection) <= 0.f)
             {

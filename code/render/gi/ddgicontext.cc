@@ -626,6 +626,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     if (!CoreGraphics::RayTracingSupported)
         return;
 
+    N_SCOPE(UpdateGIVolumes, DDGI);
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
@@ -673,16 +674,19 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         float c2 = 2 * u3 * cos2 * cos2 - 1.0f;
         float sc = 2 * u3 * sin2 * cos2;
 
+        Math::mat4 rotation = Math::rotationaxis(Math::vector::upvec(), Math::sin(ctx.frameIndex / 100.0f));
+
+        /*
         Math::mat4 randomRotation = Math::mat4(
             Math::vec4(cos1 * c2 - sin1 * sc, sin1 * sc + cos1 * s2, sq3 * cos2, 0),
             Math::vec4(cos1 * sc - sin1 * s2, sin1 * sc + cos1 * s2, sq3 * sin2, 0),
             Math::vec4(cos1 * (sq3 * cos2) - sin1 * (sq3 * sin2), sin1 * (sq3 * cos2) + cos1 * (sq3 * sin2), 1 - 2 * u3, 0),
             Math::vec4(0, 0, 0, 1)
             );
-
+        */
 
         Math::vec3 size = activeVolume.size;
-        randomRotation.store(&activeVolume.volumeConstants.TemporalRotation[0][0]);
+        rotation.store(&activeVolume.volumeConstants.TemporalRotation[0][0]);
         size.store(activeVolume.volumeConstants.Scale);
         activeVolume.position.store(activeVolume.volumeConstants.Offset);
         activeVolume.volumeConstants.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
@@ -857,6 +861,7 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
     CoreGraphics::DestroyBuffer(volume.volumeConstantBuffer);
     CoreGraphics::DestroyResourceTable(volume.updateProbesTable);
     CoreGraphics::DestroyResourceTable(volume.blendProbesTable);
+    CoreGraphics::DestroyResourceTable(volume.relocateProbesTable);
     ddgiVolumeAllocator.Dealloc(id.id);
 }
 
