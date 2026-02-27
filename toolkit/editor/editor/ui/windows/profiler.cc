@@ -241,7 +241,7 @@ Profiler::Run(SaveMode save)
 
             // Handle mouse scroll for timeline zoom
             float mouseWheel = ImGui::GetIO().MouseWheel;
-            if (mouseWheel != 0.0f)
+            if (mouseWheel != 0.0f && ImGui::IsWindowHovered() && ImGui::GetIO().KeyShift) 
             {
                 float range = this->timeEnd - this->timeStart;
                 
