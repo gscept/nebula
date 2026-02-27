@@ -247,7 +247,7 @@ CountLeadingZeroes(uint64_t value)
 #if __WIN32__
     DWORD count = 0;
     _BitScanReverse64(&count, value);
-    count = 31 - count;
+    count = 63 - count;
 #else
     int count = __builtin_clzll(value);
 #endif
