@@ -475,7 +475,7 @@ ImguiContext::Create()
                     else
                     {
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
-                            ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                        ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                         ImGuiSecondaryWindowData data;
                         data.buf = cmdBuf;
                         data.viewport = viewport;
@@ -528,7 +528,7 @@ ImguiContext::Create()
                     else
                     {
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
-                            ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                        ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                         ImGuiSecondaryWindowData data;
                         data.buf = cmdBuf;
                         data.viewport = viewport;
