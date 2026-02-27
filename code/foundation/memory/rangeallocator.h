@@ -23,7 +23,7 @@ namespace Memory
 */
 struct RangeAllocation
 {
-    uint offset;
+    size_t offset;
     uint size;
     uint node;
 
@@ -65,7 +65,7 @@ public:
 
 private:
     /// Insert node at bin location, return node index
-    uint InsertNode(uint size, uint offset);
+    uint InsertNode(uint size, size_t offset);
     /// Remove node from bin
     void RemoveNode(uint nodeIndex);
 
@@ -82,7 +82,7 @@ private:
         {};
         bool resident;
         uint size;
-        uint offset;
+        size_t offset;
 
         static constexpr uint END = 0xFFFFFFFF;
         uint binPrev, binNext;
@@ -382,7 +382,7 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
 /**
 */
 inline uint 
-RangeAllocator::InsertNode(uint size, uint offset)
+RangeAllocator::InsertNode(uint size, size_t offset)
 {
     if (this->freeNodeIterator == 0xFFFFFFFF)
         return RangeAllocatorNode::END;

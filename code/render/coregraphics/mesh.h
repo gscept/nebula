@@ -21,7 +21,9 @@ namespace CoreGraphics
 {
 struct VertexAlloc
 {
-    uint size, offset, node;
+    uint size;
+    size_t offset;
+    uint node;
 };
 
 struct CmdBufferId;

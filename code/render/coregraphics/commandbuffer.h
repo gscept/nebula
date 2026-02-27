@@ -76,7 +76,7 @@ struct TextureCopy
 
 struct BufferCopy
 {
-    uint offset;
+    size_t offset;
     uint rowLength = 0;     // for buffer to image copies
     uint imageHeight = 0;   // for buffer to image copies
 };
