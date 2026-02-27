@@ -1065,7 +1065,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             &bindingFlags,
-            0,                                                              // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
+            VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT, // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
             (uint32_t)bindings.Size(),
             binds.Begin()
         };
