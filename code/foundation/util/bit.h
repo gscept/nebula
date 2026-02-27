@@ -187,7 +187,7 @@ FirstBitSetIndex(uint64_t value)
     DWORD count = 0;
     _BitScanForward64(&count, value);
 #else
-    int count = __builtin_ctz(value);
+    int count = __builtin_ctzll(value);
 #endif
     return count;
 }
@@ -217,7 +217,7 @@ LastBitSetIndex(uint64_t value)
     DWORD count = 0;
     _BitScanReverse64(&count, value);
 #else
-    int count = 63 - __builtin_clz(value);
+    int count = 63 - __builtin_clzll(value);
 #endif
     return count;
 }
@@ -249,7 +249,7 @@ CountLeadingZeroes(uint64_t value)
     _BitScanReverse64(&count, value);
     count = 31 - count;
 #else
-    int count = __builtin_clz(value);
+    int count = __builtin_clzll(value);
 #endif
     return count;
 } 
@@ -280,7 +280,7 @@ CountTrailingZeroes(uint64_t value)
     _BitScanForward64(&count, value);
     count = count;
 #else
-    int count = __builtin_ctz(value);
+    int count = __builtin_ctzll(value);
 #endif
     return count;
 }
