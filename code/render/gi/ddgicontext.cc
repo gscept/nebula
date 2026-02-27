@@ -680,7 +680,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         float c2 = 2 * u3 * cos2 * cos2 - 1.0f;
         float sc = 2 * u3 * sin2 * cos2;
 
-        Math::mat4 rotation = Math::rotationaxis(Math::vector::upvec(), Math::sin(ctx.frameIndex / 100.0f));
+        Math::mat4 rotation = Math::rotationaxis(Math::vector::upvec(), Math::sin(ctx.frameIndex / 1000.0f));
 
         /*
         Math::mat4 randomRotation = Math::mat4(
@@ -864,7 +864,7 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
     CoreGraphics::DestroyTexture(volume.offsets);
     CoreGraphics::DestroyTexture(volume.states);
     CoreGraphics::DestroyTexture(volume.scrollSpace);
-    CoreGraphics::DestroyBuffer(volume.volumeConstantBuffer);
+    CoreGraphics::DelayedDeleteBuffer(volume.volumeConstantBuffer);
     CoreGraphics::DestroyResourceTable(volume.updateProbesTable);
     CoreGraphics::DestroyResourceTable(volume.blendProbesTable);
     CoreGraphics::DestroyResourceTable(volume.relocateProbesTable);
