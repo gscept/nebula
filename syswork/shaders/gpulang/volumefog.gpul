@@ -152,7 +152,7 @@ LocalLightsFog(
             
             const lightDir = (li.position.xyz - viewPos);
             
-            const lightDirLength = length(lightDir) + 0.0001f;
+            const lightDirLength = length(lightDir);
             const d2 = lightDirLength * lightDirLength;
             const factor = d2 / (li.range * li.range);
             const sf = saturate(1.0 - factor * factor);
@@ -317,9 +317,11 @@ csRender() void
         // equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
         const weight = exp(-totalParticleDensity) * localParticleDensity;
 
+		const worldSpacePos = ViewToWorld(f32x4(samplePos, 1), ViewConstants.InvView);
+
         // this is the Lscat calculation
-        light += GlobalLightFog(samplePos) * weight * localAbsorption;
-        light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
+        light += GlobalLightFog(worldSpacePos.xyz) * weight * localAbsorption;
+        light += LocalLightsFog(idx, worldSpacePos.xyz, rayDirection) * weight * localAbsorption;
     }
     const weight = (exp(-totalParticleDensity));
 
