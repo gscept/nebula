@@ -69,7 +69,7 @@ void ProfilingNewFrame();
 Timing::Time ProfilingGetTime();
 
 /// register a new thread for the profiling
-void ProfilingRegisterThread();
+void ProfilingRegisterThread(int priority = 0);
 
 /// get all top level scopes based on thread, only run when you know the thread is finished
 const Util::Array<ProfilingScope>& ProfilingGetScopes(Threading::ThreadId thread);
@@ -168,9 +168,10 @@ struct ProfilingScopeLock
 /// thread context of profiling
 struct ProfilingContext
 {
-    ProfilingContext()
+    ProfilingContext(int priority = 0)
         : threadName(Threading::Thread::GetMyThreadName())
         , threadId(Threading::Thread::GetMyThreadId())
+        , priority(priority)
     {};
     Util::Stack<ProfilingScope> scopes;
     Util::Array<ProfilingScope> topLevelScopes;
@@ -178,6 +179,7 @@ struct ProfilingContext
     Timing::Timer timer;
     Util::StringAtom threadName;
     Threading::ThreadId threadId;
+    int priority = 0;
 };
 
 } // namespace Profiling

@@ -29,6 +29,8 @@ private:
     float prevAverageFrameTime;
     float currentFrameTime;
     float worstFrameTime;
+    float timeStart = 0.0f;
+    float timeEnd = 1.0f;
     int fixedFps;
     Util::Array<float> frametimeHistory;
     Util::Array<Profiling::ProfilingContext> ProfilingContexts;

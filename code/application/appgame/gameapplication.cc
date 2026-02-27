@@ -121,7 +121,7 @@ GameApplication::Open()
 
 
 #if NEBULA_ENABLE_PROFILING
-        Profiling::ProfilingRegisterThread();
+        Profiling::ProfilingRegisterThread(15);
 #endif
 
         // attach a log file console handler

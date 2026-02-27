@@ -38,8 +38,12 @@ Profiler::~Profiler()
 /**
 */
 int
-RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
+RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
 {
+    const float startTime = startSection * fullFrameTime;
+    const float endTime = endSection * fullFrameTime;
+    if (scope.start + scope.duration < startTime || scope.start > endTime)
+        return level;
     static const ImU32 colors[] =
     {
         IM_COL32(255, 200, 200, 255),
@@ -56,7 +60,8 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     uint32_t colorIndex = scope.category.HashCode() % numColors;
 
     // convert to milliseconds
-    float startX = pos.x + (scope.start / frameTime) * canvas.x;
+    const float frameTime = endTime - startTime;
+    float startX = pos.x + (Math::max(0.0, (scope.start - startTime)) / frameTime) * canvas.x;
     float stopX = startX + Math::max((scope.duration / frameTime) * canvas.x, 1.0);
     float startY = pos.y;
     float stopY = startY + YPad;
@@ -94,7 +99,7 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     int deepest = level + 1;
     for (IndexT i = 0; i < scope.children.Size(); i++)
     {
-        int childLevel = RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        int childLevel = RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, level + 1);
         deepest = Math::max(deepest, childLevel);
     }
     return deepest;
@@ -200,7 +205,13 @@ Profiler::Run(SaveMode save)
         this->ProfilingContexts = Profiling::ProfilingGetContexts();
         this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
     }
-
+    this->ProfilingContexts.SortWithFunc([](const Profiling::ProfilingContext& a, const Profiling::ProfilingContext& b) 
+    {
+        if (a.priority == b.priority)
+            return a.threadName < b.threadName;
+         return a.priority > b.priority; 
+    });
+    
     if (!this->frametimeHistory.IsEmpty())
     {
         ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
@@ -220,14 +231,57 @@ Profiler::Run(SaveMode save)
     {
         if (ImGui::BeginTabItem("Timeline"))
         {
+            static bool hideEmptyThreads = true;
+            ImGui::Checkbox("Hide empty threads", &hideEmptyThreads);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 start = ImGui::GetCursorScreenPos();
             ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
             static float timeWindow = 1.0f;
-            ImGui::SliderFloat("Time window", &timeWindow, 1.0f, 1000.0f);
+            ImGui::DragFloatRange2("Time range", &this->timeStart, &this->timeEnd, 0.01f, 0.0f, 1.0f, "%.3f", "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+            // Handle mouse scroll for timeline zoom
+            float mouseWheel = ImGui::GetIO().MouseWheel;
+            if (mouseWheel != 0.0f)
+            {
+                float range = this->timeEnd - this->timeStart;
+                
+                // Get normalized mouse position within the timeline area (0 to 1)
+                ImVec2 mousePos = ImGui::GetMousePos();
+                float canvasWidth = fullSize.x - start.x;
+                float mouseNormalizedX = Math::clamp((mousePos.x - start.x) / canvasWidth, 0.0f, 1.0f);
+                
+                // Calculate the time value at mouse position
+                float mouseTimeValue = this->timeStart + (mouseNormalizedX * range);
+                
+                // Calculate zoom factor (positive mouseWheel = zoom in, negative = zoom out)
+                float zoomFactor = 1.0f - (mouseWheel * 0.1f); // Adjust 0.1 for sensitivity
+                zoomFactor = Math::clamp(zoomFactor, 0.1f, 10.0f);
+                
+                // Calculate new range
+                float newRange = range * zoomFactor;
+                newRange = Math::clamp(newRange, 0.01f, 1.0f);
+                
+                // Recalculate start and end to keep mouse position fixed
+                this->timeStart = mouseTimeValue - (mouseNormalizedX * newRange);
+                this->timeEnd = this->timeStart + newRange;
+                
+                if (this->timeStart < 0.0f)
+                {
+                    this->timeStart = 0.0f;
+                    this->timeEnd = Math::min(newRange, 1.0f);
+                }
+                if (this->timeEnd > 1.0f)
+                {
+                    this->timeEnd = 1.0f;
+                    this->timeStart = Math::max(0.0f, 1.0f - newRange);
+                }
+            }
+
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
             {
-                if (ImGui::CollapsingHeader(ctx.threadName.Value(), ImGuiTreeNodeFlags_DefaultOpen))
+                if (hideEmptyThreads && ctx.topLevelScopes.Size() == 0)
+                    continue;
+                if (ImGui::CollapsingHeader(ctx.threadName.Value(), ctx.topLevelScopes.Size() > 0 ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_OpenOnArrow))
                 {
                     ImGui::PushFont(Dynui::ImguiSmallFont);
 
@@ -238,7 +292,7 @@ Profiler::Run(SaveMode save)
                     if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                     {
                         const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
-                        int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                        int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
                         levels = Math::max(levels, level);
                     }
                     else

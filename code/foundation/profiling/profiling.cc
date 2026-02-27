@@ -113,12 +113,12 @@ ProfilingGetTime()
 /**
 */
 void 
-ProfilingRegisterThread()
+ProfilingRegisterThread(int priority)
 {
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
     ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
-    profilingContexts.Append(ProfilingContext());
+    profilingContexts.Append(ProfilingContext(priority));
     profilingContextsLastFrame.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
     contextMutexes.Append(new Threading::CriticalSection);
