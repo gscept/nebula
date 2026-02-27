@@ -23,7 +23,7 @@ ThreadLocalMiniHeap::~ThreadLocalMiniHeap()
 {
     if (this->heap != nullptr)
     {
-        Memory::Free(Memory::ScratchHeap, this->heap);   
+        free(this->heap);
     }
 }
 
@@ -35,11 +35,11 @@ ThreadLocalMiniHeap::Realloc(size_t numBytes)
 {
     if (this->heap != nullptr)
     {
-        Memory::Free(Memory::ScratchHeap, this->heap);
+        free(this->heap);
         this->heap = nullptr;
     }
 
     this->capacity = numBytes;
-    this->heap = (char*)Memory::Alloc(Memory::ScratchHeap, this->capacity);
+    this->heap = (char*)malloc(this->capacity);
     this->iterator = 0;
 }
