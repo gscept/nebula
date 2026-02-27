@@ -232,8 +232,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 , drawList = &visibilities
                 , allocator = &allocator
                 , renderables = &NodeInstances
-                , indexBuffer
-                , indexedClipStatuses
+                , &indexBuffer
+                , &indexedClipStatuses
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
