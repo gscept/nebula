@@ -43,7 +43,10 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     const float startTime = startSection * fullFrameTime;
     const float endTime = endSection * fullFrameTime;
     if (scope.start + scope.duration < startTime || scope.start > endTime)
+    {
         return level;
+    }
+    
     static const ImU32 colors[] =
     {
         IM_COL32(255, 200, 200, 255),
@@ -61,8 +64,19 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // convert to milliseconds
     const float frameTime = endTime - startTime;
-    float startX = pos.x + (Math::max(0.0, (scope.start - startTime)) / frameTime) * canvas.x;
-    float stopX = startX + Math::max((scope.duration / frameTime) * canvas.x, 1.0);
+
+    // deal with clipping
+    double scopeStart = scope.start;
+    double scopeDuration = scope.duration;
+    
+    if (scope.start < startTime)
+    {
+        scopeDuration -= startTime - scope.start;
+        scopeStart = startTime;
+    }
+
+    float startX = pos.x + (Math::max(0.0, (scopeStart - startTime)) / frameTime) * canvas.x;
+    float stopX = startX + Math::max((scopeDuration / frameTime) * canvas.x, 1.0);
     float startY = pos.y;
     float stopY = startY + YPad;
 
@@ -136,7 +150,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     drawList->AddText(ImVec2(startX + TextPad, startY), IM_COL32_BLACK, text.AsCharPtr());
     drawList->PopClipRect();
 
-    if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
+    if (ImGui::IsMouseHoveringRect(bbMin, bbMax) && !ImGui::GetIO().KeyShift) // show tooltip only when not panning
     {
         ImGui::BeginTooltip();
         Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
@@ -240,31 +254,32 @@ Profiler::Run(SaveMode save)
             ImGui::DragFloatRange2("Time range", &this->timeStart, &this->timeEnd, 0.01f, 0.0f, 1.0f, "%.3f", "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
             // Handle mouse scroll for timeline zoom
-            float mouseWheel = ImGui::GetIO().MouseWheel;
-            if (mouseWheel != 0.0f)
+            ImGuiIO& io = ImGui::GetIO();
+            float mouseWheel = io.MouseWheel;
+            if (mouseWheel != 0.0f && ImGui::IsWindowHovered() && io.KeyShift)
             {
                 float range = this->timeEnd - this->timeStart;
-                
+
                 // Get normalized mouse position within the timeline area (0 to 1)
                 ImVec2 mousePos = ImGui::GetMousePos();
                 float canvasWidth = fullSize.x - start.x;
                 float mouseNormalizedX = Math::clamp((mousePos.x - start.x) / canvasWidth, 0.0f, 1.0f);
-                
+
                 // Calculate the time value at mouse position
                 float mouseTimeValue = this->timeStart + (mouseNormalizedX * range);
-                
+
                 // Calculate zoom factor (positive mouseWheel = zoom in, negative = zoom out)
                 float zoomFactor = 1.0f - (mouseWheel * 0.1f); // Adjust 0.1 for sensitivity
                 zoomFactor = Math::clamp(zoomFactor, 0.1f, 10.0f);
-                
+
                 // Calculate new range
                 float newRange = range * zoomFactor;
                 newRange = Math::clamp(newRange, 0.01f, 1.0f);
-                
+
                 // Recalculate start and end to keep mouse position fixed
                 this->timeStart = mouseTimeValue - (mouseNormalizedX * newRange);
                 this->timeEnd = this->timeStart + newRange;
-                
+
                 if (this->timeStart < 0.0f)
                 {
                     this->timeStart = 0.0f;
@@ -275,6 +290,34 @@ Profiler::Run(SaveMode save)
                     this->timeEnd = 1.0f;
                     this->timeStart = Math::max(0.0f, 1.0f - newRange);
                 }
+            }
+
+            // Handle shift + left-drag for panning the timeline
+            if (io.KeyShift //&& ImGui::IsWindowHovered()
+             && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+            {
+                ImVec2 dragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
+                float canvasWidth = ImGui::GetContentRegionAvail().x * timeWindow;
+                float range = this->timeEnd - this->timeStart;
+                if (canvasWidth > 0.0f && range > 0.0f)
+                {
+                    float deltaNormalized = dragDelta.x / canvasWidth;
+                    float timeShift = -deltaNormalized * range;
+                    this->timeStart += timeShift;
+                    this->timeEnd += timeShift;
+
+                    if (this->timeStart < 0.0f)
+                    {
+                        this->timeStart = 0.0f;
+                        this->timeEnd = Math::min(this->timeStart + range, 1.0f);
+                    }
+                    if (this->timeEnd > 1.0f)
+                    {
+                        this->timeEnd = 1.0f;
+                        this->timeStart = Math::max(0.0f, this->timeEnd - range);
+                    }
+                }
+                ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
             }
 
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
