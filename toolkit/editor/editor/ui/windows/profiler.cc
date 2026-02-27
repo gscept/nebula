@@ -38,7 +38,7 @@ Profiler::~Profiler()
 /**
 */
 int
-RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
+RecursiveDrawScope(const Profiling::ProfilingScope& scope, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
 {
     const float startTime = startSection * fullFrameTime;
     const float endTime = endSection * fullFrameTime;
@@ -95,6 +95,15 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
     {
+        // record double-clicked region on the profiler
+        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        {
+            float normStart = (bbMin.x - start.x) / canvas.x;
+            float normEnd   = (bbMax.x - start.x) / canvas.x;
+            highlightRegion.start = Math::clamp(normStart, 0.0f, 1.0f);
+            highlightRegion.end   = Math::clamp(normEnd, 0.0f, 1.0f);
+        }
+
         ImGui::BeginTooltip();
         Util::String text = Util::String::Sprintf("%s [%s] (%4.4f ms) in %s (%d)", scope.name, scope.category.Value(), scope.duration * 1000, scope.file, scope.line);
         ImGui::Text(text.AsCharPtr());
@@ -113,7 +122,7 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     int deepest = level + 1;
     for (IndexT i = 0; i < scope.children.Size(); i++)
     {
-        int childLevel = RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, level + 1);
+        int childLevel = RecursiveDrawScope(scope.children[i], highlightRegion, drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, level + 1);
         deepest = Math::max(deepest, childLevel);
     }
     return deepest;
@@ -256,6 +265,10 @@ Profiler::Run(SaveMode save)
             // Handle mouse scroll for timeline zoom
             ImGuiIO& io = ImGui::GetIO();
             float mouseWheel = io.MouseWheel;
+            if (io.KeyShift)
+            {
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            }
             if (mouseWheel != 0.0f && ImGui::IsWindowHovered() && io.KeyShift)
             {
                 float range = this->timeEnd - this->timeStart;
@@ -335,7 +348,7 @@ Profiler::Run(SaveMode save)
                     if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                     {
                         const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
-                        int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
+                        int level = RecursiveDrawScope(scope, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
                         levels = Math::max(levels, level);
                     }
                     else
@@ -354,6 +367,29 @@ Profiler::Run(SaveMode save)
                     ImGui::PopFont();
                 }
             }
+
+            // draw highlight overlay/lines if user double-clicked a scope
+            if (this->highlightRegion.start >= 0.0f && this->highlightRegion.end > this->highlightRegion.start)
+            {
+                ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+                canvasSize.x *= timeWindow;
+                float x0 = start.x + this->highlightRegion.start * canvasSize.x;
+                float x1 = start.x + this->highlightRegion.end * canvasSize.x;
+                ImU32 overlayCol = IM_COL32(255, 255, 0, 60); // translucent yellow
+                drawList->AddRectFilled(ImVec2(x0, start.y), ImVec2(x1, fullSize.y), overlayCol);
+                drawList->AddLine(ImVec2(x0, start.y), ImVec2(x0, fullSize.y), IM_COL32_WHITE, 1.0f);
+                drawList->AddLine(ImVec2(x1, start.y), ImVec2(x1, fullSize.y), IM_COL32_WHITE, 1.0f);
+                // clear highlight on right-click inside region
+                if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    ImVec2 mp = ImGui::GetMousePos();
+                    float relX = (mp.x - start.x) / canvasSize.x;
+                    if (relX >= this->highlightRegion.start && relX <= this->highlightRegion.end)
+                    {
+                        this->highlightRegion.start = this->highlightRegion.end = -1.0f;
+                    }
+                }            }
+
             if (ImGui::CollapsingHeader("GPU"))
             {
                 ImGui::PushFont(Dynui::ImguiSmallFont);
