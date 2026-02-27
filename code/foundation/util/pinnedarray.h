@@ -654,12 +654,12 @@ inline void
 PinnedArray<MAX_ALLOCS, TYPE>::Fit()
 {
     // The start offset of the memory has to be aligned to the page size
-    SizeT numUsedBytes = Memory::align(this->count * sizeof(TYPE), System::PageSize);
-    SizeT numNeededPages = numUsedBytes / System::PageSize;
-    SizeT numUsedPages = this->capacity * sizeof(TYPE) / System::PageSize;
-    SizeT numFreeablePages = numUsedPages - numNeededPages;
+    size_t numUsedBytes = Memory::align(this->count * sizeof(TYPE), (size_t)System::PageSize);
+    size_t numNeededPages = numUsedBytes / System::PageSize;
+    size_t numUsedPages = this->capacity * sizeof(TYPE) / (size_t)System::PageSize;
+    size_t numFreeablePages = numUsedPages - numNeededPages;
 
-    Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * System::PageSize);
+    Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * (size_t)System::PageSize);
     this->capacity = this->count;
 }
 
