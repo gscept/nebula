@@ -675,9 +675,10 @@ CreateTexture(const TextureCreateInfo& info)
 /**
 */
 void
-DeleteTexture(const TextureId id)
+DestroyTexture(const TextureId id)
 {
     __Lock(textureAllocator, id.id);
+
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
 
@@ -746,20 +747,12 @@ DeleteTexture(const TextureId id)
     CoreGraphics::DelayedDeleteTexture(id);
     runtimeInfo.view = VK_NULL_HANDLE;
     loadInfo.img = VK_NULL_HANDLE;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyTexture(const TextureId id)
-{
-    DeleteTexture(id);
-    textureAllocator.Dealloc(id.id);
 
 #ifdef WITH_NEBULA_EDITOR
     TrackedTextures.EraseIndex(TrackedTextures.FindIndex(id));
 #endif
+
+    textureAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
