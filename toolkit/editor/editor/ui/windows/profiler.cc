@@ -344,6 +344,33 @@ Profiler::Run(SaveMode save)
                 ImGui::PopStyleColor();
             }
 
+            const char* heapNames[Memory::NumHeapTypes] =
+            {
+                "Default Heap",
+                "Object Heap",
+                "Object Array Heap",
+                "Resource Heap",
+                "Scratch Heap",
+                "String Data Heap",
+                "Stream Data Heap",
+                "Physics Heap",
+                "App Heap",
+                "Network Heap",
+                "Scripting Heap"
+            };
+            for (uint i = 0; i < Memory::NumHeapTypes; i++)
+            {
+                size_t heapUse = Memory::HeapTypeAllocSize[i];
+                if (heapUse >= 1_GB)
+                    ImGui::LabelText(heapNames[i], "%.2f GB allocated", heapUse / float(1_GB));
+                else if (heapUse >= 1_MB)
+                    ImGui::LabelText(heapNames[i], "%.2f MB allocated", heapUse / float(1_MB));
+                else if (heapUse >= 1_KB)
+                    ImGui::LabelText(heapNames[i], "%.2f KB allocated", heapUse / float(1_KB));
+                else
+                    ImGui::LabelText(heapNames[i], "%lu B allocated", heapUse);
+            }
+
             ImGui::PopFont();
 
             ImGui::EndTabItem();
