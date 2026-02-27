@@ -219,7 +219,7 @@ DDGIContext::Create()
 
     FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-
+        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "GI Volume Cull");
         CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
         //CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
@@ -227,6 +227,7 @@ DDGIContext::Create()
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
 
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
+        CoreGraphics::CmdEndMarker(cmdBuf);
     }, {
         { FrameScript_default::BufferIndex::ClusterGIList, CoreGraphics::PipelineStage::ComputeShaderRead }
         , { FrameScript_default::BufferIndex::ClusterGIIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
@@ -237,6 +238,7 @@ DDGIContext::Create()
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "DDGI Probe Update");
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.pipeline.pipeline);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetRaytracingTable(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
@@ -250,6 +252,7 @@ DDGIContext::Create()
                     CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.numRays, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 1);
                 }
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
         }
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
@@ -261,6 +264,7 @@ DDGIContext::Create()
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "DDGI Probe Finalize");
             Util::FixedArray<CoreGraphics::TextureBarrierInfo, true> radianceDistanceTextures(state.volumesToUpdate.Size());
             Util::FixedArray<CoreGraphics::TextureBarrierInfo, true> volumeBlendTextures(state.volumesToUpdate.Size() * 3);
 
@@ -377,6 +381,8 @@ DDGIContext::Create()
                     CoreGraphics::CmdEndMarker(cmdBuf);
                 }
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
+
         }
     });
 
