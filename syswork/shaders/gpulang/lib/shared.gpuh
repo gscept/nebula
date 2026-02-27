@@ -74,7 +74,7 @@ sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f
 
 sample2DArrayShadowLod(handle : u32, uniform samp : *sampler, uv : f32x2, index : f32, depth : f32, lod : f32) f32
 {
-    return textureSampleLodCompare(Textures2DArray[handle], samp, f32x3(uv, index), lod, depth);
+    return textureSampleCompareLod(Textures2DArray[handle], samp, f32x3(uv, index), depth, lod);
 }
 
 fetch2D(handle : u32, uv : u32x2, lod : u32) f32x4
@@ -376,7 +376,7 @@ struct LightParams
     NumLightClusters : u32;
 };
 
-@Visibility("VS|CS|PS")
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform LightUniforms : *LightParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -447,7 +447,7 @@ struct DecalParams
     StencilBuffer : u32;
 };
 
-@Visibility("CS|PS")
+@Visibility("CS|PS|RCS")
 group(FRAME_GROUP) uniform DecalUniforms : *DecalParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -459,7 +459,7 @@ struct DecalIndexData
     PBRDecalIndexList : [NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER] u32;
 };
 
-@Visibility("CS|PS")
+@Visibility("CS|PS|RCS")
 group(FRAME_GROUP) uniform DecalIndexLists : *mutable DecalIndexData;
 
 struct DecalListData
@@ -468,7 +468,7 @@ struct DecalListData
     PBRDecals : [128] PBRDecal;
 };
 
-@Visibility("CS|PS")
+@Visibility("CS|PS|RCS")
 group(FRAME_GROUP) uniform DecalLists : *mutable DecalListData;
 
 //------------------------------------------------------------------------------
@@ -511,7 +511,7 @@ struct VolumeFogParams
     GlobalTurbidity : f32;
 };
 
-@Visibility("CS|VS|PS")
+@Visibility("CS|VS|PS|RCS")
 group(FRAME_GROUP) uniform VolumeFogUniforms : *VolumeFogParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -523,7 +523,7 @@ struct FogIndexListData
     FogBoxIndexList : [NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER] u32;
 };
 
-@Visibility("CS|VS|PS")
+@Visibility("CS|VS|PS|RCS")
 group(FRAME_GROUP) uniform FogIndexLists : *mutable FogIndexListData;
 
 struct FogListData
@@ -532,7 +532,7 @@ struct FogListData
     FogBoxes : [128] FogBox;
 };
 
-@Visibility("CS|VS|PS")
+@Visibility("CS|VS|PS|RCS")
 group(FRAME_GROUP) uniform FogLists : *mutable FogListData;
 
 //------------------------------------------------------------------------------
@@ -573,7 +573,7 @@ struct GIVolumeParams
     NumGIVolumes : u32;
     NumGIVolumeClusters : u32;
 };
-@Visibility("CS|PS")
+@Visibility("CS|PS|RCS")
 group(FRAME_GROUP) uniform GIVolumeUniforms : *GIVolumeParams;
 
 struct GIIndexListData
@@ -587,10 +587,10 @@ struct GIVolumeListData
     GIVolumes : [64]GIVolume;
 };
 
-@Visibility("CS|VS|PS")
+@Visibility("CS|VS|PS|RCS")
 group(FRAME_GROUP) uniform GIIndexLists : *mutable GIIndexListData;
 
-@Visibility("CS|VS|PS")
+@Visibility("CS|VS|PS|RCS")
 group(FRAME_GROUP) uniform GIVolumeLists : *mutable GIVolumeListData;
 
 //------------------------------------------------------------------------------
