@@ -344,6 +344,7 @@ Profiler::Run(SaveMode save)
                 ImGui::PopStyleColor();
             }
 
+#if __WIN32__
             const char* heapNames[Memory::NumHeapTypes] =
             {
                 "Default Heap",
@@ -370,6 +371,7 @@ Profiler::Run(SaveMode save)
                 else
                     ImGui::LabelText(heapNames[i], "%lu B allocated", heapUse);
             }
+#endif
 
             ImGui::PopFont();
 
