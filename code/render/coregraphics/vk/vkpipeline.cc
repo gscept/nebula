@@ -409,17 +409,17 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         switch (group)
         {
             case ShaderGroup::Gen:
-                genHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                genHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Intersect:
             case ShaderGroup::Hit:
-                hitHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                hitHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Miss:
-                missHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                missHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Callable:
-                callableHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                callableHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
 
         }
@@ -445,7 +445,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         tableInfo.dataSize = data.Size();
         auto ret = CoreGraphics::CreateBuffer(tableInfo);
         tableEntry.baseAddress = CoreGraphics::BufferGetDeviceAddress(ret);
-        tableEntry.numEntries = data.Size() / CoreGraphics::ShaderGroupSize;
+        tableEntry.numEntries = data.Size() / (SizeT)CoreGraphics::ShaderGroupSize;
         tableEntry.entrySize = data.Size();
         return ret;
     };

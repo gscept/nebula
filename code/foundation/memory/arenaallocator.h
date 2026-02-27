@@ -196,7 +196,7 @@ ArenaAllocator<ChunkSize>::Alloc()
     else
     {
         // pad up to next multiple of 16 to avoid alignment issues
-        SizeT alignedSize = Memory::align(sizeof(T), 16);
+        size_t alignedSize = Memory::align(sizeof(T), 16ull);
         if (this->iterator == nullptr)
         {
             this->NewChunk();
@@ -204,7 +204,7 @@ ArenaAllocator<ChunkSize>::Alloc()
         else
         {
             // we cast the pointer diff but it should be safe since it should never be above ChunkSize
-            SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);       
+            size_t remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
             if (remainder < alignedSize)
                 this->NewChunk();
         }
@@ -234,7 +234,7 @@ ArenaAllocator<ChunkSize>::Alloc(SizeT num)
     else
     {
         // pad up to next multiple of 16 to avoid alignment issues
-        SizeT alignedSize = Memory::align(sizeof(T) * num, 16);
+        size_t alignedSize = Memory::align(sizeof(T) * num, 16ull);
         if (this->iterator == nullptr)
         {
             this->NewChunk();
@@ -242,7 +242,7 @@ ArenaAllocator<ChunkSize>::Alloc(SizeT num)
         else
         {
             // we cast the pointer diff but it should be safe since it should never be above ChunkSize
-            SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
+            size_t remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
             if (remainder < alignedSize)
                 this->NewChunk();
         }

@@ -190,11 +190,11 @@ void CmdEndRecord(const CmdBufferId id);
 void CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info);
 
 /// Set vertex buffer
-void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, size_t bufferOffset);
 /// Set vertex layout
 void CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl);
 /// Set index buffer
-void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, size_t bufferOffset);
 /// Set the type of topology used
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 
@@ -362,7 +362,7 @@ void CmdCopy(
     , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
     , const Util::Array<CoreGraphics::BufferCopy, 4>& to
-    , const SizeT size
+    , const size_t size
 );
 /// Copy from buffer to texture
 void CmdCopy(
@@ -400,8 +400,8 @@ void CmdSetStencilWriteMask(const CmdBufferId id, const uint writeMask);
 void CmdUpdateBuffer(
     const CmdBufferId id
     , const CoreGraphics::BufferId buffer
-    , uint offset
-    , uint size
+    , size_t offset
+    , size_t size
     , const void* data
 );
 

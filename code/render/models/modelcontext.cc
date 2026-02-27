@@ -116,8 +116,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         // Setup transforms
         transformRange.allocation = TransformInstanceAllocator.Alloc(transformNodes.Size());
-        transformRange.begin = transformRange.allocation.offset;
-        transformRange.end = transformRange.allocation.offset + transformNodes.Size();
+        transformRange.begin = (SizeT)transformRange.allocation.offset;
+        transformRange.end = (SizeT)transformRange.allocation.offset + transformNodes.Size();
         if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
         {
             NodeInstances.transformable.nodeParents.Extend(transformRange.end);
@@ -127,7 +127,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         for (SizeT i = 0; i < transformNodes.Size(); i++)
         {
-            const uint index = transformRange.allocation.offset + i;
+            const uint index = (uint)transformRange.allocation.offset + i;
             Models::TransformNode* tNode = reinterpret_cast<Models::TransformNode*>(transformNodes[i]);
             Math::transform44 trans;
             trans.setposition(tNode->position);
@@ -148,8 +148,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         // Setup node states
         stateRange.allocation = RenderInstanceAllocator.Alloc(renderNodes.Size());
-        stateRange.begin = stateRange.allocation.offset;
-        stateRange.end = stateRange.allocation.offset + renderNodes.Size();
+        stateRange.begin = (uint)stateRange.allocation.offset;
+        stateRange.end = (uint)stateRange.allocation.offset + renderNodes.Size();
 
         if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
         {
@@ -210,7 +210,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
                 state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
                 state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
             }
-            uint index = stateRange.allocation.offset + i;
+            uint index = (uint)stateRange.allocation.offset + i;
 
             NodeInstances.renderable.nodeStates[index] = state;
             NodeInstances.renderable.nodeTransformIndex[index] = nodeLookup[renderNodes[i]];
@@ -275,8 +275,8 @@ ModelContext::Setup(
 
     // Setup transforms
     transformRange.allocation = TransformInstanceAllocator.Alloc(1);
-    transformRange.begin = transformRange.allocation.offset;
-    transformRange.end = transformRange.allocation.offset + 1;
+    transformRange.begin = (uint)transformRange.allocation.offset;
+    transformRange.end = (uint)transformRange.allocation.offset + 1;
 
     NodeInstances.transformable.origTransforms.Append(Math::mat4());
     NodeInstances.transformable.nodeTransforms.Append(transform);
@@ -285,8 +285,8 @@ ModelContext::Setup(
 
      // Setup node states
     stateRange.allocation = RenderInstanceAllocator.Alloc(1);
-    stateRange.begin = stateRange.allocation.offset;
-    stateRange.end = stateRange.allocation.offset + 1;
+    stateRange.begin = (uint)stateRange.allocation.offset;
+    stateRange.end = (uint)stateRange.allocation.offset + 1;
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);

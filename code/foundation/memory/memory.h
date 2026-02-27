@@ -26,6 +26,25 @@ align(unsigned int alignant, unsigned int alignment)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline unsigned int
+align(int alignant, int alignment)
+{
+    return ((unsigned int)alignant + (unsigned int)alignment - 1) & ~((unsigned int)alignment - 1);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline size_t
+align(size_t alignant, size_t alignment)
+{
+    return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline uintptr_t
 alignptr(uintptr_t alignant, uintptr_t alignment)
 {
@@ -37,6 +56,16 @@ alignptr(uintptr_t alignant, uintptr_t alignment)
 */
 __forceinline unsigned int
 align_down(unsigned int alignant, unsigned int alignment)
+{
+    return (alignant / alignment * alignment);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline size_t
+align_down(size_t alignant, size_t alignment)
 {
     return (alignant / alignment * alignment);
 }

@@ -14,9 +14,9 @@ namespace Memory
 {
 HANDLE volatile Win32ProcessHeap = 0;
 long volatile TotalAllocCount = 0;
-long volatile TotalAllocSize = 0;
+size_t volatile TotalAllocSize = 0;
 long volatile HeapTypeAllocCount[NumHeapTypes] = { 0 };
-long volatile HeapTypeAllocSize[NumHeapTypes] = { 0 };
+size_t volatile HeapTypeAllocSize[NumHeapTypes] = { 0 };
 bool volatile MemoryLoggingEnabled = false;
 unsigned int volatile MemoryLoggingThreshold = 0;
 HeapType volatile MemoryLoggingHeapType = InvalidHeapType;
@@ -46,9 +46,9 @@ Alloc(HeapType heapType, size_t size, size_t align)
     }
     #if NEBULA_MEMORY_STATS
         Threading::Interlocked::Increment((volatile int*)&TotalAllocCount);
-        Threading::Interlocked::Add((volatile int*)&TotalAllocSize, (long)size + 16);
+        Threading::Interlocked::Add((volatile int64_t*)&TotalAllocSize, (long)size + 16);
         Threading::Interlocked::Increment((volatile int*)&HeapTypeAllocCount[heapType]);
-        Threading::Interlocked::Add((volatile int*)&HeapTypeAllocSize[heapType], (long)size + 16);
+        Threading::Interlocked::Add((volatile int64_t*)&HeapTypeAllocSize[heapType], (long)size + 16);
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
@@ -78,8 +78,8 @@ Realloc(HeapType heapType, void* ptr, size_t size)
     }
     #if NEBULA_MEMORY_STATS
         SIZE_T newSize = __HeapSize16(Heaps[heapType], 0, allocPtr);
-        Threading::Interlocked::Add((volatile int*)&TotalAllocSize, int(newSize - oldSize + 16));
-        Threading::Interlocked::Add((volatile int*)&HeapTypeAllocSize[heapType], int(newSize - oldSize + 16));
+        Threading::Interlocked::Add((volatile int64_t*)&TotalAllocSize, int(newSize - oldSize + 16));
+        Threading::Interlocked::Add((volatile int64_t*)&HeapTypeAllocSize[heapType], int(newSize - oldSize + 16));
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
@@ -109,9 +109,9 @@ Free(HeapType heapType, void* ptr)
         #endif
         __HeapFree16(Heaps[heapType], 0, ptr);
         #if NEBULA_MEMORY_STATS
-            Threading::Interlocked::Add((volatile int*)&TotalAllocSize, -int(size));
+            Threading::Interlocked::Add((volatile int64_t*)&TotalAllocSize, -int64_t(size));
             Threading::Interlocked::Decrement((volatile int*)&TotalAllocCount);
-            Threading::Interlocked::Add((volatile int*)&HeapTypeAllocSize[heapType], -int(size));
+            Threading::Interlocked::Add((volatile int64_t*)&HeapTypeAllocSize[heapType], -int64_t(size));
             Threading::Interlocked::Decrement((volatile int*)&HeapTypeAllocCount[heapType]);
             if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
                 ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
@@ -294,9 +294,9 @@ Checkpoint(const char* msg)
     n_printf("%d PROCESS HEAPS\n", numProcHeaps);
     const HANDLE defaultHeap = ::GetProcessHeap();
     const HANDLE crtHeap = (HANDLE) _get_heap_handle();
-    SizeT totalAllocSize = 0;
+    size_t totalAllocSize = 0;
     SizeT totalAllocCount = 0;
-    SizeT totalUnusedSize = 0;
+    size_t totalUnusedSize = 0;
     SizeT totalUnusedCount = 0;
     for (procHeapIndex = 0; procHeapIndex < numProcHeaps; procHeapIndex++)
     {

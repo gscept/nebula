@@ -24,10 +24,10 @@ namespace Memory
 struct RangeAllocation
 {
     size_t offset;
-    uint size;
+    size_t size;
     uint node;
 
-    static constexpr uint OOM = 0xFFFFFFFF;
+    static constexpr size_t OOM = 0xFFFFFFFF;
 };
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ public:
     /// Default constructor
     RangeAllocator();
     /// Construct with predetermined size and max allowed number of allocations
-    RangeAllocator(uint size, SizeT maxNumAllocs);
+    RangeAllocator(size_t size, SizeT maxNumAllocs);
     /// Destructor
     ~RangeAllocator();
 
@@ -59,13 +59,13 @@ public:
     bool Empty();
 
     /// Allocate range
-    RangeAllocation Alloc(uint size, uint alignment = 1);
+    RangeAllocation Alloc(size_t size, size_t alignment = 1);
     /// Deallocate range
     void Dealloc(const RangeAllocation& allocation);
 
 private:
     /// Insert node at bin location, return node index
-    uint InsertNode(uint size, size_t offset);
+    uint InsertNode(size_t size, size_t offset);
     /// Remove node from bin
     void RemoveNode(uint nodeIndex);
 
@@ -81,7 +81,7 @@ private:
             , blockNext(END)
         {};
         bool resident;
-        uint size;
+        size_t size;
         size_t offset;
 
         static constexpr uint END = 0xFFFFFFFF;
@@ -98,15 +98,15 @@ private:
     };
 
     /// Get bin index from size
-    static BinIndex IndexFromSize(uint size, bool round = false);
+    static BinIndex IndexFromSize(size_t size, bool round = false);
     /// Get bucket from index
-    static uint BucketFromSize(uint size);
+    static uint BucketFromSize(size_t size);
     /// Get bin from index
     static uint BinFromSize(uint size, uint bucket);
 
 public:
-    uint size;
-    uint freeStorage;
+    size_t size;
+    size_t freeStorage;
     uint freeNodeIterator;
     uint numAllocs;
 
@@ -139,7 +139,7 @@ RangeAllocator::RangeAllocator()
 /**
 */
 inline
-RangeAllocator::RangeAllocator(uint size, SizeT maxNumAllocs)
+RangeAllocator::RangeAllocator(size_t size, SizeT maxNumAllocs)
 {   
     this->size = size;
     this->freeNodes.Resize(maxNumAllocs + 1);
@@ -220,10 +220,10 @@ FindLowestSetBitAfter(uint bitMask, uint startBitIndex)
    with an external buffer to keep track of memory chunks
 */
 inline RangeAllocation 
-RangeAllocator::Alloc(uint size, uint alignment)
+RangeAllocator::Alloc(size_t size, size_t alignment)
 {
     // We are not allowed any more allocations
-    uint alignedSize = size + alignment - 1;
+    size_t alignedSize = size + alignment - 1;
     if (this->freeStorage < alignedSize || this->freeNodeIterator == RangeAllocation::OOM)
     {
         return RangeAllocation{ .offset = RangeAllocation::OOM, .size = 0, .node = RangeAllocatorNode::END };
@@ -264,9 +264,9 @@ RangeAllocator::Alloc(uint size, uint alignment)
     n_assert(!node.resident);
 
     // Save total size of node
-    uint totalSize = node.size;
+    size_t totalSize = node.size;
     //n_assert(totalSize >= alignedSize);
-    uint alignedOffset = Memory::align(node.offset, alignment);
+    size_t alignedOffset = Memory::align(node.offset, (size_t)alignment);
     node.size = alignedSize;
     node.resident = true;
     this->numAllocs++;
@@ -292,8 +292,8 @@ RangeAllocator::Alloc(uint size, uint alignment)
     this->freeStorage -= totalSize;
     
     // The remainder in the front is then added back
-    uint remainder = totalSize - node.size;
-    if (remainder > 0)
+    size_t remainder = totalSize - node.size;
+    if (remainder > 0ull)
     {
         uint newNodeIndex = this->InsertNode(remainder, node.offset + node.size);
         if (newNodeIndex != RangeAllocatorNode::END)
@@ -326,8 +326,8 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
     n_assert(node.resident);
     node.resident = false;
     this->numAllocs--;
-    uint size = node.size;
-    uint offset = node.offset;
+    size_t size = node.size;
+    size_t offset = node.offset;
 
     // Try to merge with left
     if (node.blockPrev != RangeAllocatorNode::END)
@@ -382,7 +382,7 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
 /**
 */
 inline uint 
-RangeAllocator::InsertNode(uint size, size_t offset)
+RangeAllocator::InsertNode(size_t size, size_t offset)
 {
     if (this->freeNodeIterator == 0xFFFFFFFF)
         return RangeAllocatorNode::END;
@@ -483,10 +483,10 @@ static constexpr uint MANTISSA_MASK = MANTISSA_VALUE - 1;
 
 //------------------------------------------------------------------------------
 /**
-    Calculate bin mask using 16 bit float distribution
+    Calculate bin mask using 16 bit float distribution and round up to nearest upper bin
 */
 inline uint
-BinMaskRoundedUp(uint size)
+BinMaskRoundedUp(size_t size)
 {
     uint exp = 0;
     uint mantissa = 0;
@@ -494,7 +494,7 @@ BinMaskRoundedUp(uint size)
     if (size < MANTISSA_VALUE)
     {
         // Denorm: 0..(MANTISSA_VALUE-1)
-        mantissa = size;
+        mantissa = (uint)size;
     }
     else
     {
@@ -505,7 +505,7 @@ BinMaskRoundedUp(uint size)
         exp = mantissaStartBit + 1;
         mantissa = (size >> mantissaStartBit) & MANTISSA_MASK;
 
-        uint lowBitsMask = (1 << mantissaStartBit) - 1;
+        size_t lowBitsMask = (1 << mantissaStartBit) - 1;
 
         // Round up!
         if ((size & lowBitsMask) != 0)
@@ -517,10 +517,10 @@ BinMaskRoundedUp(uint size)
 
 //------------------------------------------------------------------------------
 /**
-    Calculate bin mask using 16 bit float distribution, and round up to highest value
+    Calculate bin mask using 16 bit float distribution
 */
 inline uint
-BinMask(uint size)
+BinMask(size_t size)
 {
     uint exp = 0;
     uint mantissa = 0;
@@ -528,7 +528,7 @@ BinMask(uint size)
     if (size < MANTISSA_VALUE)
     {
         // Denorm: 0..(MANTISSA_VALUE-1)
-        mantissa = size;
+        mantissa = (uint)size;
     }
     else
     {
@@ -558,7 +558,7 @@ RangeAllocator::BinFromSize(uint size, uint bucket)
 /**
 */
 inline RangeAllocator::BinIndex
-RangeAllocator::IndexFromSize(uint size, bool round)
+RangeAllocator::IndexFromSize(size_t size, bool round)
 {
     RangeAllocator::BinIndex ret;
     uint index;

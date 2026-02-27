@@ -53,21 +53,21 @@ extern uint MaxResourceTableReadWriteImages;
 extern uint MaxResourceTableSamplers;
 extern uint MaxResourceTableInputAttachments;
 
-extern uint MemoryRangeGranularity; // Set to the smallest amount of bytes allowed for a non-coherent memory write
+extern size_t MemoryRangeGranularity; // Set to the smallest amount of bytes allowed for a non-coherent memory write
 extern uint TimestampPeriod;
 
 /// Raytracing properties
 extern uint AccelerationStructureScratchAlignment;
-extern uint ShaderGroupAlignment;
-extern uint64_t ShaderGroupSize;
+extern size_t ShaderGroupAlignment;
+extern size_t ShaderGroupSize;
 extern uint MaxRecursionDepth;
 
 struct GraphicsDeviceCreateInfo
 {
-    uint64_t globalConstantBufferMemorySize;
-    uint64_t globalVertexBufferMemorySize;
-    uint64_t globalIndexBufferMemorySize;
-    uint64_t globalUploadMemorySize;
+    size_t globalConstantBufferMemorySize;
+    size_t globalVertexBufferMemorySize;
+    size_t globalIndexBufferMemorySize;
+    size_t globalUploadMemorySize;
     uint64_t memoryHeaps[NumMemoryPoolTypes];
     uint64_t maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
@@ -124,7 +124,7 @@ struct GraphicsDeviceState
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
-    uint globalConstantBufferMaxValue;
+    size_t globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
     Util::FixedArray<bool> inflightFrames;
 
@@ -246,15 +246,15 @@ void LockConstantUpdates();
 /// Use pre-allocated range of memory to update graphics constants
 void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
 /// Reserve range of constant buffer memory and return offset
-ConstantBufferOffset AllocateConstantBufferMemory(uint size);
+ConstantBufferOffset AllocateConstantBufferMemory(size_t size);
 
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetConstantBuffer(IndexT i);
 
 /// Allocate vertices from the global vertex pool
-const VertexAlloc AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
+const VertexAlloc AllocateVertices(const size_t numVertices, const size_t vertexSize);
 /// Allocate vertices from the global vertex pool by bytes
-const VertexAlloc AllocateVertices(const SizeT bytes);
+const VertexAlloc AllocateVertices(const size_t bytes);
 /// Deallocate vertices
 void DeallocateVertices(const VertexAlloc& alloc);
 /// Get vertex buffer 
@@ -270,17 +270,17 @@ void DeallocateIndices(const VertexAlloc& alloc);
 const CoreGraphics::BufferId GetIndexBuffer();
 
 /// Allocate upload memory
-Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
+Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> AllocateUpload(const size_t numBytes, const size_t alignment = 1);
 /// Upload single item to GPU source buffer
 template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> Upload(const TYPE& data, const SizeT alignment = 1);
 /// Upload array of items to GPU source buffer
 template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> UploadArray(const TYPE* data, SizeT elements, const SizeT alignment = 1);
 /// Upload item to GPU source buffer with preallocated memory
-template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE& data);
+template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, size_t offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
-template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE* data, SizeT elements);
+template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, size_t offset, const TYPE* data, SizeT elements);
 /// Upload memory to upload buffer with given offset, return offset
-void UploadInternal(const CoreGraphics::BufferId buffer, uint offset, const void* data, SizeT size);
+void UploadInternal(const CoreGraphics::BufferId buffer, size_t offset, const void* data, size_t size);
 
 /// Free upload allocations directly
 void FreeUploads(const Util::Array<Memory::RangeAllocation>& allocations);
@@ -434,7 +434,7 @@ template<class TYPE>
 inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 Upload(const TYPE& data, const SizeT alignment)
 {
-    const uint uploadSize = sizeof(TYPE);
+    const size_t uploadSize = sizeof(TYPE);
     auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
         UploadInternal(buffer, alloc.offset, &data, uploadSize);
@@ -448,7 +448,7 @@ template<class TYPE>
 inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 {
-    const uint uploadSize = sizeof(TYPE) * numElements;
+    const size_t uploadSize = sizeof(TYPE) * numElements;
     auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
         UploadInternal(buffer, alloc.offset, data, uploadSize);
@@ -460,9 +460,9 @@ UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 */
 template<class TYPE>
 inline void
-Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE& data)
+Upload(const CoreGraphics::BufferId buffer, const size_t offset, const TYPE& data)
 {
-    const uint uploadSize = sizeof(TYPE);
+    const size_t uploadSize = sizeof(TYPE);
     UploadInternal(buffer, offset, &data, uploadSize);
 }
 
@@ -471,9 +471,9 @@ Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE& data)
 */
 template<class TYPE>
 inline void
-Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE* data, SizeT numElements)
+Upload(const CoreGraphics::BufferId buffer, const size_t offset, const TYPE* data, SizeT numElements)
 {
-    const uint uploadSize = sizeof(TYPE) * numElements;
+    const size_t uploadSize = sizeof(TYPE) * numElements;
     UploadInternal(buffer, offset, data, uploadSize);
 }
 

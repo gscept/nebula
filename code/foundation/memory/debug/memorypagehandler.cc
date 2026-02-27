@@ -79,7 +79,7 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Nebula Global Heaps Alloc Size: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromLong(Memory::TotalAllocSize) + " bytes");
+                htmlWriter->Element(HtmlElement::TableData, String::FromSize(Memory::TotalAllocSize) + " bytes");
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Nebula Local Heaps Alloc Count: ");
@@ -95,7 +95,7 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Nebula Overall Alloc Size: ");
-                htmlWriter->Element(HtmlElement::TableData, String::FromLong(heapAllocSize + Memory::TotalAllocSize) + " bytes");
+                htmlWriter->Element(HtmlElement::TableData, String::FromSize(heapAllocSize + Memory::TotalAllocSize) + " bytes");
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
 
@@ -139,7 +139,7 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Element(HtmlElement::TableData, Memory::GetHeapTypeName((Memory::HeapType)i));
                     htmlWriter->Element(HtmlElement::TableData, String::FromLong(Memory::HeapTypeAllocCount[i]));
-                    htmlWriter->Element(HtmlElement::TableData, String::FromLong(Memory::HeapTypeAllocSize[i]));
+                    htmlWriter->Element(HtmlElement::TableData, String::FromSize(Memory::HeapTypeAllocSize[i]));
                 htmlWriter->End(HtmlElement::TableRow);
             }
         htmlWriter->End(HtmlElement::Table);

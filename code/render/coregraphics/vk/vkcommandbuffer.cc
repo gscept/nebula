@@ -360,7 +360,7 @@ CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info)
 /**
 */
 void
-CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
+CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, size_t bufferOffset)
 {
 #if _DEBUG
     CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id);
@@ -394,7 +394,7 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
 /**
 */
 void
-CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
+CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, size_t bufferOffset)
 {
 #if _DEBUG
     CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id);
@@ -1185,7 +1185,7 @@ void
 CmdRaysDispatch(const CmdBufferId id, const RayDispatchTable& table, int dimX, int dimY, int dimZ)
 {
     VkStridedDeviceAddressRegionKHR genRegion, hitRegion, missRegion, callableRegion;
-    uint handleSize = CoreGraphics::ShaderGroupSize;
+    size_t handleSize = CoreGraphics::ShaderGroupSize;
 
     auto RegionSetup = [handleSize](VkStridedDeviceAddressRegionKHR& region, const RayDispatchTable::Entry& entry)
     {
@@ -1302,7 +1302,7 @@ CmdCopy(
     , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
     , const Util::Array<CoreGraphics::BufferCopy, 4>& to
-    , const SizeT size
+    , const size_t size
 )
 {
     n_assert(from.Size() > 0);
@@ -1507,7 +1507,7 @@ CmdSetStencilWriteMask(const CmdBufferId id, const uint writeMask)
 /**
 */
 void
-CmdUpdateBuffer(const CmdBufferId id, const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data)
+CmdUpdateBuffer(const CmdBufferId id, const CoreGraphics::BufferId buffer, size_t offset, size_t size, const void* data)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdUpdateBuffer(cmdBuf, Vulkan::BufferGetVk(buffer), offset, size, data);

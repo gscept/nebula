@@ -60,8 +60,8 @@ public:
         , const CoreGraphics::VertexAlloc& vertices
         , const CoreGraphics::VertexAlloc& indices
         , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-        , const SizeT vertexOffsetStride
-        , const SizeT patchVertexStride
+        , const size_t vertexOffsetStride
+        , const size_t patchVertexStride
         , const Util::Array<Math::mat4> transforms
         , const uint materialTableOffset
         , const MaterialTemplatesGPULang::MaterialProperties shader

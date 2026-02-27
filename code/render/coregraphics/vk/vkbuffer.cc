@@ -121,7 +121,7 @@ CreateBuffer(const BufferCreateInfo& info)
     }
 
     // start by creating buffer
-    uint size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
+    size_t size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
     VkBufferCreateInfo bufinfo =
     {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -151,7 +151,7 @@ CreateBuffer(const BufferCreateInfo& info)
     VkMemoryRequirements memoryReqs;
     vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
 
-    uint baseAlignment = memoryReqs.alignment;
+    size_t baseAlignment = memoryReqs.alignment;
     if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::AccelerationStructureInstances))
         baseAlignment = 16;
     if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::ShaderTable))
@@ -166,7 +166,7 @@ CreateBuffer(const BufferCreateInfo& info)
         n_assert(memoryReqs.size < CoreGraphics::SparseAddressSize);
 
         table.memoryReqs = memoryReqs;
-        table.bindCounts = size / baseAlignment;
+        table.bindCounts = uint(size / baseAlignment);
         table.pages.Resize(table.bindCounts);
 
         SizeT offset = 0;
@@ -358,13 +358,13 @@ BufferUnmap(const BufferId id)
 /**
 */
 void
-BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset)
+BufferUpdate(const BufferId id, const void* data, const size_t size, const size_t offset)
 {
     const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
 
 #if NEBULA_DEBUG
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
-    n_assert(size + offset <= (uint)setup.byteSize);
+    n_assert(size + offset <= setup.byteSize);
 #endif
     byte* buf = (byte*)map.mappedMemory + offset;
     memcpy(buf, data, size);
@@ -374,7 +374,7 @@ BufferUpdate(const BufferId id, const void* data, const uint size, const uint of
 /**
 */
 void
-BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const uint size, const uint offset)
+BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const size_t size, const size_t offset)
 {
     n_assert(size <= (uint)BufferGetUploadMaxSize());
     CoreGraphics::CmdUpdateBuffer(cmdBuf, id, offset, size, data);
@@ -561,7 +561,7 @@ BufferGetDeviceAddress(const BufferId id)
 /**
 */
 void
-BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, const void* data, const uint size)
+BufferCopyWithStaging(const CoreGraphics::BufferId dest, const size_t offset, const void* data, const size_t size)
 {
     // Create buffer to copy from
     CoreGraphics::BufferCreateInfo bufInfo;

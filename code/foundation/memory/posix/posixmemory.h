@@ -23,9 +23,9 @@ namespace Memory
 {
 #if NEBULA_MEMORY_STATS
 extern int volatile TotalAllocCount;
-extern int volatile TotalAllocSize;
+extern size_t volatile TotalAllocSize;
 extern int volatile HeapTypeAllocCount[NumHeapTypes];
-extern int volatile HeapTypeAllocSize[NumHeapTypes];
+extern size_t volatile HeapTypeAllocSize[NumHeapTypes];
 #endif
 
 #define StackAlloc(size) alloca(size);

@@ -39,8 +39,8 @@ struct BlasCreateInfo
     CoreGraphics::BufferId vbo, ibo;
     CoreGraphics::IndexType::Code indexType;
     CoreGraphics::VertexComponent::Format positionsFormat;
-    uint64_t stride;
-    uint64_t vertexOffset, indexOffset;
+    size_t stride;
+    size_t vertexOffset, indexOffset;
     CoreGraphics::PrimitiveGroup primGroup;
     AccelerationStructureBuildFlags flags;
 };
@@ -80,9 +80,9 @@ BlasInstanceId CreateBlasInstance(const BlasInstanceCreateInfo& info);
 /// Destroy blas instance
 void DestroyBlasInstance(const BlasInstanceId id);
 /// Update blas instance and write to buffer
-void BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset);
+void BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, size_t offset);
 /// Update blas instance and write to buffer
-void BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset);
+void BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, size_t offset);
 /// Set blas instance mask, setting it to 0x0 will disable it
 void BlasInstanceSetMask(const BlasInstanceId id, uint mask);
 /// Get instance size (platform dependent)

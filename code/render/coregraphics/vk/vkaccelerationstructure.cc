@@ -323,7 +323,7 @@ DestroyBlasInstance(const BlasInstanceId id)
 /**
 */
 void
-BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset)
+BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, size_t offset)
 {
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     Math::mat4 trans = Math::transpose(transform);
@@ -337,7 +337,7 @@ BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGra
 /**
 */
 void
-BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset)
+BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, size_t offset)
 {
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;

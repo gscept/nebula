@@ -371,9 +371,9 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     SizeT numObjects = nodes.end - nodes.begin;
     n_assert((state.blasInstances.Size() + numObjects) < state.maxAllowedInstances);
     Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(numObjects);
-    state.blasInstances.Extend(alloc.offset + numObjects);
-    state.blasInstanceMeshes.Extend(alloc.offset + numObjects);
-    state.objects.Extend(alloc.offset + numObjects);
+    state.blasInstances.Extend((SizeT)alloc.offset + numObjects);
+    state.blasInstanceMeshes.Extend((SizeT)alloc.offset + numObjects);
+    state.objects.Extend((SizeT)alloc.offset + numObjects);
 
     // Create bogus constants
     /*
@@ -473,7 +473,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             constants.AttributeStride = attributeStride;
             constants.VertexLayout = (uint)temp->vertexLayout;
 
-            uint instanceIndex = offset + instanceCounter;
+            uint instanceIndex = (uint)offset + instanceCounter;
             state.objects[instanceIndex] = constants;
 
             // Setup instance
@@ -510,8 +510,8 @@ void RaytracingContext::SetupMesh(
     , const CoreGraphics::VertexAlloc& vertices
     , const CoreGraphics::VertexAlloc& indices
     , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-    , const SizeT vertexOffsetStride
-    , const SizeT patchVertexStride
+    , const size_t vertexOffsetStride
+    , const size_t patchVertexStride
     , const Util::Array<Math::mat4> transforms
     , const uint materialTableOffset
     , const MaterialTemplatesGPULang::MaterialProperties shader
@@ -525,9 +525,9 @@ void RaytracingContext::SetupMesh(
 
     state.blasLock.Enter();
     Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(transforms.Size());
-    state.blasInstances.Extend(alloc.offset + transforms.Size());
-    state.blasInstanceMeshes.Extend(alloc.offset + transforms.Size());
-    state.objects.Extend(alloc.offset + transforms.Size());
+    state.blasInstances.Extend((uint)alloc.offset + transforms.Size());
+    state.blasInstanceMeshes.Extend((uint)alloc.offset + transforms.Size());
+    state.objects.Extend((uint)alloc.offset + transforms.Size());
 
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, transforms.Size());
@@ -537,7 +537,7 @@ void RaytracingContext::SetupMesh(
 
     // For each patch, setup a separate BLAS
     IndexT patchCounter = 0;
-    for (IndexT i = alloc.offset; i < alloc.offset + transforms.Size(); i++)
+    for (IndexT i = (uint)alloc.offset; i < (uint)alloc.offset + transforms.Size(); i++)
     {
         // Create BLAS for each patch
         CoreGraphics::BlasCreateInfo createInfo;
@@ -710,8 +710,8 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     for (IndexT j = 0; j < numObjects; j++)
                     {
                         Math::mat4 transform;
-                        CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[alloc.offset + j]);
-                        CoreGraphics::BlasInstanceUpdate(state.blasInstances[alloc.offset + j], state.blasInstanceBuffer.HostBuffer(), (alloc.offset + j) * CoreGraphics::BlasInstanceGetSize());
+                        CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[(uint)alloc.offset + j]);
+                        CoreGraphics::BlasInstanceUpdate(state.blasInstances[(uint)alloc.offset + j], state.blasInstanceBuffer.HostBuffer(), (alloc.offset + j) * CoreGraphics::BlasInstanceGetSize());
                     }
                 }
                 else
@@ -727,10 +727,10 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     for (IndexT j = renderableRange.begin; j < renderableRange.end; j++)
                     {
                         const Math::mat4& transform = transformables.nodeTransforms[transformableRange.begin + renderables.nodeTransformIndex[j]];
-                        if (state.blasInstances[alloc.offset + counter] != CoreGraphics::InvalidBlasInstanceId)
+                        if (state.blasInstances[(uint)alloc.offset + counter] != CoreGraphics::InvalidBlasInstanceId)
                         {
-                            CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[alloc.offset + counter]);
-                            CoreGraphics::BlasInstanceUpdate(state.blasInstances[alloc.offset + counter], transform, state.blasInstanceBuffer.HostBuffer(), (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize());
+                            CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[(uint)alloc.offset + counter]);
+                            CoreGraphics::BlasInstanceUpdate(state.blasInstances[(uint)alloc.offset + counter], transform, state.blasInstanceBuffer.HostBuffer(), (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize());
                         }
                         counter++;
                     }
@@ -847,7 +847,7 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
     // clean up old stuff, but don't deallocate entity
     Memory::RangeAllocation range = raytracingContextAllocator.Get<Raytracing_Allocation>(id.id);
     SizeT numAllocs = raytracingContextAllocator.Get<Raytracing_NumStructures>(id.id);
-    for (IndexT i = range.offset; i < numAllocs; i++)
+    for (IndexT i = (uint)range.offset; i < numAllocs; i++)
     {
         CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
         CoreGraphics::DestroyBlasInstance(state.blasInstances[i]);

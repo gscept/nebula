@@ -228,11 +228,11 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 /**
 */
 CoreGraphics::Alloc
-AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, uint alignment)
+AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, size_t alignment)
 {
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(dev, buf, &req);
-    req.alignment = Memory::align(req.alignment, (DeviceSize)alignment);
+    req.alignment = Memory::align(req.alignment, alignment);
 
     VkMemoryPropertyFlags flags = 0;
 

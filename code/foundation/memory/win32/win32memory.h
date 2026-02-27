@@ -20,9 +20,9 @@
 namespace Memory
 {
 extern long volatile TotalAllocCount;
-extern long volatile TotalAllocSize;
+extern size_t volatile TotalAllocSize;
 extern long volatile HeapTypeAllocCount[NumHeapTypes];
-extern long volatile HeapTypeAllocSize[NumHeapTypes];
+extern size_t volatile HeapTypeAllocSize[NumHeapTypes];
 extern unsigned int volatile MemoryLoggingThreshold;
 extern HeapType volatile MemoryLoggingHeapType;
 

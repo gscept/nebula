@@ -63,7 +63,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        Threading::AtomicCounter endAddress;
+        Threading::AtomicCounter64 endAddress;
         struct FlushedRanges
         {
             SizeT flushedStart;
@@ -810,12 +810,12 @@ uint MaxResourceTableReadWriteImages = UINT_MAX;
 uint MaxResourceTableSamplers = UINT_MAX;
 uint MaxResourceTableInputAttachments = UINT_MAX;
 
-uint MemoryRangeGranularity = UINT_MAX;
+size_t MemoryRangeGranularity = UINT_MAX;
 uint TimestampPeriod = UINT_MAX;
 
 uint AccelerationStructureScratchAlignment = UINT_MAX;
-uint ShaderGroupAlignment = UINT_MAX;
-uint64_t ShaderGroupSize = UINT_MAX;
+size_t ShaderGroupAlignment = UINT_MAX;
+size_t ShaderGroupSize = UINT_MAX;
 uint MaxRecursionDepth = UINT_MAX;
 
 using namespace Vulkan;
@@ -1874,17 +1874,17 @@ SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 /**
 */
 ConstantBufferOffset
-AllocateConstantBufferMemory(uint size)
+AllocateConstantBufferMemory(size_t size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
     // Calculate aligned upper bound
-    int alignedSize = Memory::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
+    size_t alignedSize = Memory::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
-    int ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
+    size_t ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalConstantBufferMaxValue)
@@ -2262,10 +2262,10 @@ Threading::CriticalSection vertexAllocationMutex;
 /**
 */
 const VertexAlloc
-AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
+AllocateVertices(const size_t numVertices, const size_t vertexSize)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    const uint size = numVertices * vertexSize;
+    const size_t size = numVertices * vertexSize;
     Memory::RangeAllocation alloc = state.vertexAllocator.Alloc(size);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, size);
@@ -2276,7 +2276,7 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 /**
 */
 const VertexAlloc
-AllocateVertices(const SizeT bytes)
+AllocateVertices(const size_t bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
     Memory::RangeAllocation alloc = state.vertexAllocator.Alloc(bytes);
@@ -2358,13 +2358,13 @@ GetIndexBuffer()
 */
 Threading::CriticalSection UploadLock;
 Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
-AllocateUpload(const SizeT numBytes, const SizeT alignment)
+AllocateUpload(const size_t numBytes, const size_t alignment)
 {
     Threading::CriticalScope _0(&UploadLock);
 
     // Calculate aligned upper bound
-    SizeT adjustedAlignment = Math::max(alignment, (SizeT)CoreGraphics::MemoryRangeGranularity);
-    const SizeT alignedBytes = numBytes + adjustedAlignment - 1;
+    size_t adjustedAlignment = Math::max(alignment, CoreGraphics::MemoryRangeGranularity);
+    const size_t alignedBytes = numBytes + adjustedAlignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
     Memory::RangeAllocation alloc = state.uploadAllocator.Alloc(numBytes, adjustedAlignment);
@@ -2379,7 +2379,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 /**
 */
 void
-UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const void* data, SizeT size)
+UploadInternal(const CoreGraphics::BufferId buffer, const size_t offset, const void* data, size_t size)
 {
     // For upload, we don't make any attempts acquiring the buffer
     CoreGraphics::BufferUpdate(buffer, data, size, offset);

@@ -178,7 +178,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
             {
                 rangesToFlush.Append(alloc);
                 BufferIdAcquire(vbo);
-                SizeT baseVertexOffset = streamData->vertexAllocationOffset.offset;
+                size_t baseVertexOffset = streamData->vertexAllocationOffset.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
@@ -199,7 +199,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
             {
                 rangesToFlush.Append(alloc);
                 BufferIdAcquire(ibo);
-                SizeT baseIndexOffset = streamData->indexAllocationOffset.offset;
+                size_t baseIndexOffset = streamData->indexAllocationOffset.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
@@ -418,9 +418,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
                 primGroups.Append(group);
             }
             MeshCreateInfo mshInfo;
-            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + range.baseVertexByteOffset), 0 });
-            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + range.attributesVertexByteOffset), 1 });
-            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (SizeT)range.indexByteOffset;
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocationOffset.offset + (size_t)range.baseVertexByteOffset), 0 });
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocationOffset.offset + (size_t)range.attributesVertexByteOffset), 1 });
+            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (size_t)range.indexByteOffset;
             mshInfo.indexBuffer = ibo;
             mshInfo.topology = PrimitiveTopology::TriangleList;
             mshInfo.indexType = range.indexType;
