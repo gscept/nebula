@@ -464,27 +464,35 @@ ImguiContext::Create()
                 N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
                 N_MARKER_END()
-                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
-                if (userData == nullptr)
+                if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
-                    N_SCOPE(Draw, ImGUI)
-                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                    void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
+                    if (userData == nullptr)
+                    {
+                        N_SCOPE(Draw, ImGUI)
+                        ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                    }
+                    else
+                    {
+                        N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
+                            ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                        ImGuiSecondaryWindowData data;
+                        data.buf = cmdBuf;
+                        data.viewport = viewport;
+                        data.id = *static_cast<ImGuiID*>(userData);
+                        for (int i = 1; i < platform_io.Viewports.Size; i++)
+                        {
+                            ImGuiViewport* viewport = platform_io.Viewports[i];
+                            if (viewport->ID == data.id)
+                                platform_io.Renderer_RenderWindow(viewport, &data);
+                        }
+                        N_MARKER_END()
+                    }
                 }
                 else
                 {
-                    N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
-                    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-                    ImGuiSecondaryWindowData data;
-                    data.buf = cmdBuf;
-                    data.viewport = viewport;
-                    data.id = *static_cast<ImGuiID*>(userData);
-                    for (int i = 1; i < platform_io.Viewports.Size; i++)
-                    {
-                        ImGuiViewport* viewport = platform_io.Viewports[i];
-                        if (viewport->ID == data.id)
-                            platform_io.Renderer_RenderWindow(viewport, &data);
-                    }
-                    N_MARKER_END()
+                    N_SCOPE(Draw, ImGUI)
+                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
                 CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
@@ -509,27 +517,35 @@ ImguiContext::Create()
                 N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
                 N_MARKER_END()
-                void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
-                if (userData == nullptr)
+                if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
-                    N_SCOPE(Draw, ImGUI)
-                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                    void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
+                    if (userData == nullptr)
+                    {
+                        N_SCOPE(Draw, ImGUI)
+                        ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
+                    }
+                    else
+                    {
+                        N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
+                            ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                        ImGuiSecondaryWindowData data;
+                        data.buf = cmdBuf;
+                        data.viewport = viewport;
+                        data.id = *static_cast<ImGuiID*>(userData);
+                        for (int i = 1; i < platform_io.Viewports.Size; i++)
+                        {
+                            ImGuiViewport* viewport = platform_io.Viewports[i];
+                            if (viewport->ID == data.id)
+                                platform_io.Renderer_RenderWindow(viewport, &data);
+                        }
+                        N_MARKER_END()
+                    }
                 }
                 else
                 {
-                    N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
-                    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-                    ImGuiSecondaryWindowData data;
-                    data.buf = cmdBuf;
-                    data.viewport = viewport;
-                    data.id = *static_cast<ImGuiID*>(userData);
-                    for (int i = 1; i < platform_io.Viewports.Size; i++)
-                    {
-                        ImGuiViewport* viewport = platform_io.Viewports[i];
-                        if (viewport->ID == data.id)
-                            platform_io.Renderer_RenderWindow(viewport, &data);
-                    }
-                    N_MARKER_END()
+                    N_SCOPE(Draw, ImGUI)
+                    ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
                 CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
