@@ -18,6 +18,7 @@
 #include "editor/commandmanager.h"
 #include "editor/editor.h"
 #include "editor/cmds.h"
+#include "uimanager.h"
 
 using namespace Util;
 
@@ -193,6 +194,11 @@ WindowServer::RunAll()
                     }
                 }
                 ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem("Save Window Layout"))
+            {
+                const IO::URI path(Editor::UIManager::GetEditorUIIniPath());
+                ImGui::SaveIniSettingsToDisk(path.LocalPath().c_str());
             }
 
             ImGui::EndMenu();
