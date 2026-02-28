@@ -62,7 +62,6 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, Profiler::HighLightRe
     const uint32_t numColors = sizeof(colors) / sizeof(ImU32);
     uint32_t colorIndex = scope.category.HashCode() % numColors;
 
-    // convert to milliseconds
     const float frameTime = endTime - startTime;
 
     // deal with clipping
@@ -93,15 +92,13 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, Profiler::HighLightRe
     drawList->AddText(ImVec2(startX + TextPad, pos.y), IM_COL32_BLACK, text.AsCharPtr());
     drawList->PopClipRect();
 
-    if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
+    if (ImGui::IsMouseHoveringRect(bbMin, bbMax) && !ImGui::GetIO().KeyShift)
     {
         // record double-clicked region on the profiler
         if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
-            float normStart = (bbMin.x - start.x) / canvas.x;
-            float normEnd   = (bbMax.x - start.x) / canvas.x;
-            highlightRegion.start = Math::clamp(normStart, 0.0f, 1.0f);
-            highlightRegion.end   = Math::clamp(normEnd, 0.0f, 1.0f);
+            highlightRegion.start = scope.start / fullFrameTime;
+            highlightRegion.duration = scope.duration / fullFrameTime;
         }
 
         ImGui::BeginTooltip();
@@ -132,16 +129,34 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, Profiler::HighLightRe
 /**
 */
 int
-RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
+RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
 {
-    static const float YPad = ImGui::GetTextLineHeight();
-    static const float TextPad = 5.0f;
-
     // convert to milliseconds
     float begin = marker.start / 1000000000.0f;
     float duration = marker.duration / 1000000000.0f;
-    float startX = pos.x + begin / frameTime * canvas.x;
-    float stopX = startX + Math::max(duration / frameTime * canvas.x, 1.0f);
+
+    const float startTime = startSection * fullFrameTime;
+    const float endTime = endSection * fullFrameTime;
+
+    if (begin + duration < startTime || begin > endTime)
+    {
+        return level;
+    }
+
+    static const float YPad = ImGui::GetTextLineHeight();
+    static const float TextPad = 5.0f;
+
+    const float frameTime = endTime - startTime;
+
+    // deal with clipping   
+    if (begin < startTime)
+    {
+        duration -= startTime - begin;
+        begin = startTime;
+    }
+
+    float startX = pos.x + (Math::max(0.0f, (begin - startTime)) / frameTime) * canvas.x;
+    float stopX = startX + Math::max((duration / frameTime) * canvas.x, 1.0f);
     float startY = pos.y;
     float stopY = startY + YPad;
 
@@ -161,6 +176,12 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 
     if (ImGui::IsMouseHoveringRect(bbMin, bbMax) && !ImGui::GetIO().KeyShift) // show tooltip only when not panning
     {
+        // record double-clicked region on the profiler
+        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        {
+            highlightRegion.start = begin / fullFrameTime;
+            highlightRegion.duration = duration / fullFrameTime;
+        }
         ImGui::BeginTooltip();
         Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
         ImGui::Text(text.AsCharPtr());
@@ -172,7 +193,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     int deepest = level + 1;
     for (IndexT i = 0; i < marker.children.Size(); i++)
     {
-        int childLevel = RecursiveDrawGpuMarker(marker.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
+        int childLevel = RecursiveDrawGpuMarker(marker.children[i], highlightRegion, drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, level + 1);
         deepest = Math::max(deepest, childLevel);
     }
     return deepest;
@@ -259,7 +280,6 @@ Profiler::Run(SaveMode save)
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 start = ImGui::GetCursorScreenPos();
             ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
-            static float timeWindow = 1.0f;
             ImGui::DragFloatRange2("Time range", &this->timeStart, &this->timeEnd, 0.01f, 0.0f, 1.0f, "%.3f", "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
             // Handle mouse scroll for timeline zoom
@@ -269,24 +289,23 @@ Profiler::Run(SaveMode save)
             {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             }
+            float zoomRange = this->timeEnd - this->timeStart;
             if (mouseWheel != 0.0f && ImGui::IsWindowHovered() && io.KeyShift)
             {
-                float range = this->timeEnd - this->timeStart;
-
                 // Get normalized mouse position within the timeline area (0 to 1)
                 ImVec2 mousePos = ImGui::GetMousePos();
                 float canvasWidth = fullSize.x - start.x;
                 float mouseNormalizedX = Math::clamp((mousePos.x - start.x) / canvasWidth, 0.0f, 1.0f);
 
                 // Calculate the time value at mouse position
-                float mouseTimeValue = this->timeStart + (mouseNormalizedX * range);
+                float mouseTimeValue = this->timeStart + (mouseNormalizedX * zoomRange);
 
                 // Calculate zoom factor (positive mouseWheel = zoom in, negative = zoom out)
                 float zoomFactor = 1.0f - (mouseWheel * 0.1f); // Adjust 0.1 for sensitivity
                 zoomFactor = Math::clamp(zoomFactor, 0.1f, 10.0f);
 
                 // Calculate new range
-                float newRange = range * zoomFactor;
+                float newRange = zoomRange * zoomFactor;
                 newRange = Math::clamp(newRange, 0.01f, 1.0f);
 
                 // Recalculate start and end to keep mouse position fixed
@@ -306,28 +325,27 @@ Profiler::Run(SaveMode save)
             }
 
             // Handle shift + left-drag for panning the timeline
-            if (io.KeyShift //&& ImGui::IsWindowHovered()
+            if (io.KeyShift && ImGui::IsWindowHovered()
              && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
             {
                 ImVec2 dragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
-                float canvasWidth = ImGui::GetContentRegionAvail().x * timeWindow;
-                float range = this->timeEnd - this->timeStart;
-                if (canvasWidth > 0.0f && range > 0.0f)
+                float canvasWidth = ImGui::GetContentRegionAvail().x;
+                if (canvasWidth > 0.0f && zoomRange > 0.0f)
                 {
                     float deltaNormalized = dragDelta.x / canvasWidth;
-                    float timeShift = -deltaNormalized * range;
+                    float timeShift = -deltaNormalized * zoomRange;
                     this->timeStart += timeShift;
                     this->timeEnd += timeShift;
 
                     if (this->timeStart < 0.0f)
                     {
                         this->timeStart = 0.0f;
-                        this->timeEnd = Math::min(this->timeStart + range, 1.0f);
+                        this->timeEnd = Math::min(this->timeStart + zoomRange, 1.0f);
                     }
                     if (this->timeEnd > 1.0f)
                     {
                         this->timeEnd = 1.0f;
-                        this->timeStart = Math::max(0.0f, this->timeEnd - range);
+                        this->timeStart = Math::max(0.0f, this->timeEnd - zoomRange);
                     }
                 }
                 ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
@@ -336,13 +354,14 @@ Profiler::Run(SaveMode save)
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
             {
                 if (hideEmptyThreads && ctx.topLevelScopes.Size() == 0)
+                {
                     continue;
+                }
                 if (ImGui::CollapsingHeader(ctx.threadName.Value(), ctx.topLevelScopes.Size() > 0 ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_OpenOnArrow))
                 {
                     ImGui::PushFont(Dynui::ImguiSmallFont);
 
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
-                    canvasSize.x *= timeWindow;
                     ImVec2 pos = ImGui::GetCursorScreenPos();
                     int levels = 0;
                     if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
@@ -369,12 +388,16 @@ Profiler::Run(SaveMode save)
             }
 
             // draw highlight overlay/lines if user double-clicked a scope
-            if (this->highlightRegion.start >= 0.0f && this->highlightRegion.end > this->highlightRegion.start)
+            if (this->pauseProfiling && this->highlightRegion.start >= 0.0f && this->highlightRegion.start + this->highlightRegion.duration > this->highlightRegion.start)
             {
+                // highlightRange is normalized to the current frame time range, adjust it the current zoom level
+                float highlightRange = this->highlightRegion.duration / zoomRange;
+                float regionStartTime = (this->highlightRegion.start - this->timeStart) / zoomRange;
+                float regionEndTime = regionStartTime + highlightRange;
+
                 ImVec2 canvasSize = ImGui::GetContentRegionAvail();
-                canvasSize.x *= timeWindow;
-                float x0 = start.x + this->highlightRegion.start * canvasSize.x;
-                float x1 = start.x + this->highlightRegion.end * canvasSize.x;
+                float x0 = start.x + regionStartTime * canvasSize.x;
+                float x1 = start.x + regionEndTime * canvasSize.x;
                 ImU32 overlayCol = IM_COL32(255, 255, 0, 60); // translucent yellow
                 drawList->AddRectFilled(ImVec2(x0, start.y), ImVec2(x1, fullSize.y), overlayCol);
                 drawList->AddLine(ImVec2(x0, start.y), ImVec2(x0, fullSize.y), IM_COL32_WHITE, 1.0f);
@@ -384,11 +407,12 @@ Profiler::Run(SaveMode save)
                 {
                     ImVec2 mp = ImGui::GetMousePos();
                     float relX = (mp.x - start.x) / canvasSize.x;
-                    if (relX >= this->highlightRegion.start && relX <= this->highlightRegion.end)
+                    if (relX >= regionStartTime && relX <= regionEndTime)
                     {
-                        this->highlightRegion.start = this->highlightRegion.end = -1.0f;
+                        this->highlightRegion.start = this->highlightRegion.duration = -1.0f;
                     }
-                }            }
+                }            
+            }
 
             if (ImGui::CollapsingHeader("GPU"))
             {
@@ -407,7 +431,7 @@ Profiler::Run(SaveMode save)
                     const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
                     if (marker.queue != CoreGraphics::GraphicsQueueType)
                         continue;
-                    int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                    int level = RecursiveDrawGpuMarker(marker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
                     levels = Math::max(levels, level);
                 }
 
@@ -424,7 +448,7 @@ Profiler::Run(SaveMode save)
                     const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
                     if (marker.queue != CoreGraphics::ComputeQueueType)
                         continue;
-                    int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
+                    int level = RecursiveDrawGpuMarker(marker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd,0);
                     levels = Math::max(levels, level);
                 }
 

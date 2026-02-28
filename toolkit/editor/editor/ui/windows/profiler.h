@@ -25,7 +25,7 @@ public:
     struct HighLightRegion
     {
         float start = -1.0f;
-        float end = -1.0f;
+        float duration = -1.0f;
     };
 
 private:
