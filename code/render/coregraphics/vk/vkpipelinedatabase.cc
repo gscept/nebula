@@ -66,7 +66,10 @@ VkPipelineDatabase::Discard()
                 for (l = 0; l < t3->children.Size(); l++)
                 {
                     Tier4Node* t4 = t3->children.ValueAtIndex(l);
-                    CoreGraphics::DestroyGraphicsPipeline(t4->pipeline);
+                    if (t4->pipeline != CoreGraphics::InvalidPipelineId)
+                    {
+                        CoreGraphics::DestroyGraphicsPipeline(t4->pipeline);
+                    }
                     t4->pipeline = CoreGraphics::InvalidPipelineId;
                 }
             }
