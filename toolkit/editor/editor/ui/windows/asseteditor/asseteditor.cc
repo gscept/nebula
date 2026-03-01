@@ -277,6 +277,11 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
         }
     }
 
+    if (!Resources::ResourceServer::Instance()->HasStreamLoader(asset.AsString().GetFileExtension()))
+    {
+        // we just ignore for now
+        return;
+    }
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
         [asset, type](Resources::ResourceId id)
