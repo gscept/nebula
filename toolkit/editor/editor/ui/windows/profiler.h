@@ -42,7 +42,8 @@ private:
     HighLightRegion highlightRegion;
     Util::Array<float> frametimeHistory;
     Util::Array<Profiling::ProfilingContext> ProfilingContexts;
-    Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkers;
+    Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkersGraphics;
+    Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkersCompute;
 };
 
 __RegisterClass(Profiler)

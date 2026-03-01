@@ -132,7 +132,7 @@ int
 RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
 {
     // convert to milliseconds
-    float begin = marker.start / 1000000000.0f;
+    float begin = marker.start / 1000000000.0f + marker.cpuBegin;
     float duration = marker.duration / 1000000000.0f;
 
     const float startTime = startSection * fullFrameTime;
@@ -225,7 +225,8 @@ Profiler::Run(SaveMode save)
 
             this->worstFrameTime = this->currentFrameTime;
             this->ProfilingContexts = Profiling::ProfilingGetContexts();
-            this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+            this->frameProfilingMarkersGraphics = CoreGraphics::GetProfilingMarkers(CoreGraphics::GraphicsQueueType);
+            this->frameProfilingMarkersCompute = CoreGraphics::GetProfilingMarkers(CoreGraphics::ComputeQueueType);
         }
         else
         {
@@ -247,7 +248,8 @@ Profiler::Run(SaveMode save)
         }
 
         this->ProfilingContexts = Profiling::ProfilingGetContexts();
-        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        this->frameProfilingMarkersGraphics = CoreGraphics::GetProfilingMarkers(CoreGraphics::GraphicsQueueType);
+        this->frameProfilingMarkersCompute = CoreGraphics::GetProfilingMarkers(CoreGraphics::ComputeQueueType);
     }
     this->ProfilingContexts.SortWithFunc([](const Profiling::ProfilingContext& a, const Profiling::ProfilingContext& b) 
     {
@@ -351,6 +353,62 @@ Profiler::Run(SaveMode save)
                 ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
             }
 
+
+            if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::PushFont(Dynui::ImguiSmallFont);
+
+                ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+                ImVec2 pos = ImGui::GetCursorScreenPos();
+                const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkersGraphics = this->frameProfilingMarkersGraphics;
+
+                int levels = 0;
+                if (!frameMarkersGraphics.IsEmpty())
+                {
+                    const CoreGraphics::FrameProfilingMarker& first = frameMarkersGraphics.Front();
+                    const CoreGraphics::FrameProfilingMarker& last = frameMarkersGraphics.Back();
+                    CoreGraphics::FrameProfilingMarker totalMarker;
+                    totalMarker.color = NEBULA_MARKER_WHITE;
+                    totalMarker.gpuBegin = first.gpuBegin;
+                    totalMarker.gpuEnd = last.gpuBegin;
+                    totalMarker.cpuBegin = first.cpuBegin;
+                    totalMarker.name = "Graphics Queue";
+                    totalMarker.queue = CoreGraphics::GraphicsQueueType;
+                    totalMarker.children = frameMarkersGraphics;
+                    totalMarker.start = first.start;
+                    totalMarker.duration = (last.start + last.duration - first.start);
+                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
+                    levels = Math::max(levels, level);
+                }
+                pos.y += Math::max(1, (levels - 1)) * 20.0f;
+
+                const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkersCompute = this->frameProfilingMarkersCompute;
+
+                levels = 0;
+                if (!frameMarkersCompute.IsEmpty())
+                {
+                    const CoreGraphics::FrameProfilingMarker& first = frameMarkersCompute.Front();
+                    const CoreGraphics::FrameProfilingMarker& last = frameMarkersCompute.Back();
+                    CoreGraphics::FrameProfilingMarker totalMarker;
+                    totalMarker.color = NEBULA_MARKER_WHITE;
+                    totalMarker.gpuBegin = first.gpuBegin;
+                    totalMarker.gpuEnd = last.gpuBegin;
+                    totalMarker.cpuBegin = first.cpuBegin;
+                    totalMarker.name = "Compute Queue";
+                    totalMarker.queue = CoreGraphics::ComputeQueueType;
+                    totalMarker.children = frameMarkersCompute;
+                    totalMarker.start = first.start;
+                    totalMarker.duration = (last.start + last.duration - first.start);
+                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
+                    levels = Math::max(levels, level);
+                }
+
+                // set back cursor so we can draw our box
+                ImGui::SetCursorScreenPos(pos);
+                ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
+                ImGui::PopFont();
+            }
+
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
             {
                 if (hideEmptyThreads && ctx.topLevelScopes.Size() == 0)
@@ -412,50 +470,6 @@ Profiler::Run(SaveMode save)
                         this->highlightRegion.start = this->highlightRegion.duration = -1.0f;
                     }
                 }            
-            }
-
-            if (ImGui::CollapsingHeader("GPU"))
-            {
-                ImGui::PushFont(Dynui::ImguiSmallFont);
-
-                ImVec2 canvasSize = ImGui::GetContentRegionAvail();
-                ImVec2 pos = ImGui::GetCursorScreenPos();
-                const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkers = this->frameProfilingMarkers;
-
-                // do graphics queue markers
-                drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Graphics Queue");
-                pos.y += 20.0f;
-                int levels = 0;
-                for (int i = 0; i < frameMarkers.Size(); i++)
-                {
-                    const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
-                    if (marker.queue != CoreGraphics::GraphicsQueueType)
-                        continue;
-                    int level = RecursiveDrawGpuMarker(marker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
-                    levels = Math::max(levels, level);
-                }
-
-                // set back cursor so we can draw our box
-                ImGui::SetCursorScreenPos(pos);
-                ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
-                pos.y += levels * 20.0f;
-
-                drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Compute Queue");
-                pos.y += 20.0f;
-                levels = 0;
-                for (int i = 0; i < frameMarkers.Size(); i++)
-                {
-                    const CoreGraphics::FrameProfilingMarker& marker = frameMarkers[i];
-                    if (marker.queue != CoreGraphics::ComputeQueueType)
-                        continue;
-                    int level = RecursiveDrawGpuMarker(marker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd,0);
-                    levels = Math::max(levels, level);
-                }
-
-                // set back cursor so we can draw our box
-                ImGui::SetCursorScreenPos(pos);
-                ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
-                ImGui::PopFont();
             }
             ImGui::EndTabItem();
         }

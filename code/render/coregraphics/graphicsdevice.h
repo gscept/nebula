@@ -163,7 +163,7 @@ struct GraphicsDeviceState
     _declare_counter(GraphicsDeviceNumDrawCalls);
 
 #ifdef NEBULA_ENABLE_PROFILING
-    Util::Array<FrameProfilingMarker> frameProfilingMarkers;
+    Util::FixedArray<Util::Array<FrameProfilingMarker>> frameProfilingMarkers;
 #endif //NEBULA_ENABLE_PROFILING
 };
 
@@ -359,7 +359,7 @@ void SetRenderWireframe(bool b);
 /// insert timestamp, returns handle to timestamp, which can be retreived on the next N'th frame where N is the number of buffered frames
 IndexT Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::PipelineStage stage, const char* name);
 /// get cpu profiling markers
-const Util::Array<FrameProfilingMarker>& GetProfilingMarkers();
+const Util::Array<FrameProfilingMarker>& GetProfilingMarkers(CoreGraphics::QueueType queue);
 /// get number of draw calls this frame
 SizeT GetNumDrawCalls();
 #endif

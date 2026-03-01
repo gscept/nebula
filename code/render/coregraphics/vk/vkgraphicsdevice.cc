@@ -1081,6 +1081,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 prios.Begin()
             });
     }
+    state.frameProfilingMarkers.Resize(CoreGraphics::QueueType::NumQueueTypes);
 
     // get physical device features
     //VkPhysicalDeviceFeatures features;
@@ -2460,9 +2461,10 @@ NewFrame()
     waitEventsThisFrame.Clear();
 
     // Go through the query timestamp results and set the time in the markers
-    state.frameProfilingMarkers.Clear();
     for (IndexT queue = 0; queue < QueueType::NumQueueTypes; queue++)
     {
+        state.frameProfilingMarkers[queue].Clear();
+
         if (!state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers.IsEmpty())
         {
             CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
@@ -2482,7 +2484,7 @@ NewFrame()
                     ParseMarkersAndTime(marker, data, offset);
 
                     // Add to combined markers to graphics device for this frame
-                    state.frameProfilingMarkers.Append(marker);
+                    state.frameProfilingMarkers[queue].Append(marker);
                 }
             }
             CoreGraphics::BufferUnmap(buf);
@@ -2577,9 +2579,9 @@ SetRenderWireframe(bool b)
 /**
 */
 const Util::Array<FrameProfilingMarker>&
-GetProfilingMarkers()
+GetProfilingMarkers(CoreGraphics::QueueType queue)
 {
-    return state.frameProfilingMarkers;
+    return state.frameProfilingMarkers[queue];
 }
 
 //------------------------------------------------------------------------------

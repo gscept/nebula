@@ -41,7 +41,7 @@ ImguiProfiler::Capture()
     if (!this->pauseProfiling)
     {
         this->profilingContexts = Profiling::ProfilingGetContexts();
-        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers(CoreGraphics::GraphicsQueueType);
     }
 }
 
