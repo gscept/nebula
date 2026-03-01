@@ -129,10 +129,10 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, Profiler::HighLightRe
 /**
 */
 int
-RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
+RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const float cpuOffset, const int level)
 {
     // convert to milliseconds
-    float begin = marker.start / 1000000000.0f;
+    float begin = (marker.start + marker.cpuBegin) / 1000000000.0f;
     float duration = marker.duration / 1000000000.0f;
 
     const float startTime = startSection * fullFrameTime;
@@ -193,7 +193,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profile
     int deepest = level + 1;
     for (IndexT i = 0; i < marker.children.Size(); i++)
     {
-        int childLevel = RecursiveDrawGpuMarker(marker.children[i], highlightRegion, drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, level + 1);
+        int childLevel = RecursiveDrawGpuMarker(marker.children[i], highlightRegion, drawList, start, fullSize, pos, canvas, fullFrameTime, startSection, endSection, cpuOffset, level + 1);
         deepest = Math::max(deepest, childLevel);
     }
     return deepest;
@@ -375,8 +375,9 @@ Profiler::Run(SaveMode save)
                     totalMarker.queue = CoreGraphics::GraphicsQueueType;
                     totalMarker.children = frameMarkersGraphics;
                     totalMarker.start = first.start;
-                    totalMarker.duration = (last.start + last.duration - first.start);
-                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
+                    totalMarker.duration = (last.start + last.duration + last.cpuBegin - (first.start + first.cpuBegin));
+                    totalMarker.cpuBegin = first.cpuBegin;
+                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, first.cpuBegin, 0);
                     levels = Math::max(levels, level);
                 }
                 pos.y += Math::max(1, (levels - 1)) * 20.0f;
@@ -396,8 +397,9 @@ Profiler::Run(SaveMode save)
                     totalMarker.queue = CoreGraphics::ComputeQueueType;
                     totalMarker.children = frameMarkersCompute;
                     totalMarker.start = first.start;
-                    totalMarker.duration = (last.start + last.duration - first.start);
-                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, 0);
+                    totalMarker.duration = (last.start + last.duration + last.cpuBegin - (first.start + first.cpuBegin));
+                    totalMarker.cpuBegin = first.cpuBegin;
+                    int level = RecursiveDrawGpuMarker(totalMarker, this->highlightRegion, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, this->timeStart, this->timeEnd, first.cpuBegin, 0);
                     levels = Math::max(levels, level);
                 }
 

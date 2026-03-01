@@ -91,6 +91,7 @@ struct FrameProfilingMarker
     IndexT gpuEnd;
     uint64_t start;
     uint64_t duration;
+    uint64_t cpuBegin;
     Util::Array<FrameProfilingMarker> children;
 };
 #endif

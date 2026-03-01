@@ -177,6 +177,7 @@ struct ProfilingContext
     Util::Array<ProfilingScope> topLevelScopes;
 
     Timing::Timer timer;
+    Timing::Time start;
     Util::StringAtom threadName;
     Threading::ThreadId threadId;
     int priority = 0;

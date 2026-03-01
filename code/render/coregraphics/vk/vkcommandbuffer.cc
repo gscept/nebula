@@ -1590,6 +1590,7 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
         marker.color = color;
         marker.name = name;
         marker.queue = usage;
+        marker.cpuBegin = 0;// Profiling::ProfilingGetTime() * 1000000000.0f;
         marker.gpuBegin = chunk.offset + chunk.queryCount++;
         vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, marker.gpuBegin);
         markers.markerStack.Push(marker);
