@@ -130,6 +130,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 return AssetEditor::AssetType::None;
         }
     };
+    
     static const auto AddDragSourceForFileEntry = [](const FileEntry& file)
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
@@ -139,11 +140,41 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             ImGui::EndDragDropSource();
         }
     };
+    static const ImGuiTableSortSpecs* s_sort_specs = nullptr;
+    static const auto SortEntryFunction = [this](const uint& a, const uint& b) -> bool
+    {
+        n_assert(s_sort_specs != nullptr);
+        // weirdness sort passes us 0 sometimes.
+        if (!this->files.Contains(a)|| !this->files.Contains(b))
+        {
+            return false;
+        }
+        const FileEntry& entryA = this->files[a];
+        const FileEntry& entryB = this->files[b];
+        const bool descending = s_sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Descending ? true : false;
+
+        if (s_sort_specs->SpecsCount != 1)
+        {
+            return descending ^ (entryA.name < entryB.name);
+        }
+        switch (s_sort_specs->Specs[0].ColumnIndex)
+        {
+            case 0:
+                return descending ^ (entryA.name < entryB.name);
+            case 1:
+                return descending ^ (entryA.size < entryB.size);
+            case 2:
+                return descending ^ (entryA.modifiedTime < entryB.modifiedTime);
+            default:
+                return false;
+        }
+        return false;
+    };
     
     if (this->activeFolder != -1)
     {
         bool doubleClicked = false;
-        const FileTreeNode& node = this->nodes[this->activeFolder];
+        FileTreeNode& node = this->nodes[this->activeFolder];
         switch(this->fileViewMode)
         {
             case FileViewMode::List:
@@ -173,14 +204,24 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             case FileViewMode::Details:
             {
                 ImGui::BeginGroup();
-                ImGui::Columns(3);
-                ImGui::Text("Name");
-                ImGui::NextColumn();
-                ImGui::Text("Size");
-                ImGui::NextColumn();
-                ImGui::Text("Modified");
-                ImGui::NextColumn();
-                ImGui::Separator();
+                ImGui::BeginTable("##filedetails", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings| ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg);
+                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort);
+                ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Modified", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableHeadersRow();
+
+                if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
+                if (sorts_specs->SpecsDirty && node.files.Size() > 1)
+                {
+                    if (sorts_specs->SpecsCount != 1)
+                    {
+                        break;
+                    }
+                    s_sort_specs = sorts_specs;
+                    std::sort(node.files.begin(), node.files.end(), SortEntryFunction);
+                    sorts_specs->SpecsDirty = false;
+                }
+                
                 for (uint fileHash : node.files)
                 {
                     const FileEntry& file = this->files[fileHash];
@@ -189,8 +230,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     {
                         continue;
                     }
-                    ImGui::PushID(fileHash);
-                    ImGui::BeginGroup();
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
                     if (ImGui::Selectable(file.name.AsCharPtr(), &isSelected))
                     {
                         this->activeFile = fileHash;
@@ -201,15 +242,13 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         doubleClicked = true;
                     }
                     AddDragSourceForFileEntry(file);
-                    ImGui::NextColumn();
+                    ImGui::TableNextColumn();
                     ImGui::Text("%d KB", (int)(file.size / 1024));
-                    ImGui::NextColumn();
+                    ImGui::TableNextColumn();  
                     Timing::CalendarTime cal = Timing::CalendarTime::FileTimeToSystemTime(file.modifiedTime);
                     ImGui::Text("%d-%d-%d %d:%d", cal.GetYear(), cal.GetMonth(), cal.GetDay(), cal.GetHour(), cal.GetMinute());
-                    ImGui::EndGroup();
-                    ImGui::PopID();
-                    ImGui::NextColumn();
                 }
+                ImGui::EndTable();
                 ImGui::EndGroup();
             }    
             break;
