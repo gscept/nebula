@@ -611,9 +611,9 @@ ImguiContext::Create()
 
     style.FrameRounding = 6.0f;
     style.GrabRounding = 6.0f;
-    style.ChildRounding = 12.0f;
-    style.WindowRounding = 12.0f;
-    style.PopupRounding = 12.0f;
+    style.ChildRounding = 6.0f;
+    style.WindowRounding = 6.0f;
+    style.PopupRounding = 1.0f;
     style.ScrollbarRounding = 12.0f;
     style.TabRounding = 6.0f;
     style.TabMinWidthForCloseButton = FLT_MAX;
