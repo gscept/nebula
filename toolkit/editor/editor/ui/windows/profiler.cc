@@ -371,7 +371,6 @@ Profiler::Run(SaveMode save)
                     totalMarker.color = NEBULA_MARKER_WHITE;
                     totalMarker.gpuBegin = first.gpuBegin;
                     totalMarker.gpuEnd = last.gpuBegin;
-                    totalMarker.cpuBegin = first.cpuBegin;
                     totalMarker.name = "Graphics Queue";
                     totalMarker.queue = CoreGraphics::GraphicsQueueType;
                     totalMarker.children = frameMarkersGraphics;
@@ -393,7 +392,6 @@ Profiler::Run(SaveMode save)
                     totalMarker.color = NEBULA_MARKER_WHITE;
                     totalMarker.gpuBegin = first.gpuBegin;
                     totalMarker.gpuEnd = last.gpuBegin;
-                    totalMarker.cpuBegin = first.cpuBegin;
                     totalMarker.name = "Compute Queue";
                     totalMarker.queue = CoreGraphics::ComputeQueueType;
                     totalMarker.children = frameMarkersCompute;
