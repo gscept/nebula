@@ -487,7 +487,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     radianceCreateInfo.height = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
-
+    radianceCreateInfo.clear = true;
     volume.radiance = CoreGraphics::CreateTexture(radianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo irradianceCreateInfo;
@@ -498,6 +498,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     irradianceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    irradianceCreateInfo.clear = true;
     volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo distanceCreateInfo;
@@ -508,6 +509,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     distanceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE + 2);
     distanceCreateInfo.format = CoreGraphics::PixelFormat::R16G16F;
     distanceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    distanceCreateInfo.clear = true;
     volume.distance = CoreGraphics::CreateTexture(distanceCreateInfo);
 
     CoreGraphics::TextureCreateInfo offsetCreateInfo;
@@ -518,6 +520,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     offsetCreateInfo.height = setup.numProbesX;
     offsetCreateInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
     offsetCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    offsetCreateInfo.clear = true;
     volume.offsets = CoreGraphics::CreateTexture(offsetCreateInfo);
 
     CoreGraphics::TextureCreateInfo statesCreateInfo;
@@ -528,6 +531,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     statesCreateInfo.height = setup.numProbesX;
     statesCreateInfo.format = CoreGraphics::PixelFormat::R8;
     statesCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    statesCreateInfo.clear = true;
     volume.states = CoreGraphics::CreateTexture(statesCreateInfo);
 
     CoreGraphics::TextureCreateInfo scrollSpaceCreateInfo;
@@ -538,6 +542,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     scrollSpaceCreateInfo.height = setup.numProbesX;
     scrollSpaceCreateInfo.format = CoreGraphics::PixelFormat::R8;
     scrollSpaceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    scrollSpaceCreateInfo.clear = true;
     volume.scrollSpace = CoreGraphics::CreateTexture(scrollSpaceCreateInfo);
 
     for (uint rayIndex = 0; rayIndex < volume.numRaysPerProbe; rayIndex++)
@@ -868,6 +873,9 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
     CoreGraphics::DestroyResourceTable(volume.updateProbesTable);
     CoreGraphics::DestroyResourceTable(volume.blendProbesTable);
     CoreGraphics::DestroyResourceTable(volume.relocateProbesTable);
+#ifndef PUBLIC_BUILD
+    CoreGraphics::DestroyResourceTable(volume.debugResourceTable);
+#endif
     ddgiVolumeAllocator.Dealloc(id.id);
 }
 
