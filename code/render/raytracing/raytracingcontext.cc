@@ -377,7 +377,6 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     state.objects.Extend((SizeT)alloc.offset + numObjects);
 
     // Create bogus constants
-    /*
     for (uint i = 0; i < numObjects; i++)
     {
         Raytracetest::TlasInstance constants;
@@ -387,9 +386,8 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
         constants.Use16BitIndex = false;
         constants.AttributeStride = 0;
         constants.VertexLayout = (uint)CoreGraphics::VertexLayoutType::Normal;
-        state.objects[alloc.offset + i] = constants;
+        state.objects[(uint)alloc.offset + i] = constants;
     }
-    */
 
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
@@ -848,7 +846,7 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
     // clean up old stuff, but don't deallocate entity
     Memory::RangeAllocation range = raytracingContextAllocator.Get<Raytracing_Allocation>(id.id);
     SizeT numAllocs = raytracingContextAllocator.Get<Raytracing_NumStructures>(id.id);
-    for (IndexT i = (uint)range.offset; i < numAllocs; i++)
+    for (IndexT i = (uint)range.offset; i < range.offset + numAllocs; i++)
     {
         CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
         CoreGraphics::DestroyBlasInstance(state.blasInstances[i]);
@@ -861,6 +859,8 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
             if (index != InvalidIndex)
             {
                 auto& [refCount, blases] = state.blasLookup.ValueAtIndex(mesh, index);
+
+                // If this is the last count, nuke the BLAS
                 if (refCount == 1)
                 {
                     for (auto blas : blases)
@@ -879,6 +879,10 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
             {
                 CoreGraphics::DestroyBlas(blases[j]);
             }
+        }
+        for (SizeT j = 0; j < state.blasInstanceBuffer.hostBuffers.buffers.Size(); j++)
+        {
+            CoreGraphics::BlasInstanceUpdate(state.blasInstances[(uint)i], state.blasInstanceBuffer.hostBuffers.buffers[j], i * CoreGraphics::BlasInstanceGetSize());
         }
         state.blasInstances[i] = CoreGraphics::InvalidBlasInstanceId;
     }
