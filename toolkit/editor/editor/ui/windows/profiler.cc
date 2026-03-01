@@ -132,7 +132,7 @@ int
 RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, Profiler::HighLightRegion& highlightRegion, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float fullFrameTime, const float startSection, const float endSection, const int level)
 {
     // convert to milliseconds
-    float begin = marker.start / 1000000000.0f + marker.cpuBegin;
+    float begin = marker.start / 1000000000.0f;
     float duration = marker.duration / 1000000000.0f;
 
     const float startTime = startSection * fullFrameTime;
