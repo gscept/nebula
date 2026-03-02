@@ -153,8 +153,6 @@ GraphicsFeatureUnit::OnActivate()
     }
 #endif
     this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
-    this->defaultStage = gfxServer->CreateStage("defaultStage", true);
-    this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
 
     Im3d::Im3dContext::Create();
@@ -301,7 +299,6 @@ GraphicsFeatureUnit::OnDeactivate()
     TBUI::TBUIContext::Discard();
     FeatureUnit::OnDeactivate();
     CoreGraphics::DestroyWindow(this->mainWindow);
-    this->gfxServer->DiscardStage(this->defaultStage);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();

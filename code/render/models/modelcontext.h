@@ -69,7 +69,7 @@ public:
     static void Create();
 
     /// setup
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const uint16_t stage = 0xFFFF);
     /// Setup without a model resource
     static void Setup(
         const Graphics::GraphicsEntityId id
@@ -78,6 +78,7 @@ public:
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
+        , const uint16_t stage = 0xFFFF
 #if NEBULA_GRAPHICS_DEBUG
         , const Util::String debugName = ""
 #endif
@@ -94,6 +95,9 @@ public:
     static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
+    
+    /// Set the stage where this model can be seen
+    static void SetStageMask(const Graphics::GraphicsEntityId id, const uint16_t stageMask);
 
     /// Compute the bounding box for a model
     static Math::bbox ComputeBoundingBox(const Graphics::GraphicsEntityId id);
@@ -181,6 +185,8 @@ public:
 
     /// Get model node instance states
     static const NodeInstanceRange& GetModelRenderableRange(const Graphics::GraphicsEntityId id);
+    /// Get stage for model
+    static const uint16_t GetModelStageMask(const Graphics::GraphicsEntityId id);
     /// Get model node instance transformables
     static const NodeInstanceRange& GetModelTransformableRange(const Graphics::GraphicsEntityId id);
     /// Get array to all model node states
@@ -214,6 +220,7 @@ private:
         Model_NodeInstanceStates,
         Model_NodeLookup,
         Model_Transform,
+        Model_StageMask,
         Model_Dirty
     };
     typedef Ids::IdAllocator<
@@ -223,6 +230,7 @@ private:
         NodeInstanceRange,
         Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
+        uint16_t,           // stage
         bool                // transform is dirty
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;

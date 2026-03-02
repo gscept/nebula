@@ -15,7 +15,6 @@
 #include "framesync/framesynctimer.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
-#include "stage.h"
 #include "graphicsentity.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
@@ -38,6 +37,16 @@ struct FrameContext
 
 using ViewIndependentCall = void(*)(const Graphics::FrameContext& ctx);
 using ViewDependentCall = void(*)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+
+static constexpr uint16_t PRIMARY_STAGE_MASK = 0x1;
+static constexpr uint16_t SHADOW_STAGE_MASK = 0x2;
+static constexpr uint16_t DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
+
+static constexpr uint16_t GetStageMask(const uint16_t stageIndex)
+{
+    return 1 << (stageIndex << SHADOW_STAGE_MASK);
+}
+
 
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
@@ -66,7 +75,7 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, bool(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
+    Ptr<View> CreateView(const Util::StringAtom& name, bool(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage = PRIMARY_STAGE_MASK);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// Get view by name
@@ -93,11 +102,6 @@ public:
     void RemoveWindow(const CoreGraphics::WindowId window);
     /// Get windows
     const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
-
-    /// create a new stage
-    Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
-    /// discard stage
-    void DiscardStage(const Ptr<Stage>& stage); 
 
     /// Setup pre game logic graphics calls
     void SetupPreLogicCalls(const Util::Array<ViewIndependentCall>& calls);
@@ -149,11 +153,9 @@ private:
     Util::Array<GraphicsContextFunctionBundle*> contexts;
     Util::Array<GraphicsContextState*> states;
 
-    Util::Array<Ptr<Stage>> stages;
     Util::Dictionary<Util::StringAtom, Ptr<View>> viewsByName;
     Util::Array<Ptr<View>> views;
     Ptr<View> currentView;
-
 
     Util::Array<PreViewCallback> preViewCallbacks;
     Util::Array<PostViewCallback> postViewCallbacks;

@@ -19,6 +19,10 @@ def GetCppTypeString(attrType):
         return "int32_t"
     elif (T == "uint32"):
         return "uint32_t"
+    elif (T == "uint16"):
+        return "uint16_t"
+    elif (T == "int16"):
+        return "int16_t"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -57,8 +61,85 @@ def GetCppTypeString(attrType):
         return "Util::Color"
     elif (T.startswith("[") and T.endswith("]")):
         return "Util::Array<{}>".format(GetCppTypeString(attrType[1:-1]))
+    elif (T == "bitfield16"):
+        return "Util::BitField<16>"
+    elif (T == "bitfield32"):
+        return "Util::BitField<32>"
+    elif (T == "bitfield64"):
+        return "Util::BitField<64>"
     else:
         return attrType
+    
+#------------------------------------------------------------------------------
+##
+#
+def GetJsonParserTypeString(attrType):
+    T = attrType.lower()
+    if (T == "byte"):
+        return "byte"
+    elif (T == "short"):
+        return "short"
+    elif (T == "ushort"):
+        return "ushort"
+    elif (T == "int"):
+        return "int"
+    elif (T == "uint"):
+        return "uint"
+    elif (T == "int32"):
+        return "int32_t"
+    elif (T == "uint32"):
+        return "uint32_t"
+    elif (T == "uint16"):
+        return "uint16_t"
+    elif (T == "int16"):
+        return "int16_t"
+    elif (T == "float"):
+        return "float"
+    elif (T == "scalar"):
+        return "Math::scalar"
+    elif (T == "int64"):
+        return "int64_t"
+    elif (T == "uint64"):
+        return "uint64_t"
+    elif (T == "double"):
+        return "double"
+    elif (T == "bool"):
+        return "bool"
+    elif (T == "int2"):
+        return "Math::int2"
+    elif (T == "vec2"):
+        return "Math::vec2"
+    elif (T == "vec3"):
+        return "Math::vec3"
+    elif (T == "vec4"):
+        return "Math::vec4"
+    elif (T == "vector"):
+        return "Math::vector"
+    elif (T == "point"):
+        return "Math::point"
+    elif (T == "quat"):
+        return "Math::quat"
+    elif (T == "mat4"):
+        return "Math::mat4"
+    elif (T == "string"):
+        return "Util::String"
+    elif (T == "resource"):
+        return "Resources::ResourceName"
+    elif (T == "entity"):
+        return "Game::Entity"
+    elif (T == "color"):
+        return "Util::Color"
+    elif (T.startswith("[") and T.endswith("]")):
+        return "Util::Array<{}>".format(GetJsonParserTypeString(attrType[1:-1]))
+    elif (T == "bitfield16"):
+        return "16"
+    elif (T == "bitfield32"):
+        return "32"
+    elif (T == "bitfield64"):
+        return "64"
+    else:
+        return attrType
+
 
 #------------------------------------------------------------------------------
 ##
@@ -79,6 +160,10 @@ def GetCsTypeString(attrType):
         return "int"
     elif (T == "uint32"):
         return "uint"
+    elif (T == "int16"):
+        return "short"
+    elif (T == "uint16"):
+        return "ushort"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -142,6 +227,10 @@ def GetArgumentType(attrType):
         return "int32_t"
     elif (T == "uint32"):
         return "uint32_t"
+    elif (T == "uint16"):
+        return "uint16_t"
+    elif (T == "int16"):
+        return "int16_t"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -180,6 +269,12 @@ def GetArgumentType(attrType):
         return "Game::Entity"
     elif (T.startswith("[") and T.endswith("]")):
         return "Util::Array<{}>".format(GetCppTypeString(attrType[1:-1]))
+    elif (T == "bitfield16"):
+        return "Util::BitField<16> const&"
+    elif (T == "bitfield32"):
+        return "Util::BitField<32> const&"
+    elif (T == "bitfield64"):
+        return "Util::BitField<64> const&"
     else:
         return attrType
 
@@ -202,6 +297,10 @@ def DefaultValue(attrType):
         return "uint32_t(0)"
     elif (T == "uint32"):
         return "uint32_t(0)"
+    elif (T == "uint16"):
+        return "uint16_t(0)"
+    elif (T == "int16"):
+        return "int16_t(0)"
     elif (T == "float"):
         return "float(0)"
     elif (T == "scalar"):
@@ -238,6 +337,12 @@ def DefaultValue(attrType):
         return "Game::Entity::Invalid()"
     elif (T == "color"):
         return "Math::vec4(0,0,0,0)"
+    elif (T == "bitfield16"):
+        return "Util::BitField<16>()"
+    elif (T == "bitfield32"):
+        return "Util::BitField<32>()"
+    elif (T == "bitfield64"):
+        return "Util::BitField<64>()"
     else:
         return None
 

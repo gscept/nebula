@@ -59,6 +59,8 @@ class IDLCodeGenerator:
             IDLDocument.AddInclude(f, "game/entity.h")
         if (IDLComponent.ContainsColor()):
             IDLDocument.AddInclude(f, "util/color.h")
+        if (IDLComponent.ContainsBitfieldTypes()):
+            IDLDocument.AddInclude(f, "util/bitfield.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)

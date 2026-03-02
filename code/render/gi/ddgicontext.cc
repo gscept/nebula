@@ -648,10 +648,11 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     state.volumesToDraw.Clear();
 
     state.elapsedTime += ctx.frameTime;
-    bool updateThisFrame = state.elapsedTime >= projectSettings.gi_settings->update_frequency;
+    bool updateThisFrame = true;
+    /*state.elapsedTime >= projectSettings.gi_settings->update_frequency;
     if (updateThisFrame)
         state.elapsedTime = 0;
-
+        */
     uint volumeCount = 0;
     for (Volume& activeVolume : volumes)
     {

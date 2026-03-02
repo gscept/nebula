@@ -214,8 +214,46 @@ void
 ComponentDrawFuncT<uint>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))
+    int value = *(uint*)data;
+    if (ImGui::DragInt("##input_data", &value, 1.0f, 0, 0xFFFFFFFF))
+    {
         *commit = true;
+        *(uint*)data = (uint)value;
+    }
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<uint16_t>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+{
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    int value = *(uint16_t*)data;
+    if (ImGui::DragInt("##input_data", &value, 1.0f, 0, UINT16_MAX))
+    {
+        *commit = true;
+        *(uint16_t*)data = (uint16_t)value;
+    }
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<int16_t>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+{
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    int value = *(int16_t*)data;
+    if (ImGui::DragInt("##input_data", &value, 1.0f, INT16_MIN, INT16_MAX))
+    {
+        *commit = true;
+        *(int16_t*)data = (int16_t)value;
+    }
     ImGui::PopID();
 }
 
@@ -227,8 +265,12 @@ void
 ComponentDrawFuncT<uint64_t>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))
+    int value = *(uint64_t*)data;
+    if (ImGui::DragInt("##input_data", &value, 1.0f, 0, 0xFFFFFFFF))
+    {
         *commit = true;
+        *(uint64_t*)data = (uint64_t)value;
+    }
     ImGui::PopID();
 }
 
@@ -415,5 +457,64 @@ ComponentDrawFuncT<Util::Color>(Game::Entity owner, ComponentId component, void*
     ImGui::PopID();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Util::BitField<16>>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+{
+    Util::BitField<16>* bitfield = (Util::BitField<16>*)data;
+    const char* labels[16];
+    for (uint i = 0; i < 16; i++)
+    {
+        bool bitSet = bitfield->IsSet(i);
+        labels[i] = bitSet ? "1" : "0";
+        if (i > 0)
+        {
+            ImGui::SameLine();
+            if (i % 8 == 0)
+            {
+                ImGui::NewLine();
+            }
+        }
+        ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data) + i);
+        if (ImGui::Button(labels[i]))
+        {
+            if (bitSet)
+                bitfield->ClearBit(i);
+            else
+                bitfield->SetBit(i);
+            *commit = true;
+        }
+        ImGui::PopID();
+    }
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Util::BitField<32>>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+{
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    if (ImGui::ColorEdit4("##color", (float*)data))
+        *commit = true;
+    ImGui::PopID();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Util::BitField<64>>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+{
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    if (ImGui::ColorEdit4("##color", (float*)data))
+        *commit = true;
+    ImGui::PopID();
+}
 } // namespace Game

@@ -49,6 +49,7 @@ class ComponentDefinition:
         self.variables = list()
         self.hasResource = False
         self.allowArray = comp["_allowArray_"] if "_allowArray_" in comp else False
+        self.category = comp["category"] if "category" in comp else None
         
         if isinstance(comp, dict):
             for varName, var in comp.items():
@@ -153,6 +154,17 @@ def ContainsColor():
                 return True
     return False
 
+
+#------------------------------------------------------------------------------
+##
+#
+def ContainsBitfieldTypes():
+    for comp in components:
+        for var in comp.variables:
+            if var.type == "bitfield16" or var.type == "bitfield32" or var.type == "bitfield64":
+                return True
+    return False
+
 #------------------------------------------------------------------------------
 ##
 #
@@ -223,6 +235,10 @@ def WriteComponentHeaderDeclarations(f, document):
             f.WriteLine('static constexpr const char** field_descriptions = nullptr;')
             f.WriteLine('static constexpr bool* field_hide_in_inspector = nullptr;')
 
+        if c.category:  
+            f.WriteLine(f'static constexpr const char* category = "{c.category}";')
+        else:
+            f.WriteLine('static constexpr const char* category = nullptr;')
 
 
         
@@ -284,7 +300,7 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->SetToNode(attr);")
         for var in struct.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -297,7 +313,7 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->BeginObject(attr.AsCharPtr());")
         for var in struct.variables:
-            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->End();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -351,7 +367,7 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->SetToNode(attr);")
         for var in comp.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -364,7 +380,7 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->BeginObject(attr.AsCharPtr());")
         for var in comp.variables:
-            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->End();")
         f.DecreaseIndent()
         f.WriteLine("}")

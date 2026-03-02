@@ -32,6 +32,7 @@ enum
     Observer_IsOrtho,
     Observer_EntityId,
     Observer_EntityType,
+    Observer_StageMask,
     Observer_ResultArray,
     Observer_Dependency,
     Observer_DependencyMode,
@@ -69,7 +70,7 @@ class ObserverContext : public Graphics::GraphicsContext
 public:
 
     /// setup entity
-    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, bool isOrtho = false);
+    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, uint16_t stageMask = 0xFFFF, bool isOrtho = false);
     /// setup a dependency between observers
     static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
 
@@ -157,6 +158,7 @@ private:
         , bool                                     // observer is an orthogonal camera
         , Graphics::GraphicsEntityId               // entity id
         , VisibilityEntityType                     // type of object so we know how to get the transform
+        , uint16_t
         , VisibilityResultArray                    // visibility lookup table
         , Graphics::GraphicsEntityId               // dependency
         , DependencyMode                           // dependency mode

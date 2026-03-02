@@ -6,7 +6,6 @@
 #include "viewport.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "imgui.h"
 #include "dynui/imguicontext.h"
 #include "editor/editor/tools/selectioncontext.h"
@@ -264,10 +263,9 @@ Viewport::GetView() const
 /**
 */
 void
-Viewport::SetStage(Ptr<Graphics::Stage> const & stage)
+Viewport::SetStage(const uint16_t stage)
 {
-    this->stage = stage;
-    this->view->SetStage(stage);
+    this->view->SetStageMask(stage);
 }
 
 } // namespace Modules

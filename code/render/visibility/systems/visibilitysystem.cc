@@ -18,13 +18,14 @@ VisibilitySystem::VisibilitySystem()
 /**
 */
 void
-VisibilitySystem::PrepareObservers(const Math::mat4* transforms, bool* orthoFlags, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
+VisibilitySystem::PrepareObservers(const Math::mat4* transforms, const bool* orthoFlags, const uint16_t* stages, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
     this->obs.completionCounters.Resize(count);
     for (auto& counter : this->obs.completionCounters)
         counter = 0;
     this->obs.transforms = transforms;
     this->obs.isOrtho = orthoFlags;
+    this->obs.stages = stages;
     this->obs.results = results;
     this->obs.count = count;
 }
@@ -33,11 +34,12 @@ VisibilitySystem::PrepareObservers(const Math::mat4* transforms, bool* orthoFlag
 /**
 */
 void
-VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32_t* ids, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32_t* ids, const uint16_t* stages, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
 {
     this->ent.boxes = boxes;
     this->ent.entities = entities;
     this->ent.ids = ids;
+    this->ent.stages = stages;
     this->ent.entityFlags = entityFlags;
     this->ent.count = count;
 }

@@ -31,6 +31,8 @@ public:
     constexpr BitField(std::initializer_list<unsigned int> list);
     /// copy constructor
     BitField(const BitField<NUMBITS>& rhs) = default;
+    /// Construct from mask
+    BitField(const uint64_t mask);
 
     /// equality operator
     constexpr bool operator==(const BitField<NUMBITS>& rhs) const;
@@ -91,6 +93,19 @@ private:
     using TYPE = typename BitType<BASE>::T;
 
     TYPE bits[size];
+
+public:
+    BitType<BASE>::T GetBits(size_t index) const
+    {
+        n_assert(index < size);
+        return this->bits[index];
+    }
+
+    void SetBits(size_t index, BitType<BASE>::T value)
+    {
+        n_assert(index < size);
+        this->bits[index] = value;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -118,6 +133,21 @@ template <unsigned int NUMBITS> constexpr BitField<NUMBITS>::BitField(std::initi
     for (auto bit : list)
     {
         this->SetBit(bit);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int NUMBITS>
+inline BitField<NUMBITS>::BitField(const uint64_t mask)
+{
+    for (IndexT i = 0; i < NUMBITS; i++)
+    {
+        if (mask & (1ull << i))
+        {
+            this->SetBit(i);
+        }
     }
 }
 

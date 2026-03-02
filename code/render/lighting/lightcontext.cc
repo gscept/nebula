@@ -325,7 +325,7 @@ LightContext::SetupGlobalLight(
         {
             Graphics::GraphicsEntityId shadowId = Graphics::CreateEntity();
             Visibility::ObserverContext::RegisterEntity(shadowId);
-            Visibility::ObserverContext::Setup(shadowId, Visibility::VisibilityEntityType::Light, true);
+            Visibility::ObserverContext::Setup(shadowId, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK, true);
 
             // allocate shadow caster slice
             Ids::Id32 casterId = shadowCasterAllocator.Alloc();
@@ -404,7 +404,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
         }
 
         Visibility::ObserverContext::RegisterEntity(id);
-        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light);
+        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
     }
 }
 
@@ -461,7 +461,7 @@ LightContext::SetupSpotLight(
         shadowCasterSliceMap.Add(id, casterId);
 
         Visibility::ObserverContext::RegisterEntity(id);
-        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light);
+        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
     }
 }
 
@@ -508,7 +508,7 @@ LightContext::SetupAreaLight(
         shadowCasterSliceMap.Add(id, casterId);
 
         Visibility::ObserverContext::RegisterEntity(id);
-        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light);
+        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
     }
 
     // Last step is to create a geometric proxy for the light source

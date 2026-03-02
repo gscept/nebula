@@ -12,8 +12,12 @@
         "hideInInspector": true
       },
       "raytracing": {
-          "type": "bool",
-          "default": true
+        "type": "bool",
+        "default": true
+      },
+      "stages": {
+        "type": "bitfield16",
+        "default": 3
       },
       "anim": {
         "type": "resource",

@@ -10,7 +10,6 @@
 #include "editor/ui/window.h"
 #include "editor/ui/modules/viewport.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "coregraphics/meshresource.h"
 #include "characters/skeletonresource.h"
 #include "dynui/imguicontext.h"

@@ -10,7 +10,6 @@
 #include "renderutil/freecamerautil.h"
 #include "input/inputserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 
 namespace Editor
 {

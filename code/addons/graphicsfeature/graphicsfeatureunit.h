@@ -12,7 +12,6 @@
 #include "game/featureunit.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "input/inputserver.h"
 #include "managers/cameramanager.h"
 #include "core/cvar.h"
@@ -62,8 +61,6 @@ public:
 
     /// retrieve the default view
     Ptr<Graphics::View> GetDefaultView() const;
-    /// retrieve the default stage
-    Ptr<Graphics::Stage> GetDefaultStage() const;
 
     /// retrieve the default view handle
     ViewHandle GetDefaultViewHandle() const;
@@ -78,7 +75,6 @@ private:
     IO::URI defaultFrameScript;
     Util::StringAtom title;
     Ptr<Graphics::View> defaultView;
-    Ptr<Graphics::Stage> defaultStage;
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
@@ -122,15 +118,6 @@ inline Ptr<Graphics::View>
 GraphicsFeatureUnit::GetDefaultView() const
 {
     return this->defaultView;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Ptr<Graphics::Stage>
-GraphicsFeatureUnit::GetDefaultStage() const
-{
-    return this->defaultStage;
 }
 
 //------------------------------------------------------------------------------

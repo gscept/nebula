@@ -48,7 +48,6 @@ Scene::Scene()
     currentTool = allTools[0];
 
     viewPort.Init(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultView());
-    viewPort.SetStage(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultStage());
     viewPort.SetFrameBuffer("ColorBufferNoGUI");
 
     this->SetWindowPadding({0, 0});
