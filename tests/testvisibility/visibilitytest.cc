@@ -77,7 +77,6 @@ VisibilityTest::Run()
     CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
     Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
-    Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
 
     // create contexts, this could and should be bundled together
     CameraContext::Create();
@@ -94,7 +93,6 @@ VisibilityTest::Run()
     CameraContext::RegisterEntity(cam);
     CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::deg2rad(60.f), 0.01f, 1000.0f);
     view->SetCamera(cam);
-    view->SetStage(stage);
 
     // setup scene
     GraphicsEntityId ent = Graphics::CreateEntity();
@@ -256,7 +254,6 @@ VisibilityTest::Run()
     }
 
     DestroyWindow(wnd);
-    gfxServer->DiscardStage(stage);
     gfxServer->DiscardView(view);
 
     gfxServer->Close();

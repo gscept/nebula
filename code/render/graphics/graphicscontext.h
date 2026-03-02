@@ -107,7 +107,6 @@ namespace Graphics
 {
 
 class View;
-class Stage;
 struct FrameContext;
 
 struct GraphicsContextFunctionBundle
@@ -116,15 +115,13 @@ struct GraphicsContextFunctionBundle
     void(*OnRenderDebug)(uint32_t flags);
 
     // change callbacks
-    void(*OnStageCreated)(const Ptr<Graphics::Stage>& stage);
-    void(*OnDiscardStage)(const Ptr<Graphics::Stage>& stage);
     void(*OnViewCreated)(const Ptr<Graphics::View>& view);
     void(*OnDiscardView)(const Ptr<Graphics::View>& view);
     void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
     void(*OnViewportResized)(const uint framescriptHash, SizeT width, SizeT height);
 
-    GraphicsContextFunctionBundle() : OnRenderDebug(nullptr), OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), 
+    GraphicsContextFunctionBundle() : OnRenderDebug(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), 
         OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnViewportResized(nullptr)
     {
     };
