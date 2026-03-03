@@ -257,9 +257,6 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
 
     Shared::ViewConstants::STRUCT& constants = view->GetViewConstants();
     constants.Time_Random_Luminance_X[2] = lum;
-    Shared::ViewConstants::STRUCT viewConstants = Graphics::GetViewConstants();
-    viewConstants.Time_Random_Luminance_X[2] = lum;
-    Graphics::UpdateViewConstants(viewConstants);
 }
 
 //------------------------------------------------------------------------------

@@ -575,13 +575,6 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    N_MARKER_BEGIN(ViewPreFrameCallbacks, Graphics)
-    for (auto& cb : this->preViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
-    }
-    N_MARKER_END()
-
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
@@ -592,6 +585,11 @@ GraphicsServer::Render()
 
         this->currentView = view;
         view->UpdateConstants();
+
+        N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
+        auto& preViewCallback = this->preViewCallbacks[i];
+        preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
 
         if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
         {
@@ -613,14 +611,12 @@ GraphicsServer::Render()
             CoreGraphics::InvalidateGraphicsPipelineCache();
         }
         this->currentView = nullptr;
-    }
 
-    N_MARKER_BEGIN(ViewPostFrameCallbacks, Graphics)
-    for (auto& cb : this->postViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
+        auto& postViewCallback = this->postViewCallbacks[i];
+        postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
     }
-    N_MARKER_END()
 }
 
 //------------------------------------------------------------------------------
@@ -641,7 +637,6 @@ GraphicsServer::EndFrame()
         CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
         displaySemaphores.Append(displaySemaphore);
         presentSemaphores.Append(presentSemaphore);
-
     }
 
     // Finish submissions

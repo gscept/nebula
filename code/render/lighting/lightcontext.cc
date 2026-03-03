@@ -49,7 +49,6 @@ struct
     Util::Array<Graphics::GraphicsEntityId> spotLightEntities;
     Util::RingBuffer<Graphics::GraphicsEntityId> shadowcastingLocalLights;
 
-    alignas(16) Shared::ShadowViewConstants::STRUCT shadowMatrixUniforms;
     CoreGraphics::TextureId localLightShadows = CoreGraphics::InvalidTextureId;
     CoreGraphics::TextureId globalLightShadowMap = CoreGraphics::InvalidTextureId;
     CoreGraphics::TextureId terrainShadowMap = CoreGraphics::InvalidTextureId;
@@ -870,6 +869,7 @@ void
 LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
+    Shared::ShadowViewConstants::STRUCT& shadowConstants = view->GetShadowConstants();
 
     // Setup global light view transform
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
@@ -888,7 +888,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
             Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
 
             shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = cascadeProj;
-            cascadeProj.store(&lightServerState.shadowMatrixUniforms.LightViewMatrix[ctxId][0][0]);
+            cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
         }
 
 #if __DX12__
@@ -915,9 +915,9 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
             cascadeScales[splitIndex] = scale;
         }
 
-        memcpy(lightServerState.shadowMatrixUniforms.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * Shared::NUM_CASCADES);
-        memcpy(lightServerState.shadowMatrixUniforms.CascadeScale, cascadeScales, sizeof(Math::vec4) * Shared::NUM_CASCADES);
-        memcpy(lightServerState.shadowMatrixUniforms.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances().Begin(), sizeof(float) * Shared::NUM_CASCADES);
+        memcpy(shadowConstants.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * Shared::NUM_CASCADES);
+        memcpy(shadowConstants.CascadeScale, cascadeScales, sizeof(Math::vec4) * Shared::NUM_CASCADES);
+        memcpy(shadowConstants.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances().Begin(), sizeof(float) * Shared::NUM_CASCADES);
     }
 
     const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
@@ -944,8 +944,9 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
                     shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = viewProjection;
 
                     lightServerState.shadowcastingLocalLights.Add(observer);
-                    viewProjection.store(&lightServerState.shadowMatrixUniforms.LightViewMatrix[ctxId][0][0]);
-                    lightServerState.shadowMatrixUniforms.ShadowTiles[ctxId / 4][ctxId % 4] = shadowCasterCount++;
+
+                    viewProjection.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
+                    shadowConstants.ShadowTiles[ctxId / 4][ctxId % 4] = shadowCasterCount++;
                     break;
                 }
 
@@ -962,9 +963,6 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         if (shadowCasterCount == 16)
             break;
     }
-
-    // apply shadow uniforms
-    Graphics::UpdateShadowConstants(lightServerState.shadowMatrixUniforms);
 }
 
 //------------------------------------------------------------------------------

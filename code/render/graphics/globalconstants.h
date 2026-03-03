@@ -40,10 +40,6 @@ void GetOffsets(uint64_t& tickOffset, uint64_t& viewOffset, uint64_t& shadowOffs
 
 /// Get tick params constant buffer
 const Shared::PerTickParams::STRUCT& GetTickParams();
-/// Get current view constants
-const Shared::ViewConstants::STRUCT& GetViewConstants();
-/// Get current shadow view constnats
-const Shared::ShadowViewConstants::STRUCT& GetShadowViewConstants();
 
 /// Set global irradiance and cubemaps
 void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);

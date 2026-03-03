@@ -219,24 +219,6 @@ GetTickParams()
 //------------------------------------------------------------------------------
 /**
 */
-const Shared::ViewConstants::STRUCT&
-GetViewConstants()
-{
-    return globalConstantState.viewConstants;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Shared::ShadowViewConstants::STRUCT&
-GetShadowViewConstants()
-{
-    return globalConstantState.shadowViewConstants;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips)
 {
