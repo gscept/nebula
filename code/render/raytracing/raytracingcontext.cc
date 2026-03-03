@@ -768,7 +768,7 @@ RaytracingContext::WaitForJobs(const Graphics::FrameContext& ctx)
 /**
 */
 void
-RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+RaytracingContext::UpdateResources(const Graphics::FrameContext& ctx)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;

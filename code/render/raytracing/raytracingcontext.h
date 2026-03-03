@@ -77,7 +77,7 @@ public:
     /// Wait for jobs to finish
     static void WaitForJobs(const Graphics::FrameContext& ctx);
     /// Update view constants
-    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateResources(const Graphics::FrameContext& ctx);
 
     /// Get light grid resources
     static CoreGraphics::ResourceTableId GetLightGridResourceTable(IndexT bufferIndex);

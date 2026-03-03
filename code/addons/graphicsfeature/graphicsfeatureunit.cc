@@ -224,6 +224,7 @@ GraphicsFeatureUnit::OnActivate()
         Decals::DecalContext::UpdateDecals,
         Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
+        Raytracing::RaytracingContext::UpdateResources,
         ::Terrain::TerrainContext::RenderUI
     };
 
@@ -234,7 +235,6 @@ GraphicsFeatureUnit::OnActivate()
         Im3d::Im3dContext::OnPrepareView,
         PostEffects::SSAOContext::UpdateViewDependentResources,
         PostEffects::HistogramContext::UpdateViewResources,
-        Raytracing::RaytracingContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
         ::Terrain::TerrainContext::CullPatches
     };
