@@ -1707,6 +1707,9 @@ void
 TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainRunJobs, Terrain);
+
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
     Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
     for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)

@@ -627,6 +627,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     if (!CoreGraphics::RayTracingSupported)
         return;
 
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
     N_SCOPE(UpdateGIVolumes, DDGI);
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
