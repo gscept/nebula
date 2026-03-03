@@ -81,9 +81,9 @@ ModelContext::Create()
 /**
 */
 void
-ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
+ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const uint16_t stageMask)
 {
-    auto successCallback = [gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [gfxId, finishedCallback, stageMask](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
@@ -93,6 +93,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
         NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
         Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+        modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+
         Util::Array<Models::ModelNode*> transformNodes;
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
@@ -263,6 +265,7 @@ ModelContext::Setup(
     , const Materials::MaterialId material
     , const CoreGraphics::MeshId mesh
     , const IndexT primitiveGroup
+    , const uint16_t stageMask
 #if NEBULA_GRAPHICS_DEBUG
     , const Util::String debugName
 #endif
@@ -318,6 +321,7 @@ ModelContext::Setup(
     NodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
     modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
 
 #if NEBULA_GRAPHICS_DEBUG
     NodeInstances.renderable.nodeNames.Append(debugName);
@@ -437,6 +441,16 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ModelContext::SetStageMask(const Graphics::GraphicsEntityId id, const uint16_t stageMask)
+{
+    const ContextEntityId cid = GetContextId(id);
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT
 ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
 {
@@ -529,6 +543,16 @@ ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint16_t
+ModelContext::GetModelStageMask(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return modelContextAllocator.Get<Model_StageMask>(cid.id);
 }
 
 //------------------------------------------------------------------------------

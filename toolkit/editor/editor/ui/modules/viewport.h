@@ -38,7 +38,7 @@ public:
     void Init(Ptr<Graphics::View> const& view);
 
     void Render();
-    void SetStage(Ptr<Graphics::Stage> const& stage);
+    void SetStage(const uint16_t stage);
     void SetFrameBuffer(Util::String const& name);
 
     void Update();
@@ -61,7 +61,6 @@ public:
 private:
     RenderMode renderMode = TexturedLit;
 
-    Ptr<Graphics::Stage> stage;
     Ptr<Graphics::View> view;
 
     Resources::ResourceId resourceId;

@@ -70,7 +70,7 @@ Camera::Setup(SizeT screenWidth, SizeT screenHeight)
 
     CameraContext::SetLODCamera(this->cameraEntityId);
     ObserverContext::RegisterEntity(this->cameraEntityId);
-	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera);
+	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera, Graphics::PRIMARY_STAGE_MASK);
 }
 
 //------------------------------------------------------------------------------

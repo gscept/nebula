@@ -69,6 +69,8 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
                 , boundingBoxes = this->ent.boxes
                 , flags = this->ent.entityFlags
                 , isOrtho = this->obs.isOrtho[i]
+                , observerStage = this->obs.stages[i]
+                , entityStages = this->ent.stages
                 , clipStatuses = this->obs.results[i].Begin()
                 , colX, colY, colZ, colW
             ]
@@ -84,6 +86,13 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
                     return;
 
                 uint32_t objectId = ids[index];
+
+                // Check stage flags
+                if ((entityStages[index] & observerStage) == 0)
+                {
+                    clipStatuses[index] = Math::ClipStatus::Outside;
+                    continue;
+                }
 
                 if (AllBits(flags[objectId], (uint32_t)Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
                 {

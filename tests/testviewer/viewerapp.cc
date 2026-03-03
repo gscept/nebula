@@ -134,7 +134,6 @@ SimpleViewerApplication::Open()
 
         this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
         gfxServer->SetCurrentView(this->view);
-        this->stage = gfxServer->CreateStage("stage1", true);
 
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
@@ -248,7 +247,6 @@ SimpleViewerApplication::Open()
         CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
         this->view->SetCamera(this->cam);
-        this->view->SetStage(this->stage);
 
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
@@ -343,7 +341,6 @@ SimpleViewerApplication::Close()
     Jobs2::JobSystemUninit();
     App::Application::Close();
     DestroyWindow(this->wnd);
-    this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();

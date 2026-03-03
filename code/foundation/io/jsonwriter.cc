@@ -331,6 +331,46 @@ JsonWriter::Add(const uint64_t& value, const Util::String& name)
 */
 template <>
 void
+JsonWriter::Add(const int16_t& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
+    n_assert(value < INT16_MAX);
+    pjson::value_variant val(value);
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+JsonWriter::Add(const uint16_t& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
+    n_assert(value < UINT16_MAX);
+    pjson::value_variant val(value);
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
 JsonWriter::Add(const float& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();

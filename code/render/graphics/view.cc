@@ -23,8 +23,8 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 View::View() :
     func(nullptr),
     camera(GraphicsEntityId::Invalid()),
-    stage(nullptr),
-    enabled(true)
+    enabled(true),
+    stageMask(Graphics::PRIMARY_STAGE_MASK)
 {
     // empty
 }

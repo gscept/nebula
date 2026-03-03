@@ -14,10 +14,8 @@
 #include "frame/framescript.h"
 #include "timing/time.h"
 #include "graphicsentity.h"
-#include "stage.h"
 namespace Graphics
 {
-class Stage;
 class Camera;
 class View : public Core::RefCounted
 {
@@ -46,9 +44,9 @@ public:
     const GraphicsEntityId& GetCamera();
 
     /// set stage
-    void SetStage(const Ptr<Stage>& stage);
+    void SetStageMask(const uint16_t stage);
     /// get stage
-    const Ptr<Stage>& GetStage() const;
+    const uint16_t GetStageMask() const;
 
     /// returns whether view is enabled
     bool IsEnabled() const;
@@ -62,9 +60,9 @@ private:
     friend class GraphicsServer;
 
     Math::rectangle<int> viewport;
+    uint16_t stageMask;
     bool (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
     GraphicsEntityId camera;
-    Ptr<Stage> stage;
     bool enabled;
 };
 
@@ -90,18 +88,18 @@ Graphics::View::GetCamera()
 /**
 */
 inline void
-View::SetStage(const Ptr<Stage>& stage)
+View::SetStageMask(const uint16_t stageMask)
 {
-    this->stage = stage;
+    this->stageMask = stageMask;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Stage>&
-View::GetStage() const
+inline const uint16_t
+View::GetStageMask() const
 {
-    return this->stage;
+    return this->stageMask;
 }
 
 //------------------------------------------------------------------------------

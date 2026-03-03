@@ -6,7 +6,6 @@
 #include "graphicsserver.h"
 #include "graphicscontext.h"
 #include "view.h"
-#include "stage.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/textureloader.h"
 #include "coregraphics/meshloader.h"
@@ -390,35 +389,14 @@ GraphicsServer::GetWindows() const
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::Stage>
-GraphicsServer::CreateStage(const Util::StringAtom& name, bool main)
-{
-    Ptr<Stage> stage = Stage::Create();
-    this->stages.Append(stage);
-    return stage;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
-{
-    IndexT i = this->stages.FindIndex(stage);
-    n_assert(i != InvalidIndex);
-    this->stages.EraseIndex(i);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
+GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage)
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
     Ptr<View> view = View::Create();
     view->SetFrameScript(render);
     view->SetViewport(viewport);
+    view->SetStageMask(stage);
     this->views.Append(view);
     this->viewsByName.Add(name, view);
 

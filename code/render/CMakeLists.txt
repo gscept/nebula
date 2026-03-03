@@ -440,8 +440,6 @@ ENDIF()
                 graphicsentity.h
                 graphicsserver.cc
                 graphicsserver.h
-                stage.cc
-                stage.h
                 view.cc
                 view.h
             )

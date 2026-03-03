@@ -44,6 +44,7 @@ __ImplementContext(ObserverContext, ObserverContext::observerAllocator)
 
 struct ObservableGlobalState
 {
+    /// This array keeps track of all observables registered 
     ObserverContext::VisibilityResultArray visibilityResults;
 } ObservableState;
 
@@ -51,13 +52,14 @@ struct ObservableGlobalState
 /**
 */
 void
-ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, bool isOrtho)
+ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, uint16_t stageMask, bool isOrtho)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     observerAllocator.Set<Observer_EntityType>(cid.id, entityType);
     observerAllocator.Set<Observer_EntityId>(cid.id, id);
     observerAllocator.Set<Observer_IsOrtho>(cid.id, isOrtho);
-    observerAllocator.Set<Observer_ResultArray>(cid.id, ObservableState.visibilityResults);
+    observerAllocator.Set<Observer_StageMask>(cid.id, stageMask);
+    observerAllocator.Set<Observer_ResultArray>(cid.id, ObservableState.visibilityResults); // Copy global list of all observables
 }
 
 //------------------------------------------------------------------------------
@@ -83,6 +85,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
     const Util::Array<bool>& observerIsOrthogonal = observerAllocator.GetArray<Observer_IsOrtho>();
+    const Util::Array<uint16_t>& observerStageMasks = observerAllocator.GetArray<Observer_StageMask>();
     const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
     const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
     Util::Array<VisibilityResultArray>& observerResults = observerAllocator.GetArray<Observer_ResultArray>();
@@ -126,15 +129,19 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->PrepareObservers(observerTransforms.Begin(), observerIsOrthogonal.Begin(), observerResults.Begin(), observerTransforms.Size());
+            sys->PrepareObservers(observerTransforms.Begin(), observerIsOrthogonal.Begin(), observerStageMasks.Begin(), observerResults.Begin(), observerTransforms.Size());
         }
     }
 
     // setup observerable entities
     const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
     static Util::Array<uint32_t> nodes;
-    nodes.Clear();
+    nodes.Reset();
     nodes.Resize(observerResults[0].Size());
+
+    static Util::Array<uint16_t> stageMasks;
+    stageMasks.Reset();
+    stageMasks.Resize(observerResults[0].Size());
 
     static Threading::AtomicCounter idCounter;
     idCounter = 1;
@@ -147,6 +154,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             [
                 idData = ids.Begin()
                 , nodeData = nodes.Begin()
+                , stageMaskData = stageMasks.Begin()
                 , counter
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset) mutable
@@ -164,18 +172,23 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 if (gid == Graphics::InvalidGraphicsEntityId)
                     continue;
 
+                const uint16_t stage = Models::ModelContext::GetModelStageMask(idData[index]);
                 const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
                 uint offset = Threading::Interlocked::Add(&counter, numNodes);
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
-                    nodeData[offset++] = j;
+                {
+                    stageMaskData[offset] = stage;
+                    nodeData[offset] = j;
+                    offset++;
+                }
             }
         }, ids.Size(), 1024, {}, &idCounter, nullptr);
 
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->PrepareEntities(NodeInstances.nodeBoundingBoxes.Begin(), nodes.Begin(), ids.Begin(), reinterpret_cast<uint32_t*>(NodeInstances.nodeFlags.Begin()), nodes.Size());
+            sys->PrepareEntities(NodeInstances.nodeBoundingBoxes.Begin(), nodes.Begin(), stageMasks.Begin(), ids.Begin(), reinterpret_cast<uint32_t*>(NodeInstances.nodeFlags.Begin()), nodes.Size());
         }
     }
 

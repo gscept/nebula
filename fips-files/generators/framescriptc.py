@@ -1286,6 +1286,7 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
+        file.WriteLine('#include "profiling/profiling.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")

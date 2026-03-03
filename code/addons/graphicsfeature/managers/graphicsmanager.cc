@@ -53,6 +53,7 @@ RegisterModelEntity(
     Resources::ResourceName const res,
     Resources::ResourceName const anim,
     Resources::ResourceName const skeleton,
+    uint const stage,
     bool const raytracing,
     Math::mat4 const& t
 )
@@ -80,7 +81,8 @@ RegisterModelEntity(
                 Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
                 Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
             }
-        }
+        },
+        stage
     );
 }
 
@@ -555,7 +557,7 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
     Game::Scale scale = world->GetComponent<Game::Scale>(entity);
     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
     RegisterModelEntity(
-        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform
+        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->stages.GetBits(0), model->raytracing, worldTransform
     );
 }
 
