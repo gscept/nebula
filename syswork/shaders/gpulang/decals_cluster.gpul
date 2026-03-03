@@ -65,7 +65,9 @@ csCull() void
     for (var i : u32 = 0; i < DecalUniforms.NumPBRDecals; i++)
     {
         const decal = DecalLists.PBRDecals[i];
-        if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
+        const viewSpaceMin = (ViewConstants.View * f32x4(decal.bboxMin.xyz, 1)).xyz;
+        const viewSpaceMax = (ViewConstants.View * f32x4(decal.bboxMax.xyz, 1)).xyz;
+        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
         {
             DecalIndexLists.PBRDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
             numDecals++;
@@ -81,7 +83,9 @@ csCull() void
     for (var i : u32 = 0; i < DecalUniforms.NumEmissiveDecals; i++)
     {
         const decal = DecalLists.EmissiveDecals[i];
-        if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
+        const viewSpaceMin = (ViewConstants.View * f32x4(decal.bboxMin.xyz, 1)).xyz;
+        const viewSpaceMax = (ViewConstants.View * f32x4(decal.bboxMax.xyz, 1)).xyz;
+        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
         {
             DecalIndexLists.EmissiveDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
             numDecals++;

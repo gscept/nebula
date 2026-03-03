@@ -10,7 +10,7 @@
 #include "frame/framecode.h"
 
 #include "graphics/globalconstants.h"
-
+#include "graphics/view.h"
 #include "gpulang/render/system_shaders/histogram_cs.h"
 #include "core/cvar.h"
 
@@ -255,6 +255,8 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
     float lum = histogramState.previousLum + (averageLum - histogramState.previousLum) * time;
     histogramState.previousLum = lum;
 
+    Shared::ViewConstants::STRUCT& constants = view->GetViewConstants();
+    constants.Time_Random_Luminance_X[2] = lum;
     Shared::ViewConstants::STRUCT viewConstants = Graphics::GetViewConstants();
     viewConstants.Time_Random_Luminance_X[2] = lum;
     Graphics::UpdateViewConstants(viewConstants);

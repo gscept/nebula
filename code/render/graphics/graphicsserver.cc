@@ -522,7 +522,6 @@ GraphicsServer::RunPreLogic()
 
         // begin frame on view, this will construct view build jobs
         this->currentView = view;
-        view->UpdateConstants();
         N_MARKER_BEGIN(ContextPerView, Graphics);
         for (auto& call : this->preLogicViewCalls)
         {
@@ -565,9 +564,6 @@ void GraphicsServer::RunPostLogic()
         N_MARKER_END();
         this->currentView = nullptr;
     }
-
-    // Consider this whole block of code viable for updating resource tables
-    //CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -590,11 +586,13 @@ GraphicsServer::Render()
     for (i = 0; i < this->views.Size(); i++)
     {
         const Ptr<View>& view = this->views[i];
-
+            
         if (!view->enabled)
             continue;
 
         this->currentView = view;
+        view->UpdateConstants();
+
         if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
         {
             Math::rectangle<int> viewport = view->GetViewport();

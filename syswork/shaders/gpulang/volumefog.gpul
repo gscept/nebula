@@ -34,7 +34,7 @@ csCull() void
     for (var i = 0u; i < VolumeFogUniforms.NumFogSpheres; i++)
     {
         const fog = FogLists.FogSpheres[i];
-        if (TestAABBSphere(aabb, fog.position, fog.radius))
+        if (TestAABBSphere(aabb, (ViewConstants.View * f32x4(fog.position, 1)).xyz, fog.radius))
         {
             FogIndexLists.FogSphereIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
             numFogs++;
@@ -50,7 +50,9 @@ csCull() void
     for (var i = 0u; i < VolumeFogUniforms.NumFogBoxes; i++)
     {
         const fog = FogLists.FogBoxes[i];
-        if (TestAABBAABB(aabb, fog.bboxMin, fog.bboxMax))
+        const viewSpaceMin = (ViewConstants.View * f32x4(fog.bboxMin.xyz, 1)).xyz;
+        const viewSpaceMax = (ViewConstants.View * f32x4(fog.bboxMax.xyz, 1)).xyz;
+        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
         {
             FogIndexLists.FogBoxIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
             numFogs++;

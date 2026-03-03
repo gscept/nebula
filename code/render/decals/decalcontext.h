@@ -53,7 +53,7 @@ public:
     static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
 
     /// update view dependent resources
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateDecals(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_BUILD
     /// render debug

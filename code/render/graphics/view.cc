@@ -73,6 +73,23 @@ View::UpdateConstants()
         constants.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
         constants.Time_Random_Luminance_X[1] = Math::rand(0, 1);
 
+        view.store(&this->viewConstants.View[0][0]);
+        proj.store(&this->viewConstants.Projection[0][0]);
+        viewProj.store(&this->viewConstants.ViewProjection[0][0]);
+        invView.store(&this->viewConstants.InvView[0][0]);
+        invProj.store(&this->viewConstants.InvProjection[0][0]);
+        invViewProj.store(&this->viewConstants.InvViewProjection[0][0]);
+        invView.position.store(this->viewConstants.EyePos);
+
+        this->viewConstants.FocalLengthNearFar[0] = settings.GetFocalLength().x;
+        this->viewConstants.FocalLengthNearFar[1] = settings.GetFocalLength().y;
+        this->viewConstants.FocalLengthNearFar[2] = settings.GetZNear();
+        this->viewConstants.FocalLengthNearFar[3] = settings.GetZFar();
+        this->viewConstants.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
+        this->viewConstants.Time_Random_Luminance_X[1] = Math::rand(0, 1);
+
+        this->constantBufferOffsets.viewOffset = CoreGraphics::AllocateConstantBufferMemory(sizeof(this->viewConstants));
+
         // Apply view transforms
         Graphics::UpdateViewConstants(constants);
     }

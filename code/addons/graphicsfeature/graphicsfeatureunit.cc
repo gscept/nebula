@@ -220,6 +220,9 @@ GraphicsFeatureUnit::OnActivate()
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
         Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
+        Lighting::LightContext::UpdateLights,
+        Decals::DecalContext::UpdateDecals,
+        Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
         ::Terrain::TerrainContext::RenderUI
     };
@@ -231,9 +234,6 @@ GraphicsFeatureUnit::OnActivate()
         Im3d::Im3dContext::OnPrepareView,
         PostEffects::SSAOContext::UpdateViewDependentResources,
         PostEffects::HistogramContext::UpdateViewResources,
-        Decals::DecalContext::UpdateViewDependentResources,
-        Fog::VolumetricFogContext::UpdateViewDependentResources,
-        Lighting::LightContext::UpdateViewDependentResources,
         Raytracing::RaytracingContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
         ::Terrain::TerrainContext::CullPatches

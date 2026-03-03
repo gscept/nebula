@@ -14,6 +14,7 @@
 #include "frame/framescript.h"
 #include "timing/time.h"
 #include "graphicsentity.h"
+#include "gpulang/render/system_shaders/shared.h"
 namespace Graphics
 {
 class Camera;
@@ -21,6 +22,8 @@ class View : public Core::RefCounted
 {
     __DeclareClass(View);
 public:
+
+
     /// constructor
     View();
     /// destructor
@@ -43,6 +46,17 @@ public:
     /// get camera
     const GraphicsEntityId& GetCamera();
 
+    /// Get reference to view constants
+    Shared::ViewConstants::STRUCT& GetViewConstants();
+    /// Get reference to shadow constants
+    Shared::ShadowViewConstants::STRUCT& GetShadowConstants();
+
+    struct ConstantBufferOffsets
+    {
+        CoreGraphics::ConstantBufferOffset viewOffset, shadowOffset;
+    };
+    const ConstantBufferOffsets& GetConstantBufferOffsets();
+
     /// set stage
     void SetStageMask(const uint16_t stage);
     /// get stage
@@ -59,6 +73,11 @@ public:
 private:    
     friend class GraphicsServer;
 
+    Shared::ViewConstants::STRUCT viewConstants;
+    Shared::ShadowViewConstants::STRUCT shadowViewConstants;
+    ConstantBufferOffsets constantBufferOffsets;
+    CoreGraphics::ResourceTableId viewResources;
+    
     Math::rectangle<int> viewport;
     uint16_t stageMask;
     bool (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
@@ -82,6 +101,15 @@ inline const GraphicsEntityId&
 Graphics::View::GetCamera()
 {
     return this->camera;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const View::ConstantBufferOffsets&
+View::GetConstantBufferOffsets()
+{
+    return this->constantBufferOffsets;
 }
 
 //------------------------------------------------------------------------------
@@ -150,10 +178,30 @@ View::SetViewport(const Math::rectangle<int>& rect)
 //------------------------------------------------------------------------------
 /**
 */
-inline const 
-Math::rectangle<int>& View::GetViewport()
+inline const Math::rectangle<int>& 
+View::GetViewport()
 {
     return this->viewport;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Shared::ViewConstants::STRUCT&
+View::GetViewConstants()
+{
+    return this->viewConstants;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Shared::ShadowViewConstants::STRUCT&
+View::GetShadowConstants()
+{
+    return this->shadowViewConstants;
+    ;
 }
 
 } // namespace Graphics

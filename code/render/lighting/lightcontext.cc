@@ -170,16 +170,6 @@ LightContext::Create()
     rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     clusterState.stagingClusterLightsList.Create(rwbInfo);
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightIndexLists, Shared::LightIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightsList, Shared::LightLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::LightUniforms::BINDING, 0, sizeof(LightsCluster::LightUniforms::STRUCT), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     // setup combine
     combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.gplb");
     combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
@@ -1040,15 +1030,11 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 /**
 */
 void
-LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+LightContext::UpdateLights(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateLightResources, Lighting);
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
     using namespace CoreGraphics;
-
-    // get camera view
-    const Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
-    const Math::rectangle<int>& viewport = view->GetViewport();
 
     // update constant buffer
     Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
@@ -1287,7 +1273,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
     uint64_t offset = SetConstants(clusterState.consts);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::LightUniforms::BINDING, 0, sizeof(Shared::LightUniforms::STRUCT), offset });
+    ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightIndexLists, Shared::LightIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightsList, Shared::LightLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::LightUniforms::BINDING, 0, sizeof(LightsCluster::LightUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     Combine::CombineUniforms::STRUCT combineConsts;

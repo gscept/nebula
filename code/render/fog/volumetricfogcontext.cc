@@ -113,16 +113,6 @@ VolumetricFogContext::Create()
         fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP, fogState.resourceTables.Size());
     }
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.gplb");
     blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurX"));
     blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurY"));
@@ -337,11 +327,10 @@ VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const M
 /**
 */
 void
-VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
 
     SizeT numFogBoxVolumes = 0;
     SizeT numFogSphereVolumes = 0;
@@ -359,7 +348,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             fog.falloff = 64.0f;
-            Math::mat4 transform = viewTransform * fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]);
+            Math::mat4 transform = fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]);
             Math::bbox box(transform);
             box.pmin.store3(fog.bboxMin);
             box.pmax.store3(fog.bboxMax);
@@ -373,7 +362,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             Math::vec4 pos = Math::vec4(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]), 1);
-            pos = viewTransform * pos;
+            pos = pos;
             pos.store3(fog.position);
             fog.radius = fogSphereVolumeAllocator.Get<FogSphereVolume_Radius>(typeIds[i]);
             fog.falloff = 64.0f;
@@ -408,7 +397,9 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
+    ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables

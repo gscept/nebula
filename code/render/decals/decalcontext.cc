@@ -98,16 +98,6 @@ DecalContext::Create()
     rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     decalState.stagingClusterDecalsList.Create(rwbInfo);
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::DecalIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::DecalLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::DecalUniforms::BINDING, 0, sizeof(Shared::DecalUniforms::STRUCT), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     FrameScript_default::Bind_ClusterDecalList(decalState.clusterDecalsList);
     FrameScript_default::Bind_ClusterDecalIndexLists(decalState.clusterDecalIndexLists);
     FrameScript_default::RegisterSubgraph_DecalCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -274,10 +264,9 @@ DecalContext::GetTransform(const Graphics::GraphicsEntityId id)
 /**
 */
 void
-DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+DecalContext::UpdateDecals(const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     const Util::Array<DecalType>& types = genericDecalAllocator.GetArray<Decal_Type>();
     const Util::Array<Ids::Id32>& typeIds = genericDecalAllocator.GetArray<Decal_TypedId>();
     const Util::Array<Math::mat4>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();
@@ -292,8 +281,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case PBRDecal:
         {
             auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
-            Math::mat4 viewSpace = viewTransform * transforms[i];
-            Math::bbox bbox(viewSpace);
+            Math::bbox bbox(transforms[i]);
             bbox.pmin.store(pbrDecal.bboxMin);
             bbox.pmax.store(pbrDecal.bboxMax);
             pbrDecal.albedo = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Albedo>(typeIds[i]));
@@ -311,8 +299,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case EmissiveDecal:
         {
             auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
-            Math::mat4 viewSpace = viewTransform * transforms[i];
-            Math::bbox bbox(viewSpace);
+            Math::bbox bbox(transforms[i]);
             bbox.pmin.store(emissiveDecal.bboxMin);
             bbox.pmax.store(emissiveDecal.bboxMax);
             transforms[i].z_axis.store3(emissiveDecal.direction);
@@ -336,7 +323,9 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::DecalUniforms::BINDING, 0, sizeof(Shared::DecalUniforms::STRUCT), offset });
+    ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::DecalIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::DecalLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::DecalUniforms::BINDING, 0, sizeof(Shared::DecalUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights

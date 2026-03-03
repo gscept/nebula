@@ -64,7 +64,7 @@ public:
     static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption);
 
     /// prepare light lists
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateFogVolumes(const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
 

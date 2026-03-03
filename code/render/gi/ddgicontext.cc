@@ -195,16 +195,6 @@ DDGIContext::Create()
     rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     state.stagingClusterGIVolumeList.Create(rwbInfo);
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::GIIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::GIVolumeLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::GIVolumeUniforms::BINDING, 0, sizeof(ProbeFinalize::GIVolumeUniforms), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     FrameScript_default::Bind_ClusterGIList(state.clusterGIVolumeList);
     FrameScript_default::Bind_ClusterGIIndexLists(state.clusterGIVolumeIndexLists);
     FrameScript_default::RegisterSubgraph_GICopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -640,7 +630,6 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     N_SCOPE(UpdateGIVolumes, DDGI);
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     const auto& projectSettings = Options::ProjectSettings;
     float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
 
@@ -769,7 +758,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
         Math::mat4 transform = Math::scaling(activeVolume.size * 2.0f);
         transform.translate(activeVolume.position);
-        Math::bbox bbox = viewTransform * transform;
+        Math::bbox bbox = transform;
         bbox.pmin.store(giVolume.bboxMin);
         bbox.pmax.store(giVolume.bboxMax);
         Math::quat().store(giVolume.Rotation);
@@ -806,6 +795,8 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = CoreGraphics::SetConstants(giVolumeUniforms);
+    ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::GIIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::GIVolumeLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
     ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::GIVolumeUniforms::BINDING, 0, sizeof(Shared::GIVolumeUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
