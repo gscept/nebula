@@ -19,8 +19,6 @@ threads_x(64)
 entry_point
 csCull() void 
 {
-    
-
     const index1D = computeGetGlobalThreadIndices().x;
 
     if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
@@ -34,7 +32,7 @@ csCull() void
     for (var i = 0u; i < VolumeFogUniforms.NumFogSpheres; i++)
     {
         const fog = FogLists.FogSpheres[i];
-        if (TestAABBSphere(aabb, (ViewConstants.View * f32x4(fog.position, 1)).xyz, fog.radius))
+        if (TestAABBSphere(aabb, fog.position.xyz, fog.radius))
         {
             FogIndexLists.FogSphereIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
             numFogs++;
@@ -50,9 +48,7 @@ csCull() void
     for (var i = 0u; i < VolumeFogUniforms.NumFogBoxes; i++)
     {
         const fog = FogLists.FogBoxes[i];
-        const viewSpaceMin = (ViewConstants.View * f32x4(fog.bboxMin.xyz, 1)).xyz;
-        const viewSpaceMax = (ViewConstants.View * f32x4(fog.bboxMax.xyz, 1)).xyz;
-        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
+        if (TestAABBAABB(aabb, fog.bboxMin, fog.bboxMax))
         {
             FogIndexLists.FogBoxIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
             numFogs++;

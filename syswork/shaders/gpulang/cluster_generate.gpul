@@ -31,13 +31,13 @@ csClusterAABB() void
     // Trace a ray from the eye (origin) towards the four corner points
     const eye = f32x3(0);
     const intersection0 = IntersectLineWithPlane(eye, minCorner.xyz, nearPlane);
-    const nearMin = intersection0.point;
+    const nearMin = ViewToWorld(f32x4(intersection0.point, 1.0f), ViewConstants.InvView).xyz;
     const intersection1 = IntersectLineWithPlane(eye, maxCorner.xyz, nearPlane);
-    const nearMax = intersection1.point;
+    const nearMax = ViewToWorld(f32x4(intersection1.point, 1.0f), ViewConstants.InvView).xyz;
     const intersection2 = IntersectLineWithPlane(eye, minCorner.xyz, farPlane);
-    const farMin = intersection2.point;
+    const farMin = ViewToWorld(f32x4(intersection2.point, 1.0f), ViewConstants.InvView).xyz;
     const intersection3 = IntersectLineWithPlane(eye, maxCorner.xyz, farPlane);
-    const farMax = intersection3.point;
+    const farMax = ViewToWorld(f32x4(intersection3.point, 1.0f), ViewConstants.InvView).xyz;
 
     // Calculate AABB using min and max
     var aabb : ClusterAABB;
