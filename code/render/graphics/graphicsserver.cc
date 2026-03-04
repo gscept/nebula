@@ -390,15 +390,24 @@ GraphicsServer::GetWindows() const
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage)
+GraphicsServer::CreateView(
+    const Util::StringAtom& name
+    , bool(*render)(const Math::rectangle<int>&, IndexT, IndexT)
+    , const Math::rectangle<int>& viewport
+    , uint16_t stageMask
+    , std::function<void(IndexT, IndexT)> preViewCallback
+    , std::function<void(IndexT, IndexT)> postViewCallback
+)
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
     Ptr<View> view = View::Create();
     view->SetFrameScript(render);
     view->SetViewport(viewport);
-    view->SetStageMask(stage);
+    view->SetStageMask(stageMask);
     this->views.Append(view);
     this->viewsByName.Add(name, view);
+    this->preViewCallbacks.Append(preViewCallback);
+    this->postViewCallbacks.Append(postViewCallback);
 
     // invoke all interested contexts
     IndexT i;
@@ -454,6 +463,15 @@ void
 GraphicsServer::SetCurrentView(const Ptr<View>& view)
 {
     this->currentView = view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex))
+{
+    this->endFrameCallbacks.Append(func);
 }
 
 //------------------------------------------------------------------------------
@@ -535,8 +553,8 @@ GraphicsServer::RunPreLogic()
 //------------------------------------------------------------------------------
 /**
 */
-
-void GraphicsServer::RunPostLogic()
+void
+GraphicsServer::RunPostLogic()
 {
     N_SCOPE(PostLogic, Graphics);
 
@@ -546,24 +564,6 @@ void GraphicsServer::RunPostLogic()
         call(this->frameContext);
     }
     N_MARKER_END();
-
-    // Go through views and call before view
-    for (IndexT i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
-            continue;
-
-        this->currentView = view;
-        N_MARKER_BEGIN(ContextPerView, Graphics);
-        for (auto& call : this->postLogicViewCalls)
-        {
-            call(view, this->frameContext);
-        }
-        N_MARKER_END();
-        this->currentView = nullptr;
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -586,9 +586,17 @@ GraphicsServer::Render()
         this->currentView = view;
         view->UpdateConstants();
 
+        N_MARKER_BEGIN(ViewPreRender, Graphics)
+        for (auto& call : this->postLogicViewCalls)
+        {
+            call(view, this->frameContext);
+        }
+        N_MARKER_END()
+
         N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
         auto& preViewCallback = this->preViewCallbacks[i];
-        preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        if (preViewCallback != nullptr)
+            preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
         N_MARKER_END()
 
         if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
@@ -614,7 +622,8 @@ GraphicsServer::Render()
 
         N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
         auto& postViewCallback = this->postViewCallbacks[i];
-        postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        if (postViewCallback != nullptr)
+            postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
         N_MARKER_END()
     }
 }
@@ -628,6 +637,11 @@ GraphicsServer::EndFrame()
     N_SCOPE(EndFrame, Graphics);
 
     Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
+
+    for (auto& func : this->endFrameCallbacks)
+    {
+        func(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
 
     for (auto& wnd : this->windows)
     {

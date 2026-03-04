@@ -152,7 +152,12 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
     }
 #endif
-    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), 1u, [](IndexT frameIndex, IndexT bufferIndex) {
+        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
+    });
     this->globalLight = Graphics::CreateEntity();
 
     Im3d::Im3dContext::Create();
@@ -191,12 +196,6 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::DownsamplingContext::Setup();
 
     Graphics::SetupBufferConstants();
-    this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
-        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
-        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
-    });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
         Graphics::SetupBufferConstants();
     });

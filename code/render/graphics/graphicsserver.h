@@ -75,7 +75,14 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, bool(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage = PRIMARY_STAGE_MASK);
+    Ptr<View> CreateView(
+        const Util::StringAtom& name
+        , bool(*renderFunction)(const Math::rectangle<int>&, IndexT, IndexT)
+        , const Math::rectangle<int>& viewport
+        , uint16_t stageMask = PRIMARY_STAGE_MASK
+        , std::function<void(IndexT, IndexT)> preViewCallback = nullptr
+        , std::function<void(IndexT, IndexT)> postViewCallback = nullptr
+    );
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// Get view by name
@@ -87,12 +94,8 @@ public:
     /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
     void SetCurrentView(const Ptr<View>& view);
 
-    using PreViewCallback = void(*)(IndexT, IndexT);
-    using PostViewCallback = void(*)(IndexT, IndexT);
-    /// Add callback for rendering before the views are processed
-    void AddPreViewCall(PreViewCallback callback);
-    /// Add callback for rendering after the views are processed
-    void AddPostViewCall(PostViewCallback callback);
+    /// Add callback to run just before frame is finished
+    void AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex));
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
 
@@ -157,8 +160,9 @@ private:
     Util::Array<Ptr<View>> views;
     Ptr<View> currentView;
 
-    Util::Array<PreViewCallback> preViewCallbacks;
-    Util::Array<PostViewCallback> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> preViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> endFrameCallbacks;
 
     void (*resizeCall) (const SizeT, const SizeT);
 
@@ -231,24 +235,6 @@ inline const Ptr<View>&
 GraphicsServer::GetCurrentView() const
 {
     return this->currentView;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPreViewCall(PreViewCallback callback)
-{
-    this->preViewCallbacks.Append(callback);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPostViewCall(PostViewCallback callback)
-{
-    this->postViewCallbacks.Append(callback);
 }
 
 //------------------------------------------------------------------------------
