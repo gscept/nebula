@@ -38,15 +38,15 @@ struct FrameContext
 using ViewIndependentCall = void(*)(const Graphics::FrameContext& ctx);
 using ViewDependentCall = void(*)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
-static constexpr uint16_t PRIMARY_STAGE_MASK = 0x1;
-static constexpr uint16_t SHADOW_STAGE_MASK = 0x2;
-static constexpr uint16_t DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
+typedef uint16_t StageMask;
+static constexpr StageMask PRIMARY_STAGE_MASK = 0x1;
+static constexpr StageMask SHADOW_STAGE_MASK = 0x2;
+static constexpr StageMask DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
 
-static constexpr uint16_t GetStageMask(const uint16_t stageIndex)
+static constexpr StageMask GetStageMask(const StageMask stageIndex)
 {
     return 1 << (stageIndex << SHADOW_STAGE_MASK);
 }
-
 
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
@@ -79,7 +79,7 @@ public:
         const Util::StringAtom& name
         , bool(*renderFunction)(const Math::rectangle<int>&, IndexT, IndexT)
         , const Math::rectangle<int>& viewport
-        , uint16_t stageMask = PRIMARY_STAGE_MASK
+        , Graphics::StageMask stageMask = PRIMARY_STAGE_MASK
         , std::function<void(IndexT, IndexT)> preViewCallback = nullptr
         , std::function<void(IndexT, IndexT)> postViewCallback = nullptr
     );

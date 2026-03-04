@@ -196,7 +196,7 @@ LightContext::Create()
     // allow 16 shadow casting local lights
     lightServerState.shadowcastingLocalLights.SetCapacity(16);
 
-    FrameScript_shadows::RegisterSubgraph_SpotlightShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_shadows::RegisterSubgraph_SpotlightShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         IndexT i;
         for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
@@ -206,11 +206,11 @@ LightContext::Create()
             Frame::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, slice, bufferIndex);
         }
     });
-    FrameScript_shadows::RegisterSubgraph_SpotlightBlur_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_shadows::RegisterSubgraph_SpotlightBlur_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
     });
 
-    FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
         {
@@ -229,7 +229,7 @@ LightContext::Create()
     // Bind shadows
     FrameScript_default::Bind_LightList(clusterState.clusterLightsList);
     FrameScript_default::Bind_ClusterLightIndexLists(clusterState.clusterLightIndexLists);
-    FrameScript_default::RegisterSubgraph_LightsCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_LightsCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -239,9 +239,9 @@ LightContext::Create()
         { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_LightsCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_LightsCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, clusterState.cullProgram);
+        CmdSetShaderProgram(cmdBuf, clusterState.cullProgram, queue);
 
         // run chunks of 1024 threads at a time
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -252,9 +252,9 @@ LightContext::Create()
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_LightsCombine_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_LightsCombine_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, combineState.combineProgram);
+        CmdSetShaderProgram(cmdBuf, combineState.combineProgram, queue);
         CmdSetResourceTable(cmdBuf, combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         // perform debug output
@@ -295,11 +295,12 @@ LightContext::SetupGlobalLight(
     auto lid = directionalLightAllocator.Alloc();
 
     const Graphics::ContextEntityId cid = GetContextId(id);
-    genericLightAllocator.Get<Type>(cid.id) = LightType::DirectionalLightType;
-    genericLightAllocator.Get<Color>(cid.id) = color;
-    genericLightAllocator.Get<Intensity>(cid.id) = intensity;
-    genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
-    genericLightAllocator.Get<TypedLightId>(cid.id) = lid;
+    genericLightAllocator.Set<Type>(cid.id, LightType::DirectionalLightType);
+    genericLightAllocator.Set<Color>(cid.id, color);
+    genericLightAllocator.Set<Intensity>(cid.id, intensity);
+    genericLightAllocator.Set<ShadowCaster>(cid.id, castShadows);
+    genericLightAllocator.Set<TypedLightId>(cid.id, lid);
+    genericLightAllocator.Set<StageMask>(cid.id, 0xFFFF);
 
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
@@ -359,23 +360,25 @@ LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambien
 /**
 */
 void
-LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
-    const Math::vec3& color,
-    const float intensity,
-    const float range,
-    bool castShadows,
-    const CoreGraphics::TextureId projection)
+LightContext::SetupPointLight(
+    const Graphics::GraphicsEntityId id
+    , const Math::vec3& color
+    , const float intensity
+    , const float range
+    , const Graphics::StageMask stageMask
+    , bool castShadows
+    , const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     const Graphics::ContextEntityId cid = GetContextId(id);
-    genericLightAllocator.Get<Type>(cid.id) = LightType::PointLightType;
-    genericLightAllocator.Get<Color>(cid.id) = color;
-    genericLightAllocator.Get<Intensity>(cid.id) = intensity;
-    genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
-    genericLightAllocator.Get<Range>(cid.id) = range;
-
     auto pli = pointLightAllocator.Alloc();
-    genericLightAllocator.Get<TypedLightId>(cid.id) = pli;
+    genericLightAllocator.Set<Type>(cid.id, LightType::PointLightType);
+    genericLightAllocator.Set<Color>(cid.id, color);
+    genericLightAllocator.Set<Intensity>(cid.id, intensity);
+    genericLightAllocator.Set<ShadowCaster>(cid.id, castShadows);
+    genericLightAllocator.Set<Range>(cid.id, range);
+    genericLightAllocator.Set<TypedLightId>(cid.id, pli);
+    genericLightAllocator.Set<StageMask>(cid.id, stageMask);
 
     // set initial state
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli).Resize(2);
@@ -402,25 +405,27 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 */
 void
 LightContext::SetupSpotLight(
-    const Graphics::GraphicsEntityId id,
-    const Math::vec3& color,
-    const float intensity,
-    const float innerConeAngle,
-    const float outerConeAngle,
-    const float range,
-    bool castShadows,
-    const CoreGraphics::TextureId projection)
+    const Graphics::GraphicsEntityId id
+    , const Math::vec3& color
+    , const float intensity
+    , const float innerConeAngle
+    , const float outerConeAngle
+    , const float range
+    , const Graphics::StageMask stageMask
+    , bool castShadows
+    , const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     const Graphics::ContextEntityId cid = GetContextId(id);
+    auto sli = spotLightAllocator.Alloc();
+
     genericLightAllocator.Set<Type>(cid.id, LightType::SpotLightType);
     genericLightAllocator.Set<Color>(cid.id, color);
     genericLightAllocator.Set<Intensity>(cid.id, intensity);
     genericLightAllocator.Set<ShadowCaster>(cid.id, castShadows);
     genericLightAllocator.Set<Range>(cid.id, range);
-
-    auto sli = spotLightAllocator.Alloc();
     genericLightAllocator.Set<TypedLightId>(cid.id, sli);
+    genericLightAllocator.Set<StageMask>(cid.id, stageMask);
 
     std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
     if (innerConeAngle >= outerConeAngle)
@@ -464,6 +469,7 @@ LightContext::SetupAreaLight(
     , const Math::vec3& color
     , const float intensity
     , const float range
+    , const Graphics::StageMask stageMask
     , bool twoSided
     , bool castShadows
     , bool renderMesh
@@ -471,14 +477,15 @@ LightContext::SetupAreaLight(
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     const Graphics::ContextEntityId cid = GetContextId(id);
+    auto ali = areaLightAllocator.Alloc();
+
     genericLightAllocator.Set<Type>(cid.id, LightType::AreaLightType);
     genericLightAllocator.Set<Color>(cid.id, color);
     genericLightAllocator.Set<Intensity>(cid.id, intensity);
     genericLightAllocator.Set<ShadowCaster>(cid.id, castShadows);
     genericLightAllocator.Set<Range>(cid.id, range);
-
-    auto ali = areaLightAllocator.Alloc();
     genericLightAllocator.Set<TypedLightId>(cid.id, ali);
+    genericLightAllocator.Set<StageMask>(cid.id, stageMask);
 
     // set initial state
     areaLightAllocator.Get<AreaLight_DynamicOffsets>(ali).Resize(2);
@@ -1067,12 +1074,13 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     Graphics::UpdateTickParams(params);
 
     // go through and update local lights
-    const Util::Array<LightType>& types		= genericLightAllocator.GetArray<Type>();
-    const Util::Array<Math::vec3>& color	= genericLightAllocator.GetArray<Color>();
-    const Util::Array<float>& intensity		= genericLightAllocator.GetArray<Intensity>();
-    const Util::Array<float>& range			= genericLightAllocator.GetArray<Range>();
-    const Util::Array<bool>& castShadow		= genericLightAllocator.GetArray<ShadowCaster>();
-    const Util::Array<Ids::Id32>& typeIds	= genericLightAllocator.GetArray<TypedLightId>();
+    const Util::Array<LightType>& types		            = genericLightAllocator.GetArray<Type>();
+    const Util::Array<Math::vec3>& color	            = genericLightAllocator.GetArray<Color>();
+    const Util::Array<float>& intensity		            = genericLightAllocator.GetArray<Intensity>();
+    const Util::Array<float>& range			            = genericLightAllocator.GetArray<Range>();
+    const Util::Array<bool>& castShadow		            = genericLightAllocator.GetArray<ShadowCaster>();
+    const Util::Array<Ids::Id32>& typeIds	            = genericLightAllocator.GetArray<TypedLightId>();
+    const Util::Array<Graphics::StageMask>& stageMasks	= genericLightAllocator.GetArray<StageMask>();
     SizeT numPointLights = 0;
     SizeT numSpotLights = 0;
     SizeT numSpotLightShadows = 0;
@@ -1110,6 +1118,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 (color[i] * intensity[i]).store(pointLight.color);
                 pointLight.range = range[i];
                 pointLight.flags = flags;
+                pointLight.stageMask = stageMasks[i];
                 numPointLights++;
             }
             break;
@@ -1172,6 +1181,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 spotLight.angleSinCos[1] = Math::cos(angles[1]);
                 spotLight.range = range[i];
                 spotLight.flags = flags;
+                spotLight.stageMask = stageMasks[i];
 
                 numSpotLights++;
             }
@@ -1246,6 +1256,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
 
                 // calculate sine and cosine
                 areaLight.flags = flags;
+                areaLight.stageMask = stageMasks[i];
+
                 numAreaLights++;
             }
             break;
@@ -1262,26 +1274,35 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
         CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList.buffers[bufferIndex]);
     }
 
-    // get per-view resource tables
-    CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
+    
 
+    
     clusterState.consts.NumSpotLights = numSpotLights;
     clusterState.consts.NumPointLights = numPointLights;
     clusterState.consts.NumAreaLights = numAreaLights;
     clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
-    uint64_t offset = SetConstants(clusterState.consts);
-    ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightIndexLists, Shared::LightIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightsList, Shared::LightLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::LightUniforms::BINDING, 0, sizeof(LightsCluster::LightUniforms::STRUCT), offset });
-    ResourceTableCommitChanges(frameResourceTable);
+
+    // get per-view resource tables
+    auto frameResourceTables = Graphics::GetFrameResourceTables(bufferIndex);
+    auto tableQueues = Graphics::GetTableQueues();
+    IndexT tableIt = 0;
+    for (auto& table : frameResourceTables)
+    {
+        uint64_t offset = SetConstants(clusterState.consts, tableQueues[tableIt]);
+        ResourceTableSetRWBuffer(table, { clusterState.clusterLightIndexLists, Shared::LightIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(table, { clusterState.clusterLightsList, Shared::LightLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex, tableQueues[tableIt]), Shared::LightUniforms::BINDING, 0, sizeof(LightsCluster::LightUniforms::STRUCT), offset });
+        ResourceTableCommitChanges(table);
+        tableIt++;
+    }
 
     Combine::CombineUniforms::STRUCT combineConsts;
     CoreGraphics::TextureDimensions lightDims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
     combineConsts.LowresResolution[0] = 1.0f / lightDims.width;
     combineConsts.LowresResolution[1] = 1.0f / lightDims.height;
-    offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::CombineUniforms::BINDING, 0, sizeof(Combine::CombineUniforms::STRUCT), offset });
+    uint64_t offset = SetConstants(combineConsts, CoreGraphics::GraphicsQueueType);
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), Combine::CombineUniforms::BINDING, 0, sizeof(Combine::CombineUniforms::STRUCT), offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

@@ -168,13 +168,13 @@ SSAOContext::Setup()
 
     FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
     FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
-    FrameScript_default::RegisterSubgraph_HBAOX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HBAOX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAO_TILE_WIDTH);
         uint numGroupsY2 = ssaoState.vars.height;
 
         // Compute AO in X
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO);
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO, queue);
         CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
     }, nullptr, {
@@ -182,13 +182,13 @@ SSAOContext::Setup()
         , { FrameScript_default::TextureIndex::HBAOInternal0, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_HBAOY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HBAOY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX2 = ssaoState.vars.width;
         uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAO_TILE_WIDTH);
 
         // Compute AO in Y
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionHBAO);
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionHBAO, queue);
         CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
     }, nullptr, {
@@ -196,13 +196,13 @@ SSAOContext::Setup()
         , { FrameScript_default::TextureIndex::HBAOInternal1, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_HBAOBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HBAOBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAO_TILE_WIDTH);
         uint numGroupsY2 = ssaoState.vars.height;
 
         // Compute AO in X
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionBlur, false);
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionBlur, queue, false);
         CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
     }, nullptr, {
@@ -210,13 +210,13 @@ SSAOContext::Setup()
         , { FrameScript_default::TextureIndex::HBAOInternal1, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_HBAOBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HBAOBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX2 = ssaoState.vars.width;
         uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAO_TILE_WIDTH);
 
         // Compute AO in X
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionBlur, false);
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionBlur, queue, false);
         CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
     }, nullptr, {
@@ -294,21 +294,21 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     hbaoParams.UVToViewA[1] = ssaoState.vars.uvToViewA.y;
     hbaoParams.UVToViewB[0] = ssaoState.vars.uvToViewB.x;
     hbaoParams.UVToViewB[1] = ssaoState.vars.uvToViewB.y;
-    uint64_t hbaoOffset = CoreGraphics::SetConstants(hbaoParams);
+    uint64_t hbaoOffset = CoreGraphics::SetConstants(hbaoParams, CoreGraphics::GraphicsQueueType);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoCs::HBAOParams::BINDING, 0, sizeof(HbaoCs::HBAOParams::STRUCT), hbaoOffset });
+    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoCs::HBAOParams::BINDING, 0, sizeof(HbaoCs::HBAOParams::STRUCT), hbaoOffset });
     ResourceTableCommitChanges(ssaoState.hbaoTable[bufferIndex]);
 
     HbaoblurCs::HBAOBlur::STRUCT blurBlock;
     blurBlock.BlurFalloff = ssaoState.vars.blurFalloff;
     blurBlock.BlurDepthThreshold = ssaoState.vars.blurThreshold;
     blurBlock.PowerExponent = 1.5f;
-    uint64_t blurOffset = CoreGraphics::SetConstants(blurBlock);
+    uint64_t blurOffset = CoreGraphics::SetConstants(blurBlock, CoreGraphics::GraphicsQueueType);
 
-    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
-    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
     ResourceTableCommitChanges(ssaoState.blurTableX[bufferIndex]);
     ResourceTableCommitChanges(ssaoState.blurTableY[bufferIndex]);
 }

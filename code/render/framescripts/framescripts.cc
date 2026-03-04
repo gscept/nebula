@@ -34,7 +34,7 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                 {
                     // Bind shader
                     const auto& pass = type->passes.ValueAtIndex(batchIndex);
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program, CoreGraphics::GraphicsQueueType);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
@@ -128,7 +128,7 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                 if (batchIndex != InvalidIndex)
                 {
                     const auto& pass = type->passes.ValueAtIndex(batchIndex);
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program, CoreGraphics::GraphicsQueueType);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;

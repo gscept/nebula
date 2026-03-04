@@ -334,7 +334,7 @@ class SubgraphDefinition:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
         file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> SubgraphTextureDependencies_{};'.format(self.name))
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
-        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
+        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*Subgraph_Sync_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
 
@@ -342,7 +342,7 @@ class SubgraphDefinition:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine('void')
-        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
+        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Subgraph_{} = func;".format(self.name))
@@ -391,7 +391,7 @@ class SubgraphDefinition:
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
-        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
         file.WriteLine('void RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT));'.format(self.name))
     
     def FormatSource(self, file):
@@ -404,7 +404,7 @@ class SubgraphDefinition:
         file.IncreaseIndent()
         if self.subp == None:
             file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.queue, self.name, self.name))
-        file.WriteLine('Subgraph_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(self.name))
+        file.WriteLine('Subgraph_{}(cmdBuf, CoreGraphics::{}QueueType, viewport, frameIndex, bufferIndex);'.format(self.name, self.queue))
         file.DecreaseIndent()
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
 

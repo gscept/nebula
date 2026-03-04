@@ -70,6 +70,7 @@ View::UpdateConstants()
         this->viewConstants.FocalLengthNearFar[3] = settings.GetZFar();
         this->viewConstants.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
         this->viewConstants.Time_Random_Luminance_X[1] = Math::rand(0, 1);
+        this->viewConstants.StageMask = this->stageMask;
 
         // Apply view transforms
         Graphics::UpdateViewConstants(this->viewConstants);

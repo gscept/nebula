@@ -208,6 +208,7 @@ struct ViewParams
     EyePos : f32x4;
     FocalLengthNearFar : f32x4; // x, y is focal length x/y, z, w is near/far planes
     Time_Random_Luminance_X : f32x4; // x is time, y is random, z is luminance, w is unused
+    StageMask : u32;                // Mask for what things are visible by this view
 };
 group(FRAME_GROUP) uniform ViewConstants : *ViewParams;
 
@@ -310,6 +311,7 @@ struct SpotLight
 
     color : f32x3;					// light color
     flags : u32;					// feature flags (shadows, projection texture, etc)
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct SpotLightProjectionExtension
@@ -333,6 +335,7 @@ struct PointLight
 
     color : f32x3;					// light color
     flags : u32;					// feature flags (shadows, projection texture, etc)
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct PointLightShadowExtension
@@ -357,6 +360,7 @@ struct AreaLight
 
     color : f32x3;					// light color
     shadowExtension : i32;		// projection extension index
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct AreaLightShadowExtension
@@ -425,6 +429,7 @@ struct PBRDecal
     direction : f32x3;
     material : u32;
     tangent : f32x3;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct EmissiveDecal
@@ -434,6 +439,7 @@ struct EmissiveDecal
     bboxMax : f32x3;
     invModel : f32x4x4;
     direction : f32x3;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 
@@ -485,6 +491,7 @@ struct FogSphere
     absorption : f32x3;
     turbidity : f32;
     falloff : f32;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct FogBox
@@ -494,6 +501,7 @@ struct FogBox
     bboxMax : f32x3;
     turbidity : f32;
     absorption : f32x3;
+    stageMask : u32;                // Stages this light is visible in
     invTransform : f32x4x4;
 };
 
@@ -560,6 +568,7 @@ struct GIVolume
     
     BlendCutoff : f32;
     Blend : f32;
+    StageMask : u32;                // Stages this light is visible in
     
     NormalBias : f32;
     ViewBias : f32;

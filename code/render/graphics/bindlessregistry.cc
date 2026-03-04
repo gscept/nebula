@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "bindlessregistry.h"
 #include "globalconstants.h"
+#include <array>
 namespace Graphics
 {
 
@@ -95,7 +96,11 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
+        auto tables = Graphics::GetTickResourceTables(i);
+        for (auto& table : tables)
+        {
+            ResourceTableSetTexture(table, info);
+        }
     }
     return idx;
 }
@@ -146,7 +151,11 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
+        auto tables = Graphics::GetTickResourceTables(i);
+        for (auto& table : tables)
+        {
+            ResourceTableSetTexture(table, info);
+        }
     }
 }
 
@@ -204,7 +213,11 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
+        auto tables = Graphics::GetTickResourceTables(i);
+        for (auto& table : tables)
+        {
+            ResourceTableSetTexture(table, info);
+        }
     }
 
     // Free id at the end

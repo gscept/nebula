@@ -394,7 +394,7 @@ GraphicsServer::CreateView(
     const Util::StringAtom& name
     , bool(*render)(const Math::rectangle<int>&, IndexT, IndexT)
     , const Math::rectangle<int>& viewport
-    , uint16_t stageMask
+    , Graphics::StageMask stageMask
     , std::function<void(IndexT, IndexT)> preViewCallback
     , std::function<void(IndexT, IndexT)> postViewCallback
 )
@@ -584,7 +584,6 @@ GraphicsServer::Render()
             continue;
 
         this->currentView = view;
-        view->UpdateConstants();
 
         N_MARKER_BEGIN(ViewPreRender, Graphics)
         for (auto& call : this->postLogicViewCalls)
@@ -598,6 +597,7 @@ GraphicsServer::Render()
         if (preViewCallback != nullptr)
             preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
         N_MARKER_END()
+        view->UpdateConstants();
 
         if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
         {

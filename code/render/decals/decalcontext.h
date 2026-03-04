@@ -31,12 +31,16 @@ public:
         const Math::mat4 transform,
         const Resources::ResourceId albedo, 
         const Resources::ResourceId normal, 
-        const Resources::ResourceId material);
+        const Resources::ResourceId material,
+        const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
+    );
     /// setup as emissive decal
     static void SetupDecalEmissive(
         const Graphics::GraphicsEntityId id,
         const Math::mat4 transform,
-        const Resources::ResourceId emissive);
+        const Resources::ResourceId emissive,
+        const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
+    );
 
     /// set albedo texture for a PBR decal
     static void SetAlbedoTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId albedo);
@@ -71,12 +75,14 @@ private:
     {
         Decal_Transform,
         Decal_Type,
-        Decal_TypedId
+        Decal_TypedId,
+        Decal_StageMask
     };
     typedef Ids::IdAllocator<
         Math::mat4,
         DecalType,
-        Ids::Id32
+        Ids::Id32,
+        Graphics::StageMask
     > GenericDecalAllocator;
     static GenericDecalAllocator genericDecalAllocator;
 

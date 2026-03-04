@@ -200,7 +200,7 @@ void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, co
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 
 /// Set shader program
-void CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, bool bindGlobals = true);
+void CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, bool bindGlobals = true);
 /// Set resource table
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint, true>& offsets = nullptr);
 /// Set resource table using raw offsets
@@ -212,7 +212,7 @@ void CmdSetGraphicsPipeline(const CmdBufferId id);
 /// Set graphics pipeline directly
 void CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline);
 /// Set ray tracing pipeline
-void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline);
+void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline, const CoreGraphics::QueueType queue);
 
 /// Insert pipeline barrier
 void CmdBarrier(

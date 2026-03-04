@@ -60,6 +60,7 @@ public:
         float blend = 0.0f;
         float updateBudget = 1.0f;
 
+        Graphics::StageMask stageMask;
         DDGIOptions options;
     };
 
@@ -106,6 +107,8 @@ private:
         
         ProbeUpdate::VolumeConstants::STRUCT volumeConstants;
         DDGIOptions options;
+
+        Graphics::StageMask stageMask;
 
 #ifndef PUBLIC_BUILD
         CoreGraphics::ResourceTableId debugResourceTable;

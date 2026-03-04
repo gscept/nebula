@@ -29,13 +29,52 @@
         ],
 
         "Submissions": [
-        
             {
                 "name": "Scene",
                 "queue": "Graphics",
                 "last_submit": true,
                 "_comment": "Preview graphics submission",
                 "ops": [
+                    {
+                        "subgraph": {
+                            "name": "Lights Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Lights Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Decal Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Decal Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Fog Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Fog Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "GI Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "GI Cull"
+                        }
+                    },
                     {
                         "pass": {
                             "name": "ForwardRendering",
@@ -70,7 +109,7 @@
                                     "name": "AlphaPass",
                                     "_comment": "TODO: Move this to a separate pass later on",
                                     "attachments": [ "ColorBuffer" ],
-                                  
+
                                     "depth": "ZBuffer",
                                     "ops": [
                                         {

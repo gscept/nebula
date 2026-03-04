@@ -31,6 +31,7 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumPointLights; i++)
     {
         const light = LightLists.PointLights[i];
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
         if (TestAABBSphere(aabb, light.position, light.range))
         {
             LightIndexLists.PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
@@ -47,6 +48,7 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumSpotLights; i++)
     {
         const light = LightLists.SpotLights[i];
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
         // first do fast discard sphere test
         if (TestAABBSphere(aabb, light.position, light.range))
         {
@@ -67,6 +69,7 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     { 
         const light = LightLists.AreaLights[i];
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
         if (TestAABBSphere(aabb, light.position, light.range))
 		{
             LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;

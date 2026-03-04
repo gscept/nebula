@@ -61,6 +61,7 @@ public:
         , const Math::vec3& color
         , const float intensity
         , const float range
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
         , bool castShadows = false
         , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
     );
@@ -73,6 +74,7 @@ public:
         , const float innerConeAngle
         , const float outerConeAngle
         , const float range
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
         , bool castShadows = false
         , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
     );
@@ -84,6 +86,7 @@ public:
         , const Math::vec3& color
         , const float intensity
         , const float range
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
         , bool twoSided = false
         , bool castShadows = false
         , bool renderMesh = false
@@ -170,7 +173,8 @@ private:
         Intensity,
         ShadowCaster,
         Range,
-        TypedLightId
+        TypedLightId,
+        StageMask
     };
 
     typedef Ids::IdAllocator<
@@ -179,7 +183,8 @@ private:
         float,                  // intensity
         bool,                   // shadow caster
         float,
-        Ids::Id32               // typed light id (index into pointlights, spotlights and globallights)
+        Ids::Id32,               // typed light id (index into pointlights, spotlights and globallights)
+        Graphics::StageMask
     > GenericLightAllocator;
     static GenericLightAllocator genericLightAllocator;
 

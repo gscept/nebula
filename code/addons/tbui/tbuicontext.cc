@@ -280,6 +280,7 @@ TBUIContext::Create()
 
             FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
                 [](const CoreGraphics::CmdBufferId cmdBuf,
+                   const CoreGraphics::QueueType queue,
                    const Math::rectangle<int>& viewport,
                    const IndexT frame,
                    const IndexT bufferIndex)

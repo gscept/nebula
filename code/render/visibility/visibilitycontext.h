@@ -26,43 +26,6 @@ namespace Models
 namespace Visibility
 {
 
-enum
-{
-    Observer_Matrix,
-    Observer_IsOrtho,
-    Observer_EntityId,
-    Observer_EntityType,
-    Observer_StageMask,
-    Observer_ResultArray,
-    Observer_Dependency,
-    Observer_DependencyMode,
-    Observer_DrawList,
-    Observer_DrawListAllocator,
-    Observer_IndexBuffer,
-    Observer_IndexedClipStatuses
-};
-
-enum
-{
-    ObservableAtom_NodeInstanceRange,
-    ObservableAtom_GraphicsEntityId,
-    ObservableAtom_Transform,
-    ObservableAtom_Instance,
-    ObservableAtom_VisibilityEntityType,
-    ObservableAtom_Active
-};
-
-enum
-{
-    Observable_EntityId,
-    Observable_NumNodes
-};
-
-enum DependencyMode
-{
-    DependencyMode_Total,       // if B depends on A, and A doesn't see B, B sees nothing either
-    DependencyMode_Masked       // visibility of B is dependent on A for each result
-};
 
 class ObserverContext : public Graphics::GraphicsContext
 {
@@ -70,9 +33,7 @@ class ObserverContext : public Graphics::GraphicsContext
 public:
 
     /// setup entity
-    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, uint16_t stageMask = 0xFFFF, bool isOrtho = false);
-    /// setup a dependency between observers
-    static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
+    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, Graphics::StageMask stageMask = 0xFFFF, bool isOrtho = false);
 
     /// run visibility testing
     static void RunVisibilityTests(const Graphics::FrameContext& ctx);
@@ -153,15 +114,25 @@ private:
     friend struct ObservableGlobalState;
     typedef Util::Array<Math::ClipStatus::Type> VisibilityResultArray;
 
+    enum
+    {
+        Observer_IsOrtho,
+        Observer_EntityId,
+        Observer_EntityType,
+        Observer_StageMask,
+        Observer_ResultArray,
+        Observer_DrawList,
+        Observer_DrawListAllocator,
+        Observer_IndexBuffer,
+        Observer_IndexedClipStatuses
+    };
+
     typedef Ids::IdAllocator<
-        Math::mat4                                 // transform of observer camera
-        , bool                                     // observer is an orthogonal camera
+        bool                                     // observer is an orthogonal camera
         , Graphics::GraphicsEntityId               // entity id
         , VisibilityEntityType                     // type of object so we know how to get the transform
-        , uint16_t
+        , Graphics::StageMask                      // mask for visibility
         , VisibilityResultArray                    // visibility lookup table
-        , Graphics::GraphicsEntityId               // dependency
-        , DependencyMode                           // dependency mode
         , VisibilityDrawList                       // draw list
         , Memory::ArenaAllocator<1024>             // memory allocator for draw commands
         , Util::FixedArray<uint64_t>               // index buffer
@@ -192,6 +163,12 @@ private:
 
     friend class ObserverContext;
     friend class Models::ModelContext;
+
+    enum
+    {
+        Observable_EntityId,
+        Observable_NumNodes
+    };
 
     // observable corresponds to a single entity
     typedef Ids::IdAllocator<

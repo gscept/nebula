@@ -46,7 +46,7 @@ ShaderStateNode::CreateResourceTables()
 
     for (IndexT i = 0; i < ret.Size(); i++)
     {
-        CoreGraphics::BufferId cbo = CoreGraphics::GetConstantBuffer(i);
+        CoreGraphics::BufferId cbo = CoreGraphics::GetConstantBuffer(i, CoreGraphics::GraphicsQueueType);
         CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
         CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::ObjectUniforms::BINDING, 0, sizeof(ObjectsShared::ObjectUniforms::STRUCT), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(table);

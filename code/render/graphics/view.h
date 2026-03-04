@@ -11,6 +11,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "coregraphics/config.h"
 #include "frame/framescript.h"
 #include "timing/time.h"
 #include "graphicsentity.h"
@@ -52,9 +53,9 @@ public:
     Shared::ShadowViewConstants::STRUCT& GetShadowConstants();
 
     /// set stage
-    void SetStageMask(const uint16_t stage);
+    void SetStageMask(const Graphics::StageMask stage);
     /// get stage
-    const uint16_t GetStageMask() const;
+    const Graphics::StageMask GetStageMask() const;
 
     /// returns whether view is enabled
     bool IsEnabled() const;
@@ -72,7 +73,7 @@ private:
     CoreGraphics::TextureId outputTarget;
 
     Math::rectangle<int> viewport;
-    uint16_t stageMask;
+    Graphics::StageMask stageMask;
     bool (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
     GraphicsEntityId camera;
     bool enabled;
@@ -100,7 +101,7 @@ Graphics::View::GetCamera()
 /**
 */
 inline void
-View::SetStageMask(const uint16_t stageMask)
+View::SetStageMask(const Graphics::StageMask stageMask)
 {
     this->stageMask = stageMask;
 }
@@ -108,7 +109,7 @@ View::SetStageMask(const uint16_t stageMask)
 //------------------------------------------------------------------------------
 /**
 */
-inline const uint16_t
+inline const Graphics::StageMask
 View::GetStageMask() const
 {
     return this->stageMask;

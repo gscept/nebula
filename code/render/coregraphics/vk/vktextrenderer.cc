@@ -193,7 +193,7 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
 #endif
 
     // apply shader and apply state
-    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program, CoreGraphics::GraphicsQueueType);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
     CoreGraphics::CmdSetResourceTable(cmdBuf, this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 

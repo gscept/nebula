@@ -125,7 +125,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
                 uint64_t bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
-                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
+                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++, CoreGraphics::GraphicsQueueType), slot, 0, bufSize, 0, false, true });
             }
             instanceGroupMask &= ~(1 << it);
             it++;

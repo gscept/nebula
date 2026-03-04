@@ -16,6 +16,7 @@ void
 VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
 {
     N_SCOPE(VisibilityDependencyJob, Visibility);
+    /*
     DependencyMode mode = *(DependencyMode*)ctx.uniforms[0];
     uint32_t numResults = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
     IndexT bIndexInA = *(uint32_t*)ctx.uniforms[1];
@@ -45,6 +46,7 @@ VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
         }
         
     }
+    */
 }
 
 } // namespace Visibility

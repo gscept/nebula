@@ -8,13 +8,13 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
+#include "graphics/graphicsserver.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/resourcetable.h"
 #include "model.h"
 #include "nodes/modelnode.h"
-
 namespace Jobs
 {
     struct JobFuncContext;
@@ -69,7 +69,7 @@ public:
     static void Create();
 
     /// setup
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const uint16_t stage = 0xFFFF);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const Graphics::StageMask stage = 0xFFFF);
     /// Setup without a model resource
     static void Setup(
         const Graphics::GraphicsEntityId id
@@ -78,7 +78,7 @@ public:
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
-        , const uint16_t stage = 0xFFFF
+        , const Graphics::StageMask stageMask = 0xFFFF
 #if NEBULA_GRAPHICS_DEBUG
         , const Util::String debugName = ""
 #endif
@@ -97,7 +97,7 @@ public:
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
     
     /// Set the stage where this model can be seen
-    static void SetStageMask(const Graphics::GraphicsEntityId id, const uint16_t stageMask);
+    static void SetStageMask(const Graphics::GraphicsEntityId id, const Graphics::StageMask stageMask);
 
     /// Compute the bounding box for a model
     static Math::bbox ComputeBoundingBox(const Graphics::GraphicsEntityId id);
@@ -186,7 +186,7 @@ public:
     /// Get model node instance states
     static const NodeInstanceRange& GetModelRenderableRange(const Graphics::GraphicsEntityId id);
     /// Get stage for model
-    static const uint16_t GetModelStageMask(const Graphics::GraphicsEntityId id);
+    static const Graphics::StageMask GetModelStageMask(const Graphics::GraphicsEntityId id);
     /// Get model node instance transformables
     static const NodeInstanceRange& GetModelTransformableRange(const Graphics::GraphicsEntityId id);
     /// Get array to all model node states
@@ -230,7 +230,7 @@ private:
         NodeInstanceRange,
         Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
-        uint16_t,           // stage
+        Graphics::StageMask,           // stage
         bool                // transform is dirty
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;

@@ -77,7 +77,7 @@ CharacterSkinNode::OnFinishedLoading(ModelStreamingData* streamingData)
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::JointPalette::BINDING, 0, (SizeT)(sizeof(Math::mat4) * 256), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i, CoreGraphics::GraphicsQueueType), ObjectsShared::JointPalette::BINDING, 0, (SizeT)(sizeof(Math::mat4) * 256), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
     }
 }

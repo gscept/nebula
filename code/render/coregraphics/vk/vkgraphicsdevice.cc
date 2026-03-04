@@ -1286,12 +1286,14 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     cboInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
-    state.globalConstantBuffer.Resize(info.numBufferedFrames);
+    state.globalConstantBufferGraphics.Resize(info.numBufferedFrames);
+    state.globalConstantBufferCompute.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
         auto gfxCboInfo = cboInfo;
         gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        state.globalConstantBuffer[i] = CreateBuffer(gfxCboInfo);
+        state.globalConstantBufferGraphics[i] = CreateBuffer(gfxCboInfo);
+        state.globalConstantBufferCompute[i] = CreateBuffer(gfxCboInfo);
     }
 
     state.inflightFrames.Resize(info.numBufferedFrames);
@@ -1489,7 +1491,8 @@ DestroyGraphicsDevice()
     {
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
         {
-            DestroyBuffer(state.globalConstantBuffer[i]);
+            DestroyBuffer(state.globalConstantBufferGraphics[i]);
+            DestroyBuffer(state.globalConstantBufferCompute[i]);
         }
     }
 
@@ -1866,9 +1869,9 @@ LockConstantUpdates()
     Set constants for preallocated memory
 */
 void
-SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
+SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size, CoreGraphics::QueueType queue)
 {
-    BufferUpdate(state.globalConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    BufferUpdate((queue == CoreGraphics::QueueType::GraphicsQueueType ? state.globalConstantBufferGraphics : state.globalConstantBufferCompute)[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1902,9 +1905,9 @@ AllocateConstantBufferMemory(size_t size)
 /**
 */
 CoreGraphics::BufferId
-GetConstantBuffer(IndexT i)
+GetConstantBuffer(IndexT i, CoreGraphics::QueueType queue)
 {
-    return state.globalConstantBuffer[i];
+    return queue == CoreGraphics::QueueType::GraphicsQueueType ? state.globalConstantBufferGraphics[i] : state.globalConstantBufferCompute[i];
 }
 
 //------------------------------------------------------------------------------

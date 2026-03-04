@@ -48,7 +48,7 @@ Viewport::Init(Util::String const & viewName)
     texInfo.width = 1280;
     texInfo.height = 900;
     this->targetTexture = CoreGraphics::CreateTexture(texInfo);
-    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), 1 << 3, [this](IndexT frameIndex, IndexT bufferIndex)
+    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), Graphics::PRIMARY_STAGE_MASK, [this](IndexT frameIndex, IndexT bufferIndex)
     {
         FrameScript_preview::Bind_Target(Frame::TextureImport(this->targetTexture));
     });

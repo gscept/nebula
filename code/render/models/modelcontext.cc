@@ -81,7 +81,12 @@ ModelContext::Create()
 /**
 */
 void
-ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const uint16_t stageMask)
+ModelContext::Setup(
+    const Graphics::GraphicsEntityId gfxId,
+    const Resources::ResourceName& name,
+    const Util::StringAtom& tag, std::function<void()> finishedCallback,
+    const Graphics::StageMask stageMask
+)
 {
     auto successCallback = [gfxId, finishedCallback, stageMask](Resources::ResourceId mid)
     {
@@ -265,7 +270,7 @@ ModelContext::Setup(
     , const Materials::MaterialId material
     , const CoreGraphics::MeshId mesh
     , const IndexT primitiveGroup
-    , const uint16_t stageMask
+    , const Graphics::StageMask stageMask
 #if NEBULA_GRAPHICS_DEBUG
     , const Util::String debugName
 #endif
@@ -442,7 +447,7 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 /**
 */
 void
-ModelContext::SetStageMask(const Graphics::GraphicsEntityId id, const uint16_t stageMask)
+ModelContext::SetStageMask(const Graphics::GraphicsEntityId id, const Graphics::StageMask stageMask)
 {
     const ContextEntityId cid = GetContextId(id);
     modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
@@ -548,7 +553,7 @@ ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint16_t
+const Graphics::StageMask
 ModelContext::GetModelStageMask(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
@@ -791,7 +796,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     static Util::FixedArray<Math::mat4> defaultJoints(256);
     ObjectsShared::JointPalette::STRUCT joints;
     memcpy(&joints, defaultJoints.Begin(), sizeof(ObjectsShared::JointPalette::STRUCT));
-    uint defaultJointsOffset = CoreGraphics::SetConstants(joints);
+    uint defaultJointsOffset = CoreGraphics::SetConstants(joints, CoreGraphics::GraphicsQueueType);
 
     Jobs2::JobDispatch(
         [
@@ -822,7 +827,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 block.DitherFactor = NodeInstances.renderable.nodeLods[j];
                 block.ObjectId = j;
 
-                uint offset = CoreGraphics::SetConstants(block);
+                uint offset = CoreGraphics::SetConstants(block, CoreGraphics::GraphicsQueueType);
                 NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
 
                 /*

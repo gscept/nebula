@@ -229,7 +229,6 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
     {
-        Lighting::LightContext::OnPrepareView,
         Particles::ParticleContext::OnPrepareView,
         Im3d::Im3dContext::OnPrepareView,
         PostEffects::SSAOContext::UpdateViewDependentResources,
@@ -256,6 +255,7 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
+        Lighting::LightContext::OnPrepareView,
         ::Terrain::TerrainContext::UpdateLOD
     };
 
