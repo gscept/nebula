@@ -417,23 +417,23 @@ const MAX_DECALS_PER_CLUSTER = 128;
 
 struct PBRDecal
 {
+    bboxMin : f32x3;
     albedo : u32;
-    bboxMin : f32x4;
-    bboxMax : f32x4;
+    bboxMax : f32x3;
+    normal : u32;
     invModel : f32x4x4;
     direction : f32x3;
     material : u32;
     tangent : f32x3;
-    normal : u32;
 };
 
 struct EmissiveDecal
 {
-    bboxMin : f32x4;
-    bboxMax : f32x4;
+    bboxMin : f32x3;
+    emissive : u32;
+    bboxMax : f32x3;
     invModel : f32x4x4;
     direction : f32x3;
-    emissive : u32;
 };
 
 
