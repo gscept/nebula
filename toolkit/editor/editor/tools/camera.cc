@@ -53,7 +53,7 @@ Camera::AttachToView(const Ptr<Graphics::View>& view)
 /**
 */
 void
-Camera::Setup(SizeT screenWidth, SizeT screenHeight)
+Camera::Setup(SizeT screenWidth, SizeT screenHeight, uint16_t stageMask)
 {
 	this->cameraEntityId = Graphics::CreateEntity();
 	CameraContext::RegisterEntity(this->cameraEntityId);
@@ -68,9 +68,10 @@ Camera::Setup(SizeT screenWidth, SizeT screenHeight)
 	this->Reset();
 	CameraContext::SetView(this->cameraEntityId, this->mayaCameraUtil.GetCameraTransform());
 
-    CameraContext::SetLODCamera(this->cameraEntityId);
+    if (stageMask == Graphics::PRIMARY_STAGE_MASK)
+        CameraContext::SetLODCamera(this->cameraEntityId);
     ObserverContext::RegisterEntity(this->cameraEntityId);
-	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera, Graphics::PRIMARY_STAGE_MASK);
+	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera, stageMask);
 }
 
 //------------------------------------------------------------------------------
