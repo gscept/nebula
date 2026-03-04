@@ -62,7 +62,7 @@ public:
     static void DrawCone(const Math::point& start, const Math::point& end, float startRadius, float endRadius, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
 
     /// called before frame
-    static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
     /// called when rendering a frame batch
     static void Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex);
            

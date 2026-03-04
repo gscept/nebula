@@ -422,7 +422,7 @@ class BatchDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
+        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, Graphics::ViewGetCamera(view), bufferIndex);".format(self.name))    
     
     def FormatSetup(self, file):
         pass
@@ -1557,7 +1557,7 @@ class FrameScriptGenerator:
         file.WriteLine("didResize = true;")
         file.DecreaseIndent()
         file.WriteLine("}")
-        file.WriteLine("const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
+        file.WriteLine("const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
         for submission in self.submissions:
             if submission.lastSubmit:
                 submission.FormatSource(file, self.importTextures)

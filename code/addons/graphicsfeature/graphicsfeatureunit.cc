@@ -201,7 +201,7 @@ GraphicsFeatureUnit::OnActivate()
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(this->globalLight, ViewGetCamera(this->defaultView), Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 

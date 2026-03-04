@@ -905,10 +905,10 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 /**
 */
 void
-VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
-    Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(view->GetCamera());
-    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
+    Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(ViewGetCamera(view));
+    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
     VegetationGenerateUniforms::STRUCT uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
     cameraTransform.z_axis.store(uniforms.CameraForward);

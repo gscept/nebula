@@ -443,7 +443,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 /**
 */
 void 
-ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+ParticleContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(PrepareView, Particles);
 
@@ -462,7 +462,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
             [
                 allSystems = allSystems.Begin()
                 , models = graphicsEntities.Begin()
-                , invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera())
+                , invViewMatrix = Graphics::CameraContext::GetTransform(ViewGetCamera(view))
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {

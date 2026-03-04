@@ -36,7 +36,7 @@ public:
     ~Viewport();
     
     void Init(Util::String const& viewName);
-    void Init(Ptr<Graphics::View> const& view);
+    void Init(const Graphics::ViewId view);
 
     void Render();
     void SetStage(const uint16_t stage);
@@ -49,7 +49,7 @@ public:
         return this->focused;
     }
 
-    const Ptr<Graphics::View> GetView() const;
+    const Graphics::ViewId GetView() const;
 
     Editor::Camera camera;
     Math::vec2 lastViewportImagePositionAbsolute;
@@ -62,7 +62,7 @@ public:
 private:
     RenderMode renderMode = TexturedLit;
 
-    Ptr<Graphics::View> view;
+    Graphics::ViewId view;
 
     CoreGraphics::TextureId targetTexture;
     Dynui::ImguiTextureId textureInfo;

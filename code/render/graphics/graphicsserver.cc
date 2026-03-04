@@ -389,7 +389,7 @@ GraphicsServer::GetWindows() const
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
+ViewId
 GraphicsServer::CreateView(
     const Util::StringAtom& name
     , bool(*render)(const Math::rectangle<int>&, IndexT, IndexT)
@@ -400,10 +400,13 @@ GraphicsServer::CreateView(
 )
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
-    Ptr<View> view = View::Create();
-    view->SetFrameScript(render);
-    view->SetViewport(viewport);
-    view->SetStageMask(stageMask);
+
+    Graphics::ViewCreateInfo info;
+    info.frameScript = render;
+    info.viewport = viewport;
+    info.stageMask = stageMask;
+    ViewId view = Graphics::CreateView(info);
+
     this->views.Append(view);
     this->viewsByName.Add(name, view);
     this->preViewCallbacks.Append(preViewCallback);
@@ -422,11 +425,12 @@ GraphicsServer::CreateView(
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
+ViewId
 GraphicsServer::CreateView(const Util::StringAtom& name)
 {
-    Ptr<View> view = View::Create();
-    view->func = nullptr;
+    Graphics::ViewCreateInfo info;
+    ViewId view = Graphics::CreateView(info);
+
     this->views.Append(view);
 
     // invoke all interested contexts
@@ -443,7 +447,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name)
 /**
 */
 void
-GraphicsServer::DiscardView(const Ptr<View>& view)
+GraphicsServer::DiscardView(const ViewId view)
 {
     IndexT idx = this->views.FindIndex(view);
     n_assert(idx != InvalidIndex);
@@ -460,9 +464,27 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 /**
 */
 void
-GraphicsServer::SetCurrentView(const Ptr<View>& view)
+GraphicsServer::SetCurrentView(const ViewId view)
 {
     this->currentView = view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetView(const Util::StringAtom& name)
+{
+    return this->viewsByName[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetCurrentView() const
+{
+    return this->currentView;
 }
 
 //------------------------------------------------------------------------------
@@ -533,9 +555,9 @@ GraphicsServer::RunPreLogic()
     // Go through views and call before view
     for (IndexT i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
+        const ViewId view = this->views[i];
 
-        if (!view->enabled)
+        if (!ViewIsEnabled(view))
             continue;
 
         // begin frame on view, this will construct view build jobs
@@ -546,7 +568,7 @@ GraphicsServer::RunPreLogic()
             call(view, this->frameContext);
         }
         N_MARKER_END();
-        this->currentView = nullptr;
+        this->currentView = InvalidViewId;
     }
 }
 
@@ -578,9 +600,9 @@ GraphicsServer::Render()
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
+        const ViewId view = this->views[i];
             
-        if (!view->enabled)
+        if (!ViewIsEnabled(view))
             continue;
 
         this->currentView = view;
@@ -597,11 +619,11 @@ GraphicsServer::Render()
         if (preViewCallback != nullptr)
             preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
         N_MARKER_END()
-        view->UpdateConstants();
+        ViewApply(view);
 
-        if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
+        if (ViewRender(view, this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
         {
-            Math::rectangle<int> viewport = view->GetViewport();
+            Math::rectangle<int> viewport = ViewGetViewport(view);
 
             // First, call the resize callback to trigger an update of the frame scripts
             if (this->resizeCall != nullptr)
@@ -618,7 +640,7 @@ GraphicsServer::Render()
 
             CoreGraphics::InvalidateGraphicsPipelineCache();
         }
-        this->currentView = nullptr;
+        this->currentView = InvalidViewId;
 
         N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
         auto& postViewCallback = this->postViewCallbacks[i];

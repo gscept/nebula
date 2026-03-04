@@ -151,11 +151,11 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 /**
 */
 void
-SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+SSRContext::UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     using namespace Graphics;
     using namespace CoreGraphics;
-    const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
+    const CameraSettings& cameraSettings = CameraContext::GetSettings(ViewGetCamera(view));
     TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
 
     float sx = (float)dims.width;

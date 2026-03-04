@@ -32,7 +32,7 @@ public:
     static void Setup();
 
     /// update view resources
-    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
     /// update constants
     static void UpdateConstants();

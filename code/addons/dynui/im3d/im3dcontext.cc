@@ -364,16 +364,16 @@ Im3dContext::DrawCone(const Math::point& start, const Math::point& end, float st
 /**
 */
 void
-Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     AppData& ad = GetAppData();
 
-    const Math::rectangle<int>& viewport = view->GetViewport();
+    const Math::rectangle<int>& viewport = ViewGetViewport(view);
 
     ad.m_deltaTime = ctx.frameTime;
     ad.m_viewportSize = Vec2((float)viewport.width(), (float)viewport.height());
     
-    Graphics::GraphicsEntityId cam = view->GetCamera();
+    Graphics::GraphicsEntityId cam = ViewGetCamera(view);
     Math::mat4 transform = inverse(CameraContext::GetView(cam));
     ad.m_viewOrigin = xyz(transform.position);
     ad.m_viewDirection = -xyz(transform.z_axis);

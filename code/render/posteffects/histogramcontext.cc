@@ -225,7 +225,7 @@ HistogramContext::Setup()
 /**
 */
 void
-HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+HistogramContext::UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     CoreGraphics::BufferInvalidate(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex], 0, NEBULA_WHOLE_BUFFER_SIZE);
     int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex]);
@@ -255,7 +255,7 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
     float lum = histogramState.previousLum + (averageLum - histogramState.previousLum) * time;
     histogramState.previousLum = lum;
 
-    Shared::ViewConstants::STRUCT& constants = view->GetViewConstants();
+    Shared::ViewConstants::STRUCT& constants = ViewGetViewConstants(view);
     constants.Time_Random_Luminance_X[2] = lum;
 }
 

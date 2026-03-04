@@ -281,9 +281,9 @@ public:
     static void SetSun(const Graphics::GraphicsEntityId sun);
 
     /// cull terrain patches
-    static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void CullPatches(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
     /// update sparse texture mips
-    static void UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateLOD(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
     /// clear the tile cache (use when we need to force update the terrain)

@@ -385,7 +385,7 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     // TODO: Cookie projection support
     Lighting::LightContext::SetupPointLight(
-        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows
+        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->stageMask, light->castShadows
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
 }
@@ -411,6 +411,7 @@ GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLigh
         Math::deg2rad(light->innerConeAngle),
         Math::deg2rad(light->outerConeAngle),
         light->range,
+        light->stageMask,
         light->castShadows
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
@@ -436,6 +437,7 @@ GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLigh
         light->color.vec,
         light->intensity,
         light->range,
+        light->stageMask,
         light->twoSided,
         light->castShadows,
         light->renderMesh

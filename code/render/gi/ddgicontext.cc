@@ -623,7 +623,7 @@ DDGIContext::SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size
 /**
 */
 void
-DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+DDGIContext::UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;
@@ -632,7 +632,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         return;
 
     N_SCOPE(UpdateGIVolumes, DDGI);
-    const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
+    const Math::point cameraPos = CameraContext::GetTransform(ViewGetCamera(view)).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     const auto& projectSettings = Options::ProjectSettings;
     float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);

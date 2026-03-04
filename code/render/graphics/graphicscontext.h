@@ -23,6 +23,7 @@
 #include "ids/idgenerationpool.h"
 #include "util/stringatom.h"
 #include "util/arraystack.h"
+#include "graphics/view.h"
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
 
@@ -115,8 +116,8 @@ struct GraphicsContextFunctionBundle
     void(*OnRenderDebug)(uint32_t flags);
 
     // change callbacks
-    void(*OnViewCreated)(const Ptr<Graphics::View>& view);
-    void(*OnDiscardView)(const Ptr<Graphics::View>& view);
+    void(*OnViewCreated)(const Graphics::ViewId view);
+    void(*OnDiscardView)(const Graphics::ViewId view);
     void(*OnAttachEntity)(Graphics::GraphicsEntityId entity);
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
     void(*OnViewportResized)(const uint framescriptHash, SizeT width, SizeT height);

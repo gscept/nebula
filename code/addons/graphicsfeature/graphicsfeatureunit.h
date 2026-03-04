@@ -60,7 +60,7 @@ public:
     void SetGraphicsDebugging(bool value);
 
     /// retrieve the default view
-    Ptr<Graphics::View> GetDefaultView() const;
+    Graphics::ViewId GetDefaultView() const;
 
     /// retrieve the default view handle
     ViewHandle GetDefaultViewHandle() const;
@@ -74,7 +74,7 @@ public:
 private:
     IO::URI defaultFrameScript;
     Util::StringAtom title;
-    Ptr<Graphics::View> defaultView;
+    Graphics::ViewId defaultView;
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
@@ -114,7 +114,7 @@ GraphicsFeatureUnit::SetWindowTitle(const Util::StringAtom& title)
 //------------------------------------------------------------------------------
 /**
 */
-inline Ptr<Graphics::View>
+inline Graphics::ViewId
 GraphicsFeatureUnit::GetDefaultView() const
 {
     return this->defaultView;

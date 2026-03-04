@@ -229,14 +229,14 @@ SSAOContext::Setup()
 /**
 */
 void
-SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+SSAOContext::UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     // get camera settings
     using namespace Graphics;
     using namespace CoreGraphics;
-    const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
+    const CameraSettings& cameraSettings = CameraContext::GetSettings(ViewGetCamera(view));
 
-    const Math::rectangle<int>& viewport = view->GetViewport();
+    const Math::rectangle<int>& viewport = ViewGetViewport(view);
 
     ssaoState.vars.width = viewport.width() / ssaoState.vars.downsample;
     ssaoState.vars.height = viewport.height() / ssaoState.vars.downsample;

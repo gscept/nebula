@@ -1704,7 +1704,7 @@ TerrainContext::SetSun(const Graphics::GraphicsEntityId sun)
 /**
 */
 void 
-TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+TerrainContext::CullPatches(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainRunJobs, Terrain);
 
@@ -1715,7 +1715,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
     for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
     {
         TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
-        Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
+        Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
         terrainInstance.indirectionUploadOffsets[ctx.bufferIndex] = 0;
 
         if (raytracingState.setupBlasFrame == ctx.frameIndex)
@@ -1827,7 +1827,7 @@ skipResolution:
 
         n_assert(terrainInstance.sectionCullDoneCounter == 0);
         terrainInstance.sectionCullDoneCounter = 1;
-        const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
+        const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(ViewGetCamera(view));
 
         Math::vec4 m_col_x[4];
         Math::vec4 m_col_y[4];
@@ -2155,7 +2155,7 @@ IndirectionClear(
 /**
 */
 void 
-TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+TerrainContext::UpdateLOD(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainUpdateVirtualTexturing, Terrain);
     Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();

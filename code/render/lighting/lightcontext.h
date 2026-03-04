@@ -54,7 +54,16 @@ public:
     static void Discard();
 
     /// setup entity as global light
-    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const float zenith, const float azimuth, bool castShadows = false);
+    static void SetupDirectionalLight(
+        const Graphics::GraphicsEntityId id
+        , const Graphics::GraphicsEntityId camera // Camera used for shadows
+        , const Math::vec3& color
+        , const float intensity
+        , const Math::vec3& ambient
+        , const float zenith
+        , const float azimuth
+        , bool castShadows = false
+    );
     /// Setup entity as point light source
     static void SetupPointLight(
         const Graphics::GraphicsEntityId id
@@ -136,7 +145,7 @@ public:
     static void SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer);
 
     /// prepare light visibility
-    static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
     /// prepare light lists
     static void UpdateLights(const Graphics::FrameContext& ctx);
@@ -263,6 +272,7 @@ private:
 
     enum
     {
+        DirectionalLight_Camera,
         DirectionalLight_Direction,
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
@@ -271,6 +281,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
+        Graphics::GraphicsEntityId,                 // camera used for shadow mapping
         Math::vector,                               // direction
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)

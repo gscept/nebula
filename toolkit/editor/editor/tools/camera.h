@@ -32,7 +32,7 @@ public:
 	Camera();
 	~Camera();
 
-	void AttachToView(const Ptr<Graphics::View>& view);
+	void AttachToView(const Graphics::ViewId view);
 	void Setup(SizeT screenWidth, SizeT screenHeight, uint16_t stageMask = Graphics::PRIMARY_STAGE_MASK);
 	void Update();
 	void Reset();

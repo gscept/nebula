@@ -98,8 +98,8 @@ ResourceBrowser::Run(SaveMode save)
             float ratio = dims.height / float(dims.width);
             ImVec2 remainder = ImGui::GetContentRegionAvail();
 
-            const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetView("mainview");
-            Math::rectangle<int> viewport = view->GetViewport();
+            const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetView("mainview");
+            Math::rectangle<int> viewport = ViewGetViewport(view);
             float scaleX = float(viewport.width()) / dims.width;
             float scaleY = float(viewport.height()) / dims.height;
             static int mip = 0, layer = 0;

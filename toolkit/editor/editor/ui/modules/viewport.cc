@@ -62,7 +62,7 @@ Viewport::Init(Util::String const & viewName)
 /**
 */
 void
-Viewport::Init(Ptr<Graphics::View> const& view)
+Viewport::Init(const Graphics::ViewId view)
 {
     this->view = view;
     this->camera.Setup(1280, 900);
@@ -236,7 +236,7 @@ Viewport::Render()
     this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
     this->lastViewportImageSize = { imageSize.x, imageSize.y };
 
-    this->view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
+    ViewSetViewport(this->view, Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
     this->focused = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
 
     if (this->focused)
@@ -255,10 +255,10 @@ Viewport::Render()
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<Graphics::View>
+const Graphics::ViewId
 Viewport::GetView() const
 {
-     n_assert(this->view.isvalid());
+     n_assert(this->view != Graphics::InvalidViewId);
      return this->view;
 }
 
@@ -268,7 +268,7 @@ Viewport::GetView() const
 void
 Viewport::SetStage(const uint16_t stage)
 {
-    this->view->SetStageMask(stage);
+    ViewSetStageMask(this->view, stage);
 }
 
 } // namespace Modules

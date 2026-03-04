@@ -280,8 +280,9 @@ LightContext::Discard()
 /**
 */
 void
-LightContext::SetupGlobalLight(
+LightContext::SetupDirectionalLight(
         const Graphics::GraphicsEntityId id,
+        const Graphics::GraphicsEntityId camera,
         const Math::vec3& color,
         const float intensity,
         const Math::vec3& ambient,
@@ -306,7 +307,8 @@ LightContext::SetupGlobalLight(
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
-    directionalLightAllocator.Get<DirectionalLight_Ambient>(lid) = ambient;
+    directionalLightAllocator.Set<DirectionalLight_Ambient>(lid, ambient);
+    directionalLightAllocator.Set<DirectionalLight_Camera>(lid, camera);
 
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
@@ -873,20 +875,28 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 /**
 */
 void
-LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
-    Shared::ShadowViewConstants::STRUCT& shadowConstants = view->GetShadowConstants();
+    Shared::ShadowViewConstants::STRUCT& shadowConstants = ViewGetShadowConstants(view);
+
 
     // Setup global light view transform
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
     {
-        lightServerState.csmUtil.SetCameraEntity(view->GetCamera());
+        lightServerState.csmUtil.SetCameraEntity(ViewGetCamera(view));
         lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
         lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
-        lightServerState.csmUtil.Compute(view->GetCamera(), lightServerState.globalLightEntity);
+        lightServerState.csmUtil.Compute(ViewGetCamera(view), lightServerState.globalLightEntity);
 
         auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
+
+        // Check if this is the camera used for cascaded shadow maps
+        if (ViewGetCamera(view) != directionalLightAllocator.Get<DirectionalLight_Camera>(lid))
+        {
+            return;
+        }
+
         const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lid);
         for (IndexT i = 0; i < observers.Size(); i++)
         {
@@ -894,7 +904,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
             Ids::Id32 ctxId = shadowCasterSliceMap[observers[i]];
             Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
 
-            shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = cascadeProj;
+            shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, cascadeProj);
             cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
         }
 

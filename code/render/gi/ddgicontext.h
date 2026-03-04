@@ -72,7 +72,7 @@ public:
     static void SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size);
 
     /// prepare light lists
-    static void UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_BUILD
     static void OnRenderDebug(uint32_t flags);

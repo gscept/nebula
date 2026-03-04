@@ -44,9 +44,9 @@ Camera::~Camera()
 /**
 */
 void
-Camera::AttachToView(const Ptr<Graphics::View>& view)
+Camera::AttachToView(const Graphics::ViewId view)
 {
-	view->SetCamera(this->cameraEntityId);
+    ViewSetCamera(view, this->cameraEntityId);
 }
 
 //------------------------------------------------------------------------------

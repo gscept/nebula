@@ -67,7 +67,7 @@ public:
     static void SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
 
     /// update resources
-    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 private:
 
     /// allocate a new slice for this context
