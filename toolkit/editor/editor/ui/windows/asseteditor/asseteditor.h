@@ -38,6 +38,9 @@ public:
     ~AssetEditor();
 
     void Run(SaveMode save) override;
+    void Update() override;
+
+    Modules::Viewport viewport;
 
     // Select material for previewing
     void Open(const Resources::ResourceName& asset, const AssetType type);

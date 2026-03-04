@@ -1,0 +1,109 @@
+{
+    "Nebula": {
+        "version": 3,
+        "ImportTextures": [
+            "Target"
+        ],
+        "LocalTextures": [
+            {
+                "name": "ColorBuffer",
+                "format": "SRGBA8",
+                "usage": "Render|TransferSource",
+                "relativeSize": [ 1.0, 1.0 ],
+                "type": "Texture2D"
+            },
+            {
+                "name": "ZBuffer",
+                "format": "D32S8",
+                "usage": "Render|Sample",
+                "relativeSize": [ 1.0, 1.0 ],
+                "type": "Texture2D"
+            },
+            {
+                "name": "Stencil",
+                "format": "R8",
+                "usage": "TransferDestination|Sample",
+                "relativeSize": [ 1.0, 1.0 ],
+                "type": "Texture2D"
+            }
+        ],
+
+        "Submissions": [
+        
+            {
+                "name": "Scene",
+                "queue": "Graphics",
+                "last_submit": true,
+                "_comment": "Preview graphics submission",
+                "ops": [
+                    {
+                        "pass": {
+                            "name": "ForwardRendering",
+                            "attachments": [
+                                {
+                                    "name": "ZBuffer",
+                                    "flags": "Store|Load|LoadStencil"
+                                },
+                                {
+                                    "name": "ColorBuffer",
+                                    "clear": [ 0, 0, 0, 0 ],
+                                    "flags": "Store"
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "OpaquePass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [ "ColorBuffer" ],
+
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryLit"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "AlphaPass",
+                                    "_comment": "TODO: Move this to a separate pass later on",
+                                    "attachments": [ "ColorBuffer" ],
+                                  
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryAlphaLit"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "transition": {
+                            "name": "ColorBuffer",
+                            "stage": "TransferRead"
+                        }
+                    },
+                                        {
+                        "copy": {
+                            "name": "Copy To Target",
+                            "from": {
+                                "tex": "ColorBuffer",
+                                "bits": "ColorBits"
+                            },
+                            "to": {
+                                "tex": "Target",
+                                "bits": "ColorBits"
+                            }
+                        }
+                    },
+                ]
+            }
+        ]
+    }
+}

@@ -7,10 +7,10 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "imgui.h"
-#include "dynui/imguicontext.h"
 #include "editor/editor/tools/selectioncontext.h"
 
 #include "frame/default.h"
+#include "frame/preview.h"
 
 namespace Presentation
 {
@@ -43,9 +43,17 @@ Viewport::Init(Util::String const & viewName)
     static int unique = 0;
     Util::String name = viewName;
     name.AppendInt(unique++);
-    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_default::Run, Math::rectangle<int>(0, 0, 1280, 900));
+    CoreGraphics::TextureCreateInfo texInfo;
+    texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
+    texInfo.width = 1280;
+    texInfo.height = 900;
+    this->targetTexture = CoreGraphics::CreateTexture(texInfo);
+    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), 1 << 3, [this](IndexT frameIndex, IndexT bufferIndex)
+    {
+        FrameScript_preview::Bind_Target(Frame::TextureImport(this->targetTexture));
+    });
     
-    this->camera.Setup(1280, 900);
+    this->camera.Setup(1280, 900, 1 << 3);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
 }
@@ -60,6 +68,7 @@ Viewport::Init(Ptr<Graphics::View> const& view)
     this->camera.Setup(1280, 900);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
+    this->targetTexture = CoreGraphics::InvalidTextureId;
 }
 
 //------------------------------------------------------------------------------
@@ -194,19 +203,14 @@ Viewport::Render()
         ImGui::EndMenuBar();
     }
 
-    CoreGraphics::TextureId textureId = FrameScript_default::Texture_SceneBuffer();
+    CoreGraphics::TextureId textureId = this->targetTexture == CoreGraphics::InvalidTextureId ? FrameScript_default::Texture_SceneBuffer() : this->targetTexture;
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(textureId);
 
     using namespace CoreGraphics;
 
-    // Needs to not be nuked scope since we're sending a void*
-    static CoreGraphics::TextureId id;
-    id = textureId;
-
-    static Dynui::ImguiTextureId textureInfo;
-    textureInfo.nebulaHandle = id;
-    textureInfo.mip = 0;
-    textureInfo.layer = 0;
+    this->textureInfo.nebulaHandle = textureId;
+    this->textureInfo.mip = 0;
+    this->textureInfo.layer = 0;
 
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -222,7 +226,7 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), uv);
+    ImGui::Image((void*)&this->textureInfo, imageSize, ImVec2(0, 0), uv);
 
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };
@@ -232,8 +236,7 @@ Viewport::Render()
     this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
     this->lastViewportImageSize = { imageSize.x, imageSize.y };
 
-    auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
-    view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
+    this->view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
     this->focused = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
 
     if (this->focused)

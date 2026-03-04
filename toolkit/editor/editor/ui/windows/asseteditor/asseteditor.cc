@@ -39,6 +39,7 @@ __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 */
 AssetEditor::AssetEditor()
 {
+    this->viewport.Init(Util::String("AssetEditorViewport"));
 }
 
 //------------------------------------------------------------------------------
@@ -73,56 +74,56 @@ EmptyEditor()
     ImGui::Text(EmptyString);
 }
 
+using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
+static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSave,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+};
+static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialEditor,
+    MeshEditor,
+    nullptr,
+    nullptr,
+    nullptr,
+    TextureEditor
+};
+
+static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialDiscard,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+};
+
+static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    "None %s",
+    "[Material] %s",
+    "[Mesh] %s",
+    "[Skeleton] %s",
+    "[Model] %s",
+    "[Animation] %s",
+    "[Texture] %s"
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 AssetEditor::Run(SaveMode save)
 {
-    using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
-    static const EditorFunc SavingFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSave,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-    static const EditorFunc RenderFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialEditor,
-        MeshEditor,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureEditor
-    };
-
-    static const EditorFunc DiscardFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialDiscard,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-
-    static const char* Labels[(uint)AssetType::NumAssetTypes] =
-    {
-        "None %s",
-        "[Material] %s",
-        "[Mesh] %s",
-        "[Skeleton] %s",
-        "[Model] %s",
-        "[Animation] %s",
-        "[Texture] %s"
-    };
-
     static const char* PopupText = "Unsaved changes";
     if (!assetEditorState.items.IsEmpty())
     {
@@ -233,6 +234,15 @@ AssetEditor::Run(SaveMode save)
     {
         EmptyEditor();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+AssetEditor::Update()
+{
+    this->viewport.Update();
 }
 
 //------------------------------------------------------------------------------

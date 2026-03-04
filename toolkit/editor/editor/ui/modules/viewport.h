@@ -9,6 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "dynui/imguicontext.h"
 #include "editor/tools/camera.h"
 
 namespace Graphics{ class Stage; class View; }
@@ -63,6 +64,8 @@ private:
 
     Ptr<Graphics::View> view;
 
+    CoreGraphics::TextureId targetTexture;
+    Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
 
     bool focused = false;
