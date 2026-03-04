@@ -1274,9 +1274,6 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
         CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList.buffers[bufferIndex]);
     }
 
-    
-
-    
     clusterState.consts.NumSpotLights = numSpotLights;
     clusterState.consts.NumPointLights = numPointLights;
     clusterState.consts.NumAreaLights = numAreaLights;

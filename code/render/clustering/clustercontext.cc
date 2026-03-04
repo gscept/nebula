@@ -227,11 +227,12 @@ ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
-            auto& frameResourceTables = Graphics::GetFrameResourceTables(i);
+            auto frameResourceTables = Graphics::GetFrameResourceTables(i);
 
             for (auto& table : frameResourceTables)
             {
                 ResourceTableSetRWBuffer(table, {state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0});
+                ResourceTableSetConstantBuffer(table, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
                 ResourceTableCommitChanges(table);
             }
         }
