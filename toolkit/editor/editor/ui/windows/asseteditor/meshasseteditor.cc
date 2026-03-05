@@ -9,6 +9,7 @@ namespace Presentation
 {
 
 static int selectedRenderMode = 0;
+static Materials::MaterialId SolidMaterial = Materials::InvalidMaterialId, WireframeMaterial = Materials::InvalidMaterialId;
 
 //------------------------------------------------------------------------------
 /**
@@ -21,12 +22,12 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     ImGui::Combo("Render Mode", &newMode, renderModes, IM_ARRAYSIZE(renderModes));
     if (selectedRenderMode != newMode)
     {
-        MaterialTemplatesGPULang::Entry* matTemplate = nullptr;
+        Materials::MaterialId mat;
         if (newMode == 0)
-            matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewFill.entry;
+            mat = SolidMaterial;
         else
-            matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewWireframe.entry;
-        Models::ModelContext::ChangeMaterial(item->previewObject, Materials::CreateMaterial(matTemplate, "EditorPreview"));
+            mat = WireframeMaterial;
+        Models::ModelContext::ChangeMaterial(item->previewObject, mat);
         selectedRenderMode = newMode;
     }
     assetEditor->viewport.Render();
@@ -70,14 +71,17 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 void
 MeshSetup(AssetEditorItem* item)
 {
-    MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewFill.entry;
-    Materials::MaterialId material = Materials::CreateMaterial(matTemplate, "EditorPreview");
+    if (SolidMaterial == Materials::InvalidMaterialId)
+    {
+        SolidMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewFill.entry, "EditorPreviewMeshFill");
+        WireframeMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewWireframe.entry, "EditorPreviewMeshWireframe");
+    }
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
         Math::bbox(),
-        material,
+        SolidMaterial,
         CoreGraphics::MeshResourceGetMesh(item->asset.mesh, 0),
         0,
         Graphics::StageMask(1 << 3)
