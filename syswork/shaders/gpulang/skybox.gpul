@@ -62,17 +62,14 @@ psMain(in UV : f32x3,
 {
     const dir = normalize(Direction);
     var atmo = f32x3(0);
-    var count = 0;
     for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
     {
         const li = LightLists.DirectionalLights[i];
         if (li.stageMask & ViewConstants.StageMask)
         {
             atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color;
-            count++;
         }
     }
-    atmo *= 1.0f / count; 
     //const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
     // rotate uvs around center with constant speed
     /*
