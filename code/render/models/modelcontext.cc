@@ -402,6 +402,7 @@ ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, const Material
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
     uint index = (uint)stateRange.allocation.offset;
 
+    DestroyMaterialInstance(NodeInstances.renderable.nodeStates[index].materialInstance);
     NodeInstances.renderable.nodeStates[index].materialInstance = CreateMaterialInstance(material);
     NodeInstances.renderable.nodeMaterials[index] = material;
     NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
