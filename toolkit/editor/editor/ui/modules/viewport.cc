@@ -237,7 +237,7 @@ Viewport::Render()
     this->lastViewportImageSize = { imageSize.x, imageSize.y };
 
     ViewSetViewport(this->view, Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
-    this->focused = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
+    this->focused = ImGui::IsItemFocused() || ImGui::IsWindowHovered();
 
     if (this->focused)
     {

@@ -47,8 +47,8 @@ Scene::Scene()
 
     currentTool = allTools[0];
 
-    viewPort.Init(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultView());
-    viewPort.SetFrameBuffer("ColorBufferNoGUI");
+    this->viewPort.Init(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultView());
+    this->viewPort.SetFrameBuffer("ColorBufferNoGUI");
 
     this->SetWindowPadding({0, 0});
 
@@ -101,7 +101,7 @@ Scene::Run(SaveMode save)
 
     DrawOutlines();
 
-    if (viewPort.IsFocused())
+    if (this->viewPort.IsFocused())
     {
         if (this->currentTool != nullptr)
         {
@@ -166,7 +166,7 @@ Scene::FocusCamera()
 
     centerPoint = centerPoint * (1.0f / (float)selection.Size());
 
-    viewPort.camera.SetTargetPosition(centerPoint + Math::xyz(Math::inverse(viewPort.camera.GetViewTransform()).get_z() * 5.0f));
+    this->viewPort.camera.SetTargetPosition(centerPoint + Math::xyz(Math::inverse(this->viewPort.camera.GetViewTransform()).get_z() * 5.0f));
 }
 
 //------------------------------------------------------------------------------
