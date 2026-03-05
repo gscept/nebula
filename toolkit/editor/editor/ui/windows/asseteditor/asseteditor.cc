@@ -101,7 +101,7 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialDiscard,
-    nullptr,
+    MeshDiscard,
     nullptr,
     nullptr,
     nullptr,
@@ -257,8 +257,6 @@ Setup(AssetEditorItem* item)
     using SetupFunc = void(*)(AssetEditorItem*);
 
     item->previewObject = Graphics::CreateEntity();
-    Models::ModelContext::RegisterEntity(item->previewObject);
-
     static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
     {
         nullptr, // LEAVE THIS ONE AS IT IS

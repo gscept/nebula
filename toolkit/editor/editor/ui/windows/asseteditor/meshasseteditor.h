@@ -14,5 +14,6 @@ namespace Presentation
 
 void MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item);
 void MeshSetup(AssetEditorItem* item);
+void MeshDiscard(AssetEditor* assetEditor, AssetEditorItem* item);
 
 } // namespace Presentation

@@ -56,6 +56,7 @@ void
 MeshSetup(AssetEditorItem* item)
 {
     Resources::ResourceId placeholderMat = Resources::CreateResource("syssur:placeholder.sur", "preview", nullptr, nullptr, true, false);
+    Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
@@ -68,8 +69,16 @@ MeshSetup(AssetEditorItem* item)
     Models::ModelContext::SetAlwaysVisible(item->previewObject);
     Visibility::ObservableContext::RegisterEntity(item->previewObject);
     Visibility::ObservableContext::Setup(item->previewObject, Visibility::VisibilityEntityType::Model);
+}
 
-
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
+{
+    Models::ModelContext::DeregisterEntity(item->previewObject);
+    Visibility::ObservableContext::DeregisterEntity(item->previewObject);
 }
 
 } // namespace Presentation
