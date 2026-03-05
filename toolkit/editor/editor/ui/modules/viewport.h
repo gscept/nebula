@@ -35,7 +35,7 @@ public:
     Viewport();
     ~Viewport();
     
-    void Init(Util::String const& viewName);
+    void Init(Util::String const& viewName, const Graphics::StageMask mask = Graphics::PRIMARY_STAGE_MASK);
     void Init(const Graphics::ViewId view);
 
     void Render();

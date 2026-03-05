@@ -74,6 +74,8 @@ struct AssetEditorItem
     } asset;
     Resources::ResourceId res;
     Resources::ResourceName name;
+    Graphics::GraphicsEntityId previewObject;
+
 
     Memory::ArenaAllocator<2048> allocator;
     void* data; // use for editor specific data

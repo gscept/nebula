@@ -6,7 +6,7 @@
         ],
         "LocalTextures": [
             {
-                "name": "ColorBuffer",
+                "name": "PreviewBuffer",
                 "format": "SRGBA8",
                 "usage": "Render|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
@@ -77,6 +77,35 @@
                     },
                     {
                         "pass": {
+                            "name": "Prepass",
+                            "attachments": [
+                                {
+                                    "name": "ZBuffer",
+                                    "clear_depth": 1,
+                                    "clear_stencil": 0,
+                                    "flags": "Store|StoreStencil"
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "DepthPrepass",
+                                    "attachments": [],
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryDepth"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+
+                        }
+                    },
+                    {
+                        "pass": {
                             "name": "ForwardRendering",
                             "attachments": [
                                 {
@@ -84,8 +113,8 @@
                                     "flags": "Store|Load|LoadStencil"
                                 },
                                 {
-                                    "name": "ColorBuffer",
-                                    "clear": [ 0, 0, 0, 0 ],
+                                    "name": "PreviewBuffer",
+                                    "clear": [ 0.5, 0.5, 0.5, 0 ],
                                     "flags": "Store"
                                 }
                             ],
@@ -94,7 +123,7 @@
                                 {
                                     "name": "OpaquePass",
                                     "subpass_dependencies": [],
-                                    "attachments": [ "ColorBuffer" ],
+                                    "attachments": [ "PreviewBuffer" ],
 
                                     "depth": "ZBuffer",
                                     "ops": [
@@ -107,8 +136,7 @@
                                 },
                                 {
                                     "name": "AlphaPass",
-                                    "_comment": "TODO: Move this to a separate pass later on",
-                                    "attachments": [ "ColorBuffer" ],
+                                    "attachments": [ "PreviewBuffer" ],
 
                                     "depth": "ZBuffer",
                                     "ops": [
@@ -124,15 +152,15 @@
                     },
                     {
                         "transition": {
-                            "name": "ColorBuffer",
+                            "name": "PreviewBuffer",
                             "stage": "TransferRead"
                         }
                     },
-                                        {
+                    {
                         "copy": {
                             "name": "Copy To Target",
                             "from": {
-                                "tex": "ColorBuffer",
+                                "tex": "PreviewBuffer",
                                 "bits": "ColorBits"
                             },
                             "to": {
@@ -140,7 +168,7 @@
                                 "bits": "ColorBits"
                             }
                         }
-                    },
+                    }
                 ]
             }
         ]

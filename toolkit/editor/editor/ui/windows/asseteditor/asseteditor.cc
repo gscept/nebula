@@ -39,7 +39,8 @@ __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 */
 AssetEditor::AssetEditor()
 {
-    this->viewport.Init(Util::String("AssetEditorViewport"));
+    this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
+
 }
 
 //------------------------------------------------------------------------------
@@ -255,11 +256,14 @@ Setup(AssetEditorItem* item)
     item->data = nullptr;
     using SetupFunc = void(*)(AssetEditorItem*);
 
+    item->previewObject = Graphics::CreateEntity();
+    Models::ModelContext::RegisterEntity(item->previewObject);
+
     static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
     {
         nullptr, // LEAVE THIS ONE AS IT IS
         MaterialSetup,
-        nullptr,
+        MeshSetup,
         nullptr,
         nullptr,
         nullptr,

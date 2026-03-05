@@ -13,5 +13,6 @@ namespace Presentation
 {
 
 void MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item);
+void MeshSetup(AssetEditorItem* item);
 
 } // namespace Presentation

@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "meshasseteditor.h"
+#include "visibility/visibilitycontext.h"
 namespace Presentation
 {
 
@@ -46,6 +47,27 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshSetup(AssetEditorItem* item)
+{
+    Resources::ResourceId placeholderMat = Resources::CreateResource("syssur:placeholder.sur", "preview", nullptr, nullptr, true, false);
+    Models::ModelContext::Setup(
+        item->previewObject,
+        Math::mat4(),
+        Math::bbox(),
+        placeholderMat.resourceId,
+        CoreGraphics::MeshResourceGetMesh(item->asset.mesh, 0),
+        0,
+        Graphics::StageMask(1 << 3)
+    );
+    Visibility::ObservableContext::RegisterEntity(item->previewObject);
+    Visibility::ObservableContext::Setup(item->previewObject, Visibility::VisibilityEntityType::Model);
 
 }
 
