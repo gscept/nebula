@@ -106,6 +106,7 @@ CreateView(const ViewCreateInfo& info)
     viewAllocator.Set<View_Viewport>(id, info.viewport);
     viewAllocator.Set<View_Camera>(id, info.camera);
     viewAllocator.Set<View_StageMask>(id, info.stageMask);
+    viewAllocator.Set<View_Enabled>(id, true);
     return ViewId(id);
 }
 
