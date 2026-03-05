@@ -432,6 +432,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name)
     ViewId view = Graphics::CreateView(info);
 
     this->views.Append(view);
+    this->viewsByName.Add(name, view);
 
     // invoke all interested contexts
     IndexT i;
@@ -613,13 +614,13 @@ GraphicsServer::Render()
             call(view, this->frameContext);
         }
         N_MARKER_END()
+        ViewApply(view);
 
         N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
         auto& preViewCallback = this->preViewCallbacks[i];
         if (preViewCallback != nullptr)
             preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
         N_MARKER_END()
-        ViewApply(view);
 
         if (ViewRender(view, this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
         {
