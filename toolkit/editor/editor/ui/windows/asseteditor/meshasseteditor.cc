@@ -30,7 +30,6 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         Models::ModelContext::ChangeMaterial(item->previewObject, mat);
         selectedRenderMode = newMode;
     }
-    assetEditor->viewport.Render();
     SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
     for (IndexT i = 0; i < numMeshes; i++)
     {
@@ -63,6 +62,7 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
+    assetEditor->viewport.Render();
 }
 
 //------------------------------------------------------------------------------

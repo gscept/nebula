@@ -212,7 +212,6 @@ Viewport::Render()
     this->textureInfo.mip = 0;
     this->textureInfo.layer = 0;
 
-
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
