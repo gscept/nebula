@@ -8,12 +8,27 @@
 namespace Presentation
 {
 
+static int selectedRenderMode = 0;
+
 //------------------------------------------------------------------------------
 /**
 */
 void 
 MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
+    static const char* renderModes[] = { "Fill", "Wireframe" };
+    static int newMode = 0;
+    ImGui::Combo("Render Mode", &newMode, renderModes, IM_ARRAYSIZE(renderModes));
+    if (selectedRenderMode != newMode)
+    {
+        MaterialTemplatesGPULang::Entry* matTemplate = nullptr;
+        if (newMode == 0)
+            matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewFill.entry;
+        else
+            matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewWireframe.entry;
+        Models::ModelContext::ChangeMaterial(item->previewObject, Materials::CreateMaterial(matTemplate, "EditorPreview"));
+        selectedRenderMode = newMode;
+    }
     assetEditor->viewport.Render();
     SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
     for (IndexT i = 0; i < numMeshes; i++)
@@ -55,13 +70,14 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 void
 MeshSetup(AssetEditorItem* item)
 {
-    Resources::ResourceId placeholderMat = Resources::CreateResource("syssur:placeholder.sur", "preview", nullptr, nullptr, true, false);
+    MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__EditorPreviewFill.entry;
+    Materials::MaterialId material = Materials::CreateMaterial(matTemplate, "EditorPreview");
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
         Math::bbox(),
-        placeholderMat.resourceId,
+        material,
         CoreGraphics::MeshResourceGetMesh(item->asset.mesh, 0),
         0,
         Graphics::StageMask(1 << 3)
