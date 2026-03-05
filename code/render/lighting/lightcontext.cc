@@ -1298,12 +1298,13 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
     // update list of point lights
-    if (numPointLights > 0 || numSpotLights > 0 || numAreaLights > 0)
+    if (numDirectionalLights > 0 || numPointLights > 0 || numSpotLights > 0 || numAreaLights > 0)
     {
         CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList.buffers[bufferIndex], clusterState.lightList);
         CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList.buffers[bufferIndex]);
     }
 
+    clusterState.consts.NumDirectionalLights = numDirectionalLights;
     clusterState.consts.NumSpotLights = numSpotLights;
     clusterState.consts.NumPointLights = numPointLights;
     clusterState.consts.NumAreaLights = numAreaLights;

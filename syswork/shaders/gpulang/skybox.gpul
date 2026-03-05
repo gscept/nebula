@@ -61,7 +61,19 @@ psMain(in UV : f32x3,
     in Direction : f32x3) void
 {
     const dir = normalize(Direction);
-    const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
+    var atmo = f32x3(0);
+    var count = 0;
+    for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+    {
+        const li = LightLists.DirectionalLights[i];
+        if (li.stageMask & ViewConstants.StageMask)
+        {
+            atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color;
+            count++;
+        }
+    }
+    atmo *= 1.0f / count; 
+    //const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
     // rotate uvs around center with constant speed
     /*
     vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
