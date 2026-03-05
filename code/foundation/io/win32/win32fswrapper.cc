@@ -10,6 +10,8 @@
 #include "util/win32/win32stringconverter.h"
 #endif
 #include <direct.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace Win32
 {
