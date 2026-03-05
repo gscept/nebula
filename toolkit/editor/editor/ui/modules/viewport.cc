@@ -212,11 +212,25 @@ Viewport::Render()
     this->textureInfo.mip = 0;
     this->textureInfo.layer = 0;
 
+
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 viewportPos = ImGui::GetWindowViewport()->Pos;
     ImVec2 localWindowPos = ImVec2 {windowPos.x - viewportPos.x, windowPos.y - viewportPos.y};
+
+    if (this->targetTexture != CoreGraphics::InvalidTextureId)
+    {
+        if (dims.width < space.x || dims.height < space.y)
+        {
+            CoreGraphics::DestroyTexture(this->targetTexture);
+            CoreGraphics::TextureCreateInfo texInfo;
+            texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
+            texInfo.width = space.x;
+            texInfo.height = space.y;
+            this->targetTexture = CoreGraphics::CreateTexture(texInfo);
+        }
+    }
 
     ImVec2 imageSize = {(float)space.x, (float)space.y};
     imageSize.x = Math::max(imageSize.x, 1.0f);
