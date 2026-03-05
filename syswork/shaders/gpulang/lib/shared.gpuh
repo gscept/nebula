@@ -298,6 +298,18 @@ group(FRAME_GROUP) uniform ClusterUniforms : *ClusterParams;
 // increase if we need more lights in close proximity, for now, 128 is more than enough
 const MAX_LIGHTS_PER_CLUSTER = 128;
 
+struct DirectionalLight
+{
+    shadowTransform : f32x4x4;
+    direction : f32x3;
+    shadowMap : u32;
+    color : f32x3;
+    shadowMapIntensity : f32;
+    shadowBias : f32;
+    shadowMapSize : f32x2;
+    stageMask : u32;                // Stages this light is visible in
+};
+
 struct SpotLight
 {
     position : f32x3;				// view space position of light
@@ -374,6 +386,7 @@ struct AreaLightShadowExtension
 struct LightParams
 {
     SSAOBuffer : u32;
+    NumDirectionalLights : u32;
     NumPointLights : u32;
     NumSpotLights : u32;
     NumAreaLights : u32;
@@ -397,14 +410,20 @@ struct LightIndexData
 @Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform LightIndexLists : *mutable LightIndexData;
 
+const MAX_DIRECTIONAL_LIGHTS = 8u;
+const MAX_SPOT_LIGHTS = 1024u;
+const MAX_POINT_LIGHTS = 1024u;
+const MAX_AREA_LIGHTS = 1024u;
+
 struct LightListData
 {
-    SpotLights : [1024]SpotLight;
+    DirectionalLights : [MAX_DIRECTIONAL_LIGHTS]DirectionalLight;
+    SpotLights : [MAX_SPOT_LIGHTS]SpotLight;
     SpotLightProjection : [256]SpotLightProjectionExtension;
     SpotLightShadow : [16]SpotLightShadowExtension;
-    PointLights : [1024]PointLight;
+    PointLights : [MAX_POINT_LIGHTS]PointLight;
     PointLightShadow : [16]PointLightShadowExtension;
-    AreaLights : [1024]AreaLight;
+    AreaLights : [MAX_AREA_LIGHTS]AreaLight;
     AreaLightShadow : [16]AreaLightShadowExtension;
 };
 

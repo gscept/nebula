@@ -291,6 +291,7 @@ LightContext::SetupDirectionalLight(
         bool castShadows)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
+    n_assert(directionalLightAllocator.Size() < Shared::MAX_DIRECTIONAL_LIGHTS);
     n_assert(lightServerState.directionalLightEntity == Graphics::GraphicsEntityId::Invalid());
 
     auto lid = directionalLightAllocator.Alloc();
@@ -372,6 +373,7 @@ LightContext::SetupPointLight(
     , const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
+    n_assert(pointLightAllocator.Size() < Shared::MAX_POINT_LIGHTS);
     const Graphics::ContextEntityId cid = GetContextId(id);
     auto pli = pointLightAllocator.Alloc();
     genericLightAllocator.Set<Type>(cid.id, LightType::PointLightType);
@@ -418,6 +420,7 @@ LightContext::SetupSpotLight(
     , const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
+    n_assert(spotLightAllocator.Size() < Shared::MAX_SPOT_LIGHTS);
     const Graphics::ContextEntityId cid = GetContextId(id);
     auto sli = spotLightAllocator.Alloc();
 
@@ -478,6 +481,7 @@ LightContext::SetupAreaLight(
 )
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
+    n_assert(areaLightAllocator.Size() < Shared::MAX_AREA_LIGHTS);
     const Graphics::ContextEntityId cid = GetContextId(id);
     auto ali = areaLightAllocator.Alloc();
 
@@ -1089,6 +1093,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     const Util::Array<bool>& castShadow		            = genericLightAllocator.GetArray<ShadowCaster>();
     const Util::Array<Ids::Id32>& typeIds	            = genericLightAllocator.GetArray<TypedLightId>();
     const Util::Array<Graphics::StageMask>& stageMasks	= genericLightAllocator.GetArray<StageMask>();
+    SizeT numDirectionalLights = 0;
     SizeT numPointLights = 0;
     SizeT numSpotLights = 0;
     SizeT numSpotLightShadows = 0;
@@ -1102,6 +1107,23 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     {
         switch (types[i])
         {
+            case LightType::DirectionalLightType:
+            {
+                auto& directionalLight = clusterState.lightList.DirectionalLights[numDirectionalLights];
+                (genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(typeIds[i])).store(directionalLight.color);
+                directionalLightAllocator.Get<DirectionalLight_Direction>(typeIds[i]).store(directionalLight.direction);
+                directionalLight.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
+                directionalLight.shadowMapIntensity = 1.0f;
+                directionalLight.shadowBias = 0.0001f;
+                auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.globalLightShadowMap);
+                directionalLight.shadowMapSize[0] = 1.0f / shadowDims.width;
+                directionalLight.shadowMapSize[1] = 1.0f / shadowDims.height;
+                lightServerState.csmUtil.GetShadowView().store(&directionalLight.shadowTransform[0][0]);
+
+                directionalLight.stageMask = stageMasks[i];
+                numDirectionalLights++;
+            }
+            break;
             case LightType::PointLightType:
             {
                 const Math::point& trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]).getposition();
