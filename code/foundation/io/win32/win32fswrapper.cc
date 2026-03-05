@@ -264,6 +264,24 @@ Win32FSWrapper::GetFileSize(Handle handle)
 
 //------------------------------------------------------------------------------
 /**
+    Returns the size of a file in bytes.
+*/
+Stream::Size
+Win32FSWrapper::GetFileSize(const Util::String& path)
+{
+    n_assert(path.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    __stat64 buf;
+    if(_wstat64((LPCWSTR)widePath, &buf) == 0)
+    {
+        return buf.st_size;
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
     Set the read-only status of a file. 
 */
 void

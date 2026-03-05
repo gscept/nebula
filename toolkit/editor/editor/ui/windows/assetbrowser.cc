@@ -408,17 +408,8 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
         // Extract file extension
         entry.extension = entry.name.GetFileExtension();
                         
-        // Get file size by opening it
-        IO::FSWrapper::Handle fileHandle = IO::FSWrapper::OpenFile(fileName, IO::Stream::ReadAccess, IO::Stream::Sequential);
-        if (fileHandle != nullptr)
-        {
-            entry.size = IO::FSWrapper::GetFileSize(fileHandle);
-            IO::FSWrapper::CloseFile(fileHandle);
-        }
-        else
-        {
-            entry.size = 0;
-        }
+        // Get file size by opening it       
+        entry.size = IO::FSWrapper::GetFileSize(fileName);
         
         // Get file modification time
         entry.modifiedTime = IO::FSWrapper::GetFileWriteTime(fileName);

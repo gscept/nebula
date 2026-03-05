@@ -221,6 +221,23 @@ PosixFSWrapper::GetFileSize(Handle handle)
 
 //------------------------------------------------------------------------------
 /**
+    Returns the size of a file in bytes.
+*/
+Stream::Size
+PosixFSWrapper::GetFileSize(const Util::String& path)
+{
+    n_assert(path.IsValid());
+    struct stat s;
+    int r = stat(path.AsCharPtr(), &s);
+    if (0 != r)
+    {
+        return 0;
+    }
+    return s.st_size;
+}
+
+//------------------------------------------------------------------------------
+/**
     Set the read-only status of a file.
 */
 void

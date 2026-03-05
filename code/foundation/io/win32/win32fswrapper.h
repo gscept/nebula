@@ -46,6 +46,8 @@ public:
     static bool Eof(Handle h);
     /// get size of a file in bytes
     static IO::Stream::Size GetFileSize(Handle h);
+    /// get size of a file in bytes
+    static IO::Stream::Size GetFileSize(const Util::String& path);
     /// set read-only status of a file
     static void SetReadOnly(const Util::String& path, bool readOnly);
     /// get read-only status of a file
