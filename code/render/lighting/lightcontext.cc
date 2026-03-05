@@ -974,7 +974,8 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     // TODO: IMPLEMENT!
                     break;
                 }
-                default: break;
+                default:
+                    break;
             }
         }
 
