@@ -28,8 +28,8 @@ public:
     /// Move operator
     void operator=(Spinlock&& rhs);
 
-    /// Lock
-    void Lock();
+    /// Lock, returns true if it locked
+    bool Lock();
     /// Unlock
     void Unlock();
 private:
@@ -79,7 +79,7 @@ Spinlock::operator=(Spinlock&& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+inline bool
 Spinlock::Lock()
 {
     // Attempt to set the lock, if already 1, yield the thread
@@ -87,13 +87,15 @@ Spinlock::Lock()
 
     // If this thread already owns the spinlock, return early
     if (threadId == this->lock)
-        return;
+        return false;
 
     // Otherwise, enter the spin to exchange the thread id to ours
     while (Interlocked::CompareExchange((volatile ThreadIdStorage*) &this->lock, threadId, InvalidThreadId) != InvalidThreadId)
     {
         Thread::YieldThread();
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
