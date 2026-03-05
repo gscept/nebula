@@ -86,6 +86,8 @@ public:
 
     /// change model for existing entity
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
+    /// Changes the material for the first node in the model
+    static void ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material);
     /// get model
     static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
 

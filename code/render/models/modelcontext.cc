@@ -309,34 +309,59 @@ ModelContext::Setup(
     state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
     state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
 
-    NodeInstances.renderable.nodeStates.Append(state);
-    NodeInstances.renderable.nodeTransformIndex.Append(0);
-    NodeInstances.renderable.nodeBoundingBoxes.Append(Math::bbox());
-    NodeInstances.renderable.origBoundingBoxes.Append(boundingBox);
-    NodeInstances.renderable.nodeLodDistances.Append(Util::MakeTuple(FLT_MAX, FLT_MAX));
-    NodeInstances.renderable.nodeLods.Append(0.0f);
-    NodeInstances.renderable.textureLods.Append(1.0f);
-    NodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
-    NodeInstances.renderable.nodeMaterials.Append(material);
-    NodeInstances.renderable.nodeMaterialTemplates.Append(MaterialGetTemplate(material));
-    NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
-    NodeInstances.renderable.nodes.Append(nullptr);
-    NodeInstances.renderable.nodeMeshes.Append(mesh);
-    NodeInstances.renderable.nodePrimitiveGroup.Append(MeshGetPrimitiveGroup(mesh, primitiveGroup));
-    NodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
+    if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
+    {
+        NodeInstances.renderable.nodeStates.Extend(stateRange.end);
+        NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
+        NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
+        NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
+        NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
+        NodeInstances.renderable.nodeLods.Extend(stateRange.end);
+        NodeInstances.renderable.textureLods.Extend(stateRange.end);
+        NodeInstances.renderable.nodeFlags.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMaterials.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMaterialTemplates.Extend(stateRange.end);
+        NodeInstances.renderable.nodeTypes.Extend(stateRange.end);
+        NodeInstances.renderable.nodes.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
+        NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+        NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
+        NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
+
+#if NEBULA_GRAPHICS_DEBUG
+        NodeInstances.renderable.nodeNames.Extend(stateRange.end);
+#endif
+    }
+    uint index = (uint)stateRange.allocation.offset;
+
+    NodeInstances.renderable.nodeStates[index] = state;
+    NodeInstances.renderable.nodeTransformIndex[index] = 0;
+    NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
+    NodeInstances.renderable.origBoundingBoxes[index] = boundingBox;
+    NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
+    NodeInstances.renderable.nodeLods[index] = 0.0f;
+    NodeInstances.renderable.textureLods[index] = 1.0f;
+    NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
+    NodeInstances.renderable.nodeMaterials[index] = material;
+    NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+    NodeInstances.renderable.nodeTypes[index] = Models::PrimitiveNodeType;
+    NodeInstances.renderable.nodes[index] = nullptr;
+    NodeInstances.renderable.nodeMeshes[index] = mesh;
+    NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(mesh, primitiveGroup);
+    NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
 
     modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
     modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
 
 #if NEBULA_GRAPHICS_DEBUG
-    NodeInstances.renderable.nodeNames.Append(debugName);
+    NodeInstances.renderable.nodeNames[index] = debugName;
 #endif
 
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
     auto sortCode = Materials::MaterialGetSortCode(material);
     assert(sortCode < 0xFFF0000000000000);
     uint64_t sortId = ((uint64_t)sortCode << 52);
-    NodeInstances.renderable.nodeSortId.Append(sortId);
+    NodeInstances.renderable.nodeSortId[index] =  sortId;
 }
 
 //------------------------------------------------------------------------------
@@ -364,6 +389,27 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 
     Resources::ResourceId model = Resources::CreateResource(name, tag, successCallback, successCallback, true);
     modelContextAllocator.Set<Model_Id>(cid.id, model);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    uint index = (uint)stateRange.allocation.offset;
+
+    NodeInstances.renderable.nodeStates[index].materialInstance = CreateMaterialInstance(material);
+    NodeInstances.renderable.nodeMaterials[index] = material;
+    NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+
+    auto sortCode = Materials::MaterialGetSortCode(material);
+    assert(sortCode < 0xFFF0000000000000);
+    uint64_t sortId = ((uint64_t)sortCode << 52);
+    NodeInstances.renderable.nodeSortId[index] = sortId;
 }
 
 //------------------------------------------------------------------------------
