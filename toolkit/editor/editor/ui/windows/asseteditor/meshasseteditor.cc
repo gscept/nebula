@@ -81,4 +81,13 @@ MeshDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
     Visibility::ObservableContext::DeregisterEntity(item->previewObject);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
+{
+    Models::ModelContext::SetStageMask(item->previewObject, show ? 1 << 3 : 0x0);
+}
+
 } // namespace Presentation

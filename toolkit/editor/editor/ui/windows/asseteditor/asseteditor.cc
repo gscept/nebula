@@ -76,6 +76,7 @@ EmptyEditor()
 }
 
 using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
+using ShowFunc = void(*)(AssetEditor*, AssetEditorItem*, bool);
 static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
     nullptr, // LEAVE THIS ONE AS IT IS
@@ -102,6 +103,17 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialDiscard,
     MeshDiscard,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+};
+
+static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] = 
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    nullptr,
+    MeshShow,
     nullptr,
     nullptr,
     nullptr,
@@ -226,6 +238,16 @@ AssetEditor::Run(SaveMode save)
                         }
                     }
                     ImGui::EndTabItem();
+
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, true);
+                }
+                else
+                {
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, false);
                 }
             }
             ImGui::EndTabBar();
