@@ -973,6 +973,44 @@
                         "defaultValue": "systex:placeholder.dds"
                     }
                 ]
+            },
+            {
+                "name": "EditorPreviewFill",
+                "inherits": "DefaultBRDF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Preview material for editor",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/editor_preview",
+                        "variation": "Fill"
+                    }
+                ]
+            },
+            {
+                "name": "EditorPreviewWireframe",
+                "inherits": "DefaultBRDF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Preview material for editor",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/editor_preview",
+                        "variation": "Wireframe"
+                    }
+                ]
             }
         ]
     }
