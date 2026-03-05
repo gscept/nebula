@@ -44,7 +44,7 @@ __ImplementContext(LightContext, LightContext::genericLightAllocator);
 
 struct
 {
-    Graphics::GraphicsEntityId globalLightEntity = Graphics::GraphicsEntityId::Invalid();
+    Graphics::GraphicsEntityId directionalLightEntity = Graphics::GraphicsEntityId::Invalid();
 
     Util::Array<Graphics::GraphicsEntityId> spotLightEntities;
     Util::RingBuffer<Graphics::GraphicsEntityId> shadowcastingLocalLights;
@@ -212,10 +212,10 @@ LightContext::Create()
 
     FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
+        if (lightServerState.directionalLightEntity != Graphics::GraphicsEntityId::Invalid())
         {
             // get cameras associated with sun
-            Graphics::ContextEntityId ctxId = GetContextId(lightServerState.globalLightEntity);
+            Graphics::ContextEntityId ctxId = GetContextId(lightServerState.directionalLightEntity);
             Ids::Id32 typedId = genericLightAllocator.Get<TypedLightId>(ctxId.id);
             const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
             for (IndexT i = 0; i < observers.Size(); i++)
@@ -282,7 +282,7 @@ LightContext::Discard()
 void
 LightContext::SetupDirectionalLight(
         const Graphics::GraphicsEntityId id,
-        const Graphics::GraphicsEntityId camera,
+        const Graphics::ViewId view,
         const Math::vec3& color,
         const float intensity,
         const Math::vec3& ambient,
@@ -291,7 +291,7 @@ LightContext::SetupDirectionalLight(
         bool castShadows)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
-    n_assert(lightServerState.globalLightEntity == Graphics::GraphicsEntityId::Invalid());
+    n_assert(lightServerState.directionalLightEntity == Graphics::GraphicsEntityId::Invalid());
 
     auto lid = directionalLightAllocator.Alloc();
 
@@ -308,7 +308,7 @@ LightContext::SetupDirectionalLight(
 
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
     directionalLightAllocator.Set<DirectionalLight_Ambient>(lid, ambient);
-    directionalLightAllocator.Set<DirectionalLight_Camera>(lid, camera);
+    directionalLightAllocator.Set<DirectionalLight_View>(lid, view);
 
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
@@ -332,7 +332,7 @@ LightContext::SetupDirectionalLight(
         }
     }
 
-    lightServerState.globalLightEntity = id;
+    lightServerState.directionalLightEntity = id;
 }
 
 //------------------------------------------------------------------------------
@@ -877,36 +877,34 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 void
 LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
-    const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
+    const Graphics::ContextEntityId cid = GetContextId(lightServerState.directionalLightEntity);
     Shared::ShadowViewConstants::STRUCT& shadowConstants = ViewGetShadowConstants(view);
-
 
     // Setup global light view transform
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
     {
-        lightServerState.csmUtil.SetCameraEntity(ViewGetCamera(view));
-        lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
-        lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
-        lightServerState.csmUtil.Compute(ViewGetCamera(view), lightServerState.globalLightEntity);
-
         auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
         // Check if this is the camera used for cascaded shadow maps
-        if (ViewGetCamera(view) != directionalLightAllocator.Get<DirectionalLight_Camera>(lid))
+        if (view == directionalLightAllocator.Get<DirectionalLight_View>(lid))
         {
-            return;
-        }
+            lightServerState.csmUtil.SetCameraEntity(ViewGetCamera(view));
+            lightServerState.csmUtil.SetGlobalLight(lightServerState.directionalLightEntity);
+            lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
+            lightServerState.csmUtil.Compute(ViewGetCamera(view), lightServerState.directionalLightEntity);
 
-        const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lid);
-        for (IndexT i = 0; i < observers.Size(); i++)
-        {
-            // do reverse lookup to find shadow caster
-            Ids::Id32 ctxId = shadowCasterSliceMap[observers[i]];
-            Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
+            const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lid);
+            for (IndexT i = 0; i < observers.Size(); i++)
+            {
+                // do reverse lookup to find shadow caster
+                Ids::Id32 ctxId = shadowCasterSliceMap[observers[i]];
+                Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
 
-            shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, cascadeProj);
-            cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
+                shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, cascadeProj);
+                cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
+            }
         }
+        
 
 #if __DX12__
         Math::mat4 textureScale = Math::scaling(0.5f, -0.5f, 1.0f);
@@ -1048,7 +1046,7 @@ void
 LightContext::UpdateLights(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateLightResources, Lighting);
-    const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
+    const Graphics::ContextEntityId cid = GetContextId(lightServerState.directionalLightEntity);
     using namespace CoreGraphics;
 
     // update constant buffer

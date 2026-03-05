@@ -56,7 +56,7 @@ public:
     /// setup entity as global light
     static void SetupDirectionalLight(
         const Graphics::GraphicsEntityId id
-        , const Graphics::GraphicsEntityId camera // Camera used for shadows
+        , const Graphics::ViewId view // Camera used for shadows
         , const Math::vec3& color
         , const float intensity
         , const Math::vec3& ambient
@@ -272,7 +272,7 @@ private:
 
     enum
     {
-        DirectionalLight_Camera,
+        DirectionalLight_View,
         DirectionalLight_Direction,
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
@@ -281,7 +281,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId,                 // camera used for shadow mapping
+        Graphics::ViewId,                           // camera used for shadow mapping
         Math::vector,                               // direction
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)
