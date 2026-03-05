@@ -47,7 +47,6 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
-
 }
 
 //------------------------------------------------------------------------------
@@ -66,8 +65,10 @@ MeshSetup(AssetEditorItem* item)
         0,
         Graphics::StageMask(1 << 3)
     );
+    Models::ModelContext::SetAlwaysVisible(item->previewObject);
     Visibility::ObservableContext::RegisterEntity(item->previewObject);
     Visibility::ObservableContext::Setup(item->previewObject, Visibility::VisibilityEntityType::Model);
+
 
 }
 
