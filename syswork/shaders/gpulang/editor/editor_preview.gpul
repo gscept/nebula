@@ -69,16 +69,8 @@ psColor(
     material[MAT_CAVITY] = 1.0f;
     var light = CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, f32x3(1.0f), material, Normal);
 
-	// Convert color to luminance
-    const lumAvg = ViewConstants.Time_Random_Luminance_X.z;
-    var xyY = RGBToXYY(light.rgb);
-    const lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, PerTickParams.MaxLuminance);
-
-    // Tonemap in luma space
-    xyY = ToneMap(xyY, lp, PerTickParams.MaxLuminance);
-
     // Convert back to RGB
-    pixelExportColor(f32x4(XYYToRGB(xyY), 1), 0);
+    pixelExportColor(light.rgb, 0);
 }
 
 @Mask("Fill")

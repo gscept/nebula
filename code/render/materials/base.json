@@ -988,7 +988,7 @@
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "system_shaders/editor_preview",
+                        "shader": "system_shaders/editor/editor_preview",
                         "variation": "Fill"
                     }
                 ]
@@ -1007,7 +1007,7 @@
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "system_shaders/editor_preview",
+                        "shader": "system_shaders/editor/editor_preview",
                         "variation": "Wireframe"
                     }
                 ]

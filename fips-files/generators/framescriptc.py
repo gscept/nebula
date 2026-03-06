@@ -41,7 +41,7 @@ def DeclareResourceDependencies(list_name, parser, deps, file):
         elif dep.tex:
             textures.add(dep)
         else:
-            Error("Unknown resource {}".format(dep.name))
+            Error(list_name, "Unknown resource '{}'".format(dep.name))
         
     if len(textures) > 0:
         file.WriteLine("const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
@@ -492,7 +492,7 @@ class FullscreenEffectDefinition:
         file.WriteLine('bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
-        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::{}::BINDING));'.format(self.name, self.name, self.constantBlockName))
+        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, {}::{}::BINDING));'.format(self.name, self.name, self.namespace, self.constantBlockName))
         file.WriteLine('CoreGraphics::ResourceTableCommitChanges(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")

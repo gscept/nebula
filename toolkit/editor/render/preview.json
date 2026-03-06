@@ -6,21 +6,28 @@
         ],
         "LocalTextures": [
             {
-                "name": "PreviewBuffer",
+                "name": "PreviewScene",
+                "format": "R11G11B10F",
+                "usage": "Render|TransferSource",
+                "relativeSize": [ 1.0, 1.0 ],
+                "type": "Texture2D"
+            },
+            {
+                "name": "PreviewOutput",
                 "format": "SRGBA8",
                 "usage": "Render|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
-                "name": "ZBuffer",
+                "name": "ZBufferPreview",
                 "format": "D32S8",
                 "usage": "Render|Sample",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
-                "name": "Stencil",
+                "name": "StencilPreview",
                 "format": "R8",
                 "usage": "TransferDestination|Sample",
                 "relativeSize": [ 1.0, 1.0 ],
@@ -80,7 +87,7 @@
                             "name": "Prepass",
                             "attachments": [
                                 {
-                                    "name": "ZBuffer",
+                                    "name": "ZBufferPreview",
                                     "clear_depth": 1,
                                     "clear_stencil": 0,
                                     "flags": "Store|StoreStencil"
@@ -91,7 +98,7 @@
                                 {
                                     "name": "DepthPrepass",
                                     "attachments": [],
-                                    "depth": "ZBuffer",
+                                    "depth": "ZBufferPreview",
                                     "ops": [
                                         {
                                             "batch": {
@@ -101,7 +108,11 @@
                                     ]
                                 }
                             ]
-
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Depth Extract"
                         }
                     },
                     {
@@ -109,11 +120,11 @@
                             "name": "ForwardRendering",
                             "attachments": [
                                 {
-                                    "name": "ZBuffer",
-                                    "flags": "Store|Load|LoadStencil"
+                                    "name": "ZBufferPreview",
+                                    "flags": "Load|LoadStencil"
                                 },
                                 {
-                                    "name": "PreviewBuffer",
+                                    "name": "PreviewScene",
                                     "clear": [ 0.5, 0.5, 0.5, 0 ],
                                     "flags": "Store"
                                 }
@@ -123,9 +134,9 @@
                                 {
                                     "name": "OpaquePass",
                                     "subpass_dependencies": [],
-                                    "attachments": [ "PreviewBuffer" ],
+                                    "attachments": [ "PreviewScene" ],
 
-                                    "depth": "ZBuffer",
+                                    "depth": "ZBufferPreview",
                                     "ops": [
                                         {
                                             "batch": {
@@ -136,9 +147,9 @@
                                 },
                                 {
                                     "name": "AlphaPass",
-                                    "attachments": [ "PreviewBuffer" ],
+                                    "attachments": [ "PreviewScene" ],
 
-                                    "depth": "ZBuffer",
+                                    "depth": "ZBufferPreview",
                                     "ops": [
                                         {
                                             "batch": {
@@ -151,8 +162,65 @@
                         }
                     },
                     {
+                        "pass": {
+                            "name": "PostEffects",
+                            "attachments": [
+                                {
+                                    "name": "PreviewOutput",
+                                    "flags": "Store"
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "FinalizePass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [
+                                        "PreviewOutput"
+                                    ],
+
+                                    "resource_dependencies": [
+                                        {
+                                            "name": "PreviewScene",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ZBufferPreview",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+
+                                    "ops": [
+                                        {
+                                            "fullscreen_effect": {
+                                                "name": "Finalize", 
+                                                "shader": "system_shaders/editor/editor_preview_finalize",
+                                                "mask": "Main",
+                                                "namespace": "EditorPreviewFinalize",
+                                                "constantBlockName": "FinalizeUniforms",
+                                                "variables": [
+                                                    {
+                                                        "semantic": "DepthTexture",
+                                                        "value": "ZBufferPreview",
+                                                        "type": "textureHandle"
+                                                    },
+                                                    {
+                                                        "semantic": "ColorTexture",
+                                                        "value": "PreviewScene",
+                                                        "type": "textureHandle"
+                                                    }
+                                                ],
+                                                "size_from_texture": "ColorBuffer"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
                         "transition": {
-                            "name": "PreviewBuffer",
+                            "name": "PreviewOutput",
                             "stage": "TransferRead"
                         }
                     },
@@ -160,7 +228,7 @@
                         "copy": {
                             "name": "Copy To Target",
                             "from": {
-                                "tex": "PreviewBuffer",
+                                "tex": "PreviewOutput",
                                 "bits": "ColorBits"
                             },
                             "to": {
