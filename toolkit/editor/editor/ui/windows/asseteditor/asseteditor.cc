@@ -125,7 +125,7 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
 static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] = 
 {
     nullptr, // LEAVE THIS ONE AS IT IS
-    nullptr,
+    MaterialShow,
     MeshShow,
     nullptr,
     ModelShow,

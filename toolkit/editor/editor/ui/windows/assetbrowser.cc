@@ -119,7 +119,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 return AssetEditor::AssetType::Skeleton;
             case FileEntry::Type::Animation:
                 return AssetEditor::AssetType::Animation;
-            case FileEntry::Type::Surface:                
+            case FileEntry::Type::Surface:        
+                return AssetEditor::AssetType::Material;
             case FileEntry::Type::Audio:                
             case FileEntry::Type::Text:
             case FileEntry::Type::Frame:
