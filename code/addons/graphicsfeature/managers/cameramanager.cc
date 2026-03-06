@@ -58,7 +58,7 @@ CameraManager::RegisterView(const Graphics::ViewId view)
     auto displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
 
     Graphics::CameraContext::RegisterEntity(data.gid);
-    Graphics::CameraContext::SetLODCamera(data.gid);
+    Graphics::CameraContext::AddLODCamera(data.gid);
     Graphics::CameraContext::SetupProjectionFov(data.gid, displayMode.GetAspectRatio(), Math::deg2rad(60.f), 0.01f, 1000.0f);
     Visibility::ObserverContext::RegisterEntity(data.gid);
     Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera, ViewGetStageMask(view));

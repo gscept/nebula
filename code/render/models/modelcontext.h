@@ -69,7 +69,7 @@ public:
     static void Create();
 
     /// setup
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const Graphics::StageMask stage = 0xFFFF);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK);
     /// Setup without a model resource
     static void Setup(
         const Graphics::GraphicsEntityId id
@@ -78,7 +78,7 @@ public:
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
-        , const Graphics::StageMask stageMask = 0xFFFF
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
 #if NEBULA_GRAPHICS_DEBUG
         , const Util::String debugName = ""
 #endif

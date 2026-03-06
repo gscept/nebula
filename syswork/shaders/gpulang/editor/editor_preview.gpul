@@ -27,7 +27,7 @@ render_state WireframeState
 /**
 */
 entry_point
-vsStatic(
+vsMesh(
     binding(0) in position : f32x3,
     binding(2) in uv : i32x2,
     binding(1) in normal : f32x3,
@@ -54,7 +54,7 @@ vsStatic(
 /**
 */
 entry_point
-psColor(
+psMesh(
     in Tangent : f32x3,
     in Normal : f32x3,
     in no_interpolate Sign : f32,
@@ -76,15 +76,15 @@ psColor(
 @Mask("Fill")
 program EditorPreviewFill
 {
-    VertexShader = vsStatic;
-    PixelShader = psColor;
+    VertexShader = vsMesh;
+    PixelShader = psMesh;
     RenderState = FillState;
 };
 
 @Mask("Wireframe")
 program EditorPreviewWireframe
 {
-    VertexShader = vsStatic;
-    PixelShader = psColor;
+    VertexShader = vsMesh;
+    PixelShader = psMesh;
     RenderState = WireframeState;
 };

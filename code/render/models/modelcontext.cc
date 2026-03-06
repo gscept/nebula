@@ -687,15 +687,30 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
     const Util::Array<Util::Array<uint32_t>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
+    const Util::Array<Graphics::StageMask>& modelStageMasks = modelContextAllocator.GetArray<Model_StageMask>();
     Util::Array<Math::bbox>& instanceBoxes = NodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
 
+    static Util::Array<CameraSettings> lodCameraSettings;
+    static Util::Array<Math::mat4> lodCameraViewTransforms;
+    static Util::Array<Graphics::StageMask> lodCameraStageMasks;
+    const Util::Array<Graphics::GraphicsEntityId>& lodCameras = Graphics::CameraContext::GetLODCameras();
+    lodCameraSettings.Clear();
+    lodCameraSettings.Reserve(lodCameras.Size());
+    lodCameraViewTransforms.Clear();
+    lodCameraViewTransforms.Reserve(lodCameras.Size());
+    lodCameraStageMasks.Clear();
+    lodCameraStageMasks.Reserve(lodCameras.Size());
+    for (auto& cam : lodCameras)
+    {
+        lodCameraSettings.Append(Graphics::CameraContext::GetSettings(cam));
+        lodCameraViewTransforms.Append(Graphics::CameraContext::GetView(cam));
+        lodCameraStageMasks.Append(Graphics::CameraContext::GetStageMask(cam));
+    }
+
     // get the lod camera
-    Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
-    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCamera);
-    const Math::mat4& viewTransform = Graphics::CameraContext::GetView(lodCamera);
-    const CameraSettings& settings = Graphics::CameraContext::GetSettings(lodCamera);
+    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCameras[0]);
 
     n_assert(TransformsUpdateCounter == 0);
     TransformsUpdateCounter = 1;
@@ -751,10 +766,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
             , instanceBoxes = instanceBoxes.Begin()
+            , stageMasks = modelStageMasks.Begin()
             , cameraTransform
-            , focalLength = settings.GetFov()
-            , viewportHeight = settings.GetFarHeight()
-            , viewTransform
+            , cameraSettings = lodCameraSettings.Begin()
+            , viewTransforms = lodCameraViewTransforms.Begin()
+            , cameraStageMasks = lodCameraStageMasks.Begin()
+            , numCameras = lodCameraSettings.Size()
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
@@ -767,6 +784,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
             const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
             const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+            const Graphics::StageMask stageMask = stageMasks[index];
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
@@ -778,23 +796,35 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
                 Math::point center = box.center();
 
-                // https://iquilezles.org/articles/sphereproj/
-                Math::vec4 centerInViewSpace = viewTransform * center;
-                float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
-                float r2 = radius * radius;
-                
-                float denom = l2 - r2;
-                float projectedArea = 0.0f;
-                if (denom <= 0.0f)
-                    projectedArea = 2.0f; // (viewportWidth * viewportHeight);
-                else
+                float lodScale = FLT_MAX;
+                for (IndexT camIndex = 0; camIndex < numCameras; camIndex++)
                 {
-                    float f_x = focalLength * (viewportHeight * 0.5f);
-                    projectedArea = PI * r2 * f_x * f_x / denom;
-                    projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * viewportHeight));
+                    // Skip cameras not in this stage
+                    if ((stageMask & cameraStageMasks[camIndex]) == 0)
+                        continue;
+
+                    const Math::mat4& view = viewTransforms[camIndex];
+                    const CameraSettings& settings = cameraSettings[camIndex];
+
+                    // https://iquilezles.org/articles/sphereproj/
+                    Math::vec4 centerInViewSpace = view * center;
+                    float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
+                    float r2 = radius * radius;
+
+                    float denom = l2 - r2;
+                    float projectedArea = 0.0f;
+                    if (denom <= 0.0f)
+                        projectedArea = 2.0f; // (viewportWidth * viewportHeight);
+                    else
+                    {
+                        float f_x = settings.GetFov() * (settings.GetFarHeight() * 0.5f);
+                        projectedArea = PI * r2 * f_x * f_x / denom;
+                        projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * settings.GetFarHeight()));
+                    }
+
+                    lodScale = Math::min(lodScale, log2(2.0f / projectedArea));
                 }
 
-                float lodScale = log2(2.0f / projectedArea);
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
                 NodeInstances.renderable.nodeMeshes[j] = NodeInstances.renderable.nodeMeshes[j];
                 NodeInstances.renderable.nodePrimitiveGroup[j] = NodeInstances.renderable.nodePrimitiveGroup[j];
