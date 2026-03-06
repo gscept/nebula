@@ -22,7 +22,6 @@
 
 #include "model/scenewriter.h"
 
-
 #include "toolkit-common/text.h"
 
 using namespace Util;
@@ -115,7 +114,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     Util::Array<SceneNode*> mergedMeshNodes;
     Util::Array<SceneNode*> mergedCharacterNodes;
     Util::Array<MeshBuilder*> mergedMeshes;
-    this->scene->OptimizeGraphics(mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
+    this->scene->OptimizeGraphics(this->logger, mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
 
     Util::String physicsMeshExportName = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
     IO::URI destinationFiles[] =
