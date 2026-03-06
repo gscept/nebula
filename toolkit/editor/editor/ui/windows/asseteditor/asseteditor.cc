@@ -77,6 +77,19 @@ EmptyEditor()
 
 using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
 using ShowFunc = void(*)(AssetEditor*, AssetEditorItem*, bool);
+using SetupFunc = void(*)(AssetEditorItem*);
+
+static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSetup,
+    MeshSetup,
+    nullptr,
+    ModelSetup,
+    nullptr,
+    TextureSetup
+};
+
 static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
     nullptr, // LEAVE THIS ONE AS IT IS
@@ -93,7 +106,7 @@ static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTy
     MaterialEditor,
     MeshEditor,
     nullptr,
-    nullptr,
+    ModelEditor,
     nullptr,
     TextureEditor
 };
@@ -104,7 +117,7 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
     MaterialDiscard,
     MeshDiscard,
     nullptr,
-    nullptr,
+    ModelDiscard,
     nullptr,
     nullptr
 };
@@ -115,7 +128,7 @@ static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes]
     nullptr,
     MeshShow,
     nullptr,
-    nullptr,
+    ModelShow,
     nullptr,
     nullptr
 };
@@ -276,19 +289,8 @@ Setup(AssetEditorItem* item)
 {
     item->allocator.Release();
     item->data = nullptr;
-    using SetupFunc = void(*)(AssetEditorItem*);
 
     item->previewObject = Graphics::CreateEntity();
-    static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSetup,
-        MeshSetup,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureSetup
-    };
 
     const SetupFunc& func = SetupFuncs[(uint)item->assetType];
     if (func)
@@ -316,6 +318,7 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
         // we just ignore for now
         return;
     }
+
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
         [asset, type](Resources::ResourceId id)
