@@ -174,6 +174,7 @@ ModelContext::Setup(
             NodeInstances.renderable.nodes.Extend(stateRange.end);
             NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
             NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroupIndex.Extend(stateRange.end);
             NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
             NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
@@ -233,6 +234,7 @@ ModelContext::Setup(
             NodeInstances.renderable.nodes[index] = sNode;
             NodeInstances.renderable.nodeMeshes[index] = sNode->GetMesh();
             NodeInstances.renderable.nodePrimitiveGroup[index] = sNode->GetPrimitiveGroup();
+            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = sNode->GetPrimitiveGroupIndex();
             NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
 
             modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(sNode->GetName(), i);
@@ -280,21 +282,35 @@ ModelContext::Setup(
     Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
     // Setup transforms
-    transformRange.allocation = TransformInstanceAllocator.Alloc(1);
+    transformRange.allocation = TransformInstanceAllocator.Alloc(groups.Size());
     transformRange.begin = (uint)transformRange.allocation.offset;
-    transformRange.end = (uint)transformRange.allocation.offset + 1;
+    transformRange.end = (uint)transformRange.allocation.offset + groups.Size();
 
-    NodeInstances.transformable.origTransforms.Append(Math::mat4());
-    NodeInstances.transformable.nodeTransforms.Append(transform);
-    NodeInstances.transformable.nodeParents.Append(UINT32_MAX);
-    roots.Append(0);
+    if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
+    {
+        NodeInstances.transformable.nodeParents.Extend(transformRange.end);
+        NodeInstances.transformable.origTransforms.Extend(transformRange.end);
+        NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
+    }
+
+    for (SizeT i = 0; i < groups.Size(); i++)
+    {
+        const uint index = (uint)transformRange.allocation.offset + i;
+
+        NodeInstances.transformable.origTransforms[index] = Math::mat4();
+        NodeInstances.transformable.nodeTransforms[index] = transform;
+        NodeInstances.transformable.nodeParents[index] = UINT32_MAX;
+        roots.Append(i);
+    }
+
 
      // Setup node states
-    stateRange.allocation = RenderInstanceAllocator.Alloc(1);
+    stateRange.allocation = RenderInstanceAllocator.Alloc(groups.Size());
     stateRange.begin = (uint)stateRange.allocation.offset;
-    stateRange.end = (uint)stateRange.allocation.offset + 1;
+    stateRange.end = (uint)stateRange.allocation.offset + groups.Size();
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);
@@ -325,6 +341,7 @@ ModelContext::Setup(
         NodeInstances.renderable.nodes.Extend(stateRange.end);
         NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
         NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+        NodeInstances.renderable.nodePrimitiveGroupIndex.Extend(stateRange.end);
         NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
         NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
@@ -332,36 +349,42 @@ ModelContext::Setup(
         NodeInstances.renderable.nodeNames.Extend(stateRange.end);
 #endif
     }
-    uint index = (uint)stateRange.allocation.offset;
-
-    NodeInstances.renderable.nodeStates[index] = state;
-    NodeInstances.renderable.nodeTransformIndex[index] = 0;
-    NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
-    NodeInstances.renderable.origBoundingBoxes[index] = boundingBox;
-    NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
-    NodeInstances.renderable.nodeLods[index] = 0.0f;
-    NodeInstances.renderable.textureLods[index] = 1.0f;
-    NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
-    NodeInstances.renderable.nodeMaterials[index] = material;
-    NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
-    NodeInstances.renderable.nodeTypes[index] = Models::PrimitiveNodeType;
-    NodeInstances.renderable.nodes[index] = nullptr;
-    NodeInstances.renderable.nodeMeshes[index] = mesh;
-    NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(mesh, primitiveGroup);
-    NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
-
-    modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
-    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+    for (SizeT i = 0; i < groups.Size(); i++)
+    {
+        uint index = (uint)stateRange.allocation.offset + i;
+        
+        NodeInstances.renderable.nodeStates[index] = state;
+        NodeInstances.renderable.nodeTransformIndex[index] = i;
+        NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
+        NodeInstances.renderable.origBoundingBoxes[index] = boundingBox;
+        NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
+        NodeInstances.renderable.nodeLods[index] = 0.0f;
+        NodeInstances.renderable.textureLods[index] = 1.0f;
+        NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
+        NodeInstances.renderable.nodeMaterials[index] = material;
+        NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+        NodeInstances.renderable.nodeTypes[index] = Models::PrimitiveNodeType;
+        NodeInstances.renderable.nodes[index] = nullptr;
+        NodeInstances.renderable.nodeMeshes[index] = mesh;
+        NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(mesh, i);
+        NodeInstances.renderable.nodePrimitiveGroupIndex[index] = i;
+        NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
+        modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, i);
 
 #if NEBULA_GRAPHICS_DEBUG
-    NodeInstances.renderable.nodeNames[index] = debugName;
+        NodeInstances.renderable.nodeNames[index] = debugName;
 #endif
 
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-    auto sortCode = Materials::MaterialGetSortCode(material);
-    assert(sortCode < 0xFFF0000000000000);
-    uint64_t sortId = ((uint64_t)sortCode << 52);
-    NodeInstances.renderable.nodeSortId[index] =  sortId;
+        auto sortCode = Materials::MaterialGetSortCode(material);
+        assert(sortCode < 0xFFF0000000000000);
+        uint64_t sortId = ((uint64_t)sortCode << 52);
+        NodeInstances.renderable.nodeSortId[index] = sortId;
+    }
+
+
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+
 }
 
 //------------------------------------------------------------------------------
@@ -825,11 +848,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     lodScale = Math::min(lodScale, log2(2.0f / projectedArea));
                 }
 
-                Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
-                NodeInstances.renderable.nodeMeshes[j] = NodeInstances.renderable.nodeMeshes[j];
-                NodeInstances.renderable.nodePrimitiveGroup[j] = NodeInstances.renderable.nodePrimitiveGroup[j];
                 float textureLod = lodScale;
-
                 if (lodScale < NodeInstances.renderable.textureLods[j])
                 {
                     // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)

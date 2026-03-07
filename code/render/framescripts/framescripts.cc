@@ -47,8 +47,6 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
 
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
-                        Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
-
                         // If new model node, bind model resources (vertex buffer, index buffer, vertex layout, primitive group)
                         if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
@@ -56,22 +54,17 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                             CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            primGroup = visModelCmd->primitiveGroup;
-
-                            if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
+                            if (visModelCmd != nullptr && mesh != visModelCmd->mesh)
                             {
-                                if (visModelCmd != nullptr && mesh != visModelCmd->mesh)
-                                {
-                                    CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
-                                    mesh = visModelCmd->mesh;
+                                CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
+                                mesh = visModelCmd->mesh;
 
-                                    // Bind graphics pipeline
-                                    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
-                                }
-
-                                // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, pass->index);
+                                // Bind graphics pipeline
+                                CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
                             }
+
+                            // Apply material
+                            MaterialApply(visModelCmd->material, cmdBuf, pass->index);
 
                             // Progress to next model command
                             visModelCmd++;
@@ -83,19 +76,13 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                         // If new draw setup, progress to the next one
                         if (visDrawCmd && visDrawCmd->offset == packetIndex)
                         {
-                            numInstances = visDrawCmd->numInstances;
-                            baseInstance = visDrawCmd->baseInstance;
+                            Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                            instance->Apply(cmdBuf, pass->index, bufferIndex);
+                            CoreGraphics::CmdDraw(cmdBuf, visDrawCmd->numInstances, visDrawCmd->baseInstance, visDrawCmd->primitiveGroup);
                             visDrawCmd++;
 
                             if (visDrawCmd == visBatchCmd.draws.End())
                                 visDrawCmd = nullptr;
-                        }
-
-                        // Apply draw packet constants and draw
-                        if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
-                        {
-                            instance->Apply(cmdBuf, pass->index, bufferIndex);
-                            CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                         }
                     }
                 }
@@ -141,7 +128,6 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
 
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
-                        Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
 
                         // If new model node, bind model resources (vertex buffer, index buffer, vertex layout, primitive group)
                         if (visModelCmd && visModelCmd->offset == packetIndex)
@@ -150,22 +136,19 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                             CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            primGroup = visModelCmd->primitiveGroup;
+                            //primGroup = visModelCmd->primitiveGroup;
 
-                            if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
+                            if (mesh != visModelCmd->mesh)
                             {
-                                if (mesh != visModelCmd->mesh)
-                                {
-                                    CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
-                                    mesh = visModelCmd->mesh;
+                                CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
+                                mesh = visModelCmd->mesh;
 
-                                    // Bind graphics pipeline
-                                    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
-                                }
-
-                                // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, pass->index);
+                                // Bind graphics pipeline
+                                CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
                             }
+
+                            // Apply material
+                            MaterialApply(visModelCmd->material, cmdBuf, pass->index);
 
                             // Progress to next model command
                             visModelCmd++;
@@ -177,17 +160,15 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::Batc
                         // If new draw setup, progress to the next one
                         if (visDrawCmd && visDrawCmd->offset == packetIndex)
                         {
-                            baseNumInstances = visDrawCmd->numInstances;
-                            baseBaseInstance = visDrawCmd->baseInstance;
+                            Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                            instance->Apply(cmdBuf, pass->index, bufferIndex);
+                            CoreGraphics::CmdDraw(cmdBuf, visDrawCmd->numInstances * numInstances, visDrawCmd->baseInstance + baseInstance, visDrawCmd->primitiveGroup);
+
                             visDrawCmd++;
 
                             if (visDrawCmd == visBatchCmd.draws.End())
                                 visDrawCmd = nullptr;
                         }
-
-                        // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, pass->index, bufferIndex);
-                        CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }
             }

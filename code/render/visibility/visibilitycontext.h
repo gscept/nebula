@@ -70,7 +70,6 @@ public:
     {
         uint32_t offset;
         CoreGraphics::MeshId mesh;
-        CoreGraphics::PrimitiveGroup primitiveGroup;
         Materials::MaterialId material;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -80,6 +79,7 @@ public:
 
     struct VisibilityDrawCommand
     {
+        CoreGraphics::PrimitiveGroup primitiveGroup;
         uint32_t offset;
         uint32_t numInstances;
         uint32_t baseInstance;

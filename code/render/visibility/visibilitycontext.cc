@@ -310,8 +310,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             ObserverContext::VisibilityBatchCommand* cmd = nullptr;
             CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
             Materials::MaterialId mat = Materials::InvalidMaterialId;
-            static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
-            Util::Tuple<uint32_t, uint32_t> drawModifiers = NullDrawModifiers;
             const MaterialTemplatesGPULang::Entry* currentMaterialType = nullptr;
 
             for (uint32_t i = 0; i < numPackets; i++)
@@ -330,7 +328,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     cmd->numDrawPackets = 0;
 
                     mesh = CoreGraphics::InvalidMeshId;
-                    drawModifiers = NullDrawModifiers;
                     currentMaterialType = otherMaterialType;
                 }
                 n_assert(cmd != nullptr);
@@ -345,7 +342,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
                     batchCmd.mesh = otherMesh;
-                    batchCmd.primitiveGroup = renderables->nodePrimitiveGroup[index];
                     batchCmd.material = otherMat;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -355,17 +351,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     mat = otherMat;
                 }
 
-                // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
-                auto otherDrawModifiers = renderables->nodeDrawModifiers[index];
-                if (drawModifiers != otherDrawModifiers)
-                {
-                    ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
-                    drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                    drawCmd.numInstances = Util::Get<0>(otherDrawModifiers);
-                    drawCmd.baseInstance = Util::Get<1>(otherDrawModifiers);
-
-                    drawModifiers = otherDrawModifiers;
-                }
+                ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
+                drawCmd.primitiveGroup = renderables->nodePrimitiveGroup[index];
+                drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                drawCmd.numInstances = Util::Get<0>(renderables->nodeDrawModifiers[index]);
+                drawCmd.baseInstance = Util::Get<1>(renderables->nodeDrawModifiers[index]);
 
                 // allocate memory for draw packet
                 void* mem = allocator->Alloc(sizeof(Models::ShaderStateNode::DrawPacket));

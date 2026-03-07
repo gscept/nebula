@@ -169,6 +169,7 @@ public:
             Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;
             Util::PinnedArray<0xFFFF, CoreGraphics::MeshId> nodeMeshes;
             Util::PinnedArray<0xFFFF, CoreGraphics::PrimitiveGroup> nodePrimitiveGroup;
+            Util::PinnedArray<0xFFFF, IndexT> nodePrimitiveGroupIndex;
             Util::PinnedArray<0xFFFF, Util::Tuple<uint32_t, uint32_t>> nodeDrawModifiers;
 
             Util::PinnedArray<0xFFFF, void*> nodeSpecialData;
