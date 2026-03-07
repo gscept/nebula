@@ -27,12 +27,10 @@ __ImplementClass(Presentation::AssetBrowser, 'AsBw', Presentation::BaseWindow);
 */
 AssetBrowser::AssetBrowser()
 {
-    AssetBrowser::FileTree& exportTree =  this->fileTrees.Emplace("export");
-    exportTree.path = "export:";
-    AssetBrowser::FileTree& workTree =  this->fileTrees.Emplace("work");
-    workTree.path = "proj:work/";
-    this->ScanFolder(exportTree);
-    this->ScanFolder(workTree);
+    this->ScanFolder("export", "export:", false);
+    this->ScanFolder("sysexport", "export:", true);
+    this->ScanFolder("work", "proj:work/", false);
+    this->ScanFolder("syswork", "tool:syswork/", false);
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +77,9 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(const FileTreeNode& node, int depth
     {
         flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Leaf; 
     }
+    ImGui::PushID(node.hash);
     bool bIsOpen = ImGui::TreeNodeEx(node.name.AsCharPtr(), flags);
+    ImGui::PopID();
     if(ImGui::IsItemClicked())
     {
         this->activeFolder = node.hash;
@@ -343,6 +343,11 @@ AssetBrowser::DisplayFileTree()
     ImGui::Columns(2);
     ImGui::BeginChild("ScrollingRegionFolders");
     this->DisplayFileTreeFolderHierarchy(this->nodes[this->fileTrees[this->activeFileTree].rootHash], 0);
+    ImGui::Text("System"); 
+    ImGui::SameLine();
+    ImGui::Separator();
+    const Util::String& sysFolder = "sys" + this->activeFileTree;
+    this->DisplayFileTreeFolderHierarchy(this->nodes[this->fileTrees[sysFolder].rootHash], 0);
     ImGui::EndChild();
     ImGui::NextColumn();
     if (ImGui::Button("Details"))
@@ -369,22 +374,23 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void 
-AssetBrowser::ScanFolder(FileTree& tree)
+AssetBrowser::ScanFolder(const Util::String & treeName, const IO::URI& folderPath, bool useArchive)
 {
-    // Initialize the root node
-    uint rootHash = tree.path.LocalPath().HashCode();
+    AssetBrowser::FileTree& tree =  this->fileTrees.Emplace(treeName);
+    tree.path = folderPath;
+    uint rootHash = (tree.path.LocalPath().HashCode()) ^ (useArchive ? 0x12345678 : 0x87654321); // Simple way to differentiate between archive and non-archive trees
     tree.rootHash = rootHash;
     FileTreeNode& root = this->nodes.Emplace(rootHash);
     root.name = tree.path.LocalPath().ExtractFileName();
     root.path = tree.path;
     root.hash = rootHash;
-    root.parentHash = -1; // No parent for root    
+    root.parentHash = -1; // No parent for root
 
     IO::IoServer* ioServer = IO::IoServer::Instance();
     // Start recursive scanning from the root
     if (ioServer->DirectoryExists(tree.path))
     {
-        ScanFolderRecursive(ioServer, tree.path, rootHash);
+        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive);
     }
     auto& node = this->nodes[rootHash];
 }
@@ -393,13 +399,13 @@ AssetBrowser::ScanFolder(FileTree& tree)
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash)
+AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive)
 {
     // List all files in the current directory
     Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
     for (const auto& fileName : files)
     {
-        uint fileHash = fileName.HashCode();
+        uint fileHash = fileName.HashCode() ^ (useArchive ? 0x12345678 : 0x87654321);
         FileEntry& entry = this->files.Emplace(fileHash);
         this->nodes[nodeHash].files.Append(fileHash);
         entry.path = fileName;
@@ -420,10 +426,10 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
     }
     
     // List all subdirectories and recursively scan them
-    Util::Array<Util::String> directories = ioServer->ListDirectories(folderPath, "*", true, false);
+    Util::Array<Util::String> directories = ioServer->ListDirectories(folderPath, "*", true, useArchive);
     for (const auto& childDir : directories)
     {
-        uint hash = childDir.HashCode();
+        uint hash = childDir.HashCode() ^ (useArchive ? 0x12345678 : 0x87654321);
         this->nodes[nodeHash].children.Append(hash);
         FileTreeNode& childNode = this->nodes.Emplace(hash);
         childNode.name = childDir.ExtractFileName();
@@ -432,7 +438,7 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
         childNode.hash = hash;
         
         // Recursively scan the subdirectory
-        ScanFolderRecursive(ioServer, childDir, hash);
+        ScanFolderRecursive(ioServer, childDir, hash, useArchive);
     }
 }
 
