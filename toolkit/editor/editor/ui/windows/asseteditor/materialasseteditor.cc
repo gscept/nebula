@@ -266,22 +266,22 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 }
                 case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
                 {
-                    ImGui::DragFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.10f, 0.0f, 1.0f);
+                    ImGui::DragFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
                     break;
                 }
                 case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
                 {
-                    ImGui::DragFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, 1.0f);
+                    ImGui::DragFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
                     break;
                 }
                 case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
                 {
-                    ImGui::DragFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, 1.0f);
+                    ImGui::DragFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
                     break;
                 }
                 case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
                 {
-                    ImGui::DragFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, 1.0f);
+                    ImGui::DragFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
                     break;
                 }
                 case MaterialTemplates::MaterialTemplateValue::Type::Color:
