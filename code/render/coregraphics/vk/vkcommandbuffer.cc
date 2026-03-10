@@ -1440,6 +1440,8 @@ CmdSetScissors(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>
 void
 CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
+    ViewportBundle& pending = commandBuffers.Get<CmdBuffer_PendingViewports>(id.id);
+    pending.numPending = 0;
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkViewport vp;
     vp.width = (float)rect.width();
@@ -1457,6 +1459,8 @@ CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index
 void
 CmdSetScissorRect(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
+    ScissorBundle& pending = commandBuffers.Get<CmdBuffer_PendingScissors>(id.id);
+    pending.numPending = 0;
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkRect2D sc;
     sc.extent.width = rect.width();
