@@ -210,12 +210,13 @@ GlobalLightFog(worldPos : f32x3) f32x3
     if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(worldPos, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer);
+		const dist = distance(ViewConstants.EyePos.xyz, worldPos);
+
+        shadowFactor = CSMPS(shadowPos, dist, PerTickParams.GlobalLightShadowBuffer);
         shadowFactor = lerp(1.0f, shadowFactor, 1);
     }
 
     // calculate 'global' fog
-    //vec3 atmo = Preetham(normalize(viewPos), PerTickParams.GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
     var atmo = f32x3(0);
 	var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
     for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)

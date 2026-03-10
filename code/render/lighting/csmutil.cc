@@ -97,16 +97,16 @@ ComputeAABB(vec4* lightAABBPoints, const vec4& sceneCenter, const vec4& sceneExt
 /**
 */
 void 
-CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light)
+CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Math::mat4 lightTransform)
 {
-    n_assert(this->cameraEntity != Graphics::GraphicsEntityId::Invalid());
+    n_assert(camera != Graphics::GraphicsEntityId::Invalid());
     const CameraSettings& camSettings = Graphics::CameraContext::GetSettings(camera);
     float aspect = camSettings.GetAspect();
     float fov = camSettings.GetFov();
     mat4 cameraTransform = Graphics::CameraContext::GetTransform(camera);
 
     // Get inversed shadow matrix, this is basically the global light transform, normalized and inversed
-    mat4 lightView = inverse(Lighting::LightContext::GetTransform(light));
+    mat4 lightView = inverse(lightTransform);
 
     mat4 viewToLight = lightView * cameraTransform;
     
@@ -153,10 +153,10 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
             lightSpaceAABBMaxValue = maximize(sceneAABBLightPoints[index], lightSpaceAABBMaxValue);
         }
 
-        float nearPlane = lightSpaceAABBMaxValue.z;
-        float farPlane = lightSpaceAABBMinValue.z;
+        float nearPlane = lightSpaceAABBMinValue.z;
+        float farPlane = lightSpaceAABBMaxValue.z;
 
-        mat4 cascadeProjectionMatrix = orthooffcenterrh(lightCameraOrthographicMin.x,
+        mat4 cascadeProjectionMatrix = orthooffcenterlh(lightCameraOrthographicMin.x,
                                                         lightCameraOrthographicMax.x,
                                                         lightCameraOrthographicMax.y,
                                                         lightCameraOrthographicMin.y,

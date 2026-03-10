@@ -175,24 +175,29 @@ private:
     /// Set global light shadow transform
     static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 
+
     enum
     {
-        Type,
-        Color,
-        Intensity,
-        ShadowCaster,
-        Range,
-        TypedLightId,
-        StageMask
+        Light_Entity,
+        Light_Type,
+        Light_Color,
+        Light_Intensity,
+        Light_ShadowCaster,
+        Light_ShadowTile,
+        Light_Range,
+        Light_TypedLightId,
+        Light_StageMask
     };
 
     typedef Ids::IdAllocator<
-        LightType,              // type
-        Math::vec3,             // color
-        float,                  // intensity
-        bool,                   // shadow caster
-        float,
-        Ids::Id32,               // typed light id (index into pointlights, spotlights and globallights)
+        Graphics::GraphicsEntityId,     // entity
+        LightType,                      // type
+        Math::vec3,                     // color
+        float,                          // intensity
+        bool,                           // shadow caster
+        Math::rectangle<int>,           // shadow rendering tile
+        float,                          // range
+        Ids::Id32,                      // typed light id (index into pointlights, spotlights and globallights)
         Graphics::StageMask
     > GenericLightAllocator;
     static GenericLightAllocator genericLightAllocator;
@@ -277,7 +282,15 @@ private:
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
         DirectionalLight_ViewProjTransform,
-        DirectionalLight_CascadeObservers
+        DirectionalLight_CascadeObservers,
+        DirectionalLight_CascadeTiles
+    };
+
+    struct ShadowData
+    {
+        CoreGraphics::TextureId shadowMap;
+        CoreGraphics::TextureViewId shadowView;
+        CoreGraphics::PassId shadowPass;
     };
 
     typedef Ids::IdAllocator<
@@ -286,7 +299,8 @@ private:
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)
         Math::mat4,                                 // transform for visibility and such
-        Util::Array<Graphics::GraphicsEntityId>     // view ids for cascades
+        Util::Array<Graphics::GraphicsEntityId>,    // view ids for cascades
+        Util::Array<Math::rectangle<int>>           // cascade shadow tiles
     > DirectionalLightAllocator;
     static DirectionalLightAllocator directionalLightAllocator;
 

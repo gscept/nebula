@@ -6,8 +6,7 @@
 #include <lib/util.gpuh>
 
 const MAX_TEXTURES = 65535;
-const NUM_CASCADES = 4;
-const SHADOW_CASTER_COUNT = 16;
+
 
 group(TICK_GROUP) binding(0) uniform Textures1D : [MAX_TEXTURES]* texture1D;
 group(TICK_GROUP) binding(0) uniform Textures1DArray : [MAX_TEXTURES]* texture1DArray;
@@ -65,6 +64,16 @@ sampleCube(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
 sampleCubeLod(handle : u32, uniform samp : *sampler, uvw : f32x3, lod : f32) f32x4
 {
     return textureSampleLod(TexturesCube[handle], samp, uvw, lod);
+}
+
+sample2DShadow(handle : u32, uniform samp : *sampler, uv : f32x2, depth : f32) f32
+{
+    return textureSampleCompare(Textures2D[handle], samp, uv, depth);
+}
+
+sample2DShadowLod(handle : u32, uniform samp : *sampler, uv : f32x2, depth : f32, lod : f32) f32
+{
+    return textureSampleCompareLod(Textures2D[handle], samp, uv, depth, lod);
 }
 
 sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f32, depth : f32) f32
@@ -212,12 +221,15 @@ struct ViewParams
 };
 group(FRAME_GROUP) uniform ViewConstants : *ViewParams;
 
+const NUM_SHADOW_TILES_PER_ROW = 4u;
+const NUM_CASCADES = 4;
+const SHADOW_CASTER_COUNT = 16;
 struct ShadowViewParams
 {
     CascadeOffset : [NUM_CASCADES]f32x4;
     CascadeScale : [NUM_CASCADES]f32x4;
     CascadeDistances : f32x4;
-    ShadowTiles : [SHADOW_CASTER_COUNT / 4] i32x4;
+    ShadowTiles : [SHADOW_CASTER_COUNT / NUM_SHADOW_TILES_PER_ROW] i32x4;
     LightViewMatrix : [SHADOW_CASTER_COUNT] f32x4x4;
 };
 

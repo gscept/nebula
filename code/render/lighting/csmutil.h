@@ -33,16 +33,8 @@ public:
     /// destructor
     virtual ~CSMUtil();
 
-    /// sets the camera entity
-    void SetCameraEntity(const Graphics::GraphicsEntityId camera);
-    /// get the camera entity
-    const Graphics::GraphicsEntityId GetCameraEntity() const;
     /// sets the scene bounding box
     void SetShadowBox(const Math::bbox& sceneBox);
-    /// sets the global light entity
-    void SetGlobalLight(const Graphics::GraphicsEntityId globalLight);
-    /// gets the global light entity
-    const Graphics::GraphicsEntityId GetGlobalLight() const;
     /// sets the texture width for the CSM texture buffer
     void SetTextureWidth(int width);
     /// sets the CSM blur size
@@ -63,7 +55,7 @@ public:
     const Math::mat4& GetCascadeCamera(IndexT index)  const;
 
     /// computes the splits
-    void Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light);
+    void Compute(const Graphics::GraphicsEntityId camera, const Math::mat4 lightTransform);
 
 private:
 
@@ -79,8 +71,6 @@ private:
 
     Math::bbox shadowBox;
     Math::vec4 frustumCenter;
-    Graphics::GraphicsEntityId globalLight;
-    Graphics::GraphicsEntityId cameraEntity;
 
     uint numCascades;
     Util::FixedArray<Math::mat4> cascadeProjectionTransform, cascadeViewProjectionTransform;
@@ -97,42 +87,6 @@ inline void
 CSMUtil::SetShadowBox( const Math::bbox& shadowRange )
 {
     this->shadowBox = shadowRange;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetCameraEntity( const Graphics::GraphicsEntityId camera )
-{
-    this->cameraEntity = camera;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Graphics::GraphicsEntityId
-CSMUtil::GetCameraEntity() const
-{
-    return this->cameraEntity;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetGlobalLight( const Graphics::GraphicsEntityId globalLight )
-{
-    this->globalLight = globalLight;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Graphics::GraphicsEntityId
-CSMUtil::GetGlobalLight() const
-{
-    return this->globalLight;
 }
 
 //------------------------------------------------------------------------------

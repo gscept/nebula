@@ -70,15 +70,6 @@ psMain(in UV : f32x3,
             atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color;
         }
     }
-    //const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
-    // rotate uvs around center with constant speed
-    /*
-    vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
-    vec3 blendColor = sampleCubeLod(SkyLayer2, SkySampler, UV, 0).rgb;
-    vec3 color = mix(baseColor, blendColor, SkyBlendFactor);
-    color = ((color - 0.5f) * Contrast) + 0.5f;
-    color *= Brightness;
-    */
 
     pixelExportColor(f32x4(atmo, 1), 0);
     pixelSetDepth(1.0f);

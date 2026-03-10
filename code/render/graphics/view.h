@@ -25,7 +25,7 @@ static constexpr StageMask PRIMARY_STAGE_MASK = 0x1;
 static constexpr StageMask SHADOW_STAGE_MASK = 0x2;
 static constexpr StageMask DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
 
-static constexpr StageMask GetStageMask(const StageMask stageIndex)
+static constexpr StageMask StageMaskFromIndex(const IndexT stageIndex)
 {
     return 1 << (stageIndex << SHADOW_STAGE_MASK);
 }

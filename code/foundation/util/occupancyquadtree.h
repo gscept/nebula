@@ -11,9 +11,8 @@
 #include "math/scalar.h"
 #include "util/fixedarray.h"
 #include "memory/arenaallocator.h"
-#include "imgui.h"
 
-namespace Terrain   
+namespace Util   
 {
 
 class OccupancyQuadTree
@@ -35,10 +34,6 @@ public:
     /// Clear the tree
     void Clear();
 
-    /// debug render
-    void DebugRender(ImDrawList* drawList, ImVec2 offset, float scale);
-
-private:
     struct Node
     {
         Node()
@@ -51,7 +46,8 @@ private:
             , size(1)
             , x(UINT32_MAX)
             , y(UINT32_MAX)
-        {}
+        {
+        }
         Node* topLeft;
         Node* topRight;
         Node* bottomLeft;
@@ -62,15 +58,16 @@ private:
         uint x, y;
     };
 
+    const Util::FixedArray<Util::FixedArray<Node>>& GetTopLevelNodes();
+
+private:
+
     /// recursively traverse tree to allocate node from tree
     bool RecursiveAllocate(Node* node, uint size, Math::uint2& outCoord);
     /// recursively traverse tree and deallocate
     bool RecursiveDeallocate(Node* node, Math::uint2 coord, uint size);
     /// recursively traverse tree and find if allocated
     bool RecursiveSearch(Node* node, Math::uint2 coord, uint size);
-
-    /// recursively debug render
-    void RecursiveDebugRender(Node* node, ImDrawList* drawList, ImVec2 offset, float scale);
 
     Memory::ArenaAllocator<sizeof(Node) * 64> allocator;
     Util::FixedArray<Util::FixedArray<Node>> topLevelNodes;
@@ -357,59 +354,6 @@ OccupancyQuadTree::IsOccupied(const Math::uint2 coord, uint size)
         }
     }
     return false;
-}
-
-static uint colorIndex = 0;
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-OccupancyQuadTree::RecursiveDebugRender(Node* node, ImDrawList* drawList, ImVec2 offset, float scale)
-{
-    static ImU32 colors[] =
-    {
-        IM_COL32(128, 0, 0, 128),
-        IM_COL32(0, 128, 0, 128),
-        IM_COL32(0, 0, 128, 128),
-        IM_COL32(128, 0, 128, 128),
-        IM_COL32(128, 128, 0, 128),
-        IM_COL32(0, 128, 128, 128),
-    };
-
-    if (node->occupied)
-    {
-        colorIndex = (colorIndex + 1) % 5;
-
-        ImVec2 min{ (float)offset.x + node->x * scale, (float)offset.y + node->y * scale };
-        ImVec2 max{ (float)offset.x + (node->x + node->size) * scale, (float)offset.y + (node->y + node->size) * scale };
-        drawList->AddRectFilled(min, max, colors[colorIndex]);
-    }
-    else if (node->topLeft)
-    {
-        RecursiveDebugRender(node->topLeft, drawList, offset, scale);
-        RecursiveDebugRender(node->topRight, drawList, offset, scale);
-        RecursiveDebugRender(node->bottomLeft, drawList, offset, scale);
-        RecursiveDebugRender(node->bottomRight, drawList, offset, scale);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-OccupancyQuadTree::DebugRender(ImDrawList* drawList, ImVec2 offset, float scale)
-{
-    colorIndex = 0;
-
-    // find root node where the coord belongs
-    for (int x = 0; x < this->topLevelNodes.Size(); x++)
-    {
-        for (int y = 0; y < this->topLevelNodes[x].Size(); y++)
-        {
-            RecursiveDebugRender(&this->topLevelNodes[x][y], drawList, offset, scale);
-        }
-    }
 }
 
 } // namespace Terrain
