@@ -154,7 +154,7 @@ LightContext::Create()
     shadowMapViewInfo.bits = CoreGraphics::ImageBits::DepthBits;
     lightServerState.shadowAtlasView = CoreGraphics::CreateTextureView(shadowMapViewInfo);
 
-    CoreGraphics::AttachmentFlagBits flags = CoreGraphics::AttachmentFlagBits::NoFlags | CoreGraphics::AttachmentFlagBits::Clear | CoreGraphics::AttachmentFlagBits::Store;
+    CoreGraphics::AttachmentFlagBits flags = CoreGraphics::AttachmentFlagBits::Clear | CoreGraphics::AttachmentFlagBits::Store;
     Math::vec4 clearValue = Math::vec4(0.0f);
     clearValue.x = 1.0f;
 
@@ -243,6 +243,7 @@ LightContext::Create()
         const Util::Array<Ids::Id32>& typeIds = genericLightAllocator.GetArray<Light_TypedLightId>();
         const Util::Array<bool>& shadowCasters = genericLightAllocator.GetArray<Light_ShadowCaster>();
         const Util::Array<Math::rectangle<int>>& shadowTiles = genericLightAllocator.GetArray<Light_ShadowTile>();
+        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
         static const MaterialTemplatesGPULang::BatchGroup typeToBatchCodeMapping[] =
         {
             MaterialTemplatesGPULang::BatchGroup::GlobalShadow,
@@ -252,6 +253,10 @@ LightContext::Create()
         };
 
         CoreGraphics::CmdBeginPass(cmdBuf, lightServerState.shadowPass);
+        static const Util::FixedArray<Shared::RenderTargetParameters> RenderTargetParams = {Shared::RenderTargetParameters {
+            .Dimensions = {(float)dims.width, (float)dims.height, 1.0f / dims.width, 1.0f / dims.height}, .Scale = {1, 1}
+        }};
+        CoreGraphics::PassSetRenderTargetParameters(lightServerState.shadowPass, RenderTargetParams);
 
         for (IndexT i = 0; i < types.Size(); i++)
         {
@@ -267,13 +272,12 @@ LightContext::Create()
                         // draw it!
                         CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
                         CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
-                        Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::GlobalShadow, observers[i], 1, j, bufferIndex);
+                        Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::GlobalShadow, observers[j], 1, j, bufferIndex);
                     }
                 }
                 else
                 {
                     CoreGraphics::CmdSetViewport(cmdBuf, shadowTiles[i], 0);
-                    CoreGraphics::CmdSetScissorRect(cmdBuf, shadowTiles[i], 0);
                     Frame::DrawBatch(cmdBuf, typeToBatchCodeMapping[(uint)types[i]], entities[i], 1, 0, bufferIndex);
                 }
             }
@@ -296,18 +300,7 @@ LightContext::Create()
 
     FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        if (lightServerState.directionalLightEntity != Graphics::GraphicsEntityId::Invalid())
-        {
-            // get cameras associated with sun
-            Graphics::ContextEntityId ctxId = GetContextId(lightServerState.directionalLightEntity);
-            Ids::Id32 typedId = genericLightAllocator.Get<Light_TypedLightId>(ctxId.id);
-            const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
-            for (IndexT i = 0; i < observers.Size(); i++)
-            {
-                // draw it!
-                Frame::DrawBatch(cmdBuf, lightServerState.globalLightsBatchCode, observers[i], 1, i, bufferIndex);
-            }
-        }
+
     });
 
     // Bind shadows
@@ -372,6 +365,7 @@ LightContext::SetupDirectionalLight(
         const Math::vec3& ambient,
         const float zenith,
         const float azimuth,
+        const Graphics::StageMask stageMask,
         bool castShadows)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
@@ -387,7 +381,7 @@ LightContext::SetupDirectionalLight(
     genericLightAllocator.Set<Light_Intensity>(cid.id, intensity);
     genericLightAllocator.Set<Light_ShadowCaster>(cid.id, castShadows);
     genericLightAllocator.Set<Light_TypedLightId>(cid.id, lid);
-    genericLightAllocator.Set<Light_StageMask>(cid.id, 0xFFFF);
+    genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
 
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
@@ -413,7 +407,6 @@ LightContext::SetupDirectionalLight(
                 {
                     directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(lid).Append(Math::rectangle<int>(section.x, section.y, section.x + 4096, section.y + 4096));
                 }
-                
             }
 
             Graphics::GraphicsEntityId shadowId = Graphics::CreateEntity();
@@ -1055,7 +1048,6 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
                 }
 
-
                 const Util::FixedArray<Math::mat4>& transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
                 const Util::FixedArray<float>& distances = lightServerState.csmUtil.GetCascadeDistances();
                 for (IndexT splitIndex = 0; splitIndex < Shared::NUM_CASCADES; ++splitIndex)
@@ -1067,12 +1059,8 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     Math::mat4 atlasOffset = Math::translation(tileOffsetX, tileOffsetY, 0);
                     Math::mat4 atlasScale = Math::scaling(tileScaleX, tileScaleY, 1);
                     Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
-
-#if __DX12__
-                    Math::mat4 textureScale = Math::scaling(0.5f, -0.5f, 1.0f);
-#elif __VULKAN__
                     Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
-#endif
+
                     Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * transforms[splitIndex];
                     Math::vec4 scale = Math::vec4(
                         shadowTexture.row0.x,

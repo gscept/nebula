@@ -62,6 +62,7 @@ public:
         , const Math::vec3& ambient
         , const float zenith
         , const float azimuth
+        , const Graphics::StageMask stageMask = 0xFFFF
         , bool castShadows = false
     );
     /// Setup entity as point light source
