@@ -153,10 +153,10 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Math::mat4 light
             lightSpaceAABBMaxValue = maximize(sceneAABBLightPoints[index], lightSpaceAABBMaxValue);
         }
 
-        float nearPlane = lightSpaceAABBMinValue.z;
-        float farPlane = lightSpaceAABBMaxValue.z;
+        float nearPlane = lightSpaceAABBMaxValue.z;
+        float farPlane = lightSpaceAABBMinValue.z;
 
-        mat4 cascadeProjectionMatrix = orthooffcenterlh(lightCameraOrthographicMin.x,
+        mat4 cascadeProjectionMatrix = orthooffcenterrh(lightCameraOrthographicMin.x,
                                                         lightCameraOrthographicMax.x,
                                                         lightCameraOrthographicMax.y,
                                                         lightCameraOrthographicMin.y,
