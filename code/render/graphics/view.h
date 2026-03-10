@@ -24,6 +24,7 @@ typedef uint16_t StageMask;
 static constexpr StageMask PRIMARY_STAGE_MASK = 0x1;
 static constexpr StageMask SHADOW_STAGE_MASK = 0x2;
 static constexpr StageMask DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
+static constexpr StageMask ALL_STAGE_MASK = 0xFFFF;
 
 static constexpr StageMask StageMaskFromIndex(const IndexT stageIndex)
 {
