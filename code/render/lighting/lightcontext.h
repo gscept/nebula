@@ -172,10 +172,7 @@ public:
 private:
 
     /// Set global light transform
-    static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
-    /// Set global light shadow transform
-    static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-
+    static void SetDirectionalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
 
     enum
     {
@@ -282,7 +279,6 @@ private:
         DirectionalLight_Direction,
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
-        DirectionalLight_ViewProjTransform,
         DirectionalLight_CascadeObservers,
         DirectionalLight_CascadeTiles
     };
@@ -299,7 +295,6 @@ private:
         Math::vector,                               // direction
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)
-        Math::mat4,                                 // transform for visibility and such
         Util::Array<Graphics::GraphicsEntityId>,    // view ids for cascades
         Util::Array<Math::rectangle<int>>           // cascade shadow tiles
     > DirectionalLightAllocator;

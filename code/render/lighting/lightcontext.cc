@@ -386,7 +386,7 @@ LightContext::SetupDirectionalLight(
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
-    SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
+    SetDirectionalLightTransform(cid, mat, Math::xyz(sunPosition));
     directionalLightAllocator.Set<DirectionalLight_Ambient>(lid, ambient);
     directionalLightAllocator.Set<DirectionalLight_View>(lid, view);
 
@@ -760,7 +760,7 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const float azim
     switch (type)
     {
         case LightType::DirectionalLightType:
-            SetGlobalLightTransform(cid, mat, Math::xyz(position));
+            SetDirectionalLightTransform(cid, mat, Math::xyz(position));
             break;
         default:
             break;
@@ -1187,7 +1187,7 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
                     Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 
-                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * viewProjections[j];
+                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * cascadeProj;
                     shadowTexture.store(&shadowConstants.ShadowLookupViewProjection[ctxId][0][0]);
                     shadowConstants.CascadeDistances[j] = distances[j];
                 }
@@ -1257,21 +1257,11 @@ LightContext::GetLightUniforms()
 /**
 */
 void
-LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction)
+LightContext::SetDirectionalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction)
 {
     auto lid = genericLightAllocator.Get<Light_TypedLightId>(id.id);
     directionalLightAllocator.Get<DirectionalLight_Direction>(lid) = direction;
     directionalLightAllocator.Get<DirectionalLight_Transform>(lid) = transform;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
-{
-    auto lid = genericLightAllocator.Get<Light_TypedLightId>(id.id);
-    directionalLightAllocator.Get<DirectionalLight_ViewProjTransform>(lid) = transform;
 }
 
 //------------------------------------------------------------------------------
