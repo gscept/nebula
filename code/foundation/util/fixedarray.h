@@ -77,6 +77,10 @@ public:
     Iterator Begin() const;
     /// get iterator past last element
     Iterator End() const;
+    /// return reference to first element
+    TYPE& Front() const;
+    /// return reference to last element
+    TYPE& Back() const;
     /// find identical element in unsorted array (slow)
     Iterator Find(const TYPE& val) const;
     /// find index of identical element in unsorted array (slow)
@@ -632,6 +636,24 @@ template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Ite
 FixedArray<TYPE, StackAlloc>::End() const
 {
     return this->elements + this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+inline TYPE& FixedArray<TYPE, StackAlloc>::Front() const
+{
+    return this->elements[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+inline TYPE& FixedArray<TYPE, StackAlloc>::Back() const
+{
+    return this->elements[this->count - 1];
 }
 
 //------------------------------------------------------------------------------
