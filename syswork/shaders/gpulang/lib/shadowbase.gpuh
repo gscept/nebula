@@ -33,7 +33,7 @@ vsStaticShadow(
 	out ProjPos : f32x4
 ) void
 {
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
@@ -53,7 +53,7 @@ vsSkinnedShadow(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
     UV = UnpackUV(uv);
@@ -71,7 +71,7 @@ vsStaticInst(
 ) void
 {
 	const viewStride = vertexGetInstanceIndex() % 16u;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
@@ -88,7 +88,7 @@ vsStaticCSM(
     out ProjPos : f32x4
 ) void
 {
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     //vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
@@ -108,7 +108,7 @@ vsSkinnedCSM(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
@@ -127,7 +127,7 @@ vsStaticInstCSM(
 {
 	const viewStride = vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW;
     const instanceStride = vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
@@ -144,7 +144,7 @@ vsStaticPoint(
     out ProjPos : f32x4
 ) void
 {
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
@@ -164,7 +164,7 @@ vsSkinnedPoint(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
@@ -182,7 +182,7 @@ vsStaticInstPoint(
 ) void
 {
 	const viewStride = vertexGetInstanceIndex() % 6;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);

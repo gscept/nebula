@@ -138,12 +138,12 @@ LightContext::Create()
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    lightServerState.shadowAtlasTileOctree.Setup(0x3FFF, 4096, 256);
+    lightServerState.shadowAtlasTileOctree.Setup(0x2000, 4096, 256);
 
     CoreGraphics::TextureCreateInfo shadowMapInfo;
     shadowMapInfo.name = "ShadowAtlas";
-    shadowMapInfo.width = 0x3FFF;
-    shadowMapInfo.height = 0x3FFF;
+    shadowMapInfo.width = 0x2000;
+    shadowMapInfo.height = 0x2000;
     shadowMapInfo.format = CoreGraphics::PixelFormat::D32;
     shadowMapInfo.usage = CoreGraphics::TextureUsage::Render;
     lightServerState.shadowAtlas = CoreGraphics::CreateTexture(shadowMapInfo);
@@ -393,11 +393,12 @@ LightContext::SetupDirectionalLight(
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
         // create new graphics entity for each view
+        SizeT cascadeSize = 2048;
         for (IndexT i = 0; i < Shared::NUM_CASCADES; i++)
         {
             if (castShadows)
             {
-                Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(4096);
+                Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(cascadeSize);
                 if (section.x == 0xFFFFFFFF)
                 {
                     n_warning("Shadow atlas is full! Cannot allocate shadow map for directional light!\n");
@@ -405,7 +406,7 @@ LightContext::SetupDirectionalLight(
                 }
                 else
                 {
-                    directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(lid).Append(Math::rectangle<int>(section.x, section.y, section.x + 4096, section.y + 4096));
+                    directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(lid).Append(Math::rectangle<int>(section.x, section.y, section.x + cascadeSize, section.y + cascadeSize));
                 }
             }
 
@@ -1012,6 +1013,95 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 /**
 */
 void
+CalculateCSMSplits(
+    const Graphics::GraphicsEntityId camera,
+    const Math::vec3 lightDirection,
+    const Util::FixedArray<float>& distances,
+    Util::FixedArray<Math::mat4>& projections,
+    Util::FixedArray<Math::mat4>& viewProjections
+)
+{
+    n_assert(camera != Graphics::GraphicsEntityId::Invalid());
+    n_assert(distances.Size() == projections.Size());
+    n_assert(distances.Size() == viewProjections.Size());
+    const Graphics::CameraSettings& camSettings = Graphics::CameraContext::GetSettings(camera);
+    float aspect = camSettings.GetAspect();
+    float fov = camSettings.GetFov();
+    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetViewProjection(camera));
+
+    Math::vec4 ndcPoints[8] = {
+        Math::vec4(0, 0, 0, 1), Math::vec4(1, 0, 0, 1), Math::vec4(1, 1, 0, 1), Math::vec4(0, 1, 0, 1),
+        Math::vec4(0, 0, 1, 1), Math::vec4(1, 0, 1, 1), Math::vec4(1, 1, 1, 1), Math::vec4(0, 1, 1, 1)
+    };
+
+    // Calculate frustum points, it will end up in a frustum in view space
+    Math::vec4 frustumPoints[8];
+    for (uint i = 0; i < 8; i++)
+    {
+        frustumPoints[i] = cameraTransform * ndcPoints[i];
+        frustumPoints[i] *= 1.0f / frustumPoints[i].w;
+    }
+
+    float intervalStart = 0;
+    float intervalEnd = 0;
+    for (int cascadeIndex = 0; cascadeIndex < distances.Size(); ++cascadeIndex)
+    {
+        intervalEnd = distances[cascadeIndex];
+
+        float tNear = (intervalStart - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
+        float tFar = (intervalEnd - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
+
+        Math::vec4 cascadePoints[8];
+        for (uint i = 0; i < 4; i++)
+        {
+            Math::vec4 nearCorner = frustumPoints[i];
+            Math::vec4 farCorner = frustumPoints[i+4];
+            Math::vec4 dir = farCorner - nearCorner;
+
+            cascadePoints[i] = nearCorner + dir * tNear;
+            cascadePoints[i + 4] = nearCorner + dir * tFar;
+        }
+
+        Math::vec4 center = Math::vec4(0);
+        for (auto& point : cascadePoints)
+            center += point;
+        center *= 1.0f / 8;
+        center.w = 1.0f;
+        float radius = 0;
+        for (auto& point : cascadePoints)
+            radius = Math::max(radius, Math::length3(point - center));
+
+        Math::vec4 lightPos = center + Math::vec4(lightDirection * radius, 0);
+        Math::mat4 lightView = (Math::lookatrh(lightPos, center, Math::vector::upvec()));
+        Math::vec4 lightCameraOrthographicMin = Math::vec4(FLT_MAX);
+        Math::vec4 lightCameraOrthographicMax = Math::vec4(-FLT_MAX);
+        for (auto& point : cascadePoints)
+        {
+            Math::vec4 transformedPoint = lightView * point;
+            lightCameraOrthographicMin = Math::minimize(lightCameraOrthographicMin, transformedPoint);
+            lightCameraOrthographicMax = Math::maximize(lightCameraOrthographicMax, transformedPoint);
+        }
+
+        Math::mat4 cascadeProjectionMatrix = Math::orthooffcenterrh(
+            -radius,
+            radius,
+            -radius,
+            radius,
+            lightCameraOrthographicMin.z,
+            lightCameraOrthographicMax.z
+        );
+
+        projections[cascadeIndex] = cascadeProjectionMatrix;
+        viewProjections[cascadeIndex] = cascadeProjectionMatrix * Math::inverse(lightView);
+
+        intervalStart = intervalEnd;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.directionalLightEntity);
@@ -1032,8 +1122,13 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
             if (stageMasks[i] & Graphics::ViewGetStageMask(view) && shadowCasters[i])
             {
                 const Math::mat4& transform = directionalLightAllocator.Get<DirectionalLight_Transform>(typeIds[i]);
+                const Math::vector& direction = directionalLightAllocator.Get<DirectionalLight_Direction>(typeIds[i]);
                 const Util::Array<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typeIds[i]);
 
+                const Util::FixedArray<float> distances = { 15, 50, 120, 300 };
+                Util::FixedArray<Math::mat4> projections(4);
+                Util::FixedArray<Math::mat4> viewProjections(4);
+                CalculateCSMSplits(ViewGetCamera(view), direction, distances, projections, viewProjections);
                 lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
                 lightServerState.csmUtil.Compute(ViewGetCamera(view), transform);
 
@@ -1042,36 +1137,23 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                 {
                     // do reverse lookup to find shadow caster
                     Ids::Id32 ctxId = shadowCasterSliceMap[observers[j]];
-                    Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(j);
+                    Math::mat4 cascadeProj = viewProjections[j];
 
                     shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, cascadeProj);
-                    cascadeProj.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
-                }
+                    cascadeProj.store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
 
-                const Util::FixedArray<Math::mat4>& transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
-                const Util::FixedArray<float>& distances = lightServerState.csmUtil.GetCascadeDistances();
-                for (IndexT splitIndex = 0; splitIndex < Shared::NUM_CASCADES; ++splitIndex)
-                {
-                    float tileScaleX = tiles[splitIndex].width() / (float)dims.width;
-                    float tileScaleY = tiles[splitIndex].height() / (float)dims.height;
-                    float tileOffsetX = tiles[splitIndex].left / (float)dims.width;
-                    float tileOffsetY = tiles[splitIndex].top / (float)dims.height;
+                    float tileScaleX = tiles[j].width() / (float)dims.width;
+                    float tileScaleY = tiles[j].height() / (float)dims.height;
+                    float tileOffsetX = tiles[j].left / (float)dims.width;
+                    float tileOffsetY = tiles[j].top / (float)dims.height;
                     Math::mat4 atlasOffset = Math::translation(tileOffsetX, tileOffsetY, 0);
                     Math::mat4 atlasScale = Math::scaling(tileScaleX, tileScaleY, 1);
                     Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
                     Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 
-                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * transforms[splitIndex];
-                    Math::vec4 scale = Math::vec4(
-                        shadowTexture.row0.x,
-                        shadowTexture.row1.y,
-                        shadowTexture.row2.z,
-                        1);
-                    Math::vec4 offset = shadowTexture.row3;
-                    offset.w = 0;
-                    offset.store(&shadowConstants.CascadeOffset[splitIndex][0]);
-                    scale.store(&shadowConstants.CascadeScale[splitIndex][0]);
-                    shadowConstants.CascadeDistances[splitIndex] = distances[splitIndex];
+                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * viewProjections[j];
+                    shadowTexture.store(&shadowConstants.ShadowLookupViewProjection[ctxId][0][0]);
+                    shadowConstants.CascadeDistances[j] = distances[ctxId];
                 }
             }
         }
@@ -1087,7 +1169,7 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
 
             lightServerState.shadowcastingLocalLights.Add(observer);
 
-            viewProjection.store(&shadowConstants.LightViewMatrix[ctxId][0][0]);
+            viewProjection.store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
             shadowConstants.ShadowTiles[ctxId / 4][ctxId % 4] = localLightShadowCasterCount++;
         }
 
@@ -1186,8 +1268,6 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
         params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);
         params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / Math::max(1u, lightServerState.terrainShadowMapSize);
-        lightServerState.csmUtil.GetShadowView().store(&params.CSMShadowMatrix[0][0]);
-
         flags |= LightsCluster::USE_SHADOW_BITFLAG;
     }
     params.GlobalLightFlags = flags;

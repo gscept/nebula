@@ -152,7 +152,6 @@ struct TickParams
     GlobalLightDirWorldspace : f32x4;
     GlobalLightColor : f32x4;
     GlobalAmbientLightColor : f32x4;
-    CSMShadowMatrix : f32x4x4;
 
     GlobalLightShadowBuffer : u32;
     TerrainShadowBuffer : u32;
@@ -226,11 +225,10 @@ const NUM_CASCADES = 4;
 const SHADOW_CASTER_COUNT = 16;
 struct ShadowViewParams
 {
-    CascadeOffset : [NUM_CASCADES]f32x4;
-    CascadeScale : [NUM_CASCADES]f32x4;
     CascadeDistances : f32x4;
     ShadowTiles : [SHADOW_CASTER_COUNT / NUM_SHADOW_TILES_PER_ROW] i32x4;
-    LightViewMatrix : [SHADOW_CASTER_COUNT] f32x4x4;
+	ShadowLookupViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
+    ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
 };
 
 @Visibility("VS|CS|PS|RCS")

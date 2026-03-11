@@ -209,10 +209,9 @@ GlobalLightFog(worldPos : f32x3) f32x3
     var shadowFactor = 1.0f;
     if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
-        const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(worldPos, 1); // csm contains inversed view + csm transform
 		const dist = distance(ViewConstants.EyePos.xyz, worldPos);
 
-        shadowFactor = CSMPS(shadowPos, dist, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(f32x4(worldPos, 1), dist, PerTickParams.GlobalLightShadowBuffer);
         shadowFactor = lerp(1.0f, shadowFactor, 1);
     }
 
