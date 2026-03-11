@@ -1052,7 +1052,7 @@ CalculateCSMSplits(
         intervalEnd = distances[cascadeIndex];
 
         // Expand cascade a little
-        distances[cascadeIndex] *= 0.95f;
+        distances[cascadeIndex] *= 1.05f;
 
         float tNear = (intervalStart - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
         float tFar = (intervalEnd - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
@@ -1080,7 +1080,7 @@ CalculateCSMSplits(
         radius = Math::ceil(radius / texelSize) * texelSize + 5.0f;
 
         Math::vec4 lightPos = center + Math::vec4(lightDirection * radius, 0);
-        Math::mat4 lightView = Math::inverse(Math::lookatrh(lightPos, center, Math::vector::upvec()));
+        Math::mat4 lightView = Math::lookatrh(lightPos, center, Math::vector::upvec());
 
         static const Math::vec4 extentsMap[] =
         {
@@ -1115,8 +1115,8 @@ CalculateCSMSplits(
             radius,
             -radius,
             radius,
-            lightCameraOrthographicMin.z,
-            lightCameraOrthographicMax.z
+            lightCameraOrthographicMin.z - 100.0f,
+            lightCameraOrthographicMax.z + 100.0f
         );
 
         projections[cascadeIndex] = cascadeProjectionMatrix;

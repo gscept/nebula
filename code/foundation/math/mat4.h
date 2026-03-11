@@ -570,7 +570,8 @@ lookatlh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(xaxis, yaxis, zaxis, eye);
+    const point translation = Math::point(-dot(xaxis, eye), -dot(yaxis, eye), -dot(zaxis, eye));
+    return mat4(xaxis, yaxis, zaxis, translation);
 }
 
 //------------------------------------------------------------------------------
@@ -596,7 +597,8 @@ lookatrh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(xaxis, yaxis, zaxis, eye);
+    const point translation = Math::point(-dot(xaxis, eye), -dot(yaxis, eye), -dot(zaxis, eye));
+    return mat4(xaxis, yaxis, zaxis, translation);
 }
 
 #ifdef N_USE_AVX
