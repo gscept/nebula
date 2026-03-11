@@ -211,7 +211,7 @@ GlobalLightFog(worldPos : f32x3) f32x3
     {
 		const dist = distance(ViewConstants.EyePos.xyz, worldPos);
 
-        shadowFactor = CSMPS(f32x4(worldPos, 1), dist, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(f32x4(worldPos, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
         shadowFactor = lerp(1.0f, shadowFactor, 1);
     }
 

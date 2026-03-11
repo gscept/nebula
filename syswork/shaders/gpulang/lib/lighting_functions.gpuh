@@ -415,7 +415,7 @@ CalculateGlobalLight(
     {
         // CSM transform takes us from world space to light view space
 		const dist = distance(ViewConstants.EyePos.xyz, worldSpacePosition);
-        shadowFactor = CSMPS(f32x4(worldSpacePosition, 1), dist, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(f32x4(worldSpacePosition, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
 
         if (PerTickParams.EnableTerrainShadows == 1)
         {
@@ -726,7 +726,7 @@ CalculateGlobalLightAmbientTransmission(
     {
 		const dist = distance(ViewConstants.EyePos.xyz, pos);
 
-        shadowFactor = CSMPS(f32x4(pos, 1), dist, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(f32x4(pos, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
         shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
     }
 

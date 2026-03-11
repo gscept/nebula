@@ -426,11 +426,11 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
         {
 			if (!gplIsPixelShader)
             {
-				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), 0);
+				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - bias, 0);
             }
 			else
             {
-				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - PerTickParams.GlobalLightShadowBias * exp2(idx));
+				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - bias);
             }
         }
     }
