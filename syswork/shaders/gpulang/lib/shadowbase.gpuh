@@ -413,7 +413,7 @@ TerrainShadows(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32x2
 //------------------------------------------------------------------------------
 /**
 */
-PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : f32x2) f32
+PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : f32x2, bias : f32) f32
 {
     const shadow = 0.0f;
 
