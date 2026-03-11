@@ -396,7 +396,7 @@ length(const vec4& v)
 __forceinline scalar
 length3(const vec4& v)
 {
-    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.vec, v.vec, 0x71)));
+    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.vec, v.vec, 0x7F)));
 }
 
 //------------------------------------------------------------------------------
