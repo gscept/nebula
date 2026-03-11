@@ -1018,7 +1018,9 @@ CalculateCSMSplits(
     const Math::vec3 lightDirection,
     const Util::FixedArray<float>& distances,
     Util::FixedArray<Math::mat4>& projections,
-    Util::FixedArray<Math::mat4>& viewProjections
+    Util::FixedArray<Math::mat4>& viewProjections,
+    const float texelSize,
+    const Math::bbox& shadowRegion
 )
 {
     n_assert(camera != Graphics::GraphicsEntityId::Invalid());
@@ -1027,7 +1029,8 @@ CalculateCSMSplits(
     const Graphics::CameraSettings& camSettings = Graphics::CameraContext::GetSettings(camera);
     float aspect = camSettings.GetAspect();
     float fov = camSettings.GetFov();
-    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetViewProjection(camera));
+    Math::mat4 invCameraView = Math::inverse(Graphics::CameraContext::GetView(camera));
+    Math::mat4 invCameraProjection = Math::inverse(Graphics::CameraContext::GetProjection(camera));
 
     Math::vec4 ndcPoints[8] = {
         Math::vec4(0, 0, 0, 1), Math::vec4(1, 0, 0, 1), Math::vec4(1, 1, 0, 1), Math::vec4(0, 1, 0, 1),
@@ -1038,7 +1041,7 @@ CalculateCSMSplits(
     Math::vec4 frustumPoints[8];
     for (uint i = 0; i < 8; i++)
     {
-        frustumPoints[i] = cameraTransform * ndcPoints[i];
+        frustumPoints[i] = invCameraView * invCameraProjection * ndcPoints[i];
         frustumPoints[i] *= 1.0f / frustumPoints[i].w;
     }
 
@@ -1047,6 +1050,9 @@ CalculateCSMSplits(
     for (int cascadeIndex = 0; cascadeIndex < distances.Size(); ++cascadeIndex)
     {
         intervalEnd = distances[cascadeIndex];
+
+        // Expand cascade a little
+        distances[cascadeIndex] *= 0.95f;
 
         float tNear = (intervalStart - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
         float tFar = (intervalEnd - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
@@ -1071,15 +1077,37 @@ CalculateCSMSplits(
         for (auto& point : cascadePoints)
             radius = Math::max(radius, Math::length3(point - center));
 
+        radius = Math::ceil(radius / texelSize) * texelSize + 5.0f;
+
         Math::vec4 lightPos = center + Math::vec4(lightDirection * radius, 0);
-        Math::mat4 lightView = (Math::lookatrh(lightPos, center, Math::vector::upvec()));
+        Math::mat4 lightView = Math::inverse(Math::lookatrh(lightPos, center, Math::vector::upvec()));
+
+        static const Math::vec4 extentsMap[] =
+        {
+            Math::vec4(1.0f, 1.0f, -1.0f, 1.0f),
+            Math::vec4(-1.0f, 1.0f, -1.0f, 1.0f),
+            Math::vec4(1.0f, -1.0f, -1.0f, 1.0f),
+            Math::vec4(-1.0f, -1.0f, -1.0f, 1.0f),
+            Math::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+            Math::vec4(-1.0f, 1.0f, 1.0f, 1.0f),
+            Math::vec4(1.0f, -1.0f, 1.0f, 1.0f),
+            Math::vec4(-1.0f, -1.0f, 1.0f, 1.0f)
+        };
+
+        Math::vec4 sceneCenter = shadowRegion.center();
+        Math::vec4 sceneExtents = shadowRegion.extents();
+        Math::vec4 sceneAABBLightPoints[8];
+        for (int index = 0; index < 8; ++index)
+        {
+            sceneAABBLightPoints[index] = lightView * multiplyadd(extentsMap[index], sceneExtents, sceneCenter);
+        }
+
         Math::vec4 lightCameraOrthographicMin = Math::vec4(FLT_MAX);
         Math::vec4 lightCameraOrthographicMax = Math::vec4(-FLT_MAX);
-        for (auto& point : cascadePoints)
+        for (auto& point : sceneAABBLightPoints)
         {
-            Math::vec4 transformedPoint = lightView * point;
-            lightCameraOrthographicMin = Math::minimize(lightCameraOrthographicMin, transformedPoint);
-            lightCameraOrthographicMax = Math::maximize(lightCameraOrthographicMax, transformedPoint);
+            lightCameraOrthographicMin = Math::minimize(lightCameraOrthographicMin, point);
+            lightCameraOrthographicMax = Math::maximize(lightCameraOrthographicMax, point);
         }
 
         Math::mat4 cascadeProjectionMatrix = Math::orthooffcenterrh(
@@ -1092,7 +1120,7 @@ CalculateCSMSplits(
         );
 
         projections[cascadeIndex] = cascadeProjectionMatrix;
-        viewProjections[cascadeIndex] = cascadeProjectionMatrix * Math::inverse(lightView);
+        viewProjections[cascadeIndex] = cascadeProjectionMatrix * lightView;
 
         intervalStart = intervalEnd;
     }
@@ -1128,7 +1156,15 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                 const Util::FixedArray<float> distances = { 15, 50, 120, 300 };
                 Util::FixedArray<Math::mat4> projections(4);
                 Util::FixedArray<Math::mat4> viewProjections(4);
-                CalculateCSMSplits(ViewGetCamera(view), direction, distances, projections, viewProjections);
+                CalculateCSMSplits(
+                    ViewGetCamera(view),
+                    direction,
+                    distances,
+                    projections,
+                    viewProjections,
+                    1.0f / tiles[i].width(),
+                    Math::bbox(Math::point(0), Math::vector(500))
+                );
                 lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
                 lightServerState.csmUtil.Compute(ViewGetCamera(view), transform);
 
@@ -1153,7 +1189,7 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
 
                     Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * viewProjections[j];
                     shadowTexture.store(&shadowConstants.ShadowLookupViewProjection[ctxId][0][0]);
-                    shadowConstants.CascadeDistances[j] = distances[ctxId];
+                    shadowConstants.CascadeDistances[j] = distances[j];
                 }
             }
         }
