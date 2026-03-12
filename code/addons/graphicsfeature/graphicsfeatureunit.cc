@@ -219,7 +219,6 @@ GraphicsFeatureUnit::OnActivate()
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
         Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
-        Lighting::LightContext::UpdateLights,
         Decals::DecalContext::UpdateDecals,
         Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
@@ -234,6 +233,7 @@ GraphicsFeatureUnit::OnActivate()
         PostEffects::SSAOContext::UpdateViewDependentResources,
         PostEffects::HistogramContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
+        Lighting::LightContext::OnPrepareView,
         ::Terrain::TerrainContext::CullPatches
     };
 
@@ -247,6 +247,7 @@ GraphicsFeatureUnit::OnActivate()
 
         // At the very latest point, wait for work to finish
         ModelContext::WaitForWork,
+        Lighting::LightContext::UpdateLights,
         Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
         Particles::ParticleContext::WaitForParticleUpdates,
@@ -255,7 +256,6 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
-        Lighting::LightContext::OnPrepareView,
         ::Terrain::TerrainContext::UpdateLOD
     };
 
