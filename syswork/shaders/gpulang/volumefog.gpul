@@ -229,7 +229,7 @@ GlobalLightFog(worldPos : f32x3) f32x3
 
 		// calculate 'global' fog
 		var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
-        if (li.stageMask & ViewConstants.StageMask)
+        if li.stageMask & ViewConstants.StageMask
         {
             atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color * shadowFactor;
         }

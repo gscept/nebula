@@ -65,7 +65,7 @@ psMain(in UV : f32x3,
     for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
     {
         const li = LightLists.DirectionalLights[i];
-        if (li.stageMask & ViewConstants.StageMask)
+        if li.stageMask & ViewConstants.StageMask
         {
             atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color;
         }

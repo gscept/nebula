@@ -154,8 +154,11 @@ RayGen(ray_payload payload : LightResponsePayload) void
 		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
 		{
 			const li = LightLists.DirectionalLights[i];
-			const dir = normalize(probeRayDirection);
-			atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color.rgb;
+			if li.stageMask & ViewConstants.StageMask
+			{
+				const dir = normalize(probeRayDirection);
+				atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color.rgb;
+			}
 		}
         StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), atmo, 1e27f);
         return;

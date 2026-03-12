@@ -41,7 +41,10 @@ Raygen(ray_payload Result : LightResponsePayload) void
 		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
 		{
 			const li = LightLists.DirectionalLights[i];
-			light += CalculateAtmosphericScattering(dir, li.direction) * li.color;
+			if li.stageMask & ViewConstants.StageMask
+			{
+				light += CalculateAtmosphericScattering(dir, li.direction) * li.color;
+			}
 		}
         
     }

@@ -282,23 +282,26 @@ CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f3
     for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
 	{
 		const li = LightLists.DirectionalLights[i];
-		light += CalculateGlobalLight(
-			albedo
-			, material
-			, F0
-			, viewVec
-			, normal
-			, worldSpacePos
-			, li.direction
-			, li.color
-			, li.cascadeTransforms
-			, li.cascadeDistances
-			, li.shadowMap
-			, li.shadowMapSize
-			, li.shadowBias
-			, li.shadowIntensity
-			, li.flags
-		);
+		if li.stageMask & ViewConstants.StageMask
+		{
+			light += CalculateGlobalLight(
+				albedo
+				, material
+				, F0
+				, viewVec
+				, normal
+				, worldSpacePos
+				, li.direction
+				, li.color
+				, li.cascadeTransforms
+				, li.cascadeDistances
+				, li.shadowMap
+				, li.shadowMapSize
+				, li.shadowBias
+				, li.shadowIntensity
+				, li.flags
+			);
+		}
 	}
 
 //#if USE_SCALARIZATION_LOOP
