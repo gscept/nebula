@@ -368,6 +368,9 @@ Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCon
 {
     AppData& ad = GetAppData();
 
+    if (view != GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
     const Math::rectangle<int>& viewport = ViewGetViewport(view);
 
     ad.m_deltaTime = ctx.frameTime;
