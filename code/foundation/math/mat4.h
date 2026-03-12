@@ -455,6 +455,25 @@ determinant(const mat4& m)
 /**
 */
 __forceinline mat4
+transpose(const mat4& m)
+{
+    __m128 tmp3, tmp2, tmp1, tmp0;
+    tmp0 = _mm_unpacklo_ps(m.r[0].vec, m.r[1].vec);
+    tmp2 = _mm_unpacklo_ps(m.r[2].vec, m.r[3].vec);
+    tmp1 = _mm_unpackhi_ps(m.r[0].vec, m.r[1].vec);
+    tmp3 = _mm_unpackhi_ps(m.r[2].vec, m.r[3].vec);
+    mat4 ret;
+    ret.r[0] = _mm_movelh_ps(tmp0, tmp2);
+    ret.r[1] = _mm_movehl_ps(tmp2, tmp0);
+    ret.r[2] = _mm_movelh_ps(tmp1, tmp3);
+    ret.r[3] = _mm_movehl_ps(tmp3, tmp1);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
 inverse(const mat4& m)
 {
     __m128 Va,Vb,Vc;
@@ -570,8 +589,15 @@ lookatlh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    const point translation = Math::point(-dot(xaxis, eye), -dot(yaxis, eye), -dot(zaxis, eye));
-    return mat4(xaxis, yaxis, zaxis, translation);
+    mat4 ret;
+    ret.row0 = xaxis;
+    ret.row0.w = -dot(xaxis, eye);
+    ret.row1 = yaxis;
+    ret.row1.w = -dot(yaxis, eye);
+    ret.row2 = zaxis;
+    ret.row2.w = -dot(zaxis, eye);
+    ret.row3 = vec4(0, 0, 0, 1);
+    return transpose(ret);
 }
 
 //------------------------------------------------------------------------------
@@ -597,8 +623,16 @@ lookatrh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    const point translation = Math::point(-dot(xaxis, eye), -dot(yaxis, eye), -dot(zaxis, eye));
-    return mat4(xaxis, yaxis, zaxis, translation);
+
+    mat4 ret;
+    ret.row0 = xaxis;
+    ret.row0.w = -dot(xaxis, eye);
+    ret.row1 = yaxis;
+    ret.row1.w = -dot(yaxis, eye);
+    ret.row2 = zaxis;
+    ret.row2.w = -dot(zaxis, eye);
+    ret.row3 = vec4(0, 0, 0, 1);
+    return transpose(ret);
 }
 
 #ifdef N_USE_AVX
@@ -1167,25 +1201,6 @@ __forceinline mat4
 trs(const vec3& position, const quat& rotation, const vec3& scale)
 {
     return Math::affine(scale, rotation, position);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline mat4
-transpose(const mat4& m)
-{
-    __m128 tmp3, tmp2, tmp1, tmp0;
-    tmp0 = _mm_unpacklo_ps(m.r[0].vec, m.r[1].vec);
-    tmp2 = _mm_unpacklo_ps(m.r[2].vec, m.r[3].vec);
-    tmp1 = _mm_unpackhi_ps(m.r[0].vec, m.r[1].vec);
-    tmp3 = _mm_unpackhi_ps(m.r[2].vec, m.r[3].vec);
-    mat4 ret;
-    ret.r[0] = _mm_movelh_ps(tmp0, tmp2);
-    ret.r[1] = _mm_movehl_ps(tmp2, tmp0);
-    ret.r[2] = _mm_movelh_ps(tmp1, tmp3);
-    ret.r[3] = _mm_movehl_ps(tmp3, tmp1);
-    return ret;
 }
 
 //------------------------------------------------------------------------------
