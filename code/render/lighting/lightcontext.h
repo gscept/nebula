@@ -212,16 +212,18 @@ private:
         PointLight_ShadowConstantBufferSet,
         PointLight_DynamicOffsets,
         PointLight_ProjectionTexture,
-        PointLight_Observer
+        PointLight_Observers,
+        PointLight_ParaboloidTiles
     };
 
     typedef Ids::IdAllocator<
-        Math::transform44,          // transform
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
-        CoreGraphics::TextureId,    // projection (if invalid, don't use)
-        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+        Math::transform44,                              // transform
+        ConstantBufferSet,                              // constant buffer binding for light
+        ConstantBufferSet,                              // constant buffer binding for shadows
+        Util::FixedArray<uint>,                         // dynamic offsets
+        CoreGraphics::TextureId,                        // projection (if invalid, don't use)
+        Util::FixedArray<Graphics::GraphicsEntityId>,   // graphics entity used for observer stuff
+        Util::FixedArray<Math::rectangle<int>>          // cascade shadow tiles
     > PointLightAllocator;
     static PointLightAllocator pointLightAllocator;
 
@@ -230,7 +232,6 @@ private:
         SpotLight_Transform,
         SpotLight_ConstantBufferSet,
         SpotLight_ShadowConstantBufferSet,
-        SpotLight_DynamicOffsets,
         SpotLight_ConeAngles,
         SpotLight_ProjectionTexture,
         SpotLight_ProjectionTransform,
@@ -241,7 +242,6 @@ private:
         Math::transform44,          // transform
         ConstantBufferSet,          // constant buffer binding for light
         ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
         std::array<float, 2>,       // cone angle
         CoreGraphics::TextureId,    // projection (if invalid, don't use)
         Math::mat4,                 // projection matrix
@@ -255,7 +255,6 @@ private:
         AreaLight_Shape,
         AreaLight_ConstantBufferSet,
         AreaLight_ShadowConstantBufferSet,
-        AreaLight_DynamicOffsets,
         AreaLight_TwoSided,
         AreaLight_Observer,
         AreaLight_RenderMesh,
@@ -266,7 +265,6 @@ private:
         AreaLightShape,             // shape of area light
         ConstantBufferSet,          // constant buffer binding for light
         ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
         bool,                       // two sides
         Graphics::GraphicsEntityId, // graphics entity used for observer stuff
         bool                        // render mesh as well
@@ -293,14 +291,14 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Graphics::ViewId,                           // camera used for shadow mapping
-        Math::vector,                               // direction
-        Math::vec3,                                 // ambient
-        Math::mat4,                                 // transform (basically just a rotation in the direction)
-        Util::Array<Graphics::GraphicsEntityId>,    // view ids for cascades
-        Util::Array<Math::rectangle<int>>,          // cascade shadow tiles
-        Util::FixedArray<float>,                    // cascade distances       
-        Util::FixedArray<Math::mat4>                // cascade transforms
+        Graphics::ViewId,                               // camera used for shadow mapping
+        Math::vector,                                   // direction
+        Math::vec3,                                     // ambient
+        Math::mat4,                                     // transform (basically just a rotation in the direction)
+        Util::FixedArray<Graphics::GraphicsEntityId>,   // view ids for cascades
+        Util::FixedArray<Math::rectangle<int>>,         // cascade shadow tiles
+        Util::FixedArray<float>,                        // cascade distances       
+        Util::FixedArray<Math::mat4>                    // cascade transforms
     > DirectionalLightAllocator;
     static DirectionalLightAllocator directionalLightAllocator;
 

@@ -47,15 +47,11 @@ struct
     Graphics::GraphicsEntityId directionalLightEntity = Graphics::GraphicsEntityId::Invalid();
 
     Util::Array<Graphics::GraphicsEntityId> spotLightEntities;
-    Util::RingBuffer<Graphics::GraphicsEntityId> shadowcastingLocalLights;
+    Util::Array<Ids::Id32> shadowCastingLights;
 
-    CoreGraphics::TextureId localLightShadows = CoreGraphics::InvalidTextureId;
-    CoreGraphics::TextureId globalLightShadowMap = CoreGraphics::InvalidTextureId;
     CoreGraphics::TextureId terrainShadowMap = CoreGraphics::InvalidTextureId;
     uint terrainShadowMapSize;
     uint terrainSize;
-    MaterialTemplatesGPULang::BatchGroup spotlightsBatchCode;
-    MaterialTemplatesGPULang::BatchGroup globalLightsBatchCode;
 
     Util::OccupancyQuadTree shadowAtlasTileOctree;
     CoreGraphics::TextureId shadowAtlas;
@@ -169,12 +165,6 @@ LightContext::Create()
     passInfo.subpasses.Append(subpass);
     lightServerState.shadowPass = CoreGraphics::CreatePass(passInfo);
 
-    // create shadow mapping frame script
-    lightServerState.spotlightsBatchCode = MaterialTemplatesGPULang::BatchGroupFromName("SpotLightShadow");
-    lightServerState.globalLightsBatchCode = MaterialTemplatesGPULang::BatchGroupFromName("GlobalShadow");
-    lightServerState.globalLightShadowMap = FrameScript_shadows::Texture_SunShadowDepth();
-    lightServerState.localLightShadows = FrameScript_shadows::Texture_LocalLightShadow();
-
     using namespace CoreGraphics;
 
     clusterState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/lights_cluster.gplb");
@@ -228,31 +218,66 @@ LightContext::Create()
 #endif
     ResourceTableCommitChanges(clusterState.resourceTable);
 
-    // allow 16 shadow casting local lights
-    lightServerState.shadowcastingLocalLights.SetCapacity(16);
+    // allow 256 shadow casting local lights
+    lightServerState.shadowCastingLights.Reserve(256);
 
     FrameScript_shadows::RegisterSubgraph_ShadowAtlasUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        const Util::Array<Graphics::GraphicsEntityId>& entities = genericLightAllocator.GetArray<Light_Entity>();
-        const Util::Array<LightType>& types = genericLightAllocator.GetArray<Light_Type>();
-        const Util::Array<Ids::Id32>& typeIds = genericLightAllocator.GetArray<Light_TypedLightId>();
-        const Util::Array<bool>& shadowCasters = genericLightAllocator.GetArray<Light_ShadowCaster>();
-        const Util::Array<Math::rectangle<int>>& shadowTiles = genericLightAllocator.GetArray<Light_ShadowTile>();
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
-        static const MaterialTemplatesGPULang::BatchGroup typeToBatchCodeMapping[] =
-        {
-            MaterialTemplatesGPULang::BatchGroup::GlobalShadow,
-            MaterialTemplatesGPULang::BatchGroup::PointLightShadow,
-            MaterialTemplatesGPULang::BatchGroup::SpotLightShadow,
-            MaterialTemplatesGPULang::BatchGroup::SpotLightShadow
-        };
 
         CoreGraphics::CmdBeginPass(cmdBuf, lightServerState.shadowPass);
         static const Util::FixedArray<Shared::RenderTargetParameters> RenderTargetParams = {Shared::RenderTargetParameters {
             .Dimensions = {(float)dims.width, (float)dims.height, 1.0f / dims.width, 1.0f / dims.height}, .Scale = {1, 1}
         }};
         CoreGraphics::PassSetRenderTargetParameters(lightServerState.shadowPass, RenderTargetParams);
+        IndexT i;
+        for (i = 0; i < lightServerState.shadowCastingLights.Size(); i++)
+        {
+            Ids::Id32 typedId = genericLightAllocator.Get<Light_TypedLightId>(lightServerState.shadowCastingLights[i]);
+            const LightType type = genericLightAllocator.Get<Light_Type>(lightServerState.shadowCastingLights[i]);
+            if (type == LightType::DirectionalLightType)
+            {
+                const Util::FixedArray<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
+                const Util::FixedArray<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typedId);
+                for (IndexT j = 0; j < observers.Size(); j++)
+                {
+                    Ids::Id32 slice = shadowCasterSliceMap[observers[j]];
 
+                    // draw it!
+                    CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
+                    CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
+                    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::DirectionalLightShadow, observers[j], 1, slice, bufferIndex);
+                }
+            }
+            else if (type == LightType::SpotLightType || type == LightType::AreaLightType)
+            {
+                Graphics::GraphicsEntityId entity = genericLightAllocator.Get<Light_Entity>(lightServerState.shadowCastingLights[i]);
+                // Since these light types only need a single observer, the entity itself is the observer
+                Ids::Id32 slice = shadowCasterSliceMap[entity];
+                const Math::rectangle<int>& shadowTile = genericLightAllocator.Get<Light_ShadowTile>(lightServerState.shadowCastingLights[i]);
+                CoreGraphics::CmdSetViewport(cmdBuf, shadowTile, 0);
+                CoreGraphics::CmdSetScissorRect(cmdBuf, shadowTile, 0);
+                Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::SpotLightShadow, entity, 1, slice, bufferIndex);
+            }
+            else if (type == LightType::PointLightType)
+            {
+                const Util::FixedArray<Graphics::GraphicsEntityId>& observers = pointLightAllocator.Get<PointLight_Observers>(typedId);
+                const Util::FixedArray<Math::rectangle<int>>& tiles = pointLightAllocator.Get<PointLight_ParaboloidTiles>(typedId);
+                for (IndexT j = 0; j < observers.Size(); j++)
+                {
+                    Ids::Id32 slice = shadowCasterSliceMap[observers[j]];
+
+                    // draw it!
+                    CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
+                    CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
+                    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::PointLightShadow, observers[j], 1, slice, bufferIndex);
+                }
+            }
+        }
+        lightServerState.shadowCastingLights.Clear();
+
+
+        /*
         for (IndexT i = 0; i < types.Size(); i++)
         {
             if (shadowCasters[i])
@@ -260,8 +285,8 @@ LightContext::Create()
                 if (types[i] == LightType::DirectionalLightType)
                 {
                     Ids::Id32 typedId = typeIds[i];
-                    const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
-                    const Util::Array<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typedId);
+                    const Util::FixedArray<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
+                    const Util::FixedArray<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typedId);
                     for (IndexT j = 0; j < observers.Size(); j++)
                     {
                         // draw it!
@@ -270,13 +295,28 @@ LightContext::Create()
                         Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::GlobalShadow, observers[j], 1, j, bufferIndex);
                     }
                 }
-                else
+                else if (types[i] == LightType::SpotLightType || types[i] == LightType::AreaLightType)
                 {
+                    const Util::Array<Graphics::GraphicsEntityId>& entities = genericLightAllocator.GetArray<Light_Entity>();
                     CoreGraphics::CmdSetViewport(cmdBuf, shadowTiles[i], 0);
-                    Frame::DrawBatch(cmdBuf, typeToBatchCodeMapping[(uint)types[i]], entities[i], 1, 0, bufferIndex);
+                    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::SpotLightShadow, entities[i], 1, 0, bufferIndex);
+                }
+                else if (types[i] == LightType::PointLightType)
+                {
+                    Ids::Id32 typedId = typeIds[i];
+                    const Util::FixedArray<Graphics::GraphicsEntityId>& observers = pointLightAllocator.Get<PointLight_Observers>(typedId);
+                    const Util::FixedArray<Math::rectangle<int>>& tiles = pointLightAllocator.Get<PointLight_ParaboloidTiles>(typedId);
+                    for (IndexT j = 0; j < observers.Size(); j++)
+                    {
+                        // draw it!
+                        CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
+                        CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
+                        Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::PointLightShadow, observers[j], 1, 0, bufferIndex);
+                    }
                 }
             }
         }
+        */
 
         CoreGraphics::CmdEndPass(cmdBuf);
     });
@@ -284,13 +324,15 @@ LightContext::Create()
     FrameScript_shadows::RegisterSubgraph_SpotlightShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
 
+        /*
         IndexT i;
-        for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
+        for (i = 0; i < lightServerState.shadowCastingLights.Size(); i++)
         {
             // draw it!
-            Ids::Id32 slice = shadowCasterSliceMap[lightServerState.shadowcastingLocalLights[i]];
-            Frame::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, slice, bufferIndex);
+            Ids::Id32 slice = shadowCasterSliceMap[lightServerState.shadowCastingLights[i]];
+            Frame::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowCastingLights[i], 1, slice, bufferIndex);
         }
+        */
     });
 
     FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -390,6 +432,8 @@ LightContext::SetupDirectionalLight(
     {
         // create new graphics entity for each view
         SizeT cascadeSize = 2048;
+        Util::FixedArray<Math::rectangle<int>> shadowTiles(Shared::NUM_CASCADES);
+        Util::FixedArray<Graphics::GraphicsEntityId> cascadeObservers(Shared::NUM_CASCADES);
         for (IndexT i = 0; i < Shared::NUM_CASCADES; i++)
         {
             if (castShadows)
@@ -402,7 +446,7 @@ LightContext::SetupDirectionalLight(
                 }
                 else
                 {
-                    directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(lid).Append(Math::rectangle<int>(section.x, section.y, section.x + cascadeSize, section.y + cascadeSize));
+                    shadowTiles[i] = Math::rectangle<int>(section.x, section.y, section.x + cascadeSize, section.y + cascadeSize);
                 }
             }
 
@@ -419,8 +463,12 @@ LightContext::SetupDirectionalLight(
             //	Visibility::ObserverContext::MakeDependency(globalLightAllocator.Get<DirectionalLight_CascadeObservers>(lid).Back(), shadowId, Visibility::DependencyMode_Masked);
 
             // store entity id for cleanup later
-            directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lid).Append(shadowId);
+            cascadeObservers[i] = shadowId;
         }
+        directionalLightAllocator.Set<DirectionalLight_CascadeTiles>(lid, shadowTiles);
+        directionalLightAllocator.Set<DirectionalLight_CascadeObservers>(lid, cascadeObservers);
+
+
     }
 
     lightServerState.directionalLightEntity = id;
@@ -468,16 +516,21 @@ LightContext::SetupPointLight(
     auto pli = pointLightAllocator.Alloc();
     if (castShadows)
     {
-        Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(256 * 6);
-        if (section.x == 0xFFFFFFFF)
+        Util::FixedArray<Math::rectangle<int>> shadowTiles(2);
+        for (uint i = 0; i < 2; i++)
         {
-            n_warning("Shadow atlas is full! Cannot allocate shadow map for point light!\n");
-            castShadows = false;
+            Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(256);
+            if (section.x == 0xFFFFFFFF)
+            {
+                n_warning("Shadow atlas is full! Cannot allocate shadow map for point light!\n");
+                castShadows = false;
+            }
+            else
+            {
+                shadowTiles[i] = Math::rectangle<int>(section.x, section.y, section.x + 256, section.y + 256);
+            }
         }
-        else
-        {
-            genericLightAllocator.Set<Light_ShadowTile>(cid.id, Math::rectangle<int>(section.x, section.y, section.x + 256 * 6, section.y + 256 * 6));
-        }
+        pointLightAllocator.Set<PointLight_ParaboloidTiles>(pli, shadowTiles);
     }
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
     genericLightAllocator.Set<Light_Type>(cid.id, LightType::PointLightType);
@@ -492,19 +545,24 @@ LightContext::SetupPointLight(
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli).Resize(2);
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[0] = 0;
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[1] = 0;
-    pointLightAllocator.Get<PointLight_ProjectionTexture>(pli) = projection;
+    pointLightAllocator.Set<PointLight_ProjectionTexture>(pli, projection);
 
-    if (0)//castShadows)
+    if (castShadows)
     {
-        // Allocate shadow caster slices for each side
-        for (IndexT i = 0; i < 6; i++)
-        {
-            Ids::Id32 casterId = shadowCasterAllocator.Alloc();
-            shadowCasterSliceMap.Add(id, casterId);
-        }
+        Graphics::GraphicsEntityId backShadowId = Graphics::CreateEntity();
+        Graphics::GraphicsEntityId frontShadowId = Graphics::CreateEntity();
 
-        Visibility::ObserverContext::RegisterEntity(id);
-        Visibility::ObserverContext::Setup(id, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
+        Visibility::ObserverContext::RegisterEntity(backShadowId);
+        Visibility::ObserverContext::Setup(backShadowId, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
+        Ids::Id32 backCasterId = shadowCasterAllocator.Alloc();
+        shadowCasterSliceMap.Add(backShadowId, backCasterId);
+
+        Visibility::ObserverContext::RegisterEntity(frontShadowId);
+        Visibility::ObserverContext::Setup(frontShadowId, Visibility::VisibilityEntityType::Light, Graphics::SHADOW_STAGE_MASK);
+        Ids::Id32 frontCasterId = shadowCasterAllocator.Alloc();
+        shadowCasterSliceMap.Add(frontShadowId, frontCasterId);
+
+        pointLightAllocator.Set<PointLight_Observers>(pli, Util::FixedArray<Graphics::GraphicsEntityId>({ backShadowId, frontShadowId }));
     }
 }
 
@@ -529,7 +587,7 @@ LightContext::SetupSpotLight(
     auto sli = spotLightAllocator.Alloc();
     if (castShadows)
     {
-        Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(256);
+        Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(2048);
         if (section.x == 0xFFFFFFFF)
         {
             n_warning("Shadow atlas is full! Cannot allocate shadow map for spot light!\n");
@@ -537,7 +595,7 @@ LightContext::SetupSpotLight(
         }
         else
         {
-            genericLightAllocator.Set<Light_ShadowTile>(cid.id, Math::rectangle<int>(section.x, section.y, section.x + 256, section.y + 256));
+            genericLightAllocator.Set<Light_ShadowTile>(cid.id, Math::rectangle<int>(section.x, section.y, section.x + 2048, section.y + 2048));
         }
     }
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
@@ -559,12 +617,9 @@ LightContext::SetupSpotLight(
 
     // use a fixed aspect of 1
     Math::mat4 proj = Math::perspfov(angles[1] * 2.0f, 1.0f, zNear, zFar);
-    proj.r[1] = -proj.r[1];
+    proj.r[1][1] *= -1.0f; // vulkan clip space
 
     // set initial state
-    spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli).Resize(2);
-    spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[0] = 0;
-    spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[1] = 0;
     spotLightAllocator.Set<SpotLight_ProjectionTexture>(sli, projection);
     spotLightAllocator.Set<SpotLight_ConeAngles>(sli, angles);
     spotLightAllocator.Set<SpotLight_Observer>(sli, id);
@@ -624,9 +679,6 @@ LightContext::SetupAreaLight(
     genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
 
     // set initial state
-    areaLightAllocator.Get<AreaLight_DynamicOffsets>(ali).Resize(2);
-    areaLightAllocator.Get<AreaLight_DynamicOffsets>(ali)[0] = 0;
-    areaLightAllocator.Get<AreaLight_DynamicOffsets>(ali)[1] = 0;
     areaLightAllocator.Set<AreaLight_Observer>(ali, id);
     areaLightAllocator.Set<AreaLight_Shape>(ali, shape);
     areaLightAllocator.Set<AreaLight_TwoSided>(ali, twoSided || shape == AreaLightShape::Tube);
@@ -1126,8 +1178,8 @@ CalculateCSMSplits(
             radius,
             -radius,
             radius,
-            -(Math::length(sceneExtents)),
-            (Math::length(sceneExtents))
+            -Math::length(sceneExtents),
+            Math::length(sceneExtents)
         );
 
         projections[cascadeIndex] = cascadeProjectionMatrix;
@@ -1150,7 +1202,6 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
     const Util::Array<Graphics::StageMask>& stageMasks = genericLightAllocator.GetArray<Light_StageMask>();
     const Util::Array<bool>& shadowCasters = genericLightAllocator.GetArray<Light_ShadowCaster>();
     IndexT localLightShadowCasterCount = 0;
-
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
 
     for (IndexT i = 0; i < types.Size(); i++)
@@ -1159,9 +1210,8 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
         {
             if (stageMasks[i] & Graphics::ViewGetStageMask(view) && shadowCasters[i])
             {
-                const Math::mat4& transform = directionalLightAllocator.Get<DirectionalLight_Transform>(typeIds[i]);
                 const Math::vector& direction = directionalLightAllocator.Get<DirectionalLight_Direction>(typeIds[i]);
-                const Util::Array<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typeIds[i]);
+                const Util::FixedArray<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typeIds[i]);
 
                 const Util::FixedArray<float> distances = { 15, 50, 120, 300 };
                 Util::FixedArray<Math::mat4> projections(4);
@@ -1176,7 +1226,8 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     Math::bbox(Math::point(0), Math::vector(500))
                 );
 
-                const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typeIds[i]);
+                const Util::FixedArray<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typeIds[i]);
+
                 for (IndexT j = 0; j < observers.Size(); j++)
                 {
                     // do reverse lookup to find shadow caster
@@ -1195,31 +1246,59 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 
                     Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * viewProjections[j];
-                    shadowTexture.store(&shadowConstants.ShadowLookupViewProjection[ctxId][0][0]);
 
                     directionalLightAllocator.Get<DirectionalLight_CascadeDistances>(typeIds[i])[j] = distances[j];
                     directionalLightAllocator.Get<DirectionalLight_CascadeTransforms>(typeIds[i])[j] = shadowTexture;
                 }
             }
         }
-        else if (types[i] == LightType::SpotLightType)
+        else if (types[i] == LightType::SpotLightType || types[i] == LightType::AreaLightType)
         {
-            // setup a perpsective transform with a fixed z near and far and aspect
-            Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
-            Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]).getmatrix();
-            Math::mat4 viewProjection = projection * inverse(view);
-            Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
-            Ids::Id32 ctxId = shadowCasterSliceMap[observer];
-            shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = viewProjection;
 
-            lightServerState.shadowcastingLocalLights.Add(observer);
+            Math::mat4 projection, view;
+            Graphics::GraphicsEntityId observer;
 
-            viewProjection.store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
-            shadowConstants.ShadowTiles[ctxId / 4][ctxId % 4] = localLightShadowCasterCount++;
+            if (types[i] == LightType::AreaLightType)
+            {
+                //projection = areaLightAllocator.Get<AreaLight_ProjectionTransform>(typeIds[i]);
+                view = areaLightAllocator.Get<AreaLight_Transform>(typeIds[i]).getmatrix();
+                observer = areaLightAllocator.Get<AreaLight_Observer>(typeIds[i]);
+            }
+            else
+            {
+                projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
+                view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]).getmatrix();
+                observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
+            }
+
+
+            if (shadowCasters[i])
+            {
+                const Math::rectangle<int>& shadowTile = genericLightAllocator.Get<Light_ShadowTile>(i);
+                Math::mat4 viewProjection = projection * inverse(view);
+                float tileScaleX = shadowTile.width() / (float)dims.width;
+                float tileScaleY = shadowTile.height() / (float)dims.height;
+                float tileOffsetX = shadowTile.left / (float)dims.width;
+                float tileOffsetY = shadowTile.top / (float)dims.height;
+                Math::mat4 atlasOffset = Math::translation(tileOffsetX, tileOffsetY, 0);
+                Math::mat4 atlasScale = Math::scaling(tileScaleX, tileScaleY, 1);
+                Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
+                Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
+                Ids::Id32 ctxId = shadowCasterSliceMap[observer];
+                shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, atlasOffset * atlasScale * textureTranslation * textureScale * viewProjection);
+                viewProjection.store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
+            }
+        }
+        else if (types[i] == LightType::PointLightType)
+        {
+            const Util::FixedArray<Graphics::GraphicsEntityId>& observers = pointLightAllocator.Get<PointLight_Observers>(typeIds[i]);
+            for (IndexT j = 0; j < observers.Size(); j++)
+            {
+            }
         }
 
         // we reached our shadow caster max
-        if (localLightShadowCasterCount == 16)
+        if (lightServerState.shadowCastingLights.Size() == 256)
             break;
     }
 }
@@ -1327,6 +1406,9 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     IndexT i;
     for (i = 0; i < types.Size(); i++)
     {
+        if (castShadow[i])
+            lightServerState.shadowCastingLights.Append(i);
+
         switch (types[i])
         {
             case LightType::DirectionalLightType:
@@ -1408,7 +1490,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     spotLight.shadowExtension = numSpotLightShadows;
                     auto& shadow = clusterState.lightList.SpotLightShadow[numSpotLightShadows];
                     shadowProj.store(&shadow.projection[0][0]);
-                    shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
+                    shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
                     shadow.shadowIntensity = 1.0f;
                     shadow.shadowSlice = numShadowLights;
                     numSpotLightShadows++;
@@ -1497,7 +1579,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     areaLight.shadowExtension = numAreaLightShadows;
                     auto& shadow = clusterState.lightList.AreaLightShadow[numAreaLightShadows];
                     shadowProj.store(&shadow.projection[0][0]);
-                    shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
+                    shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
                     shadow.shadowIntensity = 1.0f;
                     shadow.shadowSlice = numShadowLights;
                     numAreaLightShadows++;
@@ -1632,40 +1714,75 @@ LightContext::Dealloc(Graphics::ContextEntityId id)
     Ids::Id32 lightId = genericLightAllocator.Get<Light_TypedLightId>(id.id);
 
     bool castShadows = genericLightAllocator.Get<Light_ShadowCaster>(id.id);
-    if (castShadows)
-    {
-        const Math::rectangle<int>& rect = genericLightAllocator.Get<Light_ShadowTile>(id.id);
-        lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)rect.left, (uint)rect.top }, rect.width());
-    }
 
     switch (type)
     {
     case LightType::DirectionalLightType:
     {
         // dealloc observers
-        Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lightId);
-        for (IndexT i = 0; i < observers.Size(); i++)
+        if (castShadows)
         {
-            Visibility::ObserverContext::DeregisterEntity(observers[i]);
-            Graphics::DestroyEntity(observers[i]);
+            Util::FixedArray<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(lightId);
+            for (IndexT i = 0; i < observers.Size(); i++)
+            {
+                Visibility::ObserverContext::DeregisterEntity(observers[i]);
+                Graphics::DestroyEntity(observers[i]);
+                shadowCasterSliceMap.Erase(observers[i]);
+            }
         }
 
         directionalLightAllocator.Dealloc(lightId);
         break;
     }
-    case LightType::SpotLightType:
-        spotLightAllocator.Dealloc(lightId);
-        break;
+
     case LightType::PointLightType:
+    {
+        if (castShadows)
+        {
+            const auto& observers = pointLightAllocator.Get<PointLight_Observers>(lightId);
+            const auto& paraboloidTiles = pointLightAllocator.Get<PointLight_ParaboloidTiles>(lightId);
+            for (IndexT i = 0; i < observers.Size(); i++)
+            {
+                lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)paraboloidTiles[i].left, (uint)paraboloidTiles[i].top }, (uint)paraboloidTiles[i].width());
+                Visibility::ObserverContext::DeregisterEntity(observers[i]);
+                Graphics::DestroyEntity(observers[i]);
+                shadowCasterSliceMap.Erase(observers[i]);
+            }
+            pointLightAllocator.Dealloc(lightId);
+        }
+
+        break;
+    }
+    case LightType::SpotLightType:
+    {
+        if (castShadows)
+        {
+            auto obsId = spotLightAllocator.Get<SpotLight_Observer>(lightId);
+            Visibility::ObserverContext::DeregisterEntity(obsId);
+            shadowCasterSliceMap.Erase(obsId);
+
+            const Math::rectangle<int>& rect = genericLightAllocator.Get<Light_ShadowTile>(id.id);
+            lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)rect.left, (uint)rect.top }, rect.width());
+        }
         spotLightAllocator.Dealloc(lightId);
         break;
+    }
     case LightType::AreaLightType:
     {
         auto renderMesh = areaLightAllocator.Get<AreaLight_RenderMesh>(lightId);
-        auto id = areaLightAllocator.Get<AreaLight_Observer>(lightId);
+        if (castShadows)
+        {
+            auto obsId = areaLightAllocator.Get<AreaLight_Observer>(lightId);
+            Visibility::ObserverContext::DeregisterEntity(obsId);
+            shadowCasterSliceMap.Erase(obsId);
+
+            const Math::rectangle<int>& rect = genericLightAllocator.Get<Light_ShadowTile>(id.id);
+            lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)rect.left, (uint)rect.top }, rect.width());
+        }
         if (renderMesh)
         {
-            Graphics::DeregisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
+            auto meshId = genericLightAllocator.Get<Light_Entity>(id.id);
+            Graphics::DeregisterEntity<Models::ModelContext, Visibility::ObservableContext>(meshId);
         }
         areaLightAllocator.Dealloc(lightId);
         break;

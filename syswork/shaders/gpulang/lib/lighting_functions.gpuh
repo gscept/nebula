@@ -175,11 +175,9 @@ CalculateSpotLightShadow(
 ) f32
 {
     var shadowProjLightPos = shadowExt.projection * f32x4(pos, 1.0f);
-    shadowProjLightPos.xyz /= shadowProjLightPos.www;
-    var shadowLookup = shadowProjLightPos.xy * f32x2(0.5f, -0.5f) + 0.5f;
-    shadowLookup.y = 1 - shadowLookup.y;
+	shadowProjLightPos.xyz /= shadowProjLightPos.w;
     const receiverDepth = shadowProjLightPos.z;
-    const shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
+    const shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowProjLightPos.xy, light.shadowExtension, shadowExt.shadowMap);
     return saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 }
 
