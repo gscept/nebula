@@ -206,27 +206,35 @@ LocalLightsFog(
 */
 GlobalLightFog(worldPos : f32x3) f32x3
 {
-    var shadowFactor = 1.0f;
-    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
-    {
-		const dist = distance(ViewConstants.EyePos.xyz, worldPos);
+	var atmo = f32x3(0);
+	for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+	{
+	    var shadowFactor = 1.0f;
+		const li = LightLists.DirectionalLights[i];
+		if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
+		{
+			const dist = distance(ViewConstants.EyePos.xyz, worldPos);
 
-        shadowFactor = CSMPS(f32x4(worldPos, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
-        shadowFactor = lerp(1.0f, shadowFactor, 1);
-    }
+			shadowFactor = CSMPS(
+				f32x4(worldPos, 1)
+				, dist
+				, li.cascadeTransforms
+				, li.cascadeDistances
+				, li.shadowMap
+				, li.shadowMapSize
+				, li.shadowBias
+			);
+			shadowFactor = lerp(1.0f, shadowFactor, 1);
+		}
 
-    // calculate 'global' fog
-    var atmo = f32x3(0);
-	var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
-    for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
-    {
-        const li = LightLists.DirectionalLights[i];
+		// calculate 'global' fog
+		var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
         if (li.stageMask & ViewConstants.StageMask)
         {
-            atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color;
+            atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color * shadowFactor;
         }
     }
-    return atmo * shadowFactor;
+    return atmo;
 }
 
 //------------------------------------------------------------------------------

@@ -1105,6 +1105,8 @@ TerrainContext::SetupTerrain(
     shadowMapInfo.height = TerrainShadowMapSize;
     shadowMapInfo.format = CoreGraphics::PixelFormat::R16G16F;
     shadowMapInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    shadowMapInfo.clear = true;
+    shadowMapInfo.clearColorF4 = Math::float4{ -60000.0f, -60000.0f, 1.0f, 1.0f };
     instanceInfo.shadowMap = CoreGraphics::CreateTexture(shadowMapInfo);
     Lighting::LightContext::SetupTerrainShadows(instanceInfo.shadowMap, createInfo.width);
 

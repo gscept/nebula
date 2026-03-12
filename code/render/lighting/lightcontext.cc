@@ -7,7 +7,6 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
-#include "csmutil.h"
 #include "resources/resourceserver.h"
 #include "visibility/visibilitycontext.h"
 #include "clustering/clustercontext.h"
@@ -57,8 +56,6 @@ struct
     uint terrainSize;
     MaterialTemplatesGPULang::BatchGroup spotlightsBatchCode;
     MaterialTemplatesGPULang::BatchGroup globalLightsBatchCode;
-
-    CSMUtil csmUtil{ Shared::NUM_CASCADES };
 
     Util::OccupancyQuadTree shadowAtlasTileOctree;
     CoreGraphics::TextureId shadowAtlas;
@@ -177,8 +174,6 @@ LightContext::Create()
     lightServerState.globalLightsBatchCode = MaterialTemplatesGPULang::BatchGroupFromName("GlobalShadow");
     lightServerState.globalLightShadowMap = FrameScript_shadows::Texture_SunShadowDepth();
     lightServerState.localLightShadows = FrameScript_shadows::Texture_LocalLightShadow();
-    if (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId)
-        lightServerState.terrainShadowMap = Resources::CreateResource("systex:white.dds", "system");
 
     using namespace CoreGraphics;
 
@@ -384,12 +379,13 @@ LightContext::SetupDirectionalLight(
     genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
 
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
-    Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
+    Math::mat4 mat = lookat(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
     SetDirectionalLightTransform(cid, mat, Math::xyz(sunPosition));
     directionalLightAllocator.Set<DirectionalLight_Ambient>(lid, ambient);
     directionalLightAllocator.Set<DirectionalLight_View>(lid, view);
-
+    directionalLightAllocator.Set<DirectionalLight_CascadeDistances>(lid, Util::FixedArray<float>(Shared::NUM_CASCADES));
+    directionalLightAllocator.Set<DirectionalLight_CascadeTransforms>(lid, Util::FixedArray<Math::mat4>(Shared::NUM_CASCADES));
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
         // create new graphics entity for each view
@@ -562,7 +558,7 @@ LightContext::SetupSpotLight(
     const float zFar = range;
 
     // use a fixed aspect of 1
-    Math::mat4 proj = Math::perspfovrh(angles[1] * 2.0f, 1.0f, zNear, zFar);
+    Math::mat4 proj = Math::perspfov(angles[1] * 2.0f, 1.0f, zNear, zFar);
     proj.r[1] = -proj.r[1];
 
     // set initial state
@@ -753,7 +749,7 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const float azim
             return;
 
     Math::point position(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
-    Math::mat4 mat = lookatrh(Math::point(0.0f), position, Math::vector::upvec());
+    Math::mat4 mat = lookat(Math::point(0.0f), position, Math::vector::upvec());
 
     LightType type = genericLightAllocator.Get<Light_Type>(cid.id);
 
@@ -1019,7 +1015,7 @@ CalculateCSMSplits(
     const Util::FixedArray<float>& distances,
     Util::FixedArray<Math::mat4>& projections,
     Util::FixedArray<Math::mat4>& viewProjections,
-    const float texelSize,
+    const float shadowTileSize,
     const Math::bbox& shadowRegion
 )
 {
@@ -1032,31 +1028,34 @@ CalculateCSMSplits(
     Math::mat4 invCameraView = Math::inverse(Graphics::CameraContext::GetView(camera));
     Math::mat4 invCameraProjection = Math::inverse(Graphics::CameraContext::GetProjection(camera));
 
+    // Setup device coordinates
     Math::vec4 ndcPoints[8] = {
-        Math::vec4(0, 0, 0, 1), Math::vec4(1, 0, 0, 1), Math::vec4(1, 1, 0, 1), Math::vec4(0, 1, 0, 1),
-        Math::vec4(0, 0, 1, 1), Math::vec4(1, 0, 1, 1), Math::vec4(1, 1, 1, 1), Math::vec4(0, 1, 1, 1)
+        Math::vec4(-1, -1, 0, 1), Math::vec4(1, -1, 0, 1), Math::vec4(1, 1, 0, 1), Math::vec4(-1, 1, 0, 1),
+        Math::vec4(-1, -1, 1, 1), Math::vec4(1, -1, 1, 1), Math::vec4(1, 1, 1, 1), Math::vec4(-1, 1, 1, 1)
     };
 
-    // Calculate frustum points, it will end up in a frustum in view space
+    // Deproject and invert camera view to get world space position of frustum corners
     Math::vec4 frustumPoints[8];
     for (uint i = 0; i < 8; i++)
     {
-        frustumPoints[i] = invCameraView * invCameraProjection * ndcPoints[i];
+        frustumPoints[i] = (invCameraProjection * ndcPoints[i]);
         frustumPoints[i] *= 1.0f / frustumPoints[i].w;
+        frustumPoints[i] = invCameraView * frustumPoints[i];
     }
 
-    float intervalStart = 0;
+    float intervalStart = camSettings.GetZNear();
     float intervalEnd = 0;
     for (int cascadeIndex = 0; cascadeIndex < distances.Size(); ++cascadeIndex)
     {
         intervalEnd = distances[cascadeIndex];
 
         // Expand cascade a little
-        distances[cascadeIndex] *= 1.05f;
+        distances[cascadeIndex] *= 1.005f;
 
         float tNear = (intervalStart - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
         float tFar = (intervalEnd - camSettings.GetZNear()) / (camSettings.GetZFar() - camSettings.GetZNear());
 
+        // Calculate new corner points at interval offset
         Math::vec4 cascadePoints[8];
         for (uint i = 0; i < 4; i++)
         {
@@ -1068,19 +1067,30 @@ CalculateCSMSplits(
             cascadePoints[i + 4] = nearCorner + dir * tFar;
         }
 
+        // Find the centroid
         Math::vec4 center = Math::vec4(0);
         for (auto& point : cascadePoints)
             center += point;
         center *= 1.0f / 8;
         center.w = 1.0f;
+
+        // Calculate the radius to get a symmetrically enclosing sphere.
         float radius = 0;
-        for (auto& point : cascadePoints)
+        for (const auto& point : cascadePoints)
             radius = Math::max(radius, Math::length3(point - center));
 
-        radius = Math::ceil(radius / texelSize) * texelSize + 5.0f;
+        radius = Math::ceil(radius * 16.0f) / 16.0f;
 
-        Math::vec4 lightPos = center + Math::vec4(lightDirection * radius, 0);
-        Math::mat4 lightView = Math::lookatrh(lightPos, center, Math::vector::upvec());
+        Math::vec4 lightPos = center - Math::vec4(-lightDirection * radius, 0);
+        Math::mat4 lightView = Math::lookat(lightPos, center, Math::vector::upvec());
+
+        Math::vec4 centerLS = lightView * center;
+        float worldUnitsPerTexel = (2 * radius) / shadowTileSize;
+        centerLS.x = Math::floor(centerLS.x / worldUnitsPerTexel) * worldUnitsPerTexel;
+        centerLS.y = Math::floor(centerLS.y / worldUnitsPerTexel) * worldUnitsPerTexel;
+        Math::vec4 snappedCenter = Math::inverse(lightView) * centerLS;
+        lightPos = snappedCenter - Math::vec4(-lightDirection * radius, 0);
+        lightView = Math::lookat(lightPos, snappedCenter, Math::vector::upvec());
 
         static const Math::vec4 extentsMap[] =
         {
@@ -1104,19 +1114,20 @@ CalculateCSMSplits(
 
         Math::vec4 lightCameraOrthographicMin = Math::vec4(FLT_MAX);
         Math::vec4 lightCameraOrthographicMax = Math::vec4(-FLT_MAX);
-        for (auto& point : sceneAABBLightPoints)
+        for (const auto& point : cascadePoints)
         {
-            lightCameraOrthographicMin = Math::minimize(lightCameraOrthographicMin, point);
-            lightCameraOrthographicMax = Math::maximize(lightCameraOrthographicMax, point);
+            const Math::vec4 lightViewPoint = lightView * point;
+            lightCameraOrthographicMin = Math::minimize(lightCameraOrthographicMin, lightViewPoint);
+            lightCameraOrthographicMax = Math::maximize(lightCameraOrthographicMax, lightViewPoint);
         }
 
-        Math::mat4 cascadeProjectionMatrix = Math::orthooffcenterrh(
+        Math::mat4 cascadeProjectionMatrix = Math::orthooffcenter(
             -radius,
             radius,
             -radius,
             radius,
-            lightCameraOrthographicMin.z - 100.0f,
-            lightCameraOrthographicMax.z + 100.0f
+            -(Math::length(sceneExtents)),
+            (Math::length(sceneExtents))
         );
 
         projections[cascadeIndex] = cascadeProjectionMatrix;
@@ -1132,7 +1143,6 @@ CalculateCSMSplits(
 void
 LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
-    const Graphics::ContextEntityId cid = GetContextId(lightServerState.directionalLightEntity);
     Shared::ShadowViewConstants::STRUCT& shadowConstants = ViewGetShadowConstants(view);
 
     const Util::Array<LightType>& types = genericLightAllocator.GetArray<Light_Type>();
@@ -1162,21 +1172,18 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     distances,
                     projections,
                     viewProjections,
-                    1.0f / tiles[i].width(),
+                    tiles[i].width(),
                     Math::bbox(Math::point(0), Math::vector(500))
                 );
-                lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
-                lightServerState.csmUtil.Compute(ViewGetCamera(view), transform);
 
                 const Util::Array<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typeIds[i]);
                 for (IndexT j = 0; j < observers.Size(); j++)
                 {
                     // do reverse lookup to find shadow caster
                     Ids::Id32 ctxId = shadowCasterSliceMap[observers[j]];
-                    Math::mat4 cascadeProj = viewProjections[j];
 
-                    shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, cascadeProj);
-                    cascadeProj.store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
+                    shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, viewProjections[j]);
+                    viewProjections[j].store(&shadowConstants.ShadowViewProjection[ctxId][0][0]);
 
                     float tileScaleX = tiles[j].width() / (float)dims.width;
                     float tileScaleY = tiles[j].height() / (float)dims.height;
@@ -1187,9 +1194,11 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                     Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
                     Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 
-                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * cascadeProj;
+                    Math::mat4 shadowTexture = atlasOffset * atlasScale * textureTranslation * textureScale * viewProjections[j];
                     shadowTexture.store(&shadowConstants.ShadowLookupViewProjection[ctxId][0][0]);
-                    shadowConstants.CascadeDistances[j] = distances[j];
+
+                    directionalLightAllocator.Get<DirectionalLight_CascadeDistances>(typeIds[i])[j] = distances[j];
+                    directionalLightAllocator.Get<DirectionalLight_CascadeTransforms>(typeIds[i])[j] = shadowTexture;
                 }
             }
         }
@@ -1277,31 +1286,25 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
     // update constant buffer
     Ids::Id32 globalLightId = genericLightAllocator.Get<Light_TypedLightId>(cid.id);
     Shared::PerTickParams::STRUCT params = Graphics::GetTickParams();
-    (genericLightAllocator.Get<Light_Color>(cid.id) * genericLightAllocator.Get<Light_Intensity>(cid.id)).store(params.GlobalLightColor);
-    directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
-    directionalLightAllocator.Get<DirectionalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
-
     params.ltcLUT0 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut0);
     params.ltcLUT1 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut1);
+
+    params.EnableTerrainShadows = (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId) ? 0 : 1;
+    if (params.EnableTerrainShadows)
+    {
+        params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
+        params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
+        params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);
+        params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / Math::max(1u, lightServerState.terrainShadowMapSize);
+    }
 
     uint flags = 0;
 
     if (genericLightAllocator.Get<Light_ShadowCaster>(cid.id))
     {
-        params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
-        params.EnableTerrainShadows = (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId) ? 0 : 1;
-        params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
-        params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
-        params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);
-        params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / Math::max(1u, lightServerState.terrainShadowMapSize);
         flags |= LightsCluster::USE_SHADOW_BITFLAG;
     }
-    params.GlobalLightFlags = flags;
-    params.GlobalLightShadowBias = 0.0001f;
-    params.GlobalLightShadowIntensity = 1.0f;
     auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
-    params.GlobalLightShadowMapSize[0] = 1.0f / shadowDims.width;
-    params.GlobalLightShadowMapSize[1] = 1.0f / shadowDims.height;
     Graphics::UpdateTickParams(params);
 
     // go through and update local lights
@@ -1331,13 +1334,21 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 auto& directionalLight = clusterState.lightList.DirectionalLights[numDirectionalLights];
                 (genericLightAllocator.Get<Light_Color>(cid.id) * genericLightAllocator.Get<Light_Intensity>(typeIds[i])).store(directionalLight.color);
                 directionalLightAllocator.Get<DirectionalLight_Direction>(typeIds[i]).store(directionalLight.direction);
-                directionalLight.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
-                directionalLight.shadowMapIntensity = 1.0f;
+                const Util::FixedArray<float>& cascadeDistances = directionalLightAllocator.Get<DirectionalLight_CascadeDistances>(typeIds[i]);
+                const Util::FixedArray<Math::mat4> cascadeTransforms = directionalLightAllocator.Get<DirectionalLight_CascadeTransforms>(typeIds[i]);
+                directionalLight.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
+                directionalLight.shadowIntensity = 1.0f;
                 directionalLight.shadowBias = 0.0001f;
-                auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.globalLightShadowMap);
+                auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
                 directionalLight.shadowMapSize[0] = 1.0f / shadowDims.width;
                 directionalLight.shadowMapSize[1] = 1.0f / shadowDims.height;
-                lightServerState.csmUtil.GetShadowView().store(&directionalLight.shadowTransform[0][0]);
+                directionalLight.flags |= castShadow[i] ? LightsCluster::USE_SHADOW_BITFLAG : 0x0;
+                for (uint j = 0; j < cascadeDistances.Size(); j++)
+                {
+                    directionalLight.cascadeDistances[j] = cascadeDistances[j];
+                    cascadeTransforms[j].store(&directionalLight.cascadeTransforms[j][0][0]);
+
+                }
 
                 directionalLight.stageMask = stageMasks[i];
                 numDirectionalLights++;

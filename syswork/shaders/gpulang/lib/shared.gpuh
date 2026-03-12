@@ -145,15 +145,6 @@ struct TickParams
     FogDistances : f32x4;
     FogColor : f32x4;
 
-    // global light stuff
-    GlobalLightFlags : u32;
-    GlobalLightShadowIntensity : f32;
-    GlobalLightShadowMapSize : f32x2;
-    GlobalLightDirWorldspace : f32x4;
-    GlobalLightColor : f32x4;
-    GlobalAmbientLightColor : f32x4;
-
-    GlobalLightShadowBuffer : u32;
     TerrainShadowBuffer : u32;
     NumEnvMips : i32;
 
@@ -189,10 +180,6 @@ struct TickParams
     TonemapWeight : f32;
     Lum : f32;
 
-    // CSM params
-
-    GlobalLightShadowBias : f32;
-
     NormalBuffer : u32;
     DepthBuffer : u32;
     SpecularBuffer : u32;
@@ -225,7 +212,6 @@ const NUM_CASCADES = 4;
 const SHADOW_CASTER_COUNT = 16;
 struct ShadowViewParams
 {
-    CascadeDistances : f32x4;
     ShadowTiles : [SHADOW_CASTER_COUNT / NUM_SHADOW_TILES_PER_ROW] i32x4;
 	ShadowLookupViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
     ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
@@ -310,14 +296,16 @@ const MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct DirectionalLight
 {
-    shadowTransform : f32x4x4;
+    cascadeTransforms : [NUM_CASCADES]f32x4x4;
+	cascadeDistances : [NUM_CASCADES]f32;
     direction : f32x3;
     shadowMap : u32;
     color : f32x3;
-    shadowMapIntensity : f32;
+    shadowIntensity : f32;
     shadowBias : f32;
     shadowMapSize : f32x2;
     stageMask : u32;                // Stages this light is visible in
+	flags : u32;					// feature flags (shadows, projection texture, etc)
 };
 
 struct SpotLight

@@ -280,7 +280,9 @@ private:
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
         DirectionalLight_CascadeObservers,
-        DirectionalLight_CascadeTiles
+        DirectionalLight_CascadeTiles,
+        DirectionalLight_CascadeDistances,
+        DirectionalLight_CascadeTransforms,
     };
 
     struct ShadowData
@@ -296,7 +298,9 @@ private:
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)
         Util::Array<Graphics::GraphicsEntityId>,    // view ids for cascades
-        Util::Array<Math::rectangle<int>>           // cascade shadow tiles
+        Util::Array<Math::rectangle<int>>,          // cascade shadow tiles
+        Util::FixedArray<float>,                    // cascade distances       
+        Util::FixedArray<Math::mat4>                // cascade transforms
     > DirectionalLightAllocator;
     static DirectionalLightAllocator directionalLightAllocator;
 

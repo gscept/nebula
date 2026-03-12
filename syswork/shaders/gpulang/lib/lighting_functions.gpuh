@@ -404,18 +404,35 @@ CalculateGlobalLight(
     , viewVec : f32x3
     , worldSpaceNormal : f32x3
     , worldSpacePosition : f32x3
+	, worldSpaceDir : f32x3
+	, color : f32x3
+	, cascadeTransforms : [NUM_CASCADES]f32x4x4
+	, cascadeDistances : [NUM_CASCADES]f32
+	, shadowMap : u32
+	, shadowMapSize : f32x2
+	, shadowBias : f32
+	, shadowIntensity : f32
+	, flags : u32
 ) f32x3
 {
-    const NL = saturate(dot(PerTickParams.GlobalLightDirWorldspace.xyz, worldSpaceNormal));
+    const NL = saturate(dot(worldSpaceDir, worldSpaceNormal));
     if (NL <= 0) { return f32x3(0); }
 
 
     var shadowFactor = 1.0f;
-    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
+    if (FlagSet(flags, USE_SHADOW_BITFLAG))
     {
         // CSM transform takes us from world space to light view space
 		const dist = distance(ViewConstants.EyePos.xyz, worldSpacePosition);
-        shadowFactor = CSMPS(f32x4(worldSpacePosition, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
+        shadowFactor = CSMPS(
+			f32x4(worldSpacePosition, 1)
+			, dist
+			, cascadeTransforms
+			, cascadeDistances
+			, shadowMap
+			, shadowMapSize
+			, shadowBias
+		);
 
         if (PerTickParams.EnableTerrainShadows == 1)
         {
@@ -429,18 +446,18 @@ CalculateGlobalLight(
         //shadowFactor *= terrainShadow.x < 1.0f ?  * terrainShadow.x : 1.0f;
         //shadowFactor *= lerp(1.0f, terrainShadow.x, smoothstep(terrainShadow.y * 0.8f, terrainShadow.y, worldSpacePosition.y));
 
-        shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
+        shadowFactor = lerp(1.0f, shadowFactor, shadowIntensity);
     }
 
-    const H = normalize(PerTickParams.GlobalLightDirWorldspace.xyz + viewVec);
+    const H = normalize(worldSpaceDir + viewVec);
     const NV = saturate(dot(worldSpaceNormal, viewVec));
     const NH = saturate(dot(worldSpaceNormal, H));
-    const LH = saturate(dot(H, PerTickParams.GlobalLightDirWorldspace.xyz));
+    const LH = saturate(dot(H, worldSpaceDir));
 
     const  brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
 
-    const radiance = PerTickParams.GlobalLightColor.xyz;
-    var irradiance = (brdf * radiance) * saturate(NL) + PerTickParams.GlobalAmbientLightColor.xyz;
+    const radiance = color;
+    var irradiance = (brdf * radiance) * saturate(NL);
 
     return irradiance * shadowFactor;
 }
@@ -628,191 +645,6 @@ GI(
     return accumulatedGi;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-
-CalculatePointLightAmbientTransmission(
-    light : PointLight,
-    ext : PointLightShadowExtension,
-    pos : f32x3,
-    viewVec : f32x3,
-    normal : f32x3,
-    depth : f32,
-    material : f32x4,
-    albedo : f32x4,
-    transmission : f32
-) f32x3
-{
-    var lightDir = (light.position.xyz - pos);
-    const lightDirLen = length(lightDir);
-
-    const d2 = lightDirLen * lightDirLen;
-    const factor = d2 / (light.range * light.range);
-    const sf = saturate(1.0 - factor * factor);
-    const att = (sf * sf) / max(d2, 0.0001);
-    lightDir = lightDir / lightDirLen;
-
-    const NL = saturate(dot(lightDir, normal));
-    const TNL = saturate(dot(-lightDir, normal)) * transmission;
-    const radiance = light.color * att * saturate(NL + TNL) * albedo.rgb;
-
-    var shadowFactor = 1.0f;
-    if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
-    {
-        // TODO: The View here must be inferred from the view vector instead of relying the camera matrix
-        const projDir = (ViewConstants.InvView * f32x4(-lightDir, 0)).xyz;
-        shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
-    }
-
-    return radiance * shadowFactor;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CalculateSpotLightAmbientTransmission(
-    light : SpotLight,
-    projection : f32x4,
-    shadow : f32,
-    viewPos : f32x3,
-    viewVec : f32x3,
-    normal : f32x3,
-    depth : f32,
-    material : f32x4,
-    albedo : f32x4,
-    transmission : f32
-) f32x3
-{
-    var lightDir = (light.position.xyz - viewPos);
-    const lightDirLen = length(lightDir);
-    const att = InvSquareFalloff(light.range, lightDirLen, lightDir);
-    lightDir = lightDir / lightDirLen;
-
-    const theta = dot(light.forward.xyz, lightDir);
-    const intensity = saturate((theta - light.angleSinCos.y) * light.angleFade);
-
-    const lightModColor = f32x3(intensity) * att * projection.rgb;
-
-    const NL = saturate(dot(lightDir, normal));
-    const TNL = saturate(dot(-lightDir, normal)) * transmission;
-    const radiance = light.color * saturate(NL + TNL) * albedo.rgb;
-
-    return radiance * shadow * lightModColor;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CalculateGlobalLightAmbientTransmission(
-    pos : f32x3
-    , viewVec : f32x3
-    , normal : f32x3
-    , depth : f32
-    , material : f32x4
-    , albedo : f32x4
-    , transmission : f32
-) f32x3
-{
-    const NL = saturate(dot(PerTickParams.GlobalLightDirWorldspace.xyz, normal));
-    const TNL = saturate(dot(-PerTickParams.GlobalLightDirWorldspace.xyz, normal)) * transmission;
-
-    if ((NL + TNL) <= 0) { return f32x3(0); }
-
-
-    var shadowFactor = 1.0f;
-    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
-    {
-		const dist = distance(ViewConstants.EyePos.xyz, pos);
-
-        shadowFactor = CSMPS(f32x4(pos, 1), dist, PerTickParams.GlobalLightShadowBuffer, PerTickParams.GlobalLightShadowMapSize.xy, PerTickParams.GlobalLightShadowBias);
-        shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
-    }
-
-    var radiance = PerTickParams.GlobalLightColor.xyz * saturate(NL + TNL);
-    return radiance * shadowFactor * albedo.rgb;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-LocalLightsAmbientTransmission(
-    idx : u32,
-    viewPos : f32x4,
-    viewVec : f32x3,
-    normal : f32x3,
-    depth : f32,
-    material : f32x4,
-    albedo : f32x4,
-    transmission : f32
-) f32x3
-{
-    var light = f32x3(0);
-    const aabb = bufferLoad(ClusterAABBs, idx);
-    const flag = aabb.featureFlags;
-    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
-    {
-        // shade point lights
-        const count = LightIndexLists.PointLightCountList[idx];
-        var ext : PointLightShadowExtension;
-        for (var i : i32 = 0; i < count; i++)
-        {
-            const lidx = LightIndexLists.PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
-            const li = LightLists.PointLights[lidx];
-            light += CalculatePointLightAmbientTransmission(
-                li,
-                ext,
-                viewPos.xyz,
-                viewVec,
-                normal,
-                depth,
-                material,
-                albedo,
-                transmission
-            );
-        }
-    }
-    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
-    {
-        const count = LightIndexLists.SpotLightCountList[idx];
-        var shadowExt : SpotLightShadowExtension;
-        var projExt : SpotLightProjectionExtension;
-        for (var i : i32 = 0; i < count; i++)
-        {
-            const lidx = LightIndexLists.SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
-            const li = LightLists.SpotLights[lidx];
-
-            // if we have extensions, load them from their respective buffers
-            var projection = f32x4(1.0f);
-            var shadow = 1.0f;
-
-            // if we have extensions, load them from their respective buffers
-            if (li.shadowExtension != -1)
-            {
-                shadow = CalculateSpotLightShadow(li, LightLists.SpotLightShadow[li.shadowExtension], viewPos.xyz);
-            }
-            if (li.projectionExtension != -1)
-            {
-                projection = CalculateSpotLightProjection(li, LightLists.SpotLightProjection[li.projectionExtension], viewPos.xyz);
-            }
-
-            light += CalculateSpotLightAmbientTransmission(
-                li,
-                projection,
-                shadow,
-                viewPos.xyz,
-                viewVec,
-                normal,
-                depth,
-                material,
-                albedo,
-                transmission
-            );
-        }
-    }
-    return light;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -832,7 +664,28 @@ CalculateLight(
     var light = f32x3(0, 0, 0);
     const viewVec = normalize(ViewConstants.EyePos.xyz - worldSpacePos.xyz);
     const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
-    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+
+	for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+	{
+		const li = LightLists.DirectionalLights[i];
+		light += CalculateGlobalLight(
+			albedo
+			, material
+			, F0
+			, viewVec
+			, normal
+			, worldSpacePos
+			, li.direction
+			, li.color
+			, li.cascadeTransforms
+			, li.cascadeDistances
+			, li.shadowMap
+			, li.shadowMapSize
+			, li.shadowBias
+			, li.shadowIntensity
+			, li.flags
+		);
+	}
 
 //#if USE_SCALARIZATION_LOOP
 //    // Get the mask for the invocation

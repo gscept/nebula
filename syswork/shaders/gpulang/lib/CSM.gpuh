@@ -25,6 +25,8 @@ const DebugColors : [8]f32x4 =
 CSMPS(
 	  TexShadow : f32x4
 	  , Distance : f32
+	  , ShadowViewProjection : [NUM_CASCADES]f32x4x4
+	  , CascadeDistances : [NUM_CASCADES]f32
 	  , Texture : u32
 	  , ShadowTileTexelSize : f32x2
 	  , ShadowBias : f32
@@ -37,7 +39,7 @@ CSMPS(
 	var cascadeIndex : i32 = 0;
 	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
 	{
-		if Distance < ShadowViewConstants.CascadeDistances[cascadeIndex]
+		if Distance < CascadeDistances[cascadeIndex]
 		{
 			cascadeFound = true;
 			break;
@@ -50,7 +52,7 @@ CSMPS(
 		return 1.0f;
 	}
 
-	const texCoordShadow = ShadowViewConstants.ShadowLookupViewProjection[cascadeIndex] * TexShadow;
+	const texCoordShadow = ShadowViewProjection[cascadeIndex] * TexShadow;
 
 	// calculate texture coordinate in shadow space
 	const occlusion = PCFShadow(Texture, texCoordShadow.z, texCoordShadow.xy, ShadowTileTexelSize, ShadowBias * exp2(f32(cascadeIndex)));
