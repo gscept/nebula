@@ -110,7 +110,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
-    mat4 proj = orthooffcenterrh(data->DisplayPos.x, data->DisplayPos.x + viewport.width(), data->DisplayPos.y + viewport.height(), data->DisplayPos.y, 0.0f, +1.0f);
+    mat4 proj = orthooffcenter(data->DisplayPos.x, data->DisplayPos.x + viewport.width(), data->DisplayPos.y + viewport.height(), data->DisplayPos.y, 0.0f, +1.0f);
 
     TotalVerticesThisFrame += data->TotalVtxCount;
     TotalIndicesThisFrame += data->TotalIdxCount;

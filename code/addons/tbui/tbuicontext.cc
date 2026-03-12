@@ -519,9 +519,9 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
 
     // create orthogonal matrix
 #if __VULKAN__
-    Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
+    Math::mat4 proj = Math::orthooffcenter(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
 #else
-    Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
+    Math::mat4 proj = Math::orthooffcenter(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
 #endif
 
     Math::mat4 transform = Math::mat4::identity;
