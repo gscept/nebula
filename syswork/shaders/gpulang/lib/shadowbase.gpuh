@@ -35,7 +35,6 @@ vsStaticShadow(
 {
 	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
 }
 
@@ -54,8 +53,7 @@ vsSkinnedShadow(
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
     ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
-    vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
+	vertexExportCoordinates(ProjPos);
     UV = UnpackUV(uv);
 }
 
@@ -73,7 +71,6 @@ vsStaticInst(
 	const viewStride = vertexGetInstanceIndex() % 16u;
 	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 
@@ -90,7 +87,6 @@ vsStaticCSM(
 {
 	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    //vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
 }
 
@@ -110,7 +106,6 @@ vsSkinnedCSM(
 	const skinnedPos = SkinnedPosition(position, weights, indices);
 	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
 }
 
@@ -129,7 +124,6 @@ vsStaticInstCSM(
     const instanceStride = vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW;
 	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 
@@ -146,7 +140,6 @@ vsStaticPoint(
 {
     ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
 }
 
@@ -166,7 +159,6 @@ vsSkinnedPoint(
 	const skinnedPos = SkinnedPosition(position, weights, indices);
     ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW][vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW]));
 	UV = UnpackUV(uv);
 }
 
@@ -184,7 +176,6 @@ vsStaticInstPoint(
 	const viewStride = vertexGetInstanceIndex() % 6;
 	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 

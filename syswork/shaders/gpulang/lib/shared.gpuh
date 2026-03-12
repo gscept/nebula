@@ -212,8 +212,6 @@ const NUM_CASCADES = 4;
 const SHADOW_CASTER_COUNT = 16;
 struct ShadowViewParams
 {
-    ShadowTiles : [SHADOW_CASTER_COUNT / NUM_SHADOW_TILES_PER_ROW] i32x4;
-	ShadowLookupViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
     ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
 };
 

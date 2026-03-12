@@ -34,8 +34,6 @@ CSMPS(
 {
 	var cascadeFound = false;
 
-    TexShadow = TexShadow / TexShadow.wwww;
-
 	var cascadeIndex : i32 = 0;
 	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
 	{
