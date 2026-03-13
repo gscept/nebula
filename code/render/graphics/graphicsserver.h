@@ -214,6 +214,16 @@ DeregisterEntity(const GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+template<typename ... CONTEXTS>
+static void
+DeregisterEntityImmediate(const GraphicsEntityId id)
+{
+    (CONTEXTS::DeregisterEntityImmediate(id), ...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void 
 GraphicsServer::SetResizeCall(void(*func)(const SizeT windowWidth, const SizeT windowHeight))
 {

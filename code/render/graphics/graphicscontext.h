@@ -34,6 +34,7 @@ private:\
 public:\
     static void RegisterEntity(const Graphics::GraphicsEntityId id);\
     static void DeregisterEntity(const Graphics::GraphicsEntityId id);\
+    static void DeregisterEntityImmediate(const Graphics::GraphicsEntityId id);\
     static bool IsEntityRegistered(const Graphics::GraphicsEntityId id);\
     static void Destroy(); \
     static Graphics::ContextEntityId GetContextId(const Graphics::GraphicsEntityId id); \
@@ -58,6 +59,17 @@ void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
     Graphics::GraphicsContext::InternalDeregisterEntity(id, std::forward<Graphics::GraphicsContextState>(__state));\
+}\
+\
+void ctx::DeregisterEntityImmediate(const Graphics::GraphicsEntityId id)\
+{\
+    IndexT index = __state.entitySliceMap.FindIndex(id);\
+    n_assert(index != InvalidIndex);\
+    auto cid = __state.entitySliceMap.ValueAtIndex(id.id, index);\
+    __state.Dealloc(cid);\
+    __state.entitySliceMap.EraseIndex(id, index);\
+    if (__state.Defragment != nullptr)\
+        __state.Defragment();\
 }\
 \
 bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
