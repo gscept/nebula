@@ -58,13 +58,12 @@ generate
     }
 
     if ImageFormatType == ImageFormat.R32f
-    {
-        uniform Input : *mutable r32f texture2D;
-        uniform Output : [13]* mutable r32f texture2D;
-        
+    {        
 
         if ImageIsArray
         {
+			uniform Input : *mutable r32f texture2DArray;
+			uniform Output : [13]* mutable r32f texture2DArray;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
@@ -92,6 +91,8 @@ generate
         }
         else
         {
+			uniform Input : *mutable r32f texture2D;
+			uniform Output : [13]* mutable r32f texture2D;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
@@ -121,15 +122,14 @@ generate
     }
     else if ImageFormatType == ImageFormat.R11g11b10f
     {
-        uniform Input : *mutable r11g11b10f texture2D;
-        uniform Output : [13]* mutable r11g11b10f texture2D;
-
         if ImageIsArray
         {
+			uniform Input : *mutable r11g11b10f texture2DArray;
+			uniform Output : [13]* mutable r11g11b10f texture2DArray;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel), slice).xyz;
+                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
                 samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
                 samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
                 samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
@@ -153,6 +153,8 @@ generate
         }
         else
         {
+			uniform Input : *mutable r11g11b10f texture2D;
+			uniform Output : [13]* mutable r11g11b10f texture2D;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
@@ -452,7 +454,7 @@ csMain() void
     // one work group to do mips 6-11
     uniform counterPtr = bufferPtr(Counters, sliceIndex).&counter;
     if localIndex == 0 {
-        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.AcquireRelease);
+        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.Relaxed);
     }
 
     executionBarrierWorkgroup();
