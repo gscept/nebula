@@ -1230,6 +1230,21 @@ lookat(point eye, point at, vector up)
 #endif
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+lookto(point eye, vector direction, vector up)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return lookatlh(eye, eye + direction, up);
+#else
+    return lookatrh(eye, eye + direction, up);
+#endif
+}
+
+
 //------------------------------------------------------------------------------
 /**
 */
