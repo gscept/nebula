@@ -181,7 +181,6 @@ private:
         Light_Color,
         Light_Intensity,
         Light_ShadowCaster,
-        Light_ShadowTile,
         Light_Range,
         Light_TypedLightId,
         Light_StageMask
@@ -193,7 +192,6 @@ private:
         Math::vec3,                     // color
         float,                          // intensity
         bool,                           // shadow caster
-        Math::rectangle<int>,           // shadow rendering tile
         float,                          // range
         Ids::Id32,                      // typed light id (index into pointlights, spotlights and globallights)
         Graphics::StageMask
@@ -208,43 +206,39 @@ private:
     enum
     {
         PointLight_Transform,
-        PointLight_ConstantBufferSet,
-        PointLight_ShadowConstantBufferSet,
-        PointLight_DynamicOffsets,
         PointLight_ProjectionTexture,
         PointLight_Observers,
-        PointLight_ParaboloidTiles
+        PointLight_ShadowTiles,
+        PointLight_ShadowProjectionTransforms
     };
 
     typedef Ids::IdAllocator<
         Math::transform44,                              // transform
-        ConstantBufferSet,                              // constant buffer binding for light
-        ConstantBufferSet,                              // constant buffer binding for shadows
-        Util::FixedArray<uint>,                         // dynamic offsets
         CoreGraphics::TextureId,                        // projection (if invalid, don't use)
-        Util::FixedArray<Graphics::GraphicsEntityId>,   // graphics entity used for observer stuff
-        Util::FixedArray<Math::rectangle<int>>          // cascade shadow tiles
+        std::array<Graphics::GraphicsEntityId, 6>,      // graphics entity used for observer stuff
+        std::array<Math::rectangle<int>, 6>,            // cascade shadow tiles
+        std::array<Math::mat4, 6>                       // cascade shadow tiles
     > PointLightAllocator;
     static PointLightAllocator pointLightAllocator;
 
     enum
     {
         SpotLight_Transform,
-        SpotLight_ConstantBufferSet,
-        SpotLight_ShadowConstantBufferSet,
         SpotLight_ConeAngles,
         SpotLight_ProjectionTexture,
         SpotLight_ProjectionTransform,
+        SpotLight_ShadowProjectionTransform,
+        SpotLight_ShadowTile,
         SpotLight_Observer
     };
 
     typedef Ids::IdAllocator<
         Math::transform44,          // transform
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
         std::array<float, 2>,       // cone angle
         CoreGraphics::TextureId,    // projection (if invalid, don't use)
         Math::mat4,                 // projection matrix
+        Math::mat4,                 // shadow projection transform
+        Math::rectangle<int>,       // shadow tile          
         Graphics::GraphicsEntityId  // graphics entity used for observer stuff
     > SpotLightAllocator;
     static SpotLightAllocator spotLightAllocator;
@@ -253,21 +247,21 @@ private:
     {
         AreaLight_Transform,
         AreaLight_Shape,
-        AreaLight_ConstantBufferSet,
-        AreaLight_ShadowConstantBufferSet,
         AreaLight_TwoSided,
-        AreaLight_Observer,
+        AreaLight_Observers,
+        AreaLight_ShadowProjectionTransforms,
+        AreaLight_ShadowTiles,
         AreaLight_RenderMesh,
     };
 
     typedef Ids::IdAllocator<
-        Math::transform44,          // transform
-        AreaLightShape,             // shape of area light
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
-        bool,                       // two sides
-        Graphics::GraphicsEntityId, // graphics entity used for observer stuff
-        bool                        // render mesh as well
+        Math::transform44,                                  // transform
+        AreaLightShape,                                     // shape of area light
+        bool,                                               // two sides
+        std::array<Graphics::GraphicsEntityId, 2>,          // graphics entity used for observer stuff
+        std::array<Math::mat4, 2>,                          // shadow rendering projection transforms for front and back
+        std::array<Math::rectangle<int>, 2>,                // shadow rendering tiles for front and back
+        bool                                                // render mesh as well
     > AreaLightAllocator;
     static AreaLightAllocator areaLightAllocator;
 
@@ -313,7 +307,7 @@ private:
     > ShadowCasterAllocator;
     
     static ShadowCasterAllocator shadowCasterAllocator;
-    static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterSliceMap;
+    static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterIndexMap;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();

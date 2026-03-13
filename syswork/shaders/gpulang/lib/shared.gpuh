@@ -209,7 +209,7 @@ group(FRAME_GROUP) uniform ViewConstants : *ViewParams;
 
 const NUM_SHADOW_TILES_PER_ROW = 4u;
 const NUM_CASCADES = 4;
-const SHADOW_CASTER_COUNT = 16;
+const SHADOW_CASTER_COUNT = 256;
 struct ShadowViewParams
 {
     ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
@@ -324,15 +324,14 @@ struct SpotLight
 
 struct SpotLightProjectionExtension
 {
-    projection : f32x4x4;					// projection transform
+    projection : f32x4x4;		// projection transform
     projectionTexture : u32;	// projection texture
 };
 
 struct SpotLightShadowExtension
 {
     projection : f32x4x4;
-    shadowIntensity : f32;				// intensity of shadows
-    shadowSlice : u32;
+    shadowIntensity : f32;		// intensity of shadows
     shadowMap : u32;			// shadow map
 };
 
@@ -343,12 +342,15 @@ struct PointLight
 
     color : f32x3;					// light color
     flags : u32;					// feature flags (shadows, projection texture, etc)
+	shadowExtension : i32;			// shadow extension
+
     stageMask : u32;                // Stages this light is visible in
 };
 
 struct PointLightShadowExtension
 {
-    shadowIntensity : f32;		// intensity of shadows
+	projection : [6]f32x4x4;		// projection transforms for each side
+    shadowIntensity : f32;			// intensity of shadows
     shadowMap : u32;				// shadow map
 };
 
@@ -373,9 +375,9 @@ struct AreaLight
 
 struct AreaLightShadowExtension
 {
-    projection : f32x4x4;
+    frontProjection : f32x4x4;
+	backProjection : f32x4x4;
     shadowIntensity : f32;				// intensity of shadows
-    shadowSlice : u32;
     shadowMap : u32;			// shadow map
 };
 
