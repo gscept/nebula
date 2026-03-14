@@ -279,48 +279,6 @@ LightContext::Create()
         }
         lightServerState.shadowCastingLights.Clear();
 
-
-        /*
-        for (IndexT i = 0; i < types.Size(); i++)
-        {
-            if (shadowCasters[i])
-            {
-                if (types[i] == LightType::DirectionalLightType)
-                {
-                    Ids::Id32 typedId = typeIds[i];
-                    const Util::FixedArray<Graphics::GraphicsEntityId>& observers = directionalLightAllocator.Get<DirectionalLight_CascadeObservers>(typedId);
-                    const Util::FixedArray<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typedId);
-                    for (IndexT j = 0; j < observers.Size(); j++)
-                    {
-                        // draw it!
-                        CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
-                        CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
-                        Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::GlobalShadow, observers[j], 1, j, bufferIndex);
-                    }
-                }
-                else if (types[i] == LightType::SpotLightType || types[i] == LightType::AreaLightType)
-                {
-                    const Util::Array<Graphics::GraphicsEntityId>& entities = genericLightAllocator.GetArray<Light_Entity>();
-                    CoreGraphics::CmdSetViewport(cmdBuf, shadowTiles[i], 0);
-                    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::SpotLightShadow, entities[i], 1, 0, bufferIndex);
-                }
-                else if (types[i] == LightType::PointLightType)
-                {
-                    Ids::Id32 typedId = typeIds[i];
-                    const Util::FixedArray<Graphics::GraphicsEntityId>& observers = pointLightAllocator.Get<PointLight_Observers>(typedId);
-                    const Util::FixedArray<Math::rectangle<int>>& tiles = pointLightAllocator.Get<PointLight_ShadowTiles>(typedId);
-                    for (IndexT j = 0; j < observers.Size(); j++)
-                    {
-                        // draw it!
-                        CoreGraphics::CmdSetViewport(cmdBuf, tiles[j], 0);
-                        CoreGraphics::CmdSetScissorRect(cmdBuf, tiles[j], 0);
-                        Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::PointLightShadow, observers[j], 1, 0, bufferIndex);
-                    }
-                }
-            }
-        }
-        */
-
         CoreGraphics::CmdEndPass(cmdBuf);
     });
 
@@ -1202,7 +1160,7 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                 const Math::vector& direction = directionalLightAllocator.Get<DirectionalLight_Direction>(typeIds[i]);
                 const Util::FixedArray<Math::rectangle<int>>& tiles = directionalLightAllocator.Get<DirectionalLight_CascadeTiles>(typeIds[i]);
 
-                const Util::FixedArray<float> distances = { 5, 45, 120, 300 };
+                const Util::FixedArray<float> distances = { 5, 15, 50, 100 };
                 Util::FixedArray<Math::mat4> projections(4);
                 Util::FixedArray<Math::mat4> viewProjections(4);
                 CalculateCSMSplits(
@@ -1274,7 +1232,7 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
         else if (types[i] == LightType::PointLightType && shadowCasters[i])
         {
             Math::mat4 projection = Math::perspfov(Math::deg2rad(90.0f), 1.0f, 0.1f, genericLightAllocator.Get<Light_Range>(i));
-            projection.r[1][1] *= 1.0f;
+            projection.r[1][1] *= -1.0f;
             Math::point center = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]).getposition();
             const std::array<Graphics::GraphicsEntityId, 6>& observers = pointLightAllocator.Get<PointLight_Observers>(typeIds[i]);
             const std::array<Math::rectangle<int>, 6>& shadowTiles = pointLightAllocator.Get<PointLight_ShadowTiles>(typeIds[i]);
@@ -1285,9 +1243,15 @@ LightContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCo
                 Math::vector(0, 1, 0), Math::vector(0, -1, 0),
                 Math::vector(0, 0, 1), Math::vector(0, 0, -1)
             };
+
+            Math::vector up[] = {
+                Math::vector(0, 1, 0), Math::vector(0, 1, 0),
+                Math::vector(0, 0, -1), Math::vector(0, 0, 1),
+                Math::vector(0, 1, 0), Math::vector(0, 1, 0)
+            };
             for (IndexT j = 0; j < observers.size(); j++)
             {
-                Math::mat4 view = Math::lookto(center, directions[j], Math::vector::upvec());
+                Math::mat4 view = Math::lookto(center, directions[j], up[j]);
                 Ids::Id32 ctxId = shadowCasterIndexMap[observers[j]];
                 Math::mat4 viewProj = projection * view;
                 shadowCasterAllocator.Set<ShadowCaster_Transform>(ctxId, viewProj);
