@@ -276,6 +276,14 @@ GraphicsServer::Close()
 void
 GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state)
 {
+    // Make sure the context is made aware of all the views created thus far
+    for (auto& view : this->views)
+    {
+        if (context->OnViewCreated)
+        {
+            context->OnViewCreated(view);
+        }
+    }
     this->contexts.Append(context);
     this->states.Append(state);
 }

@@ -40,6 +40,7 @@ struct
     float logMinLuminance;
 
     float previousLum;
+    Util::Dictionary<Graphics::ViewId, CoreGraphics::BufferId> viewHistogramBuffers;
 
 } histogramState;
 
@@ -65,6 +66,7 @@ HistogramContext::Create()
 {
     __CreatePluginContext();
     __bundle.OnViewportResized = HistogramContext::Resize;
+    __bundle.OnViewCreated = HistogramContext::OnViewCreated;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
@@ -94,26 +96,12 @@ HistogramContext::Create()
     bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination;
     histogramState.histogramReadbackBuffers.Create(bufInfo);
 
-    bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants::STRUCT);
-    bufInfo.mode = CoreGraphics::DeviceAndHost;
-    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
-    bufInfo.data = nullptr;
-    bufInfo.dataSize = 0;
-    histogramState.histogramConstants = CoreGraphics::CreateBuffer(bufInfo);
-
     histogramState.histogramResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramCounters,
         HistogramCs::HistogramBuffer::BINDING,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
-        0
-    });
-    CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
-        histogramState.histogramConstants,
-        HistogramCs::HistogramConstants::BINDING,
-        0,
-        CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
         0
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
@@ -140,8 +128,6 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
     histogramState.offset = { mippedWidth * offset.x, mippedHeight * offset.y };
     histogramState.size = { mippedWidth * size.x, mippedHeight * size.y };
     histogramState.mip = mip;
-
-    HistogramContext::UpdateConstants();
 }
 
 //------------------------------------------------------------------------------
@@ -230,8 +216,18 @@ HistogramContext::UpdateViewResources(const Graphics::ViewId view, const Graphic
     CoreGraphics::BufferInvalidate(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex], 0, NEBULA_WHOLE_BUFFER_SIZE);
     int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex]);
 
-    if (Core::CVarModified(histogramState.minLuminance))
-        HistogramContext::UpdateConstants();
+    // Get per-view constants
+    histogramState.histogramConstants = histogramState.viewHistogramBuffers[view];
+    CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
+            histogramState.histogramConstants,
+            HistogramCs::HistogramConstants::BINDING,
+            0,
+            CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
+            0
+    });
+    CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
+
+     HistogramContext::UpdateConstants();
 
     int numPixels = histogramState.size.x * histogramState.size.y;
     int numBlackPixels = buf[0];
@@ -295,6 +291,34 @@ HistogramContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
         );
         CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+HistogramContext::OnViewCreated(const Graphics::ViewId view)
+{
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants::STRUCT);
+    bufInfo.mode = CoreGraphics::DeviceAndHost;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
+    bufInfo.data = nullptr;
+    bufInfo.dataSize = 0;
+    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
+    histogramState.viewHistogramBuffers.Add(view, buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+HistogramContext::OnViewRemoved(const Graphics::ViewId view)
+{
+    IndexT viewIndex = histogramState.viewHistogramBuffers.FindIndex(view);
+    n_assert(viewIndex != InvalidIndex);
+    CoreGraphics::DestroyBuffer(histogramState.viewHistogramBuffers.ValueAtIndex(viewIndex));
+    histogramState.viewHistogramBuffers.EraseAtIndex(viewIndex);
 }
 
 } // namespace PostEffects

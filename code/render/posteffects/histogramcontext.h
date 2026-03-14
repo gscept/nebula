@@ -39,6 +39,10 @@ public:
 
     /// Handle window resize
     static void Resize(const uint framescriptHash, SizeT width, SizeT height);
+    /// Handle new view being created
+    static void OnViewCreated(const Graphics::ViewId view);
+    /// Handle view being removed
+    static void OnViewRemoved(const Graphics::ViewId view);
 
 private:
 
