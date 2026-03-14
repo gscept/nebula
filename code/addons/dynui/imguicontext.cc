@@ -234,6 +234,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
                 ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
 
+
                 TextureInfo texInfo;
                 texInfo.type = 0;
                 texInfo.useRange = tex.useRange;
@@ -244,6 +245,8 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 CoreGraphics::TextureId texture = tex.nebulaHandle;
                 CoreGraphics::TextureIdLock _0(texture);
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
+                CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(texture);
+                texInfo.splat |= CoreGraphics::PixelFormat::ToChannels(format) == 1 ? 1 : 0;
                 auto usage = CoreGraphics::TextureGetUsage(texture);
                 if (HasFlags(usage, CoreGraphics::TextureUsage::Render) || HasFlags(usage, CoreGraphics::TextureUsage::ReadWrite))
                 {
