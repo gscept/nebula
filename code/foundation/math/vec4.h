@@ -992,7 +992,7 @@ nearequal3(const vec4& v0, const vec4& v1, const vec4& epsilon)
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
     temp = _mm_cmple_ps(temp, epsilon.vec);
-    return (_mm_movemask_ps(temp) == 0x7) != 0;
+    return (_mm_movemask_ps(temp) & 7) == 0x7;
 }
 
 //------------------------------------------------------------------------------
