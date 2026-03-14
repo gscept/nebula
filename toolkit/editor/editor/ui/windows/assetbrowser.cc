@@ -22,15 +22,36 @@ namespace Presentation
 {
 __ImplementClass(Presentation::AssetBrowser, 'AsBw', Presentation::BaseWindow);
 
+/// quick & dirty scan job as this is too slow in windows and blocks the main thread too long
+class ScanFolderJob : public Threading::Thread
+{
+    __DeclareClass(ScanFolderJob);
+public:
+    /// 
+    AssetBrowser* browser;
+
+    /// 
+    void DoWork() override
+    {
+        Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+        this->browser->ScanFolder("export", "export:", false);
+        this->browser->ScanFolder("sysexport", "export:", true);
+        this->browser->ScanFolder("work", "proj:work/", false);
+        this->browser->ScanFolder("syswork", "tool:syswork/", false);
+        ioServer = nullptr;
+        this->browser->currentScanJob = nullptr;
+    }
+};
+__ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
+
 //------------------------------------------------------------------------------
 /**
 */
 AssetBrowser::AssetBrowser()
 {
-    this->ScanFolder("export", "export:", false);
-    this->ScanFolder("sysexport", "export:", true);
-    this->ScanFolder("work", "proj:work/", false);
-    this->ScanFolder("syswork", "tool:syswork/", false);
+    this->currentScanJob = ScanFolderJob::Create();
+    this->currentScanJob->browser = this;
+    this->currentScanJob->Start();    
 }
 
 //------------------------------------------------------------------------------
@@ -56,6 +77,11 @@ AssetBrowser::Update()
 void
 AssetBrowser::Run(SaveMode save)
 {
+    if (this->currentScanJob.isvalid() && this->currentScanJob->IsRunning())
+    {
+        ImGui::Text("Scanning folders...");
+        return;
+    }
     DisplayFileTree();
 }
 
