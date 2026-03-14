@@ -63,6 +63,7 @@ private:
     RenderMode renderMode = TexturedLit;
 
     Graphics::ViewId view;
+    Graphics::GraphicsEntityId directionalLight;
 
     CoreGraphics::TextureId targetTexture;
     Dynui::ImguiTextureId textureInfo;

@@ -8,6 +8,7 @@
 #include "graphics/view.h"
 #include "imgui.h"
 #include "editor/editor/tools/selectioncontext.h"
+#include "lighting/lightcontext.h"
 
 #include "frame/default.h"
 #include "frame/preview.h"
@@ -48,10 +49,15 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     texInfo.width = 1280;
     texInfo.height = 900;
     this->targetTexture = CoreGraphics::CreateTexture(texInfo);
+    this->directionalLight = Graphics::GraphicsServer::Instance()->CreateGraphicsEntity();
     this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), mask, [this](IndexT frameIndex, IndexT bufferIndex)
     {
         FrameScript_preview::Bind_Target(Frame::TextureImport(this->targetTexture));
     });
+    Lighting::LightContext::RegisterEntity(this->directionalLight);
+    Lighting::LightContext::SetupDirectionalLight(
+        this->directionalLight, this->view, Math::vec3(1.0f), 50.0f, Math::vec3(0.05f), 70_rad, 0_rad, mask, false
+    );
     
     this->camera.Setup(1280, 900, 1 << 3);
 	this->camera.AttachToView(this->view);
