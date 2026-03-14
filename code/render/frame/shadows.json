@@ -86,6 +86,11 @@
                             ]
                         }
                     },
+                    {
+                        "subgraph": {
+                          "name": "ShadowAtlasUpdate"
+                        }
+                    },
 
                     {
                         "subgraph": {

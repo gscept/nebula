@@ -21,6 +21,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/textrenderer.h"
+#include "graphics/view.h"
 #include "debug/debughandler.h"
 
 namespace Graphics
@@ -36,22 +37,13 @@ struct FrameContext
 };
 
 using ViewIndependentCall = void(*)(const Graphics::FrameContext& ctx);
-using ViewDependentCall = void(*)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-
-static constexpr uint16_t PRIMARY_STAGE_MASK = 0x1;
-static constexpr uint16_t SHADOW_STAGE_MASK = 0x2;
-static constexpr uint16_t DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
-
-static constexpr uint16_t GetStageMask(const uint16_t stageIndex)
-{
-    return 1 << (stageIndex << SHADOW_STAGE_MASK);
-}
+using ViewDependentCall = void(*)(const ViewId view, const Graphics::FrameContext& ctx);
 
 
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
 struct GraphicsContextState;
-class View;
+struct ViewId;
 class GraphicsServer : public Core::RefCounted
 {
     __DeclareClass(GraphicsServer);
@@ -75,24 +67,27 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, bool(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage = PRIMARY_STAGE_MASK);
+    Graphics::ViewId CreateView(
+        const Util::StringAtom& name
+        , bool(*renderFunction)(const Math::rectangle<int>&, IndexT, IndexT)
+        , const Math::rectangle<int>& viewport
+        , Graphics::StageMask stageMask = PRIMARY_STAGE_MASK
+        , std::function<void(IndexT, IndexT)> preViewCallback = nullptr
+        , std::function<void(IndexT, IndexT)> postViewCallback = nullptr
+    );
     /// create a new view without a framescript
-    Ptr<View> CreateView(const Util::StringAtom& name);
+    Graphics::ViewId CreateView(const Util::StringAtom& name);
     /// Get view by name
-    const Ptr<View>& GetView(const Util::StringAtom& name);
+    const Graphics::ViewId GetView(const Util::StringAtom& name);
     /// discard view
-    void DiscardView(const Ptr<View>& view);
+    void DiscardView(const Graphics::ViewId view);
     /// get current view
-    const Ptr<View>& GetCurrentView() const;
+    const Graphics::ViewId GetCurrentView() const;
     /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
-    void SetCurrentView(const Ptr<View>& view);
+    void SetCurrentView(const Graphics::ViewId view);
 
-    using PreViewCallback = void(*)(IndexT, IndexT);
-    using PostViewCallback = void(*)(IndexT, IndexT);
-    /// Add callback for rendering before the views are processed
-    void AddPreViewCall(PreViewCallback callback);
-    /// Add callback for rendering after the views are processed
-    void AddPostViewCall(PostViewCallback callback);
+    /// Add callback to run just before frame is finished
+    void AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex));
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
 
@@ -153,12 +148,13 @@ private:
     Util::Array<GraphicsContextFunctionBundle*> contexts;
     Util::Array<GraphicsContextState*> states;
 
-    Util::Dictionary<Util::StringAtom, Ptr<View>> viewsByName;
-    Util::Array<Ptr<View>> views;
-    Ptr<View> currentView;
+    Util::Dictionary<Util::StringAtom, Graphics::ViewId> viewsByName;
+    Util::Array<Graphics::ViewId> views;
+    Graphics::ViewId currentView;
 
-    Util::Array<PreViewCallback> preViewCallbacks;
-    Util::Array<PostViewCallback> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> preViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> endFrameCallbacks;
 
     void (*resizeCall) (const SizeT, const SizeT);
 
@@ -218,37 +214,11 @@ DeregisterEntity(const GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<View>&
-GraphicsServer::GetView(const Util::StringAtom& name)
+template<typename ... CONTEXTS>
+static void
+DeregisterEntityImmediate(const GraphicsEntityId id)
 {
-    return this->viewsByName[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<View>&
-GraphicsServer::GetCurrentView() const
-{
-    return this->currentView;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPreViewCall(PreViewCallback callback)
-{
-    this->preViewCallbacks.Append(callback);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPostViewCall(PostViewCallback callback)
-{
-    this->postViewCallbacks.Append(callback);
+    (CONTEXTS::DeregisterEntityImmediate(id), ...);
 }
 
 //------------------------------------------------------------------------------

@@ -41,7 +41,7 @@ def DeclareResourceDependencies(list_name, parser, deps, file):
         elif dep.tex:
             textures.add(dep)
         else:
-            Error("Unknown resource {}".format(dep.name))
+            Error(list_name, "Unknown resource '{}'".format(dep.name))
         
     if len(textures) > 0:
         file.WriteLine("const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
@@ -334,7 +334,7 @@ class SubgraphDefinition:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
         file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> SubgraphTextureDependencies_{};'.format(self.name))
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
-        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
+        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*Subgraph_Sync_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
 
@@ -342,7 +342,7 @@ class SubgraphDefinition:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine('void')
-        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
+        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Subgraph_{} = func;".format(self.name))
@@ -391,7 +391,7 @@ class SubgraphDefinition:
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
-        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
         file.WriteLine('void RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT));'.format(self.name))
     
     def FormatSource(self, file):
@@ -404,7 +404,7 @@ class SubgraphDefinition:
         file.IncreaseIndent()
         if self.subp == None:
             file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.queue, self.name, self.name))
-        file.WriteLine('Subgraph_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(self.name))
+        file.WriteLine('Subgraph_{}(cmdBuf, CoreGraphics::{}QueueType, viewport, frameIndex, bufferIndex);'.format(self.name, self.queue))
         file.DecreaseIndent()
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
 
@@ -422,7 +422,7 @@ class BatchDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
+        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, Graphics::ViewGetCamera(view), bufferIndex);".format(self.name))    
     
     def FormatSetup(self, file):
         pass
@@ -492,7 +492,7 @@ class FullscreenEffectDefinition:
         file.WriteLine('bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
-        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::{}::BINDING));'.format(self.name, self.name, self.constantBlockName))
+        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, {}::{}::BINDING));'.format(self.name, self.name, self.namespace, self.constantBlockName))
         file.WriteLine('CoreGraphics::ResourceTableCommitChanges(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
@@ -1557,7 +1557,7 @@ class FrameScriptGenerator:
         file.WriteLine("didResize = true;")
         file.DecreaseIndent()
         file.WriteLine("}")
-        file.WriteLine("const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
+        file.WriteLine("const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
         for submission in self.submissions:
             if submission.lastSubmit:
                 submission.FormatSource(file, self.importTextures)

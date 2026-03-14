@@ -33,9 +33,8 @@ vsStaticShadow(
 	out ProjPos : f32x4
 ) void
 {
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -53,9 +52,8 @@ vsSkinnedShadow(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
-    vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+	vertexExportCoordinates(ProjPos);
     UV = UnpackUV(uv);
 }
 
@@ -71,9 +69,8 @@ vsStaticInst(
 ) void
 {
 	const viewStride = vertexGetInstanceIndex() % 16u;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 
@@ -88,9 +85,8 @@ vsStaticCSM(
     out ProjPos : f32x4
 ) void
 {
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
 }
 
@@ -108,9 +104,8 @@ vsSkinnedCSM(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+	ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(vertexGetInstanceIndex());
 	UV = UnpackUV(uv);
 }
 
@@ -125,11 +120,10 @@ vsStaticInstCSM(
     out ProjPos : f32x4
 ) void
 {
-	const viewStride = vertexGetInstanceIndex() % 4;
-    const instanceStride = vertexGetInstanceIndex() / 4;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
+	const viewStride = vertexGetInstanceIndex() % NUM_SHADOW_TILES_PER_ROW;
+    const instanceStride = vertexGetInstanceIndex() / NUM_SHADOW_TILES_PER_ROW;
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 
@@ -144,9 +138,8 @@ vsStaticPoint(
     out ProjPos : f32x4
 ) void
 {
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -164,9 +157,8 @@ vsSkinnedPoint(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -182,9 +174,8 @@ vsStaticInstPoint(
 ) void
 {
 	const viewStride = vertexGetInstanceIndex() % 6;
-	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+	ProjPos = ShadowViewConstants.ShadowViewProjection[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(viewStride);
 	UV = UnpackUV(uv);
 }
 
@@ -397,22 +388,6 @@ ExponentialShadowSample(mapDepth : f32, depth : f32, bias : f32) f32
 //------------------------------------------------------------------------------
 /**
 */
-PCFShadow(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32
-{
-    const shadow = 0.0f;
-    const offsets = f32x3(-2, 2, 0) * texelSize.xyx;
-    
-    const samp0 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.xz, 0).r;
-    const samp1 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.yz, 0).r;
-    const samp2 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zx, 0).r;
-    const samp3 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zy, 0).r;
-    const samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).r;
-    return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 TerrainShadows(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32x2
 {
     const shadow = f32x2(0.0f);
@@ -429,10 +404,9 @@ TerrainShadows(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32x2
 //------------------------------------------------------------------------------
 /**
 */
-PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : f32x2) f32
+PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : f32x2, bias : f32) f32
 {
     const shadow = 0.0f;
-    const offsets = f32x3(-2.5f, 2.5f, 0) * texelSize.xyx;
 
     const NumSamples = 2;
     const Weight = 1 / pow(NumSamples*2.0f, 2.0f);
@@ -443,11 +417,39 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
         {
 			if (!gplIsPixelShader)
             {
-				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), 0);
+				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - bias, 0);
             }
 			else
             {
-				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - PerTickParams.GlobalLightShadowBias * exp2(idx));
+				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, idx, depth - bias);
+            }
+        }
+    }
+    totalShadow *= Weight;
+    return totalShadow;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PCFShadow(shadowMap : u32, depth : f32, uv : f32x2, texelSize : f32x2, bias: f32) f32
+{
+    const shadow = 0.0f;
+
+    const NumSamples = 2;
+    const Weight = 1 / pow(NumSamples*2.0f, 2.0f);
+    var totalShadow = 0.0f;
+    for (var i : i32 = -NumSamples; i < NumSamples; i++)
+    {
+        for (var j : i32 = -NumSamples; j < NumSamples; j++)
+        {
+			if (!gplIsPixelShader)
+            {
+				totalShadow += sample2DShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - bias, 0);
+            }
+			else
+            {
+				totalShadow += sample2DShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - bias);
             }
         }
     }

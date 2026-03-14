@@ -126,7 +126,7 @@ vsLit(
     binding(3) in color : f32x4,
     binding(4) in uvMinMax : f32x4,
     binding(5) in rotSize : f32x4,
-    out ViewSpacePos : f32x4,
+    out WorldSpacePos : f32x4,
     out Normal : f32x3,
     out Tangent : f32x3,
     out WorldEyeVec : f32x3,
@@ -145,7 +145,7 @@ vsLit(
     Tangent = cornerVert.worldTangent;
     UV = cornerVert.UV;
     WorldEyeVec = normalize(ViewConstants.EyePos - cornerVert.worldPos).xyz;
-    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+    WorldSpacePos = cornerVert.worldPos;
     Color = color;
     vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
 }
@@ -155,7 +155,7 @@ vsLit(
 */
 entry_point
 
-psUnlit(in ViewSpacePosition : f32x4,
+psUnlit(in WorldSpacePos : f32x4,
     in Color : f32x4,
     in UV : f32x2) void
 {
@@ -176,7 +176,7 @@ psUnlit(in ViewSpacePosition : f32x4,
 /**
 */
 entry_point
-psUnlit2Layers(in ViewSpacePosition : f32x4,
+psUnlit2Layers(in WorldSpacePos : f32x4,
     in Color : f32x4,
     in UV : f32x2) void
 {
@@ -199,7 +199,7 @@ psUnlit2Layers(in ViewSpacePosition : f32x4,
 /**
 */
 entry_point
-psUnlit3Layers(in ViewSpacePosition : f32x4,
+psUnlit3Layers(in WorldSpacePos : f32x4,
     in Color : f32x4,
     in UV : f32x2) void
 {
@@ -223,7 +223,7 @@ psUnlit3Layers(in ViewSpacePosition : f32x4,
 /**
 */
 entry_point
-psUnlit4Layers(in ViewSpacePosition : f32x4,
+psUnlit4Layers(in WorldSpacePos : f32x4,
     in Color : f32x4,
     in UV : f32x2) void
 {
@@ -248,7 +248,7 @@ psUnlit4Layers(in ViewSpacePosition : f32x4,
 /**
 */
 entry_point
-psLit(in ViewSpacePosition : f32x4,
+psLit(in WorldSpacePos : f32x4,
     in Normal : f32x3,
     in Tangent : f32x3,
     in WorldEyeVec : f32x3,
@@ -282,16 +282,18 @@ psLit(in ViewSpacePosition : f32x4,
     }
 
     // calculate cluster index
-    const index3D = CalculateClusterIndex(pixelCoord.xy / ClusterUniforms.BlockSize, ViewSpacePosition.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+	const ViewSpacePos = ViewConstants.View * WorldSpacePos;
+    const index3D = CalculateClusterIndex(pixelCoord.xy / ClusterUniforms.BlockSize, ViewSpacePos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var light = f32x3(0, 0, 0);
 
     // add light
-    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, BSDFConstants.Transmission);
-    const viewVec = -normalize(ViewSpacePosition.xyz);
-    const viewNormal = (ViewConstants.View * f32x4(tNormal.xyz, 0)).xyz;
-    light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, BSDFConstants.Transmission);
+	light += CalculateLight(WorldSpacePos.xyz, pixelGetCoordinates().xyz, albedo.rgb, material, tNormal);
+    //light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, BSDFConstants.Transmission);
+    //const viewVec = -normalize(ViewSpacePosition.xyz);
+    //const viewNormal = (ViewConstants.View * f32x4(tNormal.xyz, 0)).xyz;
+    //light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, BSDFConstants.Transmission);
     
     pixelExportColor(f32x4(light, finalAlpha), 0);
 }

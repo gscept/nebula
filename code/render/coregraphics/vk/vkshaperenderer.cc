@@ -117,7 +117,7 @@ VkShapeRenderer::Open()
     // also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
     this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ .name = "Vulkan Shape Renderer"_atm, .comps = comps });
 
-    FrameScript_default::RegisterSubgraph_DebugShapes_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DebugShapes_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         auto thisPtr = static_cast<Vulkan::VkShapeRenderer*>(VkShapeRenderer::Instance());
         thisPtr->DrawShapes(cmdBuf);
@@ -212,7 +212,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
             }
 
             // apply shader
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType], CoreGraphics::GraphicsQueueType);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
 
             // flush any buffered primitives
@@ -234,7 +234,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     {
         if (this->shapes[shaderType].Size() > 0)
         {
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType], CoreGraphics::GraphicsQueueType);
             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
             IndexT i;

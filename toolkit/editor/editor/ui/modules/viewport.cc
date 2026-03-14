@@ -7,10 +7,11 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "imgui.h"
-#include "dynui/imguicontext.h"
 #include "editor/editor/tools/selectioncontext.h"
+#include "lighting/lightcontext.h"
 
 #include "frame/default.h"
+#include "frame/preview.h"
 
 namespace Presentation
 {
@@ -38,14 +39,27 @@ Viewport::~Viewport()
 /**
 */
 void
-Viewport::Init(Util::String const & viewName)
+Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
 {
     static int unique = 0;
     Util::String name = viewName;
     name.AppendInt(unique++);
-    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_default::Run, Math::rectangle<int>(0, 0, 1280, 900));
+    CoreGraphics::TextureCreateInfo texInfo;
+    texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
+    texInfo.width = 1280;
+    texInfo.height = 900;
+    this->targetTexture = CoreGraphics::CreateTexture(texInfo);
+    this->directionalLight = Graphics::GraphicsServer::Instance()->CreateGraphicsEntity();
+    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), mask, [this](IndexT frameIndex, IndexT bufferIndex)
+    {
+        FrameScript_preview::Bind_Target(Frame::TextureImport(this->targetTexture));
+    });
+    Lighting::LightContext::RegisterEntity(this->directionalLight);
+    Lighting::LightContext::SetupDirectionalLight(
+        this->directionalLight, this->view, Math::vec3(1.0f), 50.0f, Math::vec3(0.05f), 70_rad, 0_rad, mask, false
+    );
     
-    this->camera.Setup(1280, 900);
+    this->camera.Setup(1280, 900, 1 << 3);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
 }
@@ -54,12 +68,13 @@ Viewport::Init(Util::String const & viewName)
 /**
 */
 void
-Viewport::Init(Ptr<Graphics::View> const& view)
+Viewport::Init(const Graphics::ViewId view)
 {
     this->view = view;
     this->camera.Setup(1280, 900);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
+    this->targetTexture = CoreGraphics::InvalidTextureId;
 }
 
 //------------------------------------------------------------------------------
@@ -194,25 +209,33 @@ Viewport::Render()
         ImGui::EndMenuBar();
     }
 
-    CoreGraphics::TextureId textureId = FrameScript_default::Texture_SceneBuffer();
+    CoreGraphics::TextureId textureId = this->targetTexture == CoreGraphics::InvalidTextureId ? FrameScript_default::Texture_SceneBuffer() : this->targetTexture;
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(textureId);
 
     using namespace CoreGraphics;
 
-    // Needs to not be nuked scope since we're sending a void*
-    static CoreGraphics::TextureId id;
-    id = textureId;
-
-    static Dynui::ImguiTextureId textureInfo;
-    textureInfo.nebulaHandle = id;
-    textureInfo.mip = 0;
-    textureInfo.layer = 0;
+    this->textureInfo.nebulaHandle = textureId;
+    this->textureInfo.mip = 0;
+    this->textureInfo.layer = 0;
 
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 viewportPos = ImGui::GetWindowViewport()->Pos;
     ImVec2 localWindowPos = ImVec2 {windowPos.x - viewportPos.x, windowPos.y - viewportPos.y};
+
+    if (this->targetTexture != CoreGraphics::InvalidTextureId)
+    {
+        if (dims.width < space.x || dims.height < space.y)
+        {
+            CoreGraphics::DestroyTexture(this->targetTexture);
+            CoreGraphics::TextureCreateInfo texInfo;
+            texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
+            texInfo.width = space.x;
+            texInfo.height = space.y;
+            this->targetTexture = CoreGraphics::CreateTexture(texInfo);
+        }
+    }
 
     ImVec2 imageSize = {(float)space.x, (float)space.y};
     imageSize.x = Math::max(imageSize.x, 1.0f);
@@ -222,7 +245,7 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), uv);
+    ImGui::Image((void*)&this->textureInfo, imageSize, ImVec2(0, 0), uv);
 
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };
@@ -232,9 +255,8 @@ Viewport::Render()
     this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
     this->lastViewportImageSize = { imageSize.x, imageSize.y };
 
-    auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
-    view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
-    this->focused = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
+    ViewSetViewport(this->view, Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
+    this->focused = ImGui::IsItemFocused() || ImGui::IsWindowHovered();
 
     if (this->focused)
     {
@@ -252,10 +274,10 @@ Viewport::Render()
 //------------------------------------------------------------------------------
 /**
 */
-const Ptr<Graphics::View>
+const Graphics::ViewId
 Viewport::GetView() const
 {
-     n_assert(this->view.isvalid());
+     n_assert(this->view != Graphics::InvalidViewId);
      return this->view;
 }
 
@@ -265,7 +287,7 @@ Viewport::GetView() const
 void
 Viewport::SetStage(const uint16_t stage)
 {
-    this->view->SetStageMask(stage);
+    ViewSetStageMask(this->view, stage);
 }
 
 } // namespace Modules

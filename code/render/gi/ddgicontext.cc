@@ -195,19 +195,9 @@ DDGIContext::Create()
     rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     state.stagingClusterGIVolumeList.Create(rwbInfo);
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::GIIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::GIVolumeLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::GIVolumeUniforms::BINDING, 0, sizeof(ProbeFinalize::GIVolumeUniforms), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     FrameScript_default::Bind_ClusterGIList(state.clusterGIVolumeList);
     FrameScript_default::Bind_ClusterGIIndexLists(state.clusterGIVolumeIndexLists);
-    FrameScript_default::RegisterSubgraph_GICopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_GICopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -217,10 +207,10 @@ DDGIContext::Create()
         { FrameScript_default::BufferIndex::ClusterGIList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "GI Volume Cull");
-        CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
+        CmdSetShaderProgram(cmdBuf, state.volumeCullProgram, queue);
         //CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         // Run chunks of 1024 threads at a time
@@ -234,12 +224,12 @@ DDGIContext::Create()
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_DDGIProbeUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DDGIProbeUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "DDGI Probe Update");
-            CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.pipeline.pipeline);
+            CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.pipeline.pipeline, queue);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetRaytracingTable(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
@@ -260,7 +250,7 @@ DDGIContext::Create()
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
     } );
 
-    FrameScript_default::RegisterSubgraph_DDGIProbeFinalize_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DDGIProbeFinalize_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
@@ -281,7 +271,7 @@ DDGIContext::Create()
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Blend Radiance");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendRadianceProgram);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendRadianceProgram, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -290,7 +280,7 @@ DDGIContext::Create()
             CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Blend Distance");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendDistanceProgram);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendDistanceProgram, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -300,7 +290,7 @@ DDGIContext::Create()
             CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Radiance Rows Fixup");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceRowsFixup);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceRowsFixup, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
@@ -313,7 +303,7 @@ DDGIContext::Create()
             CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Distance Rows Fixup");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceRowsFixup);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceRowsFixup, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
@@ -328,7 +318,7 @@ DDGIContext::Create()
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Radiance Columns Fixup");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceColumnsFixup);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceColumnsFixup, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
@@ -341,7 +331,7 @@ DDGIContext::Create()
             CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Distance Columns Fixup");
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceColumnsFixup);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceColumnsFixup, queue);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
@@ -373,7 +363,7 @@ DDGIContext::Create()
                     };
                     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, { bar0, bar1 });
 
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probesRelocateAndClassifyProgram);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probesRelocateAndClassifyProgram, queue);
                     CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.relocateAndClassifyProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                     CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 8), Math::divandroundup(volumeToUpdate.probeCounts[0], 4), 1);
                     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, { bar0, bar1 });
@@ -398,7 +388,7 @@ DDGIContext::Create()
             });
     });
 
-    FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (Core::CVarReadInt(g_debug_ddgi) == 1)
         {
@@ -461,6 +451,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = Math::max(setup.numRaysPerProbe, ProbeUpdate::DDGI_NUM_FIXED_RAYS);
     volume.options = setup.options;
+    volume.stageMask = setup.stageMask;
 
     //volume.options.flags.lowPrecisionTextures = true;
 
@@ -632,15 +623,17 @@ DDGIContext::SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size
 /**
 */
 void
-DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+DDGIContext::UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;
 
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
     N_SCOPE(UpdateGIVolumes, DDGI);
-    const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
+    const Math::point cameraPos = CameraContext::GetTransform(ViewGetCamera(view)).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     const auto& projectSettings = Options::ProjectSettings;
     float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
 
@@ -769,7 +762,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
         Math::mat4 transform = Math::scaling(activeVolume.size * 2.0f);
         transform.translate(activeVolume.position);
-        Math::bbox bbox = viewTransform * transform;
+        Math::bbox bbox = transform;
         bbox.pmin.store(giVolume.bboxMin);
         bbox.pmax.store(giVolume.bboxMax);
         Math::quat().store(giVolume.Rotation);
@@ -783,6 +776,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         memcpy(giVolume.GridSpacing, activeVolume.volumeConstants.ProbeGridSpacing, sizeof(activeVolume.volumeConstants.ProbeGridSpacing));
         activeVolume.size.store(giVolume.Size);
 
+        giVolume.StageMask = activeVolume.stageMask;
         giVolume.BlendCutoff = activeVolume.blendCutoff;
         giVolume.Blend = activeVolume.blend;
         giVolume.ViewBias = activeVolume.viewBias;
@@ -803,11 +797,19 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
-
-    uint64_t offset = CoreGraphics::SetConstants(giVolumeUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::GIVolumeUniforms::BINDING, 0, sizeof(Shared::GIVolumeUniforms::STRUCT), offset });
-    ResourceTableCommitChanges(frameResourceTable);
+    auto frameResourceTables = Graphics::GetFrameResourceTables(bufferIndex);
+    auto tableQueues = Graphics::GetTableQueues();
+    IndexT tableIt = 0;
+    for (auto& table : frameResourceTables)
+    {
+        uint64_t offset = CoreGraphics::SetConstants(giVolumeUniforms, tableQueues[tableIt]);
+        ResourceTableSetRWBuffer(table, { state.clusterGIVolumeIndexLists, Shared::GIIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(table, { state.clusterGIVolumeList, Shared::GIVolumeLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex, tableQueues[tableIt]), Shared::GIVolumeUniforms::BINDING, 0, sizeof(Shared::GIVolumeUniforms::STRUCT), offset });
+        ResourceTableCommitChanges(table);
+        tableIt++;
+    }
+    
 
     if (volumeCount > 0)
     {

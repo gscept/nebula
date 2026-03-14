@@ -276,6 +276,14 @@ GraphicsServer::Close()
 void
 GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state)
 {
+    // Make sure the context is made aware of all the views created thus far
+    for (auto& view : this->views)
+    {
+        if (context->OnViewCreated)
+        {
+            context->OnViewCreated(view);
+        }
+    }
     this->contexts.Append(context);
     this->states.Append(state);
 }
@@ -389,14 +397,48 @@ GraphicsServer::GetWindows() const
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport, uint16_t stage)
+ViewId
+GraphicsServer::CreateView(
+    const Util::StringAtom& name
+    , bool(*render)(const Math::rectangle<int>&, IndexT, IndexT)
+    , const Math::rectangle<int>& viewport
+    , Graphics::StageMask stageMask
+    , std::function<void(IndexT, IndexT)> preViewCallback
+    , std::function<void(IndexT, IndexT)> postViewCallback
+)
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
-    Ptr<View> view = View::Create();
-    view->SetFrameScript(render);
-    view->SetViewport(viewport);
-    view->SetStageMask(stage);
+
+    Graphics::ViewCreateInfo info;
+    info.frameScript = render;
+    info.viewport = viewport;
+    info.stageMask = stageMask;
+    ViewId view = Graphics::CreateView(info);
+
+    this->views.Append(view);
+    this->viewsByName.Add(name, view);
+    this->preViewCallbacks.Append(preViewCallback);
+    this->postViewCallbacks.Append(postViewCallback);
+
+    // invoke all interested contexts
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnViewCreated != nullptr)
+            this->contexts[i]->OnViewCreated(view);
+    }
+    return view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ViewId
+GraphicsServer::CreateView(const Util::StringAtom& name)
+{
+    Graphics::ViewCreateInfo info;
+    ViewId view = Graphics::CreateView(info);
+
     this->views.Append(view);
     this->viewsByName.Add(name, view);
 
@@ -413,28 +455,8 @@ GraphicsServer::CreateView(const Util::StringAtom& name, bool(*render)(const Mat
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name)
-{
-    Ptr<View> view = View::Create();
-    view->func = nullptr;
-    this->views.Append(view);
-
-    // invoke all interested contexts
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->OnViewCreated != nullptr)
-            this->contexts[i]->OnViewCreated(view);
-    }
-    return view;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-GraphicsServer::DiscardView(const Ptr<View>& view)
+GraphicsServer::DiscardView(const ViewId view)
 {
     IndexT idx = this->views.FindIndex(view);
     n_assert(idx != InvalidIndex);
@@ -451,9 +473,36 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 /**
 */
 void
-GraphicsServer::SetCurrentView(const Ptr<View>& view)
+GraphicsServer::SetCurrentView(const ViewId view)
 {
     this->currentView = view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetView(const Util::StringAtom& name)
+{
+    return this->viewsByName[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetCurrentView() const
+{
+    return this->currentView;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex))
+{
+    this->endFrameCallbacks.Append(func);
 }
 
 //------------------------------------------------------------------------------
@@ -515,29 +564,28 @@ GraphicsServer::RunPreLogic()
     // Go through views and call before view
     for (IndexT i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
+        const ViewId view = this->views[i];
 
-        if (!view->enabled)
+        if (!ViewIsEnabled(view))
             continue;
 
         // begin frame on view, this will construct view build jobs
         this->currentView = view;
-        view->UpdateConstants();
         N_MARKER_BEGIN(ContextPerView, Graphics);
         for (auto& call : this->preLogicViewCalls)
         {
             call(view, this->frameContext);
         }
         N_MARKER_END();
-        this->currentView = nullptr;
+        this->currentView = InvalidViewId;
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-
-void GraphicsServer::RunPostLogic()
+void
+GraphicsServer::RunPostLogic()
 {
     N_SCOPE(PostLogic, Graphics);
 
@@ -547,27 +595,6 @@ void GraphicsServer::RunPostLogic()
         call(this->frameContext);
     }
     N_MARKER_END();
-
-    // Go through views and call before view
-    for (IndexT i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
-            continue;
-
-        this->currentView = view;
-        N_MARKER_BEGIN(ContextPerView, Graphics);
-        for (auto& call : this->postLogicViewCalls)
-        {
-            call(view, this->frameContext);
-        }
-        N_MARKER_END();
-        this->currentView = nullptr;
-    }
-
-    // Consider this whole block of code viable for updating resource tables
-    //CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -579,25 +606,33 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    N_MARKER_BEGIN(ViewPreFrameCallbacks, Graphics)
-    for (auto& cb : this->preViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
-    }
-    N_MARKER_END()
-
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
+        const ViewId view = this->views[i];
+            
+        if (!ViewIsEnabled(view))
             continue;
 
         this->currentView = view;
-        if (view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
+
+        N_MARKER_BEGIN(ViewPreRender, Graphics)
+        for (auto& call : this->postLogicViewCalls)
         {
-            Math::rectangle<int> viewport = view->GetViewport();
+            call(view, this->frameContext);
+        }
+        N_MARKER_END()
+        ViewApply(view);
+
+        N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
+        auto& preViewCallback = this->preViewCallbacks[i];
+        if (preViewCallback != nullptr)
+            preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
+
+        if (ViewRender(view, this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
+        {
+            Math::rectangle<int> viewport = ViewGetViewport(view);
 
             // First, call the resize callback to trigger an update of the frame scripts
             if (this->resizeCall != nullptr)
@@ -614,15 +649,14 @@ GraphicsServer::Render()
 
             CoreGraphics::InvalidateGraphicsPipelineCache();
         }
-        this->currentView = nullptr;
-    }
+        this->currentView = InvalidViewId;
 
-    N_MARKER_BEGIN(ViewPostFrameCallbacks, Graphics)
-    for (auto& cb : this->postViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
+        auto& postViewCallback = this->postViewCallbacks[i];
+        if (postViewCallback != nullptr)
+            postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
     }
-    N_MARKER_END()
 }
 
 //------------------------------------------------------------------------------
@@ -635,6 +669,11 @@ GraphicsServer::EndFrame()
 
     Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
 
+    for (auto& func : this->endFrameCallbacks)
+    {
+        func(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
+
     for (auto& wnd : this->windows)
     {
         CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
@@ -643,7 +682,6 @@ GraphicsServer::EndFrame()
         CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
         displaySemaphores.Append(displaySemaphore);
         presentSemaphores.Append(presentSemaphore);
-
     }
 
     // Finish submissions

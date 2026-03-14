@@ -9,7 +9,6 @@
 #include "graphics/cameracontext.h"
 #include "visibility/visibilitycontext.h"
 #include "game/gameserver.h"
-#include "graphics/view.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
@@ -40,7 +39,7 @@ CameraManager::~CameraManager()
 /**
 */
 ViewHandle
-CameraManager::RegisterView(Ptr<Graphics::View> const& view)
+CameraManager::RegisterView(const Graphics::ViewId view)
 {
     n_assert(CameraManager::HasInstance());
     Ids::Id32 id;
@@ -53,17 +52,17 @@ CameraManager::RegisterView(Ptr<Graphics::View> const& view)
     else
         Singleton->viewHandleMap[Ids::Index(id)] = data;
     
-    if (view->GetCamera() != Graphics::GraphicsEntityId::Invalid())
+    if (ViewGetCamera(view) != Graphics::GraphicsEntityId::Invalid())
         n_warning("WARNING: View already has a camera entity assigned which is being overridden!\n");
 
     auto displayMode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
 
     Graphics::CameraContext::RegisterEntity(data.gid);
-    Graphics::CameraContext::SetLODCamera(data.gid);
+    Graphics::CameraContext::AddLODCamera(data.gid);
     Graphics::CameraContext::SetupProjectionFov(data.gid, displayMode.GetAspectRatio(), Math::deg2rad(60.f), 0.01f, 1000.0f);
     Visibility::ObserverContext::RegisterEntity(data.gid);
-    Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera, view->GetStageMask());
-    view->SetCamera(data.gid);
+    Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera, ViewGetStageMask(view));
+    ViewSetCamera(view, data.gid);
 
     return id;
 }

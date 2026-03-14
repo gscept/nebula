@@ -6,8 +6,7 @@
 #include <lib/util.gpuh>
 
 const MAX_TEXTURES = 65535;
-const NUM_CASCADES = 4;
-const SHADOW_CASTER_COUNT = 16;
+
 
 group(TICK_GROUP) binding(0) uniform Textures1D : [MAX_TEXTURES]* texture1D;
 group(TICK_GROUP) binding(0) uniform Textures1DArray : [MAX_TEXTURES]* texture1DArray;
@@ -65,6 +64,16 @@ sampleCube(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
 sampleCubeLod(handle : u32, uniform samp : *sampler, uvw : f32x3, lod : f32) f32x4
 {
     return textureSampleLod(TexturesCube[handle], samp, uvw, lod);
+}
+
+sample2DShadow(handle : u32, uniform samp : *sampler, uv : f32x2, depth : f32) f32
+{
+    return textureSampleCompare(Textures2D[handle], samp, uv, depth);
+}
+
+sample2DShadowLod(handle : u32, uniform samp : *sampler, uv : f32x2, depth : f32, lod : f32) f32
+{
+    return textureSampleCompareLod(Textures2D[handle], samp, uv, depth, lod);
 }
 
 sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f32, depth : f32) f32
@@ -136,16 +145,6 @@ struct TickParams
     FogDistances : f32x4;
     FogColor : f32x4;
 
-    // global light stuff
-    GlobalLightFlags : u32;
-    GlobalLightShadowIntensity : f32;
-    GlobalLightShadowMapSize : f32x2;
-    GlobalLightDirWorldspace : f32x4;
-    GlobalLightColor : f32x4;
-    GlobalAmbientLightColor : f32x4;
-    CSMShadowMatrix : f32x4x4;
-
-    GlobalLightShadowBuffer : u32;
     TerrainShadowBuffer : u32;
     NumEnvMips : i32;
 
@@ -181,10 +180,6 @@ struct TickParams
     TonemapWeight : f32;
     Lum : f32;
 
-    // CSM params
-
-    GlobalLightShadowBias : f32;
-
     NormalBuffer : u32;
     DepthBuffer : u32;
     SpecularBuffer : u32;
@@ -208,16 +203,16 @@ struct ViewParams
     EyePos : f32x4;
     FocalLengthNearFar : f32x4; // x, y is focal length x/y, z, w is near/far planes
     Time_Random_Luminance_X : f32x4; // x is time, y is random, z is luminance, w is unused
+    StageMask : u32;                // Mask for what things are visible by this view
 };
 group(FRAME_GROUP) uniform ViewConstants : *ViewParams;
 
+const NUM_SHADOW_TILES_PER_ROW = 4u;
+const NUM_CASCADES = 4;
+const SHADOW_CASTER_COUNT = 256;
 struct ShadowViewParams
 {
-    CascadeOffset : [NUM_CASCADES]f32x4;
-    CascadeScale : [NUM_CASCADES]f32x4;
-    CascadeDistances : f32x4;
-    ShadowTiles : [SHADOW_CASTER_COUNT / 4] i32x4;
-    LightViewMatrix : [SHADOW_CASTER_COUNT] f32x4x4;
+    ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
 };
 
 @Visibility("VS|CS|PS|RCS")
@@ -297,6 +292,20 @@ group(FRAME_GROUP) uniform ClusterUniforms : *ClusterParams;
 // increase if we need more lights in close proximity, for now, 128 is more than enough
 const MAX_LIGHTS_PER_CLUSTER = 128;
 
+struct DirectionalLight
+{
+    cascadeTransforms : [NUM_CASCADES]f32x4x4;
+	cascadeDistances : [NUM_CASCADES]f32;
+    direction : f32x3;
+    shadowMap : u32;
+    color : f32x3;
+    shadowIntensity : f32;
+    shadowBias : f32;
+    shadowMapSize : f32x2;
+    stageMask : u32;                // Stages this light is visible in
+	flags : u32;					// feature flags (shadows, projection texture, etc)
+};
+
 struct SpotLight
 {
     position : f32x3;				// view space position of light
@@ -310,19 +319,19 @@ struct SpotLight
 
     color : f32x3;					// light color
     flags : u32;					// feature flags (shadows, projection texture, etc)
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct SpotLightProjectionExtension
 {
-    projection : f32x4x4;					// projection transform
+    projection : f32x4x4;		// projection transform
     projectionTexture : u32;	// projection texture
 };
 
 struct SpotLightShadowExtension
 {
     projection : f32x4x4;
-    shadowIntensity : f32;				// intensity of shadows
-    shadowSlice : u32;
+    shadowIntensity : f32;		// intensity of shadows
     shadowMap : u32;			// shadow map
 };
 
@@ -333,11 +342,15 @@ struct PointLight
 
     color : f32x3;					// light color
     flags : u32;					// feature flags (shadows, projection texture, etc)
+	shadowExtension : i32;			// shadow extension
+
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct PointLightShadowExtension
 {
-    shadowIntensity : f32;		// intensity of shadows
+	projection : [6]f32x4x4;		// projection transforms for each side
+    shadowIntensity : f32;			// intensity of shadows
     shadowMap : u32;				// shadow map
 };
 
@@ -357,19 +370,21 @@ struct AreaLight
 
     color : f32x3;					// light color
     shadowExtension : i32;		// projection extension index
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct AreaLightShadowExtension
 {
-    projection : f32x4x4;
+    frontProjection : f32x4x4;
+	backProjection : f32x4x4;
     shadowIntensity : f32;				// intensity of shadows
-    shadowSlice : u32;
     shadowMap : u32;			// shadow map
 };
 
 struct LightParams
 {
     SSAOBuffer : u32;
+    NumDirectionalLights : u32;
     NumPointLights : u32;
     NumSpotLights : u32;
     NumAreaLights : u32;
@@ -393,14 +408,20 @@ struct LightIndexData
 @Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform LightIndexLists : *mutable LightIndexData;
 
+const MAX_DIRECTIONAL_LIGHTS = 8u;
+const MAX_SPOT_LIGHTS = 1024u;
+const MAX_POINT_LIGHTS = 1024u;
+const MAX_AREA_LIGHTS = 1024u;
+
 struct LightListData
 {
-    SpotLights : [1024]SpotLight;
+    DirectionalLights : [MAX_DIRECTIONAL_LIGHTS]DirectionalLight;
+    SpotLights : [MAX_SPOT_LIGHTS]SpotLight;
     SpotLightProjection : [256]SpotLightProjectionExtension;
     SpotLightShadow : [16]SpotLightShadowExtension;
-    PointLights : [1024]PointLight;
+    PointLights : [MAX_POINT_LIGHTS]PointLight;
     PointLightShadow : [16]PointLightShadowExtension;
-    AreaLights : [1024]AreaLight;
+    AreaLights : [MAX_AREA_LIGHTS]AreaLight;
     AreaLightShadow : [16]AreaLightShadowExtension;
 };
 
@@ -417,23 +438,25 @@ const MAX_DECALS_PER_CLUSTER = 128;
 
 struct PBRDecal
 {
+    bboxMin : f32x3;
     albedo : u32;
-    bboxMin : f32x4;
-    bboxMax : f32x4;
+    bboxMax : f32x3;
+    normal : u32;
     invModel : f32x4x4;
     direction : f32x3;
     material : u32;
     tangent : f32x3;
-    normal : u32;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct EmissiveDecal
 {
-    bboxMin : f32x4;
-    bboxMax : f32x4;
+    bboxMin : f32x3;
+    emissive : u32;
+    bboxMax : f32x3;
     invModel : f32x4x4;
     direction : f32x3;
-    emissive : u32;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 
@@ -485,6 +508,7 @@ struct FogSphere
     absorption : f32x3;
     turbidity : f32;
     falloff : f32;
+    stageMask : u32;                // Stages this light is visible in
 };
 
 struct FogBox
@@ -494,6 +518,7 @@ struct FogBox
     bboxMax : f32x3;
     turbidity : f32;
     absorption : f32x3;
+    stageMask : u32;                // Stages this light is visible in
     invTransform : f32x4x4;
 };
 
@@ -560,6 +585,7 @@ struct GIVolume
     
     BlendCutoff : f32;
     Blend : f32;
+    StageMask : u32;                // Stages this light is visible in
     
     NormalBias : f32;
     ViewBias : f32;

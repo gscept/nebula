@@ -49,7 +49,7 @@ Scene::~Scene()
     Caller takes ownership of the output meshes and has to delete them
 */
 void
-Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilder*>& outMeshes)
+Scene::OptimizeGraphics(ToolkitUtil::Logger* logger, Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilder*>& outMeshes)
 {
     // Bucket meshes based on components
     Util::Dictionary<MeshBuilderVertex::ComponentMask, Util::Array<SceneNode*>> nodesByComponents;
@@ -58,7 +58,14 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
         if (node.type == SceneNode::NodeType::Mesh)
         {
             if (node.mesh.material != "physics")
+            {
+                if (MeshBuilderVertex::GetVertexLayoutType(this->meshes[node.mesh.meshIndex].GetComponents()) == CoreGraphics::VertexLayoutType::Invalid)
+                {
+                    logger->Warning("Mesh node '%s' has unknown vertex layout, reverting to Normal\n", node.base.name.AsCharPtr());
+                    this->meshes[node.mesh.meshIndex].SetComponents(MeshBuilderVertex::Components::Position | MeshBuilderVertex::Components::Uvs | MeshBuilderVertex::Components::Normals | MeshBuilderVertex::Components::Tangents);
+                }
                 nodesByComponents.Emplace(this->meshes[node.mesh.meshIndex].GetComponents()).Append(&node);
+            }
         }
         else if (node.type == SceneNode::NodeType::Joint && (node.base.parent == nullptr || node.skeleton.isSkeletonRoot))
         {

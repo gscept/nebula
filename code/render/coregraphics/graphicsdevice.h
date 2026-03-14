@@ -125,7 +125,7 @@ struct GraphicsDeviceState
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
     size_t globalConstantBufferMaxValue;
-    Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> globalConstantBufferGraphics, globalConstantBufferCompute;
     Util::FixedArray<bool> inflightFrames;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
@@ -233,23 +233,23 @@ void SubmitImmediateCommandBuffers();
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of memory and set data, return offset (thread safe)
-template<class TYPE> uint64_t SetConstants(const TYPE& data);
+template<class TYPE> uint64_t SetConstants(const TYPE& data, CoreGraphics::QueueType queue);
 /// Allocate range of memory and set data as an array of elements, return offset  (thread safe)
-template<class TYPE> uint64_t SetConstants(const TYPE* data, SizeT elements);
+template<class TYPE> uint64_t SetConstants(const TYPE* data, SizeT elements, CoreGraphics::QueueType queue);
 /// Set constants based on pre-allocated memory  (thread safe)
-template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data);
+template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data, CoreGraphics::QueueType queue);
 /// Set constants based on pre-allocated memory  (thread safe)
-template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements);
+template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements, CoreGraphics::QueueType queue);
 /// Lock constant updates
 void LockConstantUpdates();
 
 /// Use pre-allocated range of memory to update graphics constants
-void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
+void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size, CoreGraphics::QueueType queue);
 /// Reserve range of constant buffer memory and return offset
 ConstantBufferOffset AllocateConstantBufferMemory(size_t size);
 
 /// return id to global graphics constant buffer
-CoreGraphics::BufferId GetConstantBuffer(IndexT i);
+CoreGraphics::BufferId GetConstantBuffer(IndexT i, CoreGraphics::QueueType queue);
 
 /// Allocate vertices from the global vertex pool
 const VertexAlloc AllocateVertices(const size_t numVertices, const size_t vertexSize);
@@ -380,11 +380,11 @@ void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& co
 */
 template<class TYPE>
 inline ConstantBufferOffset
-SetConstants(const TYPE& data)
+SetConstants(const TYPE& data, CoreGraphics::QueueType queue)
 {
     const uint uploadSize = sizeof(TYPE);
     ConstantBufferOffset ret = AllocateConstantBufferMemory(uploadSize);
-    SetConstantsInternal(ret, &data, uploadSize);
+    SetConstantsInternal(ret, &data, uploadSize, queue);
     return ret;
 }
 
@@ -393,11 +393,11 @@ SetConstants(const TYPE& data)
 */
 template<class TYPE>
 inline ConstantBufferOffset
-SetConstants(const TYPE* data, SizeT numElements)
+SetConstants(const TYPE* data, SizeT numElements, CoreGraphics::QueueType queue)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
     ConstantBufferOffset ret = AllocateConstantBufferMemory(uploadSize);
-    SetConstantsInternal(ret, data, uploadSize);
+    SetConstantsInternal(ret, data, uploadSize, queue);
     return ret;
 }
 
@@ -406,9 +406,9 @@ SetConstants(const TYPE* data, SizeT numElements)
 */
 template<class TYPE>
 inline void
-SetConstants(ConstantBufferOffset offset, const TYPE& data)
+SetConstants(ConstantBufferOffset offset, const TYPE& data, CoreGraphics::QueueType queue)
 {
-    SetConstantsInternal(offset, &data, sizeof(TYPE));
+    SetConstantsInternal(offset, &data, sizeof(TYPE), queue);
 }
 
 //------------------------------------------------------------------------------
@@ -416,9 +416,9 @@ SetConstants(ConstantBufferOffset offset, const TYPE& data)
 */
 template<class TYPE>
 inline void
-SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements)
+SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements, CoreGraphics::QueueType queue)
 {
-    SetConstantsInternal(offset, data, sizeof(TYPE) * numElements);
+    SetConstantsInternal(offset, data, sizeof(TYPE) * numElements, queue);
 }
 
 //------------------------------------------------------------------------------

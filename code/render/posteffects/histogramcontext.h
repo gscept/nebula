@@ -32,13 +32,17 @@ public:
     static void Setup();
 
     /// update view resources
-    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
     /// update constants
     static void UpdateConstants();
 
     /// Handle window resize
     static void Resize(const uint framescriptHash, SizeT width, SizeT height);
+    /// Handle new view being created
+    static void OnViewCreated(const Graphics::ViewId view);
+    /// Handle view being removed
+    static void OnViewRemoved(const Graphics::ViewId view);
 
 private:
 

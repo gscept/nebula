@@ -29,6 +29,7 @@ fips_dir(.)
 
 fips_dir(render)
     nebula_framescript_add(editorframe.json) 
+	nebula_framescript_add(preview.json) 
     fips_files(
         pickingcontext.h
         pickingcontext.cc

@@ -132,7 +132,13 @@ SimpleViewerApplication::Open()
         FrameScript_shadows::Initialize(1024, 1024);
         FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
 
-        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), Graphics::PRIMARY_STAGE_MASK, [](IndexT frameIndex, IndexT bufferIndex)
+        {
+            static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+            FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+            FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+            FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
+        });
         gfxServer->SetCurrentView(this->view);
 
         // Create contexts, this could and should be bundled together
@@ -184,14 +190,7 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
-        this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex)
-        {
-            static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
-            FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-            FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-            FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
-        });
-        this->gfxServer->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
+        this->gfxServer->AddEndFrameCall([](IndexT frameIndex, IndexT bufferIndex)
         {
             CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
             CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(CoreGraphics::MainWindow);
@@ -233,8 +232,9 @@ SimpleViewerApplication::Open()
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(
+        Lighting::LightContext::SetupDirectionalLight(
             this->globalLight,
+            this->view,
             Math::vec3(1, 1, 1),
             10.0f,
             Math::vec3(0, 0, 0),
@@ -245,8 +245,7 @@ SimpleViewerApplication::Open()
 
         this->ResetCamera();
         CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
-
-        this->view->SetCamera(this->cam);
+        Graphics::ViewSetCamera(this->view, this->cam);
 
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
@@ -273,6 +272,9 @@ SimpleViewerApplication::Open()
             EnvironmentContext::OnBeforeFrame,
             EnvironmentContext::RenderUI,
             Particles::ParticleContext::UpdateParticles,
+            Decals::DecalContext::UpdateDecals,
+            Fog::VolumetricFogContext::UpdateFogVolumes,
+            Particles::ParticleContext::UpdateParticles,
             Terrain::TerrainContext::RenderUI
         };
 
@@ -283,9 +285,7 @@ SimpleViewerApplication::Open()
             Im3d::Im3dContext::OnPrepareView,
             PostEffects::SSAOContext::UpdateViewDependentResources,
             PostEffects::HistogramContext::UpdateViewResources,
-            Decals::DecalContext::UpdateViewDependentResources,
-            Fog::VolumetricFogContext::UpdateViewDependentResources,
-            Lighting::LightContext::UpdateViewDependentResources,
+            Lighting::LightContext::OnPrepareView,
             Terrain::TerrainContext::CullPatches
         };
 

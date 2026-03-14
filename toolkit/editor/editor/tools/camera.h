@@ -32,8 +32,8 @@ public:
 	Camera();
 	~Camera();
 
-	void AttachToView(const Ptr<Graphics::View>& view);
-	void Setup(SizeT screenWidth, SizeT screenHeight);
+	void AttachToView(const Graphics::ViewId view);
+	void Setup(SizeT screenWidth, SizeT screenHeight, Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK);
 	void Update();
 	void Reset();
 
@@ -71,6 +71,7 @@ private:
     
     SizeT screenWidth = 0;
     SizeT screenHeight = 0;
+    Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK;
 
     CameraMode cameraMode = CameraMode::FREECAM;
     ProjectionMode projectionMode = ProjectionMode::PERSPECTIVE;

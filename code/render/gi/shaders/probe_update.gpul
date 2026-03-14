@@ -150,9 +150,16 @@ RayGen(ray_payload payload : LightResponsePayload) void
     traceRay(TLAS, RayFlags.None , 0xff, 0, 0, 0, probeWorldPosition, probeRayDirection, 0.01f, MaxDistance, payload);
     if ((payload.bits & RAY_MISS_BIT) != 0)
     {
-        const lightDir = normalize(PerTickParams.GlobalLightDirWorldspace.xyz);
-        const dir = normalize(probeRayDirection);
-        const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
+		var atmo = f32x3(0);
+		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+		{
+			const li = LightLists.DirectionalLights[i];
+			if li.stageMask & ViewConstants.StageMask
+			{
+				const dir = normalize(probeRayDirection);
+				atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color.rgb;
+			}
+		}
         StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), atmo, 1e27f);
         return;
     }

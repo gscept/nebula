@@ -26,6 +26,10 @@
         "type": "float",
         "default": 5.0
       },
+      "stageMask": {
+        "type": "uint16_t",
+        "default": 1
+      },
       "castShadows": "bool"
     },
     "SpotLight": {
@@ -54,6 +58,10 @@
         "type": "float",
         "default": 8.0
       },
+      "stageMask": {
+        "type": "uint16_t",
+        "default": 1
+      },
       "castShadows": "bool"
     },
     "AreaLight": {
@@ -77,6 +85,10 @@
       "range": {
         "type": "float",
         "default": 8.0
+      },
+      "stageMask": {
+        "type": "uint16_t",
+        "default": 1
       },
       "twoSided": "bool",
       "castShadows": "bool",

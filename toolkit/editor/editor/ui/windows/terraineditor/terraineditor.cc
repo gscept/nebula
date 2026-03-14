@@ -173,12 +173,12 @@ TerrainEditor::TerrainEditor()
     CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
     // this->additionalFlags = ImGuiWindowFlags_MenuBar;
-    FrameScript_editorframe::RegisterSubgraph_TerrainTool_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_editorframe::RegisterSubgraph_TerrainTool_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainEditorState.invalidateBrush)
         {
             CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainEditorState.brushTexture);
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushGenerationProgram);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushGenerationProgram, queue);
             CoreGraphics::CmdSetResourceTable(cmdBuf, terrainEditorState.brushResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
             CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(dims.width, 8), Math::divandroundup(dims.height, 8), 1);
             terrainEditorState.invalidateBrush = false;
@@ -187,9 +187,9 @@ TerrainEditor::TerrainEditor()
         if (terrainEditorState.paint)
         {
             if (terrainEditorState.brushUniforms.mode == Terrainbrush::Biome)
-                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushMaskShaderProgram);
+                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushMaskShaderProgram, queue);
             else
-                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushHeightShaderProgram);
+                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushHeightShaderProgram, queue);
 
             CoreGraphics::CmdSetResourceTable(cmdBuf, terrainEditorState.brushResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
             CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(terrainEditorState.brushSize, 8), Math::divandroundup(terrainEditorState.brushSize, 8), 1);
@@ -212,7 +212,7 @@ TerrainEditor::TerrainEditor()
 
     // Bleh, run this again
     FrameScript_default::SetupPipelines();
-    FrameScript_default::RegisterSubgraph_TerrainEditorBrush_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainEditorBrush_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!terrainEditorState.drawBrushPreview)
             return;

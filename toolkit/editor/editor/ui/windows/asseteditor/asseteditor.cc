@@ -39,6 +39,8 @@ __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 */
 AssetEditor::AssetEditor()
 {
+    this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
+
 }
 
 //------------------------------------------------------------------------------
@@ -73,56 +75,81 @@ EmptyEditor()
     ImGui::Text(EmptyString);
 }
 
+using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
+using ShowFunc = void(*)(AssetEditor*, AssetEditorItem*, bool);
+using SetupFunc = void(*)(AssetEditorItem*);
+
+static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSetup,
+    MeshSetup,
+    nullptr,
+    ModelSetup,
+    nullptr,
+    TextureSetup
+};
+
+static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSave,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+};
+static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialEditor,
+    MeshEditor,
+    nullptr,
+    ModelEditor,
+    nullptr,
+    TextureEditor
+};
+
+static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialDiscard,
+    MeshDiscard,
+    nullptr,
+    ModelDiscard,
+    nullptr,
+    nullptr
+};
+
+static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] = 
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialShow,
+    MeshShow,
+    nullptr,
+    ModelShow,
+    nullptr,
+    nullptr
+};
+
+static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    "None %s",
+    "[Material] %s",
+    "[Mesh] %s",
+    "[Skeleton] %s",
+    "[Model] %s",
+    "[Animation] %s",
+    "[Texture] %s"
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 AssetEditor::Run(SaveMode save)
 {
-    using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
-    static const EditorFunc SavingFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSave,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-    static const EditorFunc RenderFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialEditor,
-        MeshEditor,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureEditor
-    };
-
-    static const EditorFunc DiscardFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialDiscard,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-
-    static const char* Labels[(uint)AssetType::NumAssetTypes] =
-    {
-        "None %s",
-        "[Material] %s",
-        "[Mesh] %s",
-        "[Skeleton] %s",
-        "[Model] %s",
-        "[Animation] %s",
-        "[Texture] %s"
-    };
-
     static const char* PopupText = "Unsaved changes";
     if (!assetEditorState.items.IsEmpty())
     {
@@ -224,6 +251,16 @@ AssetEditor::Run(SaveMode save)
                         }
                     }
                     ImGui::EndTabItem();
+
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, true);
+                }
+                else
+                {
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, false);
                 }
             }
             ImGui::EndTabBar();
@@ -238,23 +275,22 @@ AssetEditor::Run(SaveMode save)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+AssetEditor::Update()
+{
+    this->viewport.Update();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Setup(AssetEditorItem* item)
 {
     item->allocator.Release();
     item->data = nullptr;
-    using SetupFunc = void(*)(AssetEditorItem*);
 
-    static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSetup,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureSetup
-    };
+    item->previewObject = Graphics::CreateEntity();
 
     const SetupFunc& func = SetupFuncs[(uint)item->assetType];
     if (func)
@@ -282,6 +318,7 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
         // we just ignore for now
         return;
     }
+
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
         [asset, type](Resources::ResourceId id)

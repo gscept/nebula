@@ -4,8 +4,12 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "meshasseteditor.h"
+#include "visibility/visibilitycontext.h"
 namespace Presentation
 {
+
+static int selectedRenderMode = 0;
+static Materials::MaterialId SolidMaterial = Materials::InvalidMaterialId, WireframeMaterial = Materials::InvalidMaterialId;
 
 //------------------------------------------------------------------------------
 /**
@@ -13,6 +17,19 @@ namespace Presentation
 void 
 MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
+    static const char* renderModes[] = { "Fill", "Wireframe" };
+    static int newMode = 0;
+    ImGui::Combo("Render Mode", &newMode, renderModes, IM_ARRAYSIZE(renderModes));
+    if (selectedRenderMode != newMode)
+    {
+        Materials::MaterialId mat;
+        if (newMode == 0)
+            mat = SolidMaterial;
+        else
+            mat = WireframeMaterial;
+        Models::ModelContext::ChangeMaterial(item->previewObject, mat);
+        selectedRenderMode = newMode;
+    }
     SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
     for (IndexT i = 0; i < numMeshes; i++)
     {
@@ -45,7 +62,52 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
+    assetEditor->viewport.Render();
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshSetup(AssetEditorItem* item)
+{
+    if (SolidMaterial == Materials::InvalidMaterialId)
+    {
+        SolidMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewFill.entry, "EditorPreviewMeshFill");
+        WireframeMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewWireframe.entry, "EditorPreviewMeshWireframe");
+    }
+    Models::ModelContext::RegisterEntity(item->previewObject);
+    Models::ModelContext::Setup(
+        item->previewObject,
+        Math::mat4(),
+        Math::bbox(),
+        SolidMaterial,
+        CoreGraphics::MeshResourceGetMesh(item->asset.mesh, 0),
+        0,
+        Graphics::StageMask(1 << 3)
+    );
+    Models::ModelContext::SetAlwaysVisible(item->previewObject);
+    Visibility::ObservableContext::RegisterEntity(item->previewObject);
+    Visibility::ObservableContext::Setup(item->previewObject, Visibility::VisibilityEntityType::Model);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
+{
+    Models::ModelContext::DeregisterEntity(item->previewObject);
+    Visibility::ObservableContext::DeregisterEntity(item->previewObject);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
+{
+    Models::ModelContext::SetStageMask(item->previewObject, show ? 1 << 3 : 0x0);
 }
 
 } // namespace Presentation

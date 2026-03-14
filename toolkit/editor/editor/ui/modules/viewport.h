@@ -9,6 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "dynui/imguicontext.h"
 #include "editor/tools/camera.h"
 
 namespace Graphics{ class Stage; class View; }
@@ -34,8 +35,8 @@ public:
     Viewport();
     ~Viewport();
     
-    void Init(Util::String const& viewName);
-    void Init(Ptr<Graphics::View> const& view);
+    void Init(Util::String const& viewName, const Graphics::StageMask mask = Graphics::PRIMARY_STAGE_MASK);
+    void Init(const Graphics::ViewId view);
 
     void Render();
     void SetStage(const uint16_t stage);
@@ -48,7 +49,7 @@ public:
         return this->focused;
     }
 
-    const Ptr<Graphics::View> GetView() const;
+    const Graphics::ViewId GetView() const;
 
     Editor::Camera camera;
     Math::vec2 lastViewportImagePositionAbsolute;
@@ -61,8 +62,11 @@ public:
 private:
     RenderMode renderMode = TexturedLit;
 
-    Ptr<Graphics::View> view;
+    Graphics::ViewId view;
+    Graphics::GraphicsEntityId directionalLight;
 
+    CoreGraphics::TextureId targetTexture;
+    Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
 
     bool focused = false;

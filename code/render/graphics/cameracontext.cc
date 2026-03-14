@@ -10,6 +10,7 @@ namespace Graphics
 {
 
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
+Util::Array<Graphics::GraphicsEntityId> CameraContext::LodCameras;
 Graphics::GraphicsEntityId CameraContext::lodCamera;
 __ImplementContext(CameraContext, CameraContext::cameraAllocator);
 
@@ -61,24 +62,26 @@ CameraContext::UpdateCameras(const Graphics::FrameContext& ctx)
 /**
 */
 void
-CameraContext::SetupProjectionFov(const Graphics::GraphicsEntityId id, float aspect, float fov, float znear, float zfar)
+CameraContext::SetupProjectionFov(const Graphics::GraphicsEntityId id, float aspect, float fov, float znear, float zfar, const Graphics::StageMask stageMask)
 {
     const ContextEntityId cid = GetContextId(id);
     CameraSettings& settings = cameraAllocator.Get<Camera_Settings>(cid.id);
     settings.SetupPerspectiveFov(fov, aspect, znear, zfar);
-    cameraAllocator.Get<Camera_Projection>(cid.id) = settings.GetProjTransform();
+    cameraAllocator.Set<Camera_Projection>(cid.id, settings.GetProjTransform());
+    cameraAllocator.Set<Camera_StageMask>(cid.id, stageMask);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float width, float height, float znear, float zfar)
+CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float width, float height, float znear, float zfar, const Graphics::StageMask stageMask)
 {
     const ContextEntityId cid = GetContextId(id);
     CameraSettings& settings = cameraAllocator.Get<Camera_Settings>(cid.id);
     settings.SetupOrthogonal(width, height, znear, zfar);
-    cameraAllocator.Get<Camera_Projection>(cid.id) = settings.GetProjTransform();
+    cameraAllocator.Set<Camera_Projection>(cid.id, settings.GetProjTransform());
+    cameraAllocator.Set<Camera_StageMask>(cid.id, stageMask);
 }
 
 //------------------------------------------------------------------------------
@@ -139,6 +142,45 @@ CameraContext::GetSettings(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_Settings>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Graphics::StageMask
+CameraContext::GetStageMask(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return cameraAllocator.Get<Camera_StageMask>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Graphics::GraphicsEntityId>&
+CameraContext::GetLODCameras()
+{
+    return CameraContext::LodCameras;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CameraContext::AddLODCamera(const Graphics::GraphicsEntityId id)
+{
+    CameraContext::LodCameras.Append(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CameraContext::RemoveLODCamera(const Graphics::GraphicsEntityId id)
+{
+    IndexT i = CameraContext::LodCameras.FindIndex(id);
+    n_assert(i != InvalidIndex);
+    CameraContext::LodCameras.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

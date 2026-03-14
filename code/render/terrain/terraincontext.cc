@@ -228,13 +228,13 @@ TerrainContext::Create()
     terrainVirtualTileState.terrainWriteLowresProgram = ShaderGetProgram(terrainState.tileShader, ShaderFeatureMask("TerrainLowresWrite"));
     if (CoreGraphics::RayTracingSupported)
     {
-        FrameScript_default::RegisterSubgraph_TerrainRaytracingMeshGenerate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+        FrameScript_default::RegisterSubgraph_TerrainRaytracingMeshGenerate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
         {
             if (raytracingState.updateMesh)
             {
                 CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Terrain Update Raytracing Mesh");
 
-                CmdSetShaderProgram(cmdBuf, raytracingState.meshProgram);
+                CmdSetShaderProgram(cmdBuf, raytracingState.meshProgram, queue);
                 CmdSetResourceTable(cmdBuf, raytracingState.meshGenTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CmdDispatch(cmdBuf, Math::divandroundup(raytracingState.numTris, 64), raytracingState.numPatches, 1);
 
@@ -249,7 +249,7 @@ TerrainContext::Create()
     }
 
     
-    FrameScript_default::RegisterSubgraph_TerrainPrepare_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPrepare_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Terrain Shuffle Indirection Regions");
 
@@ -401,7 +401,7 @@ TerrainContext::Create()
         
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainIndirectionCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainIndirectionCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Terrain Copy Indirection Mips");
 
@@ -457,7 +457,7 @@ TerrainContext::Create()
         }
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainState.renderToggle == false)
             return;
@@ -500,7 +500,7 @@ TerrainContext::Create()
         }
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainPageExtract_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPageExtract_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Terrain Copy Pages to Readback");
         Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
@@ -523,7 +523,7 @@ TerrainContext::Create()
         CmdEndMarker(cmdBuf);
     });
 
-    FrameScript_default::RegisterSubgraph_SunTerrainShadows_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_SunTerrainShadows_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!terrainState.renderToggle)
             return;
@@ -540,7 +540,7 @@ TerrainContext::Create()
             TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
 
             // Setup shader state, set shader before we set the vertex layout
-            CmdSetShaderProgram(cmdBuf, terrainState.terrainShadowProgram);
+            CmdSetShaderProgram(cmdBuf, terrainState.terrainShadowProgram, queue);
 
             // Set shared resources
             CmdSetResourceTable(cmdBuf, terrainInstance.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
@@ -552,7 +552,7 @@ TerrainContext::Create()
         }
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainPagesClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPagesClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Terrain Clear Page Status Buffer");
         Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
@@ -565,7 +565,7 @@ TerrainContext::Create()
             terrainInstance.barrierContext.SyncBuffer(terrainInstance.pageUpdateListBarrierIndex, terrainInstance.pageUpdateListBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite);
             terrainInstance.barrierContext.Synchronize();
 
-            CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPageClearUpdateBufferProgram);
+            CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPageClearUpdateBufferProgram, queue);
             CmdSetResourceTable(cmdBuf, terrainInstance.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
 
             // run a single compute shader to clear the number of page entries
@@ -575,7 +575,7 @@ TerrainContext::Create()
         CmdEndMarker(cmdBuf);
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainUpdateCaches_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainUpdateCaches_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Threading::CriticalScope scope(&terrainState.syncPoint);
         Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
@@ -616,7 +616,7 @@ TerrainContext::Create()
                     });
 
                 // Setup state for update
-                CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainWriteLowresProgram);
+                CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainWriteLowresProgram, queue);
                 CmdSetResourceTable(cmdBuf, terrainInstance.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
                 CmdSetResourceTable(cmdBuf, terrainInstance.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
@@ -672,7 +672,7 @@ TerrainContext::Create()
                 );
                 terrainInstance.tileWriteBufferSet.Flush(cmdBuf, terrainInstance.tileWritesThisFrame.ByteSize());
                 CoreGraphics::BarrierPop(cmdBuf);
-                CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileWriteProgram);
+                CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileWriteProgram, queue);
                 CmdSetResourceTable(cmdBuf, terrainInstance.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
 
                 // go through pending page updates and render into the physical texture caches
@@ -714,7 +714,7 @@ TerrainContext::Create()
             terrainInstance.barrierContext.Synchronize();
         }
     });
-    FrameScript_default::RegisterSubgraph_TerrainResolve_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainResolve_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetGraphicsPipeline(cmdBuf, terrainVirtualTileState.terrainResolvePipeline);
         CmdSetVertexLayout(cmdBuf, terrainState.vlo);
@@ -1105,6 +1105,8 @@ TerrainContext::SetupTerrain(
     shadowMapInfo.height = TerrainShadowMapSize;
     shadowMapInfo.format = CoreGraphics::PixelFormat::R16G16F;
     shadowMapInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    shadowMapInfo.clear = true;
+    shadowMapInfo.clearColorF4 = Math::float4{ -60000.0f, -60000.0f, 1.0f, 1.0f };
     instanceInfo.shadowMap = CoreGraphics::CreateTexture(shadowMapInfo);
     Lighting::LightContext::SetupTerrainShadows(instanceInfo.shadowMap, createInfo.width);
 
@@ -1704,15 +1706,18 @@ TerrainContext::SetSun(const Graphics::GraphicsEntityId sun)
 /**
 */
 void 
-TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+TerrainContext::CullPatches(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainRunJobs, Terrain);
+
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
     Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
     for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
     {
         TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
-        Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
+        Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
         terrainInstance.indirectionUploadOffsets[ctx.bufferIndex] = 0;
 
         if (raytracingState.setupBlasFrame == ctx.frameIndex)
@@ -1824,7 +1829,7 @@ skipResolution:
 
         n_assert(terrainInstance.sectionCullDoneCounter == 0);
         terrainInstance.sectionCullDoneCounter = 1;
-        const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
+        const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(ViewGetCamera(view));
 
         Math::vec4 m_col_x[4];
         Math::vec4 m_col_y[4];
@@ -2152,7 +2157,7 @@ IndirectionClear(
 /**
 */
 void 
-TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+TerrainContext::UpdateLOD(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainUpdateVirtualTexturing, Terrain);
     Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();

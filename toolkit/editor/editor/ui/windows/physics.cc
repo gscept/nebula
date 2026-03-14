@@ -47,7 +47,7 @@ Physics::Run(SaveMode save)
         Ptr<Scene> sceneWindow = Presentation::WindowServer::Instance()->GetWindow("Scene View").downcast<Presentation::Scene>();
         if (sceneWindow.isvalid())
         {
-            this->defaultCamera = sceneWindow->viewPort.GetView()->GetCamera();
+            this->defaultCamera = ViewGetCamera(sceneWindow->viewPort.GetView());
         }
     }
     if (this->defaultCamera == Graphics::GraphicsEntityId::Invalid())

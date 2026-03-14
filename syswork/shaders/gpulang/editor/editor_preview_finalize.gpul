@@ -1,0 +1,92 @@
+//------------------------------------------------------------------------------
+//  editor_preview_finalize.gpul
+//  (C) 2025 Individual contributors, See LICENSE file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/preetham.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+
+struct FinalizeData
+{
+    DepthTexture: u32;
+    ColorTexture: u32;
+};
+group(BATCH_GROUP) uniform FinalizeUniforms : *FinalizeData;
+
+sampler_state UpscaleSampler
+{
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    Border = Color.Transparent;
+};
+
+sampler_state DefaultSampler
+{
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    Border = Color.Transparent;
+};
+
+render_state FinalizeState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2
+) void
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(in UV : f32x2) void
+{
+    // get an averaged depth value        
+    const depth = sample2DLod(FinalizeUniforms.DepthTexture, DefaultSampler, UV * PassUniforms.RenderTargets[0].Scale, 0).r;
+    var c = f32x4(sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, UV * PassUniforms.RenderTargets[0].Scale, 0).rgb, 1.0f);
+	if depth == 1.0f
+	{
+		pixelExportColor(c.rgb, 0);
+	}
+	else
+	{
+		// Convert color to luminance
+		const lumAvg = ViewConstants.Time_Random_Luminance_X.z;
+		var xyY = RGBToXYY(c.rgb);
+		const lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, PerTickParams.MaxLuminance);
+
+		// Tonemap in luma space
+		xyY = ToneMap(xyY, lp, PerTickParams.MaxLuminance);
+
+		// Convert back to RGB
+		pixelExportColor(XYYToRGB(xyY), 0);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Main")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = FinalizeState;
+};

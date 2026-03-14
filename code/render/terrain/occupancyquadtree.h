@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    The occupancy quad tree implements a tree which allows for a quick search 
+    A quad tree designed to return regions of free 2D space.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -25,7 +25,7 @@ public:
     ~OccupancyQuadTree();
 
     /// setup with a world size and a biggest allocation size
-    void Setup(uint worldSize, uint maxSize, uint minSize);
+    void Setup(uint textureSize, uint maxSize, uint minSize);
     /// allocate a region, return region
     Math::uint2 Allocate(uint size);
     /// deallocate region
@@ -99,10 +99,10 @@ OccupancyQuadTree::~OccupancyQuadTree()
 /**
 */
 inline void 
-OccupancyQuadTree::Setup(uint worldSize, uint maxSize, uint minSize)
+OccupancyQuadTree::Setup(uint textureSize, uint maxSize, uint minSize)
 {
     this->minSize = minSize;
-    uint numNodes = worldSize / maxSize;
+    uint numNodes = textureSize / maxSize;
     this->topLevelNodes.Resize(numNodes);
     for (uint x = 0; x < numNodes; x++)
     {

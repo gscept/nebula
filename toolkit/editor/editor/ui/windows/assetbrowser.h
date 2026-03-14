@@ -16,6 +16,7 @@
 namespace Presentation
 {
 
+class ScanFolderJob;
 class AssetEditor;
 class AssetBrowser : public BaseWindow
 {
@@ -75,7 +76,7 @@ private:
 
     Util::Dictionary<uint, FileTreeNode> nodes;
     Util::Dictionary<uint, FileEntry> files;
-    void ScanFolder(FileTree& tree);
+    void ScanFolder(const Util::String & treeName, const IO::URI& folderPath, bool useArchive);
     void DisplayFileTree();
 
 private:
@@ -104,7 +105,9 @@ private:
     /// Determine file type from file extension
     static FileEntry::Type DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and populate the FileTreeNode
-    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash);
+    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive);
+    friend class ScanFolderJob;
+    Ptr<ScanFolderJob> currentScanJob;
 };
 __RegisterClass(AssetBrowser)
 

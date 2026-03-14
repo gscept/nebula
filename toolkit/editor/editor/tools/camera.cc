@@ -44,33 +44,34 @@ Camera::~Camera()
 /**
 */
 void
-Camera::AttachToView(const Ptr<Graphics::View>& view)
+Camera::AttachToView(const Graphics::ViewId view)
 {
-	view->SetCamera(this->cameraEntityId);
+    ViewSetCamera(view, this->cameraEntityId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Camera::Setup(SizeT screenWidth, SizeT screenHeight)
+Camera::Setup(SizeT screenWidth, SizeT screenHeight, Graphics::StageMask stageMask)
 {
 	this->cameraEntityId = Graphics::CreateEntity();
 	CameraContext::RegisterEntity(this->cameraEntityId);
 
     this->screenWidth = screenWidth;
     this->screenHeight = screenHeight;
+    this->stageMask = stageMask;
 
-	CameraContext::SetupProjectionFov(this->cameraEntityId, screenWidth / (float)screenHeight, Math::deg2rad(this->fov), 0.01f, 1000.0f);
+	CameraContext::SetupProjectionFov(this->cameraEntityId, screenWidth / (float)screenHeight, Math::deg2rad(this->fov), 0.01f, 1000.0f, stageMask);
 
     this->defaultViewPoint = Math::vec3(15.0f, 15.0f, -15.0f);
 
 	this->Reset();
 	CameraContext::SetView(this->cameraEntityId, this->mayaCameraUtil.GetCameraTransform());
 
-    CameraContext::SetLODCamera(this->cameraEntityId);
+    CameraContext::AddLODCamera(this->cameraEntityId);
     ObserverContext::RegisterEntity(this->cameraEntityId);
-	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera, Graphics::PRIMARY_STAGE_MASK);
+	ObserverContext::Setup(this->cameraEntityId, VisibilityEntityType::Camera, stageMask);
 }
 
 //------------------------------------------------------------------------------
@@ -168,10 +169,10 @@ Camera::SetProjectionMode(ProjectionMode mode)
     switch (mode)
     {
     case Editor::Camera::PERSPECTIVE:
-        CameraContext::SetupProjectionFov(this->cameraEntityId, this->screenWidth / (float)this->screenHeight, Math::deg2rad(this->fov), 0.01f, 1000.0f);
+        CameraContext::SetupProjectionFov(this->cameraEntityId, this->screenWidth / (float)this->screenHeight, Math::deg2rad(this->fov), 0.01f, 1000.0f, this->stageMask);
         break;
     case Editor::Camera::ORTHOGRAPHIC:
-        CameraContext::SetupOrthographic(this->cameraEntityId, this->orthoWidth, this->orthoHeight, 0.1, 1000);
+        CameraContext::SetupOrthographic(this->cameraEntityId, this->orthoWidth, this->orthoHeight, 0.1, 1000, this->stageMask);
         break;
     default:
         break;

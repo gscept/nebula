@@ -37,7 +37,16 @@ Raygen(ray_payload Result : LightResponsePayload) void
     if ((Result.bits & RAY_MISS_BIT) != 0)
     {
         const dir = normalize(direction.xyz);
-        light = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
+		var atmo = f32x3(0);
+		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+		{
+			const li = LightLists.DirectionalLights[i];
+			if li.stageMask & ViewConstants.StageMask
+			{
+				light += CalculateAtmosphericScattering(dir, li.direction) * li.color;
+			}
+		}
+        
     }
     else
     {

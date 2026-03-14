@@ -241,9 +241,9 @@ DownsamplingContext::Setup()
     });
     CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);
 
-    FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, state.extractProgram, false);
+        CmdSetShaderProgram(cmdBuf, state.extractProgram, queue, false);
         CmdSetResourceTable(cmdBuf, state.extractResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         CmdDispatch(cmdBuf, dispatchX, viewport.height(), 1);
@@ -252,9 +252,9 @@ DownsamplingContext::Setup()
         , { FrameScript_default::TextureIndex::ZBuffer, PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, false);
+        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, queue, false);
         CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
@@ -263,9 +263,9 @@ DownsamplingContext::Setup()
         { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, false);
+        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, queue, false);
         CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = DispatchSize(viewport.width());
         uint dispatchY = DispatchSize(viewport.height());

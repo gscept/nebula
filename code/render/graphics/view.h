@@ -11,149 +11,94 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "ids/id.h"
+#include "coregraphics/config.h"
 #include "frame/framescript.h"
 #include "timing/time.h"
 #include "graphicsentity.h"
+#include "gpulang/render/system_shaders/shared.h"
 namespace Graphics
 {
-class Camera;
-class View : public Core::RefCounted
+
+typedef uint16_t StageMask;
+static constexpr StageMask PRIMARY_STAGE_MASK = 0x1;
+static constexpr StageMask SHADOW_STAGE_MASK = 0x2;
+static constexpr StageMask DEFAULT_STAGE_MASK = PRIMARY_STAGE_MASK | SHADOW_STAGE_MASK;
+static constexpr StageMask ALL_STAGE_MASK = 0xFFFF;
+
+static constexpr StageMask StageMaskFromIndex(const IndexT stageIndex)
 {
-    __DeclareClass(View);
-public:
-    /// constructor
-    View();
-    /// destructor
-    virtual ~View();
+    return 1 << (stageIndex << SHADOW_STAGE_MASK);
+}
 
-    /// Update constants
-    void UpdateConstants();
-    /// render through view, returns true if framescript needs resizing
-    bool Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+ID_32_TYPE(ViewId);
 
-    /// Set run function
-    void SetFrameScript(bool(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
-    /// Set viewport
-    void SetViewport(const Math::rectangle<int>& rect);
-    /// Get viewport
-    const Math::rectangle<int>& GetViewport();
-
-    /// set camera
-    void SetCamera(const GraphicsEntityId& camera);
-    /// get camera
-    const GraphicsEntityId& GetCamera();
-
-    /// set stage
-    void SetStageMask(const uint16_t stage);
-    /// get stage
-    const uint16_t GetStageMask() const;
-
-    /// returns whether view is enabled
-    bool IsEnabled() const;
-    
-    /// enable this view
-    void Enable();
-
-    /// disable this view
-    void Disable();
-private:    
-    friend class GraphicsServer;
-
+struct ViewCreateInfo
+{
+    bool(*frameScript)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex) = nullptr;
     Math::rectangle<int> viewport;
-    uint16_t stageMask;
-    bool (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
-    GraphicsEntityId camera;
-    bool enabled;
+    Graphics::GraphicsEntityId camera = Graphics::InvalidGraphicsEntityId;
+    Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::SetCamera(const GraphicsEntityId& camera)
-{
-    this->camera = camera;
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const GraphicsEntityId&
-Graphics::View::GetCamera()
-{
-    return this->camera;
-}
+/// Create a new view
+ViewId CreateView(const ViewCreateInfo& info);
+/// Destroy view
+void DestroyView(const ViewId id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::SetStageMask(const uint16_t stageMask)
-{
-    this->stageMask = stageMask;
-}
+/// Apply view
+void ViewApply(const ViewId id);
+/// Render view
+bool ViewRender(const ViewId id, const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+/// Set view frame script
+void ViewSetFrameScript(const ViewId id, bool(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
+/// Set view viewport
+void ViewSetViewport(const ViewId id, const Math::rectangle<int>& rect);
+/// Get view viewport
+const Math::rectangle<int>& ViewGetViewport(const ViewId id);
+/// Set view camera
+void ViewSetCamera(const ViewId id, const GraphicsEntityId& camera);
+/// Get view camera
+const GraphicsEntityId& ViewGetCamera(const ViewId id);
+/// Get view constants
+Shared::ViewConstants::STRUCT& ViewGetViewConstants(const ViewId id);
+/// Get shadow view constants
+Shared::ShadowViewConstants::STRUCT& ViewGetShadowConstants(const ViewId id);
+/// Set view stage
+void ViewSetStageMask(const ViewId id, const Graphics::StageMask stage);
+/// Get view stage
+const Graphics::StageMask ViewGetStageMask(const ViewId id);
+/// Enable view
+void ViewEnable(const ViewId id);
+/// Disable view
+void ViewDisable(const ViewId id);
+/// Check if view is enabled
+bool ViewIsEnabled(const ViewId id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const uint16_t
-View::GetStageMask() const
+enum
 {
-    return this->stageMask;
-}
+    View_ViewConstants,
+    View_ShadowConstants,
+    View_OutputTarget,
+    View_Viewport,
+    View_StageMask,
+    View_FrameScriptFunc,
+    View_Camera,
+    View_Enabled
+};
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-View::IsEnabled() const
-{
-    return this->enabled;
-}
+typedef Ids::IdAllocator<
+    Shared::ViewConstants::STRUCT,
+    Shared::ShadowViewConstants::STRUCT,
+    CoreGraphics::TextureId,
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::Enable()
-{
-    this->enabled = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::Disable()
-{
-    this->enabled = false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::SetFrameScript(bool(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex))
-{
-    this->func = func;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-View::SetViewport(const Math::rectangle<int>& rect)
-{
-    this->viewport = rect;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const 
-Math::rectangle<int>& View::GetViewport()
-{
-    return this->viewport;
-}
+    Math::rectangle<int>,
+    Graphics::StageMask,
+    bool (*)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex),
+    GraphicsEntityId,
+    bool
+> ViewAllocator;
+extern ViewAllocator viewAllocator;
 
 } // namespace Graphics

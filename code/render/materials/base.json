@@ -321,7 +321,7 @@
                         "variation": "Static|Point"
                     },
                     {
-                        "batch": "GlobalShadow",
+                        "batch": "DirectionalLightShadow",
                         "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
@@ -360,7 +360,7 @@
                         "variation": "Point|Alpha"
                     },
                     {
-                        "batch": "GlobalShadow",
+                        "batch": "DirectionalLightShadow",
                         "shader": "system_shaders/shadow",
                         "variation": "Global|Alpha"
                     },
@@ -418,7 +418,7 @@
                         "variation": "Skinned|Point"
                     },
                     {
-                        "batch": "GlobalShadow",
+                        "batch": "DirectionalLightShadow",
                         "shader": "system_shaders/shadow",
                         "variation": "Skinned|Global"
                     },
@@ -457,7 +457,7 @@
                         "variation": "Skinned|Point"
                     },
                     {
-                        "batch": "GlobalShadow",
+                        "batch": "DirectionalLightShadow",
                         "shader": "system_shaders/shadow",
                         "variation": "Skinned|Global"
                     },
@@ -817,7 +817,7 @@
                         "variation": "Static"
                     },
                     {
-                        "batch": "GlobalShadow",
+                        "batch": "DirectionalLightShadow",
                         "shader": "system_shaders/particle",
                         "variation": "Global"
                     }
@@ -971,6 +971,44 @@
                         "name": "AlbedoMap",
                         "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
+                    }
+                ]
+            },
+            {
+                "name": "EditorPreviewFill",
+                "inherits": "DefaultBRDF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Preview material for editor",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/editor/editor_preview",
+                        "variation": "Fill"
+                    }
+                ]
+            },
+            {
+                "name": "EditorPreviewWireframe",
+                "inherits": "DefaultBRDF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Preview material for editor",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/editor/editor_preview",
+                        "variation": "Wireframe"
                     }
                 ]
             }

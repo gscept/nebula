@@ -448,12 +448,13 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
 /**
 */
 void
-CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, bool bindGlobals)
+CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, bool bindGlobals)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
     VkShaderProgramRuntimeInfo& info = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
+    auto tableSet = queue == CoreGraphics::QueueType::GraphicsQueueType ? Graphics::GlobalTables::GraphicsQueue : Graphics::GlobalTables::ComputeQueue;
     IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
     pipelineBundle.program = pro;
     if (info.type == ShaderPipeline::ComputePipeline)
@@ -463,8 +464,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer, tableSet), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer, tableSet), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
         }
     }
     else if (info.type == ShaderPipeline::RayTracingPipeline)
@@ -474,8 +475,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, info.pipeline);
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer, tableSet), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer, tableSet), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
         }
     }
     else
@@ -514,8 +515,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.graphicsLayout = info.layout;
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer, tableSet), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer, tableSet), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         }
     }
@@ -648,8 +649,8 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
     if (pipelineChange)
     {
         IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer, Graphics::GlobalTables::GraphicsQueue), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer, Graphics::GlobalTables::GraphicsQueue), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
     }
 
@@ -672,20 +673,20 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
 /**
 */
 void
-CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
+CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline, const CoreGraphics::QueueType queue)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(buf.id);
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id);
     Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id);
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
-
+    auto tableSet = queue == CoreGraphics::QueueType::GraphicsQueueType ? Graphics::GlobalTables::GraphicsQueue : Graphics::GlobalTables::ComputeQueue;
     bool pipelineChange = pipelineBundle.raytracingLayout != pipelineObj.layout;
     pipelineBundle.raytracingLayout = pipelineObj.layout;
     if (pipelineChange)
     {
         IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer, tableSet), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer, tableSet), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
     }
 }
 
@@ -1439,6 +1440,8 @@ CmdSetScissors(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>
 void
 CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
+    ViewportBundle& pending = commandBuffers.Get<CmdBuffer_PendingViewports>(id.id);
+    pending.numPending = 0;
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkViewport vp;
     vp.width = (float)rect.width();
@@ -1456,6 +1459,8 @@ CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index
 void
 CmdSetScissorRect(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
+    ScissorBundle& pending = commandBuffers.Get<CmdBuffer_PendingScissors>(id.id);
+    pending.numPending = 0;
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     VkRect2D sc;
     sc.extent.width = rect.width();

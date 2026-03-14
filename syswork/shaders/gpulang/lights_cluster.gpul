@@ -31,8 +31,8 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumPointLights; i++)
     {
         const light = LightLists.PointLights[i];
-        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
+        if (TestAABBSphere(aabb, light.position, light.range))
         {
             LightIndexLists.PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
@@ -48,13 +48,12 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumSpotLights; i++)
     {
         const light = LightLists.SpotLights[i];
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
         // first do fast discard sphere test
-        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        if (TestAABBSphere(aabb, light.position, light.range))
         {
             // then do more refined cone test, if previous test passed
-            const viewSpaceForward = (ViewConstants.View * f32x4(light.forward, 0)).xyz;
-            if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
+            if (TestAABBCone(aabb, light.position, light.forward, light.range, light.angleSinCos))
             {
                 LightIndexLists.SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
@@ -70,8 +69,8 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     { 
         const light = LightLists.AreaLights[i];
-        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        if (light.stageMask & ViewConstants.StageMask) == 0 { continue; }
+        if (TestAABBSphere(aabb, light.position, light.range))
 		{
             LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;

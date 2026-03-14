@@ -416,9 +416,9 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     FrameScript_default::Bind_VegetationMeshArgumentsBuffer(vegetationState.meshArgumentsBuffer);
     FrameScript_default::Bind_VegetationMeshDrawsBuffer(vegetationState.meshDrawCallsBuffer);
 
-    FrameScript_default::RegisterSubgraph_VegetationClearDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationClearDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationClearShader);
+        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationClearShader, queue);
         CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
 
         CmdDispatch(cmdBuf, 1, 1, 1);
@@ -427,9 +427,9 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         , { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationGenerateDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationGenerateDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader);
+        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader, queue);
         CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
         CmdSetResourceTable(cmdBuf, vegetationState.argumentsTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
@@ -442,7 +442,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         , { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationDrawCPUReadback_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationDrawCPUReadback_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
          CmdBarrier(cmdBuf,
             PipelineStage::HostRead,
@@ -476,11 +476,11 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::TransferRead }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {
-            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassZShader);
+            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassZShader, queue);
 
             // setup mesh
             CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -503,7 +503,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         {
             if (vegetationState.meshDrawsThisFrame[i] > 0)
             {
-                CmdSetShaderProgram(cmdBuf, vegetationState.meshZPrograms[i]);
+                CmdSetShaderProgram(cmdBuf, vegetationState.meshZPrograms[i], queue);
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -529,11 +529,11 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationRender_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationRender_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {
-            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassShader);
+            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassShader, queue);
 
             // setup mesh
             CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -556,7 +556,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         {
             if (vegetationState.meshDrawsThisFrame[i] > 0)
             {
-                CmdSetShaderProgram(cmdBuf, vegetationState.meshPrograms[i]);
+                CmdSetShaderProgram(cmdBuf, vegetationState.meshPrograms[i], queue);
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -582,7 +582,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationCopyIndirect_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationCopyIndirect_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -905,10 +905,10 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 /**
 */
 void
-VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
-    Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(view->GetCamera());
-    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
+    Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(ViewGetCamera(view));
+    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
     VegetationGenerateUniforms::STRUCT uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
     cameraTransform.z_axis.store(uniforms.CameraForward);

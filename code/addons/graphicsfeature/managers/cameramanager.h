@@ -16,6 +16,7 @@
 #include "graphics/graphicsentity.h"
 #include "math/vec3.h"
 #include "graphicsfeature/components/camera.h"
+#include "graphics/view.h"
 
 namespace Graphics
 {
@@ -39,7 +40,7 @@ public:
     void OnDeactivate() override;
 
     /// register a view
-    static ViewHandle RegisterView(Ptr<Graphics::View> const& view);
+    static ViewHandle RegisterView(const Graphics::ViewId view);
 
     /// check if viewhandle is valid
     static bool IsViewHandleValid(ViewHandle handle);
@@ -55,7 +56,7 @@ private:
     struct ViewData
     {
         Graphics::GraphicsEntityId gid;
-        Ptr<Graphics::View> view;
+        Graphics::ViewId view;
         Camera currentSettings;
     };
 

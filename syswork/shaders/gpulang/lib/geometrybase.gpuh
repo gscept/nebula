@@ -13,7 +13,6 @@
 
 #include <material_interfaces.gpul>
 
-//#define PN_TRIANGLES
 render_state StandardState
 {
 };

@@ -152,7 +152,12 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
     }
 #endif
-    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), 1u, [](IndexT frameIndex, IndexT bufferIndex) {
+        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
+    });
     this->globalLight = Graphics::CreateEntity();
 
     Im3d::Im3dContext::Create();
@@ -191,18 +196,12 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::DownsamplingContext::Setup();
 
     Graphics::SetupBufferConstants();
-    this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
-        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
-        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
-    });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
         Graphics::SetupBufferConstants();
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(this->globalLight, this->defaultView, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, Graphics::PRIMARY_STAGE_MASK, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -220,22 +219,21 @@ GraphicsFeatureUnit::OnActivate()
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
         Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
+        Decals::DecalContext::UpdateDecals,
+        Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
+        Raytracing::RaytracingContext::UpdateResources,
         ::Terrain::TerrainContext::RenderUI
     };
 
     Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
     {
-        Lighting::LightContext::OnPrepareView,
         Particles::ParticleContext::OnPrepareView,
         Im3d::Im3dContext::OnPrepareView,
         PostEffects::SSAOContext::UpdateViewDependentResources,
         PostEffects::HistogramContext::UpdateViewResources,
-        Decals::DecalContext::UpdateViewDependentResources,
-        Fog::VolumetricFogContext::UpdateViewDependentResources,
-        Lighting::LightContext::UpdateViewDependentResources,
-        Raytracing::RaytracingContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
+        Lighting::LightContext::OnPrepareView,
         ::Terrain::TerrainContext::CullPatches
     };
 
@@ -249,6 +247,7 @@ GraphicsFeatureUnit::OnActivate()
 
         // At the very latest point, wait for work to finish
         ModelContext::WaitForWork,
+        Lighting::LightContext::UpdateLights,
         Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
         Particles::ParticleContext::WaitForParticleUpdates,

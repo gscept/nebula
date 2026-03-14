@@ -122,7 +122,7 @@ ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, con
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             nullptr,
-            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
             overallocationSize,
             (uint32_t)poolSizes.Size(),
             poolSizes.Size() > 0 ? poolSizes.Begin() : nullptr
@@ -743,7 +743,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
 /**
 */
 void
-AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding, 128, 128>& bindings, const VkDescriptorSetLayoutBinding& binding)
+AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding, 128, 128>& bindings, const VkDescriptorSetLayoutBinding& binding, Util::HashTable<uint32_t, VkDescriptorBindingFlags>& flags)
 {
     IndexT index = bindings.FindIndex(binding.binding);
     if (index != InvalidIndex)
@@ -758,7 +758,16 @@ AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding, 128, 128>& bi
         }
     }
     else
+    {
         bindings.Add(binding.binding, binding);
+        if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+            binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
+            binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC &&
+            binding.descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+            flags.Add(binding.binding, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        else
+            flags.Add(binding.binding, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -822,6 +831,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     sampledImageSize.descriptorCount = 0;
     combinedImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     combinedImageSize.descriptorCount = 0;
+    Util::HashTable<uint32_t, VkDescriptorBindingFlags> bindFlags;
 
     Util::HashTable<uint32_t, uint32_t> textureCount;
     Util::HashTable<uint32_t, uint32_t> sampledTextureCount;
@@ -859,7 +869,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         }
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
 
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
     }
 
     // update pool sizes
@@ -888,7 +898,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
 
         CountDescriptors(imageCount, binding);
     }
@@ -918,7 +928,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
 
         CountDescriptors(buf.dynamicOffset ? dynamicUniformCount : uniformCount, binding);
     }
@@ -950,7 +960,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
 
         CountDescriptors(buf.dynamicOffset ? dynamicBufferCount : bufferCount, binding);
     }
@@ -979,7 +989,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             binding.descriptorCount = tlas.num;
             binding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
             binding.stageFlags = VkTypes::AsVkShaderVisibility(tlas.visibility);
-            AddBinding(bindings, binding);
+            AddBinding(bindings, binding, bindFlags);
 
             accelerationStructureSize.descriptorCount += tlas.num;
         }
@@ -1008,7 +1018,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
         binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
 
         // add static samplers
         samplers.Append(Util::MakePair(samp.sampler, samp.slot));
@@ -1040,7 +1050,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        AddBinding(bindings, binding);
+        AddBinding(bindings, binding, bindFlags);
 
         inputAttachmentSize.descriptorCount += tex.num;
     }
@@ -1051,8 +1061,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     // Create layout
     if (bindings.Size() > 0)
     {
-        Util::FixedArray<VkDescriptorBindingFlags> flags(bindings.Size());
-        flags.Fill(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        auto flags = bindFlags.ValuesAsArray();
         VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags =
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,

@@ -243,6 +243,7 @@ PixelFormat::ToChannels(Code code)
     case D24X8:         return 2;
     case D24S8:         return 2;
     case D32S8:         return 2;
+    case D32:           return 1;
 
     default:
         n_error("Invalid pixel format code");

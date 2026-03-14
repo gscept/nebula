@@ -52,7 +52,7 @@ struct ObservableGlobalState
 /**
 */
 void
-ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, uint16_t stageMask, bool isOrtho)
+ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, Graphics::StageMask stageMask, bool isOrtho)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     observerAllocator.Set<Observer_EntityType>(cid.id, entityType);
@@ -66,29 +66,21 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 /**
 */
 void
-ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode)
-{
-    const Graphics::ContextEntityId cid = GetContextId(b);
-    observerAllocator.Set<Observer_Dependency>(cid.id, a);
-    observerAllocator.Set<Observer_DependencyMode>(cid.id, mode);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(RunVisibilityTests, Visibility);
 
     const Models::ModelContext::ModelInstance::Renderable& NodeInstances = Models::ModelContext::GetModelRenderables();
 
-    Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
     const Util::Array<bool>& observerIsOrthogonal = observerAllocator.GetArray<Observer_IsOrtho>();
-    const Util::Array<uint16_t>& observerStageMasks = observerAllocator.GetArray<Observer_StageMask>();
+    const Util::Array<Graphics::StageMask>& observerStageMasks = observerAllocator.GetArray<Observer_StageMask>();
     const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
     const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
     Util::Array<VisibilityResultArray>& observerResults = observerAllocator.GetArray<Observer_ResultArray>();
+
+    static Util::Array<Math::mat4> observerTransforms;
+    observerTransforms.Reset();
+    observerTransforms.Resize(observerAllocator.Size());
 
     IndexT i;
     for (i = 0; i < observerIds.Size(); i++)
@@ -115,7 +107,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // reset all lists to that all entities are visible
-    for (i = 0; i < observerResults.Size(); i++)
+    for (i = 0; i < observerAllocator.Size(); i++)
     {
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         observerResults[i].Fill(0, observerResults[i].Size(), Math::ClipStatus::Type::Outside);
@@ -134,12 +126,12 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // setup observerable entities
-    const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
+    const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<ObservableContext::Observable_EntityId>();
     static Util::Array<uint32_t> nodes;
     nodes.Reset();
     nodes.Resize(observerResults[0].Size());
 
-    static Util::Array<uint16_t> stageMasks;
+    static Util::Array<Graphics::StageMask> stageMasks;
     stageMasks.Reset();
     stageMasks.Resize(observerResults[0].Size());
 
@@ -172,7 +164,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 if (gid == Graphics::InvalidGraphicsEntityId)
                     continue;
 
-                const uint16_t stage = Models::ModelContext::GetModelStageMask(idData[index]);
+                const Graphics::StageMask stage = Models::ModelContext::GetModelStageMask(idData[index]);
                 const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
                 uint offset = Threading::Interlocked::Add(&counter, numNodes);
@@ -318,8 +310,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             ObserverContext::VisibilityBatchCommand* cmd = nullptr;
             CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
             Materials::MaterialId mat = Materials::InvalidMaterialId;
-            static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
-            Util::Tuple<uint32_t, uint32_t> drawModifiers = NullDrawModifiers;
             const MaterialTemplatesGPULang::Entry* currentMaterialType = nullptr;
 
             for (uint32_t i = 0; i < numPackets; i++)
@@ -338,7 +328,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     cmd->numDrawPackets = 0;
 
                     mesh = CoreGraphics::InvalidMeshId;
-                    drawModifiers = NullDrawModifiers;
                     currentMaterialType = otherMaterialType;
                 }
                 n_assert(cmd != nullptr);
@@ -353,7 +342,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
                     batchCmd.mesh = otherMesh;
-                    batchCmd.primitiveGroup = renderables->nodePrimitiveGroup[index];
                     batchCmd.material = otherMat;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -363,17 +351,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     mat = otherMat;
                 }
 
-                // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
-                auto otherDrawModifiers = renderables->nodeDrawModifiers[index];
-                if (drawModifiers != otherDrawModifiers)
-                {
-                    ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
-                    drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                    drawCmd.numInstances = Util::Get<0>(otherDrawModifiers);
-                    drawCmd.baseInstance = Util::Get<1>(otherDrawModifiers);
-
-                    drawModifiers = otherDrawModifiers;
-                }
+                ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
+                drawCmd.primitiveGroup = renderables->nodePrimitiveGroup[index];
+                drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                drawCmd.numInstances = Util::Get<0>(renderables->nodeDrawModifiers[index]);
+                drawCmd.baseInstance = Util::Get<1>(renderables->nodeDrawModifiers[index]);
 
                 // allocate memory for draw packet
                 void* mem = allocator->Alloc(sizeof(Models::ShaderStateNode::DrawPacket));
@@ -668,7 +650,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
             ObservableState.visibilityResults.Append(Math::ClipStatus::Outside);
 
         // Then update observers
-        const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
+        const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<ObserverContext::Observer_ResultArray>();
         for (IndexT i = 0; i < visAllocators.Size(); i++)
         {
             ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
@@ -708,7 +690,7 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 
     ObservableState.visibilityResults.EraseRange(0, numNodes);
     // add as many atoms to each visibility result allocator
-    const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
+    const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<ObserverContext::Observer_ResultArray>();
     for (IndexT i = 0; i < visAllocators.Size(); i++)
     {
         ObserverContext::VisibilityResultArray& alloc = visAllocators[i];

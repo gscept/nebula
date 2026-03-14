@@ -116,7 +116,7 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    FrameScript_default::RegisterSubgraph_Im3D_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_Im3D_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Render(cmdBuf, frame);
     });
@@ -364,16 +364,19 @@ Im3dContext::DrawCone(const Math::point& start, const Math::point& end, float st
 /**
 */
 void
-Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     AppData& ad = GetAppData();
 
-    const Math::rectangle<int>& viewport = view->GetViewport();
+    if (view != GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
+    const Math::rectangle<int>& viewport = ViewGetViewport(view);
 
     ad.m_deltaTime = ctx.frameTime;
     ad.m_viewportSize = Vec2((float)viewport.width(), (float)viewport.height());
     
-    Graphics::GraphicsEntityId cam = view->GetCamera();
+    Graphics::GraphicsEntityId cam = ViewGetCamera(view);
     Math::mat4 transform = inverse(CameraContext::GetView(cam));
     ad.m_viewOrigin = xyz(transform.position);
     ad.m_viewDirection = -xyz(transform.z_axis);

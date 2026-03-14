@@ -113,16 +113,6 @@ VolumetricFogContext::Create()
         fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP, fogState.resourceTables.Size());
     }
 
-    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-    {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
-
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), 0 });
-        ResourceTableCommitChanges(frameResourceTable);
-    }
-
     blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.gplb");
     blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurX"));
     blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurY"));
@@ -144,7 +134,7 @@ VolumetricFogContext::Create()
     fogState.turbidity = 0.1f;
     fogState.color = Math::vec3(1);
 
-    FrameScript_default::RegisterSubgraph_FogCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -154,9 +144,9 @@ VolumetricFogContext::Create()
         { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_FogCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, fogState.cullProgram);
+        CmdSetShaderProgram(cmdBuf, fogState.cullProgram, queue);
 
         // Run chunks of 1024 threads at a time
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -168,9 +158,9 @@ VolumetricFogContext::Create()
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_FogCompute_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCompute_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, fogState.renderProgram);
+        CmdSetShaderProgram(cmdBuf, fogState.renderProgram, queue);
 
         // Set frame resources
         CmdSetResourceTable(cmdBuf, fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -185,9 +175,9 @@ VolumetricFogContext::Create()
         , { FrameScript_default::TextureIndex::ZBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_FogBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, blurState.blurXProgram);
+        CmdSetShaderProgram(cmdBuf, blurState.blurXProgram, queue);
         CmdSetResourceTable(cmdBuf, blurState.blurXTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer0();
@@ -203,9 +193,9 @@ VolumetricFogContext::Create()
         { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderRead }
         , { FrameScript_default::TextureIndex::VolumetricFogBuffer1, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
-    FrameScript_default::RegisterSubgraph_FogBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, blurState.blurYProgram);
+        CmdSetShaderProgram(cmdBuf, blurState.blurYProgram, queue);
         CmdSetResourceTable(cmdBuf, blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer1();
@@ -240,7 +230,9 @@ VolumetricFogContext::SetupBoxVolume(
     const Graphics::GraphicsEntityId id,
     const Math::mat4& transform,
     const float density,
-    const Math::vec3& absorption)
+    const Math::vec3& absorption,
+    const Graphics::StageMask stageMask
+    )
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     Ids::Id32 fog = fogBoxVolumeAllocator.Alloc();
@@ -250,6 +242,7 @@ VolumetricFogContext::SetupBoxVolume(
     fogGenericVolumeAllocator.Set<FogVolume_TypedId>(cid.id, fog);
     fogGenericVolumeAllocator.Set<FogVolume_Turbidity>(cid.id, density);
     fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
+    fogGenericVolumeAllocator.Set<FogVolume_StageMask>(cid.id, stageMask);
 }
 
 //------------------------------------------------------------------------------
@@ -274,7 +267,9 @@ VolumetricFogContext::SetupSphereVolume(
     const Math::vec3& position,
     float radius,
     const float density,
-    const Math::vec3& absorption)
+    const Math::vec3& absorption,
+    const Graphics::StageMask stageMask
+    )
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     Ids::Id32 fog = fogSphereVolumeAllocator.Alloc();
@@ -285,6 +280,7 @@ VolumetricFogContext::SetupSphereVolume(
     fogGenericVolumeAllocator.Set<FogVolume_TypedId>(cid.id, fog);
     fogGenericVolumeAllocator.Set<FogVolume_Turbidity>(cid.id, density);
     fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
+    fogGenericVolumeAllocator.Set<FogVolume_StageMask>(cid.id, stageMask);
 }
 
 //------------------------------------------------------------------------------
@@ -337,17 +333,17 @@ VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const M
 /**
 */
 void
-VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
 
     SizeT numFogBoxVolumes = 0;
     SizeT numFogSphereVolumes = 0;
 
     const Util::Array<FogVolumeType>& types = fogGenericVolumeAllocator.GetArray<FogVolume_Type>();
     const Util::Array<Ids::Id32>& typeIds = fogGenericVolumeAllocator.GetArray<FogVolume_TypedId>();
+    const Util::Array<Graphics::StageMask>& stageMasks = fogGenericVolumeAllocator.GetArray<FogVolume_StageMask>();
     IndexT i;
     for (i = 0; i < types.Size(); i++)
     {
@@ -359,11 +355,12 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             fog.falloff = 64.0f;
-            Math::mat4 transform = viewTransform * fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]);
+            Math::mat4 transform = fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]);
             Math::bbox box(transform);
             box.pmin.store3(fog.bboxMin);
             box.pmax.store3(fog.bboxMax);
             inverse(transform).store(&fog.invTransform[0][0]);
+            fog.stageMask = stageMasks[i];
             numFogBoxVolumes++;
             break;
         }
@@ -373,10 +370,10 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             Math::vec4 pos = Math::vec4(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]), 1);
-            pos = viewTransform * pos;
             pos.store3(fog.position);
             fog.radius = fogSphereVolumeAllocator.Get<FogSphereVolume_Radius>(typeIds[i]);
             fog.falloff = 64.0f;
+            fog.stageMask = stageMasks[i];
             numFogSphereVolumes++;
             break;
         }
@@ -405,11 +402,19 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
 
     // get per-view resource tables
-    CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
-
-    uint64_t offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
-    ResourceTableCommitChanges(frameResourceTable);
+    auto frameResourceTables = Graphics::GetFrameResourceTables(bufferIndex);
+    auto tableQueues = Graphics::GetTableQueues();
+    IndexT tableIt = 0;
+    for (auto& table : frameResourceTables)
+    {
+        uint64_t offset = SetConstants(fogUniforms, tableQueues[tableIt]);
+        ResourceTableSetRWBuffer(table, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(table, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex, tableQueues[tableIt]), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
+        ResourceTableCommitChanges(table);
+        tableIt++;
+    }
+    
 
     // setup blur tables
     ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::InputImageX::BINDING, 0, CoreGraphics::InvalidSamplerId }); // ping

@@ -41,7 +41,9 @@ public:
         const Graphics::GraphicsEntityId id,
         const Math::mat4& transform,
         const float density,
-        const Math::vec3& absorption);
+        const Math::vec3& absorption,
+        const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
+    );
     /// set box transform
     static void SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
 
@@ -52,7 +54,9 @@ public:
         const Math::vec3& position,
         float radius,
         const float density,
-        const Math::vec3& absorption);
+        const Math::vec3& absorption,
+        const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK
+    );
     /// set sphere position
     static void SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::vec3& position);
     /// set sphere radius
@@ -64,7 +68,7 @@ public:
     static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption);
 
     /// prepare light lists
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateFogVolumes(const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
 
@@ -91,12 +95,14 @@ private:
         FogVolume_TypedId,
         FogVolume_Turbidity,
         FogVolume_Absorption,
+        FogVolume_StageMask
     };
     typedef Ids::IdAllocator<
         FogVolumeType,
         Ids::Id32,
         float,
-        Math::vec3 
+        Math::vec3,
+        Graphics::StageMask
     > FogGenericVolumeAllocator;
     static FogGenericVolumeAllocator fogGenericVolumeAllocator;
 

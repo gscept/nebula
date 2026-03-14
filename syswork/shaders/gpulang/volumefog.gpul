@@ -19,8 +19,6 @@ threads_x(64)
 entry_point
 csCull() void 
 {
-    
-
     const index1D = computeGetGlobalThreadIndices().x;
 
     if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
@@ -34,7 +32,7 @@ csCull() void
     for (var i = 0u; i < VolumeFogUniforms.NumFogSpheres; i++)
     {
         const fog = FogLists.FogSpheres[i];
-        if (TestAABBSphere(aabb, fog.position, fog.radius))
+        if (TestAABBSphere(aabb, fog.position.xyz, fog.radius))
         {
             FogIndexLists.FogSphereIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
             numFogs++;
@@ -206,20 +204,37 @@ LocalLightsFog(
 //------------------------------------------------------------------------------
 /**
 */
-GlobalLightFog(viewPos : f32x3) f32x3
+GlobalLightFog(worldPos : f32x3) f32x3
 {
-    var shadowFactor = 1.0f;
-    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
-    {
-        const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(viewPos, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer);
-        shadowFactor = lerp(1.0f, shadowFactor, 1);
-    }
+	var atmo = f32x3(0);
+	for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+	{
+	    var shadowFactor = 1.0f;
+		const li = LightLists.DirectionalLights[i];
+		if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
+		{
+			const dist = distance(ViewConstants.EyePos.xyz, worldPos);
 
-    // calculate 'global' fog
-    //vec3 atmo = Preetham(normalize(viewPos), PerTickParams.GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
-    const atmo = CalculateAtmosphericScattering(normalize(viewPos), PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
-    return atmo * shadowFactor;
+			shadowFactor = CSMPS(
+				f32x4(worldPos, 1)
+				, dist
+				, li.cascadeTransforms
+				, li.cascadeDistances
+				, li.shadowMap
+				, li.shadowMapSize
+				, li.shadowBias
+			);
+			shadowFactor = lerp(1.0f, shadowFactor, 1);
+		}
+
+		// calculate 'global' fog
+		var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
+        if li.stageMask & ViewConstants.StageMask
+        {
+            atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color * shadowFactor;
+        }
+    }
+    return atmo;
 }
 
 //------------------------------------------------------------------------------

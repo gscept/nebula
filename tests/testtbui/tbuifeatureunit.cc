@@ -60,7 +60,7 @@ TBUIFeatureUnit::OnActivate()
     if (!App::GameApplication::IsEditorEnabled())
 #endif
     {
-        Graphics::GraphicsServer::Instance()->AddPostViewCall(
+        Graphics::GraphicsServer::Instance()->AddEndFrameCall(
             [](IndexT frameIndex, IndexT bufferIndex)
             {
             CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);

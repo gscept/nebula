@@ -455,6 +455,25 @@ determinant(const mat4& m)
 /**
 */
 __forceinline mat4
+transpose(const mat4& m)
+{
+    __m128 tmp3, tmp2, tmp1, tmp0;
+    tmp0 = _mm_unpacklo_ps(m.r[0].vec, m.r[1].vec);
+    tmp2 = _mm_unpacklo_ps(m.r[2].vec, m.r[3].vec);
+    tmp1 = _mm_unpackhi_ps(m.r[0].vec, m.r[1].vec);
+    tmp3 = _mm_unpackhi_ps(m.r[2].vec, m.r[3].vec);
+    mat4 ret;
+    ret.r[0] = _mm_movelh_ps(tmp0, tmp2);
+    ret.r[1] = _mm_movehl_ps(tmp2, tmp0);
+    ret.r[2] = _mm_movelh_ps(tmp1, tmp3);
+    ret.r[3] = _mm_movehl_ps(tmp3, tmp1);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
 inverse(const mat4& m)
 {
     __m128 Va,Vb,Vc;
@@ -570,7 +589,15 @@ lookatlh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(xaxis, yaxis, zaxis, eye);
+    mat4 ret;
+    ret.row0 = xaxis;
+    ret.row0.w = -dot(xaxis, eye);
+    ret.row1 = yaxis;
+    ret.row1.w = -dot(yaxis, eye);
+    ret.row2 = zaxis;
+    ret.row2.w = -dot(zaxis, eye);
+    ret.row3 = vec4(0, 0, 0, 1);
+    return transpose(ret);
 }
 
 //------------------------------------------------------------------------------
@@ -596,7 +623,16 @@ lookatrh(const point& eye, const point& at, const vector& up)
     }
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(xaxis, yaxis, zaxis, eye);
+
+    mat4 ret;
+    ret.row0 = xaxis;
+    ret.row0.w = -dot(xaxis, eye);
+    ret.row1 = yaxis;
+    ret.row1.w = -dot(yaxis, eye);
+    ret.row2 = zaxis;
+    ret.row2.w = -dot(zaxis, eye);
+    ret.row3 = vec4(0, 0, 0, 1);
+    return transpose(ret);
 }
 
 #ifdef N_USE_AVX
@@ -1171,25 +1207,6 @@ trs(const vec3& position, const quat& rotation, const vec3& scale)
 /**
 */
 __forceinline mat4
-transpose(const mat4& m)
-{
-    __m128 tmp3, tmp2, tmp1, tmp0;
-    tmp0 = _mm_unpacklo_ps(m.r[0].vec, m.r[1].vec);
-    tmp2 = _mm_unpacklo_ps(m.r[2].vec, m.r[3].vec);
-    tmp1 = _mm_unpackhi_ps(m.r[0].vec, m.r[1].vec);
-    tmp3 = _mm_unpackhi_ps(m.r[2].vec, m.r[3].vec);
-    mat4 ret;
-    ret.r[0] = _mm_movelh_ps(tmp0, tmp2);
-    ret.r[1] = _mm_movehl_ps(tmp2, tmp0);
-    ret.r[2] = _mm_movelh_ps(tmp1, tmp3);
-    ret.r[3] = _mm_movehl_ps(tmp3, tmp1);
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline mat4
 skewsymmetric(const vec3& v)
 {
     return {
@@ -1200,6 +1217,98 @@ skewsymmetric(const vec3& v)
     };
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4 
+lookat(point eye, point at, vector up)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return lookatlh(eye, at, up);
+#else
+    return lookatrh(eye, at, up);
+#endif
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+lookto(point eye, vector direction, vector up)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return lookatlh(eye, eye + direction, up);
+#else
+    return lookatrh(eye, eye + direction, up);
+#endif
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+perspfov(scalar fovy, scalar aspect, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return perspfovlh(fovy, aspect, zn, zf);
+#else
+    return perspfovrh(fovy, aspect, zn, zf);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+persp(scalar w, scalar h, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return persplh(w, h, zn, zf);
+#else
+    return persprh(w, h, zn, zf);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+perspoffcenter(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return perspoffcenterlh(l, r, b, t, zn, zf);
+#else
+    return perspoffcenterrh(l, r, b, t, zn, zf);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+ortho(scalar w, scalar h, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return ortholh(w, h, zn, zf);
+#else
+    return orthorh(w, h, zn, zf);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline mat4
+orthooffcenter(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
+{
+#if PROJECTION_HANDEDNESS_LH
+    return orthooffcenterlh(l, r, b, t, zn, zf);
+#else
+    return orthooffcenterrh(l, r, b, t, zn, zf);
+#endif
+}
+
 } // namespace Math
 //------------------------------------------------------------------------------
-

@@ -10,6 +10,7 @@
 */
 //------------------------------------------------------------------------------
 #include "gpulang/render/system_shaders/shared.h"
+#include "coregraphics/config.h"
 namespace Graphics
 {
 
@@ -18,6 +19,13 @@ struct GlobalConstantsCreateInfo
 
 };
 
+enum class GlobalTables
+{
+    GraphicsQueue,
+    ComputeQueue,
+
+    NumQueues
+};
 /// Create global constants
 void CreateGlobalConstants(const GlobalConstantsCreateInfo& info);
 /// Destroy global constants
@@ -36,23 +44,26 @@ void UpdateShadowConstants(const Shared::ShadowViewConstants::STRUCT& shadowView
 void FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue);
 
 /// Get frame constant offsets
-void GetOffsets(uint64_t& tickOffset, uint64_t& viewOffset, uint64_t& shadowOffset);
+void GetOffsets(uint64_t& tickOffset, uint64_t& viewOffset, uint64_t& shadowOffset, const GlobalTables table);
 
 /// Get tick params constant buffer
 const Shared::PerTickParams::STRUCT& GetTickParams();
-/// Get current view constants
-const Shared::ViewConstants::STRUCT& GetViewConstants();
-/// Get current shadow view constnats
-const Shared::ShadowViewConstants::STRUCT& GetShadowViewConstants();
 
 /// Set global irradiance and cubemaps
 void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);
 /// Setup gbuffer bindings
 void SetupBufferConstants();
 
-/// Get per-tick resource table for graphics
-const CoreGraphics::ResourceTableId GetFrameResourceTable(uint32_t bufferIndex);
+/// Get per-tick resource table for queue
+const CoreGraphics::ResourceTableId GetFrameResourceTable(uint32_t bufferIndex, GlobalTables table);
+/// Get per-tick resource tables for all queues
+const std::array<CoreGraphics::ResourceTableId, (uint)GlobalTables::NumQueues> GetFrameResourceTables(uint32_t bufferIndex);
 
-/// Get per-tick resource table for graphics
-const CoreGraphics::ResourceTableId GetTickResourceTable(uint32_t bufferIndex);
+/// Get per-tick resource table for queue
+const CoreGraphics::ResourceTableId GetTickResourceTable(uint32_t bufferIndex, GlobalTables table);
+/// Get per-tick resource table for all queues
+const std::array<CoreGraphics::ResourceTableId, (uint)GlobalTables::NumQueues> GetTickResourceTables(uint32_t bufferIndex);
+
+/// Get the different per-queue resource tables
+const std::array<CoreGraphics::QueueType, (uint)GlobalTables::NumQueues> GetTableQueues();
 }

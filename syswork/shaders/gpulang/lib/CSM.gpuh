@@ -24,21 +24,20 @@ const DebugColors : [8]f32x4 =
 */
 CSMPS(
 	  TexShadow : f32x4
-	, Texture : u32
+	  , Distance : f32
+	  , ShadowViewProjection : [NUM_CASCADES]f32x4x4
+	  , CascadeDistances : [NUM_CASCADES]f32
+	  , Texture : u32
+	  , ShadowTileTexelSize : f32x2
+	  , ShadowBias : f32
 ) f32
 {
-	var texCoordShadow = f32x4(0.0f);
 	var cascadeFound = false;
-
-    TexShadow = TexShadow / TexShadow.wwww;
 
 	var cascadeIndex : i32 = 0;
 	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
 	{
-		texCoordShadow = mad(TexShadow, ShadowViewConstants.CascadeScale[cascadeIndex], ShadowViewConstants.CascadeOffset[cascadeIndex]);
-
-		if ( min( texCoordShadow.x, texCoordShadow.y ) >= 0.0f
-		  && max( texCoordShadow.x, texCoordShadow.y ) <= 1.0f )
+		if Distance < CascadeDistances[cascadeIndex]
 		{
 			cascadeFound = true;
 			break;
@@ -46,50 +45,14 @@ CSMPS(
 	}
 
 	// if we have no matching cascade, return with a fully lit pixel
-	if (!cascadeFound)
+	if !cascadeFound
 	{
 		return 1.0f;
 	}
 
-	// calculate texture coordinate in shadow space
-	const occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, PerTickParams.GlobalLightShadowMapSize.xy);
-	return occlusion;
-}
-
-//------------------------------------------------------------------------------
-/**
-	CSM shadow sampling entry point
-*/
-CSMCS(
-	  TexShadow : f32x4
-	, Texture : u32
-) f32
-{
-	var texCoordShadow = f32x4(0.0f);
-	var cascadeFound = false;
-
-    TexShadow = TexShadow / TexShadow.wwww;
-
-	var cascadeIndex : i32 = 0;
-	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
-	{
-		texCoordShadow = mad(TexShadow, ShadowViewConstants.CascadeScale[cascadeIndex], ShadowViewConstants.CascadeOffset[cascadeIndex]);
-
-		if ( min( texCoordShadow.x, texCoordShadow.y ) >= 0.0f
-		  && max( texCoordShadow.x, texCoordShadow.y ) <= 1.0f )
-		{
-			cascadeFound = true;
-			break;
-		}
-	}
-
-	// if we have no matching cascade, return with a fully lit pixel
-	if (!cascadeFound)
-	{
-		return 1.0f;
-	}
+	const texCoordShadow = ShadowViewProjection[cascadeIndex] * TexShadow;
 
 	// calculate texture coordinate in shadow space
-	const occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, PerTickParams.GlobalLightShadowMapSize.xy);
+	const occlusion = PCFShadow(Texture, texCoordShadow.z, texCoordShadow.xy, ShadowTileTexelSize, ShadowBias * exp2(f32(cascadeIndex)));
 	return occlusion;
 }

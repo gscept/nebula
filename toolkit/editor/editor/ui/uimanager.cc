@@ -167,7 +167,7 @@ UIManager::OnActivate()
     }, "Import nlvl (game only)", "Ctrl+Shift+I", "File");
 
     //
-    Graphics::GraphicsServer::Instance()->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
+    Graphics::GraphicsServer::Instance()->AddEndFrameCall([](IndexT frameIndex, IndexT bufferIndex)
     {
         FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));

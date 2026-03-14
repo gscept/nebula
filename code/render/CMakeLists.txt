@@ -452,8 +452,6 @@ ENDIF()
 
     fips_dir(lighting)
         fips_files(
-            csmutil.cc
-            csmutil.h
             lightcontext.cc
             lightcontext.h
             lightprobecontext.cc

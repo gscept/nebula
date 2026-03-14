@@ -64,7 +64,7 @@ program SpotlightInstanced
 program PointlightDefault
 {
     VertexShader = vsStaticPoint;
-    PixelShader = psVSMPoint;
+    PixelShader = psShadow;
     RenderState = ShadowState;
 };
 
@@ -72,7 +72,7 @@ program PointlightDefault
 program PointlightAlpha
 {
     VertexShader = vsStaticPoint;
-    PixelShader = psVSMAlphaPoint;
+    PixelShader = psShadowAlpha;
     RenderState = ShadowState;
 };
 
@@ -80,7 +80,7 @@ program PointlightAlpha
 program PointlightSkinned
 {
     VertexShader = vsSkinnedPoint;
-    PixelShader = psVSMPoint;
+    PixelShader = psShadow;
     RenderState = ShadowState;
 };
 
@@ -88,7 +88,7 @@ program PointlightSkinned
 program PointlightSkinnedAlpha
 {
     VertexShader = vsSkinnedPoint;
-    PixelShader = psVSMAlphaPoint;
+    PixelShader = psShadowAlpha;
     RenderState = ShadowState;
 };
 
@@ -96,7 +96,7 @@ program PointlightSkinnedAlpha
 program PointlightInstanced
 {
     VertexShader = vsStaticInstPoint;
-    PixelShader = psVSMPoint;
+    PixelShader = psShadow;
     RenderState = ShadowState;
 };
 

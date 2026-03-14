@@ -251,21 +251,19 @@ Mat4Test::Run()
                                 vec4(  0.0f, -1.123711f, -1.439683f, 0.0f),
                                 vec4(-43.0f, 17.853806f, 18.134460f, 1.0f))));
 
-    const vec3 eye(3.0f, 2.0f, 10.0f);
-    const vec3 at(3.0f, 2.0f, 2.0f);
+    const point eye(3.0f, 2.0f, 10.0f);
+    const point at(3.0f, 2.0f, 2.0f);
     const vec3 up(0.0f, 1.0f, 0.0f);
     // lookatlh
     mat4 tmp = lookatlh(eye, at, up);
-    VERIFY(matnearequal(tmp, mat4(vec4(  -1.0f,  0.0f,  0.0f, 0.0f),
-                                  vec4(  0.0f,  1.0f,  0.0f, 0.0f),
-                                  vec4(  0.0f, 0.0f,  -1.0f, 0.0f),
-                                  vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
+    Math::point transformed = tmp * at;
+    VERIFY(nearequal3(transformed, Math::vec4(0, 0, 8, 1), Math::vec4(0.0001f)));
+
     // lookatrh
     tmp = lookatrh(eye, at, up);
-    VERIFY(matnearequal(tmp, mat4(vec4(  1.0f,  0.0f,  0.0f, 0.0f),
-                                  vec4(  0.0f,  1.0f,  0.0f, 0.0f),
-                                  vec4(  0.0f,  0.0f,  1.0f, 0.0f),
-                                  vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
+    transformed = tmp * at;
+    VERIFY(nearequal3(transformed, Math::vec4(0, 0, -8, 1), Math::vec4(0.0001f)));
+
     // ortholh
     tmp = ortholh(1280.0f, 1024.0f, 0.1f, 100.0f);
     Math::point pnt(-640, 512, 0.1f);

@@ -60,6 +60,7 @@ public:
         float blend = 0.0f;
         float updateBudget = 1.0f;
 
+        Graphics::StageMask stageMask;
         DDGIOptions options;
     };
 
@@ -71,7 +72,7 @@ public:
     static void SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size);
 
     /// prepare light lists
-    static void UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_BUILD
     static void OnRenderDebug(uint32_t flags);
@@ -106,6 +107,8 @@ private:
         
         ProbeUpdate::VolumeConstants::STRUCT volumeConstants;
         DDGIOptions options;
+
+        Graphics::StageMask stageMask;
 
 #ifndef PUBLIC_BUILD
         CoreGraphics::ResourceTableId debugResourceTable;

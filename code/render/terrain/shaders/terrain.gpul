@@ -469,13 +469,16 @@ csTerrainShadows() void
 {
     const globalIndices = computeGetGlobalThreadIndices();
     if any(globalIndices.xy > PerTickParams.TerrainShadowMapSize) { return; }
+	if LightUniforms.NumDirectionalLights == 0 { return; }
+
+	const li = LightLists.DirectionalLights[0];
 
     const uv = globalIndices.xy * PerTickParams.TerrainShadowMapPixelSize;
     // Take a sample for the pixel we are dealing with right now
     const heightAtPixel = TerrainInstanceUniforms.MinHeight + sample2DLod(TerrainInstanceUniforms.HeightMap, ShadowSampler, uv, 0).r * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
 
     const startCoord = f32x3(globalIndices.x, heightAtPixel, globalIndices.y);
-    const endCoord = startCoord + PerTickParams.GlobalLightDirWorldspace.xyz * f32x3(100000, 100000, 100000);
+    const endCoord = startCoord + li.direction * f32x3(100000, 100000, 100000);
 
     // Adjust these parameters per game
     // For terrain with a lot of small details, use a smaller MaxDistance for more precision
@@ -484,11 +487,11 @@ csTerrainShadows() void
     const MaxDistance = 256.0f;
     const InitialStepSize = MaxDistance / NumSamples;
     var stepSize = InitialStepSize;
-    var coord = startCoord + PerTickParams.GlobalLightDirWorldspace.xyz * stepSize;
+    var coord = startCoord + li.direction * stepSize;
 
     var smallestDistance = 10000000.0f;
     var highestPoint = 100000.0f;
-    var plane = f32x4(PerTickParams.GlobalLightDirWorldspace.xyz, 0);
+    var plane = f32x4(li.direction, 0);
     for (var i = 0u; i < NumSamples; i++)
     {
         // Sample height at current position
@@ -498,7 +501,7 @@ csTerrainShadows() void
         const sampleCoord = f32x3(coord.x, heightAlongRay, coord.z);
 
         // Construct a plane and do a ray-plane intersection
-        plane.w = dot(sampleCoord, PerTickParams.GlobalLightDirWorldspace.xyz);
+        plane.w = dot(sampleCoord, li.direction);
         const intersection = IntersectLineWithPlane(startCoord, endCoord, plane);
 
         // If the intersection point with the plane is above the sample
@@ -514,12 +517,12 @@ csTerrainShadows() void
             stepSize *= 0.5f;
 
             // Move coord back half the distance traveled in search fo the closest point of intersection
-            coord -= PerTickParams.GlobalLightDirWorldspace.xyz * dist * 0.5f;
+            coord -= li.direction * dist * 0.5f;
         }
         else
         {
             // Progress coord
-            coord += PerTickParams.GlobalLightDirWorldspace.xyz * stepSize;
+            coord += li.direction * stepSize;
         }
     }
     const shadow = smallestDistance == 10000000.0f ? 1.0f : (smallestDistance * smallestDistance) / (MaxDistance * MaxDistance);

@@ -106,16 +106,19 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
+        auto resourceTables = Graphics::GetFrameResourceTables(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
+        for (auto& table : resourceTables)
+        {
+            ResourceTableSetRWBuffer(table, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+            ResourceTableSetConstantBuffer(table, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
+        }
     }
 
     FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
-    FrameScript_default::RegisterSubgraph_ClusterAABBGeneration_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_ClusterAABBGeneration_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
+        CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram, queue);
 
         state.clusterDimensions[0] = Math::divandroundup(viewport.width(), ClusterBlockSizeX);
         state.clusterDimensions[1] = Math::divandroundup(viewport.height(), ClusterBlockSizeY);
@@ -224,12 +227,14 @@ ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
-            CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
+            auto frameResourceTables = Graphics::GetFrameResourceTables(i);
 
-            ResourceTableSetRWBuffer(
-                frameResourceTable, {state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0}
-            );
-            ResourceTableCommitChanges(frameResourceTable);
+            for (auto& table : frameResourceTables)
+            {
+                ResourceTableSetRWBuffer(table, {state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0});
+                ResourceTableSetConstantBuffer(table, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
+                ResourceTableCommitChanges(table);
+            }
         }
     }
 }

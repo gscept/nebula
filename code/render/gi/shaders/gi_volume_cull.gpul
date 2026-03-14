@@ -28,7 +28,7 @@ csCull() void
     for (var i = 0u; i < GIVolumeUniforms.NumGIVolumes; i++)
     {
         const volume = GIVolumeLists.GIVolumes[i];
-        if (TestAABBAABB(aabb, volume.bboxMin.xyz, volume.bboxMax.xyz))
+        if (TestAABBAABB(aabb, volume.bboxMin, volume.bboxMax))
         {
             GIIndexLists.GIVolumeIndexLists[index1D * MAX_GI_VOLUMES_PER_CLUSTER + numVolumes] = i;
             numVolumes++;

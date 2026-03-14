@@ -37,11 +37,7 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     this->fov     = fov_;
     this->aspect  = aspect_;
 
-#if PROJECTION_HANDEDNESS_LH
-    this->projMatrix = perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
-#else
-    this->projMatrix = perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
-#endif
+    this->projMatrix = perspfov(this->fov, this->aspect, this->zNear, this->zFar);
     this->invProjMatrix = inverse(this->projMatrix);
 
     this->nearWidth  = 2.0f * this->zNear / this->projMatrix.r[0].x;
@@ -73,11 +69,7 @@ CameraSettings::SetupOrthogonal(float w, float h, float zNear_, float zFar_)
     this->farHeight  = h;
     this->focalLength.set(1.0f, 1.0f);
 
-#if PROJECTION_HANDEDNESS_LH
-    this->projMatrix = ortholh(w, h, this->zNear, this->zFar);
-#else
-    this->projMatrix = orthorh(w, h, this->zNear, this->zFar);
-#endif
+    this->projMatrix = ortho(w, h, this->zNear, this->zFar);
     this->invProjMatrix = inverse(this->projMatrix);
 }
 

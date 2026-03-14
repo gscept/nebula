@@ -59,12 +59,13 @@ SSRContext::Create()
 
     // TODO: Convert to subgraph
     using namespace CoreGraphics;
-    Frame::AddCallback("SSR-Trace", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    /*
+    Frame::AddCallback("SSR-Trace", [](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const IndexT frame, const IndexT bufferIndex)
         {
             N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
             TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
 
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.traceProgram);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.traceProgram, queue);
             CoreGraphics::CmdSetResourceTable(cmdBuf, ssrState.ssrTraceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
             const int TILE_SIZE = 32;
@@ -76,12 +77,12 @@ SSRContext::Create()
 
         });
 
-    Frame::AddCallback("SSR-Resolve", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    Frame::AddCallback("SSR-Resolve", [](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const IndexT frame, const IndexT bufferIndex)
         {
             N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
             TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_ReflectionBuffer());
 
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.resolveProgram);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.resolveProgram, queue);
             CoreGraphics::CmdSetResourceTable(cmdBuf, ssrState.ssrResolveTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
             const int TILE_SIZE = 32;
@@ -91,6 +92,7 @@ SSRContext::Create()
             };
             CoreGraphics::CmdDispatch(cmdBuf, workGroups[0], workGroups[1], 1);
         });
+        */
 }
 
 //------------------------------------------------------------------------------
@@ -149,11 +151,11 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 /**
 */
 void
-SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+SSRContext::UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     using namespace Graphics;
     using namespace CoreGraphics;
-    const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
+    const CameraSettings& cameraSettings = CameraContext::GetSettings(ViewGetCamera(view));
     TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
 
     float sx = (float)dims.width;
@@ -173,11 +175,11 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     SsrCs::SSRBlock::STRUCT ssrBlock;
     viewToTextureSpaceMatrix.store(&ssrBlock.ViewToTextureSpace[0][0]);
-    uint64_t ssrOffset = CoreGraphics::SetConstants(ssrBlock);
+    uint64_t ssrOffset = CoreGraphics::SetConstants(ssrBlock, CoreGraphics::GraphicsQueueType);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::SSRBlock::BINDING, 0, sizeof(SsrCs::SSRBlock::STRUCT), ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), SsrCs::SSRBlock::BINDING, 0, sizeof(SsrCs::SSRBlock::STRUCT), ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 

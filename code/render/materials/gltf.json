@@ -130,7 +130,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -169,7 +169,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },
@@ -208,7 +208,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -247,7 +247,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },
@@ -286,7 +286,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -325,7 +325,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },
@@ -364,7 +364,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -403,7 +403,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },
@@ -442,7 +442,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -476,7 +476,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },
@@ -510,7 +510,7 @@
             "variation": "Static|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Static|Global"
           },
@@ -544,7 +544,7 @@
             "variation": "Skinned|Point"
           },
           {
-            "batch": "GlobalShadow",
+            "batch": "DirectionalLightShadow",
             "shader": "system_shaders/shadow",
             "variation": "Skinned|Global"
           },

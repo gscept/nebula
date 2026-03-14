@@ -279,7 +279,30 @@ CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f3
     var light = f32x3(0, 0, 0);
     const viewVec = normalize(origin.xyz - worldSpacePos.xyz);
     const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
-    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+    for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+	{
+		const li = LightLists.DirectionalLights[i];
+		if li.stageMask & ViewConstants.StageMask
+		{
+			light += CalculateGlobalLight(
+				albedo
+				, material
+				, F0
+				, viewVec
+				, normal
+				, worldSpacePos
+				, li.direction
+				, li.color
+				, li.cascadeTransforms
+				, li.cascadeDistances
+				, li.shadowMap
+				, li.shadowMapSize
+				, li.shadowBias
+				, li.shadowIntensity
+				, li.flags
+			);
+		}
+	}
 
 //#if USE_SCALARIZATION_LOOP
 //    // Get the mask for the invocation
