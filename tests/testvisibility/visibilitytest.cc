@@ -76,7 +76,7 @@ VisibilityTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
+    ViewId view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
 
     // create contexts, this could and should be bundled together
     CameraContext::Create();
@@ -92,7 +92,7 @@ VisibilityTest::Run()
     GraphicsEntityId cam = Graphics::CreateEntity();
     CameraContext::RegisterEntity(cam);
     CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::deg2rad(60.f), 0.01f, 1000.0f);
-    view->SetCamera(cam);
+    ViewSetCamera(view, cam);
 
     // setup scene
     GraphicsEntityId ent = Graphics::CreateEntity();
@@ -120,7 +120,7 @@ VisibilityTest::Run()
 
     GraphicsEntityId globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(globalLight);
-    Lighting::LightContext::SetupGlobalLight(globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), 85_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(globalLight, view, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), 85_rad, 0_rad, true);
 
     // register visibility system
     ObserverContext::CreateBruteforceSystem({});

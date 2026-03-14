@@ -55,12 +55,12 @@ RenderTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 640, 480));
+    ViewId view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 640, 480));
     
     GraphicsEntityId cam = Graphics::CreateEntity();
     CameraContext::RegisterEntity(cam);
     CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::deg2rad(60.f), 1.0f, 1000.0f);
-    view->SetCamera(cam);
+    ViewSetCamera(view, cam);
     
     IndexT frameIndex = -1;
     bool run = true;

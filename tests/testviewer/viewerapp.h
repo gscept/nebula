@@ -63,7 +63,7 @@ protected:
     Ptr<IO::IoServer> ioServer;
 
     CoreGraphics::WindowId wnd;
-    Ptr<Graphics::View> view;
+    Graphics::ViewId view;
 
     Graphics::GraphicsEntityId cam;
     
