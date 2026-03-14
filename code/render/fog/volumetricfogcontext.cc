@@ -370,7 +370,6 @@ VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             Math::vec4 pos = Math::vec4(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]), 1);
-            pos = pos;
             pos.store3(fog.position);
             fog.radius = fogSphereVolumeAllocator.Get<FogSphereVolume_Radius>(typeIds[i]);
             fog.falloff = 64.0f;
