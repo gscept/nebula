@@ -230,5 +230,14 @@ Camera::GetProjectionTransform() const
     return CameraContext::GetProjection(this->cameraEntityId);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::CameraSettings& 
+Camera::GetCameraSettings() const
+{
+    return CameraContext::GetSettings(this->cameraEntityId);
+}
+
 
 } // namespace Editor

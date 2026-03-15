@@ -10,6 +10,7 @@
 #include "renderutil/freecamerautil.h"
 #include "input/inputserver.h"
 #include "graphics/view.h"
+#include "graphics/camerasettings.h"
 
 namespace Editor
 {
@@ -54,6 +55,7 @@ public:
 
     Math::mat4 GetProjectionTransform() const;
 
+    const Graphics::CameraSettings& GetCameraSettings() const;
 
 
 public:
