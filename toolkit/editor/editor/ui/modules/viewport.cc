@@ -9,6 +9,8 @@
 #include "imgui.h"
 #include "editor/editor/tools/selectioncontext.h"
 #include "lighting/lightcontext.h"
+#include "im3d/im3dcontext.h"
+#include "graphics/cameracontext.h"
 
 #include "frame/default.h"
 #include "frame/preview.h"
@@ -194,6 +196,23 @@ Viewport::Render()
             ImGui::EndMenu();
         }
 
+
+        if (ImGui::BeginMenu("    Debug    "))
+        {
+            static bool showWorldAxis = false;
+            ImGui::Checkbox("   Show World axis   ", &showWorldAxis);
+            if (showWorldAxis)
+            {
+                Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
+                Math::mat4 invViewTranslation = Math::translation(invView.position);
+                Math::mat4 scaling = Math::scaling(0.15f);
+                Math::mat4 offset = Math::translation(-invView.z_axis * 0.5f);
+                Im3d::Im3dContext::DrawAxes(invViewTranslation * offset * scaling);
+            }
+
+            ImGui::EndMenu();
+        }
+
         const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
         Util::String cameraPosStr = Util::String::Sprintf("Camera Position x: %.3f, y: %.3f, z: %.3f", cameraPos.x, cameraPos.y, cameraPos.z);
         Util::String fps = Util::String::Sprintf("FPS: %.2f, ms: %.1f", ImGui::GetIO().Framerate, ImGui::GetIO().DeltaTime * 1000);
@@ -257,6 +276,7 @@ Viewport::Render()
 
     ViewSetViewport(this->view, Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
     this->focused = ImGui::IsItemFocused() || ImGui::IsWindowHovered();
+
 
     if (this->focused)
     {
