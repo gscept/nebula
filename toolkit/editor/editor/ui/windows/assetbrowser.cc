@@ -49,6 +49,8 @@ __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
 */
 AssetBrowser::AssetBrowser()
 {
+    this->fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
+    this->fileDB.Open(this->logger);
     this->currentScanJob = ScanFolderJob::Create();
     this->currentScanJob->browser = this;
     this->currentScanJob->Start();    
@@ -400,8 +402,9 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void 
-AssetBrowser::ScanFolder(const Util::String & treeName, const IO::URI& folderPath, bool useArchive)
+AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
 {
+    IO::URI folderPath(folderPathString);
     AssetBrowser::FileTree& tree =  this->fileTrees.Emplace(treeName);
     tree.path = folderPath;
     uint rootHash = (tree.path.LocalPath().HashCode()) ^ (useArchive ? 0x12345678 : 0x87654321); // Simple way to differentiate between archive and non-archive trees
@@ -412,11 +415,13 @@ AssetBrowser::ScanFolder(const Util::String & treeName, const IO::URI& folderPat
     root.hash = rootHash;
     root.parentHash = -1; // No parent for root
 
+    Util::Guid rootGuid = this->fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
+
     IO::IoServer* ioServer = IO::IoServer::Instance();
     // Start recursive scanning from the root
     if (ioServer->DirectoryExists(tree.path))
     {
-        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive);
+        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive, rootGuid);
     }
     auto& node = this->nodes[rootHash];
 }
@@ -425,7 +430,7 @@ AssetBrowser::ScanFolder(const Util::String & treeName, const IO::URI& folderPat
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive)
+AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, Util::Guid parent)
 {
     // List all files in the current directory
     Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
@@ -440,15 +445,17 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
         
         // Extract file extension
         entry.extension = entry.name.GetFileExtension();
-                        
-        // Get file size by opening it       
-        entry.size = IO::FSWrapper::GetFileSize(fileName);
         
-        // Get file modification time
-        entry.modifiedTime = IO::FSWrapper::GetFileWriteTime(fileName);
+        IO::IOStat ioInfo;
+        if (ioServer->GetIOInfo(fileName, ioInfo, useArchive))
+        {
+            entry.size = ioInfo.size;
+            entry.modifiedTime = ioInfo.modifiedTime;   
+        }
         
         // Determine file type
         entry.type = DetermineFileType(entry.extension);
+        this->fileDB.AddFile(this->logger, entry.name, parent, entry.size, static_cast<ToolkitUtil::FileType>(entry.type), entry.modifiedTime);
     }
     
     // List all subdirectories and recursively scan them
@@ -462,9 +469,11 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
         
         childNode.path = childDir;
         childNode.hash = hash;
+
+        Util::Guid childGuid = this->fileDB.CreateFolder(this->logger, childNode.name, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
         
         // Recursively scan the subdirectory
-        ScanFolderRecursive(ioServer, childDir, hash, useArchive);
+        ScanFolderRecursive(ioServer, childDir, hash, useArchive, childGuid);
     }
 }
 

@@ -365,4 +365,22 @@ ZipArchive::ConvertToArchiveURI(const URI& fileURI) const
     return zipURI;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+ZipArchive::GetIOInfo(const IO::URI& path, IO::IOStat& outInfo)
+{
+    const ZipFileEntry* fileEntry = this->FindFileEntry(path.LocalPath());
+    if (fileEntry != nullptr)
+    {
+        outInfo.size = fileEntry->GetFileSize();
+        outInfo.accessTime = fileEntry->createdTime; // not really correct, but better than nothing
+        outInfo.modifiedTime = fileEntry->createdTime; // not really correct, but better than nothing
+        outInfo.creationTime = fileEntry->createdTime;
+        return true;
+    }
+    return false;
+}
+
 } // namespace IO

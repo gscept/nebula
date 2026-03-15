@@ -711,6 +711,29 @@ IoServer::NativePath(const Util::String& path)
 //------------------------------------------------------------------------------
 /**
 */
+bool 
+IoServer::GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive) const
+{
+    // transparent archive support
+    if (this->IsArchiveFileSystemEnabled() && prioritizeArchive)
+    {
+        Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithFile(uri);
+        if (archive.isvalid())
+        {
+            String pathInArchive = archive->ConvertToPathInArchive(uri.LocalPath());
+            return archive->GetIOInfo(pathInArchive, outInfo);
+        }
+    }
+
+    // doesn't exist as archive, check conventional filesystem
+    const String path = uri.GetHostAndLocalPath();
+    n_assert(path.IsValid());
+    return FSWrapper::GetIOInfo(path, outInfo);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 IoServer::IterateFolders(const URI& dir, const Util::String& pattern, FileMapFunc iter)
 {

@@ -34,6 +34,18 @@ typedef Posix::PosixFileTime FileTime;
 #error "FileTime class not implemented on this platform!"
 #endif
 //------------------------------------------------------------------------------
+
+namespace IO
+{
+struct IOStat
+{
+    uint64_t size;
+    FileTime accessTime;
+    FileTime modifiedTime;
+    FileTime creationTime;
+};
+} // namespace IO
+
 #endif
 
 

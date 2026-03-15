@@ -5,7 +5,7 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
     
-    fips_deps(foundation render physics application)
+    fips_deps(foundation render physics application db)
 
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MD CMP_Framework_MD)
@@ -30,6 +30,13 @@ fips_begin_lib(toolkitutil)
             fips_files(
                 assetexporter.cc
                 assetexporter.h
+            )
+        fips_dir(filedb)
+            fips_files(
+                filedbattrs.cc
+                filedbattrs.h
+                filedb.cc
+                filedb.h
             )
         fips_dir(model/animutil)
             fips_files(

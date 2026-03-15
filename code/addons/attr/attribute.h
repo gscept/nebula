@@ -9,6 +9,7 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
+#include "attrid.h"
 #include "boolattrid.h"
 #include "blobattrid.h"
 #include "guidattrid.h"
@@ -47,6 +48,10 @@ public:
     Attribute(const IntAttrId& id, int val);
     /// construct from uint attribute id
     Attribute(const UIntAttrId& id, uint val);
+    /// construct from int64
+    Attribute(const Int64AttrId& id, int64_t val);
+    /// construct from uint64 attribute id
+    Attribute(const UInt64AttrId& id, uint64_t val);
     /// construct from matrix44
     Attribute(const Mat4AttrId& id, const Math::mat4& val);
     /// construct from string
@@ -135,6 +140,14 @@ public:
     void SetUInt(uint val);
     /// get int content
     uint GetUInt() const;
+    /// set int64 content
+    void SetInt64(int64_t val);
+    /// get int64 content
+    int64_t GetInt64() const;
+    /// set uint64 content
+    void SetUInt64(uint64_t val);
+    /// get uint64 content
+    uint64_t GetUInt64() const;
     /// set float content
     void SetFloat(float val);
     /// get float content
@@ -238,6 +251,26 @@ Attribute::Attribute(const FloatAttrId& id, float val) :
 */
 inline
 Attribute::Attribute(const IntAttrId& id, int val) :
+    Util::KeyValuePair<AttrId,Util::Variant>(id, Util::Variant(val))
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Attribute::Attribute(const Int64AttrId& id, int64_t val) :
+    Util::KeyValuePair<AttrId,Util::Variant>(id, Util::Variant(val))
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Attribute::Attribute(const UInt64AttrId& id, uint64_t val) :
     Util::KeyValuePair<AttrId,Util::Variant>(id, Util::Variant(val))
 {
     // empty
@@ -653,6 +686,48 @@ Attribute::GetUInt() const
 {
     n_assert(this->GetValueType() == UIntType);
     return this->valueData.GetUInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Attribute::SetInt64(int64_t val)
+{
+    n_assert(this->GetValueType() == Int64Type);
+    n_assert(this->GetAccessMode() == ReadWrite);
+    this->valueData = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+Attribute::GetInt64() const
+{
+    n_assert(this->GetValueType() == Int64Type);
+    return this->valueData.GetInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Attribute::SetUInt64(uint64_t val)
+{
+    n_assert(this->GetValueType() == UInt64Type);
+    n_assert(this->GetAccessMode() == ReadWrite);
+    this->valueData = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint64_t
+Attribute::GetUInt64() const
+{
+    n_assert(this->GetValueType() == UInt64Type);
+    return this->valueData.GetUInt64();
 }
 
 //------------------------------------------------------------------------------

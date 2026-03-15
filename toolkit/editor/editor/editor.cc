@@ -51,6 +51,8 @@ Create()
     ToolkitUtil::ProjectInfo projectInfo;
     ToolkitUtil::ProjectInfo::Result res = projectInfo.Setup();
     n_assert(res == ToolkitUtil::ProjectInfo::Success);
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("int", projectInfo.GetAttr("IntermediateDir")));
+    IO::IoServer::Instance()->CreateDirectory("int:");
 
     LiveBatcher::Setup();
 

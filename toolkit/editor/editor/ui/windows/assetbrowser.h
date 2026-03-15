@@ -12,6 +12,7 @@
 #include "util/array.h"
 #include "util/string.h"
 #include "io/uri.h"
+#include "filedb/filedb.h"
 
 namespace Presentation
 {
@@ -31,23 +32,24 @@ private:
 
     struct FileEntry
     {
-        enum class Type
+        enum class Type : int
         {
-            FBX,
-            GLTF,
-            Model,
-            Mesh,
-            Texture,
-            Surface,
-            Audio,
-            Text,
-            Skeleton,
-            Animation,
-            Frame,
-            Shader,
-            Physics,
-            NavMesh,
-            Other
+            Unknown = 0,
+            FBX = 1,
+            GLTF = 2,
+            Model = 3,
+            Mesh = 4,
+            Texture = 5,
+            Surface = 6,
+            Audio = 7,
+            Text = 8,
+            Skeleton = 9,
+            Animation = 10,
+            Frame = 11,
+            Shader = 12,
+            Physics = 13,
+            NavMesh = 14,
+            Other = 15
         };
         Util::String name;
         Util::String extension;
@@ -76,7 +78,7 @@ private:
 
     Util::Dictionary<uint, FileTreeNode> nodes;
     Util::Dictionary<uint, FileEntry> files;
-    void ScanFolder(const Util::String & treeName, const IO::URI& folderPath, bool useArchive);
+    void ScanFolder(const Util::String& treeName, const Util::String& folderPath, bool useArchive);
     void DisplayFileTree();
 
 private:
@@ -105,9 +107,11 @@ private:
     /// Determine file type from file extension
     static FileEntry::Type DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and populate the FileTreeNode
-    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive);
+    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, Util::Guid parent);
     friend class ScanFolderJob;
     Ptr<ScanFolderJob> currentScanJob;
+    ToolkitUtil::FileDB fileDB;
+    ToolkitUtil::Logger logger;
 };
 __RegisterClass(AssetBrowser)
 

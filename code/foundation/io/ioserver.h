@@ -100,6 +100,9 @@ public:
     /// return native path
     static Util::String NativePath(const Util::String& path);
 
+    /// get file/folder information (size, access time, modified time, creation time) via stat calls
+    bool GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive) const;
+
     /// list all files matching a pattern in a directory
     Util::Array<Util::String> ListFiles(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;
     /// list all subdirectories matching a pattern in a directory

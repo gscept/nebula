@@ -148,6 +148,14 @@ public:
     void SetInt(const IntAttrId& colAttrId, IndexT rowIndex, int val);
     /// get int value
     int GetInt(const IntAttrId& colAttrId, IndexT rowIndex) const;
+    /// set int64 value
+    void SetInt64(const Int64AttrId& colAttrId, IndexT rowIndex, int64_t val);
+    /// get int64 value
+    int64_t GetInt64(const Int64AttrId& colAttrId, IndexT rowIndex) const;
+    /// set uint64 value
+    void SetUInt64(const UInt64AttrId& colAttrId, IndexT rowIndex, uint64_t val);
+    /// get uint64 value
+    uint64_t GetUInt64(const UInt64AttrId& colAttrId, IndexT rowIndex) const;
     /// set string value
     void SetString(const StringAttrId& colAttrId, IndexT rowIndex, const Util::String& val);
     /// get string value
@@ -183,10 +191,18 @@ public:
     void SetInt(IndexT colIndex, IndexT rowIndex, int val);
     /// get int value by column index
     int GetInt(IndexT colIndex, IndexT rowIndex) const;
+    /// set int64 value by column index
+    void SetInt64(IndexT colIndex, IndexT rowIndex, int64_t val);
+    /// get int64 value by column index
+    int64_t GetInt64(IndexT colIndex, IndexT rowIndex) const;
     /// set uint value by column index
     void SetUInt(IndexT colIndex, IndexT rowIndex, uint val);
     /// get uint value by column index
     uint GetUInt(IndexT colIndex, IndexT rowIndex) const;
+    /// set uint64 value by column index
+    void SetUInt64(IndexT colIndex, IndexT rowIndex, uint64_t val);
+    /// get uint64 value by column index
+    uint64_t GetUInt64(IndexT colIndex, IndexT rowIndex) const;
     /// set string value by column index
     void SetString(IndexT colIndex, IndexT rowIndex, const Util::String& val);
     /// get string value by column index
@@ -584,6 +600,31 @@ AttributeTable::GetInt(IndexT colIndex, IndexT rowIndex) const
 /**
 */
 inline void
+AttributeTable::SetInt64(IndexT colIndex, IndexT rowIndex, int64_t val)
+{
+    n_assert(this->GetColumnValueType(colIndex) == Int64Type);
+    n_assert(!this->IsRowDeleted(rowIndex));
+    int64_t* valuePtr = (int64_t*) this->GetValuePtr(colIndex, rowIndex);
+    *valuePtr = val;
+    this->rowModifiedBuffer[rowIndex] = 1;
+    this->isModified = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+AttributeTable::GetInt64(IndexT colIndex, IndexT rowIndex) const
+{
+    n_assert(this->GetColumnValueType(colIndex) == Int64Type);
+    int64_t* valuePtr = (int64_t*) this->GetValuePtr(colIndex, rowIndex);
+    return *valuePtr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 AttributeTable::SetUInt(IndexT colIndex, IndexT rowIndex, uint val)
 {
     n_assert(this->GetColumnValueType(colIndex) == UIntType);
@@ -602,6 +643,31 @@ AttributeTable::GetUInt(IndexT colIndex, IndexT rowIndex) const
 {
     n_assert(this->GetColumnValueType(colIndex) == UIntType);
     uint* valuePtr = (uint*)this->GetValuePtr(colIndex, rowIndex);
+    return *valuePtr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeTable::SetUInt64(IndexT colIndex, IndexT rowIndex, uint64_t val)
+{
+    n_assert(this->GetColumnValueType(colIndex) == UInt64Type);
+    n_assert(!this->IsRowDeleted(rowIndex));
+    uint64_t* valuePtr = (uint64_t*)this->GetValuePtr(colIndex, rowIndex);
+    *valuePtr = val;
+    this->rowModifiedBuffer[rowIndex] = 1;
+    this->isModified = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint64_t
+AttributeTable::GetUInt64(IndexT colIndex, IndexT rowIndex) const
+{
+    n_assert(this->GetColumnValueType(colIndex) == UInt64Type);
+    uint64_t* valuePtr = (uint64_t*)this->GetValuePtr(colIndex, rowIndex);
     return *valuePtr;
 }
 
@@ -803,6 +869,42 @@ inline int
 AttributeTable::GetInt(const IntAttrId& colAttrId, IndexT rowIndex) const
 {
     return this->GetInt(this->indexMap[colAttrId], rowIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeTable::SetInt64(const Int64AttrId& colAttrId, IndexT rowIndex, int64_t val)
+{
+    this->SetInt64(this->indexMap[colAttrId], rowIndex, val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+AttributeTable::GetInt64(const Int64AttrId& colAttrId, IndexT rowIndex) const
+{
+    return this->GetInt64(this->indexMap[colAttrId], rowIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeTable::SetUInt64(const UInt64AttrId& colAttrId, IndexT rowIndex, uint64_t val)
+{
+    this->SetUInt64(this->indexMap[colAttrId], rowIndex, val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint64_t
+AttributeTable::GetUInt64(const UInt64AttrId& colAttrId, IndexT rowIndex) const
+{
+    return this->GetUInt64(this->indexMap[colAttrId], rowIndex);
 }
 
 //------------------------------------------------------------------------------

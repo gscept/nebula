@@ -272,6 +272,30 @@ Sqlite3Command::ReadRow()
                     }
                     break;
 
+                 case Attr::Int64Type:
+                    {
+                        n_assert(SQLITE_INTEGER == sqliteColumnType);
+                        int64_t val = sqlite3_column_int64(this->sqliteStatement, resultColumnIndex);                        
+                        this->valueTable->SetInt64(valueTableColumnIndex, rowIndex, val);
+                    }
+                    break;
+
+                 case Attr::UIntType:
+                    {
+                        n_assert(SQLITE_INTEGER == sqliteColumnType);
+                        unsigned int val = (unsigned int)sqlite3_column_int(this->sqliteStatement, resultColumnIndex);                        
+                        this->valueTable->SetUInt(valueTableColumnIndex, rowIndex, val);
+                    }
+                    break;
+
+                 case Attr::UInt64Type:
+                    {
+                        n_assert(SQLITE_INTEGER == sqliteColumnType);
+                        uint64_t val = (uint64_t)sqlite3_column_int64(this->sqliteStatement, resultColumnIndex);                        
+                        this->valueTable->SetUInt64(valueTableColumnIndex, rowIndex, val);
+                    }
+                    break;
+
                 case Attr::FloatType:
                     {
                         n_assert(SQLITE_FLOAT == sqliteColumnType);
@@ -432,6 +456,44 @@ Sqlite3Command::BindInt(IndexT index, int val)
 
 //------------------------------------------------------------------------------
 /**
+    Bind an integer value by placeholder index. Either get the index from
+    one of the IndexOf methods or use a 0-based index.
+*/
+void
+Sqlite3Command::BindInt64(IndexT index, int64_t val)
+{
+    n_assert(0 != this->sqliteStatement);
+    int err = sqlite3_bind_int64(this->sqliteStatement, index + 1, val);
+    n_assert(SQLITE_OK == err);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Bind an unsigned integer value by placeholder index. Either get the index from
+    one of the IndexOf methods or use a 0-based index.
+*/
+void
+Sqlite3Command::BindUInt(IndexT index, unsigned int val)
+{
+    n_assert(0 != this->sqliteStatement);
+    int err = sqlite3_bind_int(this->sqliteStatement, index + 1, val);
+    n_assert(SQLITE_OK == err);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Bind an unsigned 64 bit integer value by placeholder index. Either get the index from
+    one of the IndexOf methods or use a 0-based index.
+*/
+void
+Sqlite3Command::BindUInt64(IndexT index, uint64_t val)
+{
+    n_assert(0 != this->sqliteStatement);
+    int err = sqlite3_bind_int64(this->sqliteStatement, index + 1, val);
+    n_assert(SQLITE_OK == err);
+}
+//------------------------------------------------------------------------------
+/**
     Bind a float value by placeholder index. Either get the index from
     one of the IndexOf methods or use a 0-based index.
 */
@@ -555,6 +617,33 @@ Sqlite3Command::BindInt(const Util::String& name, int val)
 /**
 */
 void
+Sqlite3Command::BindInt64(const Util::String& name, int64_t val)
+{
+    Sqlite3Command::BindInt64(Sqlite3Command::IndexOf(name), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Sqlite3Command::BindUInt(const Util::String& name, unsigned int val)
+{
+    Sqlite3Command::BindUInt(Sqlite3Command::IndexOf(name), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Sqlite3Command::BindUInt64(const Util::String& name, uint64_t val)
+{
+    Sqlite3Command::BindUInt64(Sqlite3Command::IndexOf(name), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 Sqlite3Command::BindFloat(const Util::String& name, float val)
 {
     Sqlite3Command::BindFloat(Sqlite3Command::IndexOf(name), val);
@@ -621,6 +710,33 @@ void
 Sqlite3Command::BindInt(const Attr::AttrId& id, int val)
 {
     Sqlite3Command::BindInt(Sqlite3Command::IndexOf(id), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Sqlite3Command::BindInt64(const Attr::AttrId& id, int64_t val)
+{
+    Sqlite3Command::BindInt64(Sqlite3Command::IndexOf(id), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Sqlite3Command::BindUInt(const Attr::AttrId& id, unsigned int val)
+{
+    Sqlite3Command::BindUInt(Sqlite3Command::IndexOf(id), val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Sqlite3Command::BindUInt64(const Attr::AttrId& id, uint64_t val)
+{
+    Sqlite3Command::BindUInt64(Sqlite3Command::IndexOf(id), val);
 }
 
 //------------------------------------------------------------------------------
