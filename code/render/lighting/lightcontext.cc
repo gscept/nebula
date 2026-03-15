@@ -1406,7 +1406,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 const Math::point& trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]).getposition();
                 CoreGraphics::TextureId tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
                 auto& pointLight = clusterState.lightList.PointLights[numPointLights];
-
+                pointLight.shadowExtension = -1;
                 uint flags = 0;
 
                 // update shadow data
