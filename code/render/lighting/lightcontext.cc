@@ -1415,9 +1415,10 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     flags |= LightsCluster::USE_SHADOW_BITFLAG;
                     pointLight.shadowExtension = numPointLightShadows;
                     auto& shadow = clusterState.lightList.PointLightShadow[numPointLightShadows];
+                    auto& viewProjections = pointLightAllocator.Get<PointLight_ShadowProjectionTransforms>(typeIds[i]);
                     for (uint j = 0; j < 6; j++)
                     {
-                        pointLightAllocator.Get<PointLight_ShadowProjectionTransforms>(typeIds[i])[j].store(&shadow.projection[j][0][0]);
+                        viewProjections[j].store(&shadow.projection[j][0][0]);
                     }
                     shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
                     shadow.shadowIntensity = 1.0f;
