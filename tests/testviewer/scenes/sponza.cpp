@@ -78,7 +78,15 @@ void OpenScene()
     
     light = Graphics::CreateEntity();
     Graphics::RegisterEntity<Lighting::LightContext>(light);
-    Lighting::LightContext::SetupPointLight(light, Math::vec3(1, 1, 1), 10.0f, 10.0f, false);
+    Lighting::LightContext::SetupPointLight(
+        light, 
+        {
+            .color = Math::vec3(1, 1, 1),
+            .intensity = 10.0f,
+            .range = 10.0f,
+            .castShadows = false
+        }
+    );
     Lighting::LightContext::SetPosition(light, Math::point(0, 1, 0));
 }
 

@@ -201,7 +201,18 @@ GraphicsFeatureUnit::OnActivate()
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupDirectionalLight(this->globalLight, this->defaultView, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, Graphics::PRIMARY_STAGE_MASK, true);
+    Lighting::LightContext::SetupDirectionalLight(
+        this->globalLight,
+        {
+            .view = this->defaultView,
+            .color = Math::vec3(1),
+            .intensity = 50.000f,
+            .zenith = (float)70.0_rad,
+            .azimuth = (float)0_rad,
+            .stageMask = Graphics::PRIMARY_STAGE_MASK,
+            .castShadows = true
+        }
+    );
 
     ObserverContext::CreateBruteforceSystem({});
 

@@ -72,7 +72,15 @@ void OpenScene()
             const float green = Math::rand();
             const float blue = Math::rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 2500.0f, 10.0f, false);
+            Lighting::LightContext::SetupPointLight(
+                id, 
+                {
+                    .color = Math::vec3(red, green, blue),
+                    .intensity = 2500.0f,
+                    .range = 10.0f,
+                    .castShadows = false
+                }
+            );
             Lighting::LightContext::SetPosition(id, Math::point(i * 4, 5, j * 4));
             pointLights.Append(id);
         }
@@ -92,7 +100,17 @@ void OpenScene()
             const float blue = Math::rand();
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 2500.0f, 45.0_rad, 60.0_rad, 50.0f, true);
+            Lighting::LightContext::SetupSpotLight(
+                id, 
+                {
+                    .color = Math::vec3(red, green, blue),
+                    .intensity = 2500.0f,
+                    .innerConeAngle = (float)45.0_rad,
+                    .outerConeAngle = (float)60.0_rad,
+                    .range = 50.0f,
+                    .castShadows = true
+                }
+            );
             Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
             Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
             spotLights.Append(id);
@@ -121,7 +139,16 @@ void OpenScene()
             auto shape = shapes[index % 3];
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupAreaLight(id, shape, Math::vec3(red, green, blue), 250.0f, 15, true);
+            Lighting::LightContext::SetupAreaLight(
+                id, 
+                {
+                    .shape = shape,
+                    .color = Math::vec3(red, green, blue),
+                    .intensity = 250.0f,
+                    .range = 15,
+                    .castShadows = true
+                }
+            );
             Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
             Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
             Lighting::LightContext::SetScale(id, Math::vector(shape == Lighting::LightContext::AreaLightShape::Disk ? 3.0f : 2.0f, 3.0f, 1.0f));

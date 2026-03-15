@@ -75,12 +75,6 @@ Environment::Run(SaveMode save)
         LightContext::SetIntensity(globalLight, intensity);
     }
 
-    Math::vec3 ambient = LightContext::GetAmbient(globalLight);
-    if (ImGui::ColorEdit3("Ambient", &ambient.x))
-    {
-        LightContext::SetAmbient(globalLight, ambient);
-    }
-
     bool visible = Terrain::TerrainContext::GetVisible();
     if (ImGui::Checkbox("Render terrain", &visible))
     {

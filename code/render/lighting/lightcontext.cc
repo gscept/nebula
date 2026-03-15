@@ -355,16 +355,7 @@ LightContext::Discard()
 /**
 */
 void
-LightContext::SetupDirectionalLight(
-        const Graphics::GraphicsEntityId id,
-        const Graphics::ViewId view,
-        const Math::vec3& color,
-        const float intensity,
-        const Math::vec3& ambient,
-        const float zenith,
-        const float azimuth,
-        const Graphics::StageMask stageMask,
-        bool castShadows)
+LightContext::SetupDirectionalLight(const Graphics::GraphicsEntityId id, const DirectionalLightSetupInfo& info)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     n_assert(directionalLightAllocator.Size() < Shared::MAX_DIRECTIONAL_LIGHTS);
@@ -374,21 +365,20 @@ LightContext::SetupDirectionalLight(
     const Graphics::ContextEntityId cid = GetContextId(id);
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
     genericLightAllocator.Set<Light_Type>(cid.id, LightType::DirectionalLightType);
-    genericLightAllocator.Set<Light_Color>(cid.id, color);
-    genericLightAllocator.Set<Light_Intensity>(cid.id, intensity);
-    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, castShadows);
+    genericLightAllocator.Set<Light_Color>(cid.id, info.color);
+    genericLightAllocator.Set<Light_Intensity>(cid.id, info.intensity);
     genericLightAllocator.Set<Light_TypedLightId>(cid.id, lid);
-    genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
+    genericLightAllocator.Set<Light_StageMask>(cid.id, info.stageMask);
 
-    Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
+    Math::point sunPosition(Math::cos(info.azimuth) * Math::sin(info.zenith), Math::cos(info.zenith), Math::sin(info.azimuth) * Math::sin(info.zenith));
     Math::mat4 mat = lookat(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
     SetDirectionalLightTransform(cid, mat, Math::xyz(sunPosition));
-    directionalLightAllocator.Set<DirectionalLight_Ambient>(lid, ambient);
-    directionalLightAllocator.Set<DirectionalLight_View>(lid, view);
+    directionalLightAllocator.Set<DirectionalLight_View>(lid, info.view);
     directionalLightAllocator.Set<DirectionalLight_CascadeDistances>(lid, Util::FixedArray<float>(Shared::NUM_CASCADES));
     directionalLightAllocator.Set<DirectionalLight_CascadeTransforms>(lid, Util::FixedArray<Math::mat4>(Shared::NUM_CASCADES));
-    if (castShadows)
+    bool canCastShadows = info.castShadows;
+    if (info.castShadows)
     {
         // create new graphics entity for each view
         SizeT cascadeSize = 2048;
@@ -400,6 +390,11 @@ LightContext::SetupDirectionalLight(
             if (section.x == 0xFFFFFFFF)
             {
                 n_warning("Shadow atlas is full! Cannot allocate shadow map for directional light!\n");
+                canCastShadows = false;
+                for (uint j = 0; j < i; j++)
+                {
+                    lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)shadowTiles[j].left, (uint)shadowTiles[j].top }, cascadeSize);
+                }
                 break;
             }
             else
@@ -420,64 +415,41 @@ LightContext::SetupDirectionalLight(
         }
         directionalLightAllocator.Set<DirectionalLight_CascadeTiles>(lid, shadowTiles);
         directionalLightAllocator.Set<DirectionalLight_CascadeObservers>(lid, cascadeObservers);
-
     }
-}
+    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, canCastShadows);
 
-//------------------------------------------------------------------------------
-/**
-*/
-Math::vec3
-LightContext::GetAmbient(const Graphics::GraphicsEntityId id)
-{
-    const Graphics::ContextEntityId cid = GetContextId(id);
-    return directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient)
-{
-    const Graphics::ContextEntityId cid = GetContextId(id);
-    if (cid == Graphics::ContextEntityId::Invalid())
-        return;
-
-    directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id) = ambient;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-LightContext::SetupPointLight(
-    const Graphics::GraphicsEntityId id
-    , const Math::vec3& color
-    , const float intensity
-    , const float range
-    , const Graphics::StageMask stageMask
-    , bool castShadows
-    , const CoreGraphics::TextureId projection)
+LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, const PointLightSetupInfo& info)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     n_assert(pointLightAllocator.Size() < Shared::MAX_POINT_LIGHTS);
     const Graphics::ContextEntityId cid = GetContextId(id);
     auto pli = pointLightAllocator.Alloc();
-    if (castShadows)
+    bool canCastShadows = info.castShadows;
+    if (info.castShadows)
     {
         std::array<Math::rectangle<int>, 6> shadowTiles;
         for (uint i = 0; i < 6; i++)
         {
-            Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(2048);
+            Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(256);
             if (section.x == 0xFFFFFFFF)
             {
                 n_warning("Shadow atlas is full! Cannot allocate shadow map for point light!\n");
-                castShadows = false;
+                canCastShadows = false;
+                for (uint j = 0; j < i; j++)
+                {
+                    lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)shadowTiles[j].left, (uint)shadowTiles[j].top }, 256);
+                }
+                break;
             }
             else
             {
-                shadowTiles[i] = Math::rectangle<int>(section.x, section.y, section.x + 2048, section.y + 2048);
+                shadowTiles[i] = Math::rectangle<int>(section.x, section.y, section.x + 256, section.y + 256);
             }
         }
         pointLightAllocator.Set<PointLight_ShadowTiles>(pli, shadowTiles);
@@ -496,47 +468,39 @@ LightContext::SetupPointLight(
     }
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
     genericLightAllocator.Set<Light_Type>(cid.id, LightType::PointLightType);
-    genericLightAllocator.Set<Light_Color>(cid.id, color);
-    genericLightAllocator.Set<Light_Intensity>(cid.id, intensity);
-    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, castShadows);
-    genericLightAllocator.Set<Light_Range>(cid.id, range);
+    genericLightAllocator.Set<Light_Color>(cid.id, info.color);
+    genericLightAllocator.Set<Light_Intensity>(cid.id, info.intensity);
+    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, canCastShadows);
+    genericLightAllocator.Set<Light_Range>(cid.id, info.range);
     genericLightAllocator.Set<Light_TypedLightId>(cid.id, pli);
-    genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
+    genericLightAllocator.Set<Light_StageMask>(cid.id, info.stageMask);
 
     // set initial state
-    pointLightAllocator.Set<PointLight_ProjectionTexture>(pli, projection);
+    pointLightAllocator.Set<PointLight_ProjectionTexture>(pli, info.projection);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-LightContext::SetupSpotLight(
-    const Graphics::GraphicsEntityId id
-    , const Math::vec3& color
-    , const float intensity
-    , const float innerConeAngle
-    , const float outerConeAngle
-    , const float range
-    , const Graphics::StageMask stageMask
-    , bool castShadows
-    , const CoreGraphics::TextureId projection)
+LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, const SpotLightSetupInfo& info)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     n_assert(spotLightAllocator.Size() < Shared::MAX_SPOT_LIGHTS);
     const Graphics::ContextEntityId cid = GetContextId(id);
     auto sli = spotLightAllocator.Alloc();
-    if (castShadows)
+    bool canCastShadows = info.castShadows;
+    if (info.castShadows)
     {
-        Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(2048);
+        Math::uint2 section = lightServerState.shadowAtlasTileOctree.Allocate(256);
         if (section.x == 0xFFFFFFFF)
         {
             n_warning("Shadow atlas is full! Cannot allocate shadow map for spot light!\n");
-            castShadows = false;
+            canCastShadows = false;
         }
         else
         {
-            spotLightAllocator.Set<SpotLight_ShadowTile>(sli, Math::rectangle<int>(section.x, section.y, section.x + 2048, section.y + 2048));
+            spotLightAllocator.Set<SpotLight_ShadowTile>(sli, Math::rectangle<int>(section.x, section.y, section.x + 256, section.y + 256));
         }
 
         // allocate shadow caster slice
@@ -548,27 +512,27 @@ LightContext::SetupSpotLight(
     }
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
     genericLightAllocator.Set<Light_Type>(cid.id, LightType::SpotLightType);
-    genericLightAllocator.Set<Light_Color>(cid.id, color);
-    genericLightAllocator.Set<Light_Intensity>(cid.id, intensity);
-    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, castShadows);
-    genericLightAllocator.Set<Light_Range>(cid.id, range);
+    genericLightAllocator.Set<Light_Color>(cid.id, info.color);
+    genericLightAllocator.Set<Light_Intensity>(cid.id, info.intensity);
+    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, canCastShadows);
+    genericLightAllocator.Set<Light_Range>(cid.id, info.range);
     genericLightAllocator.Set<Light_TypedLightId>(cid.id, sli);
-    genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
+    genericLightAllocator.Set<Light_StageMask>(cid.id, info.stageMask);
 
-    std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
-    if (innerConeAngle >= outerConeAngle)
-        angles[0] = outerConeAngle - Math::deg2rad(0.1f);
+    std::array<float, 2> angles = { info.innerConeAngle, info.outerConeAngle };
+    if (info.innerConeAngle >= info.outerConeAngle)
+        angles[0] = info.outerConeAngle - Math::deg2rad(0.1f);
 
     // construct projection from angle and range
     const float zNear = 0.1f;
-    const float zFar = range;
+    const float zFar = info.range;
 
     // use a fixed aspect of 1
     Math::mat4 proj = Math::perspfov(angles[1] * 2.0f, 1.0f, zNear, zFar);
     proj.r[1][1] *= -1.0f; // vulkan clip space
 
     // set initial state
-    spotLightAllocator.Set<SpotLight_ProjectionTexture>(sli, projection);
+    spotLightAllocator.Set<SpotLight_ProjectionTexture>(sli, info.projection);
     spotLightAllocator.Set<SpotLight_ConeAngles>(sli, angles);
     spotLightAllocator.Set<SpotLight_Observer>(sli, id);
     spotLightAllocator.Set<SpotLight_ProjectionTransform>(sli, proj);
@@ -578,17 +542,7 @@ LightContext::SetupSpotLight(
 /**
 */
 void
-LightContext::SetupAreaLight(
-    const Graphics::GraphicsEntityId id
-    , const AreaLightShape shape
-    , const Math::vec3& color
-    , const float intensity
-    , const float range
-    , const Graphics::StageMask stageMask
-    , bool twoSided
-    , bool castShadows
-    , bool renderMesh
-)
+LightContext::SetupAreaLight(const Graphics::GraphicsEntityId id, const AreaLightSetupInfo& info)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     n_assert(areaLightAllocator.Size() < Shared::MAX_AREA_LIGHTS);
@@ -596,15 +550,16 @@ LightContext::SetupAreaLight(
     auto ali = areaLightAllocator.Alloc();
     genericLightAllocator.Set<Light_Entity>(cid.id, id);
     genericLightAllocator.Set<Light_Type>(cid.id, LightType::AreaLightType);
-    genericLightAllocator.Set<Light_Color>(cid.id, color);
-    genericLightAllocator.Set<Light_Intensity>(cid.id, intensity);
-    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, castShadows);
-    genericLightAllocator.Set<Light_Range>(cid.id, range);
+    genericLightAllocator.Set<Light_Color>(cid.id, info.color);
+    genericLightAllocator.Set<Light_Intensity>(cid.id, info.intensity);
+    genericLightAllocator.Set<Light_ShadowCaster>(cid.id, info.castShadows);
+    genericLightAllocator.Set<Light_Range>(cid.id, info.range);
     genericLightAllocator.Set<Light_TypedLightId>(cid.id, ali);
-    genericLightAllocator.Set<Light_StageMask>(cid.id, stageMask);
+    genericLightAllocator.Set<Light_StageMask>(cid.id, info.stageMask);
 
     std::array<Math::rectangle<int>, 2> shadowTiles;
-    if (castShadows)
+    bool canCastShadows = info.castShadows;
+    if (info.castShadows)
     {
         for (uint i = 0; i < shadowTiles.size(); i++)
         {
@@ -612,7 +567,12 @@ LightContext::SetupAreaLight(
             if (section.x == 0xFFFFFFFF)
             {
                 n_warning("Shadow atlas is full! Cannot allocate shadow map for area light!\n");
-                castShadows = false;
+                canCastShadows = false;
+                for (uint j = 0; j < i; j++)
+                {
+                    lightServerState.shadowAtlasTileOctree.Deallocate(Math::uint2{ (uint)shadowTiles[j].left, (uint)shadowTiles[j].top }, 256);
+                }
+                break;
             }
             else
             {
@@ -639,13 +599,13 @@ LightContext::SetupAreaLight(
     }
 
     // set initial state
-    areaLightAllocator.Set<AreaLight_Shape>(ali, shape);
-    areaLightAllocator.Set<AreaLight_TwoSided>(ali, twoSided || shape == AreaLightShape::Tube);
-    areaLightAllocator.Set<AreaLight_RenderMesh>(ali, renderMesh);
+    areaLightAllocator.Set<AreaLight_Shape>(ali, info.shape);
+    areaLightAllocator.Set<AreaLight_TwoSided>(ali, info.twoSided || info.shape == AreaLightShape::Tube);
+    areaLightAllocator.Set<AreaLight_RenderMesh>(ali, info.renderMesh);
     //areaLightAllocator.Set<AreaLight_Projection>(ali, proj);
 
     // Last step is to create a geometric proxy for the light source
-    if (renderMesh)
+    if (info.renderMesh)
     {
         // Create material
         MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__AreaLight.entry;
@@ -653,13 +613,13 @@ LightContext::SetupAreaLight(
 
         const MaterialTemplatesGPULang::MaterialTemplateValue& value = MaterialTemplatesGPULang::base::__AreaLight.__EmissiveColor;
         MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
-        (color * intensity).store(data->EmissiveColor);
+        (info.color * info.intensity).store(data->EmissiveColor);
         data->EmissiveColor[3] = 1.0f;
         Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
         ArrayFreeStack(1, data);
 
         CoreGraphics::MeshId mesh;
-        switch (shape)
+        switch (info.shape)
         {
             case AreaLightShape::Disk:
                 mesh = CoreGraphics::DiskMesh;

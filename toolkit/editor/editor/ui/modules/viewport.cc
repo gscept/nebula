@@ -58,7 +58,16 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     });
     Lighting::LightContext::RegisterEntity(this->directionalLight);
     Lighting::LightContext::SetupDirectionalLight(
-        this->directionalLight, this->view, Math::vec3(1.0f), 50.0f, Math::vec3(0.05f), 70_rad, 0_rad, mask, false
+        this->directionalLight, 
+        {
+            .view = this->view,
+            .color = Math::vec3(1.0f),
+            .intensity = 50.0f,
+            .zenith = (float)70_rad,
+            .azimuth = (float)0_rad,
+            .stageMask = mask,
+            .castShadows = false
+        }
     );
     
     this->camera.Setup(1280, 900, 1 << 3);

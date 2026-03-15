@@ -234,13 +234,14 @@ SimpleViewerApplication::Open()
         Lighting::LightContext::RegisterEntity(this->globalLight);
         Lighting::LightContext::SetupDirectionalLight(
             this->globalLight,
-            this->view,
-            Math::vec3(1, 1, 1),
-            10.0f,
-            Math::vec3(0, 0, 0),
-            60_rad,
-            0_rad,
-            true
+            {
+                .view = this->view,
+                .color = Math::vec3(1, 1, 1),
+                .intensity = 10.0f,
+                .zenith = (float)60_rad,
+                .azimuth = (float)0_rad,
+                .castShadows = true
+            }
         );
 
         this->ResetCamera();

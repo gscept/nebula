@@ -120,7 +120,17 @@ VisibilityTest::Run()
 
     GraphicsEntityId globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(globalLight);
-    Lighting::LightContext::SetupDirectionalLight(globalLight, view, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), 85_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(
+        globalLight, 
+        {
+            .view = view,
+            .color = Math::vec3(1, 1, 1),
+            .intensity = 1.0f,
+            .zenith = (float)85_rad,
+            .azimuth = (float)0_rad,
+            .castShadows = true
+        }
+    );
 
     // register visibility system
     ObserverContext::CreateBruteforceSystem({});

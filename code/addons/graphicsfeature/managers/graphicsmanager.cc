@@ -385,7 +385,14 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     // TODO: Cookie projection support
     Lighting::LightContext::SetupPointLight(
-        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->stageMask, light->castShadows
+        light->graphicsEntityId,
+        {
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .castShadows = light->castShadows
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
 }
@@ -406,13 +413,15 @@ GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLigh
     // TODO: Cookie projection support
     Lighting::LightContext::SetupSpotLight(
         light->graphicsEntityId,
-        light->color.vec,
-        light->intensity,
-        Math::deg2rad(light->innerConeAngle),
-        Math::deg2rad(light->outerConeAngle),
-        light->range,
-        light->stageMask,
-        light->castShadows
+        {
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .innerConeAngle = Math::deg2rad(light->innerConeAngle),
+            .outerConeAngle = Math::deg2rad(light->outerConeAngle),
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .castShadows = light->castShadows
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
@@ -433,14 +442,16 @@ GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLigh
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     Lighting::LightContext::SetupAreaLight(
         light->graphicsEntityId,
-        (Lighting::LightContext::AreaLightShape)light->shape,
-        light->color.vec,
-        light->intensity,
-        light->range,
-        light->stageMask,
-        light->twoSided,
-        light->castShadows,
-        light->renderMesh
+        {
+            .shape = (Lighting::LightContext::AreaLightShape)light->shape,
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .twoSided = light->twoSided,
+            .castShadows = light->castShadows,
+            .renderMesh = light->renderMesh
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
