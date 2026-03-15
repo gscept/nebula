@@ -692,3 +692,28 @@ QuatRotateVector(q : f32x4, v : f32x3) f32x3
 	const t : f32 = 2.0f * dot(qv, v);
 	return v + (t * qv) + (cross(qv, v) * 2.0f * q.w);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+CubeMapUVAndFaceFromDirection(dir : f32x3, out uv : f32x2, out cubeFace : u32) void
+{
+	const a = abs(dir);
+
+	 // Determine dominant axis (one-hot)
+    const isX = step(a.y, a.x) * step(a.z, a.x);
+    const isY = step(a.x, a.y) * step(a.z, a.y) * (1.0 - isX);
+    const isZ = 1.0 - isX - isY;
+
+	const uvX = f32x2(-dir.z, -dir.y) / a.x;
+	const uvY = f32x2(dir.x, dir.z) / a.y;
+	const uvZ = f32x2(dir.x, -dir.y) / a.z;
+	uv = (uvX * isX) + (uvY * isY) + (uvZ * isZ);
+
+	const signMask = step(0.0f, dir);
+	const faceX = lerp(0.0f, 1.0f, signMask.x);
+	const faceY = lerp(2.0f, 3.0f, signMask.y);
+	const faceZ = lerp(4.0f, 5.0f, signMask.z);
+	const face = (faceX * isX) + (faceY * isY) + (faceZ * isZ);
+	cubeFace = u32(face);
+}

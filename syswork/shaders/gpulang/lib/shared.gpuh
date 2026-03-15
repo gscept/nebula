@@ -301,7 +301,7 @@ struct DirectionalLight
     color : f32x3;
     shadowIntensity : f32;
     shadowBias : f32;
-    shadowMapSize : f32x2;
+    shadowMapPixelSize : f32x2;
     stageMask : u32;                // Stages this light is visible in
 	flags : u32;					// feature flags (shadows, projection texture, etc)
 };
@@ -331,6 +331,7 @@ struct SpotLightProjectionExtension
 struct SpotLightShadowExtension
 {
     projection : f32x4x4;
+	shadowMapPixelSize : f32x2;
     shadowIntensity : f32;		// intensity of shadows
     shadowMap : u32;			// shadow map
 };
@@ -350,6 +351,7 @@ struct PointLight
 struct PointLightShadowExtension
 {
 	projection : [6]f32x4x4;		// projection transforms for each side
+	shadowMapPixelSize : f32x2;
     shadowIntensity : f32;			// intensity of shadows
     shadowMap : u32;				// shadow map
 };
@@ -377,6 +379,7 @@ struct AreaLightShadowExtension
 {
     frontProjection : f32x4x4;
 	backProjection : f32x4x4;
+	shadowMapPixelSize : f32x2;
     shadowIntensity : f32;				// intensity of shadows
     shadowMap : u32;			// shadow map
 };

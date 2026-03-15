@@ -296,7 +296,7 @@ CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f3
 				, li.cascadeTransforms
 				, li.cascadeDistances
 				, li.shadowMap
-				, li.shadowMapSize
+				, li.shadowMapPixelSize
 				, li.shadowBias
 				, li.shadowIntensity
 				, li.flags

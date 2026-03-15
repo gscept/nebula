@@ -103,11 +103,32 @@ GetInvertedOcclusionPointLight(
 
 //------------------------------------------------------------------------------
 /**
+*/
+CalculatePointLightShadow(
+    light : PointLight
+    , shadowExt : PointLightShadowExtension
+	, pos : f32x3
+) f32
+{
+    var lightDir = (light.position.xyz - pos);
+	var uv : f32x2;
+	var faceIndex : u32;
+	CubeMapUVAndFaceFromDirection(lightDir, uv, faceIndex);
+
+	var shadowProjLightPos = shadowExt.projection[faceIndex] * f32x4(pos, 1.0f);
+	shadowProjLightPos.xyz /= shadowProjLightPos.w;
+    const receiverDepth = shadowProjLightPos.z;
+	const shadowFactor = PCFShadow(shadowExt.shadowMap, receiverDepth, shadowProjLightPos.xy, shadowExt.shadowMapPixelSize, 0.001f);
+    return saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+}
+
+//------------------------------------------------------------------------------
+/**
     Calculate point light for ambient, specular and shadows
 */
 CalculatePointLight(
     light : PointLight,
-    ext : PointLightShadowExtension,
+    shadow : f32,
     pos : f32x3,
     viewVec : f32x3, 
     normal : f32x3, 
@@ -137,17 +158,9 @@ CalculatePointLight(
     const brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
 
     const radiance = light.color * att;
-    const irradiance = (brdf * radiance) * saturate(NL);
+    var irradiance = (brdf * radiance) * saturate(NL);
 
-    var shadowFactor = 1.0f;
-    if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
-    {
-        const projDir = (ViewConstants.InvView * f32x4(-lightDir, 0)).xyz;
-        shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
-    }
-
-    return irradiance * shadowFactor;
+    return irradiance * shadow;
 }
 
 //------------------------------------------------------------------------------
@@ -177,7 +190,7 @@ CalculateSpotLightShadow(
     var shadowProjLightPos = shadowExt.projection * f32x4(pos, 1.0f);
 	shadowProjLightPos.xyz /= shadowProjLightPos.w;
     const receiverDepth = shadowProjLightPos.z;
-    const shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowProjLightPos.xy, light.shadowExtension, shadowExt.shadowMap);
+	const shadowFactor = PCFShadow(shadowExt.shadowMap, receiverDepth, shadowProjLightPos.xy, shadowExt.shadowMapPixelSize, 0.001f);
     return saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 }
 
@@ -493,9 +506,17 @@ LocalLights(
         {
             const lidx = LightIndexLists.PointLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
             const li = LightLists.PointLights[lidx];
+            var shadow = 1.0f;
+
+			// if we have extensions, load them from their respective buffers
+            if (li.shadowExtension != -1)
+            {
+                shadow = CalculatePointLightShadow(li, LightLists.PointLightShadow[li.shadowExtension], pos);
+            }
+
             light += CalculatePointLight(
                 li,
-                ext,
+				shadow,
                 pos,
                 viewVec,
                 normal,
@@ -680,7 +701,7 @@ CalculateLight(
 				, li.cascadeTransforms
 				, li.cascadeDistances
 				, li.shadowMap
-				, li.shadowMapSize
+				, li.shadowMapPixelSize
 				, li.shadowBias
 				, li.shadowIntensity
 				, li.flags

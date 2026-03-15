@@ -221,7 +221,7 @@ GlobalLightFog(worldPos : f32x3) f32x3
 				, li.cascadeTransforms
 				, li.cascadeDistances
 				, li.shadowMap
-				, li.shadowMapSize
+				, li.shadowMapPixelSize
 				, li.shadowBias
 			);
 			shadowFactor = lerp(1.0f, shadowFactor, 1);

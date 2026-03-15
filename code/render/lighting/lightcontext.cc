@@ -1388,8 +1388,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 directionalLight.shadowIntensity = 1.0f;
                 directionalLight.shadowBias = 0.0001f;
                 auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
-                directionalLight.shadowMapSize[0] = 1.0f / shadowDims.width;
-                directionalLight.shadowMapSize[1] = 1.0f / shadowDims.height;
+                directionalLight.shadowMapPixelSize[0] = 1.0f / shadowDims.width;
+                directionalLight.shadowMapPixelSize[1] = 1.0f / shadowDims.height;
                 directionalLight.flags |= castShadow[i] ? LightsCluster::USE_SHADOW_BITFLAG : 0x0;
                 for (uint j = 0; j < cascadeDistances.Size(); j++)
                 {
@@ -1422,6 +1422,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     }
                     shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
                     shadow.shadowIntensity = 1.0f;
+                    shadow.shadowMapPixelSize[0] = 1.0f / shadowDims.width;
+                    shadow.shadowMapPixelSize[1] = 1.0f / shadowDims.height;
                     numPointLightShadows++;
                     numShadowLights++;
                 }
@@ -1461,6 +1463,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     spotLightAllocator.Get<SpotLight_ShadowProjectionTransform>(typeIds[i]).store(&shadow.projection[0][0]);
                     shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
                     shadow.shadowIntensity = 1.0f;
+                    shadow.shadowMapPixelSize[0] = 1.0f / shadowDims.width;
+                    shadow.shadowMapPixelSize[1] = 1.0f / shadowDims.height;
                     numSpotLightShadows++;
                     numShadowLights++;
                 }
@@ -1547,6 +1551,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     shadowProjArray[0].store(&shadow.frontProjection[0][0]);
                     shadowProjArray[1].store(&shadow.backProjection[0][0]);
                     shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.shadowAtlas);
+                    shadow.shadowMapPixelSize[0] = 1.0f / shadowDims.width;
+                    shadow.shadowMapPixelSize[1] = 1.0f / shadowDims.height;
                     shadow.shadowIntensity = 1.0f;
                     numAreaLightShadows++;
                     numShadowLights++;
