@@ -61,6 +61,9 @@ public:
     /// draw a cone
     static void DrawCone(const Math::point& start, const Math::point& end, float startRadius, float endRadius, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
 
+    /// draw XYZ axes
+    static void DrawAxes(Math::mat4 viewProjection);
+
     /// called before frame
     static void OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
     /// called when rendering a frame batch

@@ -360,6 +360,23 @@ Im3dContext::DrawCone(const Math::point& start, const Math::point& end, float st
 
     Im3d::PopDrawState();
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawAxes(Math::mat4 viewProjection)
+{
+    Im3d::PushDrawState();
+
+    Im3d::SetSize(2.0f);
+    Im3d::PushMatrix(viewProjection);
+    Im3d::DrawXyzAxes();
+    Im3d::PopMatrix();
+
+    Im3d::PopDrawState();
+}
+
 //------------------------------------------------------------------------------
 /**
 */
