@@ -559,6 +559,9 @@ class CopyDefinition:
         file.WriteLine("}")
     
     def FormatSource(self, file):
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
         SyncResourceDependencies("Copy_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine("Copy_{}(cmdBuf);".format(self.name))
 
@@ -1028,9 +1031,9 @@ class PassDefinition:
         
         for subpass in self.subpasses:
             if subpass.depth:
-                file.WriteLine('Subpass_{}_Viewports[Pass_{}_Attachment_{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, self.name, subpass.depth['name'], subpass.depth['ref'].ref.relativeSize[0], subpass.depth['ref'].ref.relativeSize[1]))
-            for attachment in subpass.attachments:
-                file.WriteLine('Subpass_{}_Viewports[Pass_{}_Attachment_{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, self.name, attachment['name'], attachment['ref'].ref.relativeSize[0], attachment['ref'].ref.relativeSize[1]))
+                file.WriteLine('Subpass_{}_Viewports[{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, 0, subpass.depth['ref'].ref.relativeSize[0], subpass.depth['ref'].ref.relativeSize[1]))
+            for i, attachment in enumerate(subpass.attachments):
+                file.WriteLine('Subpass_{}_Viewports[{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, i + 1 if subpass.depth else i, attachment['ref'].ref.relativeSize[0], attachment['ref'].ref.relativeSize[1]))
             file.WriteLine('CoreGraphics::CmdSetViewports(cmdBuf, Subpass_{}_Viewports);'.format(subpass.name))
             file.WriteLine('CoreGraphics::CmdSetScissors(cmdBuf, Subpass_{}_Viewports);'.format(subpass.name))
             if subpass != self.subpasses[0]:
@@ -1578,6 +1581,10 @@ if __name__ == '__main__':
 
     generator = FrameScriptGenerator()
     generator.SetVersion(Version)
+
+    if len(sys.argv) != 4:
+        print("Usage: framescriptc <input> <output header> <output source>")
+        exit(1)
     file = sys.argv[-3]
     outH = sys.argv[-2]
     outS = sys.argv[-1]
