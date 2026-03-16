@@ -187,25 +187,6 @@ DownsamplingContext::Setup()
     uint dispatchX = DispatchSize(dims.width);
     uint dispatchY = DispatchSize(dims.height);
 
-    // This should not be the entire buffer, but instead update per-frame to account for the actual viewport being used
-    DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-    constants.Mips = mips - 1;
-    constants.NumGroups = dispatchX * dispatchY;
-    constants.Dimensions[0] = dims.width - 1;
-    constants.Dimensions[1] = dims.height - 1;
-    BufferUpdate(state.colorBufferConstants, constants, 0);
-
-    dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
-    mips = TextureGetNumMips(FrameScript_default::Texture_Depth());
-    dispatchX = DispatchSize(dims.width);
-    dispatchY = DispatchSize(dims.height);
-
-    constants.Mips = mips - 1;
-    constants.NumGroups = dispatchX * dispatchY;
-    constants.Dimensions[0] = dims.width - 1;
-    constants.Dimensions[1] = dims.height - 1;
-    BufferUpdate(state.depthBufferConstants, constants, 0);
-
     CoreGraphics::ResourceTableSetRWBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferCounter,
         DownsampleCsLight::Counters::BINDING,
@@ -258,6 +239,14 @@ DownsamplingContext::Setup()
         CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
+
+        DownsampleCsLight::DownsampleUniforms::STRUCT constants;
+        constants.Mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer()) - 1;
+        constants.NumGroups = dispatchX * dispatchY;
+        constants.Dimensions[0] = viewport.width() - 1;
+        constants.Dimensions[1] = viewport.height() - 1;
+        CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
+
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderWrite }
@@ -267,8 +256,16 @@ DownsamplingContext::Setup()
     {
         CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, queue, false);
         CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = DispatchSize(viewport.width());
-        uint dispatchY = DispatchSize(viewport.height());
+        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        uint dispatchY = Math::divandroundup(viewport.height(), 64);
+
+        DownsampleCsLight::DownsampleUniforms::STRUCT constants;
+        constants.Mips = TextureGetNumMips(FrameScript_default::Texture_Depth()) - 1;
+        constants.NumGroups = dispatchX * dispatchY;
+        constants.Dimensions[0] = viewport.width() - 1;
+        constants.Dimensions[1] = viewport.height() - 1;
+        CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
+
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }
@@ -316,29 +313,6 @@ DownsamplingContext::Resize(const uint framescriptHash, SizeT width, SizeT heigh
             DownsampleCsDepth::Input::BINDING,
             DownsampleCsDepth::Output::BINDING
         );
-
-        auto dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
-        auto mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
-        uint dispatchX = DispatchSize(dims.width);
-        uint dispatchY = DispatchSize(dims.height);
-
-        DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-        constants.Mips = mips - 1;
-        constants.NumGroups = dispatchX * dispatchY;
-        constants.Dimensions[0] = dims.width - 1;
-        constants.Dimensions[1] = dims.height - 1;
-        BufferUpdate(state.colorBufferConstants, constants, 0);
-
-        dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
-        mips = TextureGetNumMips(FrameScript_default::Texture_Depth());
-        dispatchX = DispatchSize(dims.width);
-        dispatchY = DispatchSize(dims.height);
-
-        constants.Mips = mips - 1;
-        constants.NumGroups = dispatchX * dispatchY;
-        constants.Dimensions[0] = dims.width - 1;
-        constants.Dimensions[1] = dims.height - 1;
-        BufferUpdate(state.depthBufferConstants, constants, 0);
 
         CoreGraphics::ResourceTableSetTexture(
             state.extractResourceTable,
