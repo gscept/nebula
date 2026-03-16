@@ -22,6 +22,16 @@ render_state ShadowState
     DepthBiasFactor = 1.8f;
 };
 
+render_state ShadowStateDoubleSided
+{
+	Cull = CullFace.None;
+	DepthClampEnabled = false;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = true;
+    DepthBiasEnabled = true;
+    DepthBiasFactor = 1.8f;
+};
+
 //------------------------------------------------------------------------------
 /**
 */

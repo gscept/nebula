@@ -37,6 +37,22 @@ render_state AlphaState
     BlendEnabled[0] = true;
     SourceBlend[0] = BlendFactor.SourceAlpha;
     DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+	SourceAlphaBlend[0] = BlendFactor.SourceAlpha;
+    DestinationAlphaBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+};
+
+
+render_state TranslucentState
+{
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+};
+
+render_state TranslucentStateDoubleSided
+{
+    Cull = CullFace.None;
     DepthWriteEnabled = false;
     DepthTestEnabled = true;
 };
@@ -62,11 +78,14 @@ render_state AlphaDoubleSidedState
     BlendEnabled[0] = true;
     SourceBlend[0] = BlendFactor.SourceAlpha;
     DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+	SourceAlphaBlend[0] = BlendFactor.SourceAlpha;
+    DestinationAlphaBlend[0] = BlendFactor.OneMinusSourceAlpha;
     DepthWriteEnabled = false;
     DepthTestEnabled = true;
     DepthTestFunction = CompareMode.Less;
     Cull = CullFace.None;
 };
+
 
 render_state DepthState
 {
@@ -97,7 +116,7 @@ MaskColor(albedo : f32x4, cutoff : f32) f32x4
 {
     if (ColorMaskMode == ColorMaskModes.None)
     {
-        return f32x4(albedo.rgb, 1.0f);
+        return albedo;
     }
     else if (ColorMaskMode == ColorMaskModes.Alpha)
     {
