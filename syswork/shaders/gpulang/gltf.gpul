@@ -38,8 +38,9 @@ vsGLTFStatic(
         binding(1) in normal : f32x3,
         binding(2) in uv : i32x2,
         binding(3) in tangent : f32x4,
-        out Tangent : f32x4,
+        out Tangent : f32x3,
         out Normal : f32x3,
+		out Sign : f32,
         out UV : f32x2,
         out WorldSpacePos : f32x3
 ) void
@@ -48,8 +49,9 @@ vsGLTFStatic(
     vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
     UV = UnpackUV(uv);
 
-    Tangent = f32x4((ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz, tangent.w);
-    Normal = (ObjectUniforms.Model * f32x4(normal, 0)).xyz;
+    Tangent = normalize(ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz;
+    Normal = normalize(ObjectUniforms.Model * f32x4(normal, 0)).xyz;
+	Sign = tangent.w;
     WorldSpacePos = modelSpace.xyz;
 }
 
@@ -64,8 +66,9 @@ vsGLTFSkinned(
     binding(3) in tangent : f32x4,
     binding(7) in weights : f32x4,
     binding(8) in indices : u32x4,
-    out Tangent : f32x4,
+    out Tangent : f32x3,
     out Normal : f32x3,
+	out Sign : f32,
     out UV : f32x2,
     out WorldSpacePos : f32x3
 ) void
@@ -78,8 +81,9 @@ vsGLTFSkinned(
     vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
 
     UV = UnpackUV(uv);
-    Tangent = f32x4(normalize((ObjectUniforms.Model * skinnedTangent).xyz), tangent.w);
-    Normal = normalize((ObjectUniforms.Model * skinnedNormal).xyz);
+    Tangent = normalize((ObjectUniforms.Model * skinnedTangent)).xyz;
+    Normal = normalize((ObjectUniforms.Model * skinnedNormal)).xyz;
+	Sign = tangent.w;
     WorldSpacePos = modelSpace.xyz;
 }
 
@@ -89,8 +93,9 @@ vsGLTFSkinned(
 early_depth
 entry_point
 psGLTF(
-    in Tangent : f32x4,
+    in Tangent : f32x3,
     in Normal : f32x3,
+	in Sign : f32,
     in UV : f32x2,
     in WorldSpacePos : f32x3
 ) void
@@ -105,7 +110,7 @@ psGLTF(
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = occlusion.r;
     material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
-    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Tangent.w, normals));
+    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Sign, normals));
 
     const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
     const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
@@ -116,8 +121,50 @@ psGLTF(
     light += emissive.rgb;
 
     pixelExportColor(PackColor(light.rgb, baseColor.a), UberShaderOutput.Albedo);
-    pixelExportColor(f32x4(N, 0), UberShaderOutput.Normals);
-    pixelExportColor(f32x4(F0, material[MAT_ROUGHNESS]), UberShaderOutput.Material);
+    //pixelExportColor(f32x4(N, 0), UberShaderOutput.Normals);
+    //pixelExportColor(f32x4(F0, material[MAT_ROUGHNESS]), UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psGLTFTranslucent(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+	in Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3
+) void
+{
+    const baseColor = MaskColor(sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV) * GLTFConstants.baseColorFactor, GLTFConstants.alphaCutoff);
+    const metallicRoughness = sample2D(GLTFConstants.metallicRoughnessTexture, MaterialSampler, UV) * f32x4(1.0f, GLTFConstants.roughnessFactor, GLTFConstants.metallicFactor, 1.0f);
+    const emissive = sample2D(GLTFConstants.emissiveTexture, MaterialSampler, UV) * GLTFConstants.emissiveFactor;
+    const occlusion = sample2D(GLTFConstants.occlusionTexture, MaterialSampler, UV);
+    const normals = sample2D(GLTFConstants.normalTexture, NormalSampler, UV) * GLTFConstants.normalScale;
+    var material : f32x4;
+    material[MAT_METALLIC] = metallicRoughness.b;
+    material[MAT_ROUGHNESS] = metallicRoughness.g;
+    material[MAT_CAVITY] = occlusion.r;
+    material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
+    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Sign, normals));
+
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
+    const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+	const dims = textureGetSizeMip(Textures2D[PerTickParams.Scene], 0);
+	const scene = sample2DLod(PerTickParams.Scene, LinearSampler, pixelGetCoordinates().xy * (1.0f / dims), 0);
+
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
+	light += scene.rgb * baseColor.rgb; // fake IBL for translucency
+	light += CalculateLightTranslucent(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
+    //light += calcEnv(baseColor, F0, N, viewVec, material);
+    light += emissive.rgb;
+
+    pixelExportColor(PackColor(light.rgb, baseColor.a), UberShaderOutput.Albedo);
+    //pixelExportColor(f32x4(N, 0), UberShaderOutput.Normals);
+    //pixelExportColor(f32x4(F0, material[MAT_ROUGHNESS]), UberShaderOutput.Material);
 }
 
 //------------------------------------------------------------------------------
@@ -250,33 +297,33 @@ program GLTFSkinnedAlphaMaskDoubleSided
 program GLTFStaticAlphaBlend
 {
     VertexShader = vsGLTFStatic;
-    PixelShader = psGLTF;
+    PixelShader = psGLTFTranslucent;
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
-    PackColorMethod = PackColorMethods.Solid;
-    RenderState = AlphaState;
+    PackColorMethod = PackColorMethods.Transparent;
+    RenderState = TranslucentState;
 };
 
 @Mask("Skinned|AlphaBlend")
 program GLTFSkinnedAlphaBlend
 {
     VertexShader = vsGLTFSkinned;
-    PixelShader = psGLTF;
+    PixelShader = psGLTFTranslucent;
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
-    PackColorMethod = PackColorMethods.Solid;
-    RenderState = AlphaState;
+    PackColorMethod = PackColorMethods.Transparent;
+    RenderState = TranslucentState;
 };
 
 @Mask("Static|AlphaBlend|DoubleSided")
 program GLTFStaticAlphaBlendDoubleSided
 {
     VertexShader = vsGLTFStatic;
-    PixelShader = psGLTF;
+    PixelShader = psGLTFTranslucent;
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
-    PackColorMethod = PackColorMethods.Solid;
-    RenderState = AlphaDoubleSidedState;
+    PackColorMethod = PackColorMethods.Transparent;
+    RenderState = TranslucentStateDoubleSided;
 };
 
 @Mask("Skinned|AlphaBlend|DoubleSided")

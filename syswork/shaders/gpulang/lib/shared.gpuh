@@ -180,6 +180,7 @@ struct TickParams
     TonemapWeight : f32;
     Lum : f32;
 
+	Scene : u32;
     NormalBuffer : u32;
     DepthBuffer : u32;
     SpecularBuffer : u32;
@@ -203,6 +204,7 @@ struct ViewParams
     EyePos : f32x4;
     FocalLengthNearFar : f32x4; // x, y is focal length x/y, z, w is near/far planes
     Time_Random_Luminance_X : f32x4; // x is time, y is random, z is luminance, w is unused
+	Viewport : f32x4;
     StageMask : u32;                // Mask for what things are visible by this view
 };
 group(FRAME_GROUP) uniform ViewConstants : *ViewParams;

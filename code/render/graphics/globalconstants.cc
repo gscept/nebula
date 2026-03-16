@@ -255,8 +255,7 @@ SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraph
 void
 SetupBufferConstants()
 {
-    globalConstantState.tickParams.NormalBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_NormalBuffer());
-    globalConstantState.tickParams.SpecularBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_SpecularBuffer());
+    globalConstantState.tickParams.Scene = TextureGetBindlessHandle(FrameScript_default::Texture_LightBuffer());
     globalConstantState.tickParams.DepthBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_ZBuffer());
     globalConstantState.tickParams.DepthBufferCopy = TextureGetBindlessHandle(FrameScript_default::Texture_Depth());
 }

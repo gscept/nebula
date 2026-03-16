@@ -84,6 +84,12 @@ ViewApply(const ViewId id)
         viewConstants.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
         viewConstants.Time_Random_Luminance_X[1] = Math::rand(0, 1);
         viewConstants.StageMask = stageMask;
+        const Math::rectangle<int> viewport = viewAllocator.Get<View_Viewport>(id.id);
+
+        viewConstants.Viewport[0] = viewport.left;
+        viewConstants.Viewport[1] = viewport.top;
+        viewConstants.Viewport[2] = viewport.width();
+        viewConstants.Viewport[3] = viewport.height();
 
         // Apply view transforms
         Graphics::UpdateViewConstants(viewConstants);

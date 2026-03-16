@@ -80,6 +80,14 @@
                 "type": "Texture2D"
             },
             {
+              "name": "AlphaLightBuffer",
+              "format": "R16G16B16A16F",
+              "usage": "Render|ReadWrite|TransferSource",
+              "relativeSize": [ 1.0, 1.0 ],
+              "mips": "auto",
+              "type": "Texture2D"
+            },
+            {
                 "name": "LightDebugBuffer",
                 "format": "R16G16B16A16F",
                 "usage": "ReadWrite",
@@ -126,21 +134,6 @@
                 "name": "ReflectionBuffer",
                 "format": "R16G16B16A16F",
                 "usage": "ReadWrite",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
-                "name": "NormalBuffer",
-                "format": "R16G16B16A16F",
-                "usage": "Render",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
-                "_comment": "RGB = Specular reflectivity, A = Roughness",
-                "name": "SpecularBuffer",
-                "format": "R8G8B8A8",
-                "usage": "Render",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
@@ -396,18 +389,13 @@
                                     "name": "LightBuffer",
                                     "clear": [ 0, 0, 0, 0 ],
                                     "flags": "Store"
-                                },
-                                {
-                                    "name": "NormalBuffer",
-                                    "flags": "Store",
-                                    "clear": [ 0, 0, 0, 0 ]
-                                },
-                                {
-                                    "name": "SpecularBuffer",
-                                    "flags": "Store",
-                                    "clear": [ 0, 0, 0, 0 ]
                                 }
-
+                                ,
+                                {
+                                    "name": "AlphaLightBuffer",
+                                    "clear": [ 0, 0, 0, 0 ],
+                                    "flags": "Store"
+                                }
                             ],
 
                             "subpasses": [
@@ -482,7 +470,7 @@
                                     "name": "AlphaPass",
                                     "_comment": "TODO: Move this to a separate pass later on",
                                     "subpass_dependencies": [ "Skypass" ],
-                                    "attachments": [ "LightBuffer" ],
+                                    "attachments": [ "AlphaLightBuffer" ],
 
                                     "resource_dependencies": [
                                         {
