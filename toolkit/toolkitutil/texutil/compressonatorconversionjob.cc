@@ -124,7 +124,10 @@ CompressonatorConversionJob::Convert()
         if((String::MatchPattern(this->srcPath, "*norm.*")) 
             || (String::MatchPattern(this->srcPath, "*normal.*")) 
             || (String::MatchPattern(this->srcPath, "*Normal.*")) 
-            || (String::MatchPattern(this->srcPath, "*bump.*")))
+            || (String::MatchPattern(this->srcPath, "*_N.*"))
+            || (String::MatchPattern(this->srcPath, "*_n.*"))
+            || (String::MatchPattern(this->srcPath, "*bump.*"))
+           )
         {
             kernel_options.format = CMP_FORMAT_BC5;
         }
