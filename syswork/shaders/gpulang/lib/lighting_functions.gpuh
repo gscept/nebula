@@ -8,6 +8,7 @@
 #include <lib/CSM.gpuh>
 #include <lib/clustering.gpuh>
 #include <lib/ddgi.gpuh>
+#include <mie-rayleigh.gpuh>
 
 // match these in lightcontext.cc
 const USE_SHADOW_BITFLAG = 0x1u;
@@ -420,7 +421,7 @@ CalculateGlobalLight(
 	, cascadeTransforms : [NUM_CASCADES]f32x4x4
 	, cascadeDistances : [NUM_CASCADES]f32
 	, shadowMap : u32
-	, shadowMapSize : f32x2
+	, shadowMapPixelSize : f32x2
 	, shadowBias : f32
 	, shadowIntensity : f32
 	, flags : u32
@@ -441,7 +442,7 @@ CalculateGlobalLight(
 			, cascadeTransforms
 			, cascadeDistances
 			, shadowMap
-			, shadowMapSize
+			, shadowMapPixelSize
 			, shadowBias
 		);
 
@@ -744,6 +745,92 @@ CalculateLight(
 //#else
     light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
     light += GI(idx, viewVec, worldSpacePos, normal, albedo);
+//#endif
+
+    //light += IBL(albedo, F0, normal, viewVec, material);
+    light += albedo.rgb * material[MAT_EMISSIVE];
+    return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateLightTranslucent(
+    worldSpacePos : f32x3
+    , clipXYZ : f32x3
+    , albedo : f32x3
+    , material : f32x4
+    , normal : f32x3
+) f32x3
+{
+    const viewDepth = CalculateViewDepth(ViewConstants.View, worldSpacePos);
+    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var light = f32x3(0, 0, 0);
+    const viewVec = normalize(worldSpacePos.xyz - ViewConstants.EyePos.xyz);
+    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+	for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+	{
+		const li = LightLists.DirectionalLights[i];
+		if (li.stageMask & ViewConstants.StageMask)
+		{
+			light += CalculateGlobalLight(
+				albedo
+				, material
+				, F0
+				, viewVec
+				, -normal
+				, worldSpacePos
+				, li.direction
+				, li.color
+				, li.cascadeTransforms
+				, li.cascadeDistances
+				, li.shadowMap
+				, li.shadowMapPixelSize
+				, li.shadowBias
+				, li.shadowIntensity
+				, li.flags
+			);
+		}
+	}
+
+//#if USE_SCALARIZATION_LOOP
+//    // Get the mask for the invocation
+//    const laneMask = subgroupGetLocalInvocationMask();
+//
+//    // Get the execution mask for the wavefront
+//    var execMask = subgroupBallot(true);
+//    const firstWaveIndex = subgroupRead(idx);
+//
+//    // Check if all waves use the same index and do this super cheaply
+//    if (subgroupBallot(firstWaveIndex == idx) == execMask)
+//    {
+//        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
+//    }
+//    else
+//    {
+//        // Scalarization loop
+//        while ((laneMask & execMask) != u32x4(0))
+//        {
+//            const scalarIdx = subgroupRead(idx);
+//            const currentMask = subgroupBallot(scalarIdx == idx);
+//            execMask &= ~currentMask;
+//
+//            // If this wave uses the cell we loaded into SGPR, use it
+//            // this will effectively scalarize the light lists
+//            if (scalarIdx == idx)
+//            {
+//                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
+//            }
+//        }
+//    }
+//#else
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, -normal, clipXYZ.z);
+    light += GI(idx, viewVec, worldSpacePos, -normal, albedo);
 //#endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);
