@@ -234,7 +234,9 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
         Raytracing::RaytracingContext::UpdateResources,
-        ::Terrain::TerrainContext::RenderUI
+        ::Terrain::TerrainContext::RenderUI,
+        ObserverContext::RunVisibilityTests,
+        ObserverContext::GenerateDrawLists,
     };
 
     Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
@@ -252,8 +254,6 @@ GraphicsFeatureUnit::OnActivate()
     {
         Dynui::ImguiContext::EndFrame,
         Clustering::ClusterContext::UpdateResources,
-        ObserverContext::RunVisibilityTests,
-        ObserverContext::GenerateDrawLists,
         Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
