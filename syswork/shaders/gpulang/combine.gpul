@@ -11,10 +11,12 @@ uniform Fog : *texture2D;
 uniform Reflections : *texture2D;
 uniform AO : *texture2D;
 uniform Lighting : *mutable rgba16f texture2D;
+uniform AlphaLighting : *texture2D;
 
 struct CombineData
 {
     LowresResolution : f32x2;
+	Viewport : f32x2;
 };
 group(BATCH_GROUP) uniform CombineUniforms: *CombineData;
 
@@ -25,16 +27,18 @@ local_size_x(64)
 entry_point
 csCombine() void
 {
-    const coord = f32x2(computeGetGlobalThreadIndices().xy) * CombineUniforms.LowresResolution;
     const fullscaleCoord = i32x2(computeGetGlobalThreadIndices().xy);
+	if fullscaleCoord.x >= CombineUniforms.Viewport.x || fullscaleCoord.y >= CombineUniforms.Viewport.y { return; }
+    const coord = computeGetGlobalThreadIndices().xy * CombineUniforms.LowresResolution;
     const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
-    const reflections = textureSampleLod(Reflections, LinearSampler, coord, 0);
-    const ao = textureSampleLod(AO, LinearSampler, coord, 0).r;
+	const alpha = textureFetch(AlphaLighting, fullscaleCoord, 0);
+    const reflections = textureFetch(Reflections, coord, 0);
+    const ao = textureFetch(AO, fullscaleCoord, 0).r;
     const light = textureLoad(Lighting, fullscaleCoord);
 
-    const res = light.rgb * (1 - (ao)) * fog.a
+    const res = light.rgb * (1 - (ao)) * fog.a * (1.0f - alpha.a) + alpha.rgb * alpha.a
         //+ reflections.rgb * fog.a 
-        + fog.rgb;
+        + fog.rgb * (1.0f - alpha.a);
     textureStore(Lighting, fullscaleCoord, f32x4(res, 1));
 }
 

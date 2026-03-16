@@ -84,6 +84,7 @@ struct
 {
     CoreGraphics::ShaderId combineShader;
     CoreGraphics::ShaderProgramId combineProgram;
+    CoreGraphics::BufferId combineConstants;
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 } combineState;
 
@@ -194,6 +195,14 @@ LightContext::Create()
 
     // setup combine
     combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.gplb");
+
+    BufferCreateInfo combineBufferInfo;
+    combineBufferInfo.name = "CombineConstants";
+    combineBufferInfo.byteSize = sizeof(Combine::CombineUniforms::STRUCT);
+    combineBufferInfo.mode = BufferAccessMode::DeviceLocal;
+    combineBufferInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
+    combineBufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+    combineState.combineConstants = CoreGraphics::CreateBuffer(combineBufferInfo);
     combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
     combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
@@ -205,6 +214,8 @@ LightContext::Create()
         ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_AlphaLightBuffer(), Combine::AlphaLighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetConstantBuffer(combineState.resourceTables[i], ResourceTableBuffer(combineState.combineConstants, Combine::CombineUniforms::BINDING));
         ResourceTableCommitChanges(combineState.resourceTables[i]);
     }
 
@@ -331,6 +342,13 @@ LightContext::Create()
     {
         CmdSetShaderProgram(cmdBuf, combineState.combineProgram, queue);
         CmdSetResourceTable(cmdBuf, combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
+        Combine::CombineUniforms::STRUCT combineConsts;
+        combineConsts.LowresResolution[0] = 1.0f / dims.width;
+        combineConsts.LowresResolution[1] = 1.0f / dims.height;
+        combineConsts.Viewport[0] = viewport.width();
+        combineConsts.Viewport[1] = viewport.height();
+        CmdUpdateBuffer(cmdBuf, combineState.combineConstants, 0, sizeof(Combine::CombineUniforms::STRUCT), &combineConsts);
 
         // perform debug output
         CmdDispatch(cmdBuf, Math::divandroundup(viewport.width(), 64), viewport.height(), 1);
@@ -1568,14 +1586,6 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
         ResourceTableCommitChanges(table);
         tableIt++;
     }
-
-    Combine::CombineUniforms::STRUCT combineConsts;
-    CoreGraphics::TextureDimensions lightDims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
-    combineConsts.LowresResolution[0] = 1.0f / lightDims.width;
-    combineConsts.LowresResolution[1] = 1.0f / lightDims.height;
-    uint64_t offset = SetConstants(combineConsts, CoreGraphics::GraphicsQueueType);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), Combine::CombineUniforms::BINDING, 0, sizeof(Combine::CombineUniforms::STRUCT), offset });
-    ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -1620,6 +1630,11 @@ LightContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
             ResourceTableSetTexture(
                 combineState.resourceTables[i],
                 {FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId
+                }
+            );
+            ResourceTableSetTexture(
+                combineState.resourceTables[i],
+                {FrameScript_default::Texture_AlphaLightBuffer(), Combine::AlphaLighting::BINDING, 0, CoreGraphics::InvalidSamplerId
                 }
             );
             ResourceTableCommitChanges(combineState.resourceTables[i]);
