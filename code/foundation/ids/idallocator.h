@@ -113,7 +113,7 @@ public:
     Ids::Id32 Alloc()
     {
         /// @note   This purposefully hides the default allocation method and should definitely not be virtual!
-        this->allocationLock.Lock();
+        bool locked = this->allocationLock.Lock();
         Ids::Id32 index;
         if (this->freeIds.Size() > 0)
         {
@@ -129,7 +129,7 @@ public:
             this->generations.Append(0);
             n_assert2(MAX_ALLOCS > index, "max amount of allocations exceeded!\n");
         }
-        this->allocationLock.Unlock();
+        if (locked) this->allocationLock.Unlock();
         Ids::Id8 generation = this->generations[index];
         return index;
     }
@@ -138,10 +138,10 @@ public:
     void Dealloc(Ids::Id32 index)
     {
         // TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
-        this->allocationLock.Lock();
+        bool locked = this->allocationLock.Lock();
         this->freeIds.Append(index);
         this->generations[index]++;
-        this->allocationLock.Unlock();
+        if (locked) this->allocationLock.Unlock();
     }
 
 private:
