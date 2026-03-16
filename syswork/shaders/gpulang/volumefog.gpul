@@ -133,8 +133,7 @@ LocalFogVolumes(
 */
 LocalLightsFog(
     idx : u32,
-    viewPos : f32x3,
-    viewVec : f32x3
+    worldPos : f32x3
 ) f32x3
 {
     var light = f32x3(0, 0, 0);
@@ -148,7 +147,7 @@ LocalLightsFog(
             const lidx = LightIndexLists.PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
             const li = LightLists.PointLights[lidx];
             
-            const lightDir = (li.position.xyz - viewPos);
+            const lightDir = (li.position.xyz - worldPos);
             
             const lightDirLength = length(lightDir);
             const d2 = lightDirLength * lightDirLength;
@@ -173,7 +172,7 @@ LocalLightsFog(
             }
 
             // calculate attentuation and angle falloff, and just multiply by color
-            var lightDir = (li.position.xyz - viewPos);
+            var lightDir = (li.position.xyz - worldPos);
             if dot(lightDir, lightDir) < 0.0001f { continue; }        
             const lightDirLen = length(lightDir) + 0.0001f;
             const att = InvSquareFalloff(li.range, lightDirLen, lightDir);
@@ -186,7 +185,7 @@ LocalLightsFog(
             if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
             {
                 // shadows
-                var shadowProjLightPos = shadowExt.projection * f32x4(viewPos, 1.0f);
+                var shadowProjLightPos = shadowExt.projection * f32x4(worldPos, 1.0f);
                 shadowProjLightPos.xyz /= shadowProjLightPos.www;
                 var shadowLookup = shadowProjLightPos.xy * f32x2(0.5f, -0.5f) + 0.5f;
                 shadowLookup.y = 1 - shadowLookup.y;
@@ -228,9 +227,9 @@ GlobalLightFog(worldPos : f32x3) f32x3
 		}
 
 		// calculate 'global' fog
-		var dir = normalize(ViewConstants.InvView * f32x4(worldPos, 1)).xyz;
         if li.stageMask & ViewConstants.StageMask
         {
+			var dir = (ViewConstants.InvView * f32x4(normalize(worldPos), 0)).xyz;
             atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color * shadowFactor;
         }
     }
@@ -332,11 +331,11 @@ csRender() void
         // equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
         const weight = exp(-totalParticleDensity) * localParticleDensity;
 
-		const worldSpacePos = ViewToWorld(f32x4(samplePos, 1), ViewConstants.InvView);
+		//const worldSpacePos = ViewToWorld(f32x4(samplePos, 1), ViewConstants.InvView);
 
         // this is the Lscat calculation
-        light += GlobalLightFog(worldSpacePos.xyz) * weight * localAbsorption;
-        light += LocalLightsFog(idx, worldSpacePos.xyz, rayDirection) * weight * localAbsorption;
+        light += GlobalLightFog(samplePos) * weight * localAbsorption;
+        light += LocalLightsFog(idx, samplePos) * weight * localAbsorption;
     }
     const weight = (exp(-totalParticleDensity));
 
