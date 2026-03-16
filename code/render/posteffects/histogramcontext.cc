@@ -167,6 +167,8 @@ HistogramContext::Setup()
         CoreGraphics::CmdDispatch(cmdBuf, groupsX, groupsY, 1);
     }, {
         { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    }, {
+        { FrameScript_default::TextureIndex::LightBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
     FrameScript_default::RegisterSubgraph_HistogramCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
