@@ -210,9 +210,10 @@ GlobalLightFog(worldPos : f32x3) f32x3
 	{
 	    var shadowFactor = 1.0f;
 		const li = LightLists.DirectionalLights[i];
+		const viewVec = ViewConstants.EyePos.xyz - worldPos;
 		if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
 		{
-			const dist = distance(ViewConstants.EyePos.xyz, worldPos);
+			const dist = length(viewVec);
 
 			shadowFactor = CSMPS(
 				f32x4(worldPos, 1)
@@ -229,8 +230,7 @@ GlobalLightFog(worldPos : f32x3) f32x3
 		// calculate 'global' fog
         if li.stageMask & ViewConstants.StageMask
         {
-			var dir = (ViewConstants.InvView * f32x4(normalize(worldPos), 0)).xyz;
-            atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color * shadowFactor;
+            atmo += CalculateAtmosphericScattering(normalize(viewVec), li.direction.xyz) * li.color * shadowFactor;
         }
     }
     return atmo;
