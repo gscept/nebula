@@ -283,9 +283,125 @@ program GLTFStaticAlphaBlendDoubleSided
 program GLTFSkinnedAlphaBlendDoubleSided
 {
     VertexShader = vsGLTFSkinned;
-    PixelShader = psGLTF;
+    PixelShader = psGLTFTranslucent;
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
-    PackColorMethod = PackColorMethods.Solid;
-    RenderState = AlphaDoubleSidedState;
+    PackColorMethod = PackColorMethods.Transparent;
+    RenderState = TranslucentStateDoubleSided;
+};
+
+
+/// Shadows
+@Mask("GLTF|Spot|AlphaMask")
+program GLTFSpotlightAlphaMask
+{
+    VertexShader = vsStaticShadow;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Spot|Skinned|AlphaMask")
+program GLTFSpotlightSkinnedAlphaMask
+{
+    VertexShader = vsSkinnedShadow;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Spot|AlphaMask|DoubleSided")
+program GLTFSpotlightAlphaMaskDoubleSided
+{
+    VertexShader = vsStaticShadow;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+@Mask("GLTF|Spot|Skinned|AlphaMask|DoubleSided")
+program GLTFSpotlightSkinnedAlphaMaskDoubleSided
+{
+    VertexShader = vsSkinnedShadow;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+// Pointlight methods
+@Mask("GLTF|Point|AlphaMask")
+program GLTFPointlightAlphaMask
+{
+    VertexShader = vsStaticPoint;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Point|Skinned|AlphaMask")
+program GLTFPointlightSkinnedAlphaMask
+{
+    VertexShader = vsSkinnedPoint;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Point|AlphaMask|DoubleSided")
+program GLTFPointlightAlphaMaskDoubleSided
+{
+    VertexShader = vsStaticPoint;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+@Mask("GLTF|Point|Skinned|AlphaMask|DoubleSided")
+program GLTFPointlightSkinnedAlphaMaskDoubleSided
+{
+    VertexShader = vsSkinnedPoint;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+// CSM methods
+@Mask("GLTF|Global|AlphaMask")
+program GLTFCSMAlphaMask
+{
+    VertexShader = vsStaticCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Global|AlphaMask|Instanced")
+program GLTFCSMInstancedAlphaMask
+{
+    VertexShader = vsStaticInstCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Global|Skinned|AlphaMask")
+program GLTFCSMSkinnedAlphaMask
+{
+    VertexShader = vsSkinnedCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowState;
+};
+
+@Mask("GLTF|Global|AlphaMask|DoubleSided")
+program GLTFCSMAlphaMaskDoubleSided
+{
+    VertexShader = vsStaticCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+@Mask("GLTF|Global|AlphaMask|Instanced|DoubleSided")
+program GLTFCSMInstancedAlphaMaskDoubleSided
+{
+    VertexShader = vsStaticInstCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
+};
+
+@Mask("GLTF|Global|Skinned|AlphaMask|DoubleSided")
+program GLTFCSMSkinnedAlphaMaskDoubleSided
+{
+    VertexShader = vsSkinnedCSM;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = ShadowStateDoubleSided;
 };
