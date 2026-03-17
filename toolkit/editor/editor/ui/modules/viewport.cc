@@ -205,21 +205,20 @@ Viewport::Render()
             ImGui::EndMenu();
         }
 
-
+        static bool showWorldAxis = false;
         if (ImGui::BeginMenu("    Debug    "))
         {
-            static bool showWorldAxis = false;
             ImGui::Checkbox("   Show World axis   ", &showWorldAxis);
-            if (showWorldAxis)
-            {
-                Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
-                Math::mat4 invViewTranslation = Math::translation(invView.position);
-                Math::mat4 scaling = Math::scaling(0.15f);
-                Math::mat4 offset = Math::translation(-invView.z_axis * 0.5f);
-                Im3d::Im3dContext::DrawAxes(invViewTranslation * offset * scaling);
-            }
-
             ImGui::EndMenu();
+        }
+
+        if (showWorldAxis)
+        {
+            Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
+            Math::mat4 invViewTranslation = Math::translation(invView.position);
+            Math::mat4 scaling = Math::scaling(0.15f);
+            Math::mat4 offset = Math::translation(-invView.z_axis * 0.5f);
+            Im3d::Im3dContext::DrawAxes(invViewTranslation * offset * scaling);
         }
 
         const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
