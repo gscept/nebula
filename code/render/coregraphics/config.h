@@ -306,7 +306,6 @@ PipelineStageWrites(const PipelineStage stage)
         case PipelineStage::TransferWrite:
             return true;
         default:
-            n_error("Unhandled PipelineStage type");
             return false;
     }
     return false;
@@ -338,10 +337,10 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::GraphicsQueueType:
                 return sourceStage;
             case CoreGraphics::QueueType::ComputeQueueType:
-                return PipelineStage::ComputeShaderRead;
+                return PipelineStage::ComputeShaderWrite;
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
-                return PipelineStage::TransferRead;
+                return PipelineStage::TransferWrite;
             default:
                 n_error("Unhandled QueueType");
                 return PipelineStage::InvalidStage;
