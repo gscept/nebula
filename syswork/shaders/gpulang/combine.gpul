@@ -16,7 +16,6 @@ uniform AlphaLighting : *texture2D;
 struct CombineData
 {
     LowresResolution : f32x2;
-	Viewport : f32x2;
 };
 group(BATCH_GROUP) uniform CombineUniforms: *CombineData;
 
@@ -28,7 +27,7 @@ entry_point
 csCombine() void
 {
     const fullscaleCoord = i32x2(computeGetGlobalThreadIndices().xy);
-	if fullscaleCoord.x >= CombineUniforms.Viewport.x || fullscaleCoord.y >= CombineUniforms.Viewport.y { return; }
+	if fullscaleCoord.x > ViewConstants.Viewport.z || fullscaleCoord.y > ViewConstants.Viewport.w { return; }
     const coord = computeGetGlobalThreadIndices().xy * CombineUniforms.LowresResolution;
     const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
 	const alpha = textureFetch(AlphaLighting, fullscaleCoord, 0);

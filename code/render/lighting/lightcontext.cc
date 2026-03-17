@@ -346,8 +346,6 @@ LightContext::Create()
         Combine::CombineUniforms::STRUCT combineConsts;
         combineConsts.LowresResolution[0] = 1.0f / dims.width;
         combineConsts.LowresResolution[1] = 1.0f / dims.height;
-        combineConsts.Viewport[0] = viewport.width();
-        combineConsts.Viewport[1] = viewport.height();
         CmdUpdateBuffer(cmdBuf, combineState.combineConstants, 0, sizeof(Combine::CombineUniforms::STRUCT), &combineConsts);
 
         // perform debug output
