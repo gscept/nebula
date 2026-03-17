@@ -132,9 +132,9 @@ SetupMipChainResources(
         {
             CoreGraphics::ResourceTableSetRWTexture(table,
             {
-                    views[i],
-                    slot,
-                    i - 1,
+                views[i],
+                slot,
+                i - 1,
             });
         }
     }
@@ -176,7 +176,7 @@ DownsamplingContext::Setup()
 
     bufInfo.elementSize = sizeof(DownsampleCsDepth::DownsampleUniforms::STRUCT);
     bufInfo.mode = CoreGraphics::DeviceAndHost;
-    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     state.colorBufferConstants = CoreGraphics::CreateBuffer(bufInfo);

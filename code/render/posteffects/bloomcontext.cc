@@ -67,7 +67,7 @@ BloomContext::Setup()
 
     BufferCreateInfo bufInfo;
     bufInfo.byteSize = sizeof(Bloom::BloomUniforms::STRUCT);
-    bufInfo.usageFlags = BufferUsage::ConstantBuffer;
+    bufInfo.usageFlags = BufferUsage::ConstantBuffer | BufferUsage::TransferDestination;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = ComputeQueueSupport;
     bloomState.constants = CreateBuffer(bufInfo);
