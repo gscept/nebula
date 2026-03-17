@@ -43,17 +43,16 @@ render_state AlphaState
     DepthTestEnabled = true;
 };
 
-
 render_state TranslucentState
 {
-    DepthWriteEnabled = false;
+    DepthWriteEnabled = true;
     DepthTestEnabled = true;
 };
 
 render_state TranslucentStateDoubleSided
 {
     Cull = CullFace.None;
-    DepthWriteEnabled = false;
+    DepthWriteEnabled = true;
     DepthTestEnabled = true;
 };
 

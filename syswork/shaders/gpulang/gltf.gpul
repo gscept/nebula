@@ -301,7 +301,7 @@ program GLTFStaticAlphaBlend
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
-    RenderState = TranslucentState;
+    RenderState = StandardState;
 };
 
 @Mask("Skinned|AlphaBlend")
@@ -312,7 +312,7 @@ program GLTFSkinnedAlphaBlend
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
-    RenderState = TranslucentState;
+    RenderState = StandardState;
 };
 
 @Mask("Static|AlphaBlend|DoubleSided")
@@ -323,7 +323,7 @@ program GLTFStaticAlphaBlendDoubleSided
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
-    RenderState = TranslucentStateDoubleSided;
+    RenderState = DoubleSidedState;
 };
 
 @Mask("Skinned|AlphaBlend|DoubleSided")
@@ -334,7 +334,7 @@ program GLTFSkinnedAlphaBlendDoubleSided
     ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
-    RenderState = TranslucentStateDoubleSided;
+    RenderState = DoubleSidedState;
 };
 
 
