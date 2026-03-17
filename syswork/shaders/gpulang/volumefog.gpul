@@ -253,7 +253,7 @@ csRender() void
     const eye = ViewConstants.EyePos.xyz;
 
     // construct a ray, beginning at eye and going from eye through worldPoint
-    const viewVec = eye - worldPos.xyz;
+    const viewVec = worldPos.xyz - eye;
     const rayDirection = normalize(viewVec);
     const oneDivFogSteps = 1 / f32(VOLUME_FOG_STEPS);
 
@@ -295,7 +295,7 @@ csRender() void
     for (var i = 0u; i < VOLUME_FOG_STEPS; i++)
     {
         // construct sample position
-        const samplePos = eye - stepLen;
+        const samplePos = eye + stepLen;
 
         // offset ray offset with some noise
         stepLen += stepSize;
@@ -328,7 +328,7 @@ csRender() void
         const weight = exp(-totalParticleDensity) * localParticleDensity;
 
         // this is the Lscat calculation
-        light += GlobalLightFog(samplePos, -rayDirection, length(eye-samplePos)) * weight * localAbsorption;
+        light += GlobalLightFog(samplePos, rayDirection, length(eye-samplePos)) * weight * localAbsorption;
         light += LocalLightsFog(idx, samplePos) * weight * localAbsorption;
     }
     const weight = (exp(-totalParticleDensity));
