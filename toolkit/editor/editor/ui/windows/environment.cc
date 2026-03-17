@@ -11,6 +11,7 @@
 #include "editor/cmds.h"
 #include "imgui_internal.h"
 #include "lighting/lightcontext.h"
+#include "fog/volumetricfogcontext.h"
 
 using namespace Editor;
 using namespace Lighting;
@@ -73,6 +74,17 @@ Environment::Run(SaveMode save)
     if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1000.0f))
     {
         LightContext::SetIntensity(globalLight, intensity);
+    }
+
+    Math::vec3 fogColor = Fog::VolumetricFogContext::GetGlobalFogAbsorption();
+    float globalFogParticleDensity = Fog::VolumetricFogContext::GetGlobalFogTurbidity();
+    if (ImGui::ColorEdit3("Global Fog Absorption", &fogColor.x))
+    {
+        Fog::VolumetricFogContext::SetGlobalFogAbsorption(fogColor);
+    }
+    if (ImGui::DragFloat("Global Fog Turbidity", &globalFogParticleDensity, 1.0f, 0.0f, 200.0f))
+    {
+        Fog::VolumetricFogContext::SetGlobalFogTurbidity(globalFogParticleDensity);
     }
 
     bool visible = Terrain::TerrainContext::GetVisible();

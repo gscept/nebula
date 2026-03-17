@@ -45,7 +45,10 @@ struct
     Volumefog::FogBox fogBoxes[128];
     Volumefog::FogSphere fogSpheres[128];
 
-    Core::CVar* r_show_fog_params;
+    Core::CVar* r_fog_params;
+
+    Volumefog::VolumeFogUniforms::STRUCT fogUniforms;
+
 } fogState;
 
 struct
@@ -167,7 +170,7 @@ VolumetricFogContext::Create()
 
         // run volumetric fog compute
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer0();
-        CmdDispatch(cmdBuf, Math::divandroundup(viewport.width() * scaleX, 64), viewport.height() * scaleY, 1);
+        CmdDispatch(cmdBuf, Math::divandroundup(viewport.width() * scaleX, 64), Math::ceil(viewport.height() * scaleY), 1);
     }, {
         { FrameScript_default::BufferIndex::ClusterFogIndexLists, CoreGraphics::PipelineStage::ComputeShaderRead }
     }, {
@@ -182,12 +185,12 @@ VolumetricFogContext::Create()
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer0();
         Blur2dRgba16fCs::BlurUniforms::STRUCT blurUniforms;
-        blurUniforms.Viewport[0] = viewport.width() * scaleX;
-        blurUniforms.Viewport[1] = viewport.height() * scaleY;
+        blurUniforms.Viewport[0] = Math::ceil(viewport.width() * scaleX);
+        blurUniforms.Viewport[1] = Math::ceil(viewport.height() * scaleY);
         CoreGraphics::BufferUpdate(blurState.blurConstants, blurUniforms);
 
-        // fog0 -> read, fog1 -> write
-        CmdDispatch(cmdBuf, Math::divandroundup(viewport.width() * scaleX, Blur2dRgba16fCs::BlurTileWidth), viewport.height() * scaleY, 1);
+        // fog0 -> read, fog1 -> write, add extra workgroup in X and 4 more pixels in height to compensate for downscale
+        CmdDispatch(cmdBuf, Math::divandroundup(viewport.width() * scaleX, Blur2dRgba16fCs::BlurTileWidth) + 1, viewport.height() * scaleY + 4, 1);
 
     }, nullptr, {
         { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderRead }
@@ -200,18 +203,18 @@ VolumetricFogContext::Create()
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer1();
         Blur2dRgba16fCs::BlurUniforms::STRUCT blurUniforms;
-        blurUniforms.Viewport[0] = viewport.width() * scaleX;
-        blurUniforms.Viewport[1] = viewport.height() * scaleY;
+        blurUniforms.Viewport[0] = Math::ceil(viewport.width() * scaleX);
+        blurUniforms.Viewport[1] = Math::ceil(viewport.height() * scaleY);
         CoreGraphics::BufferUpdate(blurState.blurConstants, blurUniforms);
 
-        // fog0 -> read, fog1 -> write
-        CmdDispatch(cmdBuf, Math::divandroundup(viewport.height() * scaleY, Blur2dRgba16fCs::BlurTileWidth), viewport.width() * scaleX, 1);
+        // fog0 -> read, fog1 -> write, add extra workgroup in Y and 4 more pixels in width to compensate for downscale
+        CmdDispatch(cmdBuf, Math::divandroundup(viewport.height() * scaleY, Blur2dRgba16fCs::BlurTileWidth) + 1, viewport.width() * scaleX + 4, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::TextureIndex::VolumetricFogBuffer1, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
-    fogState.r_show_fog_params = Core::CVarCreate(Core::CVar_Int, "r_show_fog_params", "0", "Show/hide fog parameters debug ui");
+    fogState.r_fog_params = Core::CVarCreate(Core::CVar_Int, "r_fog_params", "0", "Show/hide fog parameters debug ui");
 }
 
 //------------------------------------------------------------------------------
@@ -332,6 +335,42 @@ VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const M
 //------------------------------------------------------------------------------
 /**
 */
+const Math::vec3&
+VolumetricFogContext::GetGlobalFogAbsorption()
+{
+    return fogState.color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VolumetricFogContext::SetGlobalFogAbsorption(const Math::vec3& color)
+{
+    fogState.color = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+VolumetricFogContext::GetGlobalFogTurbidity()
+{
+    return fogState.turbidity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VolumetricFogContext::SetGlobalFogTurbidity(float turbidity)
+{
+    fogState.turbidity = turbidity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
 {
@@ -390,13 +429,13 @@ VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
         CoreGraphics::BufferFlush(fogState.stagingClusterFogLists.buffers[bufferIndex]);
     }
 
-    Volumefog::VolumeFogUniforms::STRUCT fogUniforms;
-    fogUniforms.NumFogBoxes = numFogBoxVolumes;
-    fogUniforms.NumFogSpheres = numFogSphereVolumes;
-    fogUniforms.NumVolumeFogClusters = Clustering::ClusterContext::GetNumClusters();
-    fogUniforms.GlobalTurbidity = fogState.turbidity;
-    fogState.color.store(fogUniforms.GlobalAbsorption);
-    fogUniforms.DownscaleFog = 4;
+    
+    fogState.fogUniforms.NumFogBoxes = numFogBoxVolumes;
+    fogState.fogUniforms.NumFogSpheres = numFogSphereVolumes;
+    fogState.fogUniforms.NumVolumeFogClusters = Clustering::ClusterContext::GetNumClusters();
+    fogState.fogUniforms.GlobalTurbidity = fogState.turbidity;
+    fogState.color.store(fogState.fogUniforms.GlobalAbsorption);
+    fogState.fogUniforms.DownscaleFog = 4;
 
     ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Volumefog::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
@@ -407,7 +446,7 @@ VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
     IndexT tableIt = 0;
     for (auto& table : frameResourceTables)
     {
-        uint64_t offset = SetConstants(fogUniforms, tableQueues[tableIt]);
+        uint64_t offset = SetConstants(fogState.fogUniforms, tableQueues[tableIt]);
         ResourceTableSetRWBuffer(table, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(table, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex, tableQueues[tableIt]), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
@@ -433,21 +472,18 @@ VolumetricFogContext::UpdateFogVolumes(const Graphics::FrameContext& ctx)
 void
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    int showUI = Core::CVarReadInt(fogState.r_show_fog_params);
+    int showUI = Core::CVarReadInt(fogState.r_fog_params);
     if (showUI)
     {
         float col[3];
         fogState.color.storeu(col);
-        Shared::PerTickParams::STRUCT tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Volumetric Fog Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
-            ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 200.0f);
+            ImGui::SliderFloat("Particle Density", &fogState.turbidity, 0, 200.0f);
             ImGui::ColorEdit3("Fog Color", col);
         }
         fogState.color.loadu(col);
-        Graphics::UpdateTickParams(tickParams);
-
         ImGui::End();
     }
 }

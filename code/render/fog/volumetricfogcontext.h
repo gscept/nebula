@@ -67,12 +67,21 @@ public:
     /// set volume absorption
     static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption);
 
+    /// Get global fog color
+    static const Math::vec3& GetGlobalFogAbsorption();
+    /// Set global fog color
+    static void SetGlobalFogAbsorption(const Math::vec3& color);
+    /// Get global particle turbidity
+    static float GetGlobalFogTurbidity();
+    /// Set global particle turbidity
+    static void SetGlobalFogTurbidity(float turbidity);
+
     /// prepare light lists
     static void UpdateFogVolumes(const Graphics::FrameContext& ctx);
-    /// render IMGUI
+    /// render ui
     static void RenderUI(const Graphics::FrameContext& ctx);
 
-    /// set global turbidity (fog density)
+    /// set global turbidity (fog turbidity)
     void SetGlobalTurbidity(float f);
     /// set the global fog absorption color
     void SetGlobalAbsorption(const Math::vec3& color);

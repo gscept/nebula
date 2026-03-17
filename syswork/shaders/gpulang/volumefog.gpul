@@ -203,33 +203,31 @@ LocalLightsFog(
 //------------------------------------------------------------------------------
 /**
 */
-GlobalLightFog(worldPos : f32x3) f32x3
+GlobalLightFog(worldPos : f32x3, viewVec : f32x3, dist : f32) f32x3
 {
 	var atmo = f32x3(0);
 	for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
 	{
-	    var shadowFactor = 1.0f;
 		const li = LightLists.DirectionalLights[i];
-		const viewVec = ViewConstants.EyePos.xyz - worldPos;
-		if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
-		{
-			const dist = length(viewVec);
-
-			shadowFactor = CSMPS(
-				f32x4(worldPos, 1)
-				, dist
-				, li.cascadeTransforms
-				, li.cascadeDistances
-				, li.shadowMap
-				, li.shadowMapPixelSize
-				, li.shadowBias
-			);
-			shadowFactor = lerp(1.0f, shadowFactor, 1);
-		}
-
+		
 		// calculate 'global' fog
         if li.stageMask & ViewConstants.StageMask
         {
+			var shadowFactor = 1.0f;
+			if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
+			{
+
+				shadowFactor = CSMPS(
+					f32x4(worldPos, 1)
+					, dist
+					, li.cascadeTransforms
+					, li.cascadeDistances
+					, li.shadowMap
+					, li.shadowMapPixelSize
+					, li.shadowBias
+				);
+				shadowFactor = lerp(1.0f, shadowFactor, 1);
+			}
             atmo += CalculateAtmosphericScattering(normalize(viewVec), li.direction.xyz) * li.color * shadowFactor;
         }
     }
@@ -244,32 +242,27 @@ entry_point
 csRender() void
 {
     const coord = f32x2(computeGetGlobalThreadIndices().xy);
+	const boundaries = floor(ViewConstants.Viewport.zw / VolumeFogUniforms.DownscaleFog);
+	if coord.x > boundaries.x || coord.y > boundaries.y { return; }
     const upscaleCoord = i32x2(computeGetGlobalThreadIndices().xy * VolumeFogUniforms.DownscaleFog);
-    var depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], upscaleCoord, 0).r;
-    const seed = coord * (ClusterUniforms.InvFramebufferDimensions);
-
-    if depth == 1 { depth = 0.999998f; }
+    var depth = fetch2D(PerTickParams.DepthBuffer, upscaleCoord, 0).r;
+    const seed = upscaleCoord * (ClusterUniforms.InvFramebufferDimensions);
 
     // find last point to march
-    const viewPos = PixelToView(seed, depth, ViewConstants.InvProjection);
-    const eye = f32x3(0, 0, 0);
+    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+    const eye = ViewConstants.EyePos.xyz;
 
     // construct a ray, beginning at eye and going from eye through worldPoint
-    const rayStart = eye;
-    const viewVec = eye - viewPos.xyz;
+    const viewVec = eye - worldPos.xyz;
     const rayDirection = normalize(viewVec);
-
-    //light.rgb = lerp(fogColor, light.rgb, fogIntensity);
-
     const oneDivFogSteps = 1 / f32(VOLUME_FOG_STEPS);
 
     // ray march!
     var light = f32x3(0, 0, 0);
     const numSteps = 0u;
-    const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
-    const stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y)) * oneDivFogSteps;
+    //const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+    const stepSize = (viewVec + rayDirection * dot(hash12(seed), hash12(seed + 0.59374))) * oneDivFogSteps;
     var stepLen = stepSize;
-    var rayOffset = rayDirection;
 
     // calculate global fog, which should be a factor of the distance and the global turbidity
     const fogModulate = ((ViewConstants.FocalLengthNearFar.w + 0.001f) - length(viewVec)) / ViewConstants.FocalLengthNearFar.w;
@@ -302,19 +295,22 @@ csRender() void
     for (var i = 0u; i < VOLUME_FOG_STEPS; i++)
     {
         // construct sample position
-        const samplePos = rayStart + stepLen * rayDirection;
+        const samplePos = eye - stepLen;
 
         // offset ray offset with some noise
         stepLen += stepSize;
+
+		const sampleDepth = CalculateViewDepth(ViewConstants.View, samplePos);
+
         
         // break if we went too far
-        if (samplePos.z < viewPos.z)
+        if depth < sampleDepth
         {
             break;
         }
 
         // calculate cluster index
-        const index3D = CalculateClusterIndex(upscaleCoord / ClusterUniforms.BlockSize, samplePos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+        const index3D = CalculateClusterIndex(upscaleCoord / ClusterUniforms.BlockSize, sampleDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
         const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
         // sample local fog volumes
@@ -331,10 +327,8 @@ csRender() void
         // equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
         const weight = exp(-totalParticleDensity) * localParticleDensity;
 
-		//const worldSpacePos = ViewToWorld(f32x4(samplePos, 1), ViewConstants.InvView);
-
         // this is the Lscat calculation
-        light += GlobalLightFog(samplePos) * weight * localAbsorption;
+        light += GlobalLightFog(samplePos, -rayDirection, length(eye-samplePos)) * weight * localAbsorption;
         light += LocalLightsFog(idx, samplePos) * weight * localAbsorption;
     }
     const weight = (exp(-totalParticleDensity));
