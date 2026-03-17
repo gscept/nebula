@@ -12,7 +12,7 @@ const SharedMemSize = 16u;
 
 struct DownsampleData
 {
-    Dimensions : i32x2;
+    Dimensions : [16]i32x4; // This must be per mip!
     Mips : u32;
     NumGroups : u32;
 };
@@ -67,26 +67,26 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).x;
-                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).x;
-                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).x;
-                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).x;
+                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel), slice)).x;
+                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0)), slice)).x;
+                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1)), slice)).x;
+                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1)), slice)).x;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).x;
-                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).x;
-                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).x;
-                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).x;
+                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel), slice)).x;
+                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 0)), slice)).x;
+                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(0, 1)), slice)).x;
+                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 1)), slice)).x;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions, texel), slice), value.x);
+                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions[mip].xy, texel), slice), value.x);
             }
         }
         else
@@ -96,26 +96,26 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel)).x;
-                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).x;
-                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).x;
-                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).x;
+                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel)).x;
+                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0))).x;
+                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1))).x;
+                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1))).x;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel)).x;
-                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).x;
-                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).x;
-                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).x;
+                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel)).x;
+                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 0))).x;
+                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(0, 1))).x;
+                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 1))).x;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], min(DownsampleUniforms.Dimensions, texel), value);
+                textureStore(Output[mip], min(DownsampleUniforms.Dimensions[mip].xy, texel), value);
             }
         }
         workgroup SharedMemory : [SharedMemSize][SharedMemSize]f32;
@@ -129,26 +129,26 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
-                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
-                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
-                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
+                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel), slice)).xyz;
+                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0)), slice)).xyz;
+                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1)), slice)).xyz;
+                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1)), slice)).xyz;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
-                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
-                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
-                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
+                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel), slice)).xyz;
+                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 0)), slice)).xyz;
+                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(0, 1)), slice)).xyz;
+                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 1)), slice)).xyz;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(Dimensions, texel), slice), f32x4(value, 0));
+                textureStore(Output[mip], i32x3(min(Dimensions[mip].xy, texel), slice), f32x4(value, 0));
             }
         }
         else
@@ -158,26 +158,26 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel)).xyz;
-                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).xyz;
-                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).xyz;
-                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).xyz;
+                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel)).xyz;
+                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0))).xyz;
+                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1))).xyz;
+                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1))).xyz;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel)).xyz;
-                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).xyz;
-                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).xyz;
-                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).xyz;
+                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel)).xyz;
+                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 0))).xyz;
+                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(0, 1))).xyz;
+                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[5].xy, texel + i32x2(1, 1))).xyz;
                 return Reduce(samples[0], samples[1], samples[2], samples[3]);
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], min(DownsampleUniforms.Dimensions, texel), f32x4(value, 0));
+                textureStore(Output[mip], min(DownsampleUniforms.Dimensions[mip].xy, texel), f32x4(value, 0));
             }
         }
 
@@ -454,7 +454,7 @@ csMain() void
     // one work group to do mips 6-11
     uniform counterPtr = bufferPtr(Counters, sliceIndex).&counter;
     if localIndex == 0 {
-        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.Relaxed);
+        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.AcquireRelease);
     }
 
     executionBarrierWorkgroup();
