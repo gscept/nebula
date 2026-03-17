@@ -88,8 +88,8 @@ ViewApply(const ViewId id)
 
         viewConstants.Viewport[0] = viewport.left;
         viewConstants.Viewport[1] = viewport.top;
-        viewConstants.Viewport[2] = viewport.width();
-        viewConstants.Viewport[3] = viewport.height();
+        viewConstants.Viewport[2] = viewport.right;
+        viewConstants.Viewport[3] = viewport.bottom;
 
         // Apply view transforms
         Graphics::UpdateViewConstants(viewConstants);
