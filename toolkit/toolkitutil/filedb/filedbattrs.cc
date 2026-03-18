@@ -10,15 +10,15 @@
 namespace Attr
 {
     // Folder table attributes
-    DefineGuid(FolderId, 'FLDI', Attr::ReadOnly);
-    DefineGuid(ParentFolderId, 'PFID', Attr::ReadWrite);
+    DefineUInt64(FolderId, 'FLDI', Attr::ReadOnly);
+    DefineUInt64(ParentFolderId, 'PFID', Attr::ReadWrite);
     DefineBool(IsRootFolder, 'IROT', Attr::ReadOnly);
     DefineBool(IsArchive, 'IARC', Attr::ReadOnly);
 
     
     // File table attributes
-    DefineGuid(FileId, 'FIDI', Attr::ReadOnly);
-    DefineGuid(FileFolderId, 'FFID', Attr::ReadWrite);
+    DefineUInt64(FileId, 'FIDI', Attr::ReadOnly);
+    DefineUInt64(FileFolderId, 'FFID', Attr::ReadWrite);
     DefineInt64(FileSize, 'FSIZ', Attr::ReadWrite);
     DefineInt(FileType, 'FTYP', Attr::ReadWrite);
     DefineString(FileExt, 'FEXT', Attr::ReadWrite);

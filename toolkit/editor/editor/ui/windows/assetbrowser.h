@@ -107,7 +107,7 @@ private:
     /// Determine file type from file extension
     static FileEntry::Type DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and populate the FileTreeNode
-    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, Util::Guid parent);
+    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, uint64_t parent);
     friend class ScanFolderJob;
     Ptr<ScanFolderJob> currentScanJob;
     ToolkitUtil::FileDB fileDB;

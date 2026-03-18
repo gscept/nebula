@@ -13,14 +13,14 @@
 namespace Attr
 {
     // Folder table attributes
-    DeclareGuid(FolderId, 'FLDI', Attr::ReadOnly);
-    DeclareGuid(ParentFolderId, 'PFID', Attr::ReadWrite);
+    DeclareUInt64(FolderId, 'FLDI', Attr::ReadOnly);
+    DeclareUInt64(ParentFolderId, 'PFID', Attr::ReadWrite);
     DeclareBool(IsRootFolder, 'IROT', Attr::ReadOnly);
     DeclareBool(IsArchive, 'IARC', Attr::ReadOnly);
     
     // File table attributes
-    DeclareGuid(FileId, 'FIDI', Attr::ReadOnly);
-    DeclareGuid(FileFolderId, 'FFID', Attr::ReadWrite);
+    DeclareUInt64(FileId, 'FIDI', Attr::ReadOnly);
+    DeclareUInt64(FileFolderId, 'FFID', Attr::ReadWrite);
     DeclareInt64(FileSize, 'FSIZ', Attr::ReadWrite);
     DeclareInt(FileType, 'FTYP', Attr::ReadWrite);
     DeclareString(FileExt, 'FEXT', Attr::ReadWrite);

@@ -17,7 +17,6 @@
 #include "db/dataset.h"
 #include "io/uri.h"
 #include "io/filetime.h"
-#include "util/guid.h"
 #include "util/string.h"
 #include "util/array.h"
 #include "toolkit-common/logger.h"
@@ -51,9 +50,9 @@ public:
     /// folder information structure
     struct FolderInfo
     {
-        Util::Guid id;
+        uint64_t id;
         Util::String name;
-        Util::Guid parentId;
+        uint64_t parentId;
         IO::FileTime modifiedDate;
         IO::URI uri;
         bool isRoot;
@@ -62,9 +61,9 @@ public:
     /// file information structure
     struct FileInfo
     {
-        Util::Guid id;
+        uint64_t id;
         Util::String name;
-        Util::Guid folderId;
+        uint64_t folderId;
         SizeT size;
         FileType type;
         IO::FileTime modifiedDate;
@@ -90,53 +89,53 @@ public:
     // ==================== Folder Operations ====================
     
     /// create a root folder, returns folder ID
-    Util::Guid CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedDate, bool isArchive);
+    uint64_t CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedDate, bool isArchive);
     
     /// create a subfolder under a parent folder
-    Util::Guid CreateFolder(Logger& logger, const Util::String& name, const Util::Guid& parentFolderId, const IO::FileTime& modifiedDate, bool isArchive);
+    uint64_t CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFolderId, const IO::FileTime& modifiedDate, bool isArchive);
     
     /// get folder info by ID
-    bool GetFolderInfo(const Util::Guid& folderId, FolderInfo& outInfo);
+    bool GetFolderInfo(uint64_t folderId, FolderInfo& outInfo);
     
     /// get all immediate children folders of a parent
-    bool GetChildFolders(const Util::Guid& parentFolderId, Util::Array<FolderInfo>& outFolders);
+    bool GetChildFolders(uint64_t parentFolderId, Util::Array<FolderInfo>& outFolders);
     
     /// get the path from root to a given folder (each element is folder name)
-    bool GetFolderPath(const Util::Guid& folderId, Util::Array<Util::String>& outPath);
+    bool GetFolderPath(uint64_t folderId, Util::Array<Util::String>& outPath);
     
     /// delete a folder (fails if not empty)
-    bool DeleteFolder(Logger& logger, const Util::Guid& folderId);
+    bool DeleteFolder(Logger& logger, uint64_t folderId);
 
     // ==================== File Operations ====================
     
     /// add a file to a folder
-    Util::Guid AddFile(Logger& logger, const Util::String& name, const Util::Guid& folderId,
+    uint64_t AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
                        SizeT size, FileType type, const IO::FileTime& modifiedDate);
     
     /// get file info by ID
-    bool GetFileInfo(const Util::Guid& fileId, FileInfo& outInfo);
+    bool GetFileInfo(uint64_t fileId, FileInfo& outInfo);
     
     /// get all files in a folder
-    bool GetFilesInFolder(const Util::Guid& folderId, Util::Array<FileInfo>& outFiles);
+    bool GetFilesInFolder(uint64_t folderId, Util::Array<FileInfo>& outFiles);
     
     /// get files in folder by type filter
-    bool GetFilesInFolderByType(const Util::Guid& folderId, FileType Type,
+    bool GetFilesInFolderByType(uint64_t folderId, FileType Type,
                                 Util::Array<FileInfo>& outFiles);
     
     /// get files modified after a certain date
-    bool GetFilesModifiedAfter(const Util::Guid& folderId, const IO::FileTime& dateTime,
+    bool GetFilesModifiedAfter(uint64_t folderId, const IO::FileTime& dateTime,
                                Util::Array<FileInfo>& outFiles);
     
     /// get files larger than a certain size
-    bool GetFilesLargerThan(const Util::Guid& folderId, SizeT sizeBytes,
+    bool GetFilesLargerThan(uint64_t folderId, SizeT sizeBytes,
                             Util::Array<FileInfo>& outFiles);
     
     /// update file metadata (modified date)
-    bool UpdateFileMetadata(Logger& logger, const Util::Guid& fileId,
+    bool UpdateFileMetadata(Logger& logger, uint64_t fileId,
                            const IO::FileTime& modifiedDate = IO::FileTime());
     
     /// delete a file
-    bool DeleteFile(Logger& logger, const Util::Guid& fileId);
+    bool DeleteFile(Logger& logger, uint64_t fileId);
 
     // ==================== Utility ====================
     

@@ -61,10 +61,7 @@ AssetBrowser::AssetBrowser()
 */
 AssetBrowser::~AssetBrowser()
 {
-    if (this->fileDB.IsOpen())
-    {
-        this->fileDB.Close();
-    }
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -418,13 +415,13 @@ AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& fold
     root.hash = rootHash;
     root.parentHash = -1; // No parent for root
 
-    Util::Guid rootGuid = this->fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
+    uint64_t rootId = this->fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
 
     IO::IoServer* ioServer = IO::IoServer::Instance();
     // Start recursive scanning from the root
     if (ioServer->DirectoryExists(tree.path))
     {
-        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive, rootGuid);
+        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive, rootId);
     }
     auto& node = this->nodes[rootHash];
 }
@@ -433,7 +430,7 @@ AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& fold
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, Util::Guid parent)
+AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, uint64_t parent)
 {
     // List all files in the current directory
     Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
@@ -473,10 +470,10 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
         childNode.path = childDir;
         childNode.hash = hash;
 
-        Util::Guid childGuid = this->fileDB.CreateFolder(this->logger, childNode.name, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
+        uint64_t childId = this->fileDB.CreateFolder(this->logger, childNode.name, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
         
         // Recursively scan the subdirectory
-        ScanFolderRecursive(ioServer, childDir, hash, useArchive, childGuid);
+        ScanFolderRecursive(ioServer, childDir, hash, useArchive, childId);
     }
 }
 

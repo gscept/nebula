@@ -19,6 +19,86 @@ using namespace Util;
 using namespace IO;
 using namespace Db;
 
+namespace
+{
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+SanitizeHashComponent(uint32_t hash)
+{
+    return hash == 0 ? 1 : hash;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+ExtractRootHash(uint64_t packedId)
+{
+    return static_cast<uint32_t>(packedId >> 32);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64_t
+PackEntityId(uint32_t rootHash, uint32_t entityHash)
+{
+    return (static_cast<uint64_t>(SanitizeHashComponent(rootHash)) << 32) | SanitizeHashComponent(entityHash);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+String
+BuildRelativeHierarchy(const Array<String>& hierarchy, const String& leafName)
+{
+    String result;
+    for (IndexT i = 1; i < hierarchy.Size(); ++i)
+    {
+        if (!result.IsEmpty())
+        {
+            result.Append("/");
+        }
+        result.Append(hierarchy[i]);
+    }
+
+    if (leafName.IsValid())
+    {
+        if (!result.IsEmpty())
+        {
+            result.Append("/");
+        }
+        result.Append(leafName);
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+HashEntityPath(const char* entityType, const String& relativePath)
+{
+    String hashSource(entityType);
+    hashSource.Append("|");
+    hashSource.Append(relativePath);
+    return SanitizeHashComponent(hashSource.HashCode());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+HashRoot(const String& rootName, bool isArchive)
+{
+    String hashSource(rootName);
+    hashSource.Append(isArchive ? "|archive" : "|filesystem");
+    return SanitizeHashComponent(hashSource.HashCode());
+}
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -171,13 +251,13 @@ FileDB::CreateTables()
 //------------------------------------------------------------------------------
 /**
 */
-Guid
+uint64_t
 FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedDate, bool isArchive)
 {
     n_assert(this->isOpen);
-    
-    Guid folderId;
-    folderId.Generate();
+
+    const uint32_t rootHash = HashRoot(name, isArchive);
+    const uint64_t folderId = PackEntityId(rootHash, HashEntityPath("folder", String()));
     
     Ptr<Table> folderTable = this->database->GetTableByName("Folders");
     Ptr<Dataset> dataset = folderTable->CreateDataset();
@@ -192,7 +272,7 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
     values->AddRow();
     IndexT lastRowIdx = values->GetNumRows() - 1;
     
-    values->SetGuid(Attr::FolderId, lastRowIdx, folderId);
+    values->SetUInt64(Attr::FolderId, lastRowIdx, folderId);
     values->SetString(Attr::EntityName, lastRowIdx, name);
     values->SetUInt64(Attr::ModifiedDate, lastRowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, lastRowIdx, true);
@@ -205,8 +285,8 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
 //------------------------------------------------------------------------------
 /**
 */
-Guid
-FileDB::CreateFolder(Logger& logger, const Util::String& name, const Guid& parentFolderId, const IO::FileTime& modifiedDate, bool isArchive)
+uint64_t
+FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFolderId, const IO::FileTime& modifiedDate, bool isArchive)
 {
     n_assert(this->isOpen);
     
@@ -214,12 +294,19 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, const Guid& paren
     FolderInfo parentInfo;
     if (!this->GetFolderInfo(parentFolderId, parentInfo))
     {
-        logger.Error("Parent folder with ID %s does not exist\n", parentFolderId.AsString().AsCharPtr());
-        return Guid();
+        logger.Error("Parent folder with ID %llu does not exist\n", static_cast<unsigned long long>(parentFolderId));
+        return 0;
     }
-    
-    Guid folderId;
-    folderId.Generate();
+
+    Array<String> parentPath;
+    if (!this->GetFolderPath(parentFolderId, parentPath))
+    {
+        logger.Error("Failed to resolve path for parent folder ID %llu\n", static_cast<unsigned long long>(parentFolderId));
+        return 0;
+    }
+
+    const String relativePath = BuildRelativeHierarchy(parentPath, name);
+    const uint64_t folderId = PackEntityId(ExtractRootHash(parentFolderId), HashEntityPath("folder", relativePath));
         
     Ptr<Table> folderTable = this->database->GetTableByName("Folders");
     Ptr<Dataset> dataset = folderTable->CreateDataset();
@@ -235,8 +322,8 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, const Guid& paren
     values->AddRow();
     IndexT lastRowIdx = values->GetNumRows() - 1;
     
-    values->SetGuid(Attr::FolderId, lastRowIdx, folderId);
-    values->SetGuid(Attr::ParentFolderId, lastRowIdx, parentFolderId);
+    values->SetUInt64(Attr::FolderId, lastRowIdx, folderId);
+    values->SetUInt64(Attr::ParentFolderId, lastRowIdx, parentFolderId);
     values->SetString(Attr::EntityName, lastRowIdx, name);
     values->SetUInt64(Attr::ModifiedDate, lastRowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, lastRowIdx, false);
@@ -250,7 +337,7 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, const Guid& paren
 /**
 */
 bool
-FileDB::GetFolderInfo(const Guid& folderId, FolderInfo& outInfo)
+FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
 {
     n_assert(this->isOpen);
     
@@ -261,6 +348,7 @@ FileDB::GetFolderInfo(const Guid& folderId, FolderInfo& outInfo)
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
     dataset->AddColumn(Attr::ModifiedDate);
+    dataset->AddColumn(Attr::IsRootFolder);
     
     Ptr<FilterSet> filter = dataset->Filter();
     filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
@@ -275,8 +363,9 @@ FileDB::GetFolderInfo(const Guid& folderId, FolderInfo& outInfo)
     
     outInfo.id = folderId;
     outInfo.name = values->GetString(Attr::EntityName, 0);
-    outInfo.parentId = values->GetGuid(Attr::ParentFolderId, 0);
+    outInfo.parentId = values->GetUInt64(Attr::ParentFolderId, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, 0));
+    outInfo.isRoot = values->GetBool(Attr::IsRootFolder, 0);
     
     return true;
 }
@@ -285,7 +374,7 @@ FileDB::GetFolderInfo(const Guid& folderId, FolderInfo& outInfo)
 /**
 */
 bool
-FileDB::GetChildFolders(const Guid& parentFolderId, Array<FolderInfo>& outFolders)
+FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
 {
     n_assert(this->isOpen);
     
@@ -306,10 +395,11 @@ FileDB::GetChildFolders(const Guid& parentFolderId, Array<FolderInfo>& outFolder
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FolderInfo info;
-        info.id = values->GetGuid(Attr::FolderId, i);
+        info.id = values->GetUInt64(Attr::FolderId, i);
         info.parentId = parentFolderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.isRoot = false;
         
         outFolders.Append(info);
     }
@@ -321,7 +411,7 @@ FileDB::GetChildFolders(const Guid& parentFolderId, Array<FolderInfo>& outFolder
 /**
 */
 bool
-FileDB::GetFolderPath(const Guid& folderId, Array<String>& outPath)
+FileDB::GetFolderPath(uint64_t folderId, Array<String>& outPath)
 {
     n_assert(this->isOpen);
     
@@ -335,23 +425,14 @@ FileDB::GetFolderPath(const Guid& folderId, Array<String>& outPath)
     do
     {
         outPath.Insert(0, current.name);
-        
-        // Check if this is a root folder
-        Ptr<Table> folderTable = this->database->GetTableByName("Folders");
-        Ptr<Dataset> dataset = folderTable->CreateDataset();
-        dataset->AddColumn(Attr::IsRootFolder);
-        Ptr<FilterSet> filter = dataset->Filter();
-        filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, current.id));
-        dataset->PerformQuery();
-        Ptr<ValueTable> values = dataset->Values();
-        
-        if (values->GetNumRows() > 0 && values->GetBool(Attr::IsRootFolder, 0))
+
+        if (current.isRoot)
         {
             break;
         }
         
         // Get parent and continue
-        if (!current.parentId.IsValid())
+        if (current.parentId == 0)
         {
             break;
         }
@@ -360,7 +441,7 @@ FileDB::GetFolderPath(const Guid& folderId, Array<String>& outPath)
         {
             break;
         }
-    } while (current.parentId.IsValid());
+    } while (current.parentId != 0);
     
     return true;
 }
@@ -369,7 +450,7 @@ FileDB::GetFolderPath(const Guid& folderId, Array<String>& outPath)
 /**
 */
 bool
-FileDB::DeleteFolder(Logger& logger, const Guid& folderId)
+FileDB::DeleteFolder(Logger& logger, uint64_t folderId)
 {
     n_assert(this->isOpen);
     
@@ -377,14 +458,14 @@ FileDB::DeleteFolder(Logger& logger, const Guid& folderId)
     Array<FolderInfo> children;
     if (this->GetChildFolders(folderId, children) && children.Size() > 0)
     {
-        logger.Error("Cannot delete folder with ID %s - it has child folders\n", folderId.AsString().AsCharPtr());
+        logger.Error("Cannot delete folder with ID %llu - it has child folders\n", static_cast<unsigned long long>(folderId));
         return false;
     }
     
     Array<FileInfo> files;
     if (this->GetFilesInFolder(folderId, files) && files.Size() > 0)
     {
-        logger.Error("Cannot delete folder with ID %s - it contains files\n", folderId.AsString().AsCharPtr());
+        logger.Error("Cannot delete folder with ID %llu - it contains files\n", static_cast<unsigned long long>(folderId));
         return false;
     }
     
@@ -411,8 +492,8 @@ FileDB::DeleteFolder(Logger& logger, const Guid& folderId)
 //------------------------------------------------------------------------------
 /**
 */
-Guid
-FileDB::AddFile(Logger& logger, const Util::String& name, const Guid& folderId,
+uint64_t
+FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
                SizeT size, FileType type, const IO::FileTime& modifiedDate)
 {
     n_assert(this->isOpen);
@@ -421,12 +502,19 @@ FileDB::AddFile(Logger& logger, const Util::String& name, const Guid& folderId,
     FolderInfo folderInfo;
     if (!this->GetFolderInfo(folderId, folderInfo))
     {
-        logger.Error("Folder with ID %s does not exist\n", folderId.AsString().AsCharPtr());
-        return Guid();
+        logger.Error("Folder with ID %llu does not exist\n", static_cast<unsigned long long>(folderId));
+        return 0;
     }
-    
-    Guid fileId;
-    fileId.Generate();
+
+    Array<String> folderPath;
+    if (!this->GetFolderPath(folderId, folderPath))
+    {
+        logger.Error("Failed to resolve path for folder ID %llu\n", static_cast<unsigned long long>(folderId));
+        return 0;
+    }
+
+    const String relativePath = BuildRelativeHierarchy(folderPath, name);
+    const uint64_t fileId = PackEntityId(ExtractRootHash(folderId), HashEntityPath("file", relativePath));
         
     Ptr<Table> fileTable = this->database->GetTableByName("Files");
     Ptr<Dataset> dataset = fileTable->CreateDataset();
@@ -442,8 +530,8 @@ FileDB::AddFile(Logger& logger, const Util::String& name, const Guid& folderId,
     values->AddRow();
     IndexT lastRowIdx = values->GetNumRows() - 1;
     
-    values->SetGuid(Attr::FileId, lastRowIdx, fileId);
-    values->SetGuid(Attr::FileFolderId, lastRowIdx, folderId);
+    values->SetUInt64(Attr::FileId, lastRowIdx, fileId);
+    values->SetUInt64(Attr::FileFolderId, lastRowIdx, folderId);
     
     values->SetString(Attr::EntityName, lastRowIdx, name);
     values->SetInt(Attr::FileType, lastRowIdx, static_cast<int>(type));
@@ -458,7 +546,7 @@ FileDB::AddFile(Logger& logger, const Util::String& name, const Guid& folderId,
 /**
 */
 bool
-FileDB::GetFileInfo(const Guid& fileId, FileInfo& outInfo)
+FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
 {
     n_assert(this->isOpen);
     
@@ -484,7 +572,7 @@ FileDB::GetFileInfo(const Guid& fileId, FileInfo& outInfo)
     }
     
     outInfo.id = fileId;
-    outInfo.folderId = values->GetGuid(Attr::FileFolderId, 0);
+    outInfo.folderId = values->GetUInt64(Attr::FileFolderId, 0);
     outInfo.name = values->GetString(Attr::EntityName, 0);
     outInfo.type = static_cast<FileType>(values->GetInt(Attr::FileType, 0));
     outInfo.size = (SizeT)values->GetInt64(Attr::FileSize, 0);
@@ -497,7 +585,7 @@ FileDB::GetFileInfo(const Guid& fileId, FileInfo& outInfo)
 /**
 */
 bool
-FileDB::GetFilesInFolder(const Guid& folderId, Array<FileInfo>& outFiles)
+FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
 {
     n_assert(this->isOpen);
     
@@ -520,7 +608,7 @@ FileDB::GetFilesInFolder(const Guid& folderId, Array<FileInfo>& outFiles)
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetGuid(Attr::FileId, i);
+        info.id = values->GetUInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
@@ -537,7 +625,7 @@ FileDB::GetFilesInFolder(const Guid& folderId, Array<FileInfo>& outFiles)
 /**
 */
 bool
-FileDB::GetFilesInFolderByType(const Guid& folderId, FileType type,
+FileDB::GetFilesInFolderByType(uint64_t folderId, FileType type,
                                Array<FileInfo>& outFiles)
 {
     n_assert(this->isOpen);
@@ -565,7 +653,7 @@ FileDB::GetFilesInFolderByType(const Guid& folderId, FileType type,
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetGuid(Attr::FileId, i);
+        info.id = values->GetUInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
@@ -582,7 +670,7 @@ FileDB::GetFilesInFolderByType(const Guid& folderId, FileType type,
 /**
 */
 bool
-FileDB::GetFilesModifiedAfter(const Guid& folderId, const IO::FileTime& dateTime,
+FileDB::GetFilesModifiedAfter(uint64_t folderId, const IO::FileTime& dateTime,
                               Array<FileInfo>& outFiles)
 {
     n_assert(this->isOpen);
@@ -610,7 +698,7 @@ FileDB::GetFilesModifiedAfter(const Guid& folderId, const IO::FileTime& dateTime
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetGuid(Attr::FileId, i);
+        info.id = values->GetUInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
@@ -627,7 +715,7 @@ FileDB::GetFilesModifiedAfter(const Guid& folderId, const IO::FileTime& dateTime
 /**
 */
 bool
-FileDB::GetFilesLargerThan(const Guid& folderId, SizeT sizeBytes,
+FileDB::GetFilesLargerThan(uint64_t folderId, SizeT sizeBytes,
                            Array<FileInfo>& outFiles)
 {
     n_assert(this->isOpen);
@@ -655,7 +743,7 @@ FileDB::GetFilesLargerThan(const Guid& folderId, SizeT sizeBytes,
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetGuid(Attr::FileId, i);
+        info.id = values->GetUInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
@@ -672,7 +760,7 @@ FileDB::GetFilesLargerThan(const Guid& folderId, SizeT sizeBytes,
 /**
 */
 bool
-FileDB::UpdateFileMetadata(Logger& logger, const Guid& fileId,
+FileDB::UpdateFileMetadata(Logger& logger, uint64_t fileId,
                           const IO::FileTime& modifiedDate)
 {
     n_assert(this->isOpen);
@@ -680,7 +768,7 @@ FileDB::UpdateFileMetadata(Logger& logger, const Guid& fileId,
     FileInfo fileInfo;
     if (!this->GetFileInfo(fileId, fileInfo))
     {
-        logger.Error("File with ID %s does not exist\n", fileId.AsString().AsCharPtr());
+        logger.Error("File with ID %llu does not exist\n", static_cast<unsigned long long>(fileId));
         return false;
     }
     
@@ -722,7 +810,7 @@ FileDB::UpdateFileMetadata(Logger& logger, const Guid& fileId,
 /**
 */
 bool
-FileDB::DeleteFile(Logger& logger, const Guid& fileId)
+FileDB::DeleteFile(Logger& logger, uint64_t fileId)
 {
     n_assert(this->isOpen);
     
