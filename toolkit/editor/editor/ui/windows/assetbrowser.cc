@@ -61,7 +61,10 @@ AssetBrowser::AssetBrowser()
 */
 AssetBrowser::~AssetBrowser()
 {
-    // empty
+    if (this->fileDB.IsOpen())
+    {
+        this->fileDB.Close();
+    }
 }
 
 //------------------------------------------------------------------------------
