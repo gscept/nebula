@@ -236,12 +236,14 @@ GetSubpassInfo(
             consumedAttachments[ref.attachment] = true;
         }
 
-        for (auto input : subpass.inputs)
+		// Update only the attachments we actually bind
+        for (uint i = 0; i < subpass.inputs.Size(); i++)
         {
             VkAttachmentReference& ref = subpassInfo.inputs.Emplace();
-            ref.attachment = input;
+            ref.attachment = subpass.inputs[i];
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-            consumedAttachments[input] = true;
+            consumedAttachments[subpass.inputs[i]] = true;
         }
 
         for (j = 0; j < consumedAttachments.Size(); j++)
@@ -263,7 +265,7 @@ GetSubpassInfo(
                 dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
                 dep.dstSubpass = i;
                 dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | (subpass.inputs.IsEmpty() ? 0x0 : VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
                 dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
                 outDeps.Append(dep);
 
@@ -596,14 +598,14 @@ SetupPass(const PassId pid)
         IndexT j = 0;
         for (i = 0; i < loadInfo.attachments.Size(); i++)
         {
-            n_assert(j < 16); // only allow 8 input attachments in the shader, so we must limit it
+            n_assert(i < 8); // only allow 8 input attachments in the shader, so we must limit it
             if (!loadInfo.attachmentIsDepthStencil[i])
             {
                 CoreGraphics::ResourceTableInputAttachment write;
                 write.tex = loadInfo.attachments[i];
                 write.isDepth = false;
                 write.sampler = InvalidSamplerId;
-                write.slot = Shared::InputAttachment0::BINDING + j;
+                write.slot = Shared::InputAttachment0::BINDING + j++;
                 write.index = 0;
                 ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
             }

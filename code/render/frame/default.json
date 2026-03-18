@@ -490,8 +490,9 @@
                                             "stage": "PixelShaderRead"
                                         }
                                     ],
-                                  
+
                                     "depth": "ZBuffer",
+                                    "inputs": ["LightBuffer"],
                                     "ops": [
                                         {
                                             "batch": {

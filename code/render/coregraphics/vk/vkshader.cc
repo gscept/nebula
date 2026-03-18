@@ -247,7 +247,6 @@ ShaderSetup(
     uint32_t numPerStageStorageImages[NumShaders] = {0};
     uint32_t numPerStageInputAttachments[NumShaders] = {0};
     uint32_t numPerStageAccelerationStructures[NumShaders] = {0};
-    uint32_t numInputAttachments = 0;
     bool bindingTable[128] = { false };
 
     enum

@@ -636,15 +636,6 @@ group(PASS_GROUP) uniform InputAttachment3 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment4 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment5 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment6 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment7 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment8 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment9 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment10 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment11 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment12 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment13 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment14 : *pixelCache;
-group(PASS_GROUP) uniform InputAttachment15 : *pixelCache;
 group(PASS_GROUP) uniform DepthAttachment : *pixelCache;
 
 struct RenderTargetParameters
