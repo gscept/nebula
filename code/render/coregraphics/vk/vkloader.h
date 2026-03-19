@@ -151,6 +151,8 @@ _DEC_VK(vkCreateRenderPass);
 _DEC_VK(vkDestroyRenderPass);
 _DEC_VK(vkCmdBeginRenderPass);
 _DEC_VK(vkCmdEndRenderPass);
+_DEC_VK(vkCmdBeginRendering);
+_DEC_VK(vkCmdEndRendering);
 _DEC_VK(vkCmdNextSubpass);
 _DEC_VK(vkCmdBindIndexBuffer);
 _DEC_VK(vkCmdBindVertexBuffers);

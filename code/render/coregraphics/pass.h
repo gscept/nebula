@@ -26,6 +26,7 @@ namespace CoreGraphics
 struct ResourceTableId;
 struct TextureView;
 ID_24_8_TYPE(PassId);
+ID_24_8_TYPE(PassRenderId);
 
 enum class AttachmentFlagBits : uint16_t
 {
@@ -99,6 +100,34 @@ enum class PassRecordMode : uint8_t
 const PassId CreatePass(const PassCreateInfo& info);
 /// discard pass
 void DestroyPass(const PassId id);
+
+
+struct PassRenderInfo
+{
+    Math::rectangle<int> area;
+    SizeT layerCount = 1;
+    Util::FixedArray<CoreGraphics::TextureViewId> colorTargets;
+    Util::FixedArray<CoreGraphics::ImageLayout> colorTargetLayouts;
+    Util::FixedArray<CoreGraphics::AttachmentFlagBits> colorTargetFlags;
+    Util::FixedArray<CoreGraphics::TextureViewId> resolveTargets;
+    Util::FixedArray<CoreGraphics::ImageLayout> resolveLayouts;
+    Util::FixedArray<Math::vec4> colorClearValues;
+
+    CoreGraphics::TextureViewId depthTarget = CoreGraphics::InvalidTextureViewId;
+    CoreGraphics::ImageLayout depthTargetLayout = CoreGraphics::ImageLayout::Undefined;
+    CoreGraphics::TextureViewId depthResolveTarget = CoreGraphics::InvalidTextureViewId;
+    CoreGraphics::ImageLayout depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;
+    CoreGraphics::AttachmentFlagBits depthFlags = CoreGraphics::AttachmentFlagBits::NoFlags;
+    Math::vec4 depthClearValue;
+};
+/// Create pass for dynamic rendering
+const PassRenderId CreateRenderPass(const PassRenderInfo& info);
+/// Destroy render pass
+void DestroyRenderPass(PassRenderId pass);
+/// Begin a render pass using only a begin info struct
+void PassRenderBegin(CoreGraphics::CmdBufferId cmdBuf, const PassRenderId pass);
+/// End a render pass 
+void PassRenderEnd(CoreGraphics::CmdBufferId cmdBuf);
 
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);

@@ -313,8 +313,8 @@ class ResourceDependencyDefinition:
         return self(parser, dict(name = name, stage = stage))
 
 class SubgraphDefinition:
-    def __init__(self, parser, node, p, subp):
-        self.name = "{}_{}".format(node['name'].replace(" ", ""), "Pass" if p is not None else "Compute")
+    def __init__(self, parser, node, p, subp, rp):
+        self.name = "{}_{}".format(node['name'].replace(" ", ""), "Pass" if p is not None else "Render" if rp is not None else "Compute")
         self.disabledBindings = list()
         self.p = p
         self.subp = subp
@@ -844,7 +844,7 @@ class SubpassDefinition:
         self.ops = list()
         for op in node["ops"]:
             if 'subgraph' in op:
-                self.ops.append(SubgraphDefinition(parser, op['subgraph'], parent, self))
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], parent, self, None))
             elif 'batch' in op:
                 self.ops.append(BatchDefinition(parser, op['batch']))
             elif 'fullscreen_effect' in op:
@@ -856,10 +856,6 @@ class SubpassDefinition:
         for op in self.ops:
             op.FormatHeader(file)
             
-    def FormatExtern(self, file, parser):
-        numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
-        file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
-
     def FormatExtern(self, file, parser):
         numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
         file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
@@ -1052,6 +1048,206 @@ class PassDefinition:
         for sub in self.subpasses:
             sub.FormatSetup(file)
 
+class RenderDefinition:
+    def __init__(self, parser, node):
+        self.name = node['name'].replace(" ", "")
+        self.targets = list()
+        self.targetDict = {}
+        self.resourceDependencies = list()
+        self.queue = parser.queue
+        self.depthAttachment = None
+        parser.externs.append(self)
+        parser.passes.append(self)
+
+        if "targets" in node:
+            for at in node["targets"]:
+                attachment = AttachmentDefinition(parser, at)
+                self.targets.append(attachment)
+                self.targetDict[attachment.name] = attachment
+                self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.name, stage = "ColorWrite", parser = parser))
+
+        if "depth" in node:
+            self.depthAttachment = AttachmentDefinition(parser, node["depth"])
+            self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = self.depthAttachment.name, stage = "DepthStencilWrite", parser = parser))
+
+        self.ops = list()
+        for op in node["ops"]:
+            if 'subgraph' in op:
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None, self))
+            elif 'batch' in op:
+                self.ops.append(BatchDefinition(parser, op['batch']))
+            elif 'fullscreen_effect' in op:
+                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], self))
+
+    def FormatExtern(self, file, parser):
+
+        file.WriteLine("")
+        file.WriteLine(f'CoreGraphics::PassRenderId Render_{self.name};')
+        file.WriteLine(f'Util::FixedArray<Shared::RenderTargetParameters> Render_{self.name}_RenderTargetDimensions({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
+        file.WriteLine(f'Util::FixedArray<Math::rectangle<int>> Render_{self.name}_Viewports({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
+
+        DeclareResourceDependencies("Render_{}".format(self.name), parser, self.resourceDependencies, file)   
+        
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
+        file.WriteLine("void")
+        file.WriteLine("Initialize_Render_{}()".format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine(f'CoreGraphics::PassRenderInfo info;')
+        
+        file.WriteLine(f'info.area = Math::rectangle<int>(0, 0, 0, 0);')
+        if self.depthAttachment is not None:
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine(f'CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{self.depthAttachment.name}]);')
+            file.WriteLine(f'info.area.right = Math::max(dims.width, info.area.right);')
+            file.WriteLine(f'info.area.bottom = Math::max(dims.height, info.area.bottom);')
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        for target in self.targets:
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine(f'CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{target.name}]);')
+            file.WriteLine(f'info.area.right = Math::max(dims.width, info.area.right);')
+            file.WriteLine(f'info.area.bottom = Math::max(dims.height, info.area.bottom);')
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        file.WriteLine(f'info.colorTargets.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorTargetLayouts.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorTargetFlags.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorClearValues.Resize({len(self.targets)});')
+        file.WriteLine(f'info.resolveTargets.Resize({len(self.targets)});')
+        file.WriteLine(f'info.resolveLayouts.Resize({len(self.targets)});')
+        for idx, target in enumerate(self.targets):
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine("CoreGraphics::TextureViewCreateInfo viewInfo;")
+            file.WriteLine(f'viewInfo.name = "[Attachment] {target.name} in {self.name}";')
+            file.WriteLine(f"viewInfo.tex = Textures[(uint)TextureIndex::{target.name}];")
+            file.WriteLine(f"viewInfo.format = CoreGraphics::PixelFormat::Code::{target.ref.format};")
+            file.WriteLine(f"viewInfo.startMip = 0;")
+            file.WriteLine(f"viewInfo.numMips = 1;")
+            file.WriteLine(f"viewInfo.startLayer = 0;")
+            file.WriteLine(f"viewInfo.numLayers = {target.ref.layers};")            
+
+            bits = ""
+            for bit in target.ref.bits:
+                bits += "CoreGraphics::ImageBits::{}".format(bit)
+                if bit != target.ref.bits[-1]:
+                    bits += " | "
+            file.WriteLine("viewInfo.bits = {};".format(bits))
+            
+            file.WriteLine("Math::vec4 clearValue = Math::vec4(0.0f);")
+            flags = "CoreGraphics::AttachmentFlagBits::NoFlags"
+            if target.clearColor is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::Clear"
+            for flag in target.storeLoadFlags:
+                flags += " | CoreGraphics::AttachmentFlagBits::{}".format(flag) 
+
+            if target.clearColor is not None:
+                file.WriteLine(f"clearValue = Math::vec4({target.clearColor[0]}, {target.clearColor[1]}, {target.clearColor[2]}, {target.clearColor[3]});")
+
+            file.WriteLine(f'info.colorTargets[{idx}] = CoreGraphics::CreateTextureView(viewInfo);')
+            file.WriteLine(f'info.colorTargetLayouts[{idx}] = CoreGraphics::ImageLayout::ColorRenderTexture;')
+            file.WriteLine(f'info.colorTargetFlags[{idx}] = {flags};')
+            file.WriteLine(f'info.colorClearValues[{idx}] = clearValue;')
+            file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::InvalidTextureViewId;')
+            file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::Undefined;')
+
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        
+        if self.depthAttachment != None:
+            file.WriteLine("CoreGraphics::TextureViewCreateInfo viewInfo;")
+            file.WriteLine(f'viewInfo.name = "[Attachment] {self.depthAttachment.name} in {self.name}";')
+            file.WriteLine(f"viewInfo.tex = Textures[(uint)TextureIndex::{self.depthAttachment.name}];")
+            file.WriteLine(f"viewInfo.format = CoreGraphics::PixelFormat::Code::{self.depthAttachment.ref.format};")
+            file.WriteLine(f"viewInfo.startMip = 0;")
+            file.WriteLine(f"viewInfo.numMips = 1;")
+            file.WriteLine(f"viewInfo.startLayer = 0;")
+            file.WriteLine(f"viewInfo.numLayers = {self.depthAttachment.ref.layers};")      
+
+            bits = ""
+            for bit in self.depthAttachment.ref.bits:
+                bits += "CoreGraphics::ImageBits::{}".format(bit)
+                if bit != self.depthAttachment.ref.bits[-1]:
+                    bits += " | "
+            file.WriteLine("viewInfo.bits = {};".format(bits))
+
+            file.WriteLine("Math::vec4 clearValue = Math::vec4(0.0f);")
+            if self.depthAttachment.clearDepth is not None:
+                file.WriteLine(f"clearValue.x = {self.depthAttachment.clearDepth};")
+            if self.depthAttachment.clearStencil is not None:
+                file.WriteLine(f"clearValue.y = {self.depthAttachment.clearStencil};")
+            flags = "CoreGraphics::AttachmentFlagBits::NoFlags"
+            if self.depthAttachment.clearDepth is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::Clear"
+            if self.depthAttachment.clearStencil is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::ClearStencil"
+            for flag in self.depthAttachment.storeLoadFlags:
+                flags += " | CoreGraphics::AttachmentFlagBits::{}".format(flag) 
+
+            file.WriteLine(f'info.depthTarget = CoreGraphics::CreateTextureView(viewInfo);')
+            file.WriteLine(f'info.depthTargetLayout = CoreGraphics::ImageLayout::DepthStencilRenderTexture;')
+            file.WriteLine(f'info.depthResolveTarget = CoreGraphics::InvalidTextureViewId;')
+            file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;')
+            file.WriteLine(f'info.depthFlags = {flags};')
+            file.WriteLine(f'info.depthClearValue = clearValue;')
+        file.WriteLine(f'Render_{self.name} = CoreGraphics::CreateRenderPass(info);')
+            
+
+        file.DecreaseIndent()
+        file.WriteLine("}")
+
+    def FormatHeader(self, file):
+        file.WriteLine('extern Util::FixedArray<Shared::RenderTargetParameters> Render_{}_RenderTargetDimensions;'.format(self.name, len(self.targets)))
+        file.WriteLine('extern Util::FixedArray<Math::rectangle<int>> Render_{}_Viewports;'.format(self.name))
+
+        idx = 0
+        if self.depthAttachment != None:
+            file.WriteLine(f"static const int Render_{self.name}_DepthAttachment = {idx};")
+            idx += 1
+
+        for target in self.targets:
+            file.WriteLine(f"static const int Render_{self.name}_Attachment_{target.name} = {idx};")
+            idx += 1
+
+    def FormatSource(self, file):
+        file.WriteLine("")
+        SyncResourceDependencies("Render_{}".format(self.name), self.resourceDependencies, self.queue, file)
+        file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, "{}");'.format(self.name))
+        file.IncreaseIndent()
+
+        for op in self.ops:
+            if type(op) == SubgraphDefinition:
+                file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, self.queue, op.name, op.name))
+                file.WriteLine('if (Subgraph_Sync_{} != nullptr)'.format(op.name))
+                file.WriteLine('{')
+                file.WriteLine('    Subgraph_Sync_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(op.name))
+                file.WriteLine('}')
+
+        i = 0
+        if self.depthAttachment != None:
+            file.WriteLine(f'Render_{self.name}_Viewports[{i}] = Math::rectangle<int>(0, 0, viewport.width() * {self.depthAttachment.ref.relativeSize[0]}, viewport.height() * {self.depthAttachment.ref.relativeSize[1]});')
+            i += 1
+        for target in self.targets:
+            file.WriteLine(f'Render_{self.name}_Viewports[{i}] = Math::rectangle<int>(0, 0, viewport.width() * {target.ref.relativeSize[0]}, viewport.height() * {target.ref.relativeSize[1]});')
+            i += 1
+        file.WriteLine(f'CoreGraphics::CmdSetViewports(cmdBuf, Render_{self.name}_Viewports);')
+        file.WriteLine(f'CoreGraphics::CmdSetScissors(cmdBuf, Render_{self.name}_Viewports);')
+
+        file.WriteLine(f"CoreGraphics::PassRenderBegin(cmdBuf, Render_{self.name});")
+
+        for op in self.ops:
+            op.FormatSource(file)
+
+        file.WriteLine(f"CoreGraphics::PassRenderEnd(cmdBuf);")
+        
+    def FormatSetup(self, file):
+        file.WriteLine("Initialize_Render_{}();".format(self.name))
+
 class SubmissionDefinition:
     def __init__(self, parser, node):
         self.name = node['name'].replace(" ", "")
@@ -1077,7 +1273,9 @@ class SubmissionDefinition:
 
         for op in node['ops']:
             if 'subgraph' in op:
-                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None))
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None, None))
+            elif 'render' in op:
+                self.ops.append(RenderDefinition(parser, op['render']))
             elif 'pass' in op:
                 self.ops.append(PassDefinition(parser, op['pass']))
             elif 'copy' in op:

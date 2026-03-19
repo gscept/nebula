@@ -73,19 +73,19 @@
             },
             {
                 "name": "LightBuffer",
-                "format": "R11G11B10F",
+                "format": "R16G16B16A16F",
                 "usage": "Render|ReadWrite|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "mips": "auto",
                 "type": "Texture2D"
             },
             {
-              "name": "AlphaLightBuffer",
-              "format": "R16G16B16A16F",
-              "usage": "Render|ReadWrite|TransferSource",
-              "relativeSize": [ 1.0, 1.0 ],
-              "mips": "auto",
-              "type": "Texture2D"
+                "name": "AlphaLightBuffer",
+                "format": "R16G16B16A16F",
+                "usage": "Render|ReadWrite|TransferSource",
+                "relativeSize": [ 1.0, 1.0 ],
+                "mips": "auto",
+                "type": "Texture2D"
             },
             {
                 "name": "LightDebugBuffer",
@@ -282,6 +282,54 @@
                     {
                         "subgraph": {
                             "name": "Terrain Indirection Copy"
+                        }
+                    },
+
+                    {
+                        "render": {
+                            "name": "Terrain Prepass",
+                            "targets": [
+                                {
+                                    "name": "TerrainPosBuffer",
+                                    "clear": [ 0, 0, 0, 255 ],
+                                    "flags": "Store"
+                                }
+                            ],
+                            "depth": {
+                                "name": "ZBuffer",
+                                "clear_depth": 1,
+                                "clear_stencil": 0,
+                                "flags": "Store|StoreStencil"
+                            },
+                            "ops": [
+                                {
+                                    "subgraph": {
+                                        "name": "Terrain Prepass"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "render": {
+                            "name": "Opaque Prepass",
+                            "depth": {
+                                "name": "ZBuffer",
+                                "flags": "Store|StoreStencil|Load|LoadStencil"
+                            },
+                            "ops": [
+                                {
+                                    "batch": {
+                                        "name": "FlatGeometryDepth"
+                                    }
+                                },
+                                {
+                                    "subgraph": {
+                                        "name": "Vegetation Prepass"
+                                    }
+                                }
+                            ]
                         }
                     },
 

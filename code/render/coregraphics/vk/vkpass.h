@@ -88,5 +88,19 @@ const VkFramebuffer PassGetVkFramebuffer(const CoreGraphics::PassId id);
 /// Get pass
 const VkRenderPass PassGetVkRenderPass(const CoreGraphics::PassId id);
 
+enum
+{
+    PassRender_Attachments,
+    PassRender_DepthAttachment,
+    PassRender_BeginInfo
+};
+
+typedef Ids::IdAllocator<
+    Util::FixedArray<VkRenderingAttachmentInfo>,
+    VkRenderingAttachmentInfo,
+    VkRenderingInfo
+> VkPassRenderAllocator;
+const VkRenderingInfo PassRenderGetVk(const CoreGraphics::PassRenderId id);
+
 
 } // namespace Vulkan

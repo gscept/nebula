@@ -1104,12 +1104,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
         .pNext = &vk11Features,
+        .shaderFloat16 = true
+    };
+
+    VkPhysicalDeviceVulkan13Features vk13Features =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+        .pNext = &vk12Features,
+        .dynamicRendering = true
     };
 
     VkPhysicalDeviceFeatures2 features2 =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .pNext = &vk12Features
+        .pNext = &vk13Features
     };
     vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
