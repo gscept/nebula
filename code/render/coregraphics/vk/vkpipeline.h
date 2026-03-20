@@ -20,6 +20,7 @@ struct Pipeline
 
     // Pass needed for pass related resource tables
     CoreGraphics::PassId pass;
+    CoreGraphics::RenderPassId renderPass;
 };
 
 enum

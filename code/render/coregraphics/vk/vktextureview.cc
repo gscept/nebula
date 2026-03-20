@@ -184,4 +184,14 @@ TextureViewGetTexture(const TextureViewId id)
     return loadInfo.tex;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::PixelFormat::Code
+TextureViewGetPixelFormat(const TextureViewId id)
+{
+    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id);
+    return loadInfo.format;
+}
+
 } // namespace CoreGraphics

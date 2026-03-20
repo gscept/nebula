@@ -26,7 +26,7 @@ namespace CoreGraphics
 struct ResourceTableId;
 struct TextureView;
 ID_24_8_TYPE(PassId);
-ID_24_8_TYPE(PassRenderId);
+ID_24_8_TYPE(RenderPassId);
 
 enum class AttachmentFlagBits : uint16_t
 {
@@ -101,9 +101,25 @@ const PassId CreatePass(const PassCreateInfo& info);
 /// discard pass
 void DestroyPass(const PassId id);
 
+/// called when window is resized
+void PassWindowResizeCallback(const PassId id);
+/// Set viewports
+void PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
 
-struct PassRenderInfo
+/// get number of color attachments for entire pass (attachment list)
+const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGraphics::PassId id);
+
+/// get number of color attachments for a subpass
+const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);
+/// Get pass resource table
+const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::PassId id);
+
+/// get name
+const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
+
+struct RenderPassCreateInfo
 {
+    Util::StringAtom name;
     Math::rectangle<int> area;
     SizeT layerCount = 1;
     Util::FixedArray<CoreGraphics::TextureViewId> colorTargets;
@@ -121,29 +137,11 @@ struct PassRenderInfo
     Math::vec4 depthClearValue;
 };
 /// Create pass for dynamic rendering
-const PassRenderId CreateRenderPass(const PassRenderInfo& info);
+const RenderPassId CreateRenderPass(const RenderPassCreateInfo& info);
 /// Destroy render pass
-void DestroyRenderPass(PassRenderId pass);
-/// Begin a render pass using only a begin info struct
-void PassRenderBegin(CoreGraphics::CmdBufferId cmdBuf, const PassRenderId pass);
-/// End a render pass 
-void PassRenderEnd(CoreGraphics::CmdBufferId cmdBuf);
+void DestroyRenderPass(RenderPassId pass);
 
-/// called when window is resized
-void PassWindowResizeCallback(const PassId id);
-/// Set viewports
-void PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
-
-/// get number of color attachments for entire pass (attachment list)
-const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGraphics::PassId id);
-
-/// get number of color attachments for a subpass
-const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);
-/// Get pass resource table
-const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::PassId id);
-
-/// get name
-const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
+/// 
 
 } // namespace CoreGraphics
 

@@ -53,11 +53,11 @@ const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 const VkQueue GetCurrentQueue(const CoreGraphics::QueueType type);
 
 /// Generate or return cached VkPipeline
-VkPipeline GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
+VkPipeline GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::RenderPassId renderPass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
 /// Return true if pipeline already exists
-CoreGraphics::PipelineId PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
+CoreGraphics::PipelineId PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::RenderPassId renderPass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
 /// Cache a new pipeline
-void CachePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info, const CoreGraphics::PipelineId pipeline);
+void CachePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::RenderPassId renderPass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info, const CoreGraphics::PipelineId pipeline);
 /// Invalidate pipeline
 void InvalidatePipeline(const CoreGraphics::PipelineId id);
 

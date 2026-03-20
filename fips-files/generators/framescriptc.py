@@ -318,6 +318,7 @@ class SubgraphDefinition:
         self.disabledBindings = list()
         self.p = p
         self.subp = subp
+        self.rp = rp
         self.queue = parser.queue
         if "disabled" in node:
             for binding in node['disabled']:
@@ -325,7 +326,7 @@ class SubgraphDefinition:
 
         parser.externs.append(self)
 
-        if self.p is not None and self.subp is not None:
+        if self.p is not None and self.subp is not None or self.rp is not None:
             parser.pipelines.append(self)
 
     def FormatExtern(self, file, parser):
@@ -336,7 +337,10 @@ class SubgraphDefinition:
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
         file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*Subgraph_Sync_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
-        file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
+        if self.p is not None and self.subp is not None:
+            file.WriteLine(f"void (*SubgraphPipelines_{self.name})(const CoreGraphics::PassId, const uint);\n")
+        if self.rp is not None:
+            file.WriteLine(f"void (*SubgraphPipelines_{self.name})(const CoreGraphics::RenderPassId);\n")
 
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
@@ -374,11 +378,26 @@ class SubgraphDefinition:
             file.DecreaseIndent()
             file.WriteLine("}")     
 
+        if self.rp is not None:
+            file.WriteLine("//------------------------------------------------------------------------------")
+            file.WriteLine("/**")
+            file.WriteLine("*/")
+            file.WriteLine('void')
+            file.WriteLine('RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::RenderPassId))'.format(self.name))
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine("SubgraphPipelines_{} = func;".format(self.name))
+            file.DecreaseIndent()
+            file.WriteLine("}")     
+
     def FormatPipeline(self, file):
         file.WriteLine("")
         file.WriteLine("if (SubgraphPipelines_{} != nullptr)".format(self.name))
         file.IncreaseIndent()
-        file.WriteLine("SubgraphPipelines_{}(Pass_{}, {});".format(self.name, self.p.name, self.subp.index))
+        if self.rp is not None:
+            file.WriteLine(f"SubgraphPipelines_{self.name}(Render_{self.rp.name});")
+        else:
+            file.WriteLine(f"SubgraphPipelines_{self.name}(Pass_{self.p.name}, {self.subp.index});")
         file.DecreaseIndent()
         file.WriteLine("#ifdef NEBULA_DEBUG")
         file.WriteLine("else")
@@ -391,6 +410,9 @@ class SubgraphDefinition:
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
+        if self.rp is not None:
+            file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::RenderPassId));'.format(self.name))
+
         file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
         file.WriteLine('void RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT));'.format(self.name))
     
@@ -472,7 +494,7 @@ class FullscreenEffectDefinition:
         file.WriteLine('CoreGraphics::DestroyResourceTable(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine('}')
-        file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
+        file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
         file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
         file.WriteLine('{}::{}::STRUCT state;'.format(self.namespace, self.constantBlockName))
         for var in self.variables:
@@ -1082,7 +1104,7 @@ class RenderDefinition:
     def FormatExtern(self, file, parser):
 
         file.WriteLine("")
-        file.WriteLine(f'CoreGraphics::PassRenderId Render_{self.name};')
+        file.WriteLine(f'CoreGraphics::RenderPassId Render_{self.name};')
         file.WriteLine(f'Util::FixedArray<Shared::RenderTargetParameters> Render_{self.name}_RenderTargetDimensions({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
         file.WriteLine(f'Util::FixedArray<Math::rectangle<int>> Render_{self.name}_Viewports({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
 
@@ -1095,7 +1117,7 @@ class RenderDefinition:
         file.WriteLine("Initialize_Render_{}()".format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
-        file.WriteLine(f'CoreGraphics::PassRenderInfo info;')
+        file.WriteLine(f'CoreGraphics::RenderPassCreateInfo info;')
         
         file.WriteLine(f'info.area = Math::rectangle<int>(0, 0, 0, 0);')
         if self.depthAttachment is not None:
@@ -1214,6 +1236,9 @@ class RenderDefinition:
             file.WriteLine(f"static const int Render_{self.name}_Attachment_{target.name} = {idx};")
             idx += 1
 
+        for op in self.ops:
+            op.FormatHeader(file)
+
     def FormatSource(self, file):
         file.WriteLine("")
         SyncResourceDependencies("Render_{}".format(self.name), self.resourceDependencies, self.queue, file)
@@ -1238,12 +1263,12 @@ class RenderDefinition:
         file.WriteLine(f'CoreGraphics::CmdSetViewports(cmdBuf, Render_{self.name}_Viewports);')
         file.WriteLine(f'CoreGraphics::CmdSetScissors(cmdBuf, Render_{self.name}_Viewports);')
 
-        file.WriteLine(f"CoreGraphics::PassRenderBegin(cmdBuf, Render_{self.name});")
+        file.WriteLine(f"CoreGraphics::CmdBeginRenderPass(cmdBuf, Render_{self.name});")
 
         for op in self.ops:
             op.FormatSource(file)
 
-        file.WriteLine(f"CoreGraphics::PassRenderEnd(cmdBuf);")
+        file.WriteLine(f"CoreGraphics::CmdEndRenderPass(cmdBuf);")
         
     def FormatSetup(self, file):
         file.WriteLine("Initialize_Render_{}();".format(self.name))

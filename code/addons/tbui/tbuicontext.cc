@@ -274,7 +274,7 @@ TBUIContext::Create()
                     CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
                     if (state.pipeline != CoreGraphics::InvalidPipelineId)
                         CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, pass, subpass, inputAssembly});
+                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, pass, subpass, CoreGraphics::InvalidRenderPassId, inputAssembly});
                 }
             );
 

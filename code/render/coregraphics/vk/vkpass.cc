@@ -78,9 +78,27 @@ PassGetVkRenderPass(const CoreGraphics::PassId id)
 /**
 */
 const VkRenderingInfo
-PassRenderGetVk(const CoreGraphics::PassRenderId id)
+RenderPassGetVk(const CoreGraphics::RenderPassId id)
 {
     return passRenderAllocator.Get<PassRender_BeginInfo>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkPipelineRenderingCreateInfo&
+RenderPassGetVkPipelineInfo(const CoreGraphics::RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_PipelineInfo>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ResourceTableId
+RenderPassGetResourceTable(const CoreGraphics::RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_ShaderInterface>(id.id).table;
 }
 
 //------------------------------------------------------------------------------
@@ -754,23 +772,27 @@ DestroyPass(const PassId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-PassRenderBegin(CoreGraphics::CmdBufferId cmdBuf, const PassRenderId pass)
-{
-    vkCmdBeginRendering(CmdBufferGetVk(cmdBuf), &passRenderAllocator.Get<PassRender_BeginInfo>(pass.id));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const PassRenderId
-CreateRenderPass(const PassRenderInfo& info)
+const RenderPassId
+CreateRenderPass(const RenderPassCreateInfo& info)
 {
     Ids::Id32 id = passRenderAllocator.Alloc();
     VkRenderingInfo& renderInfo = passRenderAllocator.Get<PassRender_BeginInfo>(id);
     Util::FixedArray<VkRenderingAttachmentInfo>& attachmentInfo = passRenderAllocator.Get<PassRender_Attachments>(id);
 	VkRenderingAttachmentInfo& depthAttachmentInfo = passRenderAllocator.Get<PassRender_DepthAttachment>(id);
+    VkPipelineViewportStateCreateInfo& viewportInfo = passRenderAllocator.Get<PassRender_ViewportInfo>(id);
+    VkPipelineRenderingCreateInfo& pipelineInfo = passRenderAllocator.Get<PassRender_PipelineInfo>(id);
+    RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id);
+    Util::FixedArray<VkFormat>& pipelineInfoFormats = passRenderAllocator.Get<PassRender_PipelineInfoColorFormats>(id);
 
+    pipelineInfoFormats.Resize(info.colorTargets.Size());
+
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    pipelineInfo.pNext = nullptr;
+    pipelineInfo.viewMask = 0x0;
+    pipelineInfo.colorAttachmentCount = pipelineInfoFormats.Size();
+    pipelineInfo.pColorAttachmentFormats = pipelineInfoFormats.Begin();
+    pipelineInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+    pipelineInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 	attachmentInfo.Resize(info.colorTargets.Size());
 	for (SizeT i = 0; i < info.colorTargets.Size(); i++)
 	{
@@ -779,7 +801,7 @@ CreateRenderPass(const PassRenderInfo& info)
         target.pNext = nullptr;
         target.imageView = TextureViewGetVk(info.colorTargets[i]);
         target.imageLayout = VkTypes::AsVkImageLayout(info.colorTargetLayouts[i]);
-        target.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+        target.resolveMode = VK_RESOLVE_MODE_NONE;
         if (info.resolveTargets[i] != CoreGraphics::InvalidTextureViewId)
 		{
 			target.resolveImageView = TextureViewGetVk(info.resolveTargets[i]);
@@ -790,7 +812,7 @@ CreateRenderPass(const PassRenderInfo& info)
             target.resolveImageView = VK_NULL_HANDLE;
             target.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		}
-        
+        pipelineInfoFormats[i] = VkTypes::AsVkFormat(CoreGraphics::TextureViewGetPixelFormat(info.colorTargets[i]));
 
 		target.loadOp = AsVkLoadOp(info.colorTargetFlags[i]);
         target.storeOp = AsVkStoreOp(info.colorTargetFlags[i]);
@@ -809,7 +831,7 @@ CreateRenderPass(const PassRenderInfo& info)
         .offset {.x = info.area.left, .y = info.area.top}, .extent {.width = (uint)info.area.width(), .height = (uint)info.area.height()}
     };
     renderInfo.layerCount = info.layerCount;
-    renderInfo.viewMask = 0xFFFFFFFF;
+    renderInfo.viewMask = 0x0;
     renderInfo.colorAttachmentCount = attachmentInfo.Size();
     renderInfo.pColorAttachments = attachmentInfo.Begin();
 
@@ -819,7 +841,7 @@ CreateRenderPass(const PassRenderInfo& info)
         depthAttachmentInfo.pNext = nullptr;
         depthAttachmentInfo.imageView = TextureViewGetVk(info.depthTarget);
         depthAttachmentInfo.imageLayout = VkTypes::AsVkImageLayout(info.depthTargetLayout);
-        depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+        depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
 
 		if (info.depthResolveTarget != CoreGraphics::InvalidTextureViewId)
 		{
@@ -832,6 +854,7 @@ CreateRenderPass(const PassRenderInfo& info)
             depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		}
 
+        pipelineInfo.depthAttachmentFormat = VkTypes::AsVkFormat(TextureViewGetPixelFormat(info.depthTarget));
         depthAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
         depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -843,14 +866,36 @@ CreateRenderPass(const PassRenderInfo& info)
         clear.depthStencil.stencil = info.depthClearValue.y;
         renderInfo.pDepthAttachment = &depthAttachmentInfo;
 	}
-    return PassRenderId(id);
+
+    // setup uniform buffer for render target information
+    ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.gplb"_atm);
+    shaderInterface.constants = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassUniforms", CoreGraphics::BufferAccessMode::DeviceAndHost);
+    shaderInterface.renderTargetDimensionsOffset = offsetof(Shared::PassUniforms::STRUCT, RenderTargets);
+
+    CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
+    shaderInterface.table = CreateResourceTable(ResourceTableCreateInfo{ Util::String::Sprintf("Render Pass %s Descriptors", info.name.Value()).AsCharPtr(), tableLayout, 8 });
+
+    CoreGraphics::ResourceTableBuffer write;
+    write.buf = shaderInterface.constants;
+    write.offset = 0;
+    write.size = NEBULA_WHOLE_BUFFER_SIZE;
+    write.index = 0;
+    write.dynamicOffset = false;
+    write.texelBuffer = false;
+    write.slot = ShaderGetResourceSlot(sid, "PassUniforms");
+    ResourceTableSetConstantBuffer(shaderInterface.table, write);
+
+    // setup input attachments
+    ResourceTableCommitChanges(shaderInterface.table);
+
+    return RenderPassId(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DestroyRenderPass(PassRenderId pass)
+DestroyRenderPass(RenderPassId pass)
 {
 	Util::FixedArray<VkRenderingAttachmentInfo>& attachmentInfo = passRenderAllocator.Get<PassRender_Attachments>(pass.id);
     attachmentInfo.Clear();

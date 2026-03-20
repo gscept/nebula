@@ -476,7 +476,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::TransferRead }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {
@@ -529,7 +529,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
     });
 
-    FrameScript_default::RegisterSubgraph_VegetationRender_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationRender_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {

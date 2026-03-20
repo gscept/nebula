@@ -738,10 +738,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         }, entities.Size(), 1024, { &Models::ModelContext::TransformsUpdateCounter }, &idCounter, &state.jobWaitEvent);
 
         // Copy over object bindings
-        void* objectData = CoreGraphics::BufferMap(state.objectBindingBuffer.HostBuffer());
-        memcpy(objectData, state.objects.Begin(), state.objects.ByteSize());
-        CoreGraphics::BufferUnmap(state.objectBindingBuffer.HostBuffer());
-
+        CoreGraphics::BufferUpdate(state.objectBindingBuffer.HostBuffer(), state.objects.Begin(), state.objects.ByteSize());
         state.topLevelNeedsUpdate = true;
     }
     else

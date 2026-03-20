@@ -499,12 +499,13 @@ VkPipeline
 GetOrCreatePipeline(
     CoreGraphics::PassId pass
     , uint subpass
+    , CoreGraphics::RenderPassId renderPass
     , CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
     , const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
-    VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
+    VkPipeline pipeline = state.database.GetCompiledPipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info);
     _incr_counter(state.NumPipelinesBuilt, 1);
     return pipeline;
 }
@@ -513,10 +514,10 @@ GetOrCreatePipeline(
 /**
 */
 CoreGraphics::PipelineId
-PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
+PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::RenderPassId renderPass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
-    return state.database.GetPipeline(pass, subpass, program, inputAssembly, info);
+    return state.database.GetPipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info);
 }
 
 //------------------------------------------------------------------------------
@@ -526,13 +527,14 @@ void
 CachePipeline(
     CoreGraphics::PassId pass
     , uint subpass
+    , CoreGraphics::RenderPassId renderPass
     , CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
     , const VkGraphicsPipelineCreateInfo& info
     , const CoreGraphics::PipelineId pipeline)
 {
     Threading::CriticalScope scope(&pipelineMutex);
-    state.database.CachePipeline(pass, subpass, program, inputAssembly, info, pipeline);
+    state.database.CachePipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info, pipeline);
 }
 
 //------------------------------------------------------------------------------
@@ -1087,45 +1089,48 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     //VkPhysicalDeviceFeatures features;
     //vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
-    VkPhysicalDeviceDiagnosticsConfigFeaturesNV nvidiaDeviceDiagnosticsFeature =
+    VkPhysicalDeviceFeatures2 features2 =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
-        .pNext = nullptr,
-        .diagnosticsConfig = false
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = nullptr
     };
+    vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
-    VkPhysicalDeviceVulkan11Features vk11Features =
+    VkPhysicalDeviceVulkan13Features vk13Features =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
-        .pNext = &nvidiaDeviceDiagnosticsFeature,
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+        .pNext = nullptr,
+        .dynamicRendering = true
     };
 
     VkPhysicalDeviceVulkan12Features vk12Features =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-        .pNext = &vk11Features,
-        .shaderFloat16 = true
+        .pNext = &vk13Features,
+        .shaderFloat16 = true,
+        .descriptorBindingUniformBufferUpdateAfterBind = true,
+        .descriptorBindingSampledImageUpdateAfterBind = true,
+        .descriptorBindingStorageImageUpdateAfterBind = true,
+        .descriptorBindingStorageBufferUpdateAfterBind = true,
+        .descriptorBindingPartiallyBound = true,
+        .hostQueryReset = true,
+        .timelineSemaphore = true,
+        .bufferDeviceAddress = true,
+
     };
 
-    VkPhysicalDeviceVulkan13Features vk13Features =
+    VkPhysicalDeviceVulkan11Features vk11Features =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
         .pNext = &vk12Features,
-        .dynamicRendering = true
+        .variablePointersStorageBuffer = true,
+        .variablePointers = true
     };
 
-    VkPhysicalDeviceFeatures2 features2 =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .pNext = &vk13Features
-    };
-    vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
-
-    vk11Features.pNext = nullptr;
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
-        .pNext = &vk12Features,
+        .pNext = &vk11Features,
         .vertexInputDynamicState = true
     };
     void* lastExtension = &dynamicVertexFeatures;
@@ -1200,7 +1205,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .pNext = lastExtension,
         .flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV  | VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV
     };
-    nvidiaDeviceDiagnosticsFeature =
+    VkPhysicalDeviceDiagnosticsConfigFeaturesNV nvidiaDeviceDiagnosticsFeature =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
         .pNext = &nvidiaCheckpointConfig,

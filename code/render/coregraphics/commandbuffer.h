@@ -31,6 +31,7 @@ struct ShaderProgramId;
 struct BarrierId;
 struct EventId;
 struct PassId;
+struct RenderPassId;
 struct PipelineId;
 struct BlasId;
 struct TlasId;
@@ -305,6 +306,10 @@ void CmdBeginPass(const CmdBufferId id, const CoreGraphics::PassId pass);
 void CmdNextSubpass(const CmdBufferId id);
 /// End pass
 void CmdEndPass(const CmdBufferId id);
+/// Begin render pass
+void CmdBeginRenderPass(const CmdBufferId id, const CoreGraphics::RenderPassId pass);
+/// End render pass
+void CmdEndRenderPass(const CmdBufferId id);
 /// Draw primitives
 void CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw primitives instanced

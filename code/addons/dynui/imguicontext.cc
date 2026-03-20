@@ -456,7 +456,7 @@ ImguiContext::Create()
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
                 if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
                     CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
-                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, CoreGraphics::InvalidRenderPassId, inputAssembly });
             });
 
         FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -510,7 +510,7 @@ ImguiContext::Create()
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
                 if (state.pipeline != CoreGraphics::InvalidPipelineId)
                     CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-                state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+                state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, CoreGraphics::InvalidRenderPassId, inputAssembly });
             });
         FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
