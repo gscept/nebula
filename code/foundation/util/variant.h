@@ -23,6 +23,7 @@
 #include "memory/memory.h"
 #include "core/refcounted.h"
 #include "util/color.h"
+#include "io/filetime.h"
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -65,6 +66,7 @@ public:
         Mat4Array,
         BlobArray,
         GuidArray,
+        FileTime,
         NumTypes,
     };
 
@@ -136,6 +138,8 @@ public:
     Variant(const Util::Array<Util::Blob>& rhs);
     /// guid array constructor
     Variant(const Util::Array<Util::Guid>& rhs);
+    /// filetime constructor
+    Variant(const IO::FileTime& rhs);
     /// copy constructor
     Variant(const Variant& rhs);
 
@@ -214,6 +218,8 @@ public:
     void operator=(const Util::Array<Util::Blob>& rhs);
     /// guid array assignment
     void operator=(const Util::Array<Util::Guid>& rhs);
+    /// filetime assignment
+    void operator=(const IO::FileTime& rhs);
 
     /// equality operator
     bool operator==(const Variant& rhs) const;
@@ -249,6 +255,8 @@ public:
     bool operator==(const Util::Guid& rhs) const;
     /// char ptr equality operator
     bool operator==(const char* chrPtr) const;
+    /// filetime equality operator
+    bool operator==(const IO::FileTime& rhs) const;
     /// pointer equality operator
     bool operator==(Core::RefCounted* ptr) const;
     /// pointer equality operator
@@ -288,6 +296,8 @@ public:
     bool operator!=(const Util::Guid& rhs) const;
     /// char ptr inequality operator
     bool operator!=(const char* chrPtr) const;
+    /// filetime inequality operator
+    bool operator!=(const IO::FileTime& rhs) const;
     /// pointer equality operator
     bool operator!=(Core::RefCounted* ptr) const;
     /// pointer equality operator
@@ -426,6 +436,10 @@ public:
     void SetBlobArray(const Util::Array<Util::Blob>& val);
     /// get blob array content
     const Util::Array<Util::Blob>& GetBlobArray() const;
+    /// set filetime content
+    void SetFileTime(const IO::FileTime& val);
+    /// get filetime content
+    IO::FileTime GetFileTime() const;
 
     /// Templated get method.
     template <typename TYPE>
@@ -729,6 +743,9 @@ Variant::Copy(const Variant& rhs)
             break;
         case BlobArray:
             this->blobArray = new Util::Array<Util::Blob>(*rhs.blobArray);
+            break;
+        case FileTime:
+            this->i64 = rhs.i64;
             break;
         default:
             n_error("Variant::Copy(): invalid type!");
@@ -1094,6 +1111,16 @@ Variant::Variant(const Util::Array<Util::Blob>& rhs) :
 /**
 */
 inline
+Variant::Variant(const IO::FileTime& rhs) :
+    type(FileTime)
+{
+    this->i64 = rhs.AsEpochTime();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
 Variant::~Variant()
 {
     this->Delete();
@@ -1159,6 +1186,9 @@ Variant::SetType(Type t)
             break;
         case BlobArray:
             this->blobArray = new Util::Array<Util::Blob>;
+            break;
+        case FileTime:
+            this->i64 = 0;
             break;
         default:
             break;
@@ -1645,6 +1675,16 @@ Variant::operator=(const Util::Array<Util::Blob>& val)
 }
 
 //------------------------------------------------------------------------------
+/***/
+inline void
+Variant::operator=(const IO::FileTime& val)
+{
+    this->Delete();
+    this->type = FileTime;
+    this->i64 = val.AsEpochTime();
+}
+
+//------------------------------------------------------------------------------
 /**
 */
 inline bool
@@ -1702,6 +1742,8 @@ Variant::operator==(const Variant& rhs) const
                 return ((*this->m) == (*rhs.m));
             case Transform44:
                 return ((*this->t) == (*rhs.t));
+            case FileTime:
+                return (this->i64 == rhs.i64);
             default:
                 n_error("Variant::operator==(): invalid variant type!");
                 return false;
@@ -1764,6 +1806,8 @@ Variant::operator>(const Variant& rhs) const
             return (this->object > rhs.object);
         case VoidPtr:
             return (this->voidPtr > rhs.voidPtr);
+        case FileTime:
+            return (this->i64 > rhs.i64);
         default:
             n_error("Variant::operator>(): invalid variant type!");
             return false;
@@ -1826,6 +1870,8 @@ Variant::operator<(const Variant& rhs) const
             return (this->object < rhs.object);
         case VoidPtr:
             return (this->voidPtr < rhs.voidPtr);
+        case FileTime:
+            return (this->i64 < rhs.i64);
         default:
             n_error("Variant::operator<(): invalid variant type!");
             return false;
@@ -1889,6 +1935,8 @@ Variant::operator>=(const Variant& rhs) const
             return (this->object >= rhs.object);
         case VoidPtr:
             return (this->voidPtr >= rhs.voidPtr);
+        case FileTime:
+            return (this->i64 >= rhs.i64);
         default:
             n_error("Variant::operator>(): invalid variant type!");
             return false;
@@ -1951,6 +1999,8 @@ Variant::operator<=(const Variant& rhs) const
             return (this->object <= rhs.object);
         case VoidPtr:
             return (this->voidPtr <= rhs.voidPtr);
+        case FileTime:
+            return (this->i64 <= rhs.i64);
         default:
             n_error("Variant::operator<(): invalid variant type!");
             return false;
@@ -2155,6 +2205,13 @@ Variant::operator==(void* ptr) const
 }
 
 //------------------------------------------------------------------------------
+/**/
+inline bool
+Variant::operator==(const IO::FileTime& rhs) const
+{    return (this->i64 == rhs.AsEpochTime());
+}
+
+//------------------------------------------------------------------------------
 /**
 */
 inline bool
@@ -2338,6 +2395,15 @@ Variant::operator!=(void* ptr) const
 {
     n_assert(VoidPtr == this->type);
     return (this->voidPtr == ptr);
+}
+
+//------------------------------------------------------------------------------
+/*
+*/
+inline bool
+Variant::operator!=(const IO::FileTime& rhs) const
+{
+        return (this->i64 != rhs.AsEpochTime());
 }
 
 //------------------------------------------------------------------------------
@@ -2923,6 +2989,26 @@ Variant::SetBlobArray(const Util::Array<Util::Blob>& val)
 //------------------------------------------------------------------------------
 /**
 */
+inline void
+Variant::SetFileTime(const IO::FileTime& val)
+{
+    *this = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline IO::FileTime
+Variant::GetFileTime() const
+{    
+    n_assert(FileTime == this->type);
+    IO::FileTime fileTime(this->i64);
+    return fileTime;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const Util::Array<Util::Blob>&
 Variant::GetBlobArray() const
 {
@@ -3222,6 +3308,15 @@ Variant::Get() const
     return this->GetBlobArray();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline IO::FileTime
+Variant::Get() const
+{
+    return this->GetFileTime();
+}
 //------------------------------------------------------------------------------
 /**
 */

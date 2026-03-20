@@ -192,6 +192,10 @@ public:
     void SetInt(int val);
     /// set as uint value
     void SetUInt(uint val);
+    /// set as int64 value
+    void SetInt64(int64_t val);
+    /// set as uint64 value
+    void SetUInt64(uint64_t val);
     /// set as long value
     void SetLong(long val);
     /// set as long value
@@ -260,8 +264,12 @@ public:
     const char* Get() const;
     /// return contents as integer
     int AsInt() const;
-    /// return contents as long long
-    long long AsLongLong() const;
+    /// return contents as int64_t
+    int64_t AsInt64() const;
+    /// return contents as unsigned integer
+    uint32_t AsUInt() const;
+    /// return contents as unsigned uint64_t
+    uint64_t AsUInt64() const;
     /// return contents as float
     float AsFloat() const;
     /// return contents as bool
@@ -318,6 +326,10 @@ public:
     static String FromInt(int i);
     /// construct a string from a uint
     static String FromUInt(uint i);
+    /// construct a string from a int64
+    static String FromInt64(int64_t i);
+    /// construct a string from a uint64
+    static String FromUInt64(uint64_t i);
     /// construct a string from a long
     static String FromLong(long i);
     /// construct a string from a size_t
@@ -923,6 +935,28 @@ String::FromUInt(uint i)
 {
     String str;
     str.SetUInt(i);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromInt64(int64_t i)
+{   
+    String str;
+    str.SetInt64(i);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromUInt64(uint64_t i)
+{
+    String str;
+    str.SetUInt64(i);
     return str;
 }
 

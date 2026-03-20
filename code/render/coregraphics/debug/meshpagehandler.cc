@@ -123,7 +123,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 {
     // lookup the mesh in the ResourceServer
     const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
-    Resources::ResourceId id = resId.AsLongLong();
+    Resources::ResourceId id = resId.AsUInt64();
 
     if (!resManager->HasResource(id))
     {
@@ -286,7 +286,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 {
     // lookup the mesh in the ResourceServer
     const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
-    ResourceId id = resId.AsLongLong();
+    ResourceId id = resId.AsUInt64();
     if (!resManager->HasResource(id))
     {
         return HttpStatus::NotFound;

@@ -20,7 +20,7 @@ public:
     /// construct from generic attribute id
     UIntAttrId(const AttrId& rhs);
     /// construct from attribute definition
-    UIntAttrId(const AttributeDefinition<IntTypeClass,int>& rhs);
+    UIntAttrId(const AttributeDefinition<IntTypeClass,uint>& rhs);
     /// construct from name
     UIntAttrId(const Util::String& rhs);
     /// construct from fourcc code
@@ -45,7 +45,7 @@ UIntAttrId::UIntAttrId(const AttrId& rhs) :
 /**
 */
 inline
-UIntAttrId::UIntAttrId(const AttributeDefinition<IntTypeClass,int>& rhs) :
+UIntAttrId::UIntAttrId(const AttributeDefinition<IntTypeClass,uint>& rhs) :
     AttrId(&rhs)
 {
     // empty

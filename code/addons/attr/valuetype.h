@@ -25,7 +25,6 @@ enum ValueType
     IntType             = Util::Variant::Int,
     UIntType            = Util::Variant::UInt,
     Int64Type           = Util::Variant::Int64,
-    UInt64Type          = Util::Variant::UInt64,
     FloatType           = Util::Variant::Float,
     DoubleType          = Util::Variant::Double,
     BoolType            = Util::Variant::Bool,
@@ -58,7 +57,6 @@ class UShortTypeClass {};
 class IntTypeClass {};
 class UIntTypeClass {};
 class Int64TypeClass {};
-class UInt64TypeClass {};
 class FloatTypeClass {};
 class DoubleTypeClass {};
 class BoolTypeClass {};

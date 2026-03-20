@@ -236,6 +236,32 @@ PosixFSWrapper::GetFileSize(const Util::String& path)
     return s.st_size;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+    Get file/folder io info via stat.
+*/
+bool 
+PosixFSWrapper::GetIOInfo(const IO::URI& path, IO::IOStat& outInfo)
+{
+    n_assert(path.IsValid());
+    struct stat s;
+    int r = stat(path.LocalPath().AsCharPtr(), &s);
+    if (0 != r)
+    {
+        return false;
+    }
+    outInfo.size = s.st_size;
+    outInfo.accessTime.time.tv_sec = s.st_atime;
+    outInfo.accessTime.time.tv_nsec = 0;
+    outInfo.modifiedTime.time.tv_sec = s.st_mtime;
+    outInfo.modifiedTime.time.tv_nsec = 0;
+    outInfo.creationTime.time.tv_sec = s.st_ctime;
+    outInfo.creationTime.time.tv_nsec = 0;
+    return true;
+}
+
+
 //------------------------------------------------------------------------------
 /**
     Set the read-only status of a file.

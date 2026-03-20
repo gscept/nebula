@@ -14,6 +14,7 @@
 #include "io/stream.h"
 #include "minizip/unzip.h"
 #include "util/stringatom.h"
+#include "io/filetime.h"
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -46,9 +47,11 @@ private:
 
     Threading::CriticalSection* archiveCritSect;
     Util::StringAtom name;
-    unzFile zipFileHandle;    // handle on zip file
-    unz64_file_pos filePosInfo; // info about position in zip file
-    uint64_t uncompressedSize;    // uncompressed size of the file
+    unzFile zipFileHandle;          // handle on zip file
+    unz64_file_pos filePosInfo;     // info about position in zip file
+    uint64_t uncompressedSize;      // uncompressed size of the file
+    uint64_t compressedSize;        // compressed size of the file
+    IO::FileTime createdTime;       // creation time of the file
 };
 
 //------------------------------------------------------------------------------

@@ -1037,10 +1037,34 @@ Returns content as integer. Note: this method doesn't check whether the
 contents is actually a valid integer. Use the IsValidInteger() method
 for this!
 */
-long long
-String::AsLongLong() const
+int64_t
+String::AsInt64() const
 {
     return atoll(this->AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
+    Returns content as integer. Note: this method doesn't check whether the
+    contents is actually a valid integer. Use the IsValidInteger() method
+    for this!
+*/
+uint32_t
+String::AsUInt() const
+{
+    return (uint32_t)strtoul(this->AsCharPtr(), nullptr, 10);
+}
+
+//------------------------------------------------------------------------------
+/**
+Returns content as integer. Note: this method doesn't check whether the
+contents is actually a valid integer. Use the IsValidInteger() method
+for this!
+*/
+uint64_t
+String::AsUInt64() const
+{
+    return strtoull(this->AsCharPtr(), nullptr, 10);
 }
 
 //------------------------------------------------------------------------------
@@ -1404,6 +1428,24 @@ void
 String::SetUInt(uint val)
 {
     this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetInt64(int64_t val)
+{
+    this->Format("%lld", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetUInt64(uint64_t val)
+{
+    this->Format("%llu", val);
 }
 
 //------------------------------------------------------------------------------

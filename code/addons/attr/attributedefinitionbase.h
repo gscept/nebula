@@ -249,8 +249,7 @@ AttributeDefinitionBase::GetSizeOfType() const
     case UShortType:        return sizeof(uint16_t);
     case IntType:           return sizeof(uint32_t);
     case UIntType:          return sizeof(uint32_t);
-    case Int64Type:         return sizeof(uint64_t);
-    case UInt64Type:        return sizeof(uint64_t);
+    case Int64Type:         return sizeof(int64_t);
     case FloatType:         return sizeof(float);
     case DoubleType:        return sizeof(double);
     case BoolType:          return sizeof(bool);
