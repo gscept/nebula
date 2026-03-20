@@ -153,12 +153,12 @@ psGLTFTranslucent(
     const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
 
 	const dims = textureGetSizeMip(Textures2D[PerTickParams.Scene], 0);
-    const pixel = texturePixelCacheLoad(InputAttachment0);
-	//const scene = sample2DLod(PerTickParams.Scene, LinearSampler, pixelGetCoordinates().xy * (1.0f / dims), 0);
+    //const pixel = texturePixelCacheLoad(InputAttachment0);
+	const scene = sample2DLod(PerTickParams.Scene, LinearSampler, pixelGetCoordinates().xy * (1.0f / dims), 0);
 
     var light = f32x3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
-	light += pixel.rgb * baseColor.rgb; // fake IBL for translucency
+	light += scene.rgb * baseColor.rgb; // fake IBL for translucency
 	light += CalculateLightTranslucent(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
     //light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;
