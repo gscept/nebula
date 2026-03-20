@@ -450,7 +450,7 @@ class BatchDefinition:
         pass
 
 class FullscreenEffectDefinition:
-    def __init__(self, parser, node, p):
+    def __init__(self, parser, node, p, rp):
         self.name = node['name'].replace(" ", "")
         self.shader = node['shader']
         self.mask = node['mask']
@@ -460,6 +460,7 @@ class FullscreenEffectDefinition:
         for var in node['variables']:
             self.variables.append(dict(name = var['semantic'], value = var['value'], type = var['type']))
         self.p = p
+        self.rp = rp
         parser.externs.append(self)
 
     def FormatHeader(self, file):
@@ -494,17 +495,20 @@ class FullscreenEffectDefinition:
         file.WriteLine('CoreGraphics::DestroyResourceTable(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine('}')
-        file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
-        file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
-        file.WriteLine('{}::{}::STRUCT state;'.format(self.namespace, self.constantBlockName))
+        if self.p is not None:
+            file.WriteLine(f"FullScreenEffect_{self.name}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{self.p.name}, 0, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});")
+        else:
+            file.WriteLine(f"FullScreenEffect_{self.name}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, CoreGraphics::InvalidPassId, 0, Render_{self.rp.name}, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});")
+        file.WriteLine(f'FullScreenEffect_{self.name}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);')
+        file.WriteLine(f'{self.namespace}::{self.constantBlockName}::STRUCT state;')
         for var in self.variables:
             type = var['type']
             if type == "textureHandle":
-                file.WriteLine('state.{} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{}]);'.format(var['name'], var['value']))
+                file.WriteLine(f'state.{var["name"]} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{var["value"]}]);')
             elif type == "texture":
-                file.WriteLine('CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{}], {}::{}::BINDING));'.format(var['value'], self.namespace, var['name']))
+                file.WriteLine(f'CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{var["value"]}], {self.namespace}::{var["name"]}::BINDING));')
             else:
-                file.WriteLine('state.{} = {};'.format(var['name'], var['value']))
+                file.WriteLine(f'state.{var["name"]} = {var["value"]};')
         file.WriteLine('CoreGraphics::BufferCreateInfo bufInfo;')
         file.WriteLine('bufInfo.name = "FullscreenEffect_{}_Constants";'.format(self.name))
         file.WriteLine('bufInfo.byteSize = sizeof({}::{}::STRUCT);'.format(self.namespace, self.constantBlockName))
@@ -870,7 +874,7 @@ class SubpassDefinition:
             elif 'batch' in op:
                 self.ops.append(BatchDefinition(parser, op['batch']))
             elif 'fullscreen_effect' in op:
-                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], parent))
+                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], parent, None))
 
 
     def FormatHeader(self, file):
@@ -1099,7 +1103,7 @@ class RenderDefinition:
             elif 'batch' in op:
                 self.ops.append(BatchDefinition(parser, op['batch']))
             elif 'fullscreen_effect' in op:
-                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], self))
+                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], None, self))
 
     def FormatExtern(self, file, parser):
 
@@ -1119,6 +1123,7 @@ class RenderDefinition:
         file.IncreaseIndent()
         file.WriteLine(f'CoreGraphics::RenderPassCreateInfo info;')
         
+        file.WriteLine(f'info.name = "Render_{self.name}";')
         file.WriteLine(f'info.area = Math::rectangle<int>(0, 0, 0, 0);')
         if self.depthAttachment is not None:
             file.WriteLine("{")
@@ -1263,15 +1268,23 @@ class RenderDefinition:
         file.WriteLine(f'CoreGraphics::CmdSetViewports(cmdBuf, Render_{self.name}_Viewports);')
         file.WriteLine(f'CoreGraphics::CmdSetScissors(cmdBuf, Render_{self.name}_Viewports);')
 
+        if self.depthAttachment != None:
+            file.WriteLine(f'Render_{self.name}_RenderTargetDimensions[Render_{self.name}_DepthAttachment] = Shared::RenderTargetParameters{{ {{ viewport.width() * {self.depthAttachment.ref.relativeSize[0]}f, viewport.height() * {self.depthAttachment.ref.relativeSize[1]}f, 1 / float(viewport.width()) * {self.depthAttachment.ref.relativeSize[0]}f, 1 / float(viewport.height()) * {self.depthAttachment.ref.relativeSize[1]}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{self.depthAttachment.ref.name}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{self.depthAttachment.ref.name}].second }} }};')
+        for target in self.targets: 
+            file.WriteLine(f'Render_{self.name}_RenderTargetDimensions[Render_{self.name}_Attachment_{target.name}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {target.ref.relativeSize[0]}f, viewport.height() * {target.ref.relativeSize[1]}f, 1 / float(viewport.width()) * {target.ref.relativeSize[0]}f, 1 / float(viewport.height()) * {target.ref.relativeSize[1]}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{target.ref.name}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{target.ref.name}].second }} }};')
+        file.WriteLine(f'CoreGraphics::RenderPassSetRenderTargetParameters(cmdBuf, Render_{self.name}, Render_{self.name}_RenderTargetDimensions);')
         file.WriteLine(f"CoreGraphics::CmdBeginRenderPass(cmdBuf, Render_{self.name});")
 
         for op in self.ops:
             op.FormatSource(file)
 
         file.WriteLine(f"CoreGraphics::CmdEndRenderPass(cmdBuf);")
+        file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
         
     def FormatSetup(self, file):
         file.WriteLine("Initialize_Render_{}();".format(self.name))
+        for op in self.ops:
+            op.FormatSetup(file)
 
 class SubmissionDefinition:
     def __init__(self, parser, node):

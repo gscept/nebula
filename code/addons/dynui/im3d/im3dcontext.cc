@@ -116,31 +116,31 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    FrameScript_default::RegisterSubgraph_Im3D_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_Im3D_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Render(cmdBuf, frame);
     });
-    FrameScript_default::RegisterSubgraphPipelines_Im3D_Pass([](const CoreGraphics::PassId pass, const uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_Im3D_Render([](const CoreGraphics::RenderPassId pass)
     {
         if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
-        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
-        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
-        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
-        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
-        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
+        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
     });
     Im3d::NewFrame();
 

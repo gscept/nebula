@@ -906,6 +906,16 @@ DestroyRenderPass(RenderPassId pass)
 /**
 */
 void
+RenderPassSetRenderTargetParameters(const CoreGraphics::CmdBufferId cmdBuf, const RenderPassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
+{
+    RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id.id);
+    CmdUpdateBuffer(cmdBuf, shaderInterface.constants, shaderInterface.renderTargetDimensionsOffset, viewports.ByteSize(), viewports.Begin());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 PassRenderEnd(CoreGraphics::CmdBufferId cmdBuf)
 {
     vkCmdEndRendering(CmdBufferGetVk(cmdBuf));

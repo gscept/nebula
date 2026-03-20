@@ -268,17 +268,16 @@ TBUIContext::Create()
             components.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::UByte4N, 0));
             state.vertexLayout = CoreGraphics::CreateVertexLayout({.name = "TBUI Vertex Layout", .comps = components});
 
-            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
-                [](const CoreGraphics::PassId pass, uint subpass)
+            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Render([](const CoreGraphics::RenderPassId pass)
                 {
                     CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
                     if (state.pipeline != CoreGraphics::InvalidPipelineId)
                         CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, pass, subpass, CoreGraphics::InvalidRenderPassId, inputAssembly});
+                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, CoreGraphics::InvalidPassId, 0, pass, inputAssembly});
                 }
             );
 
-            FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
+            FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Render(
                 [](const CoreGraphics::CmdBufferId cmdBuf,
                    const CoreGraphics::QueueType queue,
                    const Math::rectangle<int>& viewport,
