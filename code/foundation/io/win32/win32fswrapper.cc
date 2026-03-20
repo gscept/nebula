@@ -293,12 +293,20 @@ Win32FSWrapper::GetIOInfo(const IO::URI& uri, IO::IOStat& outInfo)
     ushort widePath[1024];
     Win32::Win32StringConverter::UTF8ToWide(uri.LocalPath(), widePath, sizeof(widePath));
     struct _stat64 buf;
+    const static auto ToFileTime = [](const __time64_t& t) -> FILETIME
+    {
+        FILETIME ft;
+        LONGLONG ll = Int64(t) * 10000000 + 116444736000000000; // convert to 100-nanosecond intervals and add epoch difference
+        ft.dwLowDateTime = (DWORD)(ll & 0xFFFFFFFF);
+        ft.dwHighDateTime = (DWORD)(ll >> 32);
+        return ft;
+    };
     if(_wstat64((LPCWSTR)widePath, &buf) == 0)
     {
         outInfo.size = buf.st_size;
-        outInfo.accessTime.time = buf.st_atime;
-        outInfo.modifiedTime.time = buf.st_mtime;
-        outInfo.creationTime.time = buf.st_ctime;
+        outInfo.accessTime.time = ToFileTime(buf.st_atime);
+        outInfo.modifiedTime.time = ToFileTime(buf.st_mtime);
+        outInfo.creationTime.time = ToFileTime(buf.st_ctime);
         return true;
     }
     return false;
