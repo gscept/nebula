@@ -13,6 +13,8 @@
 #include "imgui_internal.h"
 #include "asseteditor/asseteditor.h"
 #include "timing/calendartime.h"
+#include <algorithm>
+#include <cstdint>
 
 #include "editor/tools/pathconverter.h"
 
@@ -91,33 +93,48 @@ AssetBrowser::Run(SaveMode save)
 /**
 */
 void
-AssetBrowser::DisplayFileTreeFolderHierarchy(const FileTreeNode& node, int depth)
+AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
 {
-    Util::String rootFolder = IO::URI("proj:").GetHostAndLocalPath();
-    Util::String relativePath = node.path.LocalPath().ExtractToEnd(rootFolder.Length());
-    
+    ToolkitUtil::FileDB::FolderInfo info;
+    if (!this->fileDB.GetFolderInfo(folderId, info))
+    {
+        return;
+    }
+
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
+    this->fileDB.GetChildFolders(folderId, children);
+    std::sort(children.begin(), children.end(), [](const ToolkitUtil::FileDB::FolderInfo& a, const ToolkitUtil::FileDB::FolderInfo& b)
+    {
+        return a.name < b.name;
+    });
+
+    Util::Array<ToolkitUtil::FileDB::FileInfo> files;
+    this->fileDB.GetFilesInFolder(folderId, files);
+
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_SpanFullWidth;
     if (depth == 0)
     {
         flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen;
     }
-    if (node.children.IsEmpty() && node.files.IsEmpty())
+    if (children.IsEmpty() && files.IsEmpty())
     {
         flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Leaf; 
     }
-    ImGui::PushID(node.hash);
-    bool bIsOpen = ImGui::TreeNodeEx(node.name.AsCharPtr(), flags);
+
+    ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(folderId)));
+    bool bIsOpen = ImGui::TreeNodeEx(info.name.AsCharPtr(), flags);
     ImGui::PopID();
     if(ImGui::IsItemClicked())
     {
-        this->activeFolder = node.hash;
+        this->activeFolder = folderId;
+        this->activeFile = 0;
     }
+
     if (bIsOpen)
     {
-        for (const auto& childHash : node.children)
+        for (const auto& child : children)
         {
-            const FileTreeNode& childNode = this->nodes[childHash];
-            DisplayFileTreeFolderHierarchy(childNode, depth + 1);
+            DisplayFileTreeFolderHierarchy(child.id, depth + 1);
         }
         ImGui::TreePop();
     }
@@ -131,101 +148,83 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(const FileTreeNode& node, int depth
 void
 AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 {
-    static const auto FileEntryTypeToAssetType = [](FileEntry::Type type) -> AssetEditor::AssetType
+    static const auto FileEntryTypeToAssetType = [](ToolkitUtil::FileType type) -> AssetEditor::AssetType
     {
         switch (type)
         {
-            case FileEntry::Type::FBX:
-            case FileEntry::Type::GLTF:
-            case FileEntry::Type::Model:
+            case ToolkitUtil::FileType::FBX:
+            case ToolkitUtil::FileType::GLTF:
+            case ToolkitUtil::FileType::Model:
                 return AssetEditor::AssetType::Model;
-            case FileEntry::Type::Mesh:
+            case ToolkitUtil::FileType::Mesh:
                 return AssetEditor::AssetType::Mesh;
-            case FileEntry::Type::Texture:
+            case ToolkitUtil::FileType::Texture:
                 return AssetEditor::AssetType::Texture;
-            case FileEntry::Type::Skeleton:
+            case ToolkitUtil::FileType::Skeleton:
                 return AssetEditor::AssetType::Skeleton;
-            case FileEntry::Type::Animation:
+            case ToolkitUtil::FileType::Animation:
                 return AssetEditor::AssetType::Animation;
-            case FileEntry::Type::Surface:        
+            case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
-            case FileEntry::Type::Audio:                
-            case FileEntry::Type::Text:
-            case FileEntry::Type::Frame:
-            case FileEntry::Type::Shader:
-            case FileEntry::Type::Physics:
-            case FileEntry::Type::NavMesh:            
+            case ToolkitUtil::FileType::Audio:
+            case ToolkitUtil::FileType::Text:
+            case ToolkitUtil::FileType::Frame:
+            case ToolkitUtil::FileType::Shader:
+            case ToolkitUtil::FileType::Physics:
+            case ToolkitUtil::FileType::NavMesh:
             default:
                 return AssetEditor::AssetType::None;
         }
     };
-    
-    static const auto AddDragSourceForFileEntry = [](const FileEntry& file)
+
+    static const auto AddDragSourceForFileUri = [](const IO::URI& file)
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            Util::String filePath = file.path.GetHostAndLocalPath();
+            Util::String filePath = file.GetHostAndLocalPath();
             ImGui::SetDragDropPayload("resource", filePath.AsCharPtr(), sizeof(char) * filePath.Length() + 1);
             ImGui::EndDragDropSource();
         }
     };
-    static const ImGuiTableSortSpecs* s_sort_specs = nullptr;
-    static const auto SortEntryFunction = [this](const uint& a, const uint& b) -> bool
-    {
-        n_assert(s_sort_specs != nullptr);
-        // weirdness sort passes us 0 sometimes.
-        if (!this->files.Contains(a)|| !this->files.Contains(b))
-        {
-            return false;
-        }
-        const FileEntry& entryA = this->files[a];
-        const FileEntry& entryB = this->files[b];
-        const bool descending = s_sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Descending ? true : false;
 
-        if (s_sort_specs->SpecsCount != 1)
-        {
-            return descending ^ (entryA.name < entryB.name);
-        }
-        switch (s_sort_specs->Specs[0].ColumnIndex)
-        {
-            case 0:
-                return descending ^ (entryA.name < entryB.name);
-            case 1:
-                return descending ^ (entryA.size < entryB.size);
-            case 2:
-                return descending ^ (entryA.modifiedTime < entryB.modifiedTime);
-            default:
-                return false;
-        }
-        return false;
-    };
-    
-    if (this->activeFolder != -1)
+    static const ImGuiTableSortSpecs* s_sort_specs = nullptr;
+
+    if (this->activeFolder != 0)
     {
-        bool doubleClicked = false;
-        FileTreeNode& node = this->nodes[this->activeFolder];
+        bool hasFileToOpen = false;
+        ToolkitUtil::FileDB::FileInfo fileToOpen;
+        Util::Array<ToolkitUtil::FileDB::FileInfo> folderFiles;
+        this->fileDB.GetFilesInFolder(this->activeFolder, folderFiles);
+
+        Util::Array<ToolkitUtil::FileDB::FileInfo> visibleFiles;
+        visibleFiles.Reserve(folderFiles.Size());
+        for (const auto& file : folderFiles)
+        {
+            if (!filter.IsEmpty() && this->activeFile != file.id && !Util::String::MatchPattern(file.name, filter))
+            {
+                continue;
+            }
+            visibleFiles.Append(file);
+        }
+
         switch(this->fileViewMode)
         {
             case FileViewMode::List:
             {
-                for (uint fileHash : node.files)
+                for (const auto& file : visibleFiles)
                 {
-                    const FileEntry& file = this->files[fileHash];
-                    bool isSelected = (this->activeFile == fileHash);
-                    if (!filter.IsEmpty() && !isSelected && !Util::String::MatchPattern(file.name, filter))
-                    {
-                        continue;
-                    }
-                    ImGui::PushID(fileHash);
+                    bool isSelected = (this->activeFile == file.id);
+                    ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(file.id)));
                     if(ImGui::Selectable(file.name.AsCharPtr(), &isSelected))
                     {
-                        this->activeFile = fileHash;
+                        this->activeFile = file.id;
                     }
                     if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(0))
                     {
-                        doubleClicked = true;
+                        hasFileToOpen = true;
+                        fileToOpen = file;
                     }
-                    AddDragSourceForFileEntry(file);
+                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
                     ImGui::PopID();
                 }
             }
@@ -240,41 +239,51 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 ImGui::TableHeadersRow();
 
                 if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-                if (sorts_specs->SpecsDirty && node.files.Size() > 1)
+                if (sorts_specs->SpecsDirty && visibleFiles.Size() > 1)
                 {
-                    if (sorts_specs->SpecsCount != 1)
-                    {
-                        break;
-                    }
                     s_sort_specs = sorts_specs;
-                    std::sort(node.files.begin(), node.files.end(), SortEntryFunction);
+                    const bool descending = s_sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Descending;
+                    std::sort(visibleFiles.begin(), visibleFiles.end(), [descending](const ToolkitUtil::FileDB::FileInfo& a, const ToolkitUtil::FileDB::FileInfo& b)
+                    {
+                        if (s_sort_specs->SpecsCount != 1)
+                        {
+                            return descending ? (b.name < a.name) : (a.name < b.name);
+                        }
+                        switch (s_sort_specs->Specs[0].ColumnIndex)
+                        {
+                            case 0:
+                                return descending ? (b.name < a.name) : (a.name < b.name);
+                            case 1:
+                                return descending ? (b.size < a.size) : (a.size < b.size);
+                            case 2:
+                                return descending ? (b.modifiedDate < a.modifiedDate) : (a.modifiedDate < b.modifiedDate);
+                            default:
+                                return false;
+                        }
+                    });
                     sorts_specs->SpecsDirty = false;
                 }
                 
-                for (uint fileHash : node.files)
+                for (const auto& file : visibleFiles)
                 {
-                    const FileEntry& file = this->files[fileHash];
-                    bool isSelected = (this->activeFile == fileHash);
-                    if (!filter.IsEmpty() && !isSelected && !Util::String::MatchPattern(file.name, filter))
-                    {
-                        continue;
-                    }
+                    bool isSelected = (this->activeFile == file.id);
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     if (ImGui::Selectable(file.name.AsCharPtr(), &isSelected))
                     {
-                        this->activeFile = fileHash;
+                        this->activeFile = file.id;
 
                     }
                     if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(0))
                     {
-                        doubleClicked = true;
+                        hasFileToOpen = true;
+                        fileToOpen = file;
                     }
-                    AddDragSourceForFileEntry(file);
+                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
                     ImGui::TableNextColumn();
                     ImGui::Text("%d KB", (int)(file.size / 1024));
                     ImGui::TableNextColumn();  
-                    Timing::CalendarTime cal = Timing::CalendarTime::FileTimeToSystemTime(file.modifiedTime);
+                    Timing::CalendarTime cal = Timing::CalendarTime::FileTimeToSystemTime(file.modifiedDate);
                     ImGui::Text("%d-%d-%d %d:%d", cal.GetYear(), cal.GetMonth(), cal.GetDay(), cal.GetHour(), cal.GetMinute());
                 }
                 ImGui::EndTable();
@@ -284,27 +293,27 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             case FileViewMode::Icons:
             {        
                 ImGuiStyle& style = ImGui::GetStyle();
-                int numFiles = node.files.Size();
+                int numFiles = visibleFiles.Size();
                 float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
                 static int itemSize = 50;
                 ImGui::SliderInt("Zoom", &itemSize, 25, 200);
                 int n = 0;
-                for (uint fileHash : node.files)
+                for (const auto& file : visibleFiles)
                 {
-                    const FileEntry& file = this->files[fileHash];
                     Util::String const& name = file.name;
-                    ImGui::PushID(fileHash);
+                    ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(file.id)));
                     ImGui::BeginGroup();
                     //ImGui::ImageButton(name.AsCharPtr(), &Editor::UI::Icons::game, { (float)itemSize, (float)itemSize });
                     if(ImGui::Button("X", { (float)itemSize, (float)itemSize }))
                     {
-                        this->activeFile = fileHash;
+                        this->activeFile = file.id;
                     }
                     if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(0))
                     {
-                        doubleClicked = true;
+                        hasFileToOpen = true;
+                        fileToOpen = file;
                     }
-                    AddDragSourceForFileEntry(file);
+                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
                     ImGui::BeginChild("##filename00", { (float)itemSize, ImGui::GetTextLineHeight()}, false, ImGuiWindowFlags_NoScrollbar);
                     ImGui::Text(name.AsCharPtr());
                     if (ImGui::IsItemHovered())
@@ -315,10 +324,11 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     }
                     if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(0))
                     {
-                        this->activeFile = fileHash;
-                        doubleClicked = true;
+                        this->activeFile = file.id;
+                        hasFileToOpen = true;
+                        fileToOpen = file;
                     }
-                    AddDragSourceForFileEntry(file);
+                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
                     ImGui::EndChild();                    
                     ImGui::EndGroup();
 
@@ -334,12 +344,11 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             break;
             default: break;
         }
-        if (doubleClicked)
+        if (hasFileToOpen)
         {
-            const FileEntry& file = this->files[this->activeFile];
-            IO::URI uri = file.path;
+            IO::URI uri = this->fileDB.GetFilePath(fileToOpen.id);
             Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
-            assetEditor->Open(uri.GetHostAndLocalPath(), FileEntryTypeToAssetType(file.type));
+            assetEditor->Open(uri.GetHostAndLocalPath(), FileEntryTypeToAssetType(fileToOpen.type));
         }    
     }
 }
@@ -355,11 +364,21 @@ AssetBrowser::DisplayFileTree()
     if (ImGui::Button("work"))
     {
         this->activeFileTree = "work";
+        if (this->roots.Contains(this->activeFileTree))
+        {
+            this->activeFolder = this->roots[this->activeFileTree];
+            this->activeFile = 0;
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("export"))
     {
         this->activeFileTree = "export";
+        if (this->roots.Contains(this->activeFileTree))
+        {
+            this->activeFolder = this->roots[this->activeFileTree];
+            this->activeFile = 0;
+        }
     }
     ImGui::SameLine();
     ImGui::InputText("##search", buffer, NEBULA_MAXPATH, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
@@ -370,12 +389,22 @@ AssetBrowser::DisplayFileTree()
     ImGui::Separator();
     ImGui::Columns(2);
     ImGui::BeginChild("ScrollingRegionFolders");
-    this->DisplayFileTreeFolderHierarchy(this->nodes[this->fileTrees[this->activeFileTree].rootHash], 0);
+    if (this->roots.Contains(this->activeFileTree))
+    {
+        this->DisplayFileTreeFolderHierarchy(this->roots[this->activeFileTree], 0);
+    }
+    else
+    {
+        ImGui::Text("No root data yet");
+    }
     ImGui::Text("System"); 
     ImGui::SameLine();
     ImGui::Separator();
     const Util::String& sysFolder = "sys" + this->activeFileTree;
-    this->DisplayFileTreeFolderHierarchy(this->nodes[this->fileTrees[sysFolder].rootHash], 0);
+    if (this->roots.Contains(sysFolder))
+    {
+        this->DisplayFileTreeFolderHierarchy(this->roots[sysFolder], 0);
+    }
     ImGui::EndChild();
     ImGui::NextColumn();
     if (ImGui::Button("Details"))
@@ -405,87 +434,77 @@ void
 AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
 {
     IO::URI folderPath(folderPathString);
-    AssetBrowser::FileTree& tree =  this->fileTrees.Emplace(treeName);
-    tree.path = folderPath;
-    uint rootHash = (tree.path.LocalPath().HashCode()) ^ (useArchive ? 0x12345678 : 0x87654321); // Simple way to differentiate between archive and non-archive trees
-    tree.rootHash = rootHash;
-    FileTreeNode& root = this->nodes.Emplace(rootHash);
-    root.name = tree.path.LocalPath().ExtractFileName();
-    root.path = tree.path;
-    root.hash = rootHash;
-    root.parentHash = -1; // No parent for root
-
     uint64_t rootId = this->fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
+    if (this->roots.Contains(treeName))
+    {
+        this->roots[treeName] = rootId;
+    }
+    else
+    {
+        uint64_t& root = this->roots.Emplace(treeName);
+        root = rootId;
+    }
+
+    if (this->activeFolder == 0 && treeName == this->activeFileTree)
+    {
+        this->activeFolder = rootId;
+    }
 
     IO::IoServer* ioServer = IO::IoServer::Instance();
     // Start recursive scanning from the root
-    if (ioServer->DirectoryExists(tree.path))
+    if (ioServer->DirectoryExists(folderPath))
     {
-        ScanFolderRecursive(ioServer, tree.path, rootHash, useArchive, rootId);
+        ScanFolderRecursive(ioServer, folderPath, useArchive, rootId);
     }
-    auto& node = this->nodes[rootHash];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, uint nodeHash, bool useArchive, uint64_t parent)
+AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent)
 {
     // List all files in the current directory
     Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
     for (const auto& fileName : files)
     {
-        uint fileHash = fileName.HashCode() ^ (useArchive ? 0x12345678 : 0x87654321);
-        FileEntry& entry = this->files.Emplace(fileHash);
-        this->nodes[nodeHash].files.Append(fileHash);
-        entry.path = fileName;
-        entry.name = fileName.ExtractFileName();
-        entry.folder = nodeHash;
-        
-        // Extract file extension
-        entry.extension = entry.name.GetFileExtension();
-        
+        Util::String fileLeaf = fileName.ExtractFileName();
         IO::IOStat ioInfo;
+        IO::Stream::Size fileSize = 0;
+        IO::FileTime modifiedTime;
         if (ioServer->GetIOInfo(fileName, ioInfo, useArchive))
         {
-            entry.size = ioInfo.size;
-            entry.modifiedTime = ioInfo.modifiedTime;   
+            fileSize = ioInfo.size;
+            modifiedTime = ioInfo.modifiedTime;
         }
-        
-        // Determine file type
-        entry.type = DetermineFileType(entry.extension);
-        this->fileDB.AddFile(this->logger, entry.name, parent, entry.size, static_cast<ToolkitUtil::FileType>(entry.type), entry.modifiedTime);
+
+        this->fileDB.AddFile(this->logger, fileLeaf, parent, fileSize, DetermineFileType(fileLeaf.GetFileExtension()), modifiedTime);
     }
     
     // List all subdirectories and recursively scan them
     Util::Array<Util::String> directories = ioServer->ListDirectories(folderPath, "*", true, useArchive);
     for (const auto& childDir : directories)
     {
-        uint hash = childDir.HashCode() ^ (useArchive ? 0x12345678 : 0x87654321);
-        this->nodes[nodeHash].children.Append(hash);
-        FileTreeNode& childNode = this->nodes.Emplace(hash);
-        childNode.name = childDir.ExtractFileName();
-        
-        childNode.path = childDir;
-        childNode.hash = hash;
-
-        uint64_t childId = this->fileDB.CreateFolder(this->logger, childNode.name, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
+        Util::String childName = childDir.ExtractFileName();
+        uint64_t childId = this->fileDB.CreateFolder(this->logger, childName, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
         
         // Recursively scan the subdirectory
-        ScanFolderRecursive(ioServer, childDir, hash, useArchive, childId);
+        if (childId != 0)
+        {
+            ScanFolderRecursive(ioServer, childDir, useArchive, childId);
+        }
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-AssetBrowser::FileEntry::Type
+ToolkitUtil::FileType
 AssetBrowser::DetermineFileType(const Util::String& extension)
 {
     if (extension.IsEmpty())
     {
-        return FileEntry::Type::Text;
+        return ToolkitUtil::FileType::Text;
     }
     
     Util::String ext(extension);
@@ -494,69 +513,70 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     // Model files
     if (ext == "n3")
     {
-        return FileEntry::Type::Model;
+        return ToolkitUtil::FileType::Model;
     }
 
     if (ext == "nvx2" || ext == "nvx")
     {
-        return FileEntry::Type::Mesh;
+        return ToolkitUtil::FileType::Mesh;
     }
     
     // Texture files
     if (ext == "dds" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "tga" || ext == "bmp")
     {
-        return FileEntry::Type::Texture;
+        return ToolkitUtil::FileType::Texture;
     }
     
     // Surface/Material files
     if (ext == "sur" || ext == "material")
     {
-        return FileEntry::Type::Surface;
+        return ToolkitUtil::FileType::Surface;
     }
     
     // Audio files
     if (ext == "ogg" || ext == "wav" || ext == "mp3" || ext == "flac")
     {
-        return FileEntry::Type::Audio;
+        return ToolkitUtil::FileType::Audio;
     }
     
     // Skeleton files
     if (ext == "nsk")
     {
-        return FileEntry::Type::Skeleton;
+        return ToolkitUtil::FileType::Skeleton;
     }
     
     // Animation files
     if (ext == "nax")
     {
-        return FileEntry::Type::Animation;
+        return ToolkitUtil::FileType::Animation;
     }
     
     // Frame files
     if (ext == "json")
     {
-        return FileEntry::Type::Frame;
+        return ToolkitUtil::FileType::Frame;
     }
     
     // Shader files
     if (ext == "gplb" || ext == "gpul")
     {
-        return FileEntry::Type::Shader;
+        return ToolkitUtil::FileType::Shader;
     }
     
     // Physics files
     if (ext == "actor" || ext == "physics")
     {
-        return FileEntry::Type::Physics;
+        return ToolkitUtil::FileType::Physics;
     }
     
     // NavMesh files
     if (ext == "nav")
     {
-        return FileEntry::Type::NavMesh;
+        return ToolkitUtil::FileType::NavMesh;
     }
     
     // Default to Other for unknown extensions
-    return FileEntry::Type::Other;
+    return ToolkitUtil::FileType::Other;
 }
+
 }

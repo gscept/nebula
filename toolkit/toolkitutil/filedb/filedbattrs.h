@@ -13,20 +13,20 @@
 namespace Attr
 {
     // Folder table attributes
-    DeclareUInt64(FolderId, 'FLDI', Attr::ReadOnly);
-    DeclareUInt64(ParentFolderId, 'PFID', Attr::ReadWrite);
+    DeclareInt64(FolderId, 'FLDI', Attr::ReadOnly);
+    DeclareInt64(ParentFolderId, 'PFID', Attr::ReadWrite);
     DeclareBool(IsRootFolder, 'IROT', Attr::ReadOnly);
     DeclareBool(IsArchive, 'IARC', Attr::ReadOnly);
     
     // File table attributes
-    DeclareUInt64(FileId, 'FIDI', Attr::ReadOnly);
-    DeclareUInt64(FileFolderId, 'FFID', Attr::ReadWrite);
+    DeclareInt64(FileId, 'FIDI', Attr::ReadOnly);
+    DeclareInt64(FileFolderId, 'FFID', Attr::ReadWrite);
     DeclareInt64(FileSize, 'FSIZ', Attr::ReadWrite);
     DeclareInt(FileType, 'FTYP', Attr::ReadWrite);
     DeclareString(FileExt, 'FEXT', Attr::ReadWrite);
     
     // shared attributes (used by both folders and files)
     DeclareString(EntityUri, 'FURI', Attr::ReadWrite);
-    DeclareUInt64(ModifiedDate, 'MDAT', Attr::ReadWrite);
+    DeclareInt64(ModifiedDate, 'MDAT', Attr::ReadWrite);
     DeclareString(EntityName, 'NAME', Attr::ReadWrite);  // Generic name for folders/files    
 }

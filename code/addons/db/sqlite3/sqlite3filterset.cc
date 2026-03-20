@@ -130,9 +130,6 @@ Sqlite3FilterSet::BindValuesToCommand(const Ptr<Command>& cmd, IndexT wildcardSt
             case Attr::Int64Type:
                 cmd->BindInt64(wildCardIndex, attr.GetInt64());
                 break;
-            case Attr::UInt64Type:
-                cmd->BindUInt64(wildCardIndex, attr.GetUInt64());
-                break;
             case Attr::FloatType:
                 cmd->BindFloat(wildCardIndex, attr.GetFloat());
                 break;

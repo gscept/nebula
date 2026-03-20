@@ -14,42 +14,22 @@
 //------------------------------------------------------------------------------
 namespace Util
 {
-uint32_t Hash(const uint8_t* key, SizeT len, uint32_t seed = 4711)
+
+//------------------------------------------------------------------------------
+/**
+ * Hash based on murmurhash3
+*/
+uint32_t Hash(const uint8_t* key, SizeT len, uint32_t seed = 4711);
+
+
+//------------------------------------------------------------------------------
+/**
+ * Hash combine function, based on boost::hash_combine
+*/
+inline uint32_t
+HashCombineFast(uint32_t hash1, uint32_t hash2)
 {
-
-    const static auto murmur_scramble = [](uint32_t k)
-    {
-        k *= 0xcc9e2d51;
-        k = (k << 15) | (k >> 17);
-        k *= 0x1b873593;
-        return k;
-    };
-
-    uint32_t h = seed;
-    uint32_t k;
-
-    for (size_t i = len >> 2; i; i--) 
-    {
-        Memory::Copy(key, &k, 4);
-        key += sizeof(uint32_t);
-        h ^= murmur_scramble(k);
-        h = (h << 13) | (h >> 19);
-        h = h * 5 + 0xe6546b64;
-    }
-    k = 0;
-    for (size_t i = len & 3; i; i--) 
-    {
-        k <<= 8;
-        k |= *key++;
-    }
-    h ^= murmur_scramble(k);
-    h ^= (uint32_t)len;
-    h ^= h >> 16;
-    h *= 0x85ebca6b;
-    h ^= h >> 13;
-    h *= 0xc2b2ae35;
-    h ^= h >> 16;
-    return h;
+    return hash1 ^ (hash2 + 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
 }
 
 }

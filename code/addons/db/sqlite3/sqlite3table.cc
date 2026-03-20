@@ -130,7 +130,6 @@ Sqlite3Table::BuildColumnDef(const Column& column)
         case Attr::IntType:
         case Attr::UIntType:
         case Attr::Int64Type:
-        case Attr::UInt64Type:
         case Attr::BoolType:
             def.Append(IntegerFrag);
             break;
@@ -758,10 +757,6 @@ Sqlite3Table::BindValueToCommand(const Ptr<Command>& cmd, IndexT wildCardIndex, 
 
         case Attr::UIntType: 
             cmd->BindUInt(wildCardIndex, this->valueTable->GetUInt(valueTableColIndex, valueTableRowIndex));
-            break;
-
-        case Attr::UInt64Type: 
-            cmd->BindUInt64(wildCardIndex, this->valueTable->GetUInt64(valueTableColIndex, valueTableRowIndex));
             break;
 
         case Attr::FloatType:

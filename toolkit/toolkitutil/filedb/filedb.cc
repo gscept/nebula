@@ -10,6 +10,8 @@
 #include "io/filetime.h"
 #include "timing/calendartime.h"
 #include "util/variant.h"
+#include "util/guid.h"
+#include "util/hash.h"
 
 
 namespace ToolkitUtil
@@ -25,15 +27,6 @@ namespace
 /**
 */
 uint32_t
-SanitizeHashComponent(uint32_t hash)
-{
-    return hash == 0 ? 1 : hash;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
 ExtractRootHash(uint64_t packedId)
 {
     return static_cast<uint32_t>(packedId >> 32);
@@ -45,34 +38,7 @@ ExtractRootHash(uint64_t packedId)
 uint64_t
 PackEntityId(uint32_t rootHash, uint32_t entityHash)
 {
-    return (static_cast<uint64_t>(SanitizeHashComponent(rootHash)) << 32) | SanitizeHashComponent(entityHash);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-String
-BuildRelativeHierarchy(const Array<String>& hierarchy, const String& leafName)
-{
-    String result;
-    for (IndexT i = 1; i < hierarchy.Size(); ++i)
-    {
-        if (!result.IsEmpty())
-        {
-            result.Append("/");
-        }
-        result.Append(hierarchy[i]);
-    }
-
-    if (leafName.IsValid())
-    {
-        if (!result.IsEmpty())
-        {
-            result.Append("/");
-        }
-        result.Append(leafName);
-    }
-    return result;
+    return (static_cast<uint64_t>(rootHash) << 32) | entityHash;
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +50,7 @@ HashEntityPath(const char* entityType, const String& relativePath)
     String hashSource(entityType);
     hashSource.Append("|");
     hashSource.Append(relativePath);
-    return SanitizeHashComponent(hashSource.HashCode());
+    return hashSource.HashCode();
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +61,12 @@ HashRoot(const String& rootName, bool isArchive)
 {
     String hashSource(rootName);
     hashSource.Append(isArchive ? "|archive" : "|filesystem");
-    return SanitizeHashComponent(hashSource.HashCode());
+    Util::Guid guid;
+    guid.Generate();
+    hashSource.Append("|");
+    hashSource.Append(guid.AsString());
+
+    return hashSource.HashCode();
 }
 }
 
@@ -263,20 +234,30 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
     Ptr<Dataset> dataset = folderTable->CreateDataset();
     
     dataset->AddColumn(Attr::FolderId);
+    dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
+
+    Ptr<FilterSet> filter = dataset->Filter();
+    filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
+    dataset->PerformQuery();
     
     Ptr<ValueTable> values = dataset->Values();
-    values->AddRow();
-    IndexT lastRowIdx = values->GetNumRows() - 1;
+    IndexT rowIdx = 0;
+    if (values->GetNumRows() == 0)
+    {
+        values->AddRow();
+        rowIdx = values->GetNumRows() - 1;
+    }
     
-    values->SetUInt64(Attr::FolderId, lastRowIdx, folderId);
-    values->SetString(Attr::EntityName, lastRowIdx, name);
-    values->SetUInt64(Attr::ModifiedDate, lastRowIdx, modifiedDate.AsEpochTime());
-    values->SetBool(Attr::IsRootFolder, lastRowIdx, true);
-    values->SetBool(Attr::IsArchive, lastRowIdx, isArchive);
+    values->SetInt64(Attr::FolderId, rowIdx, folderId);
+    values->SetInt64(Attr::ParentFolderId, rowIdx, 0);
+    values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
+    values->SetBool(Attr::IsRootFolder, rowIdx, true);
+    values->SetBool(Attr::IsArchive, rowIdx, isArchive);
     
     dataset->CommitChanges();
     return folderId;
@@ -298,15 +279,9 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
         return 0;
     }
 
-    Array<String> parentPath;
-    if (!this->GetFolderPath(parentFolderId, parentPath))
-    {
-        logger.Error("Failed to resolve path for parent folder ID %llu\n", static_cast<unsigned long long>(parentFolderId));
-        return 0;
-    }
-
-    const String relativePath = BuildRelativeHierarchy(parentPath, name);
-    const uint64_t folderId = PackEntityId(ExtractRootHash(parentFolderId), HashEntityPath("folder", relativePath));
+    uint32_t parentRootHash = ExtractRootHash(parentFolderId);
+    uint32_t folderHash = Util::HashCombineFast((uint32_t)(parentFolderId&0xFFFFFFFF), HashEntityPath("folder", name));
+    uint64_t folderId = PackEntityId(parentRootHash, folderHash);    
         
     Ptr<Table> folderTable = this->database->GetTableByName("Folders");
     Ptr<Dataset> dataset = folderTable->CreateDataset();
@@ -317,17 +292,25 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
+
+
+    Ptr<FilterSet> filter = dataset->Filter();
+    filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
+    dataset->PerformQuery();
     
     Ptr<ValueTable> values = dataset->Values();
-    values->AddRow();
-    IndexT lastRowIdx = values->GetNumRows() - 1;
-    
-    values->SetUInt64(Attr::FolderId, lastRowIdx, folderId);
-    values->SetUInt64(Attr::ParentFolderId, lastRowIdx, parentFolderId);
-    values->SetString(Attr::EntityName, lastRowIdx, name);
-    values->SetUInt64(Attr::ModifiedDate, lastRowIdx, modifiedDate.AsEpochTime());
-    values->SetBool(Attr::IsRootFolder, lastRowIdx, false);
-    values->SetBool(Attr::IsArchive, lastRowIdx, isArchive);
+    IndexT rowIdx = 0;
+    if (values->GetNumRows() == 0)
+    {
+        values->AddRow();
+        rowIdx = values->GetNumRows() - 1;
+    }    
+    values->SetInt64(Attr::FolderId, rowIdx, folderId);
+    values->SetInt64(Attr::ParentFolderId, rowIdx, parentFolderId);
+    values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
+    values->SetBool(Attr::IsRootFolder, rowIdx, false);
+    values->SetBool(Attr::IsArchive, rowIdx, isArchive);
     
     dataset->CommitChanges();
     return folderId;
@@ -363,8 +346,8 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     
     outInfo.id = folderId;
     outInfo.name = values->GetString(Attr::EntityName, 0);
-    outInfo.parentId = values->GetUInt64(Attr::ParentFolderId, 0);
-    outInfo.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, 0));
+    outInfo.parentId = values->GetInt64(Attr::ParentFolderId, 0);
+    outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
     outInfo.isRoot = values->GetBool(Attr::IsRootFolder, 0);
     
     return true;
@@ -395,10 +378,10 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FolderInfo info;
-        info.id = values->GetUInt64(Attr::FolderId, i);
+        info.id = values->GetInt64(Attr::FolderId, i);
         info.parentId = parentFolderId;
         info.name = values->GetString(Attr::EntityName, i);
-        info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         info.isRoot = false;
         
         outFolders.Append(info);
@@ -410,21 +393,24 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
 //------------------------------------------------------------------------------
 /**
 */
-bool
-FileDB::GetFolderPath(uint64_t folderId, Array<String>& outPath)
+Util::String
+FileDB::GetFolderPath(uint64_t folderId)
 {
     n_assert(this->isOpen);
     
+    Util::String outPath;
+
     FolderInfo current;
     if (!this->GetFolderInfo(folderId, current))
     {
-        return false;
+        return outPath;
     }
     
+    Util::Array<Util::String> pathComponents;
     // Build path from leaf to root
     do
     {
-        outPath.Insert(0, current.name);
+        pathComponents.Insert(0, current.name);
 
         if (current.isRoot)
         {
@@ -441,9 +427,43 @@ FileDB::GetFolderPath(uint64_t folderId, Array<String>& outPath)
         {
             break;
         }
-    } while (current.parentId != 0);
+    } while (true);
+
+    for(const auto& component : pathComponents)
+    {
+        if (!outPath.IsEmpty())
+        {
+            outPath.Append("/");
+        }
+        outPath.Append(component);
+    }
     
-    return true;
+    return  outPath;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+FileDB::GetFilePath(uint64_t fileId)
+{
+    n_assert(this->isOpen);
+    
+    FileInfo fileInfo;
+    if (!this->GetFileInfo(fileId, fileInfo))
+    {
+        return Util::String();
+    }
+    
+    Util::String folderPath = this->GetFolderPath(fileInfo.folderId);
+    if (folderPath.IsEmpty())
+    {
+        return fileInfo.name;
+    }
+    else
+    {
+        return folderPath + "/" + fileInfo.name;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -506,15 +526,10 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
         return 0;
     }
 
-    Array<String> folderPath;
-    if (!this->GetFolderPath(folderId, folderPath))
-    {
-        logger.Error("Failed to resolve path for folder ID %llu\n", static_cast<unsigned long long>(folderId));
-        return 0;
-    }
-
-    const String relativePath = BuildRelativeHierarchy(folderPath, name);
-    const uint64_t fileId = PackEntityId(ExtractRootHash(folderId), HashEntityPath("file", relativePath));
+    uint32_t parentRootHash = ExtractRootHash(folderId);
+    uint32_t folderHash = Util::HashCombineFast((uint32_t)(folderId&0xFFFFFFFF), HashEntityPath("file", name));
+    uint64_t fileId = PackEntityId(parentRootHash, folderHash); 
+    
         
     Ptr<Table> fileTable = this->database->GetTableByName("Files");
     Ptr<Dataset> dataset = fileTable->CreateDataset();
@@ -525,18 +540,26 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     dataset->AddColumn(Attr::FileType);
     dataset->AddColumn(Attr::FileSize);
     dataset->AddColumn(Attr::ModifiedDate);
+
+    Ptr<FilterSet> filter = dataset->Filter();
+    filter->AddEqualCheck(Attr::Attribute(Attr::FileId, fileId));
+    dataset->PerformQuery();
     
     Ptr<ValueTable> values = dataset->Values();
-    values->AddRow();
-    IndexT lastRowIdx = values->GetNumRows() - 1;
+    IndexT rowIdx = 0;
+    if (values->GetNumRows() == 0)
+    {
+        values->AddRow();
+        rowIdx = values->GetNumRows() - 1;
+    }
     
-    values->SetUInt64(Attr::FileId, lastRowIdx, fileId);
-    values->SetUInt64(Attr::FileFolderId, lastRowIdx, folderId);
+    values->SetInt64(Attr::FileId, rowIdx, fileId);
+    values->SetInt64(Attr::FileFolderId, rowIdx, folderId);
     
-    values->SetString(Attr::EntityName, lastRowIdx, name);
-    values->SetInt(Attr::FileType, lastRowIdx, static_cast<int>(type));
-    values->SetInt64(Attr::FileSize, lastRowIdx, size);
-    values->SetUInt64(Attr::ModifiedDate, lastRowIdx, modifiedDate.AsEpochTime());
+    values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetInt(Attr::FileType, rowIdx, static_cast<int>(type));
+    values->SetInt64(Attr::FileSize, rowIdx, size);
+    values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
     
     dataset->CommitChanges();
     return fileId;
@@ -572,11 +595,11 @@ FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
     }
     
     outInfo.id = fileId;
-    outInfo.folderId = values->GetUInt64(Attr::FileFolderId, 0);
+    outInfo.folderId = values->GetInt64(Attr::FileFolderId, 0);
     outInfo.name = values->GetString(Attr::EntityName, 0);
     outInfo.type = static_cast<FileType>(values->GetInt(Attr::FileType, 0));
     outInfo.size = (SizeT)values->GetInt64(Attr::FileSize, 0);
-    outInfo.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, 0));
+    outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
     
     return true;
 }
@@ -600,7 +623,7 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
     dataset->AddColumn(Attr::ModifiedDate);
     
     Ptr<FilterSet> filter = dataset->Filter();
-    filter->AddEqualCheck(Attr::Attribute(Attr::FileFolderId, folderId));
+    filter->AddEqualCheck(Attr::Attribute(Attr::FileFolderId, (int64_t)folderId));
     
     dataset->PerformQuery();
     Ptr<ValueTable> values = dataset->Values();
@@ -608,12 +631,12 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetUInt64(Attr::FileId, i);
+        info.id = values->GetInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
-        info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         
         outFiles.Append(info);
     }
@@ -653,12 +676,12 @@ FileDB::GetFilesInFolderByType(uint64_t folderId, FileType type,
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetUInt64(Attr::FileId, i);
+        info.id = values->GetInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
-        info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         
         outFiles.Append(info);
     }
@@ -698,12 +721,12 @@ FileDB::GetFilesModifiedAfter(uint64_t folderId, const IO::FileTime& dateTime,
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetUInt64(Attr::FileId, i);
+        info.id = values->GetInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
-        info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         
         outFiles.Append(info);
     }
@@ -743,12 +766,12 @@ FileDB::GetFilesLargerThan(uint64_t folderId, SizeT sizeBytes,
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
-        info.id = values->GetUInt64(Attr::FileId, i);
+        info.id = values->GetInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
-        info.modifiedDate = IO::FileTime(values->GetUInt64(Attr::ModifiedDate, i));
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         
         outFiles.Append(info);
     }
@@ -796,7 +819,7 @@ FileDB::UpdateFileMetadata(Logger& logger, uint64_t fileId,
     {
         if (!(modifiedDate == IO::FileTime()))
         {
-            values->SetUInt64(Attr::ModifiedDate, 0, modifiedDate.AsEpochTime());
+            values->SetInt64(Attr::ModifiedDate, 0, modifiedDate.AsEpochTime());
         }
         
         dataset->CommitChanges();

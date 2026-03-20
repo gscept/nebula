@@ -46,8 +46,6 @@ public:
     virtual void BindInt64(IndexT index, int64_t val);
     /// bind an unsigned integer by placeholder index
     virtual void BindUInt(IndexT index, unsigned int val);
-    /// bind an unsigned 64 bit integer by placeholder index
-    virtual void BindUInt64(IndexT index, uint64_t val);
     /// bind a float by placeholder index
     virtual void BindFloat(IndexT index, float val);
     /// bind a bool by placeholder index
@@ -69,8 +67,6 @@ public:
     virtual void BindInt64(const Util::String& name, int64_t val);
     /// bind an unsigned integer by placeholder name
     virtual void BindUInt(const Util::String& name, unsigned int val);
-    /// bind an unsigned 64 bit integer by placeholder name
-    virtual void BindUInt64(const Util::String& name, uint64_t val);
     /// bind a float by placeholder name
     virtual void BindFloat(const Util::String& name, float val);
     /// bind a bool by placeholder name
@@ -92,8 +88,6 @@ public:
     virtual void BindInt64(const Attr::AttrId& id, int64_t val);
     /// bind an unsigned integer by placeholder attribute id
     virtual void BindUInt(const Attr::AttrId& id, unsigned int val);
-    /// bind an unsigned 64 bit integer by placeholder attribute id
-    virtual void BindUInt64(const Attr::AttrId& id, uint64_t val);
     /// bind a float by placeholder attribute id
     virtual void BindFloat(const Attr::AttrId& id, float val);
     /// bind a bool by placeholder attribute id

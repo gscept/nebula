@@ -100,8 +100,8 @@ public:
     /// get all immediate children folders of a parent
     bool GetChildFolders(uint64_t parentFolderId, Util::Array<FolderInfo>& outFolders);
     
-    /// get the path from root to a given folder (each element is folder name)
-    bool GetFolderPath(uint64_t folderId, Util::Array<Util::String>& outPath);
+    /// get the path from root to a given folder
+    Util::String GetFolderPath(uint64_t folderId);
     
     /// delete a folder (fails if not empty)
     bool DeleteFolder(Logger& logger, uint64_t folderId);
@@ -112,6 +112,9 @@ public:
     uint64_t AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
                        SizeT size, FileType type, const IO::FileTime& modifiedDate);
     
+    /// get the path from root to a given file
+    Util::String GetFilePath(uint64_t fileId);
+
     /// get file info by ID
     bool GetFileInfo(uint64_t fileId, FileInfo& outInfo);
     

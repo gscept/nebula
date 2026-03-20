@@ -366,7 +366,6 @@ AttributeTable::GetValueTypeSize(ValueType type) const
     case IntType:       return sizeof(int);
     case UIntType:      return sizeof(uint);
     case Int64Type:     return sizeof(uint64_t);
-    case UInt64Type:    return sizeof(int64_t);
     case BoolType:      return sizeof(int);     // not a bug!
     case FloatType:     return sizeof(float);
     case Vec4Type:    return sizeof(vec4);
@@ -1094,7 +1093,6 @@ AttributeTable::SetRowToDefaultValues(IndexT rowIndex)
         case IntType:       this->SetInt(colIndex, rowIndex, colAttrId.GetIntDefValue()); break;
         case UIntType:      this->SetUInt(colIndex, rowIndex, colAttrId.GetUIntDefValue()); break;
         case Int64Type:     this->SetInt64(colIndex, rowIndex, colAttrId.GetInt64DefValue()); break;
-        case UInt64Type:    this->SetUInt64(colIndex, rowIndex, colAttrId.GetUInt64DefValue()); break;
         case FloatType:     this->SetFloat(colIndex, rowIndex, colAttrId.GetFloatDefValue()); break;
         case BoolType:      this->SetBool(colIndex, rowIndex, colAttrId.GetBoolDefValue()); break;
         case Vec4Type:      this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
@@ -1149,17 +1147,6 @@ AttributeTable::SetColumnToDefaultValues(IndexT colIndex)
         }
     }
     break;
-
-    case UInt64Type:
-    {
-        uint64_t def = colAttrId.GetUInt64DefValue();
-        for (rowIndex = 0; rowIndex < this->GetNumRows(); rowIndex++)
-        {
-            this->SetUInt64(colIndex, rowIndex, def);
-        }
-    }
-    break;
-
 
     case FloatType:
     {

@@ -107,7 +107,7 @@ HttpStatus::Code
 ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream)
 {
     ShaderServer* shdServer = ShaderServer::Instance();
-    Resources::ResourceId id = resId.AsLongLong();
+    Resources::ResourceId id = resId.AsUInt64();
     Resources::ResourceName name = ShaderGetName(id);
 
     // check if shader actually exists

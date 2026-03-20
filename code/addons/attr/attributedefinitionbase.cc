@@ -133,21 +133,6 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const uint64_t& defVal, bool isDynamic) :
-    name(name),
-    typeName(typeName),
-    fourCC(fourCC),
-    accessMode(accessMode),
-    defaultValue(defVal),
-    valueType(ValueType::UInt64Type),
-    isDynamic(isDynamic)
-{
-    this->Register();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const float& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
