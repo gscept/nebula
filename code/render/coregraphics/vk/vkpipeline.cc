@@ -48,7 +48,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     VkGraphicsPipelineCreateInfo shaderInfo;
     VkShaderProgramRuntimeInfo& programInfo = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
     const VkPipelineRenderingCreateInfo* renderPassInfo = nullptr;
-
+    VkPipelineViewportStateCreateInfo viewportInfo;
 
 
     // Setup blend info
@@ -117,7 +117,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
         shaderInfo.pNext = renderPassInfo;
         blendInfo.attachmentCount = renderPassInfo->colorAttachmentCount;
 
-        VkPipelineViewportStateCreateInfo viewportInfo =
+        viewportInfo =
         {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             nullptr,
