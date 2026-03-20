@@ -284,6 +284,28 @@ Win32FSWrapper::GetFileSize(const Util::String& path)
 
 //------------------------------------------------------------------------------
 /**
+    get file/folder io info via stat
+*/
+bool 
+Win32FSWrapper::GetIOInfo(const IO::URI& uri, IO::IOStat& outInfo)
+{
+    n_assert(uri.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(uri.LocalPath(), widePath, sizeof(widePath));
+    struct _stat64 buf;
+    if(_wstat64((LPCWSTR)widePath, &buf) == 0)
+    {
+        outInfo.size = buf.st_size;
+        outInfo.accessTime.time = buf.st_atime;
+        outInfo.modifiedTime.time = buf.st_mtime;
+        outInfo.creationTime.time = buf.st_ctime;
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
     Set the read-only status of a file. 
 */
 void
