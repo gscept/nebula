@@ -1,244 +1,221 @@
 {
-    "Nebula": {
-        "version": 3,
-        "ImportTextures": [
-            "Target"
+  "Nebula": {
+    "version": 3,
+    "ImportTextures": [
+      "Target"
+    ],
+    "LocalTextures": [
+      {
+        "name": "PreviewScene",
+        "format": "R11G11B10F",
+        "usage": "Render|TransferSource",
+        "relativeSize": [
+          1.0,
+          1.0
         ],
-        "LocalTextures": [
-            {
-                "name": "PreviewScene",
-                "format": "R11G11B10F",
-                "usage": "Render|TransferSource",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
-                "name": "PreviewOutput",
-                "format": "SRGBA8",
-                "usage": "Render|TransferSource",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
+        "type": "Texture2D"
+      },
+      {
+        "name": "PreviewOutput",
+        "format": "SRGBA8",
+        "usage": "Render|TransferSource",
+        "relativeSize": [
+          1.0,
+          1.0
+        ],
+        "type": "Texture2D"
+      },
+      {
+        "name": "ZBufferPreview",
+        "format": "D32S8",
+        "usage": "Render|Sample",
+        "relativeSize": [
+          1.0,
+          1.0
+        ],
+        "type": "Texture2D"
+      },
+      {
+        "name": "StencilPreview",
+        "format": "R8",
+        "usage": "TransferDestination|Sample",
+        "relativeSize": [
+          1.0,
+          1.0
+        ],
+        "type": "Texture2D"
+      }
+    ],
+
+    "Submissions": [
+      {
+        "name": "Scene",
+        "queue": "Graphics",
+        "last_submit": true,
+        "_comment": "Preview graphics submission",
+        "ops": [
+          {
+            "subgraph": {
+              "name": "Lights Copy"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "Lights Cull"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "Decal Copy"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "Decal Cull"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "Fog Copy"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "Fog Cull"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "GI Copy"
+            }
+          },
+          {
+            "subgraph": {
+              "name": "GI Cull"
+            }
+          },
+          {
+            "render": {
+              "name": "Prepass",
+              "depth": {
                 "name": "ZBufferPreview",
-                "format": "D32S8",
-                "usage": "Render|Sample",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
-                "name": "StencilPreview",
-                "format": "R8",
-                "usage": "TransferDestination|Sample",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
+                "clear_depth": 1,
+                "clear_stencil": 0,
+                "flags": "Store|StoreStencil"
+              },
+              "ops": [
+                {
+                  "batch": {
+                    "name": "FlatGeometryDepth"
+                  }
+                }
+              ]
             }
-        ],
-
-        "Submissions": [
-            {
-                "name": "Scene",
-                "queue": "Graphics",
-                "last_submit": true,
-                "_comment": "Preview graphics submission",
-                "ops": [
-                    {
-                        "subgraph": {
-                            "name": "Lights Copy"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Lights Cull"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Decal Copy"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Decal Cull"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Fog Copy"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Fog Cull"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "GI Copy"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "GI Cull"
-                        }
-                    },
-                    {
-                        "pass": {
-                            "name": "Prepass",
-                            "attachments": [
-                                {
-                                    "name": "ZBufferPreview",
-                                    "clear_depth": 1,
-                                    "clear_stencil": 0,
-                                    "flags": "Store|StoreStencil"
-                                }
-                            ],
-
-                            "subpasses": [
-                                {
-                                    "name": "DepthPrepass",
-                                    "attachments": [],
-                                    "depth": "ZBufferPreview",
-                                    "ops": [
-                                        {
-                                            "batch": {
-                                                "name": "FlatGeometryDepth"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Depth Extract"
-                        }
-                    },
-                    {
-                        "pass": {
-                            "name": "ForwardRendering",
-                            "attachments": [
-                                {
-                                    "name": "ZBufferPreview",
-                                    "flags": "Load|LoadStencil"
-                                },
-                                {
-                                    "name": "PreviewScene",
-                                    "clear": [ 0.5, 0.5, 0.5, 0 ],
-                                    "flags": "Store"
-                                }
-                            ],
-
-                            "subpasses": [
-                                {
-                                    "name": "OpaquePass",
-                                    "subpass_dependencies": [],
-                                    "attachments": [ "PreviewScene" ],
-
-                                    "depth": "ZBufferPreview",
-                                    "ops": [
-                                        {
-                                            "batch": {
-                                                "name": "FlatGeometryLit"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "name": "AlphaPass",
-                                    "attachments": [ "PreviewScene" ],
-
-                                    "depth": "ZBufferPreview",
-                                    "ops": [
-                                        {
-                                            "batch": {
-                                                "name": "FlatGeometryAlphaLit"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "pass": {
-                            "name": "PostEffects",
-                            "attachments": [
-                                {
-                                    "name": "PreviewOutput",
-                                    "flags": "Store"
-                                }
-                            ],
-
-                            "subpasses": [
-                                {
-                                    "name": "FinalizePass",
-                                    "subpass_dependencies": [],
-                                    "attachments": [
-                                        "PreviewOutput"
-                                    ],
-
-                                    "resource_dependencies": [
-                                        {
-                                            "name": "PreviewScene",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ZBufferPreview",
-                                            "stage": "PixelShaderRead"
-                                        }
-                                    ],
-
-                                    "ops": [
-                                        {
-                                            "fullscreen_effect": {
-                                                "name": "Finalize", 
-                                                "shader": "system_shaders/editor/editor_preview_finalize",
-                                                "mask": "Main",
-                                                "namespace": "EditorPreviewFinalize",
-                                                "constantBlockName": "FinalizeUniforms",
-                                                "variables": [
-                                                    {
-                                                        "semantic": "DepthTexture",
-                                                        "value": "ZBufferPreview",
-                                                        "type": "textureHandle"
-                                                    },
-                                                    {
-                                                        "semantic": "ColorTexture",
-                                                        "value": "PreviewScene",
-                                                        "type": "textureHandle"
-                                                    }
-                                                ],
-                                                "size_from_texture": "ColorBuffer"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        } 
-                    },
-                    {
-                        "transition": {
-                            "name": "PreviewOutput",
-                            "stage": "TransferRead"
-                        }
-                    },
-                    {
-                        "copy": {
-                            "name": "Copy To Target",
-                            "from": {
-                                "tex": "PreviewOutput",
-                                "bits": "ColorBits"
-                            },
-                            "to": {
-                                "tex": "Target",
-                                "bits": "ColorBits"
-                            }
-                        }
-                    }
-                ]
+          },
+          {
+            "subgraph": {
+              "name": "Depth Extract"
             }
+          },
+          {
+            "render": {
+              "name": "Forward Rendering",
+              "depth": {
+                "name": "ZBufferPreview",
+                "flags": "Load|LoadStencil"
+              },
+              "targets": [
+                {
+                  "name": "PreviewScene",
+                  "clear": [
+                    0.5,
+                    0.5,
+                    0.5,
+                    0
+                  ],
+                  "flags": "Store"
+                }
+              ],
+              "ops": [
+                {
+                  "batch": {
+                    "name": "FlatGeometryLit"
+                  }
+                },
+                {
+                  "batch": {
+                    "name": "FlatGeometryAlphaLit"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "render": {
+              "name": "Post Effects",
+              "resource_dependencies": [
+                {
+                  "name": "PreviewScene",
+                  "stage": "PixelShaderRead"
+                },
+                {
+                  "name": "ZBufferPreview",
+                  "stage": "PixelShaderRead"
+                }
+              ],
+              "targets": [
+                {
+                  "name": "PreviewOutput",
+                  "flags": "Store"
+                }
+              ],
+              "ops": [
+                {
+                  "fullscreen_effect": {
+                    "name": "Finalize",
+                    "shader": "system_shaders/editor/editor_preview_finalize",
+                    "mask": "Main",
+                    "namespace": "EditorPreviewFinalize",
+                    "constantBlockName": "FinalizeUniforms",
+                    "variables": [
+                      {
+                        "semantic": "DepthTexture",
+                        "value": "ZBufferPreview",
+                        "type": "textureHandle"
+                      },
+                      {
+                        "semantic": "ColorTexture",
+                        "value": "PreviewScene",
+                        "type": "textureHandle"
+                      }
+                    ],
+                    "size_from_texture": "ColorBuffer"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "transition": {
+              "name": "PreviewOutput",
+              "stage": "TransferRead"
+            }
+          },
+          {
+            "copy": {
+              "name": "Copy To Target",
+              "from": {
+                "tex": "PreviewOutput",
+                "bits": "ColorBits"
+              },
+              "to": {
+                "tex": "Target",
+                "bits": "ColorBits"
+              }
+            }
+          }
         ]
-    }
+      }
+    ]
+  }
 }
