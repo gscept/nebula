@@ -19,7 +19,7 @@ namespace Db
 class Sqlite3Factory : public DbFactory
 {
     __DeclareClass(Sqlite3Factory);
-    __DeclareInterfaceSingleton(Sqlite3Factory);
+    __DeclareSingleton(Sqlite3Factory);
 public:
     /// constructor
     Sqlite3Factory();

@@ -1410,6 +1410,7 @@ AttributeTable::DeleteRowData(IndexT rowIndex)
         switch (colAttrId.GetValueType())
         {
         case IntType:
+        case Int64Type:
         case FloatType:
         case BoolType:
         case Vec4Type:

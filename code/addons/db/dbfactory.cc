@@ -17,7 +17,7 @@
 namespace Db
 {
 __ImplementClass(Db::DbFactory, 'DBFC', Core::RefCounted);
-__ImplementInterfaceSingleton(Db::DbFactory);
+__ImplementSingleton(Db::DbFactory);
 
 //------------------------------------------------------------------------------
 /**

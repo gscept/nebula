@@ -14,7 +14,7 @@
 namespace Db
 {
 __ImplementClass(Db::Sqlite3Factory, 'S3FC', Db::DbFactory);
-__ImplementInterfaceSingleton(Db::Sqlite3Factory);
+__ImplementSingleton(Db::Sqlite3Factory);
 
 //------------------------------------------------------------------------------
 /**

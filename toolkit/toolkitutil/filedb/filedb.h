@@ -56,6 +56,7 @@ public:
         IO::FileTime modifiedDate;
         IO::URI uri;
         bool isRoot;
+        bool isArchive;
     };
 
     /// file information structure
@@ -99,6 +100,9 @@ public:
     
     /// get all immediate children folders of a parent
     bool GetChildFolders(uint64_t parentFolderId, Util::Array<FolderInfo>& outFolders);
+
+    /// get all root folders
+    bool GetRootFolders(Util::Array<FolderInfo>& outFolders);
     
     /// get the path from root to a given folder
     Util::String GetFolderPath(uint64_t folderId);

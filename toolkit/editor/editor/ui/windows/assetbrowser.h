@@ -30,8 +30,8 @@ public:
     void Update();
     void Run(SaveMode save) override;
 private:
-    Util::Dictionary<Util::String, uint64_t> roots;
-    void ScanFolder(const Util::String& treeName, const Util::String& folderPath, bool useArchive);
+    
+    void ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String& treeName, const Util::String& folderPath, bool useArchive);
     void DisplayFileTree();
 
 private:
@@ -50,7 +50,7 @@ private:
         
     uint64_t activeFolder = 0;
     uint64_t activeFile = 0;
-    Util::String activeFileTree = "export";
+    uint64_t activeFileTree = 0;
 
     FileViewMode fileViewMode = FileViewMode::Details;
     ///
@@ -60,7 +60,7 @@ private:
     /// Determine file type from file extension
     static ToolkitUtil::FileType DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and sync entries to FileDB
-    void ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent);
+    void ScanFolderRecursive(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent);
     friend class ScanFolderJob;
     Ptr<ScanFolderJob> currentScanJob;
     ToolkitUtil::FileDB fileDB;

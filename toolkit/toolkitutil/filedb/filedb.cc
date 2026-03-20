@@ -61,11 +61,6 @@ HashRoot(const String& rootName, bool isArchive)
 {
     String hashSource(rootName);
     hashSource.Append(isArchive ? "|archive" : "|filesystem");
-    Util::Guid guid;
-    guid.Generate();
-    hashSource.Append("|");
-    hashSource.Append(guid.AsString());
-
     return hashSource.HashCode();
 }
 }
@@ -271,14 +266,6 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
 {
     n_assert(this->isOpen);
     
-    // Verify parent exists
-    FolderInfo parentInfo;
-    if (!this->GetFolderInfo(parentFolderId, parentInfo))
-    {
-        logger.Error("Parent folder with ID %llu does not exist\n", static_cast<unsigned long long>(parentFolderId));
-        return 0;
-    }
-
     uint32_t parentRootHash = ExtractRootHash(parentFolderId);
     uint32_t folderHash = Util::HashCombineFast((uint32_t)(parentFolderId&0xFFFFFFFF), HashEntityPath("folder", name));
     uint64_t folderId = PackEntityId(parentRootHash, folderHash);    
@@ -332,6 +319,7 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     dataset->AddColumn(Attr::EntityName);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
+    dataset->AddColumn(Attr::IsArchive);
     
     Ptr<FilterSet> filter = dataset->Filter();
     filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
@@ -349,6 +337,7 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     outInfo.parentId = values->GetInt64(Attr::ParentFolderId, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
     outInfo.isRoot = values->GetBool(Attr::IsRootFolder, 0);
+    outInfo.isArchive = values->GetBool(Attr::IsArchive, 0);
     
     return true;
 }
@@ -368,6 +357,7 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
     dataset->AddColumn(Attr::ModifiedDate);
+    dataset->AddColumn(Attr::IsArchive);
     
     Ptr<FilterSet> filter = dataset->Filter();
     filter->AddEqualCheck(Attr::Attribute(Attr::ParentFolderId, parentFolderId));
@@ -383,10 +373,50 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
         info.name = values->GetString(Attr::EntityName, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         info.isRoot = false;
+        info.isArchive = values->GetBool(Attr::IsArchive, i);
         
         outFolders.Append(info);
     }
     
+    return outFolders.Size() > 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+FileDB::GetRootFolders(Array<FolderInfo>& outFolders)
+{
+    n_assert(this->isOpen);
+
+    Ptr<Table> folderTable = this->database->GetTableByName("Folders");
+    Ptr<Dataset> dataset = folderTable->CreateDataset();
+
+    dataset->AddColumn(Attr::FolderId);
+    dataset->AddColumn(Attr::ParentFolderId);
+    dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::ModifiedDate);
+    dataset->AddColumn(Attr::IsRootFolder);
+    dataset->AddColumn(Attr::IsArchive);
+
+    Ptr<FilterSet> filter = dataset->Filter();
+    filter->AddEqualCheck(Attr::Attribute(Attr::IsRootFolder, true));
+
+    dataset->PerformQuery();
+    Ptr<ValueTable> values = dataset->Values();
+
+    for (IndexT i = 0; i < values->GetNumRows(); ++i)
+    {
+        FolderInfo info;
+        info.id = values->GetInt64(Attr::FolderId, i);
+        info.parentId = values->GetInt64(Attr::ParentFolderId, i);
+        info.name = values->GetString(Attr::EntityName, i);
+        info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
+        info.isRoot = values->GetBool(Attr::IsRootFolder, i);
+        info.isArchive = values->GetBool(Attr::IsArchive, i);
+        outFolders.Append(info);
+    }
+
     return outFolders.Size() > 0;
 }
 
@@ -518,14 +548,6 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
 {
     n_assert(this->isOpen);
     
-    // Verify folder exists
-    FolderInfo folderInfo;
-    if (!this->GetFolderInfo(folderId, folderInfo))
-    {
-        logger.Error("Folder with ID %llu does not exist\n", static_cast<unsigned long long>(folderId));
-        return 0;
-    }
-
     uint32_t parentRootHash = ExtractRootHash(folderId);
     uint32_t folderHash = Util::HashCombineFast((uint32_t)(folderId&0xFFFFFFFF), HashEntityPath("file", name));
     uint64_t fileId = PackEntityId(parentRootHash, folderHash); 

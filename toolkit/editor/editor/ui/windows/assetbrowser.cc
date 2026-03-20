@@ -24,6 +24,29 @@ namespace Presentation
 {
 __ImplementClass(Presentation::AssetBrowser, 'AsBw', Presentation::BaseWindow);
 
+namespace
+{
+// Recursively remove a folder subtree from FileDB so parent deletion can succeed.
+void
+DeleteFolderSubtree(ToolkitUtil::FileDB& fileDB, ToolkitUtil::Logger& logger, uint64_t folderId)
+{
+    Util::Array<ToolkitUtil::FileDB::FileInfo> files;
+    fileDB.GetFilesInFolder(folderId, files);
+    for (const auto& file : files)
+    {
+        fileDB.DeleteFile(logger, file.id);
+    }
+
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
+    fileDB.GetChildFolders(folderId, children);
+    for (const auto& child : children)
+    {
+        DeleteFolderSubtree(fileDB, logger, child.id);
+        fileDB.DeleteFolder(logger, child.id);
+    }
+}
+}
+
 /// quick & dirty scan job as this is too slow in windows and blocks the main thread too long
 class ScanFolderJob : public Threading::Thread
 {
@@ -36,10 +59,15 @@ public:
     void DoWork() override
     {
         Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
-        this->browser->ScanFolder("export", "export:", false);
-        this->browser->ScanFolder("sysexport", "export:", true);
-        this->browser->ScanFolder("work", "proj:work/", false);
-        this->browser->ScanFolder("syswork", "tool:syswork/", false);
+        ToolkitUtil::Logger logger;
+        ToolkitUtil::FileDB fileDB;
+        fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
+        fileDB.Open(logger);
+        this->browser->ScanFolder(fileDB, "export", "export:", false);
+        this->browser->ScanFolder(fileDB, "sysexport", "export:", true);
+        this->browser->ScanFolder(fileDB, "work", "proj:work/", false);
+        this->browser->ScanFolder(fileDB, "syswork", "tool:syswork/", false);
+        fileDB.Close();
         ioServer = nullptr;
         this->browser->currentScanJob = nullptr;
     }
@@ -53,9 +81,10 @@ AssetBrowser::AssetBrowser()
 {
     this->fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
     this->fileDB.Open(this->logger);
+   
     this->currentScanJob = ScanFolderJob::Create();
     this->currentScanJob->browser = this;
-    this->currentScanJob->Start();    
+    this->currentScanJob->Start();
 }
 
 //------------------------------------------------------------------------------
@@ -81,11 +110,6 @@ AssetBrowser::Update()
 void
 AssetBrowser::Run(SaveMode save)
 {
-    if (this->currentScanJob.isvalid() && this->currentScanJob->IsRunning())
-    {
-        ImGui::Text("Scanning folders...");
-        return;
-    }
     DisplayFileTree();
 }
 
@@ -261,7 +285,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                                 return false;
                         }
                     });
-                    sorts_specs->SpecsDirty = false;
+                    // fixme as we currently read the files from the database everytime we sort them everytime. needs a cache of sorts maybe. seems fast enough for now though.
+                    //sorts_specs->SpecsDirty = false;
                 }
                 
                 for (const auto& file : visibleFiles)
@@ -359,28 +384,33 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 void
 AssetBrowser::DisplayFileTree()
 {
+     Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders; 
+    this->fileDB.GetRootFolders(rootFolders);
+
     static char buffer[NEBULA_MAXPATH];
     ImGui::PushItemWidth(ImGui::GetWindowWidth());
-    if (ImGui::Button("work"))
+
+    for (auto& root : rootFolders)
     {
-        this->activeFileTree = "work";
-        if (this->roots.Contains(this->activeFileTree))
+        if (this->activeFileTree == 0)
         {
-            this->activeFolder = this->roots[this->activeFileTree];
-            this->activeFile = 0;
+            this->activeFileTree = root.id;
         }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("export"))
-    {
-        this->activeFileTree = "export";
-        if (this->roots.Contains(this->activeFileTree))
+        Util::String displayName = root.name;
+        if (root.isArchive)
         {
-            this->activeFolder = this->roots[this->activeFileTree];
-            this->activeFile = 0;
+            displayName.Append(" (zip)");
         }
+        ImGui::Button(displayName.AsCharPtr());
+        if (ImGui::IsItemClicked())
+        {            
+            this->activeFileTree = root.id;
+            this->activeFile = 0;
+            this->activeFolder = 0;
+        }
+        ImGui::SameLine();
     }
-    ImGui::SameLine();
+    ImGui::NewLine();
     ImGui::InputText("##search", buffer, NEBULA_MAXPATH, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
     
      
@@ -389,21 +419,13 @@ AssetBrowser::DisplayFileTree()
     ImGui::Separator();
     ImGui::Columns(2);
     ImGui::BeginChild("ScrollingRegionFolders");
-    if (this->roots.Contains(this->activeFileTree))
+    if (this->activeFileTree != 0)
     {
-        this->DisplayFileTreeFolderHierarchy(this->roots[this->activeFileTree], 0);
+        this->DisplayFileTreeFolderHierarchy(this->activeFileTree, 0);
     }
     else
     {
         ImGui::Text("No root data yet");
-    }
-    ImGui::Text("System"); 
-    ImGui::SameLine();
-    ImGui::Separator();
-    const Util::String& sysFolder = "sys" + this->activeFileTree;
-    if (this->roots.Contains(sysFolder))
-    {
-        this->DisplayFileTreeFolderHierarchy(this->roots[sysFolder], 0);
     }
     ImGui::EndChild();
     ImGui::NextColumn();
@@ -431,30 +453,16 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void 
-AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
+AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
 {
     IO::URI folderPath(folderPathString);
-    uint64_t rootId = this->fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
-    if (this->roots.Contains(treeName))
-    {
-        this->roots[treeName] = rootId;
-    }
-    else
-    {
-        uint64_t& root = this->roots.Emplace(treeName);
-        root = rootId;
-    }
-
-    if (this->activeFolder == 0 && treeName == this->activeFileTree)
-    {
-        this->activeFolder = rootId;
-    }
+    uint64_t rootId = fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
 
     IO::IoServer* ioServer = IO::IoServer::Instance();
     // Start recursive scanning from the root
     if (ioServer->DirectoryExists(folderPath))
     {
-        ScanFolderRecursive(ioServer, folderPath, useArchive, rootId);
+        ScanFolderRecursive(fileDB, ioServer, folderPath, useArchive, rootId);
     }
 }
 
@@ -462,13 +470,16 @@ AssetBrowser::ScanFolder(const Util::String & treeName, const Util::String& fold
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent)
+AssetBrowser::ScanFolderRecursive(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent)
 {
     // List all files in the current directory
     Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
+    Util::Array<Util::String> filesystemFileNames;
+    filesystemFileNames.Reserve(files.Size());
     for (const auto& fileName : files)
     {
         Util::String fileLeaf = fileName.ExtractFileName();
+        filesystemFileNames.Append(fileLeaf);
         IO::IOStat ioInfo;
         IO::Stream::Size fileSize = 0;
         IO::FileTime modifiedTime;
@@ -478,20 +489,65 @@ AssetBrowser::ScanFolderRecursive(const IO::IoServer* ioServer, const IO::URI& f
             modifiedTime = ioInfo.modifiedTime;
         }
 
-        this->fileDB.AddFile(this->logger, fileLeaf, parent, fileSize, DetermineFileType(fileLeaf.GetFileExtension()), modifiedTime);
+        fileDB.AddFile(this->logger, fileLeaf, parent, fileSize, DetermineFileType(fileLeaf.GetFileExtension()), modifiedTime);
+    }
+
+    // Remove files from DB that no longer exist in the filesystem for this folder.
+    Util::Array<ToolkitUtil::FileDB::FileInfo> dbFiles;
+    fileDB.GetFilesInFolder(parent, dbFiles);
+    for (const auto& dbFile : dbFiles)
+    {
+        bool existsOnDisk = false;
+        for (const auto& fsName : filesystemFileNames)
+        {
+            if (fsName == dbFile.name)
+            {
+                existsOnDisk = true;
+                break;
+            }
+        }
+        if (!existsOnDisk)
+        {
+            fileDB.DeleteFile(this->logger, dbFile.id);
+        }
     }
     
     // List all subdirectories and recursively scan them
     Util::Array<Util::String> directories = ioServer->ListDirectories(folderPath, "*", true, useArchive);
+    Util::Array<Util::String> filesystemDirectoryNames;
+    filesystemDirectoryNames.Reserve(directories.Size());
     for (const auto& childDir : directories)
     {
         Util::String childName = childDir.ExtractFileName();
-        uint64_t childId = this->fileDB.CreateFolder(this->logger, childName, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
+        filesystemDirectoryNames.Append(childName);
+        uint64_t childId = fileDB.CreateFolder(this->logger, childName, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
         
         // Recursively scan the subdirectory
         if (childId != 0)
         {
-            ScanFolderRecursive(ioServer, childDir, useArchive, childId);
+            ScanFolderRecursive(fileDB, ioServer, childDir, useArchive, childId);
+        }
+    }
+
+    // Remove folders from DB that no longer exist in the filesystem for this parent.
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> dbChildren;
+    fileDB.GetChildFolders(parent, dbChildren);
+    for (const auto& dbChild : dbChildren)
+    {
+        bool existsOnDisk = false;
+        for (const auto& fsDirName : filesystemDirectoryNames)
+        {
+            if (fsDirName == dbChild.name)
+            {
+                existsOnDisk = true;
+                break;
+            }
+        }
+
+        if (!existsOnDisk)
+        {
+            DeleteFolderSubtree(fileDB, this->logger, dbChild.id);
+            fileDB.DeleteFolder(this->logger, dbChild.id);
         }
     }
 }

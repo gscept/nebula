@@ -30,7 +30,7 @@ class Writer;
 class DbFactory : public Core::RefCounted
 {
     __DeclareClass(DbFactory);
-    __DeclareInterfaceSingleton(DbFactory);
+    __DeclareSingleton(DbFactory);
 public:
     /// constructor
     DbFactory();
