@@ -22,6 +22,8 @@ public:
     Win32FileTime();
     /// construct from string
     Win32FileTime(const Util::String& str);
+    /// construct from epoch time
+    Win32FileTime(uint64_t epochTime);
     /// operator ==
     friend bool operator==(const Win32FileTime& a, const Win32FileTime& b);
     /// operator !=
@@ -40,6 +42,11 @@ public:
     /// set bits
     void SetBits(uint lowBits, uint highBits);
 
+    /// convert to epoch time
+    uint64_t AsEpochTime() const;
+    /// set from epoch time
+    void SetFromEpochTime(uint64_t epochTime);
+
     FILETIME time;
 };
 
@@ -51,6 +58,14 @@ Win32FileTime::Win32FileTime()
 {
     time.dwLowDateTime = 0;
     time.dwHighDateTime = 0;
+}
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Win32FileTime::Win32FileTime(uint64_t epochTime)
+{
+    SetFromEpochTime(epochTime);
 }
 
 //------------------------------------------------------------------------------

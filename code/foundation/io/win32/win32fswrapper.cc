@@ -296,7 +296,7 @@ Win32FSWrapper::GetIOInfo(const IO::URI& uri, IO::IOStat& outInfo)
     const static auto ToFileTime = [](const __time64_t& t) -> FILETIME
     {
         FILETIME ft;
-        LONGLONG ll = Int64(t) * 10000000 + 116444736000000000; // convert to 100-nanosecond intervals and add epoch difference
+        LONGLONG ll = int64_t(t) * 10000000 + 116444736000000000; // convert to 100-nanosecond intervals and add epoch difference
         ft.dwLowDateTime = (DWORD)(ll & 0xFFFFFFFF);
         ft.dwHighDateTime = (DWORD)(ll >> 32);
         return ft;
