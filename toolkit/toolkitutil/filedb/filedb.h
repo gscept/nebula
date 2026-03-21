@@ -57,6 +57,7 @@ public:
         IO::URI uri;
         bool isRoot;
         bool isArchive;
+        bool hasChildren;
     };
 
     /// file information structure
@@ -64,6 +65,7 @@ public:
     {
         uint64_t id;
         Util::String name;
+        Util::String filePath;
         uint64_t folderId;
         SizeT size;
         FileType type;
@@ -81,7 +83,7 @@ public:
     const IO::URI& GetDatabaseURI() const;
     
     /// open the database (creates if doesn't exist)
-    bool Open(Logger& logger);
+    bool Open(Logger& logger, bool memoryOnly);
     /// close the database
     void Close();
     /// check if database is open

@@ -107,13 +107,16 @@ FileDB::GetDatabaseURI() const
 /**
 */
 bool
-FileDB::Open(Logger& logger)
+FileDB::Open(Logger& logger, bool memoryOnly)
 {
     n_assert(!this->isOpen);
     n_assert(this->databaseURI.IsValid());
 
     // Create database factory and database
-    this->dbFactory = Db::Sqlite3Factory::Create();
+    if (this->dbFactory == nullptr)
+    {
+        this->dbFactory = Db::Sqlite3Factory::Create();
+    }
     this->database = DbFactory::Instance()->CreateDatabase();
     
     // Determine access mode
@@ -123,6 +126,7 @@ FileDB::Open(Logger& logger)
     this->database->SetURI(this->databaseURI);
     this->database->SetAccessMode(accessMode);
     this->database->SetIgnoreUnknownColumns(false);
+    this->database->SetInMemoryDatabase(memoryOnly);
     
     // Try to open database
     if (!this->database->Open())
@@ -338,6 +342,16 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
     outInfo.isRoot = values->GetBool(Attr::IsRootFolder, 0);
     outInfo.isArchive = values->GetBool(Attr::IsArchive, 0);
+    {
+        Ptr<Table> childFolderTable = this->database->GetTableByName("Folders");
+        Ptr<Dataset> childFolderDataset = childFolderTable->CreateDataset();
+        dataset->AddColumn(Attr::ParentFolderId);
+        Ptr<FilterSet> childFolderFilter = childFolderDataset->Filter();
+        childFolderFilter->AddEqualCheck(Attr::Attribute(Attr::ParentFolderId, folderId));
+        childFolderDataset->PerformQuery();
+        Ptr<ValueTable> childFolderValues = childFolderDataset->Values();
+        outInfo.hasChildren = childFolderValues->GetNumRows() > 0;
+    }
     
     return true;
 }
@@ -622,6 +636,7 @@ FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
     outInfo.type = static_cast<FileType>(values->GetInt(Attr::FileType, 0));
     outInfo.size = (SizeT)values->GetInt64(Attr::FileSize, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
+    outInfo.filePath = this->GetFilePath(fileId);
     
     return true;
 }
@@ -649,7 +664,7 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
     
     dataset->PerformQuery();
     Ptr<ValueTable> values = dataset->Values();
-    
+    Util::String folderPath = this->GetFolderPath(folderId);
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
@@ -659,6 +674,7 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
+        info.filePath = folderPath.IsEmpty() ? info.name : folderPath + "/" + info.name;
         
         outFiles.Append(info);
     }

@@ -13,9 +13,6 @@
 #include "imgui_internal.h"
 #include "asseteditor/asseteditor.h"
 #include "timing/calendartime.h"
-#include <algorithm>
-#include <cstdint>
-
 #include "editor/tools/pathconverter.h"
 
 using namespace Editor;
@@ -55,6 +52,7 @@ public:
     /// 
     AssetBrowser* browser;
 
+    volatile float progress = 0.0f;
     /// 
     void DoWork() override
     {
@@ -62,14 +60,23 @@ public:
         ToolkitUtil::Logger logger;
         ToolkitUtil::FileDB fileDB;
         fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
-        fileDB.Open(logger);
+        fileDB.Open(logger, false);
         this->browser->ScanFolder(fileDB, "export", "export:", false);
+        this->progress = 0.25f;
         this->browser->ScanFolder(fileDB, "sysexport", "export:", true);
+        this->progress = 0.5f;
         this->browser->ScanFolder(fileDB, "work", "proj:work/", false);
+        this->progress = 0.75f;
         this->browser->ScanFolder(fileDB, "syswork", "tool:syswork/", false);
+        this->progress = 1.0f;
         fileDB.Close();
         ioServer = nullptr;
+        this->browser->isDoneRefreshingCaches.Set();
         this->browser->currentScanJob = nullptr;
+    }
+    float GetProgress() const
+    {
+        return this->progress;
     }
 };
 __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
@@ -80,7 +87,10 @@ __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
 AssetBrowser::AssetBrowser()
 {
     this->fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
-    this->fileDB.Open(this->logger);
+    if (IO::IoServer::Instance()->FileExists(IO::URI("int:/filedb.sqlite")))
+    {
+        this->fileDB.Open(this->logger, true);    
+    }    
    
     this->currentScanJob = ScanFolderJob::Create();
     this->currentScanJob->browser = this;
@@ -110,7 +120,74 @@ AssetBrowser::Update()
 void
 AssetBrowser::Run(SaveMode save)
 {
-    DisplayFileTree();
+    if(this->isDoneRefreshingCaches.Test())
+    {
+        this->isDoneRefreshingCaches.Clear();
+        this->fileDB.Close();
+        this->fileDB.Open(this->logger, true);
+        this->RefreshFolderInfoCaches();
+        this->RefreshFileInfoCaches();
+    }
+    if(this->currentScanJob != nullptr)
+    {
+        ImGui::ProgressBar(this->currentScanJob->GetProgress(), ImVec2(0.0f, 0.0f), "Scanning...");
+    }
+    if(this->fileDB.IsOpen())
+    {
+        DisplayFileTree();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::RefreshFolderInfoCaches()
+{
+    this->folderInfoCache.Clear();
+    if (this->activeFileTree != 0)
+    {
+        std::function<void(uint64_t)> fillFolders;
+        fillFolders = [this, &fillFolders](uint64_t folderId)
+        {
+            Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
+            this->fileDB.GetChildFolders(folderId, children);
+            for (const auto& child : children)
+            {
+                if (this->folderInfoCache.Contains(child.id))
+                {
+                    this->folderInfoCache[child.id] = child;
+                }
+                else
+                {
+                    this->folderInfoCache.Add(child.id, child);
+                }
+                fillFolders(child.id);
+            }
+        };
+
+        this->fileDB.GetFolderInfo(this->activeFileTree, this->folderInfoCache.Emplace(this->activeFileTree));
+        fillFolders(this->activeFileTree);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::RefreshFileInfoCaches()
+{
+    this->fileInfoCache.Clear();
+    if (this->activeFileTree != 0 && this->activeFolder != 0)
+    {
+        Util::Array<ToolkitUtil::FileDB::FileInfo> files;
+        this->fileDB.GetFilesInFolder(this->activeFolder, files);
+        this->fileInfoCache.Reserve(files.Size());
+        for (const auto& file : files)
+        {
+            this->fileInfoCache.Append(file);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -119,12 +196,8 @@ AssetBrowser::Run(SaveMode save)
 void
 AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
 {
-    ToolkitUtil::FileDB::FolderInfo info;
-    if (!this->fileDB.GetFolderInfo(folderId, info))
-    {
-        return;
-    }
-
+    ToolkitUtil::FileDB::FolderInfo info = this->folderInfoCache[folderId];
+ 
     Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
     this->fileDB.GetChildFolders(folderId, children);
     std::sort(children.begin(), children.end(), [](const ToolkitUtil::FileDB::FolderInfo& a, const ToolkitUtil::FileDB::FolderInfo& b)
@@ -132,17 +205,15 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
         return a.name < b.name;
     });
 
-    Util::Array<ToolkitUtil::FileDB::FileInfo> files;
-    this->fileDB.GetFilesInFolder(folderId, files);
-
+    
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_SpanFullWidth;
     if (depth == 0)
     {
         flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen;
     }
-    if (children.IsEmpty() && files.IsEmpty())
+    if (info.id == this->activeFolder)
     {
-        flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Leaf; 
+        flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected;
     }
 
     ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(folderId)));
@@ -152,6 +223,7 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
     {
         this->activeFolder = folderId;
         this->activeFile = 0;
+        this->RefreshFileInfoCaches();
     }
 
     if (bIsOpen)
@@ -216,13 +288,11 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     if (this->activeFolder != 0)
     {
         bool hasFileToOpen = false;
-        ToolkitUtil::FileDB::FileInfo fileToOpen;
-        Util::Array<ToolkitUtil::FileDB::FileInfo> folderFiles;
-        this->fileDB.GetFilesInFolder(this->activeFolder, folderFiles);
+        ToolkitUtil::FileDB::FileInfo fileToOpen;       
 
         Util::Array<ToolkitUtil::FileDB::FileInfo> visibleFiles;
-        visibleFiles.Reserve(folderFiles.Size());
-        for (const auto& file : folderFiles)
+        visibleFiles.Reserve(this->fileInfoCache.Size());
+        for (const auto& file : this->fileInfoCache)
         {
             if (!filter.IsEmpty() && this->activeFile != file.id && !Util::String::MatchPattern(file.name, filter))
             {
@@ -248,7 +318,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         hasFileToOpen = true;
                         fileToOpen = file;
                     }
-                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
+                    AddDragSourceForFileUri(file.filePath);
                     ImGui::PopID();
                 }
             }
@@ -304,7 +374,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         hasFileToOpen = true;
                         fileToOpen = file;
                     }
-                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
+                    AddDragSourceForFileUri(file.filePath);
                     ImGui::TableNextColumn();
                     ImGui::Text("%d KB", (int)(file.size / 1024));
                     ImGui::TableNextColumn();  
@@ -338,7 +408,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         hasFileToOpen = true;
                         fileToOpen = file;
                     }
-                    AddDragSourceForFileUri(this->fileDB.GetFilePath(file.id));
+                    AddDragSourceForFileUri(file.filePath);
                     ImGui::BeginChild("##filename00", { (float)itemSize, ImGui::GetTextLineHeight()}, false, ImGuiWindowFlags_NoScrollbar);
                     ImGui::Text(name.AsCharPtr());
                     if (ImGui::IsItemHovered())
@@ -371,7 +441,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         }
         if (hasFileToOpen)
         {
-            IO::URI uri = this->fileDB.GetFilePath(fileToOpen.id);
+            IO::URI uri = fileToOpen.filePath;
             Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
             assetEditor->Open(uri.GetHostAndLocalPath(), FileEntryTypeToAssetType(fileToOpen.type));
         }    
@@ -389,7 +459,7 @@ AssetBrowser::DisplayFileTree()
 
     static char buffer[NEBULA_MAXPATH];
     ImGui::PushItemWidth(ImGui::GetWindowWidth());
-
+    uint64_t oldActiveFileTree = this->activeFileTree;
     for (auto& root : rootFolders)
     {
         if (this->activeFileTree == 0)
@@ -403,12 +473,16 @@ AssetBrowser::DisplayFileTree()
         }
         ImGui::Button(displayName.AsCharPtr());
         if (ImGui::IsItemClicked())
-        {            
+        {
             this->activeFileTree = root.id;
             this->activeFile = 0;
             this->activeFolder = 0;
         }
         ImGui::SameLine();
+    }
+    if (oldActiveFileTree != this->activeFileTree)
+    {
+        this->RefreshFolderInfoCaches();
     }
     ImGui::NewLine();
     ImGui::InputText("##search", buffer, NEBULA_MAXPATH, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);

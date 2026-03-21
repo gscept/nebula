@@ -14,6 +14,7 @@
 #include "util/string.h"
 #include "io/uri.h"
 #include "filedb/filedb.h"
+#include "threading/safeflag.h"
 
 namespace Presentation
 {
@@ -65,6 +66,14 @@ private:
     Ptr<ScanFolderJob> currentScanJob;
     ToolkitUtil::FileDB fileDB;
     ToolkitUtil::Logger logger;
+
+    /// refresh caches for folder and file info to avoid redundant DB queries during tree display
+    void RefreshFolderInfoCaches();
+    void RefreshFileInfoCaches();
+
+    Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
+    Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
+    Threading::SafeFlag isDoneRefreshingCaches;
 };
 __RegisterClass(AssetBrowser)
 
