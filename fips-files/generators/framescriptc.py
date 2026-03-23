@@ -1085,6 +1085,11 @@ class RenderDefinition:
         parser.externs.append(self)
         parser.passes.append(self)
 
+        if 'resource_dependencies' in node:
+            for dependency in node['resource_dependencies']:
+                dep = ResourceDependencyDefinition(parser = parser, node = dependency)
+                self.resourceDependencies.append(dep)
+
         if "targets" in node:
             for at in node["targets"]:
                 attachment = AttachmentDefinition(parser, at)
