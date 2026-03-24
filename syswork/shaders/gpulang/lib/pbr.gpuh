@@ -86,12 +86,23 @@ CalculateF0(color : f32x3, metallic : f32, def : f32x3) f32x3
 
 //------------------------------------------------------------------------------
 /**
+*/
+Pow5(val : f32) f32
+{
+	const val2 = val*val;
+	return val2*val2*val;
+}
+
+//------------------------------------------------------------------------------
+/**
 	TODO: Add more variants of diffuse lobes.
 */
 DiffuseLobe(diffuseColor : f32x3, roughness : f32, NdotV : f32, NdotL : f32, LdotH : f32) f32x3
 {
-	// Lambert
-	return diffuseColor / PI;
+	const fd90 = 0.5f + 2.0f * roughness * LdotH * LdotH;
+	const lightScatter = 1.0f + (fd90 - 1.0f) * Pow5(1.0f - NdotL);
+	const viewScatter = 1.0f + (fd90 - 1.0f) * Pow5(1.0f - NdotV);
+	return diffuseColor * (lightScatter * viewScatter / PI) * NdotL;
 }
 
 //------------------------------------------------------------------------------
