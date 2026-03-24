@@ -1116,7 +1116,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .hostQueryReset = true,
         .timelineSemaphore = true,
         .bufferDeviceAddress = true,
-
     };
 
     VkPhysicalDeviceVulkan11Features vk11Features =
@@ -1140,16 +1139,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
         .pNext = lastExtension,
-        .taskShader = true,
-        .meshShader = true,
+        .taskShader = CoreGraphics::MeshShadersSupported,
+        .meshShader = CoreGraphics::MeshShadersSupported,
         .multiviewMeshShader = false,
         .primitiveFragmentShadingRateMeshShader = CoreGraphics::VariableRateShadingSupported,
         .meshShaderQueries = false,
     };
-    if (CoreGraphics::MeshShadersSupported)
-    {
-        lastExtension = &meshShadersFeatures;
-    }
+    lastExtension = &meshShadersFeatures;
 #pragma endregion
 
 #pragma region Variable Rate Shading Features
