@@ -49,7 +49,7 @@
 
     "Submissions": [
       {
-        "name": "Scene",
+        "name": "ScenePreview",
         "queue": "Graphics",
         "last_submit": true,
         "_comment": "Preview graphics submission",

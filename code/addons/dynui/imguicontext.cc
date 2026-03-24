@@ -451,15 +451,15 @@ ImguiContext::Create()
 #if WITH_NEBULA_EDITOR
     if (App::GameApplication::IsEditorEnabled())
     {
-        FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+        FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
             {
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
                 if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
                     CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
-                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, CoreGraphics::InvalidRenderPassId, inputAssembly });
+                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, CoreGraphics::InvalidPassId, 0, pass, inputAssembly });
             });
 
-        FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+        FrameScript_editorframe::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
