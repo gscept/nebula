@@ -46,12 +46,13 @@ ResourceBrowser::Run(SaveMode save)
             ImGui::PushFont(Dynui::ImguiBoldFont);
             ImGui::Text("Textures");
             ImGui::PopFont();
-            if (ImGui::BeginTable("Textures###Table", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY))
+            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp))
             {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Dimensions");
                 ImGui::TableSetupColumn("Format");
                 ImGui::TableSetupColumn("Size");
+                ImGui::TableSetupColumn("Samples");
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableHeadersRow();
 
@@ -81,6 +82,9 @@ ResourceBrowser::Run(SaveMode save)
                         ImGui::Text(Util::Format("%.2f KB", byteSize / float(1_KB)).AsCharPtr());
                     else
                         ImGui::Text(Util::Format("%.2f B", float(byteSize)).AsCharPtr());
+
+                    ImGui::TableNextColumn();
+                    ImGui::Text(Util::Format("%d", CoreGraphics::TextureGetNumSamples(tex)).AsCharPtr());
                     counter++;
                 }
                 ImGui::EndTable();
