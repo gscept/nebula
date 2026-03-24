@@ -221,6 +221,7 @@ PixelFormat::ToChannels(Code code)
     case DXT5:          return 4;
     case DXT5sRGB:      return 4;
     case BC4:           return 1;
+    case BC5:           return 2;
     case BC7:           return 4;
     case BC7sRGB:       return 4;
     case R8:            return 1;
