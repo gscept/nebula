@@ -116,6 +116,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
         const VkRenderingInfo& renderingInfo = RenderPassGetVk(info.renderPass);
         shaderInfo.pNext = renderPassInfo;
         blendInfo.attachmentCount = renderPassInfo->colorAttachmentCount;
+        multisampleInfo.rasterizationSamples = VkTypes::AsVkSampleFlags(RenderPassGetNumSamples(info.renderPass));
 
         viewportInfo =
         {

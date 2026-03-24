@@ -142,6 +142,8 @@ const RenderPassId CreateRenderPass(const RenderPassCreateInfo& info);
 void DestroyRenderPass(RenderPassId pass);
 /// Set viewports
 void RenderPassSetRenderTargetParameters(const CoreGraphics::CmdBufferId cmdBuf, const RenderPassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
+/// Get number of samples pass is rendering to
+const SizeT RenderPassGetNumSamples(const RenderPassId id);
 
 } // namespace CoreGraphics
 
