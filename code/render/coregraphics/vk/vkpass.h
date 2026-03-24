@@ -105,6 +105,7 @@ enum
     PassRender_ViewportInfo,
     PassRender_PipelineInfoColorFormats,
     PassRender_ShaderInterface,
+    PassRender_Samples
 };
 
 struct RenderPassShaderInterface
@@ -121,7 +122,8 @@ typedef Ids::IdAllocator<
     VkPipelineRenderingCreateInfo,
     VkPipelineViewportStateCreateInfo,
     Util::FixedArray<VkFormat>,
-    RenderPassShaderInterface
+    RenderPassShaderInterface,
+    SizeT
 > VkPassRenderAllocator;
 
 

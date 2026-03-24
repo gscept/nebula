@@ -783,6 +783,7 @@ CreateRenderPass(const RenderPassCreateInfo& info)
     VkPipelineRenderingCreateInfo& pipelineInfo = passRenderAllocator.Get<PassRender_PipelineInfo>(id);
     RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id);
     Util::FixedArray<VkFormat>& pipelineInfoFormats = passRenderAllocator.Get<PassRender_PipelineInfoColorFormats>(id);
+    SizeT& samples = passRenderAllocator.Get<PassRender_Samples>(id);
 
     pipelineInfoFormats.Resize(info.colorTargets.Size());
 
@@ -801,14 +802,18 @@ CreateRenderPass(const RenderPassCreateInfo& info)
         target.pNext = nullptr;
         target.imageView = TextureViewGetVk(info.colorTargets[i]);
         target.imageLayout = VkTypes::AsVkImageLayout(info.colorTargetLayouts[i]);
-        target.resolveMode = VK_RESOLVE_MODE_NONE;
+
+        CoreGraphics::TextureId tex = CoreGraphics::TextureViewGetTexture(info.colorTargets[i]);
+        samples = Math::max(samples, CoreGraphics::TextureGetNumSamples(tex));
         if (info.resolveTargets[i] != CoreGraphics::InvalidTextureViewId)
 		{
+            target.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
 			target.resolveImageView = TextureViewGetVk(info.resolveTargets[i]);
 			target.resolveImageLayout = VkTypes::AsVkImageLayout(info.resolveLayouts[i]);
 		}
 		else
 		{
+            target.resolveMode = VK_RESOLVE_MODE_NONE;
             target.resolveImageView = VK_NULL_HANDLE;
             target.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		}
@@ -841,22 +846,24 @@ CreateRenderPass(const RenderPassCreateInfo& info)
         depthAttachmentInfo.pNext = nullptr;
         depthAttachmentInfo.imageView = TextureViewGetVk(info.depthTarget);
         depthAttachmentInfo.imageLayout = VkTypes::AsVkImageLayout(info.depthTargetLayout);
-        depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+
+        CoreGraphics::TextureId tex = CoreGraphics::TextureViewGetTexture(info.depthTarget);
+        samples = Math::max(samples, CoreGraphics::TextureGetNumSamples(tex));
 
 		if (info.depthResolveTarget != CoreGraphics::InvalidTextureViewId)
 		{
+            depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
 			depthAttachmentInfo.resolveImageView = TextureViewGetVk(info.depthResolveTarget);
 			depthAttachmentInfo.resolveImageLayout = VkTypes::AsVkImageLayout(info.depthResolveTargetLayout);
 		}
 		else
 		{
+            depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
             depthAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
             depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		}
 
         pipelineInfo.depthAttachmentFormat = VkTypes::AsVkFormat(TextureViewGetPixelFormat(info.depthTarget));
-        depthAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
-        depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		depthAttachmentInfo.loadOp = AsVkLoadOp(info.depthFlags);
         depthAttachmentInfo.storeOp = AsVkStoreOp(info.depthFlags);
@@ -910,6 +917,15 @@ RenderPassSetRenderTargetParameters(const CoreGraphics::CmdBufferId cmdBuf, cons
 {
     RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id.id);
     CmdUpdateBuffer(cmdBuf, shaderInterface.constants, shaderInterface.renderTargetDimensionsOffset, viewports.ByteSize(), viewports.Begin());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+RenderPassGetNumSamples(const RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_Samples>(id.id);
 }
 
 //------------------------------------------------------------------------------
