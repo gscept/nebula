@@ -178,6 +178,7 @@ class LocalTextureDefinition:
         self.relativeSize = None
         self.depthFormat = False
         self.stencilFormat = False
+        self.samples = 1
         self.bits = list()
 
         if 'fixedSize' in node:
@@ -192,6 +193,9 @@ class LocalTextureDefinition:
             self.mips = node['mips']
         if 'layers' in node:
             self.layers = node['layers']
+
+        if 'samples' in node:
+            self.samples = node['samples']
 
         if 'format' not in node:
             Error(self.name, 'Local texture must declare format')
@@ -210,6 +214,9 @@ class LocalTextureDefinition:
         else:
             self.usage = 'Render'
 
+        if self.samples > 1 and self.mips != 1:
+            Error(self.name, 'Multi sampling and mips can\'t be used together')
+            
         usageBits = self.usage.split("|")
         self.usage = ""
         for bit in usageBits:
@@ -221,6 +228,10 @@ class LocalTextureDefinition:
             self.type = node['type']
         else:
             self.type = 'Texture2D'
+
+        global textureTypes
+        if self.type not in textureTypes:
+            Error(self.type, f'Invalid texture type {self.type}')
 
     def HasDepthFormat(self):
         return self.depthFormat
@@ -249,13 +260,14 @@ class LocalTextureDefinition:
             file.WriteLine("}")
             file.WriteLine("CoreGraphics::TextureCreateInfo info;")
             file.WriteLine('info.name = "{}";'.format(self.name))
-            file.WriteLine("info.type = CoreGraphics::{};".format(self.type))
-            file.WriteLine("info.format = CoreGraphics::PixelFormat::Code::{};".format(self.format))
-            file.WriteLine("info.width = Math::ceil({} * frameWidth);".format(self.relativeSize[0]))
-            file.WriteLine("info.height = Math::ceil({} * frameHeight);".format(self.relativeSize[1]))
-            file.WriteLine("info.usage = {};".format(self.usage))
-            file.WriteLine("info.mips = {};".format("CoreGraphics::TextureAutoMips" if self.mips == "auto" else self.mips))
-            file.WriteLine("info.layers = {};".format(self.layers))
+            file.WriteLine(f"info.type = CoreGraphics::{self.type};")
+            file.WriteLine(f"info.format = CoreGraphics::PixelFormat::Code::{self.format};")
+            file.WriteLine(f"info.width = Math::ceil({self.relativeSize[0]} * frameWidth);")
+            file.WriteLine(f"info.height = Math::ceil({self.relativeSize[1]} * frameHeight);")
+            file.WriteLine(f"info.usage = {self.usage};")
+            file.WriteLine(f"info.mips = {"CoreGraphics::TextureAutoMips" if self.mips == "auto" else self.mips};")
+            file.WriteLine(f"info.layers = {self.layers};")
+            file.WriteLine(f"info.samples = {self.samples};")
             if self.depthFormat or self.stencilFormat:
                 file.WriteLine("info.clearDepthStencil.depth = 1.0f;")
                 file.WriteLine("info.clearDepthStencil.stencil = 0.0f;")
@@ -779,11 +791,17 @@ class AttachmentDefinition:
         self.clearColor = None
         self.clearDepth = None
         self.clearStencil = None
+        self.resolve = None
         self.storeLoadFlags = list()
         if self.name not in parser.localTextureDict:
             Error(self.name, "Attachment references undeclared texture")
         else:
             self.ref = parser.localTextureDict[self.name]
+
+        if "resolve" in node:
+            self.resolve = node['resolve']
+            if self.resolve not in parser.localTextureDict:
+                Error(self.name, "Attachment references undeclared texture")
 
         if "clear" in node:
             self.clearColor = node['clear']
@@ -1096,6 +1114,8 @@ class RenderDefinition:
                 self.targets.append(attachment)
                 self.targetDict[attachment.name] = attachment
                 self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.name, stage = "ColorWrite", parser = parser))
+                if attachment.resolve is not None:
+                    self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.resolve, stage = "ColorWrite", parser = parser))
 
         if "depth" in node:
             self.depthAttachment = AttachmentDefinition(parser, node["depth"])
@@ -1185,8 +1205,21 @@ class RenderDefinition:
             file.WriteLine(f'info.colorTargetLayouts[{idx}] = CoreGraphics::ImageLayout::ColorRenderTexture;')
             file.WriteLine(f'info.colorTargetFlags[{idx}] = {flags};')
             file.WriteLine(f'info.colorClearValues[{idx}] = clearValue;')
-            file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::InvalidTextureViewId;')
-            file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::Undefined;')
+            if target.resolve is not None:
+                file.WriteLine("CoreGraphics::TextureViewCreateInfo resolveViewInfo;")
+                file.WriteLine(f'resolveViewInfo.name = "[Attachment] {target.resolve} in {self.name}_Resolve";')
+                file.WriteLine(f"resolveViewInfo.tex = Textures[(uint)TextureIndex::{target.resolve}];")
+                file.WriteLine(f"resolveViewInfo.format = CoreGraphics::PixelFormat::Code::{target.ref.format};")
+                file.WriteLine(f"resolveViewInfo.startMip = 0;")
+                file.WriteLine(f"resolveViewInfo.numMips = 1;")
+                file.WriteLine(f"resolveViewInfo.startLayer = 0;")
+                file.WriteLine(f"resolveViewInfo.bits = {bits};")
+                file.WriteLine(f"resolveViewInfo.numLayers = {target.ref.layers};")     
+                file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::CreateTextureView(resolveViewInfo);')
+                file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::ColorRenderTexture;')
+            else:
+                file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::InvalidTextureViewId;')
+                file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::Undefined;')
 
             file.DecreaseIndent()
             file.WriteLine("}")
@@ -1223,8 +1256,21 @@ class RenderDefinition:
 
             file.WriteLine(f'info.depthTarget = CoreGraphics::CreateTextureView(viewInfo);')
             file.WriteLine(f'info.depthTargetLayout = CoreGraphics::ImageLayout::DepthStencilRenderTexture;')
-            file.WriteLine(f'info.depthResolveTarget = CoreGraphics::InvalidTextureViewId;')
-            file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;')
+            if self.depthAttachment.resolve is not None:
+                file.WriteLine("CoreGraphics::TextureViewCreateInfo resolveViewInfo;")
+                file.WriteLine(f'resolveViewInfo.name = "[Attachment] {self.depthAttachment.resolve} in {self.name}_Resolve";')
+                file.WriteLine(f"resolveViewInfo.tex = Textures[(uint)TextureIndex::{self.depthAttachment.resolve}];")
+                file.WriteLine(f"resolveViewInfo.format = CoreGraphics::PixelFormat::Code::{self.depthAttachment.ref.format};")
+                file.WriteLine(f"resolveViewInfo.startMip = 0;")
+                file.WriteLine(f"resolveViewInfo.numMips = 1;")
+                file.WriteLine(f"resolveViewInfo.startLayer = 0;")
+                file.WriteLine(f"resolveViewInfo.bits = {bits};")
+                file.WriteLine(f"resolveViewInfo.numLayers = {self.depthAttachment.ref.layers};")    
+                file.WriteLine(f'info.depthResolveTarget = CreateTextureView(resolveViewInfo);')
+                file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::DepthStencilRenderTexture;')
+            else:                
+                file.WriteLine(f'info.depthResolveTarget = CoreGraphics::InvalidTextureViewId;')
+                file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;')
             file.WriteLine(f'info.depthFlags = {flags};')
             file.WriteLine(f'info.depthClearValue = clearValue;')
         file.WriteLine(f'Render_{self.name} = CoreGraphics::CreateRenderPass(info);')
@@ -1848,6 +1894,8 @@ if __name__ == '__main__':
 
     queues = set(['Graphics', 'Compute', 'Transfer', 'Sparse'])
     framescriptName = Path(file).stem
+
+    textureTypes = set(['Texture1D', 'Texture2D', 'Texture3D', 'TextureCube', 'Texture1DArray', 'Texture2DArray', 'TextureCubeArray'])
 
     headerF = IDLC.filewriter.FileWriter()
     headerF.Open(outH)
