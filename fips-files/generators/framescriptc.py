@@ -1146,6 +1146,14 @@ class RenderDefinition:
         file.WriteLine("Initialize_Render_{}()".format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
+        
+        file.WriteLine("if (Render_{} != CoreGraphics::InvalidRenderPassId)".format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("CoreGraphics::DestroyRenderPass(Render_{});".format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine("}")
+
         file.WriteLine(f'CoreGraphics::RenderPassCreateInfo info;')
         
         file.WriteLine(f'info.name = "Render_{self.name}";')
