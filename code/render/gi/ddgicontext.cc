@@ -377,18 +377,19 @@ DDGIContext::Create()
     });
 
 #ifndef PUBLIC_BUILD
-    FrameScript_default::RegisterSubgraphPipelines_DDGIDebug_Pass([](const CoreGraphics::PassId pass, const uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_DDGIDebug_Render([](const CoreGraphics::RenderPassId pass)
     {
         state.debugPipeline = CoreGraphics::CreateGraphicsPipeline(
             {
                 .shader = state.debugProgram,
-                .pass = pass,
-                .subpass = subpass,
+                .pass = CoreGraphics::InvalidPassId,
+                .subpass = 0,
+                .renderPass = pass,
                 .inputAssembly = CoreGraphics::InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::TriangleList, .primRestart = false } }
             });
     });
 
-    FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DDGIDebug_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (Core::CVarReadInt(g_debug_ddgi) == 1)
         {

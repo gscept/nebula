@@ -517,7 +517,10 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         {
             CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer, tableSet), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer, tableSet), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            if (pipelineBundle.pass != CoreGraphics::InvalidPassId)
+                CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            else if (pipelineBundle.renderPass != CoreGraphics::InvalidRenderPassId)
+                CoreGraphics::CmdSetResourceTable(id, RenderPassGetResourceTable(pipelineBundle.renderPass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         }
     }
 }
@@ -613,7 +616,7 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
     if (!AllBits(bits, CmdPipelineBuildBits::PipelineBuilt))
     {
         const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
-        VkPipeline pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
+        VkPipeline pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.renderPass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
         bits |= CmdPipelineBuildBits::PipelineBuilt;
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
@@ -651,7 +654,11 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
         IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer, Graphics::GlobalTables::GraphicsQueue), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer, Graphics::GlobalTables::GraphicsQueue), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-        CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+
+        if (pipelineBundle.pass != CoreGraphics::InvalidPassId)
+            CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        else if (pipelineBundle.renderPass != CoreGraphics::InvalidRenderPassId)
+            CoreGraphics::CmdSetResourceTable(buf, RenderPassGetResourceTable(pipelineObj.renderPass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
     }
 
     // Set viewport and scissors since Vulkan requires them to be set after the pipeline
@@ -1016,6 +1023,7 @@ void
 CmdBeginPass(const CmdBufferId id, const PassId pass)
 {
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
+    n_assert(pipelineBundle.pass == CoreGraphics::InvalidPassId && pipelineBundle.renderPass == CoreGraphics::InvalidRenderPassId);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
     const VkGraphicsPipelineCreateInfo& framebufferInfo = PassGetVkFramebufferInfo(pass);
@@ -1050,8 +1058,36 @@ CmdNextSubpass(const CmdBufferId id)
 void
 CmdEndPass(const CmdBufferId id)
 {
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
+    pipelineBundle.pass = CoreGraphics::InvalidPassId;
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdEndRenderPass(cmdBuf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBeginRenderPass(const CmdBufferId id, const CoreGraphics::RenderPassId pass)
+{
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
+    n_assert(pipelineBundle.pass == CoreGraphics::InvalidPassId && pipelineBundle.renderPass == CoreGraphics::InvalidRenderPassId);
+    pipelineBundle.renderPass = pass;
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    const auto& passBegin = RenderPassGetVk(pass);
+    vkCmdBeginRendering(cmdBuf, &passBegin);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdEndRenderPass(const CmdBufferId id)
+{
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
+    pipelineBundle.renderPass = CoreGraphics::InvalidRenderPassId;
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    vkCmdEndRendering(cmdBuf);
 }
 
 //------------------------------------------------------------------------------

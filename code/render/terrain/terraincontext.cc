@@ -431,20 +431,21 @@ TerrainContext::Create()
         CmdEndMarker(cmdBuf);
     }, nullptr);
 
-    FrameScript_default::RegisterSubgraphPipelines_TerrainPrepass_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_TerrainPrepass_Render([](const CoreGraphics::RenderPassId pass)
     {
         if (terrainVirtualTileState.terrainPrepassPipeline != InvalidPipelineId)
             DestroyGraphicsPipeline(terrainVirtualTileState.terrainPrepassPipeline);
         terrainVirtualTileState.terrainPrepassPipeline = CreateGraphicsPipeline(
             {
                 .shader = terrainVirtualTileState.terrainPrepassProgram,
-                .pass = pass,
-                .subpass = subpass,
+                .pass = CoreGraphics::InvalidPassId,
+                .subpass = 0,
+                .renderPass = pass,
                 .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
             });
     });
 
-    FrameScript_default::RegisterSubgraphSync_TerrainPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraphSync_TerrainPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
         for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
@@ -457,7 +458,7 @@ TerrainContext::Create()
         }
     });
 
-    FrameScript_default::RegisterSubgraph_TerrainPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainState.renderToggle == false)
             return;
@@ -688,19 +689,20 @@ TerrainContext::Create()
         }
     }, nullptr);
 
-    FrameScript_default::RegisterSubgraphPipelines_TerrainResolve_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_TerrainResolve_Render([](const CoreGraphics::RenderPassId pass)
     {
         if (terrainVirtualTileState.terrainResolvePipeline != InvalidPipelineId)
             DestroyGraphicsPipeline(terrainVirtualTileState.terrainResolvePipeline);
         terrainVirtualTileState.terrainResolvePipeline = CoreGraphics::CreateGraphicsPipeline(
             {
                 .shader = terrainVirtualTileState.terrainResolveProgram,
-                .pass = pass,
-                .subpass = subpass,
+                .pass = CoreGraphics::InvalidPassId,
+                .subpass = 0,
+                .renderPass = pass,
                 .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
             });
     });
-    FrameScript_default::RegisterSubgraphSync_TerrainResolve_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraphSync_TerrainResolve_Render([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
         for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
@@ -714,7 +716,7 @@ TerrainContext::Create()
             terrainInstance.barrierContext.Synchronize();
         }
     });
-    FrameScript_default::RegisterSubgraph_TerrainResolve_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainResolve_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetGraphicsPipeline(cmdBuf, terrainVirtualTileState.terrainResolvePipeline);
         CmdSetVertexLayout(cmdBuf, terrainState.vlo);

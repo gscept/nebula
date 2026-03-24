@@ -197,22 +197,23 @@ TerrainEditor::TerrainEditor()
         }
     }, nullptr, nullptr);
 
-    FrameScript_default::RegisterSubgraphPipelines_TerrainEditorBrush_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_TerrainEditorBrush_Render([](const CoreGraphics::RenderPassId pass)
     {
         if (terrainEditorState.brushPreviewPipeline != CoreGraphics::InvalidPipelineId)
             DestroyGraphicsPipeline(terrainEditorState.brushPreviewPipeline);
         terrainEditorState.brushPreviewPipeline = CoreGraphics::CreateGraphicsPipeline(
             {
                 .shader = terrainEditorState.brushPreviewProgram,
-                .pass = pass,
-                .subpass = subpass,
+                .pass = CoreGraphics::InvalidPassId,
+                .subpass = 0,
+                .renderPass = pass,
                 .inputAssembly = CoreGraphics::InputAssemblyKey{ {.topo = CoreGraphics::PrimitiveTopology::TriangleList, .primRestart = false } }
             });
     });
 
     // Bleh, run this again
     FrameScript_default::SetupPipelines();
-    FrameScript_default::RegisterSubgraph_TerrainEditorBrush_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainEditorBrush_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!terrainEditorState.drawBrushPreview)
             return;

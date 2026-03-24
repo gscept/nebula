@@ -81,7 +81,7 @@ VkPipelineDatabase::Discard()
 /**
 */
 void
-VkPipelineDatabase::SetPass(const CoreGraphics::PassId pass)
+VkPipelineDatabase::SetPass(const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass)
 {
     this->currentPass = pass;
     IndexT index = this->tier1.FindIndex(pass);
@@ -162,7 +162,7 @@ VkPipelineDatabase::SetInputAssembly(const CoreGraphics::InputAssemblyKey key)
 */
 CoreGraphics::PipelineId
 VkPipelineDatabase::GetPipeline(
-    const CoreGraphics::PassId pass
+    const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
     , const uint32_t subpass
     , const CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
@@ -184,7 +184,7 @@ VkPipelineDatabase::GetPipeline(
 */
 void
 VkPipelineDatabase::CachePipeline(
-    const CoreGraphics::PassId pass
+    const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
     , const uint32_t subpass
     , const CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
@@ -231,8 +231,9 @@ VkPipelineDatabase::GetCompiledPipeline()
         CoreGraphics::PipelineCreateInfo pipeInfo;
         pipeInfo.inputAssembly = this->currentInputAssembly;
         pipeInfo.shader = this->currentShaderProgram;
-        pipeInfo.pass = this->currentPass;
+        pipeInfo.pass = this->currentPass.first;
         pipeInfo.subpass = this->currentSubpass;
+        pipeInfo.renderPass = this->currentPass.second;
         pipeInfo.ignoreCache = true;
         this->ct4->pipeline = CoreGraphics::CreateGraphicsPipeline(pipeInfo);
 
@@ -251,7 +252,7 @@ VkPipelineDatabase::GetCompiledPipeline()
 */
 VkPipeline
 VkPipelineDatabase::GetCompiledPipeline(
-    const CoreGraphics::PassId pass
+    const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
     , const uint32_t subpass
     , const CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
@@ -271,7 +272,7 @@ VkPipelineDatabase::GetCompiledPipeline(
 void
 VkPipelineDatabase::Reset()
 {
-    this->currentPass = CoreGraphics::InvalidPassId;
+    this->currentPass = Util::MakePair(CoreGraphics::InvalidPassId, CoreGraphics::InvalidRenderPassId);
     this->currentSubpass = -1;
     this->currentShaderProgram = CoreGraphics::InvalidShaderProgramId;
     this->currentVertexLayout = 0;

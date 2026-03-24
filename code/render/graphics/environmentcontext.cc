@@ -60,7 +60,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         {
             Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
             Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
-        });
+        }, Graphics::ALL_STAGE_MASK);
 
     envState.bloomColor = Math::vec4(1.0f);
     envState.bloomIntensity = 0.65f;

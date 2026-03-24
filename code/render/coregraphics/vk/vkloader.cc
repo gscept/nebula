@@ -161,6 +161,8 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkDestroyRenderPass);
     _IMP_VK(vkCmdBeginRenderPass);
     _IMP_VK(vkCmdEndRenderPass);
+    _IMP_VK(vkCmdBeginRendering);
+    _IMP_VK(vkCmdEndRendering);
     _IMP_VK(vkCmdNextSubpass);
     _IMP_VK(vkCmdBindIndexBuffer);
     _IMP_VK(vkCmdBindVertexBuffers);
@@ -345,6 +347,8 @@ _DEF_VK(vkCreateRenderPass);
 _DEF_VK(vkDestroyRenderPass);
 _DEF_VK(vkCmdBeginRenderPass);
 _DEF_VK(vkCmdEndRenderPass);
+_DEF_VK(vkCmdBeginRendering);
+_DEF_VK(vkCmdEndRendering);
 _DEF_VK(vkCmdNextSubpass);
 _DEF_VK(vkCmdBindIndexBuffer);
 _DEF_VK(vkCmdBindVertexBuffers);

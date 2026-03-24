@@ -57,7 +57,7 @@ public:
     void Discard();
 
     /// set pass
-    void SetPass(const CoreGraphics::PassId pass);
+    void SetPass(const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass);
     /// set subpass
     void SetSubpass(uint32_t subpass);
     /// set shader
@@ -66,14 +66,14 @@ public:
     void SetInputAssembly(const CoreGraphics::InputAssemblyKey key);
     /// Get if there is a pipeline associated with the current state
     CoreGraphics::PipelineId GetPipeline(
-        const CoreGraphics::PassId pass
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// Inject pipeline, used for pipelines created outside of the database
     void CachePipeline(
-        const CoreGraphics::PassId pass
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
@@ -85,7 +85,7 @@ public:
     VkPipeline GetCompiledPipeline();
     /// Gets the pipeline associated with a set of state, or returns a previously created one
     VkPipeline GetCompiledPipeline(
-        const CoreGraphics::PassId pass
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
@@ -102,7 +102,7 @@ private:
 
     VkDevice dev;
     VkPipelineCache cache;
-    CoreGraphics::PassId currentPass;
+    Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> currentPass;
     uint32_t currentSubpass;
     CoreGraphics::ShaderProgramId currentShaderProgram;
     VkGraphicsPipelineCreateInfo currentShaderInfo;
@@ -138,7 +138,7 @@ private:
         CoreGraphics::PipelineId pipeline = CoreGraphics::InvalidPipelineId;
     };
 
-    Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;
+    Util::Dictionary<Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId>, Tier1Node*> tier1;
     
     Memory::ArenaAllocator<BIG_CHUNK> tierNodeAllocator;
 

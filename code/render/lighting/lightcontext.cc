@@ -293,25 +293,6 @@ LightContext::Create()
         CoreGraphics::CmdEndPass(cmdBuf);
     });
 
-    FrameScript_shadows::RegisterSubgraph_SpotlightShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
-
-        /*
-        IndexT i;
-        for (i = 0; i < lightServerState.shadowCastingLights.Size(); i++)
-        {
-            // draw it!
-            Ids::Id32 shadowCasterIndex = shadowCasterIndexMap[lightServerState.shadowCastingLights[i]];
-            Frame::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowCastingLights[i], 1, slice, bufferIndex);
-        }
-        */
-    });
-
-    FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
-
-    });
-
     // Bind shadows
     FrameScript_default::Bind_LightList(clusterState.clusterLightsList);
     FrameScript_default::Bind_ClusterLightIndexLists(clusterState.clusterLightIndexLists);

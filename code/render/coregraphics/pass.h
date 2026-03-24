@@ -26,6 +26,7 @@ namespace CoreGraphics
 struct ResourceTableId;
 struct TextureView;
 ID_24_8_TYPE(PassId);
+ID_24_8_TYPE(RenderPassId);
 
 enum class AttachmentFlagBits : uint16_t
 {
@@ -115,6 +116,34 @@ const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::Pas
 
 /// get name
 const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
+
+struct RenderPassCreateInfo
+{
+    Util::StringAtom name;
+    Math::rectangle<int> area;
+    SizeT layerCount = 1;
+    Util::FixedArray<CoreGraphics::TextureViewId> colorTargets;
+    Util::FixedArray<CoreGraphics::ImageLayout> colorTargetLayouts;
+    Util::FixedArray<CoreGraphics::AttachmentFlagBits> colorTargetFlags;
+    Util::FixedArray<CoreGraphics::TextureViewId> resolveTargets;
+    Util::FixedArray<CoreGraphics::ImageLayout> resolveLayouts;
+    Util::FixedArray<Math::vec4> colorClearValues;
+
+    CoreGraphics::TextureViewId depthTarget = CoreGraphics::InvalidTextureViewId;
+    CoreGraphics::ImageLayout depthTargetLayout = CoreGraphics::ImageLayout::Undefined;
+    CoreGraphics::TextureViewId depthResolveTarget = CoreGraphics::InvalidTextureViewId;
+    CoreGraphics::ImageLayout depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;
+    CoreGraphics::AttachmentFlagBits depthFlags = CoreGraphics::AttachmentFlagBits::NoFlags;
+    Math::vec4 depthClearValue;
+};
+/// Create pass for dynamic rendering
+const RenderPassId CreateRenderPass(const RenderPassCreateInfo& info);
+/// Destroy render pass
+void DestroyRenderPass(RenderPassId pass);
+/// Set viewports
+void RenderPassSetRenderTargetParameters(const CoreGraphics::CmdBufferId cmdBuf, const RenderPassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
+/// Get number of samples pass is rendering to
+const SizeT RenderPassGetNumSamples(const RenderPassId id);
 
 } // namespace CoreGraphics
 

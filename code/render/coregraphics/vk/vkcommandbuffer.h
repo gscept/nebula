@@ -101,6 +101,7 @@ struct VkPipelineBundle
     VkPipelineLayout graphicsLayout;
     VkPipelineLayout raytracingLayout;
     CoreGraphics::PassId pass;
+    CoreGraphics::RenderPassId renderPass;
     CoreGraphics::ShaderProgramId program;
 };
 

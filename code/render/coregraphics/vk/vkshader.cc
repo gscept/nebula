@@ -247,7 +247,6 @@ ShaderSetup(
     uint32_t numPerStageStorageImages[NumShaders] = {0};
     uint32_t numPerStageInputAttachments[NumShaders] = {0};
     uint32_t numPerStageAccelerationStructures[NumShaders] = {0};
-    uint32_t numInputAttachments = 0;
     bool bindingTable[128] = { false };
 
     enum
@@ -927,7 +926,7 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAt
         info.name = name;
         info.mode = mode;
         info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        info.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
+        info.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
 
         // Initialize data to zeroes
         Util::FixedArray<byte> data(buffer.byteSize, 0x0);

@@ -39,5 +39,7 @@ void TextureViewReload(const TextureViewId id);
 
 /// get texture
 TextureId TextureViewGetTexture(const TextureViewId id);
+/// Get pixel format of view
+CoreGraphics::PixelFormat::Code TextureViewGetPixelFormat(const TextureViewId id);
 
 } // namespace CoreGraphics

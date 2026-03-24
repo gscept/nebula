@@ -61,23 +61,17 @@ psMain(in UV : f32x2) void
     // get an averaged depth value        
     const depth = sample2DLod(FinalizeUniforms.DepthTexture, DefaultSampler, UV * PassUniforms.RenderTargets[0].Scale, 0).r;
     var c = f32x4(sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, UV * PassUniforms.RenderTargets[0].Scale, 0).rgb, 1.0f);
-	if depth == 1.0f
-	{
-		pixelExportColor(c.rgb, 0);
-	}
-	else
-	{
-		// Convert color to luminance
-		const lumAvg = ViewConstants.Time_Random_Luminance_X.z;
-		var xyY = RGBToXYY(c.rgb);
-		const lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, PerTickParams.MaxLuminance);
 
-		// Tonemap in luma space
-		xyY = ToneMap(xyY, lp, PerTickParams.MaxLuminance);
+	// Convert color to luminance
+	const lumAvg = ViewConstants.Time_Random_Luminance_X.z;
+	var xyY = RGBToXYY(c.rgb);
+	const lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, PerTickParams.MaxLuminance);
 
-		// Convert back to RGB
-		pixelExportColor(XYYToRGB(xyY), 0);
-	}
+	// Tonemap in luma space
+	xyY = ToneMap(xyY, lp, PerTickParams.MaxLuminance);
+
+	// Convert back to RGB
+	pixelExportColor(XYYToRGB(xyY), 0);
 }
 
 //------------------------------------------------------------------------------

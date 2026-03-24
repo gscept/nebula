@@ -89,4 +89,42 @@ const VkFramebuffer PassGetVkFramebuffer(const CoreGraphics::PassId id);
 const VkRenderPass PassGetVkRenderPass(const CoreGraphics::PassId id);
 
 
+/// Get rendering info from render pass
+const VkRenderingInfo RenderPassGetVk(const CoreGraphics::RenderPassId id);
+/// Get pipeline create info
+const VkPipelineRenderingCreateInfo& RenderPassGetVkPipelineInfo(const CoreGraphics::RenderPassId id);
+/// Get resource table for render pass
+const CoreGraphics::ResourceTableId RenderPassGetResourceTable(const CoreGraphics::RenderPassId id);
+
+enum
+{
+    PassRender_Attachments,
+    PassRender_DepthAttachment,
+    PassRender_BeginInfo,
+    PassRender_PipelineInfo,
+    PassRender_ViewportInfo,
+    PassRender_PipelineInfoColorFormats,
+    PassRender_ShaderInterface,
+    PassRender_Samples
+};
+
+struct RenderPassShaderInterface
+{
+    CoreGraphics::ResourceTableId table;
+    CoreGraphics::BufferId constants;
+    uint32_t renderTargetDimensionsOffset;
+};
+
+typedef Ids::IdAllocator<
+    Util::FixedArray<VkRenderingAttachmentInfo>,
+    VkRenderingAttachmentInfo,
+    VkRenderingInfo,
+    VkPipelineRenderingCreateInfo,
+    VkPipelineViewportStateCreateInfo,
+    Util::FixedArray<VkFormat>,
+    RenderPassShaderInterface,
+    SizeT
+> VkPassRenderAllocator;
+
+
 } // namespace Vulkan

@@ -10,6 +10,7 @@
 #include "coregraphics/shaderserver.h"
 #include "vktextureview.h"
 #include "coregraphics/pass.h"
+#include "coregraphics/vk/vkcommandbuffer.h"
 
 #include "gpulang/render/system_shaders/shared.h"
 
@@ -17,8 +18,8 @@ using namespace CoreGraphics;
 namespace Vulkan
 {
 
-VkPassAllocator passAllocator(0x00FFFFFF);
-
+VkPassAllocator passAllocator(0x000000FF);
+VkPassRenderAllocator passRenderAllocator(0x000000FF);
 //------------------------------------------------------------------------------
 /**
 */
@@ -76,10 +77,107 @@ PassGetVkRenderPass(const CoreGraphics::PassId id)
 //------------------------------------------------------------------------------
 /**
 */
+const VkRenderingInfo
+RenderPassGetVk(const CoreGraphics::RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_BeginInfo>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkPipelineRenderingCreateInfo&
+RenderPassGetVkPipelineInfo(const CoreGraphics::RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_PipelineInfo>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ResourceTableId
+RenderPassGetResourceTable(const CoreGraphics::RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_ShaderInterface>(id.id).table;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const VkPipelineViewportStateCreateInfo&
 PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32_t subpass)
 {
     return passAllocator.Get<Pass_VkRuntimeInfo>(id.id).subpassPipelineInfo[subpass];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkAttachmentLoadOp
+AsVkLoadOp(const CoreGraphics::AttachmentFlagBits bits)
+{
+	switch (bits & (AttachmentFlagBits::Load | AttachmentFlagBits::Clear))
+    {
+        case AttachmentFlagBits::Load:
+            return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case AttachmentFlagBits::Clear:
+            return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        default:
+            return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkAttachmentStoreOp
+AsVkStoreOp(const CoreGraphics::AttachmentFlagBits bits)
+{
+	VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    switch (bits & (AttachmentFlagBits::Store | AttachmentFlagBits::Discard))
+    {
+        case CoreGraphics::AttachmentFlagBits::Store:
+            return VK_ATTACHMENT_STORE_OP_STORE;
+        case AttachmentFlagBits::Discard:
+            return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        default:
+            return VK_ATTACHMENT_STORE_OP_NONE;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkAttachmentLoadOp
+AsVkLoadOpStencil(const CoreGraphics::AttachmentFlagBits bits)
+{
+	switch (bits & (AttachmentFlagBits::LoadStencil | AttachmentFlagBits::ClearStencil))
+    {
+        case AttachmentFlagBits::Load:
+            return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case AttachmentFlagBits::Clear:
+            return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        default:
+            return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkAttachmentStoreOp
+AsVkStoreOpStencil(const CoreGraphics::AttachmentFlagBits bits)
+{
+	VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    switch (bits & (AttachmentFlagBits::StoreStencil | AttachmentFlagBits::DiscardStencil))
+    {
+        case CoreGraphics::AttachmentFlagBits::Store:
+            return VK_ATTACHMENT_STORE_OP_STORE;
+        case AttachmentFlagBits::Discard:
+            return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        default:
+            return VK_ATTACHMENT_STORE_OP_NONE;
+    }
 }
 
 } // namespace Vulkan
@@ -195,7 +293,6 @@ GetSubpassInfo(
         */
 
         // fill list of all attachments, will be removed per subpass attachment
-        IndexT j = 0;
         if (subpass.depth != InvalidIndex)
         {
             VkAttachmentReference& ds = subpassInfo.depthReference;
@@ -213,37 +310,41 @@ GetSubpassInfo(
         }
 
         // Add color attachments
+        subpassInfo.colorReferences.Reserve(subpass.attachments.Size());
         for (auto attachment : subpass.attachments)
         {
             VkAttachmentReference& ref = subpassInfo.colorReferences.Emplace();
             ref.attachment = attachment;
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-            VkAttachmentReference& res = subpassInfo.resolves.Emplace();
-            res.attachment = VK_ATTACHMENT_UNUSED;
-            res.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
             consumedAttachments[attachment] = true;
             usedAttachments++;
         }
 
-        for (IndexT k = 0; k < subpass.resolves.Size(); k++)
+        IndexT j = 0;
+
+		subpassInfo.resolves.Reserve(subpass.resolves.Size());
+        for (j = 0; j < subpass.resolves.Size(); j++)
         {
-            VkAttachmentReference& ref = subpassInfo.resolves[k];
-            ref.attachment = subpass.resolves[k];
+            VkAttachmentReference& ref = subpassInfo.resolves.Emplace();
+            ref.attachment = subpass.resolves[j];
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             consumedAttachments[ref.attachment] = true;
         }
 
-        for (auto input : subpass.inputs)
+		// Update only the attachments we actually bind
+        subpassInfo.inputs.Reserve(subpass.inputs.Size());
+        for (j = 0; j < subpass.inputs.Size(); j++)
         {
             VkAttachmentReference& ref = subpassInfo.inputs.Emplace();
-            ref.attachment = input;
+            ref.attachment = subpass.inputs[j];
+			ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-            consumedAttachments[input] = true;
+            consumedAttachments[subpass.inputs[j]] = true;
         }
 
+		subpassInfo.preserves.Reserve(consumedAttachments.Size());
         for (j = 0; j < consumedAttachments.Size(); j++)
         {
             if (!consumedAttachments[j])
@@ -350,20 +451,6 @@ GetSubpassInfo(
         vksubpass.pDepthStencilAttachment = &subpassInfo.depthReference;
     }
 
-    VkAttachmentLoadOp loadOps[] =
-    {
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VK_ATTACHMENT_LOAD_OP_LOAD,
-    };
-
-    VkAttachmentStoreOp storeOps[] =
-    {
-        VK_ATTACHMENT_STORE_OP_NONE,
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_ATTACHMENT_STORE_OP_STORE,
-    };
-
     numUsedAttachmentsTotal = (uint32_t)loadInfo.attachments.Size();
     outAttachments.Resize(numUsedAttachmentsTotal);
     for (i = 0; i < loadInfo.attachments.Size(); i++)
@@ -374,58 +461,10 @@ GetSubpassInfo(
 
         VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = outAttachments[i];
-        IndexT loadIdx = 0;
-        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::Load | AttachmentFlagBits::Clear))
-        {
-            case AttachmentFlagBits::Load:
-                loadIdx = 2;
-                break;
-            case AttachmentFlagBits::Clear:
-                loadIdx = 1;
-                break;
-            default:
-                loadIdx = 0;
-                break;
-        }
-        IndexT stencilLoadIdx = 0;
-        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::LoadStencil | AttachmentFlagBits::ClearStencil))
-        {
-            case AttachmentFlagBits::LoadStencil:
-                stencilLoadIdx = 2;
-                break;
-            case AttachmentFlagBits::ClearStencil:
-                stencilLoadIdx = 1;
-                break;
-            default:
-                stencilLoadIdx = 0;
-                break;
-        }
-        IndexT storeIdx = 0;
-        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::Store | AttachmentFlagBits::Discard))
-        {
-            case AttachmentFlagBits::Store:
-                storeIdx = 2;
-                break;
-            case AttachmentFlagBits::Discard:
-                storeIdx = 1;
-                break;
-            default:
-                storeIdx = 0;
-                break;
-        }
-        IndexT stencilStoreIdx = 0;
-        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::StoreStencil | AttachmentFlagBits::DiscardStencil))
-        {
-            case AttachmentFlagBits::StoreStencil:
-                stencilStoreIdx = 2;
-                break;
-            case AttachmentFlagBits::DiscardStencil:
-                stencilStoreIdx = 1;
-                break;
-            default:
-                stencilStoreIdx = 0;
-                break;
-        }
+        VkAttachmentLoadOp loadOp = AsVkLoadOp(loadInfo.attachmentFlags[i]);
+        VkAttachmentLoadOp stencilLoadOp = AsVkLoadOpStencil(loadInfo.attachmentFlags[i]);
+        VkAttachmentStoreOp storeOp = AsVkStoreOp(loadInfo.attachmentFlags[i]);
+		VkAttachmentStoreOp stencilStoreOp = AsVkStoreOpStencil(loadInfo.attachmentFlags[i]);
 
         attachment.flags = 0;
         if (loadInfo.attachmentIsDepthStencil[i])
@@ -455,10 +494,10 @@ GetSubpassInfo(
             attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
         attachment.format = fmt;
-        attachment.loadOp = loadOps[loadIdx];
-        attachment.storeOp = storeOps[storeIdx];
-        attachment.stencilLoadOp = loadOps[stencilLoadIdx];
-        attachment.stencilStoreOp = storeOps[stencilStoreIdx];
+        attachment.loadOp = loadOp;
+        attachment.storeOp = storeOp;
+        attachment.stencilLoadOp = stencilLoadOp;
+        attachment.stencilStoreOp = stencilStoreOp;
         attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
     }
 }
@@ -596,14 +635,14 @@ SetupPass(const PassId pid)
         IndexT j = 0;
         for (i = 0; i < loadInfo.attachments.Size(); i++)
         {
-            n_assert(j < 16); // only allow 8 input attachments in the shader, so we must limit it
+            n_assert(i < 8); // only allow 8 input attachments in the shader, so we must limit it
             if (!loadInfo.attachmentIsDepthStencil[i])
             {
                 CoreGraphics::ResourceTableInputAttachment write;
                 write.tex = loadInfo.attachments[i];
                 write.isDepth = false;
                 write.sampler = InvalidSamplerId;
-                write.slot = Shared::InputAttachment0::BINDING + j;
+                write.slot = Shared::InputAttachment0::BINDING + j++;
                 write.index = 0;
                 ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
             }
@@ -728,6 +767,174 @@ DestroyPass(const PassId id)
 
     DelayedDeletePass(id);
     passAllocator.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const RenderPassId
+CreateRenderPass(const RenderPassCreateInfo& info)
+{
+    Ids::Id32 id = passRenderAllocator.Alloc();
+    VkRenderingInfo& renderInfo = passRenderAllocator.Get<PassRender_BeginInfo>(id);
+    Util::FixedArray<VkRenderingAttachmentInfo>& attachmentInfo = passRenderAllocator.Get<PassRender_Attachments>(id);
+	VkRenderingAttachmentInfo& depthAttachmentInfo = passRenderAllocator.Get<PassRender_DepthAttachment>(id);
+    VkPipelineViewportStateCreateInfo& viewportInfo = passRenderAllocator.Get<PassRender_ViewportInfo>(id);
+    VkPipelineRenderingCreateInfo& pipelineInfo = passRenderAllocator.Get<PassRender_PipelineInfo>(id);
+    RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id);
+    Util::FixedArray<VkFormat>& pipelineInfoFormats = passRenderAllocator.Get<PassRender_PipelineInfoColorFormats>(id);
+    SizeT& samples = passRenderAllocator.Get<PassRender_Samples>(id);
+
+    pipelineInfoFormats.Resize(info.colorTargets.Size());
+
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    pipelineInfo.pNext = nullptr;
+    pipelineInfo.viewMask = 0x0;
+    pipelineInfo.colorAttachmentCount = pipelineInfoFormats.Size();
+    pipelineInfo.pColorAttachmentFormats = pipelineInfoFormats.Begin();
+    pipelineInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+    pipelineInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+	attachmentInfo.Resize(info.colorTargets.Size());
+	for (SizeT i = 0; i < info.colorTargets.Size(); i++)
+	{
+        VkRenderingAttachmentInfo& target = attachmentInfo[i];
+		target.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        target.pNext = nullptr;
+        target.imageView = TextureViewGetVk(info.colorTargets[i]);
+        target.imageLayout = VkTypes::AsVkImageLayout(info.colorTargetLayouts[i]);
+
+        CoreGraphics::TextureId tex = CoreGraphics::TextureViewGetTexture(info.colorTargets[i]);
+        samples = Math::max(samples, CoreGraphics::TextureGetNumSamples(tex));
+        if (info.resolveTargets[i] != CoreGraphics::InvalidTextureViewId)
+		{
+            target.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+			target.resolveImageView = TextureViewGetVk(info.resolveTargets[i]);
+			target.resolveImageLayout = VkTypes::AsVkImageLayout(info.resolveLayouts[i]);
+		}
+		else
+		{
+            target.resolveMode = VK_RESOLVE_MODE_NONE;
+            target.resolveImageView = VK_NULL_HANDLE;
+            target.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		}
+        pipelineInfoFormats[i] = VkTypes::AsVkFormat(CoreGraphics::TextureViewGetPixelFormat(info.colorTargets[i]));
+
+		target.loadOp = AsVkLoadOp(info.colorTargetFlags[i]);
+        target.storeOp = AsVkStoreOp(info.colorTargetFlags[i]);
+
+		VkClearValue& clear = target.clearValue;
+        clear.color.float32[0] = info.colorClearValues[i].x;
+		clear.color.float32[1] = info.colorClearValues[i].y;
+		clear.color.float32[2] = info.colorClearValues[i].z;
+		clear.color.float32[3] = info.colorClearValues[i].w;
+	}
+
+    renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    renderInfo.pNext = nullptr;
+    renderInfo.flags = 0x0;
+    renderInfo.renderArea = {
+        .offset {.x = info.area.left, .y = info.area.top}, .extent {.width = (uint)info.area.width(), .height = (uint)info.area.height()}
+    };
+    renderInfo.layerCount = info.layerCount;
+    renderInfo.viewMask = 0x0;
+    renderInfo.colorAttachmentCount = attachmentInfo.Size();
+    renderInfo.pColorAttachments = attachmentInfo.Begin();
+
+	if (info.depthTarget != CoreGraphics::InvalidTextureViewId)
+	{
+        depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depthAttachmentInfo.pNext = nullptr;
+        depthAttachmentInfo.imageView = TextureViewGetVk(info.depthTarget);
+        depthAttachmentInfo.imageLayout = VkTypes::AsVkImageLayout(info.depthTargetLayout);
+
+        CoreGraphics::TextureId tex = CoreGraphics::TextureViewGetTexture(info.depthTarget);
+        samples = Math::max(samples, CoreGraphics::TextureGetNumSamples(tex));
+
+		if (info.depthResolveTarget != CoreGraphics::InvalidTextureViewId)
+		{
+            depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+			depthAttachmentInfo.resolveImageView = TextureViewGetVk(info.depthResolveTarget);
+			depthAttachmentInfo.resolveImageLayout = VkTypes::AsVkImageLayout(info.depthResolveTargetLayout);
+		}
+		else
+		{
+            depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+            depthAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
+            depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		}
+
+        pipelineInfo.depthAttachmentFormat = VkTypes::AsVkFormat(TextureViewGetPixelFormat(info.depthTarget));
+
+		depthAttachmentInfo.loadOp = AsVkLoadOp(info.depthFlags);
+        depthAttachmentInfo.storeOp = AsVkStoreOp(info.depthFlags);
+
+		VkClearValue& clear = depthAttachmentInfo.clearValue;
+        clear.depthStencil.depth = info.depthClearValue.x;
+        clear.depthStencil.stencil = info.depthClearValue.y;
+        renderInfo.pDepthAttachment = &depthAttachmentInfo;
+	}
+
+    // setup uniform buffer for render target information
+    ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.gplb"_atm);
+    shaderInterface.constants = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassUniforms", CoreGraphics::BufferAccessMode::DeviceAndHost);
+    shaderInterface.renderTargetDimensionsOffset = offsetof(Shared::PassUniforms::STRUCT, RenderTargets);
+
+    CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
+    shaderInterface.table = CreateResourceTable(ResourceTableCreateInfo{ Util::String::Sprintf("Render Pass %s Descriptors", info.name.Value()).AsCharPtr(), tableLayout, 8 });
+
+    CoreGraphics::ResourceTableBuffer write;
+    write.buf = shaderInterface.constants;
+    write.offset = 0;
+    write.size = NEBULA_WHOLE_BUFFER_SIZE;
+    write.index = 0;
+    write.dynamicOffset = false;
+    write.texelBuffer = false;
+    write.slot = ShaderGetResourceSlot(sid, "PassUniforms");
+    ResourceTableSetConstantBuffer(shaderInterface.table, write);
+
+    // setup input attachments
+    ResourceTableCommitChanges(shaderInterface.table);
+
+    return RenderPassId(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DestroyRenderPass(RenderPassId pass)
+{
+	Util::FixedArray<VkRenderingAttachmentInfo>& attachmentInfo = passRenderAllocator.Get<PassRender_Attachments>(pass.id);
+    attachmentInfo.Clear();
+    passRenderAllocator.Dealloc(pass.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RenderPassSetRenderTargetParameters(const CoreGraphics::CmdBufferId cmdBuf, const RenderPassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
+{
+    RenderPassShaderInterface& shaderInterface = passRenderAllocator.Get<PassRender_ShaderInterface>(id.id);
+    CmdUpdateBuffer(cmdBuf, shaderInterface.constants, shaderInterface.renderTargetDimensionsOffset, viewports.ByteSize(), viewports.Begin());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+RenderPassGetNumSamples(const RenderPassId id)
+{
+    return passRenderAllocator.Get<PassRender_Samples>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassRenderEnd(CoreGraphics::CmdBufferId cmdBuf)
+{
+    vkCmdEndRendering(CmdBufferGetVk(cmdBuf));
 }
 
 //------------------------------------------------------------------------------
