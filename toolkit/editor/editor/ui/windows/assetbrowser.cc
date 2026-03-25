@@ -14,6 +14,7 @@
 #include "asseteditor/asseteditor.h"
 #include "timing/calendartime.h"
 #include "editor/tools/pathconverter.h"
+#include "asseteditor/particleasseteditor.h"
 
 using namespace Editor;
 
@@ -80,6 +81,30 @@ public:
     }
 };
 __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
+
+using NewFunc = void(*)(const Ptr<IO::Stream>& file);
+static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
+{
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,  
+    nullptr,
+    ParticleNew,  
+    nullptr
+};
+
+
 
 //------------------------------------------------------------------------------
 /**
@@ -321,8 +346,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     AddDragSourceForFileUri(file.filePath);
                     ImGui::PopID();
                 }
+                break;
             }
-            break;
             case FileViewMode::Details:
             {
                 ImGui::BeginGroup();
@@ -383,8 +408,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 }
                 ImGui::EndTable();
                 ImGui::EndGroup();
+                break;
             }    
-            break;
             case FileViewMode::Icons:
             {        
                 ImGuiStyle& style = ImGui::GetStyle();
@@ -435,10 +460,12 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
                     ImGui::PopID();
                 }
+                break;
             }
-            break;
             default: break;
         }
+
+
         if (hasFileToOpen)
         {
             IO::URI uri = fileToOpen.filePath;
@@ -446,6 +473,43 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             assetEditor->Open(uri.GetHostAndLocalPath(), FileEntryTypeToAssetType(fileToOpen.type));
         }    
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+NewAsset(const Util::String& requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
+{
+    Util::String folderPath = db.GetFolderPath(folderEntry);
+    Util::Array<ToolkitUtil::FileDB::FileInfo> files(32, 8);
+    db.GetFilesInFolder(folderEntry, files);
+    Util::String newFilePath = Util::Format("%s/%s", folderPath.AsCharPtr(), requestedFileName.AsCharPtr());
+retry:
+    for (const auto& file : files)
+    {
+        if (file.name == newFilePath)
+        {
+            newFilePath = newFilePath + "_copy";
+            goto retry;
+        }
+    }
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(newFilePath);
+    stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+    stream->Open();
+
+    if (NewFuncs[(uint)type] != nullptr)
+        NewFuncs[(uint)type](stream);
+
+    db.AddFile(
+        logger,
+        stream->GetURI().LocalPath().ExtractFileName(),
+        folderEntry,
+        stream->GetSize(),
+        ToolkitUtil::FileType::Particle,
+        IO::FileTime()
+    );
+    stream->Close();
 }
 
 //------------------------------------------------------------------------------
@@ -520,6 +584,23 @@ AssetBrowser::DisplayFileTree()
     ImGui::BeginChild("ScrollingRegionFiles");
     this->DisplaySelectedFolder(buffer);
     ImGui::EndChild();
+    if (this->activeFolder != 0)
+    {
+        if (ImGui::BeginPopupContextItem("AssetActions"))
+        {
+            if (ImGui::MenuItem("Create Particle System###Item"))
+            {
+                NewAsset("new_particle_system.par", this->fileDB, ToolkitUtil::FileType::Particle, this->activeFolder, this->logger);
+                this->RefreshFileInfoCaches();
+            }
+            if (ImGui::MenuItem("Create Material###Item"))
+            {
+                NewAsset("new_surface.sur", this->fileDB, ToolkitUtil::FileType::Surface, this->activeFolder, this->logger);
+                this->RefreshFileInfoCaches();
+            }
+            ImGui::EndPopup();
+        }
+    }
     ImGui::NextColumn();
 }
 
@@ -703,6 +784,12 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     if (ext == "nav")
     {
         return ToolkitUtil::FileType::NavMesh;
+    }
+
+    // Particle files
+    if (ext == "nps")
+    {
+        return ToolkitUtil::FileType::Particle;
     }
     
     // Default to Other for unknown extensions

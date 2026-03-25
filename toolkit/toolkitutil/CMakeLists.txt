@@ -222,4 +222,9 @@ ENDIF()
                 surfacebuilder.h
                 surfacebuilder.cc
             )
+        fips_dir(particle)
+            fips_files(
+                particleexporter.cc
+                particleexporter.h
+            )
 fips_end_lib()

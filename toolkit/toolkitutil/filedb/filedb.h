@@ -41,7 +41,8 @@ enum class FileType : int
     Shader = 12,
     Physics = 13,
     NavMesh = 14,
-    Other = 15
+    Particle = 15,
+    Other = 16
 };
 class FileDB
 {
