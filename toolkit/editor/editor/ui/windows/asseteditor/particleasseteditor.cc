@@ -44,7 +44,7 @@ JsonWriter::Add(const Particles::EnvelopeCurve& value, const Util::String& name)
     }
 }
 
-}
+} // namespace IO
 
 namespace Presentation
 {
@@ -52,115 +52,68 @@ namespace Presentation
 struct ParticleAssetItemData
 {
     Particles::EmitterAttrs attrs;
+    Resources::ResourceName mesh;
 };
-
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ParticleSave(const Ptr<IO::Stream>& stream, const Particles::EmitterAttrs& attrs)
+ParticleSave(const Ptr<IO::Stream>& stream, const Particles::EmitterAttrs& attrs, const Resources::ResourceName& mesh)
 {
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
     writer->SetStream(stream);
     writer->Open();
 
-    writer->BeginObject("particle");
+    writer->BeginArray("emitters");
 
-    static const char* FloatAttrNames[] = {
-        "EmissionDuration",
-        "ActivityDistance",
-        "StartRotationMin",
-        "StartRotationMax",
-        "Gravity",
-        "ParticleStretch",
-        "VelocityRandomize",
-        "RotationRandomize",
-        "SizeRandomize",
-        "PrecalcTime",
-        "StartDelay",
-        "TextureTile",
-        "PhasesPerSecond",
-    };
+    writer->BeginObject("");
+
+    writer->Add(mesh.Value(), "mesh");
+
 
     writer->BeginObject("floats");
     for (uint i = 0; i < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; i++)
     {
-        writer->Add(attrs.GetFloat((Particles::EmitterAttrs::FloatAttr)i), FloatAttrNames[i]);
+        writer->Add(attrs.GetFloat((Particles::EmitterAttrs::FloatAttr)i), Particles::FloatAttrNames[i]);
     }
     writer->End();
-
-    static const char* BoolAttrNames[] = 
-    {
-        "Looping",
-        "RandomizeRotation",
-        "StretchToStart",
-        "RenderOldestFirst",
-        "ViewAngleFade",
-        "Billboard",
-    };
 
     writer->BeginObject("bools");
     for (uint i = 0; i < Particles::EmitterAttrs::BoolAttr::NumBoolAttrs; i++)
     {
-        writer->Add(attrs.GetBool((Particles::EmitterAttrs::BoolAttr)i), BoolAttrNames[i]);
+        writer->Add(attrs.GetBool((Particles::EmitterAttrs::BoolAttr)i), Particles::BoolAttrNames[i]);
     }
     writer->End();
 
-    static const char* IntAttrNames[] = 
-    {
-        "StretchDetail",
-        "AnimPhases",
-    };
 
     writer->BeginObject("ints");
     for (uint i = 0; i < Particles::EmitterAttrs::IntAttr::NumIntAttrs; i++)
     {
-        writer->Add(attrs.GetInt((Particles::EmitterAttrs::IntAttr)i), IntAttrNames[i]);
+        writer->Add(attrs.GetInt((Particles::EmitterAttrs::IntAttr)i), Particles::IntAttrNames[i]);
     }
     writer->End();
-
-    static const char* Float4AttrNames[] = 
-    {
-        "WindDirection"
-    };
 
     writer->BeginObject("vecs");
     for (uint i = 0; i < Particles::EmitterAttrs::Float4Attr::NumFloat4Attrs; i++)
     {
-        writer->Add(attrs.GetVec4((Particles::EmitterAttrs::Float4Attr)i), Float4AttrNames[i]);
+        writer->Add(attrs.GetVec4((Particles::EmitterAttrs::Float4Attr)i), Particles::Float4AttrNames[i]);
     }
     writer->End();
 
-    static const char* EnvelopeAttrNames[] = 
-    {
-        "Red",
-        "Green",
-        "Blue",
-        "Alpha",
-        "EmissionFrequency",
-        "LifeTime",
-        "StartVelocity",
-        "RotationVelocity",
-        "Size",
-        "SpreadMin",
-        "SpreadMax",
-        "AirResistance",
-        "VelocityFactor",
-        "Mass",
-        "TimeManipulator",
-        "Alignment0"
-    };
 
     writer->BeginObject("curves");
     for (uint i = 0; i < Particles::EmitterAttrs::EnvelopeAttr::NumEnvelopeAttrs; i++)
     {
         Particles::EnvelopeCurve curve = attrs.GetEnvelope((Particles::EmitterAttrs::EnvelopeAttr)i);
-        writer->Add(curve, EnvelopeAttrNames[i]);
+        writer->Add(curve, Particles::EnvelopeAttrNames[i]);
     }
     writer->End();
 
     // Close object
+    writer->End();
+
+    // Close array
     writer->End();
 
     writer->Close();
@@ -253,7 +206,8 @@ void
 ParticleNew(const Ptr<IO::Stream>& stream)
 {
     Particles::EmitterAttrs emitter;
-    ParticleSave(stream, emitter);
+    Resources::ResourceName mesh = "";
+    ParticleSave(stream, emitter, mesh);
 }
 
 } // namespace Presentation
