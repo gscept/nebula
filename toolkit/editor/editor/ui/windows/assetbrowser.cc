@@ -287,6 +287,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 return AssetEditor::AssetType::Animation;
             case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
+            case ToolkitUtil::FileType::Particle:
+                return AssetEditor::AssetType::Particle;
             case ToolkitUtil::FileType::Audio:
             case ToolkitUtil::FileType::Text:
             case ToolkitUtil::FileType::Frame:
@@ -787,7 +789,7 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     }
 
     // Particle files
-    if (ext == "nps")
+    if (ext == "par")
     {
         return ToolkitUtil::FileType::Particle;
     }

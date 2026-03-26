@@ -20,7 +20,6 @@ class BXmlReader;
 namespace Materials
 {
 
-
 class MaterialLoader : public Resources::ResourceLoader
 {
     __DeclareClass(MaterialLoader);

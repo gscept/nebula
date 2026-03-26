@@ -16,9 +16,68 @@
 //------------------------------------------------------------------------------
 namespace Particles
 {
+
+static const char* FloatAttrNames[] = 
+{
+    "EmissionDuration",
+    "ActivityDistance",
+    "StartRotationMin",
+    "StartRotationMax",
+    "Gravity",
+    "ParticleStretch",
+    "VelocityRandomize",
+    "RotationRandomize",
+    "SizeRandomize",
+    "PrecalcTime",
+    "StartDelay",
+    "TextureTile",
+    "PhasesPerSecond",
+};
+    
+static const char* BoolAttrNames[] = 
+{
+    "Looping",
+    "RandomizeRotation",
+    "StretchToStart",
+    "RenderOldestFirst",
+    "ViewAngleFade",
+    "Billboard",
+};
+static const char* IntAttrNames[] = 
+{
+    "StretchDetail",
+    "AnimPhases",
+};
+    
+static const char* Float4AttrNames[] = 
+{
+    "WindDirection"
+};
+    
+static const char* EnvelopeAttrNames[] = 
+{
+    "Red",
+    "Green",
+    "Blue",
+    "Alpha",
+    "EmissionFrequency",
+    "LifeTime",
+    "StartVelocity",
+    "RotationVelocity",
+    "Size",
+    "SpreadMin",
+    "SpreadMax",
+    "AirResistance",
+    "VelocityFactor",
+    "Mass",
+    "TimeManipulator",
+    "Alignment0"
+};
+
 class EmitterAttrs
 {
 public:
+
     /// scalar attributes
     enum FloatAttr
     {
@@ -284,4 +343,3 @@ EmitterAttrs::GetEnvelope(EnvelopeAttr key) const
 
 } // namespace Particles
 //------------------------------------------------------------------------------
-    

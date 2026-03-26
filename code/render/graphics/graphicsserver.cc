@@ -12,6 +12,7 @@
 #include "coregraphics/gpulangshaderloader.h"
 #include "coreanimation/animationloader.h"
 #include "characters/skeletonloader.h"
+#include "particles/particleloader.h"
 #include "models/modelloader.h"
 #include "materials/materialloader.h"
 #include "renderutil/drawfullscreenquad.h"
@@ -134,6 +135,7 @@ GraphicsServer::Open()
         Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("par", Particles::ParticleLoader::RTTI);
 
         RenderUtil::DrawFullScreenQuad::Setup();
 
