@@ -6,6 +6,8 @@
 #include "particleloader.h"
 #include "io/jsonreader.h"
 #include "particles/emitterattrs.h"
+#include "particleresource.h"
+#include "resources/resourceserver.h"
 
 namespace IO
 {
@@ -72,6 +74,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
     reader->SetStream(stream);
     Resources::ResourceLoader::ResourceInitOutput ret;
 
+    ParticleResourceId id = particleResourceAllocator.Alloc();
     if (reader->Open())
     {
         if (!reader->HasNode("emitters"))
@@ -80,14 +83,16 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             return ret;
         }
 
+        ParticleEmitter resource;
         reader->SetToNode("emitters");
         
         if (reader->SetToFirstChild()) do
         {
             Particles::EmitterAttrs attrs;
-            Resources::ResourceName mesh;
-
-            mesh = reader->GetString("mesh");
+            resource.meshes.Append(Resources::CreateResource(reader->GetString("mesh"), job.tag));
+            resource.albedo = Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag));
+            resource.material = Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag));
+            resource.normals = Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag));
 
             reader->SetToNode("floats");
             for (uint i = 0; i < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; i++)
@@ -125,6 +130,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 attrs.SetEnvelope((Particles::EmitterAttrs::EnvelopeAttr)i, curve);
             }
             reader->SetToParent();
+            resource.emitters.Append(attrs);
         } while (reader->SetToNextChild());
     }
 
