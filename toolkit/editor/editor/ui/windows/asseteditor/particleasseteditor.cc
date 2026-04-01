@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "particleasseteditor.h"
 #include "particles/emitterattrs.h"
+#include "particles/particleresource.h"
 #include "pjson/pjson.h"
 #include "io/jsonwriter.h"
 
@@ -51,15 +52,22 @@ namespace Presentation
 
 struct ParticleAssetItemData
 {
-    Particles::EmitterAttrs attrs;
-    Resources::ResourceName mesh;
+    struct ParticleAsset
+    {
+        Util::StringAtom name;
+        Particles::EmitterAttrs attrs;
+        Resources::ResourceName mesh = "";
+        Resources::ResourceName albedo = "systex:white.dds", normals = "systex:nobump.dds", material = "systex:default_material.dds";
+        Math::mat4 transform;
+    };
+    Util::Array<ParticleAsset> emitters;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ParticleSave(const Ptr<IO::Stream>& stream, const Particles::EmitterAttrs& attrs, const Resources::ResourceName& mesh)
+ParticleSave(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAssetItemData::ParticleAsset>& emitters)
 {
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
     writer->SetStream(stream);
@@ -67,51 +75,59 @@ ParticleSave(const Ptr<IO::Stream>& stream, const Particles::EmitterAttrs& attrs
 
     writer->BeginArray("emitters");
 
-    writer->BeginObject("");
 
-    writer->Add(mesh.Value(), "mesh");
-
-
-    writer->BeginObject("floats");
-    for (uint i = 0; i < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; i++)
+    for (SizeT i = 0; i < emitters.Size(); i++)
     {
-        writer->Add(attrs.GetFloat((Particles::EmitterAttrs::FloatAttr)i), Particles::FloatAttrNames[i]);
+        writer->BeginObject("");
+
+        writer->Add(emitters[i].mesh.Value(), "mesh");
+        writer->Add(emitters[i].albedo.Value(), "albedo");
+        writer->Add(emitters[i].material.Value(), "material");
+        writer->Add(emitters[i].normals.Value(), "normals");
+        writer->Add(emitters[i].transform, "transform");
+
+
+        writer->BeginObject("floats");
+        for (uint j = 0; j < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; j++)
+        {
+            writer->Add(emitters[i].attrs.GetFloat((Particles::EmitterAttrs::FloatAttr)j), Particles::FloatAttrNames[j]);
+        }
+        writer->End();
+
+        writer->BeginObject("bools");
+        for (uint j = 0; j < Particles::EmitterAttrs::BoolAttr::NumBoolAttrs; j++)
+        {
+            writer->Add(emitters[i].attrs.GetBool((Particles::EmitterAttrs::BoolAttr)j), Particles::BoolAttrNames[j]);
+        }
+        writer->End();
+
+
+        writer->BeginObject("ints");
+        for (uint j = 0; j < Particles::EmitterAttrs::IntAttr::NumIntAttrs; j++)
+        {
+            writer->Add(emitters[i].attrs.GetInt((Particles::EmitterAttrs::IntAttr)j), Particles::IntAttrNames[j]);
+        }
+        writer->End();
+
+        writer->BeginObject("vecs");
+        for (uint j = 0; j < Particles::EmitterAttrs::Float4Attr::NumFloat4Attrs; j++)
+        {
+            writer->Add(emitters[i].attrs.GetVec4((Particles::EmitterAttrs::Float4Attr)j), Particles::Float4AttrNames[j]);
+        }
+        writer->End();
+
+
+        writer->BeginObject("curves");
+        for (uint j = 0; j < Particles::EmitterAttrs::EnvelopeAttr::NumEnvelopeAttrs; j++)
+        {
+            Particles::EnvelopeCurve curve = emitters[i].attrs.GetEnvelope((Particles::EmitterAttrs::EnvelopeAttr)j);
+            writer->Add(curve, Particles::EnvelopeAttrNames[j]);
+        }
+        writer->End();
+
+        // Close object
+        writer->End();
     }
-    writer->End();
-
-    writer->BeginObject("bools");
-    for (uint i = 0; i < Particles::EmitterAttrs::BoolAttr::NumBoolAttrs; i++)
-    {
-        writer->Add(attrs.GetBool((Particles::EmitterAttrs::BoolAttr)i), Particles::BoolAttrNames[i]);
-    }
-    writer->End();
-
-
-    writer->BeginObject("ints");
-    for (uint i = 0; i < Particles::EmitterAttrs::IntAttr::NumIntAttrs; i++)
-    {
-        writer->Add(attrs.GetInt((Particles::EmitterAttrs::IntAttr)i), Particles::IntAttrNames[i]);
-    }
-    writer->End();
-
-    writer->BeginObject("vecs");
-    for (uint i = 0; i < Particles::EmitterAttrs::Float4Attr::NumFloat4Attrs; i++)
-    {
-        writer->Add(attrs.GetVec4((Particles::EmitterAttrs::Float4Attr)i), Particles::Float4AttrNames[i]);
-    }
-    writer->End();
-
-
-    writer->BeginObject("curves");
-    for (uint i = 0; i < Particles::EmitterAttrs::EnvelopeAttr::NumEnvelopeAttrs; i++)
-    {
-        Particles::EnvelopeCurve curve = attrs.GetEnvelope((Particles::EmitterAttrs::EnvelopeAttr)i);
-        writer->Add(curve, Particles::EnvelopeAttrNames[i]);
-    }
-    writer->End();
-
-    // Close object
-    writer->End();
 
     // Close array
     writer->End();
@@ -153,23 +169,28 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ParticleAssetItemData* data = static_cast<ParticleAssetItemData*>(item->data);
-    if (ImGui::CollapsingHeader("Emission"))
+    for (SizeT i = 0; i < data->emitters.Size(); i++)
     {
-        if (ImGui::CollapsingHeader("Emission Frequency"))
-	    {
-            Particles::EnvelopeCurve curve = data->attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency);
-            DrawCurve(draw_list, curve);
-            data->attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency, curve);
-	    }
+        if (ImGui::CollapsingHeader(data->emitters[i].name.Value()))
+        {
+            if (ImGui::CollapsingHeader("Emission"))
+            {
+                if (ImGui::CollapsingHeader("Emission Frequency"))
+                {
+                    Particles::EnvelopeCurve curve = data->emitters[i].attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency);
+                    DrawCurve(draw_list, curve);
+                    data->emitters[i].attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency, curve);
+                }
 
-        if (ImGui::CollapsingHeader("Life Time"))
-	    {
-            Particles::EnvelopeCurve curve = data->attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime);
-            DrawCurve(draw_list, curve);
-            data->attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime, curve);
-	    }
+                if (ImGui::CollapsingHeader("Life Time"))
+                {
+                    Particles::EnvelopeCurve curve = data->emitters[i].attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime);
+                    DrawCurve(draw_list, curve);
+                    data->emitters[i].attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime, curve);
+                }
+            }
+        }
     }
-	
 }
 
 //------------------------------------------------------------------------------
@@ -205,9 +226,8 @@ ParticleShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
 void
 ParticleNew(const Ptr<IO::Stream>& stream)
 {
-    Particles::EmitterAttrs emitter;
-    Resources::ResourceName mesh = "";
-    ParticleSave(stream, emitter, mesh);
+    ParticleAssetItemData::ParticleAsset res;
+    ParticleSave(stream, { res });
 }
 
 } // namespace Presentation
