@@ -22,6 +22,7 @@
 
 struct ImDrawData;
 struct ImFont;
+struct ImVec2;
 namespace Dynui
 {
 
@@ -80,3 +81,8 @@ private:
 };
 
 } // namespace Dynui
+
+/// Add two ImVec2
+ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs);
+/// Subtract two ImVec2
+ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs);
