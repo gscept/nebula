@@ -95,10 +95,10 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 resource.meshes.Append(Resources::CreateResource(mesh, job.tag));
             else
                 resource.meshes.Append(Resources::InvalidResourceId);
-            resource.albedo = Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag);
-            resource.material = Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag);
-            resource.normals = Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag);
-            resource.transform = reader->GetOptMat4("transform", Math::mat4());
+            resource.albedo.Append(Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag));
+            resource.material.Append(Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag));
+            resource.normals.Append(Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag));
+            resource.transform.Append(reader->GetOptMat4("transform", Math::mat4()));
 
             reader->SetToNode("floats");
             for (uint i = 0; i < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; i++)

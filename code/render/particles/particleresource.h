@@ -21,8 +21,8 @@ RESOURCE_ID_TYPE(ParticleResourceId);
 struct ParticleEmitter
 {
     Util::Array<Resources::ResourceId> meshes;
-    Resources::ResourceId albedo, material, normals;
-    Math::mat4 transform;
+    Util::Array<Resources::ResourceId> albedo, material, normals;
+    Util::Array<Math::mat4> transform;
     Util::Array<EmitterAttrs> emitters;
 };
 
