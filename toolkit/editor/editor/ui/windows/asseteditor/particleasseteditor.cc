@@ -201,6 +201,15 @@ ParticleSetup(AssetEditorItem* item)
 {
 	auto itemData = item->allocator.Alloc<ParticleAssetItemData>();
 	item->data = itemData;
+
+    SizeT numEmitters = Particles::ParticleResourceGetNumEmitters(item->asset.particle);
+    for (SizeT i = 0; i < numEmitters; i++)
+    {
+        Particles::ParticleResourceGetEmitterAttrs(item->asset.particle, i);
+        ParticleAssetItemData::ParticleAsset emitter;
+        emitter.name = Util::StringAtom::Sprintf("Emitter %d", i);
+        itemData->emitters.Append(emitter);
+    }
 }
 
 //------------------------------------------------------------------------------
