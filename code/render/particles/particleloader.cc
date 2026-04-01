@@ -24,21 +24,22 @@ JsonReader::Get<Particles::EnvelopeCurve>(Particles::EnvelopeCurve& ret, const c
     const pjson::value_variant* node = this->GetChild(attr);
     if (node->is_array())
     {
+        const pjson::value_variant_vec_t& arr = node->get_array();
         float values[4];
         float limits[2];
         float keyPos0, keyPos1, frequency, amplitude;
         int mod;
-        this->Get<float>(values[0]);
-        this->Get<float>(values[1]);
-        this->Get<float>(values[2]);
-        this->Get<float>(values[3]);
-        this->Get<float>(limits[0]);
-        this->Get<float>(limits[1]);
-        this->Get<float>(keyPos0);
-        this->Get<float>(keyPos1);
-        this->Get<float>(frequency);
-        this->Get<float>(amplitude);
-        this->Get<int>(mod);
+        values[0] = arr[0].as_float();
+        values[1] = arr[1].as_float();
+        values[2] = arr[2].as_float();
+        values[3] = arr[3].as_float();
+        limits[0] = arr[4].as_float();
+        limits[1] = arr[5].as_float();
+        keyPos0 = arr[6].as_float();
+        keyPos1 = arr[7].as_float();
+        frequency = arr[8].as_float();
+        amplitude = arr[9].as_float();
+        mod = arr[10].as_int32();
         ret.SetValues(values[0], values[1], values[2], values[3]);
         ret.SetLimits(limits[0], limits[1]);
         ret.SetKeyPos0(keyPos0);
@@ -74,9 +75,9 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
     reader->SetStream(stream);
     Resources::ResourceLoader::ResourceInitOutput ret;
 
-    ParticleResourceId id = particleResourceAllocator.Alloc();
     if (reader->Open())
     {
+        ParticleResourceId id = particleResourceAllocator.Alloc();
         if (!reader->HasNode("emitters"))
         {
             n_error("ParticleLoader: '%s' is not a valid particle!", stream->GetURI().AsString().AsCharPtr());
@@ -89,10 +90,15 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
         if (reader->SetToFirstChild()) do
         {
             Particles::EmitterAttrs attrs;
-            resource.meshes.Append(Resources::CreateResource(reader->GetString("mesh"), job.tag));
-            resource.albedo = Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag));
-            resource.material = Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag));
-            resource.normals = Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag));
+            Util::String mesh = reader->GetString("mesh");
+            if (mesh.IsValid())
+                resource.meshes.Append(Resources::CreateResource(mesh, job.tag));
+            else
+                resource.meshes.Append(Resources::InvalidResourceId);
+            resource.albedo = Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag);
+            resource.material = Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag);
+            resource.normals = Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag);
+            resource.transform = reader->GetOptMat4("transform", Math::mat4());
 
             reader->SetToNode("floats");
             for (uint i = 0; i < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; i++)
@@ -132,9 +138,11 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             reader->SetToParent();
             resource.emitters.Append(attrs);
         } while (reader->SetToNextChild());
+
+        ret.id = id;
     }
 
-    return ResourceInitOutput();
+    return ret;
 }
 
 //------------------------------------------------------------------------------

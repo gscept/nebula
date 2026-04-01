@@ -22,6 +22,7 @@ struct ParticleEmitter
 {
     Util::Array<Resources::ResourceId> meshes;
     Resources::ResourceId albedo, material, normals;
+    Math::mat4 transform;
     Util::Array<EmitterAttrs> emitters;
 };
 

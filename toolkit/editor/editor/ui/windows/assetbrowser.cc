@@ -481,18 +481,22 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 /**
 */
 void
-NewAsset(const Util::String& requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
+NewAsset(Util::String requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
 {
     Util::String folderPath = db.GetFolderPath(folderEntry);
     Util::Array<ToolkitUtil::FileDB::FileInfo> files(32, 8);
     db.GetFilesInFolder(folderEntry, files);
     Util::String newFilePath = Util::Format("%s/%s", folderPath.AsCharPtr(), requestedFileName.AsCharPtr());
 retry:
+    SizeT counter = 0;
     for (const auto& file : files)
     {
-        if (file.name == newFilePath)
+        if (file.name == requestedFileName)
         {
-            newFilePath = newFilePath + "_copy";
+            Util::String ext = requestedFileName.GetFileExtension();
+            requestedFileName.StripFileExtension();
+            requestedFileName += Util::String::Sprintf(" (%d).%s", counter++, ext.AsCharPtr());
+            newFilePath = Util::Format("%s/%s", folderPath.AsCharPtr(), requestedFileName.AsCharPtr());
             goto retry;
         }
     }

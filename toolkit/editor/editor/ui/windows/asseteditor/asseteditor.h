@@ -12,6 +12,7 @@
 #include "graphics/view.h"
 #include "coregraphics/meshresource.h"
 #include "characters/skeletonresource.h"
+#include "particles/particleresource.h"
 #include "dynui/imguicontext.h"
 
 namespace Presentation
@@ -67,6 +68,7 @@ struct AssetEditorItem
         U() { id = Resources::InvalidResourceUnknownId; }
         Materials::MaterialId material;
         CoreGraphics::MeshResourceId mesh;
+        Particles::ParticleResourceId particle;
         Characters::SkeletonResourceId skeleton;
         Models::ModelId model;
         CoreGraphics::TextureId texture;
