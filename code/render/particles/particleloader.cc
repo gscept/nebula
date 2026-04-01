@@ -84,7 +84,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             return ret;
         }
 
-        ParticleEmitter resource;
+        ParticleEmitters resource;
         reader->SetToNode("emitters");
         
         if (reader->SetToFirstChild()) do
@@ -95,6 +95,8 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 resource.meshes.Append(Resources::CreateResource(mesh, job.tag));
             else
                 resource.meshes.Append(Resources::InvalidResourceId);
+
+            resource.name.Append(reader->GetOptString("name", "emitter"));
             resource.albedo.Append(Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag));
             resource.material.Append(Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag));
             resource.normals.Append(Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag));
@@ -139,6 +141,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             resource.emitters.Append(attrs);
         } while (reader->SetToNextChild());
 
+        particleResourceAllocator.Set<ParticleResource_Resource>(id.id, resource);
         ret.id = id;
     }
 

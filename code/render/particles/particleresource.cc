@@ -7,24 +7,18 @@ namespace Particles
 {
 
 ParticleResourceAllocator particleResourceAllocator;
+
 //------------------------------------------------------------------------------
 /**
 */
-SizeT
-ParticleResourceGetNumEmitters(const ParticleResourceId id)
+const ParticleEmitters&
+ParticleResourceGetEmitters(const ParticleResourceId id)
 {
-    const ParticleEmitter& emitter = particleResourceAllocator.Get<ParticleResource_Resource>(id.id);
-    return emitter.emitters.Size();
+    return particleResourceAllocator.Get<ParticleResource_Resource>(id.id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Particles::EmitterAttrs&
-ParticleResourceGetEmitterAttrs(const ParticleResourceId id, const IndexT index)
-{
-    const ParticleEmitter& emitter = particleResourceAllocator.Get<ParticleResource_Resource>(id.id);
-    return emitter.emitters[index];
-}
 
 } // namespace Particles

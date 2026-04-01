@@ -8,6 +8,9 @@
 #include "particles/particleresource.h"
 #include "pjson/pjson.h"
 #include "io/jsonwriter.h"
+#include "resources/resourceserver.h"
+
+#include "dynui/imguicontext.h"
 
 namespace IO
 {
@@ -75,17 +78,16 @@ ParticleSave(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAssetItemD
 
     writer->BeginArray("emitters");
 
-
     for (SizeT i = 0; i < emitters.Size(); i++)
     {
         writer->BeginObject("");
 
+        writer->Add(emitters[i].name, "name");
         writer->Add(emitters[i].mesh.Value(), "mesh");
         writer->Add(emitters[i].albedo.Value(), "albedo");
         writer->Add(emitters[i].material.Value(), "material");
         writer->Add(emitters[i].normals.Value(), "normals");
         writer->Add(emitters[i].transform, "transform");
-
 
         writer->BeginObject("floats");
         for (uint j = 0; j < Particles::EmitterAttrs::FloatAttr::NumFloatAttrs; j++)
@@ -143,15 +145,15 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
 {
     const float* values = curve.GetValues();
     ImVec2 points[4];
-    draw_list->AddBezierCubic(points[0], points[1], points[2], points[3], IM_COL32(255, 0, 0, 255), 2.0f, 64);
-    draw_list->AddCircleFilled(points[0], 5.0f, IM_COL32(255,0,0,255));
-    draw_list->AddCircleFilled(points[1], 5.0f, IM_COL32(0,255,0,255));
-    draw_list->AddCircleFilled(points[2], 5.0f, IM_COL32(0,255,0,255));
-    draw_list->AddCircleFilled(points[3], 5.0f, IM_COL32(255,0,0,255));
-    draw_list->AddLine(points[0], points[1], IM_COL32(100, 100, 100, 255));
-    draw_list->AddLine(points[2], points[3], IM_COL32(100,100,100,255));
+    draw_list->AddBezierCubic(points[0] + ImGui::GetWindowPos(), points[1] + ImGui::GetWindowPos(), points[2] + ImGui::GetWindowPos(), points[3] + ImGui::GetWindowPos(), IM_COL32(255, 0, 0, 255), 2.0f, 64);
+    draw_list->AddCircleFilled(points[0] + ImGui::GetWindowPos(), 5.0f, IM_COL32(255,0,0,255));
+    draw_list->AddCircleFilled(points[1] + ImGui::GetWindowPos(), 5.0f, IM_COL32(0,255,0,255));
+    draw_list->AddCircleFilled(points[2] + ImGui::GetWindowPos(), 5.0f, IM_COL32(0,255,0,255));
+    draw_list->AddCircleFilled(points[3] + ImGui::GetWindowPos(), 5.0f, IM_COL32(255,0,0,255));
+    draw_list->AddLine(points[0] + ImGui::GetWindowPos(), points[1] + ImGui::GetWindowPos(), IM_COL32(100, 100, 100, 255));
+    draw_list->AddLine(points[2] + ImGui::GetWindowPos(), points[3] + ImGui::GetWindowPos(), IM_COL32(100,100,100,255));
 
-    ImGui::SetCursorScreenPos(ImVec2(points[0].x - 5, points[0].y - 5));
+    ImGui::SetCursorScreenPos(points[0] + ImGui::GetWindowPos() - ImVec2(5, 5));
     ImGui::InvisibleButton("p0", ImVec2(10,10));
 
     if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) 
@@ -175,15 +177,15 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {
             if (ImGui::CollapsingHeader("Emission"))
             {
-                if (ImGui::CollapsingHeader("Emission Frequency"))
                 {
+                    ImGui::Text("Emission Frequency");
                     Particles::EnvelopeCurve curve = data->emitters[i].attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency);
                     DrawCurve(draw_list, curve);
                     data->emitters[i].attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::EmissionFrequency, curve);
                 }
 
-                if (ImGui::CollapsingHeader("Life Time"))
                 {
+                    ImGui::Text("Life Time");
                     Particles::EnvelopeCurve curve = data->emitters[i].attrs.GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime);
                     DrawCurve(draw_list, curve);
                     data->emitters[i].attrs.SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::LifeTime, curve);
@@ -202,12 +204,20 @@ ParticleSetup(AssetEditorItem* item)
 	auto itemData = item->allocator.Alloc<ParticleAssetItemData>();
 	item->data = itemData;
 
-    SizeT numEmitters = Particles::ParticleResourceGetNumEmitters(item->asset.particle);
-    for (SizeT i = 0; i < numEmitters; i++)
+    const Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetEmitters(item->asset.particle);
+    for (SizeT i = 0; i < emitters.meshes.Size(); i++)
     {
-        Particles::ParticleResourceGetEmitterAttrs(item->asset.particle, i);
         ParticleAssetItemData::ParticleAsset emitter;
-        emitter.name = Util::StringAtom::Sprintf("Emitter %d", i);
+        emitter.name = emitters.name[i];
+        emitter.albedo = Resources::ResourceServer::Instance()->GetName(emitters.albedo[i]);
+        emitter.material = Resources::ResourceServer::Instance()->GetName(emitters.material[i]);
+        emitter.normals = Resources::ResourceServer::Instance()->GetName(emitters.normals[i]);
+        emitter.attrs = emitters.emitters[i];
+        emitter.transform = emitters.transform[i];
+        if (emitters.meshes[i] != Resources::InvalidResourceId)
+            emitter.mesh = Resources::ResourceServer::Instance()->GetName(emitters.meshes[i]);
+        else
+            emitter.mesh = "";
         itemData->emitters.Append(emitter);
     }
 }
