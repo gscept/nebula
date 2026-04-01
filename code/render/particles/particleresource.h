@@ -18,18 +18,17 @@ namespace Particles
 
 RESOURCE_ID_TYPE(ParticleResourceId);
 
-struct ParticleEmitter
+struct ParticleEmitters
 {
+    Util::Array<Util::StringAtom> name;
     Util::Array<Resources::ResourceId> meshes;
     Util::Array<Resources::ResourceId> albedo, material, normals;
     Util::Array<Math::mat4> transform;
     Util::Array<EmitterAttrs> emitters;
 };
 
-/// Get number of emitters in a particle resource
-SizeT ParticleResourceGetNumEmitters(const ParticleResourceId id);
-/// Get an emitter from a particle resource
-const Particles::EmitterAttrs& ParticleResourceGetEmitterAttrs(const ParticleResourceId id, const IndexT index);
+/// Get emitters
+const ParticleEmitters& ParticleResourceGetEmitters(const ParticleResourceId id);
 
 enum
 {
@@ -38,7 +37,7 @@ enum
 
 typedef Ids::IdAllocatorSafe<
     0xFFFF,
-    ParticleEmitter
+    ParticleEmitters
 > ParticleResourceAllocator;
 extern ParticleResourceAllocator particleResourceAllocator;
 
