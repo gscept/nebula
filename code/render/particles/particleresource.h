@@ -30,6 +30,10 @@ struct ParticleEmitters
 /// Get emitters
 const ParticleEmitters& ParticleResourceGetEmitters(const ParticleResourceId id);
 
+#if WITH_NEBULA_EDITOR
+ParticleEmitters& ParticleResourceGetMutableEmitters(const ParticleResourceId id);
+#endif
+
 enum
 {
     ParticleResource_Resource

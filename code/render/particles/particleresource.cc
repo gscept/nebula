@@ -20,5 +20,14 @@ ParticleResourceGetEmitters(const ParticleResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
+ParticleEmitters&
+ParticleResourceGetMutableEmitters(const ParticleResourceId id)
+{
+    return particleResourceAllocator.Get<ParticleResource_Resource>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 
 } // namespace Particles

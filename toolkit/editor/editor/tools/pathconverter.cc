@@ -35,6 +35,8 @@ GetRelativeFolder(const Util::String& path, const char** assign)
         *assign = "ani";
     else if (extension == "sur")
         *assign = "sur";
+    else if (extension == "par")
+        *assign = "par";
     else
         *assign = "export";
 
