@@ -41,7 +41,6 @@ __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 AssetEditor::AssetEditor()
 {
     this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
-
 }
 
 //------------------------------------------------------------------------------
@@ -100,7 +99,8 @@ static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTy
     nullptr,
     nullptr,
     nullptr,
-    nullptr
+    nullptr,
+    ParticleSave
 };
 static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
