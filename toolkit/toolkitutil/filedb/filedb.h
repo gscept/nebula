@@ -52,9 +52,9 @@ public:
     {
         uint64_t id;
         Util::String name;
+        Util::String folderPath;    // path from root to this folder (excluding this folder)
         uint64_t parentId;
         IO::FileTime modifiedDate;
-        IO::URI uri;
         bool isRoot;
         bool isArchive;
         bool hasChildren;

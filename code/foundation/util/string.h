@@ -139,6 +139,8 @@ public:
     IndexT FindStringIndex(const String& s, IndexT startIndex = 0) const;
     /// return index of character in string, or InvalidIndex if not found
     IndexT FindCharIndex(char c, IndexT startIndex = 0) const;
+    /// return index of character in string, or InvalidIndex if not found
+    IndexT FindCharIndexReverse(char c, IndexT startIndex = 0) const;
     /// returns true if string begins with string
     bool BeginsWithString(const String& s) const;
     /// returns true if string ends with string
@@ -399,6 +401,10 @@ public:
     String StripSubpath(const String& subpath) const;
     /// replace illegal filename characters
     void ReplaceIllegalFilenameChars(char replacement);
+    /// append a directory/file to the path (adds separator if necessary)
+    void AppendPath(const String& path);
+    /// append a directory/file to the path (adds separator if necessary)
+    static String AppendPath(const String& base, const String& path);
 
     /// helpers to interface with libraries that expect std::string like apis
     inline const char* c_str() const { return this->AsCharPtr(); }
@@ -1240,6 +1246,33 @@ String::AppendMat4(const Math::mat4& val)
 }
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendPath(const String& path)
+{
+    if (!this->IsEmpty() && this->FindCharIndexReverse('/') != (this->strLen - 1))
+    {
+        this->AppendChar('/');
+    }
+    this->Append(path);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::AppendPath(const String& base, const String& path)
+{
+    String result = base;
+    if (!result.IsEmpty() && result.FindCharIndexReverse('/') != (result.strLen - 1))
+    {
+        result.AppendChar('/');
+    }
+    result.Append(path);
+    return result;
+}
 
 //------------------------------------------------------------------------------
 /**

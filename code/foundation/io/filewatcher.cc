@@ -71,11 +71,12 @@ FileWatcher::Update()
 /**
 */
 void
-FileWatcher::Watch(Util::StringAtom const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback)
+FileWatcher::Watch(Util::StringAtom const& folder, bool recursive, Util::BitField<8> flags, WatchDelegate const& callback)
 {
     EventHandlerData data = { callback, folder,flags };
     data.data.recursive = recursive;
-    this->watcherQueue.Enqueue(data);               
+    this->watcherQueue.Enqueue(data);
+    FileWatcherImpl::WakeUp();
 }
 
 //------------------------------------------------------------------------------
@@ -87,6 +88,16 @@ FileWatcher::Unwatch(Util::StringAtom const& folder)
     EventHandlerData data;
     data.folder = folder;
     this->watcherQueue.Enqueue(data);
+    FileWatcherImpl::WakeUp();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+FileWatcher::IsWatched(Util::StringAtom const& folder) const
+{
+    return this->watchers.Contains(folder);
 }
 
 //------------------------------------------------------------------------------
@@ -123,14 +134,16 @@ void
 FileWatcher::DoWork()
 {
     this->ioServer = IO::IoServer::Create();
+    FileWatcherImpl::Init();
     while (!this->ThreadStopRequested())
     {        
         this->CheckQueue();
         this->Update();
-        Core::SysFunc::Sleep(this->interval);
+        FileWatcherImpl::WaitForEvents(this->interval);
     }
     // clear queue before shutting down
     this->CheckQueue();
+    FileWatcherImpl::Shutdown();
 }
 
 } // namespace IO

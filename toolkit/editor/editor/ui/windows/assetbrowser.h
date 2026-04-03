@@ -15,6 +15,8 @@
 #include "io/uri.h"
 #include "filedb/filedb.h"
 #include "threading/safeflag.h"
+#include "threading/safequeue.h"
+#include "io/filewatcher.h"
 
 namespace Presentation
 {
@@ -32,7 +34,7 @@ public:
     void Run(SaveMode save) override;
 private:
     
-    void ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String& treeName, const Util::String& folderPath, bool useArchive);
+    void ScanFolderTree(ToolkitUtil::FileDB& fileDB, const Util::String& treeName, const Util::String& folderPath, bool useArchive);
     void DisplayFileTree();
 
 private:
@@ -61,7 +63,7 @@ private:
     /// Determine file type from file extension
     static ToolkitUtil::FileType DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and sync entries to FileDB
-    void ScanFolderRecursive(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent);
+    void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
     friend class ScanFolderJob;
     Ptr<ScanFolderJob> currentScanJob;
     ToolkitUtil::FileDB fileDB;
@@ -71,9 +73,16 @@ private:
     void RefreshFolderInfoCaches();
     void RefreshFileInfoCaches();
 
+    /// set active folder from selection and trigger watcher and sync updates if necessary
+    void SetActiveFolder(uint64_t folderId);
+
     Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
     Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
+    Util::Dictionary<Util::String, uint64_t> fileInfoDict;
     Threading::SafeFlag isDoneRefreshingCaches;
+    Threading::SafeQueue<IO::WatchEvent> pendingWatchEvents;
+    Threading::SafeQueue<uint64_t> refreshedFolders;
+    Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
 };
 __RegisterClass(AssetBrowser)
 

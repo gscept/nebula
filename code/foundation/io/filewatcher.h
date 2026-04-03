@@ -19,6 +19,7 @@
 #include "threading/thread.h"
 #include "threading/safequeue.h"
 #include <functional>
+#include "util/bitfield.h"
 #if __WIN32__
 #include "io/win32/win32filewatcher.h"
 #elif __linux__
@@ -42,11 +43,11 @@ enum WatchEventType
 
 enum WatchFlags
 {
-    NameChanged = N_BIT(0),
-    SizeChanged = N_BIT(1),
-    Write = N_BIT(2),
-    Access = N_BIT(3),
-    Creation = N_BIT(4),
+    NameChanged = 0,
+    SizeChanged = 1,
+    Write = 2,
+    Access = 3,
+    Creation = 4,
 };
 
 //------------------------------------------------------------------------------
@@ -54,6 +55,7 @@ struct WatchEvent
 {
     WatchEventType type;
     Util::StringAtom folder;
+    Util::String relativePath;
     Util::String file;
 };
 using WatchDelegate = std::function<void(WatchEvent const&)>;
@@ -63,7 +65,7 @@ struct EventHandlerData
 {
     WatchDelegate callback;
     Util::StringAtom folder;
-    WatchFlags flags;
+    Util::BitField<8> flags;
     FileWatcherPlatform data;
 };
 
@@ -85,9 +87,11 @@ public:
     void SetSpeed(double speed);
     
     /// Register Folder
-    void Watch(Util::StringAtom const& folder, bool recursive, WatchFlags flags, WatchDelegate const& callback);
+    void Watch(Util::StringAtom const& folder, bool recursive, Util::BitField<8> flags, WatchDelegate const& callback);
     /// unregister
     void Unwatch(Util::StringAtom const& folder);
+    /// check if folder is watched
+    bool IsWatched(Util::StringAtom const& folder) const;
         
 private:
     /// checks for file modifications and calls registered callbacks

@@ -2,6 +2,7 @@
 #include "io/filewatcher.h"
 #include "io/assignregistry.h"
 #include "util/win32/win32stringconverter.h"
+#include "core/sysfunc.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -40,11 +41,11 @@ FileWatcherImpl::CreateWatcher(EventHandlerData& data)
     n_assert(p.dirHandle != INVALID_HANDLE_VALUE);
     //p.overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     p.notifyFilter = 0;
-    p.notifyFilter |= data.flags & NameChanged ? FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
-    p.notifyFilter |= data.flags & SizeChanged ? FILE_NOTIFY_CHANGE_SIZE : 0;
-    p.notifyFilter |= data.flags & Write ? FILE_NOTIFY_CHANGE_LAST_WRITE : 0;
-    p.notifyFilter |= data.flags & Access ? FILE_NOTIFY_CHANGE_LAST_ACCESS : 0;
-    p.notifyFilter |= data.flags & Creation ? FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
+    p.notifyFilter |= data.flags.IsSet(NameChanged) ? FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
+    p.notifyFilter |= data.flags.IsSet(SizeChanged) ? FILE_NOTIFY_CHANGE_SIZE : 0;
+    p.notifyFilter |= data.flags.IsSet(Write) ? FILE_NOTIFY_CHANGE_LAST_WRITE : 0;
+    p.notifyFilter |= data.flags.IsSet(Access) ? FILE_NOTIFY_CHANGE_LAST_ACCESS : 0;
+    p.notifyFilter |= data.flags.IsSet(Creation) ? FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_FILE_NAME : 0;
     QueryDirectoryChanges(data);
 }
 
@@ -66,27 +67,31 @@ FileWatcherImpl::Update(EventHandlerData& data)
     {
         if (ev->FileNameLength > 0)
         {
-            Util::String file = Win32::Win32StringConverter::WideToUTF8((ushort*)ev->FileName, ev->FileNameLength / 2);
+            Util::String fullRelative = Win32::Win32StringConverter::WideToUTF8((ushort*)ev->FileName, ev->FileNameLength / 2);
+            fullRelative.SubstituteString("\\", "/");
+            Util::String relativePath = fullRelative.ExtractToLastSlash();
+            relativePath.TrimRight("/");
+            Util::String file = fullRelative.ExtractFileName();
             switch (ev->Action)
             {
             case FILE_ACTION_ADDED:
             {
-                data.callback({ Created, data.folder, file });
+                data.callback({ Created, data.folder, relativePath, file });
             }
             break;
             case FILE_ACTION_MODIFIED:
             {
-                data.callback({ Modified, data.folder, file });
+                data.callback({ Modified, data.folder, relativePath, file });
             }
             break;
             case FILE_ACTION_REMOVED:
             {
-                data.callback({ Deleted, data.folder, file });
+                data.callback({ Deleted, data.folder, relativePath, file });
             }
             break;
             case FILE_ACTION_RENAMED_NEW_NAME:
             {
-                data.callback({ NameChange, data.folder, file });
+                data.callback({ NameChange, data.folder, relativePath, file });
             }
 
             }
@@ -109,6 +114,14 @@ FileWatcherImpl::DestroyWatcher(EventHandlerData& data)
     CancelIo(p.dirHandle);
     CloseHandle(p.dirHandle);
     CloseHandle(p.overlapped.hEvent);
+}
+
+void FileWatcherImpl::Init() {}
+void FileWatcherImpl::Shutdown() {}
+void FileWatcherImpl::WakeUp() {}
+void FileWatcherImpl::WaitForEvents(double timeoutSecs)
+{
+    Core::SysFunc::Sleep(timeoutSecs);
 }
 
 }

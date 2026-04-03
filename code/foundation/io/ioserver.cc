@@ -82,7 +82,7 @@ IoServer::IoServer() :
     this->archiveCriticalSection.Leave();
 
     this->watcherCriticalSection.Enter();
-    #ifndef __linux__
+    
     if (!FileWatcher::HasInstance())
     {
         this->watcher = FileWatcher::Create();
@@ -92,7 +92,7 @@ IoServer::IoServer() :
     {
         this->watcher = FileWatcher::Instance();
     }
-    #endif
+
     this->watcherCriticalSection.Leave();
 
     this->httpClientRegistry = Http::HttpClientRegistry::Create();

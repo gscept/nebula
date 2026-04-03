@@ -636,7 +636,6 @@ FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
     outInfo.type = static_cast<FileType>(values->GetInt(Attr::FileType, 0));
     outInfo.size = (SizeT)values->GetInt64(Attr::FileSize, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
-    outInfo.filePath = this->GetFilePath(fileId);
     
     return true;
 }
