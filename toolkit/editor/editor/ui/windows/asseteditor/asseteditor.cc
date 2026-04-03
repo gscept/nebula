@@ -20,6 +20,7 @@
 #include "modelasseteditor.h"
 #include "skeletonasseteditor.h"
 #include "textureasseteditor.h"
+#include "particleasseteditor.h"
 
 #include "materials/gpulang/material_interfaces.h"
 
@@ -87,7 +88,8 @@ static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
     nullptr,
     ModelSetup,
     nullptr,
-    TextureSetup
+    TextureSetup,
+    ParticleSetup
 };
 
 static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
@@ -108,7 +110,8 @@ static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTy
     nullptr,
     ModelEditor,
     nullptr,
-    TextureEditor
+    TextureEditor,
+    ParticleEditor
 };
 
 static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
@@ -119,7 +122,8 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
     nullptr,
     ModelDiscard,
     nullptr,
-    nullptr
+    nullptr,
+    ParticleDiscard
 };
 
 static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] = 
@@ -130,7 +134,8 @@ static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes]
     nullptr,
     ModelShow,
     nullptr,
-    nullptr
+    nullptr,
+    ParticleShow
 };
 
 static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
@@ -141,7 +146,8 @@ static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
     "[Skeleton] %s",
     "[Model] %s",
     "[Animation] %s",
-    "[Texture] %s"
+    "[Texture] %s",
+    "[Particle] %s"
 };
 
 //------------------------------------------------------------------------------

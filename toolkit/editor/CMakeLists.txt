@@ -130,6 +130,8 @@ fips_dir(editor)
                 meshasseteditor.h
                 modelasseteditor.cc
                 modelasseteditor.h
+                particleasseteditor.cc
+                particleasseteditor.h
                 skeletonasseteditor.cc
                 skeletonasseteditor.h
                 textureasseteditor.cc

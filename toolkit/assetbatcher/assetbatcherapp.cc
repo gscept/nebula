@@ -233,6 +233,7 @@ AssetBatcherApp::DoWork()
         if (modeFlags.Find("fbx")) mode |= AssetExporter::FBX;
         if (modeFlags.Find("model")) mode |= AssetExporter::Models;
         if (modeFlags.Find("surface")) mode |= AssetExporter::Surfaces;
+        if (modeFlags.Find("particles")) mode |= AssetExporter::Particles;
         if (modeFlags.Find("texture")) mode |= AssetExporter::Textures;
         if (modeFlags.Find("physics")) mode |= AssetExporter::Physics;
         if (modeFlags.Find("gltf")) mode |= AssetExporter::GLTF;
@@ -264,7 +265,7 @@ AssetBatcherApp::DoWork()
     exporter->SetLogger(&this->logger);
     if (force)
     {
-        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
+        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceParticles | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
@@ -280,7 +281,6 @@ AssetBatcherApp::DoWork()
     }
     else
     {
-        
         switch (exportFlag)
         {
             case ExporterBase::All:

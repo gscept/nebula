@@ -31,6 +31,7 @@ public:
         Model,
         Animation,
         Texture,
+        Particle,
 
         NumAssetTypes
     };
