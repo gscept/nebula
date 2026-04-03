@@ -24,6 +24,7 @@
 #include "fileservertest.h"
 #include "filewatchertest.h"
 #include "uritest.h"
+#include "urntest.h"
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
 #include "pinnedarraytest.h"
@@ -100,6 +101,7 @@ __cdecl main()
     testRunner->AttachTestCase(CmdLineArgsTest::Create());
     testRunner->AttachTestCase(MediaTypeTest::Create());
     testRunner->AttachTestCase(URITest::Create());
+    testRunner->AttachTestCase(URNTest::Create());
     testRunner->AttachTestCase(StringTest::Create());   
     testRunner->AttachTestCase(ArrayTest::Create());
     testRunner->AttachTestCase(PinnedArrayTest::Create());

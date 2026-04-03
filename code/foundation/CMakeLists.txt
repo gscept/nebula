@@ -218,6 +218,8 @@ nebula_begin_module(foundation)
             textreader.h
             textwriter.cc
             textwriter.h
+            urn.cc
+            urn.h
             uri.cc
             uri.h
             xmlreader.cc

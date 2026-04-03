@@ -374,6 +374,25 @@ String::FindCharIndex(char c, IndexT startIndex) const
 
 //------------------------------------------------------------------------------
 /**
+    Return index of character in string, or InvalidIndex if not found.
+*/
+IndexT
+String::FindCharIndexReverse(char c, IndexT startIndex) const
+{
+    if (this->strLen > 0)
+    {
+        n_assert(startIndex < this->strLen);
+        const char* ptr = strrchr(this->AsCharPtr() + startIndex, c);
+        if (ptr)
+        {
+            return IndexT(ptr - this->AsCharPtr());
+        }
+    }
+    return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 String::BeginsWithString(const String& s) const

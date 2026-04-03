@@ -14,6 +14,7 @@
 #include "asseteditor/asseteditor.h"
 #include "timing/calendartime.h"
 #include "editor/tools/pathconverter.h"
+#include "io/filewatcher.h"
 #include "asseteditor/particleasseteditor.h"
 
 using namespace Editor;
@@ -57,22 +58,46 @@ public:
     /// 
     void DoWork() override
     {
+        // initial scan
         Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
         ToolkitUtil::Logger logger;
         ToolkitUtil::FileDB fileDB;
         fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
         fileDB.Open(logger, false);
-        this->browser->ScanFolder(fileDB, "export", "export:", false);
+        this->browser->ScanFolderTree(fileDB, "export", "export:", false);
         this->progress = 0.25f;
-        this->browser->ScanFolder(fileDB, "sysexport", "export:", true);
+        this->browser->ScanFolderTree(fileDB, "sysexport", "export:", true);
         this->progress = 0.5f;
-        this->browser->ScanFolder(fileDB, "work", "proj:work/", false);
+        this->browser->ScanFolderTree(fileDB, "work", "proj:work/", false);
         this->progress = 0.75f;
-        this->browser->ScanFolder(fileDB, "syswork", "tool:syswork/", false);
+        this->browser->ScanFolderTree(fileDB, "syswork", "tool:syswork/", false);
         this->progress = 1.0f;
-        fileDB.Close();
-        ioServer = nullptr;
+
         this->browser->isDoneRefreshingCaches.Set();
+        
+        // read queued refreshes
+        Util::Array<uint64_t> pendingFolderRefreshes;
+        uint64_t lastQueuedFolder = 0;
+        do
+        {
+            this->browser->pendingFolderRefreshes.Wait();
+            this->browser->pendingFolderRefreshes.DequeueAll(pendingFolderRefreshes);
+            if (pendingFolderRefreshes.IsEmpty())
+            {
+                continue;
+            }
+            
+            // we only grab the last one
+            lastQueuedFolder = pendingFolderRefreshes.Back();
+            if (lastQueuedFolder != -1)
+            {
+                this->browser->ScanFolder(fileDB, ioServer, IO::URI(fileDB.GetFolderPath(lastQueuedFolder)), false, lastQueuedFolder, false);
+                this->browser->refreshedFolders.Enqueue(lastQueuedFolder);
+            }
+
+        } while (lastQueuedFolder != -1);
+        
+        fileDB.Close();
         this->browser->currentScanJob = nullptr;
     }
     float GetProgress() const
@@ -127,7 +152,12 @@ AssetBrowser::AssetBrowser()
 */
 AssetBrowser::~AssetBrowser()
 {
-    // empty
+    if (this->currentScanJob != nullptr)
+    {
+        this->pendingFolderRefreshes.Enqueue(-1);
+        this->currentScanJob->Stop();
+        this->currentScanJob = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -145,15 +175,98 @@ AssetBrowser::Update()
 void
 AssetBrowser::Run(SaveMode save)
 {
+    static bool showProgress = true;
     if(this->isDoneRefreshingCaches.Test())
     {
+        showProgress = false;
         this->isDoneRefreshingCaches.Clear();
         this->fileDB.Close();
-        this->fileDB.Open(this->logger, true);
+        // reopen as filebased to ensure all changes are flushed and we have access to file paths for watchers
+        this->fileDB.Open(this->logger, false);
         this->RefreshFolderInfoCaches();
         this->RefreshFileInfoCaches();
     }
-    if(this->currentScanJob != nullptr)
+    {
+        Util::Array<IO::WatchEvent> events;
+        this->pendingWatchEvents.DequeueAll(events);
+        if (!events.IsEmpty() && this->fileDB.IsOpen() && this->activeFolder != 0)
+        {
+            IO::IoServer* ioServer = IO::IoServer::Instance();
+            bool cacheNeedsRefresh = false;
+            for (const IO::WatchEvent& event : events)
+            {
+                Util::String fileName = event.file;
+                if (fileName.IsEmpty())
+                    continue;
+
+                Util::String folderPath = this->fileDB.GetFolderPath(this->activeFolder);
+                Util::String relFilePath = event.relativePath.IsEmpty() ? fileName : Util::String::AppendPath(event.relativePath, fileName);
+                Util::String filePath = Util::String::AppendPath(event.folder.AsString(), relFilePath);
+                IO::URI fileUri(Util::String::AppendPath(folderPath, relFilePath));
+                bool fileExistsOnDisk = ioServer->FileExists(fileUri);
+
+                switch (event.type)
+                {
+                    case IO::WatchEventType::Created:
+                    case IO::WatchEventType::NameChange:
+                    {
+                        if (fileExistsOnDisk)
+                        {
+                            IO::IOStat ioInfo;
+                            IO::Stream::Size fileSize = 0;
+                            IO::FileTime modifiedTime;
+                            if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                            {
+                                fileSize = ioInfo.size;
+                                modifiedTime = ioInfo.modifiedTime;
+                            }
+                            this->fileDB.AddFile(this->logger, fileName, this->activeFolder, fileSize, DetermineFileType(fileName.GetFileExtension()), modifiedTime);
+                        }
+                        else
+                        {
+                            if (this->fileInfoDict.Contains(filePath))
+                            {
+                                uint64_t fileId = this->fileInfoDict[filePath];
+                                this->fileDB.DeleteFile(this->logger, fileId);
+                            }
+                        }
+                        cacheNeedsRefresh = true;
+                    }
+                    break;
+                    case IO::WatchEventType::Deleted:
+                    {
+                        if (this->fileInfoDict.Contains(filePath))
+                        {
+                            uint64_t fileId = this->fileInfoDict[filePath];
+                            this->fileDB.DeleteFile(this->logger, fileId);
+                        }
+                        cacheNeedsRefresh = true;
+                    }
+                    break;
+                    case IO::WatchEventType::Modified:
+                    {
+                        if (this->fileInfoDict.Contains(filePath))
+                        {
+                            uint64_t fileId = this->fileInfoDict[filePath];
+                            IO::IOStat ioInfo;
+                            if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                            {
+                                this->fileDB.UpdateFileMetadata(this->logger, fileId, ioInfo.modifiedTime);
+                            }
+                            break;
+                        }
+                        cacheNeedsRefresh = true;
+                    }
+                    break;
+                }
+            }
+            if (cacheNeedsRefresh)
+            {
+                this->RefreshFileInfoCaches();
+            }
+        }
+    }
+    if(showProgress && this->currentScanJob != nullptr)
     {
         ImGui::ProgressBar(this->currentScanJob->GetProgress(), ImVec2(0.0f, 0.0f), "Scanning...");
     }
@@ -203,18 +316,64 @@ void
 AssetBrowser::RefreshFileInfoCaches()
 {
     this->fileInfoCache.Clear();
+    this->fileInfoDict.Clear();
     if (this->activeFileTree != 0 && this->activeFolder != 0)
     {
         Util::Array<ToolkitUtil::FileDB::FileInfo> files;
         this->fileDB.GetFilesInFolder(this->activeFolder, files);
         this->fileInfoCache.Reserve(files.Size());
-        for (const auto& file : files)
+        for (auto& file : files)
         {
+            file.filePath = this->fileDB.GetFilePath(file.id);
             this->fileInfoCache.Append(file);
+            this->fileInfoDict.Add(file.filePath, file.id);
         }
     }
 }
 
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::SetActiveFolder(uint64_t folderId)
+{
+    if (this->activeFolder != folderId)
+    {
+        if (this->activeFolder != 0)
+        {
+            ToolkitUtil::FileDB::FolderInfo oldInfo = this->folderInfoCache[this->activeFolder];
+            if (!oldInfo.isArchive)
+            {
+                Util::String oldFolder = this->fileDB.GetFolderPath(this->activeFolder);
+                if (IO::FileWatcher::Instance()->IsWatched(oldFolder))
+                {
+                    IO::FileWatcher::Instance()->Unwatch(oldFolder);
+                }
+            }
+        }
+        ToolkitUtil::FileDB::FolderInfo info = this->folderInfoCache[folderId];
+        if (!info.isArchive)
+        {
+            Util::BitField<8> watchFlags;
+            watchFlags.SetBit(IO::WatchFlags::NameChanged);
+            watchFlags.SetBit(IO::WatchFlags::SizeChanged);
+            watchFlags.SetBit(IO::WatchFlags::Creation);
+            Util::String newFolder = this->fileDB.GetFolderPath(folderId);
+            IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
+            {
+                this->pendingWatchEvents.Enqueue(event);
+            };
+
+            IO::FileWatcher::Instance()->Watch(newFolder, true, watchFlags, callback);
+            this->pendingFolderRefreshes.Enqueue(folderId);
+        }
+        this->activeFolder = folderId;
+        this->activeFile = 0;
+        this->RefreshFileInfoCaches();
+    }
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -246,16 +405,14 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
     ImGui::PopID();
     if(ImGui::IsItemClicked())
     {
-        this->activeFolder = folderId;
-        this->activeFile = 0;
-        this->RefreshFileInfoCaches();
+        this->SetActiveFolder(folderId);
     }
 
     if (bIsOpen)
     {
         for (const auto& child : children)
         {
-            DisplayFileTreeFolderHierarchy(child.id, depth + 1);
+            this->DisplayFileTreeFolderHierarchy(child.id, depth + 1);
         }
         ImGui::TreePop();
     }
@@ -312,6 +469,12 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
     if (this->activeFolder != 0)
     {
+        Util::Array<uint64_t> refreshedFolderIds;
+        this->refreshedFolders.DequeueAll(refreshedFolderIds);
+        if (refreshedFolderIds.FindIndex(this->activeFolder) != InvalidIndex)
+        {
+            this->RefreshFileInfoCaches();
+        }
         bool hasFileToOpen = false;
         ToolkitUtil::FileDB::FileInfo fileToOpen;       
 
@@ -608,7 +771,7 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void 
-AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
+AssetBrowser::ScanFolderTree(ToolkitUtil::FileDB& fileDB, const Util::String & treeName, const Util::String& folderPathString, bool useArchive)
 {
     IO::URI folderPath(folderPathString);
     uint64_t rootId = fileDB.CreateRootFolder(folderPathString, IO::FSWrapper::GetFileWriteTime(folderPath.LocalPath()), useArchive);
@@ -617,7 +780,7 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String & treeN
     // Start recursive scanning from the root
     if (ioServer->DirectoryExists(folderPath))
     {
-        ScanFolderRecursive(fileDB, ioServer, folderPath, useArchive, rootId);
+        ScanFolder(fileDB, ioServer, folderPath, useArchive, rootId, true);
     }
 }
 
@@ -625,10 +788,10 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const Util::String & treeN
 /**
 */
 void
-AssetBrowser::ScanFolderRecursive(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent)
+AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive)
 {
     // List all files in the current directory
-    Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*.*", true);
+    Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*", true);
     Util::Array<Util::String> filesystemFileNames;
     filesystemFileNames.Reserve(files.Size());
     for (const auto& fileName : files)
@@ -678,9 +841,9 @@ AssetBrowser::ScanFolderRecursive(ToolkitUtil::FileDB& fileDB, const IO::IoServe
         uint64_t childId = fileDB.CreateFolder(this->logger, childName, parent, IO::FSWrapper::GetFileWriteTime(childDir), useArchive);
         
         // Recursively scan the subdirectory
-        if (childId != 0)
+        if (childId != 0 && recursive)
         {
-            ScanFolderRecursive(fileDB, ioServer, childDir, useArchive, childId);
+            ScanFolder(fileDB, ioServer, childDir, useArchive, childId, true);
         }
     }
 

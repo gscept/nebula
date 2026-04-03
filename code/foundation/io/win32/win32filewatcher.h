@@ -25,8 +25,12 @@ struct FileWatcherPlatform
 class FileWatcherImpl 
 {
 public:
+    static void Init();
+    static void Shutdown();
     static void CreateWatcher(EventHandlerData& data);
     static void DestroyWatcher(EventHandlerData& data);
     static void Update(EventHandlerData& data);
+    static void WaitForEvents(double timeoutSecs);
+    static void WakeUp();
 };
 }
