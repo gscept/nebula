@@ -328,7 +328,6 @@ ResourceLoader::RunCallbacks(Resource::State status, const Resources::ResourceId
         else if (status == Resource::Failed && cbl.failed != nullptr)
             cbl.failed(id);
         cbls.EraseIndexSwap(i);
-        cbl = {};
     }
 }
 

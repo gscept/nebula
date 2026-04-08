@@ -35,6 +35,7 @@
 #include "system/systeminfo.h"
 #include "math/scalar.h"
 #include <type_traits>
+#include <new>
 
 
 
@@ -227,6 +228,8 @@ protected:
 
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
+    /// destroy and immediately reconstruct an element in-place
+    void Reset(TYPE* elm);
     /// copy content
     void Copy(const Array<TYPE, SMALL_VECTOR_SIZE>& src);
     /// delete content
@@ -379,8 +382,10 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Array(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) noex
     // If data is on the stack, copy data over
     if (rhs.capacity <= SMALL_VECTOR_SIZE)
     {
-        for (IndexT i = 0; i < rhs.capacity; i++)
-            this->elements[i] = rhs.elements[i];
+        for (IndexT i = 0; i < rhs.count; i++)
+        {
+            this->elements[i] = std::move(rhs.elements[i]);
+        }
     }
     else
     {
@@ -447,6 +452,19 @@ template<class TYPE, int SMALL_VECTOR_SIZE> void
 Array<TYPE, SMALL_VECTOR_SIZE>::Destroy(TYPE* elm)
 {
     elm->~TYPE();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE> void
+Array<TYPE, SMALL_VECTOR_SIZE>::Reset(TYPE* elm)
+{
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+    {
+        this->Destroy(elm);
+        ::new ((void*)elm) TYPE();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -533,8 +551,9 @@ Array<TYPE, SMALL_VECTOR_SIZE>::operator=(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) 
         this->grow = rhs.grow;
         this->count = rhs.count;
         this->capacity = rhs.capacity;
+        rhs.elements = rhs.stackElements.data();
         rhs.count = 0;
-        rhs.capacity = 0;
+        rhs.capacity = SMALL_VECTOR_SIZE;
     }
 }
 
@@ -627,7 +646,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
     {
         // this is a backward move
         this->MoveRange(&this->elements[toIndex], &this->elements[fromIndex], num);
-        this->DestroyRange(fromIndex + num - 1, this->count);
+        this->DestroyRange(toIndex + num, this->count);
     }
     else
     {
@@ -657,7 +676,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
     {
         for (IndexT i = fromIndex; i < toIndex; i++)
         {
-            this->Destroy(&(this->elements[i]));
+            this->Reset(&(this->elements[i]));
         }
     }
     else
@@ -695,18 +714,19 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
 Array<TYPE, SMALL_VECTOR_SIZE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 {
-    // copy over contents
-    if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
+    // Use bitwise moves only for trivially copyable types.
+    // For non-trivial types, move-assign element-wise.
+    if constexpr (std::is_trivially_copyable<TYPE>::value)
+    {
+        Memory::MoveElements(from, to, num);
+    }
+    else
     {
         IndexT i;
         for (i = 0; i < num; i++)
         {
             to[i] = std::move(from[i]);
         }
-    }
-    else
-    {
-        Memory::MoveElements(from, to, num);
     }
 }
 
@@ -719,7 +739,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Get(IndexT index) const
 {
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements != nullptr);
-    n_assert(this->capacity > index);
+    n_assert(this->count > index);
 #endif
     return this->elements[index];
 }
@@ -1065,10 +1085,12 @@ Array<TYPE, SMALL_VECTOR_SIZE>::EraseIndexSwap(IndexT index)
     IndexT lastElementIndex = this->count - 1;
     if (index < lastElementIndex)
     {
-        if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
-            this->elements[index] = std::move(this->elements[lastElementIndex]);
-        else
-            this->elements[index] = this->elements[lastElementIndex];
+        this->elements[index] = std::move(this->elements[lastElementIndex]);
+        this->Reset(&this->elements[lastElementIndex]);
+    }
+    else
+    {
+        this->Reset(&this->elements[index]);
     }
     this->count--;
 }
@@ -1131,8 +1153,7 @@ void
 Array<TYPE, SMALL_VECTOR_SIZE>::EraseBack()
 {
     n_assert(this->count > 0);
-    if constexpr (!std::is_trivially_destructible<TYPE>::value)
-        this->Destroy(&(this->elements[this->count - 1]));
+    this->Reset(&(this->elements[this->count - 1]));
     this->count--;
 }
 
@@ -1171,8 +1192,11 @@ Array<TYPE, SMALL_VECTOR_SIZE>::PopBack()
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->count > 0);
 #endif
-    this->count--;
-    return std::move(this->elements[this->count]);
+    IndexT index = this->count - 1;
+    TYPE ret = std::move(this->elements[index]);
+    this->Reset(&(this->elements[index]));
+    this->count = index;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -1637,12 +1661,16 @@ void Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num, ARGS... args)
     {
         this->DestroyRange(num, this->count);
     }
-    else if (num > this->capacity)
+    else
     {
-        SizeT oldCapacity = this->capacity;
-        this->GrowTo(num);
-        for (IndexT i = oldCapacity; i < this->capacity; i++)
+        if (num > this->capacity)
+        {
+            this->GrowTo(num);
+        }
+        for (IndexT i = this->count; i < num; i++)
+        {
             this->elements[i] = TYPE(args...);
+        }
     }
 
     this->count = num;
@@ -1657,8 +1685,8 @@ inline void Array<TYPE, SMALL_VECTOR_SIZE>::Extend(SizeT num)
     if (num > this->capacity)
     {
         this->GrowTo(num);
-        this->count = num;
     }
+    this->count = Math::max(this->count, num);
 }
 
 //------------------------------------------------------------------------------

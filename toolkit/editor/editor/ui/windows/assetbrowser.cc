@@ -98,7 +98,6 @@ public:
         } while (lastQueuedFolder != -1);
         
         fileDB.Close();
-        this->browser->currentScanJob = nullptr;
     }
     float GetProgress() const
     {
