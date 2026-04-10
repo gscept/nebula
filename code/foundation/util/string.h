@@ -545,6 +545,8 @@ String::String(String&& rhs) noexcept:
     if (rhs.heapBuffer)
     {
         rhs.heapBuffer = nullptr;
+        rhs.strLen = 0;
+        rhs.heapBufferSize = 0;
         this->localBuffer[0] = 0;
     }
     else
@@ -554,6 +556,10 @@ String::String(String&& rhs) noexcept:
             Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
         }
         this->localBuffer[this->strLen] = 0;
+        rhs.heapBuffer = nullptr;
+        rhs.strLen = 0;
+        rhs.heapBufferSize = 0;
+
     }
 }
 

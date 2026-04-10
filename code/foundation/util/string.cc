@@ -123,13 +123,13 @@ String::Set(const char* str, SizeT length)
         // however, if there is already an external buffer
         // allocated, we use the external buffer!
         this->Delete();
-        Memory::Copy(str, this->localBuffer, length);
+        Memory::Move(str, this->localBuffer, length);
         this->localBuffer[length] = 0;
     }
     else if (length < this->heapBufferSize)
     {
         // the new contents fits into the existing buffer
-        Memory::Copy(str, this->heapBuffer, length);
+        Memory::Move(str, this->heapBuffer, length);
         this->heapBuffer[length] = 0;
         this->localBuffer[0] = 0;
     }
@@ -137,7 +137,7 @@ String::Set(const char* str, SizeT length)
     {
         // need to allocate bigger heap buffer
         this->Alloc(length + 1);
-        Memory::Copy(str, this->heapBuffer, length);
+        Memory::Move(str, this->heapBuffer, length);
         this->heapBuffer[length] = 0;
         this->localBuffer[0] = 0;
     }
@@ -397,7 +397,11 @@ String::FindCharIndexReverse(char c, IndexT startIndex) const
 bool
 String::BeginsWithString(const String& s) const
 {
-    return FindStringIndex(s) != InvalidIndex;
+    if (s.strLen > this->strLen)
+    {
+        return false;
+    }
+    return (0 == strncmp(this->AsCharPtr(), s.AsCharPtr(), s.strLen));
 }
 
 //------------------------------------------------------------------------------
@@ -406,7 +410,12 @@ String::BeginsWithString(const String& s) const
 bool
 String::EndsWithString(const String& s) const
 {
-    return FindStringIndex(s, s.Length()) != InvalidIndex;
+    if (s.strLen > this->strLen)
+    {
+        return false;
+    }
+    const IndexT start = this->strLen - s.strLen;
+    return (0 == strncmp(this->AsCharPtr() + start, s.AsCharPtr(), s.strLen));
 }
 
 //------------------------------------------------------------------------------
@@ -1253,6 +1262,7 @@ String::FromBlob(const Util::Blob& b)
 
     Util::String str;
     str.SetCharPtr((const char*)buf);
+    Memory::Free(Memory::ScratchHeap, buf);
     return str;
 }
 
@@ -1264,27 +1274,46 @@ Util::Blob
 String::AsBlob() const
 {
     Util::Blob b;
-    SizeT s = this->heapBufferSize >> 1;
+    n_assert((this->strLen & 1) == 0);
+    SizeT s = this->strLen >> 1;
     b.Reserve(s);
     unsigned char * ptr = (unsigned char*)b.GetPtr();
+    const unsigned char* src = (const unsigned char*)this->AsCharPtr();
     SizeT c = 0;
     for(SizeT i = 0 ; i < s; i++)
     {
-        unsigned char temp = this->heapBuffer[c++];
+        unsigned char temp = src[c++];
 
-        if(temp > 0x60)
+        if(temp >= 'a' && temp <= 'f')
         {
             temp -= 39;
+        }
+        else if (temp >= 'A' && temp <= 'F')
+        {
+            temp -= 7;
+        }
+        else
+        {
+            n_assert(temp >= '0' && temp <= '9');
         }
         temp -= 48; 
         temp *= 16;
 
-        temp += heapBuffer[c];
-        if(heapBuffer[c++] > 0x60)
+        unsigned char low = src[c++];
+        if(low >= 'a' && low <= 'f')
         {
-            temp -= 39;
+            low -= 39;
         }
-        temp -= 48;
+        else if (low >= 'A' && low <= 'F')
+        {
+            low -= 7;
+        }
+        else
+        {
+            n_assert(low >= '0' && low <= '9');
+        }
+        low -= 48;
+        temp += low;
         ptr[i] = temp;
     }
     return b;
@@ -1316,6 +1345,10 @@ String::FromBase64(const String& in)
 {
     Util::String ret;
     int allocsize = BASE64_DECODE_OUT_SIZE(in.strLen);
+    if (allocsize <= 0)
+    {
+        return ret;
+    }
     unsigned char * buffer = (unsigned char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
     
     base64_decode((char*)in.AsCharPtr(), in.strLen, buffer);
