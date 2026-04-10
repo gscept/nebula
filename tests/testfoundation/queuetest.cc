@@ -6,6 +6,7 @@
 #include "queuetest.h"
 #include "util/queue.h"
 #include "util/arrayqueue.h"
+#include <functional>
 
 namespace Test
 {
@@ -27,6 +28,25 @@ bool Compare(Util::Queue<int> const & q, Util::ArrayQueue<int> const & a)
     return same;
 }
 
+struct TestStruct
+{
+    Util::String str;
+    int i;
+    std::function<int()> func;
+    const TestStruct& operator=(const TestStruct& other)
+    {
+        str = other.str;
+        i = other.i;
+        func = other.func;
+        return *this;
+    }
+    TestStruct(const Util::String& s, int i, std::function<int()> f) : str(s), i(i), func(f) { initCount++; }
+    TestStruct(const TestStruct& other) : str(other.str), i(other.i), func(other.func) { initCount++; }
+    TestStruct() { initCount++; }
+    ~TestStruct() { initCount--; }
+    static int initCount;
+};
+int TestStruct::initCount = 0;
 //------------------------------------------------------------------------------
 /**
 */
@@ -152,6 +172,113 @@ QueueTest::Run()
     aq.EraseIndex(aq.Size() - 1);
     VERIFY(q0 == q1);
     VERIFY(Compare(q0, aq));
+
+    // non POD tests
+    {
+        Queue<Util::String> q;
+        ArrayQueue<Util::String> aq;
+        q.Enqueue("Hello");
+        q.Enqueue("World");
+        q.Reserve(q.Capacity() + 10);
+        VERIFY(q.Peek() == "Hello");
+        VERIFY(q.Dequeue() == "Hello");
+        VERIFY(q.Dequeue() == "World");
+        VERIFY(q.IsEmpty());
+
+        q.Enqueue("Hello");
+        q.Enqueue("World");
+        q.Enqueue("World2");
+        q.Enqueue("World3");
+        q.EraseIndex(0);
+        VERIFY(q.Peek() == "World");
+        q.EraseIndex(1);
+        VERIFY(q.Peek() == "World");
+        VERIFY(q[1] == "World3");
+        q.EraseIndex(0);
+        VERIFY(q.Dequeue() == "World3");
+        VERIFY(q.IsEmpty());
+
+        
+        Queue<TestStruct> q2;
+        {
+            TestStruct ts1;
+            ts1.str = "Hello";
+            ts1.i = 42;
+            ts1.func = []() { return 42; };
+            q2.Enqueue({ "Hello", 42, []() { return 45; } });
+            q2.Enqueue(ts1);
+            q2.Enqueue(ts1);
+            q2.Reserve(q2.Capacity() + 10);
+            {
+                char stackbuffer[256];
+                TestStruct ts;
+                ts.str = "World";
+                ts.i = 24;
+                Util::String closureStr = "Closure";
+                ts.func = [closureStr]() { return closureStr.Length(); };
+                q2.Enqueue(std::move(ts));
+            }
+            q2.EraseIndex(1);
+            VERIFY(q2.Dequeue().func() == 45);
+            VERIFY(q2.Dequeue().func() == 42);
+            VERIFY(q2.Dequeue().func() == 7);
+            VERIFY(q2.IsEmpty());
+        }
+    }
+    VERIFY(TestStruct::initCount == 0);
+
+    {
+        struct DestructorCounter
+        {
+            ~DestructorCounter() { value = -1; }
+            int value;
+        };
+        static const auto MakeSplitQueue = []() -> Queue<DestructorCounter>
+        {
+            Queue<DestructorCounter> q;
+            q.Grow();
+            const int capacity = q.Capacity();
+            const int half = capacity >> 1;
+            for (int i = 0; i< capacity; i++)
+            {
+                q.Enqueue({i});
+            }
+            for (int i = 0; i < half; i++)
+            {
+                q.Dequeue();      
+            }
+            for(int i = 0; i < half; i++)
+            {
+                q.Enqueue({i + capacity});
+            }
+            return q;
+        };
+
+        Queue<DestructorCounter> q = MakeSplitQueue();
+        const int capacity = q.Capacity();
+        const int half = capacity >> 1;
+        // we now have a wraparound, and the first half of the queue is in the middle of the buffer,
+        // and the second half is at the beginning of the buffer. We erase in the second half, which 
+        //forces the elements in the first half to be move-constructed into the second half, and then 
+        // we verify that the remaining elements are correct.
+        q.EraseIndex(capacity * 3 / 4);
+        same = true;
+        for (int i = 0 ; i < q.Size(); i++)
+        {
+            int offset = i < capacity * 3 / 4 ? half : half + 1;
+            same &= q[i].value == (i + offset);
+        }
+        VERIFY(same);
+
+        Queue<DestructorCounter> q2 = MakeSplitQueue();
+        q2.EraseIndex(capacity/4);
+        bool allValid = true;
+        for (int i = 0, k = q2.Size(); i < k; i++)   
+        {
+            allValid &= q2.Dequeue().value != -1;
+        }
+        VERIFY(allValid);
+    }
 }
 
 }; // namespace Test

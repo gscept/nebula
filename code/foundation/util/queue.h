@@ -4,7 +4,6 @@
     @class Util::Queue
     
     Faster queue class that apart from Enqueue has constant time operations.
-    Assumes that items can be trivially moved by using memmove.
                 
     @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
@@ -14,12 +13,6 @@
 #include "util/round.h"
 #include <type_traits>
 #include <new>
-
-#if (__cplusplus >= 201703L ) || (_MSVC_LANG >= 201703L)
-#define IFCONSTEXPR if constexpr
-#else
-#define IFCONSTEXPR if
-#endif
 
 
 //------------------------------------------------------------------------------
@@ -155,6 +148,9 @@ Queue<TYPE>::~Queue()
 template<class TYPE>
 Queue<TYPE>::Queue(const Queue<TYPE>& rhs):
     data(nullptr),
+    grow(16),
+    start(0),
+    size(0),
     capacity(0)
 {
     this->Reserve(rhs.size);
@@ -302,12 +298,13 @@ Util::Queue<TYPE>::EraseIndex(const IndexT i)
     {
         IndexT idx = this->MapIndex(i);
 
-        IFCONSTEXPR(std::is_trivially_copyable_v<TYPE>)
+        if constexpr(std::is_trivially_copyable_v<TYPE>)
         {
             // Trivially-copyable: plain byte assignment is safe; no construction/destruction needed
+            // check if wrapped around
             if (idx < this->start)
             {
-                for (IndexT j = 0; j < this->size - i; ++j)
+                for (IndexT j = 0; j < this->size - i - 1; ++j)
                 {
                     this->data[idx] = this->data[idx + 1];
                     idx++;
@@ -329,9 +326,10 @@ Util::Queue<TYPE>::EraseIndex(const IndexT i)
             // Use placement-new for the first write into the dead slot, move-assign for the rest,
             // then explicitly destroy the vacated tail slot.
             this->DestroyElement<TYPE>(idx);
+            // check if wrapped around
             if (idx < this->start)
             {
-                SizeT remaining = this->size - i;
+                SizeT remaining = this->size - i - 1;
                 if (remaining > 0)
                 {
                     ::new ((void*)&this->data[idx]) TYPE(std::move(this->data[idx + 1]));
@@ -391,7 +389,7 @@ Queue<TYPE>::Reserve(SizeT num)
         if (this->capacity > 0)
         {
             // we could use SFINAE here as well, but as its a single if in a (rare) call its not worth the bother
-            IFCONSTEXPR(std::is_trivially_copyable_v<TYPE>)
+            if constexpr(std::is_trivially_copyable_v<TYPE>)
             {
                 if (this->size > 0)
                 {

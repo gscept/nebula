@@ -60,6 +60,8 @@ public:
     void BeginBulkAdd();
     /// add a key/value pair
     IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
+    /// add a key/value pair, consuming rvalues
+    IndexT Add(KeyValuePair<KEYTYPE, VALUETYPE>&& kvp);
     /// add a key and associated value
     IndexT Add(const KEYTYPE& key, const VALUETYPE& value);
     /// add a key and associated value, consuming rvalues
@@ -288,6 +290,24 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 */
 template<class KEYTYPE, class VALUETYPE>
 inline IndexT
+Dictionary<KEYTYPE, VALUETYPE>::Add(KeyValuePair<KEYTYPE, VALUETYPE>&& kvp)
+{
+    if (this->inBulkInsert)
+    {
+        this->keyValuePairs.Append(std::move(kvp));
+        return this->keyValuePairs.Size() - 1;
+    }
+    else
+    {
+        return this->keyValuePairs.InsertSorted(std::move(kvp));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
 #if NEBULA_BOUNDSCHECKS
@@ -312,16 +332,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::Add(KEYTYPE&& key, VALUETYPE&& value)
 {
-    KeyValuePair<KEYTYPE, VALUETYPE> kvp(std::move(key), std::move(value));
-    if (this->inBulkInsert)
-    {
-        this->keyValuePairs.Append(std::move(kvp));
-        return this->keyValuePairs.Size() - 1;
-    }
-    else
-    {
-        return this->keyValuePairs.InsertSorted(kvp);
-    }
+    return this->Add(KeyValuePair<KEYTYPE, VALUETYPE>(std::move(key), std::move(value)));
 }
 
 //------------------------------------------------------------------------------
