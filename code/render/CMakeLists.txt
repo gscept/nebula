@@ -4,7 +4,7 @@
        
 FIND_PROGRAM(GPULANGC
     NAMES gpulangc.exe gpulangc
-    PATHS ${FIPS_DEPLOY_DIR}/gpulang/win64 ${FIPS_DEPLOY_DIR}/gpulang/linux
+    PATHS ${FIPS_DEPLOY_DIR}/gpulang/win64 ${FIPS_DEPLOY_DIR}/gpulang/linux ${FIPS_DEPLOY_DIR}/gpulang/macos
     NO_DEFAULT_PATH
 )
 

@@ -10,7 +10,7 @@ namespace Net
 {
 #if (__WIN32__)
 __ImplementClass(Net::Socket, 'SOCK', Win32::Win32Socket);
-#elif __linux__
+#elif __linux__ || __APPLE__
 __ImplementClass(Net::Socket, 'SOCK', Posix::PosixSocket);
 #else
 #error "Socket class not implemented on this platform!"
