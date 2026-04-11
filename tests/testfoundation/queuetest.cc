@@ -210,7 +210,7 @@ QueueTest::Run()
             q2.Enqueue(ts1);
             q2.Reserve(q2.Capacity() + 10);
             {
-                char stackbuffer[256];
+                [[maybe_unused]] char stackbuffer[256];
                 TestStruct ts;
                 ts.str = "World";
                 ts.i = 24;
