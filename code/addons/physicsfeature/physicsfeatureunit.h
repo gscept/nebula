@@ -9,6 +9,7 @@
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
+#include "core/cvar.h"
 
 #define TIMESOURCE_PHYSICS 'PHTS'
 
@@ -43,9 +44,13 @@ public:
     virtual void OnDecay();
     /// called when game debug visualization is on
     virtual void OnRenderDebug();
+
 private:
     Util::Dictionary<Game::World*, IndexT> physicsWorlds;
     bool simulating;
+    int debugDrawPhysicsLastValue = 0;
+
+    Core::CVar* cl_debug_draw_physics;
 };
 
 } // namespace PhysicsFeature

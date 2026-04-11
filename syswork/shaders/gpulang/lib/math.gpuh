@@ -1,0 +1,22 @@
+//------------------------------------------------------------------------------
+//  math.fxh
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+makequat(axis : f32x3, sine : f32, cosine: f32) f32x4
+{
+    return f32x4(axis * f32x3(sine, sine, sine), cosine);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+quatrotate(quat : f32x4, position : f32x3) f32x3
+{
+    const temp = cross(quat.xyz, position) + quat.w * position;
+    return position + 2.0f * cross(quat.xyz, temp);
+}

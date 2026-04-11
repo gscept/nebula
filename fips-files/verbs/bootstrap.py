@@ -11,8 +11,8 @@ import subprocess
 def run(fips_dir, proj_dir, args) :
     """run the 'bootstrap' verb"""
 
-    log.info("[BOOTSTRAP]: " + log.BLUE + "-- AnyFX --" + log.DEF)
-    subprocess.call(proj_dir + "/fips anyfx setup force quiet", shell=True)
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- GPULang --" + log.DEF)
+    subprocess.call(proj_dir + "/fips gpulang setup force quiet", shell=True)
 
     # Get config build type
     # cfg = config.load(fips_dir, proj_dir, settings.get(proj_dir, 'config'))
@@ -29,9 +29,6 @@ def run(fips_dir, proj_dir, args) :
     log.info("[BOOTSTRAP]: " + log.BLUE + "-- PhysX --" + log.DEF)
     subprocess.call(proj_dir + '/fips physx build {} debug'.format(version), shell=True)
     subprocess.call(proj_dir + '/fips physx build {} release'.format(version), shell=True)
-
-    log.info("[BOOTSTRAP]: " + log.BLUE + "-- UltraLight --" + log.DEF)
-    subprocess.call(proj_dir + "/fips ultralight", shell=True)
 
     log.info("[BOOTSTRAP]: " + log.BLUE + "-- Python Deps --" + log.DEF)
     log.info(log.YELLOW + "Installing required python dependencies..." + log.DEF)

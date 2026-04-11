@@ -17,6 +17,8 @@ namespace CoreGraphics
 
 ID_24_8_TYPE(FenceId);
 
+static const uint64_t FENCE_WAIT_FOREVER = UINT64_MAX;
+
 struct FenceCreateInfo
 {
     bool createSignaled : 1;
@@ -32,8 +34,8 @@ bool FencePeek(const FenceId id);
 /// reset fence status
 bool FenceReset(const FenceId id);
 /// wait for fence
-bool FenceWait(const FenceId id, const uint64 time);
+bool FenceWait(const FenceId id, const uint64_t time);
 /// wait for fence and reset
-bool FenceWaitAndReset(const FenceId id, const uint64 time);
+bool FenceWaitAndReset(const FenceId id, const uint64_t time);
 
 } // namespace CoreGraphics

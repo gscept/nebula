@@ -34,9 +34,9 @@ public:
 #endif
         Materials::MaterialInstanceId materialInstance;
         CoreGraphics::ResourceTableId table;
-        uint32 offsets[NumMaxOffsets];
-        uint8 numOffsets;
-        uint8 slot;
+        uint32_t offsets[NumMaxOffsets];
+        uint8_t numOffsets;
+        uint8_t slot;
 
         /// Apply the resource table
         void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, IndexT bufferIndex);

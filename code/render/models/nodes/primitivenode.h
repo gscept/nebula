@@ -51,8 +51,8 @@ protected:
 
     struct LoadContext
     {
-        uint16 meshIndex;
-        uint16 primIndex;
+        uint16_t meshIndex;
+        uint16_t primIndex;
     } loadContext;
 
     CoreGraphics::BufferId vbo, ibo;

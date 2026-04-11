@@ -3,8 +3,10 @@
 //  (C) 2010 Radon Labs GmbH
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //-------------------------------------------------------------------------------
+#include "core/config.h"
 #include "foundation/stdneb.h"
 #include "linuxthread.h"
+
 #if !(__OSX__ || __NACL__)
 #include <sched.h>
 #include <sys/prctl.h>
@@ -34,6 +36,7 @@ List<LinuxThread*> LinuxThread::ThreadList;
 /**
 */
 LinuxThread::LinuxThread() :
+    thread(0),
     priority(Normal),
     stackSize(0),
     threadState(Initial)

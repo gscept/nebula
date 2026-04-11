@@ -247,6 +247,7 @@ IO::JsonReader::GetOpt<Gltf::Animation::Sampler::Type>(Gltf::Animation::Sampler:
     }
     return true;
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -269,8 +270,6 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Sampler>>(Util::Array<Gltf::Ani
     } while (this->SetToNextChild());
     this->SetToParent();
 }
-
-
 
 //------------------------------------------------------------------------------
 /**
@@ -357,7 +356,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Buffer>>(Util::Array<Gltf::Buffer>& ite
             this->GetOpt(item.name, "name");
             this->GetOpt(item.mimeType, "mimeType");
             SizeT byteLength = this->GetInt("byteLength");
-            item.data.Reserve(byteLength);
+            item.data.SetSize(byteLength);
             Util::String folder = this->stream->GetURI().AsString().ExtractDirName();
             item.Load(folder);
             ReadExtensionsAndExtras(item, this->curNode);

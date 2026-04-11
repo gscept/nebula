@@ -78,6 +78,7 @@ Application::Open()
                 Core::CVarWriteString(newCVar, value.c_str());
         }
     }
+    
     return true;
 }
 

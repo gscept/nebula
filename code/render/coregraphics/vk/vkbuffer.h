@@ -20,16 +20,16 @@ struct VkBufferLoadInfo
     VkDevice dev;
     CoreGraphics::Alloc mem;
     CoreGraphics::BufferAccessMode mode;
-    uint64 size;
-    uint64 elementSize;
-    uint64 byteSize;
+    uint64_t size;
+    uint64_t elementSize;
+    uint64_t byteSize;
     Ids::Id32 sparseExtension;
 };
 
 struct VkBufferRuntimeInfo
 {
     VkBuffer buf;
-    CoreGraphics::BufferUsageFlags usageFlags;
+    CoreGraphics::BufferUsage usageFlags;
 };
 
 struct VkBufferMapInfo

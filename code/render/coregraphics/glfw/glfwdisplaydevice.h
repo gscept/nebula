@@ -13,8 +13,8 @@
 #include "coregraphics/base/displaydevicebase.h"
 #include "util/array.h"
 #include "threading/thread.h"
-#include "input/glfw/glfwinputdisplayeventhandler.h"
-#include "graphics/glfw/glfwgraphicsdisplayeventhandler.h"
+#include "input/inputdisplayeventhandler.h"
+#include "graphics/graphicsdisplayeventhandler.h"
 
 namespace GLFW
 {
@@ -46,12 +46,15 @@ public:
     /// get general info about display adapter
     CoreGraphics::AdapterInfo GetAdapterInfo(CoreGraphics::Adapter::Code adapter);
 
+    /// Get list of monitors
+    Util::FixedArray<CoreGraphics::Monitor> GetMonitors();
+
     /// translate glfw keycodes to nebula ones
     static Input::Key::Code TranslateKeyCode(int inkey);
 
 protected:
-    Ptr<GLFWInputDisplayEventHandler> inputEventHandler;
-    Ptr<GLFWGraphicsDisplayEventHandler> graphicsEventHandler;
+    Ptr<Input::InputDisplayEventHandler> inputEventHandler;
+    Ptr<Graphics::GraphicsDisplayEventHandler> graphicsEventHandler;
     friend class GLFWWindow;
 
     friend class OGL4RenderDevice;
@@ -66,8 +69,9 @@ protected:
     friend void CloseFunc(const CoreGraphics::WindowId& id);
     friend void FocusFunc(const CoreGraphics::WindowId& id, int focus);
     friend void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
+    friend void MoveFunc(const CoreGraphics::WindowId& id, int x, int y);
     friend void CoreGraphics::WindowNewFrame(const CoreGraphics::WindowId id);
-    friend const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
+    friend const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info);
 
     /// retrieve monitor from adapter. can be NULL
     GLFWmonitor* GetMonitor(int index);

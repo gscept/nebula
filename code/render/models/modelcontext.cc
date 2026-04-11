@@ -11,11 +11,12 @@
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
 #include "graphics/cameracontext.h"
+#include "graphics/view.h"
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
 
-#include "system_shaders/objects_shared.h"
-#include "system_shaders/particle.h"
+#include "gpulang/render/system_shaders/objects_shared.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -80,9 +81,14 @@ ModelContext::Create()
 /**
 */
 void
-ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
+ModelContext::Setup(
+    const Graphics::GraphicsEntityId gfxId,
+    const Resources::ResourceName& name,
+    const Util::StringAtom& tag, std::function<void()> finishedCallback,
+    const Graphics::StageMask stageMask
+)
 {
-    auto successCallback = [gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [gfxId, finishedCallback, stageMask](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
@@ -91,7 +97,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         // Run through nodes and collect transform and renderable nodes
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
         NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
-        Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+        Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+        modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+
         Util::Array<Models::ModelNode*> transformNodes;
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
@@ -115,8 +123,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         // Setup transforms
         transformRange.allocation = TransformInstanceAllocator.Alloc(transformNodes.Size());
-        transformRange.begin = transformRange.allocation.offset;
-        transformRange.end = transformRange.allocation.offset + transformNodes.Size();
+        transformRange.begin = (SizeT)transformRange.allocation.offset;
+        transformRange.end = (SizeT)transformRange.allocation.offset + transformNodes.Size();
         if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
         {
             NodeInstances.transformable.nodeParents.Extend(transformRange.end);
@@ -126,7 +134,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         for (SizeT i = 0; i < transformNodes.Size(); i++)
         {
-            const uint index = transformRange.allocation.offset + i;
+            const uint index = (uint)transformRange.allocation.offset + i;
             Models::TransformNode* tNode = reinterpret_cast<Models::TransformNode*>(transformNodes[i]);
             Math::transform44 trans;
             trans.setposition(tNode->position);
@@ -147,8 +155,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         // Setup node states
         stateRange.allocation = RenderInstanceAllocator.Alloc(renderNodes.Size());
-        stateRange.begin = stateRange.allocation.offset;
-        stateRange.end = stateRange.allocation.offset + renderNodes.Size();
+        stateRange.begin = (uint)stateRange.allocation.offset;
+        stateRange.end = (uint)stateRange.allocation.offset + renderNodes.Size();
 
         if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
         {
@@ -166,6 +174,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodes.Extend(stateRange.end);
             NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
             NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroupIndex.Extend(stateRange.end);
             NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
             NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
@@ -185,10 +194,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
             if (sNode->GetType() == Models::ParticleSystemNodeType)
             {
-                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock_SLOT;
-                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock_SLOT;
-                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock_SLOT;
-                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT;
+                state.instancingConstantsIndex = ::Particle::Instances::BINDING;
+                state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
+                state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
+                state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
 
                 state.resourceTableOffsets.Resize(4);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -199,9 +208,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             else
             {
-                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
-                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
-                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
+                state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
+                state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
+                state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
                 state.particleConstantsIndex = InvalidIndex;
 
                 state.resourceTableOffsets.Resize(3);
@@ -209,7 +218,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
                 state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
                 state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
             }
-            uint index = stateRange.allocation.offset + i;
+            uint index = (uint)stateRange.allocation.offset + i;
 
             NodeInstances.renderable.nodeStates[index] = state;
             NodeInstances.renderable.nodeTransformIndex[index] = nodeLookup[renderNodes[i]];
@@ -225,6 +234,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodes[index] = sNode;
             NodeInstances.renderable.nodeMeshes[index] = sNode->GetMesh();
             NodeInstances.renderable.nodePrimitiveGroup[index] = sNode->GetPrimitiveGroup();
+            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = sNode->GetPrimitiveGroupIndex();
             NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
 
             modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(sNode->GetName(), i);
@@ -233,7 +243,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             auto sortCode = MaterialGetSortCode(sNode->material);
             assert(sortCode < 0xFFF0000000000000);
             //assert(sNode->HashCode() < 0x000FFFFF00000000);
-            uint64 sortId = ((uint64)sortCode << 52) | ((uint64)sNode->HashCode() << 32);
+            uint64_t sortId = ((uint64_t)sortCode << 52) | ((uint64_t)sNode->HashCode() << 32);
             NodeInstances.renderable.nodeSortId[index] = sortId;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -262,36 +272,51 @@ ModelContext::Setup(
     , const Materials::MaterialId material
     , const CoreGraphics::MeshId mesh
     , const IndexT primitiveGroup
+    , const Graphics::StageMask stageMask
 #if NEBULA_GRAPHICS_DEBUG
     , const Util::String debugName
 #endif
 )
 {
     const ContextEntityId cid = GetContextId(id);
-    Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
     // Setup transforms
-    transformRange.allocation = TransformInstanceAllocator.Alloc(1);
-    transformRange.begin = transformRange.allocation.offset;
-    transformRange.end = transformRange.allocation.offset + 1;
+    transformRange.allocation = TransformInstanceAllocator.Alloc(groups.Size());
+    transformRange.begin = (uint)transformRange.allocation.offset;
+    transformRange.end = (uint)transformRange.allocation.offset + groups.Size();
 
-    NodeInstances.transformable.origTransforms.Append(Math::mat4());
-    NodeInstances.transformable.nodeTransforms.Append(transform);
-    NodeInstances.transformable.nodeParents.Append(UINT32_MAX);
-    roots.Append(0);
+    if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
+    {
+        NodeInstances.transformable.nodeParents.Extend(transformRange.end);
+        NodeInstances.transformable.origTransforms.Extend(transformRange.end);
+        NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
+    }
+
+    for (SizeT i = 0; i < groups.Size(); i++)
+    {
+        const uint index = (uint)transformRange.allocation.offset + i;
+
+        NodeInstances.transformable.origTransforms[index] = Math::mat4();
+        NodeInstances.transformable.nodeTransforms[index] = transform;
+        NodeInstances.transformable.nodeParents[index] = UINT32_MAX;
+        roots.Append(i);
+    }
+
 
      // Setup node states
-    stateRange.allocation = RenderInstanceAllocator.Alloc(1);
-    stateRange.begin = stateRange.allocation.offset;
-    stateRange.end = stateRange.allocation.offset + 1;
+    stateRange.allocation = RenderInstanceAllocator.Alloc(groups.Size());
+    stateRange.begin = (uint)stateRange.allocation.offset;
+    stateRange.end = (uint)stateRange.allocation.offset + groups.Size();
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);
-    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
-    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
-    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
+    state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
+    state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
+    state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
     state.particleConstantsIndex = InvalidIndex;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
@@ -300,33 +325,66 @@ ModelContext::Setup(
     state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
     state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
 
-    NodeInstances.renderable.nodeStates.Append(state);
-    NodeInstances.renderable.nodeTransformIndex.Append(0);
-    NodeInstances.renderable.nodeBoundingBoxes.Append(Math::bbox());
-    NodeInstances.renderable.origBoundingBoxes.Append(boundingBox);
-    NodeInstances.renderable.nodeLodDistances.Append(Util::MakeTuple(FLT_MAX, FLT_MAX));
-    NodeInstances.renderable.nodeLods.Append(0.0f);
-    NodeInstances.renderable.textureLods.Append(1.0f);
-    NodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
-    NodeInstances.renderable.nodeMaterials.Append(material);
-    NodeInstances.renderable.nodeMaterialTemplates.Append(MaterialGetTemplate(material));
-    NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
-    NodeInstances.renderable.nodes.Append(nullptr);
-    NodeInstances.renderable.nodeMeshes.Append(mesh);
-    NodeInstances.renderable.nodePrimitiveGroup.Append(MeshGetPrimitiveGroup(mesh, primitiveGroup));
-    NodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
-
-    modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
+    if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
+    {
+        NodeInstances.renderable.nodeStates.Extend(stateRange.end);
+        NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
+        NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
+        NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
+        NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
+        NodeInstances.renderable.nodeLods.Extend(stateRange.end);
+        NodeInstances.renderable.textureLods.Extend(stateRange.end);
+        NodeInstances.renderable.nodeFlags.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMaterials.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMaterialTemplates.Extend(stateRange.end);
+        NodeInstances.renderable.nodeTypes.Extend(stateRange.end);
+        NodeInstances.renderable.nodes.Extend(stateRange.end);
+        NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
+        NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+        NodeInstances.renderable.nodePrimitiveGroupIndex.Extend(stateRange.end);
+        NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
+        NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
 #if NEBULA_GRAPHICS_DEBUG
-    NodeInstances.renderable.nodeNames.Append(debugName);
+        NodeInstances.renderable.nodeNames.Extend(stateRange.end);
+#endif
+    }
+    for (SizeT i = 0; i < groups.Size(); i++)
+    {
+        uint index = (uint)stateRange.allocation.offset + i;
+        
+        NodeInstances.renderable.nodeStates[index] = state;
+        NodeInstances.renderable.nodeTransformIndex[index] = i;
+        NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
+        NodeInstances.renderable.origBoundingBoxes[index] = boundingBox;
+        NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
+        NodeInstances.renderable.nodeLods[index] = 0.0f;
+        NodeInstances.renderable.textureLods[index] = 1.0f;
+        NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
+        NodeInstances.renderable.nodeMaterials[index] = material;
+        NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+        NodeInstances.renderable.nodeTypes[index] = Models::PrimitiveNodeType;
+        NodeInstances.renderable.nodes[index] = nullptr;
+        NodeInstances.renderable.nodeMeshes[index] = mesh;
+        NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(mesh, i);
+        NodeInstances.renderable.nodePrimitiveGroupIndex[index] = i;
+        NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
+        modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, i);
+
+#if NEBULA_GRAPHICS_DEBUG
+        NodeInstances.renderable.nodeNames[index] = debugName;
 #endif
 
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-    auto sortCode = Materials::MaterialGetSortCode(material);
-    assert(sortCode < 0xFFF0000000000000);
-    uint64 sortId = ((uint64)sortCode << 52);
-    NodeInstances.renderable.nodeSortId.Append(sortId);
+        auto sortCode = Materials::MaterialGetSortCode(material);
+        assert(sortCode < 0xFFF0000000000000);
+        uint64_t sortId = ((uint64_t)sortCode << 52);
+        NodeInstances.renderable.nodeSortId[index] = sortId;
+    }
+
+
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+
 }
 
 //------------------------------------------------------------------------------
@@ -354,6 +412,28 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 
     Resources::ResourceId model = Resources::CreateResource(name, tag, successCallback, successCallback, true);
     modelContextAllocator.Set<Model_Id>(cid.id, model);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    uint index = (uint)stateRange.allocation.offset;
+
+    DestroyMaterialInstance(NodeInstances.renderable.nodeStates[index].materialInstance);
+    NodeInstances.renderable.nodeStates[index].materialInstance = CreateMaterialInstance(material);
+    NodeInstances.renderable.nodeMaterials[index] = material;
+    NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+
+    auto sortCode = Materials::MaterialGetSortCode(material);
+    assert(sortCode < 0xFFF0000000000000);
+    uint64_t sortId = ((uint64_t)sortCode << 52);
+    NodeInstances.renderable.nodeSortId[index] = sortId;
 }
 
 //------------------------------------------------------------------------------
@@ -436,6 +516,16 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ModelContext::SetStageMask(const Graphics::GraphicsEntityId id, const Graphics::StageMask stageMask)
+{
+    const ContextEntityId cid = GetContextId(id);
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT
 ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
 {
@@ -450,7 +540,7 @@ ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::Stri
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     // This is a bit hacky, but we really need to only do this once per node and batch.
     // What we do is that we get the batch index from the batch lookup map, and the variable indexes
@@ -480,7 +570,7 @@ ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, 
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     return SetupMaterialInstanceContext(id, 0, batch);
 }
@@ -528,6 +618,16 @@ ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::StageMask
+ModelContext::GetModelStageMask(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return modelContextAllocator.Get<Model_StageMask>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -609,14 +709,31 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     N_SCOPE(UpdateTransforms, Models);
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
-    const Util::Array<Util::Array<uint32>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
+    const Util::Array<Util::Array<uint32_t>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
+    const Util::Array<Graphics::StageMask>& modelStageMasks = modelContextAllocator.GetArray<Model_StageMask>();
     Util::Array<Math::bbox>& instanceBoxes = NodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
 
+    static Util::Array<CameraSettings> lodCameraSettings;
+    static Util::Array<Math::mat4> lodCameraViewTransforms;
+    static Util::Array<Graphics::StageMask> lodCameraStageMasks;
+    const Util::Array<Graphics::GraphicsEntityId>& lodCameras = Graphics::CameraContext::GetLODCameras();
+    lodCameraSettings.Clear();
+    lodCameraSettings.Reserve(lodCameras.Size());
+    lodCameraViewTransforms.Clear();
+    lodCameraViewTransforms.Reserve(lodCameras.Size());
+    lodCameraStageMasks.Clear();
+    lodCameraStageMasks.Reserve(lodCameras.Size());
+    for (auto& cam : lodCameras)
+    {
+        lodCameraSettings.Append(Graphics::CameraContext::GetSettings(cam));
+        lodCameraViewTransforms.Append(Graphics::CameraContext::GetView(cam));
+        lodCameraStageMasks.Append(Graphics::CameraContext::GetStageMask(cam));
+    }
+
     // get the lod camera
-    Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
-    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCamera);
+    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCameras[0]);
 
     n_assert(TransformsUpdateCounter == 0);
     TransformsUpdateCounter = 1;
@@ -638,7 +755,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 return;
 
             const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
-            const Util::Array<uint32>& roots = nodeInstanceRoots[index];
+            const Util::Array<uint32_t>& roots = nodeInstanceRoots[index];
             if (hasPending[index])
             {
                 // The pending transform is the root of the model
@@ -653,7 +770,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // Update transforms
                 for (j = transformRange.begin + 1; j < transformRange.end; j++)
                 {
-                    uint32 parent = NodeInstances.transformable.nodeParents[j];
+                    uint32_t parent = NodeInstances.transformable.nodeParents[j];
                     n_assert(parent != UINT32_MAX);
                     Math::mat4 parentTransform = NodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
                     Math::mat4 orig = NodeInstances.transformable.origTransforms[j];
@@ -672,7 +789,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
             , instanceBoxes = instanceBoxes.Begin()
+            , stageMasks = modelStageMasks.Begin()
             , cameraTransform
+            , cameraSettings = lodCameraSettings.Begin()
+            , viewTransforms = lodCameraViewTransforms.Begin()
+            , cameraStageMasks = lodCameraStageMasks.Begin()
+            , numCameras = lodCameraSettings.Size()
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
@@ -685,31 +807,58 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
             const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
             const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+            const Graphics::StageMask stageMask = stageMasks[index];
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
                 Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
                 Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
+                float radius = box.diagonal_size() / 2;
                 box.affine_transform(transform);
                 instanceBoxes[j] = box;
 
-                Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
-                NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
-                NodeInstances.renderable.nodePrimitiveGroup[j] = primitiveNode->GetPrimitiveGroup();
+                Math::point center = box.center();
 
-                // calculate view vector to calculate LOD
-                Math::vec4 viewVector = cameraTransform.position - transform.position;
-                float viewDistance = length(viewVector);
-                float textureLod = Math::max(0.0f, (viewDistance - 10.0f) / 30.5f);
+                float lodScale = FLT_MAX;
+                for (IndexT camIndex = 0; camIndex < numCameras; camIndex++)
+                {
+                    // Skip cameras not in this stage
+                    if ((stageMask & cameraStageMasks[camIndex]) == 0)
+                        continue;
 
-                if (textureLod < NodeInstances.renderable.textureLods[j])
+                    const Math::mat4& view = viewTransforms[camIndex];
+                    const CameraSettings& settings = cameraSettings[camIndex];
+
+                    // https://iquilezles.org/articles/sphereproj/
+                    Math::vec4 centerInViewSpace = view * center;
+                    float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
+                    float r2 = radius * radius;
+
+                    float denom = l2 - r2;
+                    float projectedArea = 0.0f;
+                    if (denom <= 0.0f)
+                        projectedArea = 2.0f; // (viewportWidth * viewportHeight);
+                    else
+                    {
+                        float f_x = settings.GetFov() * (settings.GetFarHeight() * 0.5f);
+                        projectedArea = PI * r2 * f_x * f_x / denom;
+                        projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * settings.GetFarHeight()));
+                    }
+
+                    lodScale = Math::min(lodScale, log2(2.0f / projectedArea));
+                }
+
+                float textureLod = lodScale;
+                if (lodScale < NodeInstances.renderable.textureLods[j])
                 {
                     // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                    Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], textureLod);
-                    NodeInstances.renderable.textureLods[j] = textureLod;
+                    Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], lodScale);
+                    NodeInstances.renderable.textureLods[j] = lodScale;
                 }
 
                 Models::NodeInstanceFlags nodeFlag = NodeInstances.renderable.nodeFlags[j];
+                Math::vec4 viewVector = cameraTransform.position - transform.position;
+                float viewDistance = length(viewVector);
 
                 // Calculate if object should be culled due to LOD
                 const auto& [min, max] = NodeInstances.renderable.nodeLodDistances[j];
@@ -741,16 +890,14 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
     // Create a set of default joints
     static Util::FixedArray<Math::mat4> defaultJoints(256);
-    ObjectsShared::JointBlock joints;
-    memcpy(joints.JointPalette, defaultJoints.Begin(), sizeof(ObjectsShared::JointBlock::JointPalette));
-    uint defaultJointsOffset = CoreGraphics::SetConstants(joints);
+    ObjectsShared::JointPalette::STRUCT joints;
+    memcpy(&joints, defaultJoints.Begin(), sizeof(ObjectsShared::JointPalette::STRUCT));
+    uint defaultJointsOffset = CoreGraphics::SetConstants(joints, CoreGraphics::GraphicsQueueType);
 
     Jobs2::JobDispatch(
         [
             nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
-            , cameraTransform
-            , defaultJointsOffset
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
@@ -770,13 +917,13 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                                            .nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
 
                 // Allocate object constants
-                ObjectsShared::ObjectBlock block;
-                transform.store(block.Model);
-                inverse(transform).store(block.InvModel);
+                ObjectsShared::ObjectUniforms::STRUCT block;
+                transform.store(&block.Model[0][0]);
+                inverse(transform).store(&block.InvModel[0][0]);
                 block.DitherFactor = NodeInstances.renderable.nodeLods[j];
                 block.ObjectId = j;
 
-                uint offset = CoreGraphics::SetConstants(block);
+                uint offset = CoreGraphics::SetConstants(block, CoreGraphics::GraphicsQueueType);
                 NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
 
                 /*

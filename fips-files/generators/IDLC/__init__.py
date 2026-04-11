@@ -52,12 +52,15 @@ class IDLCodeGenerator:
         IDLComponent.ParseComponents(self.document)
 
         IDLDocument.AddInclude(f, "core/types.h")
+        IDLDocument.AddInclude(f, "util/array.h")
         if (IDLComponent.ContainsResourceTypes()):
             IDLDocument.AddInclude(f, "resources/resource.h")
         if (IDLComponent.ContainsEntityTypes()):
             IDLDocument.AddInclude(f, "game/entity.h")
         if (IDLComponent.ContainsColor()):
             IDLDocument.AddInclude(f, "util/color.h")
+        if (IDLComponent.ContainsBitfieldTypes()):
+            IDLDocument.AddInclude(f, "util/bitfield.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
@@ -66,11 +69,16 @@ class IDLCodeGenerator:
         hasMessages = "messages" in self.document
         hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
+        hasStructs = "structs" in self.document
+
         if hasComponents or hasMessages or hasEnums:
             IDLDocument.BeginNamespace(f, self.document)
             
             if hasEnums:
                 IDLComponent.WriteEnumeratedCppTypes(f, self.document)
+
+            if hasStructs:
+                IDLComponent.WriteStructCppTypes(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
@@ -110,6 +118,8 @@ class IDLCodeGenerator:
 
         hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
+        hasStructs = "structs" in self.document
+
 
         if hasEnums or hasComponents:
             IDLDocument.AddInclude(f, "pjson/pjson.h");
@@ -120,15 +130,6 @@ class IDLCodeGenerator:
                 IDLComponent.WriteStructJsonSerializers(f, self.document);
                 
             IDLDocument.EndNamespaceOverride(f, self.document, "IO")
-
-        if hasMessages:
-            IDLDocument.AddInclude(f, "nanobind/nanobind.h")
-            IDLDocument.BeginNamespace(f, self.document)
-
-            if hasMessages:
-                IDLProtocol.WriteMessageImplementation(f, self.document)
-
-            IDLDocument.EndNamespace(f, self.document)
 
         f.Close()
 
@@ -150,12 +151,16 @@ class IDLCodeGenerator:
 
         hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
+        hasStructs = "structs" in self.document
 
         if hasEnums or hasComponents:
             IDLDocument.BeginNamespace(f, self.document)
 
             if hasEnums:
                 IDLComponent.WriteEnumeratedCsTypes(f, self.document)
+
+            if hasStructs:
+                IDLComponent.WriteStructCsTypes(f, self.document)
 
             if hasComponents:
                 IDLComponent.WriteComponentCsDeclarations(f, self.document)

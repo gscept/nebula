@@ -1,0 +1,36 @@
+//------------------------------------------------------------------------------
+//  objects_shared.gpuh
+//  (C) 2025 gscept
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+
+struct Object
+{
+    Model : f32x4x4;
+	InvModel : f32x4x4;
+	ObjectId : i32;
+	DitherFactor : f32;
+};
+
+// contains variables which are guaranteed to be unique per object.
+group(DYNAMIC_OFFSET_GROUP) uniform ObjectUniforms : *Object;
+
+// Instancing data is a buffer of 256 transforms
+const MAX_INSTANCING_BATCH_SIZE : i32 = 256;
+struct InstanceGroupData
+{
+    ModelArray : [MAX_INSTANCING_BATCH_SIZE]f32x4x4;
+    ModelViewArray : [MAX_INSTANCING_BATCH_SIZE]f32x4x4;
+    ModelViewProjectionArray : [MAX_INSTANCING_BATCH_SIZE]f32x4x4;
+    IdArray : [MAX_INSTANCING_BATCH_SIZE]i32;
+};
+
+group(DYNAMIC_OFFSET_GROUP) uniform Instances : *mutable InstanceGroupData;
+
+// Joints are limited to 256 matrices
+struct JointData
+{
+    Transform : [256]f32x4x4;
+};
+group(DYNAMIC_OFFSET_GROUP) uniform JointPalette : *JointData;

@@ -18,7 +18,7 @@
 #define NEBULA_ALL_LAYERS (-1)
 namespace CoreGraphics
 {
-typedef uint64 ConstantBufferOffset;
+typedef uint64_t ConstantBufferOffset;
 
 union InputAssemblyKey
 {
@@ -145,6 +145,7 @@ ShaderVisibilityFromString(const Util::String& str)
 
     return ret;
 }
+
 
 //------------------------------------------------------------------------------
 /**
@@ -304,6 +305,8 @@ PipelineStageWrites(const PipelineStage stage)
         case PipelineStage::MemoryWrite:
         case PipelineStage::TransferWrite:
             return true;
+        default:
+            return false;
     }
     return false;
 }
@@ -334,10 +337,13 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::GraphicsQueueType:
                 return sourceStage;
             case CoreGraphics::QueueType::ComputeQueueType:
-                return PipelineStage::ComputeShaderRead;
+                return PipelineStage::ComputeShaderWrite;
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
-                return PipelineStage::TransferRead;
+                return PipelineStage::TransferWrite;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
     case PipelineStage::ColorRead:
     case PipelineStage::DepthStencilRead:
@@ -357,6 +363,9 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
                 return PipelineStage::TransferRead;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
     case PipelineStage::AccelerationStructureRead:
     case PipelineStage::AccelerationStructureWrite:
@@ -368,7 +377,12 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
                 return PipelineStage::TransferRead;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
+    default:
+        return sourceStage;
     }
 
     return sourceStage;

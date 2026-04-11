@@ -27,15 +27,15 @@ struct TileCacheEntry
 {
     struct Entry
     {
-        uint64 tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
-        uint64 tileX : 11;                // must hold at least SubTextureMaxTiles
-        uint64 tileY : 11;                // same as above
-        uint64 subTextureIndex : 32;      // the index of the subtexture
+        uint64_t tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
+        uint64_t tileX : 11;                // must hold at least SubTextureMaxTiles
+        uint64_t tileY : 11;                // same as above
+        uint64_t subTextureIndex : 32;      // the index of the subtexture
     };
     union
     {
         Entry entry;
-        uint64 hash;
+        uint64_t hash;
     };
 
     bool operator>(const TileCacheEntry& rhs) const
@@ -79,6 +79,8 @@ public:
     CacheResult Cache(TileCacheEntry entry);
     /// clear cache
     void Clear();
+    /// Reset the cache without freeing memory
+    void Reset();
 private:
     struct Node
     {
@@ -217,8 +219,59 @@ TextureTileCache::Clear()
     }
     this->head = nullptr;
     this->tail = nullptr;
+
+    // setup storage
+    for (uint x = 0; x < this->tiles; x++)
+    {
+        for (uint y = 0; y < this->tiles; y++)
+        {
+            // calculate node index 2D->1D
+            uint index = x + y * this->tiles;
+
+            // set the data, this will be static
+            Node* node = &this->nodes[index];
+            node->offset = Math::uint2{ x * this->tileSize, y * this->tileSize };
+            node->entry = InvalidTileCacheEntry;
+            node->prev = nullptr;
+            node->next = nullptr;
+
+            // Add to linked list
+            this->InsertBeginning(node);
+        }
+    }
+
     this->nodes.Clear();
     this->lookup.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TextureTileCache::Reset()
+{
+    // setup storage
+    this->head = nullptr;
+    this->tail = nullptr;
+    this->lookup.Clear();
+    for (uint x = 0; x < this->tiles; x++)
+    {
+        for (uint y = 0; y < this->tiles; y++)
+        {
+            // calculate node index 2D->1D
+            uint index = x + y * this->tiles;
+
+            // set the data, this will be static
+            Node* node = &this->nodes[index];
+            node->offset = Math::uint2{ x * tileSize, y * tileSize };
+            node->entry = InvalidTileCacheEntry;
+            node->prev = nullptr;
+            node->next = nullptr;
+
+            // Add to linked list
+            this->InsertBeginning(node);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

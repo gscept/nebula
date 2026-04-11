@@ -1,0 +1,10 @@
+{
+	"project_root": "H:/nebula/nebula",
+	"include_directories": [
+		"syswork/shaders/gpulang",
+		"../fips-build/nebula-demo/win64-vstudio-checked/material_templates/render/materials/gpulang"
+	],
+	"flags": [
+		"SPIRV"
+	]
+}

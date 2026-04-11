@@ -10,7 +10,6 @@
 #include "editor/ui/window.h"
 #include "editor/ui/modules/viewport.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "coregraphics/meshresource.h"
 #include "characters/skeletonresource.h"
 #include "dynui/imguicontext.h"
@@ -32,6 +31,7 @@ public:
         Model,
         Animation,
         Texture,
+        Particle,
 
         NumAssetTypes
     };
@@ -39,6 +39,9 @@ public:
     ~AssetEditor();
 
     void Run(SaveMode save) override;
+    void Update() override;
+
+    Modules::Viewport viewport;
 
     // Select material for previewing
     void Open(const Resources::ResourceName& asset, const AssetType type);
@@ -72,6 +75,8 @@ struct AssetEditorItem
     } asset;
     Resources::ResourceId res;
     Resources::ResourceName name;
+    Graphics::GraphicsEntityId previewObject;
+
 
     Memory::ArenaAllocator<2048> allocator;
     void* data; // use for editor specific data

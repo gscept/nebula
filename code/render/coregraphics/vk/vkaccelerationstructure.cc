@@ -160,7 +160,7 @@ CreateBlas(const BlasCreateInfo& info)
         .pNext = nullptr,
         .vertexFormat = positionsFormat,
         .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + info.vertexOffset},
-        .vertexStride = (uint64)info.stride,
+        .vertexStride = (uint64_t)info.stride,
         .maxVertex = info.indexType == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
         .indexType = info.indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
         .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + info.indexOffset},
@@ -211,7 +211,7 @@ CreateBlas(const BlasCreateInfo& info)
     CoreGraphics::BufferCreateInfo bufferInfo;
     bufferInfo.byteSize = setup.buildSizes.accelerationStructureSize;
     bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureData;
+    bufferInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::AccelerationStructureData;
     bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 
     // Create main buffer
@@ -219,7 +219,7 @@ CreateBlas(const BlasCreateInfo& info)
     blasAllocator.Set<Blas_Buffer>(id, blasBuf);
 
     // Create scratch buffer
-    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
+    bufferInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::AccelerationStructureScratch;
     bufferInfo.byteSize = setup.buildSizes.buildScratchSize;
     CoreGraphics::BufferId scratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
     blasAllocator.Set<Blas_Scratch>(id, scratchBuf);
@@ -323,7 +323,7 @@ DestroyBlasInstance(const BlasInstanceId id)
 /**
 */
 void
-BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset)
+BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, size_t offset)
 {
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     Math::mat4 trans = Math::transpose(transform);
@@ -337,7 +337,7 @@ BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGra
 /**
 */
 void
-BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset)
+BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, size_t offset)
 {
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
@@ -438,7 +438,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.accelerationStructureSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureData;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::AccelerationStructureData;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 
         // Create main buffer
@@ -451,7 +451,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.buildScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::AccelerationStructureScratch;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         buildScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_BuildScratch>(id, buildScratchBuf);
@@ -471,7 +471,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.updateScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::AccelerationStructureScratch;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         updateScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_UpdateScratch>(id, updateScratchBuf);

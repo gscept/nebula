@@ -7,6 +7,7 @@
 #include "dynui/imguicontext.h"
 
 #include "coregraphics/texture.h"
+#include "graphics/view.h"
 namespace Presentation
 {
 __ImplementClass(Presentation::ResourceBrowser, 'RsBw', Presentation::BaseWindow);
@@ -42,15 +43,16 @@ ResourceBrowser::Run(SaveMode save)
         static int current = -1;
         if (ImGui::BeginChild("List", ImVec2{ 0, 0 }, false, ImGuiWindowFlags_NoScrollbar))
         {
-            ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+            ImGui::PushFont(Dynui::ImguiBoldFont);
             ImGui::Text("Textures");
             ImGui::PopFont();
-            if (ImGui::BeginTable("Textures###Table", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY))
+            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp))
             {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Dimensions");
                 ImGui::TableSetupColumn("Format");
                 ImGui::TableSetupColumn("Size");
+                ImGui::TableSetupColumn("Samples");
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableHeadersRow();
 
@@ -80,12 +82,15 @@ ResourceBrowser::Run(SaveMode save)
                         ImGui::Text(Util::Format("%.2f KB", byteSize / float(1_KB)).AsCharPtr());
                     else
                         ImGui::Text(Util::Format("%.2f B", float(byteSize)).AsCharPtr());
+
+                    ImGui::TableNextColumn();
+                    ImGui::Text(Util::Format("%d", CoreGraphics::TextureGetNumSamples(tex)).AsCharPtr());
                     counter++;
                 }
                 ImGui::EndTable();
             }
+            ImGui::EndChild();
         }
-        ImGui::EndChild();
         ImGui::TableNextColumn();
 
         if (current != -1)
@@ -93,16 +98,44 @@ ResourceBrowser::Run(SaveMode save)
             CoreGraphics::TextureIdLock _0(CoreGraphics::TrackedTextures[current]);
             selectedTex.nebulaHandle = CoreGraphics::TrackedTextures[current];
             CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(CoreGraphics::TrackedTextures[current]);
+            CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
             float ratio = dims.height / float(dims.width);
             ImVec2 remainder = ImGui::GetContentRegionAvail();
+
+            const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetView("mainview");
+            Math::rectangle<int> viewport = ViewGetViewport(view);
+            float scaleX = float(viewport.width()) / dims.width;
+            float scaleY = float(viewport.height()) / dims.height;
             static int mip = 0, layer = 0;
             static bool alpha = false;
             static bool range = false;
             static bool red = true, green = true, blue = true, a = true;
             static float minRange = 0, maxRange = 1;
+            static bool overlay = false;
+            static float relativeWidth = 1.0f, relativeHeight = 1.0f;
+
             if (ImGui::BeginChild("Preview", ImVec2{ 0, 0 }))
             {
+                ImGui::Checkbox("Overlay viewport", &overlay);
+                if (overlay)
+                {
+                    static bool relativeSize = false;
+                    ImGui::Checkbox("Relative size", &relativeSize);
+                    if (relativeSize)
+                    {
+                        ImGui::DragFloat("Viewport Width Factor", &relativeWidth, 0.1f, 0.0f, 1.0f, "%.2f");
+                        ImGui::DragFloat("Viewport Height Factor", &relativeHeight, 0.1f, 0.0f, 1.0f, "%.2f");
+                    }
+                }
                 ImGui::Image(&selectedTex, ImVec2{ (float)remainder.x, (float)remainder.x * ratio });
+                if (overlay)
+                {
+                    ImVec2 min = ImGui::GetItemRectMin();
+                    ImVec2 max = ImGui::GetItemRectMax();
+
+                    ImDrawList* drawList = ImGui::GetWindowDrawList();
+                    drawList->AddRect(min, ImVec2{ min.x + (max.x - min.x) * scaleX * relativeWidth, min.y + (max.y - min.y) * scaleY * relativeHeight }, ImGui::GetColorU32(ImVec4{ 1, 0, 0, 1 }));
+                }
                 ImGui::InputInt("Mip", &mip);
                 ImGui::InputInt("Layer", &layer);
                 
@@ -128,8 +161,8 @@ ResourceBrowser::Run(SaveMode save)
                 }
                 mip = Math::min(Math::max(0, mip), CoreGraphics::TextureGetNumMips(CoreGraphics::TrackedTextures[current]) - 1);
                 layer = Math::min(Math::max(0, layer), CoreGraphics::TextureGetNumLayers(CoreGraphics::TrackedTextures[current]) - 1);
-                ImGui::EndChild();
             }
+            ImGui::EndChild();
 
             selectedTex.layer = layer;
             selectedTex.mip = mip;

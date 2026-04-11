@@ -29,6 +29,7 @@ fips_dir(.)
 
 fips_dir(render)
     nebula_framescript_add(editorframe.json) 
+	nebula_framescript_add(preview.json) 
     fips_files(
         pickingcontext.h
         pickingcontext.cc
@@ -84,6 +85,8 @@ fips_dir(editor)
                 environment.h
                 console.cc
                 console.h
+				createobjectwindow.cc
+				createobjectwindow.h
                 scriptedwindow.cc
                 scriptedwindow.h
                 scene.cc
@@ -94,6 +97,8 @@ fips_dir(editor)
                 outline.h
                 physics.cc
                 physics.h
+                navigation.cc
+                navigation.h
                 profiler.cc
                 profiler.h
                 resourcebrowser.cc
@@ -107,6 +112,12 @@ fips_dir(editor)
                 inspector.cc
                 inspector.h
             )
+        fips_dir(editor/ui/windows/terraineditor)
+            compile_gpulang(terrainbrush.gpul)
+            fips_files(
+                terraineditor.cc
+                terraineditor.h
+            )
         fips_dir(editor/ui/windows/asseteditor)
             fips_files(
                 animationasseteditor.cc
@@ -119,6 +130,8 @@ fips_dir(editor)
                 meshasseteditor.h
                 modelasseteditor.cc
                 modelasseteditor.h
+                particleasseteditor.cc
+                particleasseteditor.h
                 skeletonasseteditor.cc
                 skeletonasseteditor.h
                 textureasseteditor.cc
@@ -133,6 +146,8 @@ fips_dir(editor)
         fips_files(
             camera.cc
             camera.h
+			livebatcher.cc
+			livebatcher.h
             toolinterface.h
             toolinterface.cc
             selectioncontext.h
@@ -148,5 +163,5 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common)
+fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkit-common toolkitutil)
 nebula_end_module()

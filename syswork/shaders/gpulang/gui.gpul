@@ -1,0 +1,89 @@
+//------------------------------------------------------------------------------
+//  gui.gpul
+//
+//  Basic GUI shader for use with LibRocket
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+
+struct GUIData
+{
+    Texture : u32;
+    Transform : f32x4x4;
+};
+group(BATCH_GROUP) inline GUI : *GUIData;
+
+sampler_state TextureSampler
+{
+    //Samplers = { Texture };
+};
+
+render_state DefaultGUIState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    Cull = CullFace.Back;
+    DepthTestEnabled = false;
+};
+
+render_state ScissorGUIState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    Cull = CullFace.Back;
+    ScissorEnabled = true;
+    DepthTestEnabled = false;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x2,
+    binding(1) in color : f32x4,
+    binding(2) in uv : f32x2,
+    out UV : f32x2,
+    out Color : f32x4
+) void
+{
+    vertexExportCoordinates(GUI.Transform * f32x4(position, 1, 1));
+    Color = color;
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(
+    in UV : f32x2,
+    in Color : f32x4
+) void
+{
+    const texColor = sample2D(GUI.Texture, TextureSampler, UV);
+    pixelExportColor(texColor * Color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = DefaultGUIState;
+};
+
+@Mask("Static|Alt0")
+program Scissor
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = ScissorGUIState;
+};

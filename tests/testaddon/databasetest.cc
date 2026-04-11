@@ -71,7 +71,7 @@ DatabaseTest::Run()
     VERIFY(table1->HasColumn(FourCC('sval')));
     VERIFY(!table1->HasColumn(Attr::BlobValue));
     VERIFY(table1->GetColumn(Attr::GuidValue).GetType() == Column::Primary);
-    VERIFY(!table1->GetColumn(Attr::BoolValue).GetType() == Column::Primary);
+    VERIFY(!(table1->GetColumn(Attr::BoolValue).GetType() == Column::Primary));
 
     // add tables to database
     db->AddTable(table1);    

@@ -7,6 +7,7 @@
     (C) 2022 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "timing/timer.h"
 #include "util/stringatom.h"
 #include "filter.h"
 #include "processorid.h"
@@ -35,6 +36,12 @@ public:
     Util::Array<MemDb::TableId> cache;
     /// set to false if the cache is invalid
     bool cacheValid = false;
+    /// set to false if the processor shouldn't execute in the frame.
+    bool active = true;
+#ifdef NEBULA_ENABLE_PROFILING
+    /// Profiling timer, handled by the frame pipeline.
+    Timing::Timer timer;
+#endif
 #ifdef WITH_NEBULA_EDITOR
     /// set to true if you want this processor to always run in editor
     bool runInEditor = false;

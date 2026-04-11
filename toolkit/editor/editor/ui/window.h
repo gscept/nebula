@@ -39,7 +39,7 @@ public:
     //Get and set so that ImGui can access it
     bool& Open();
 
-    //Runs and renders the interface once.
+    // Runs and renders the interface once.
     virtual void Run(SaveMode save);
 
     // Runs every frame, no matter if the window is open or not.

@@ -1,0 +1,547 @@
+//------------------------------------------------------------------------------
+//  @file probe_finalize.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/ddgi.gpuh>
+
+
+group(SYSTEM_GROUP) uniform IrradianceOutput : *mutable r11g11b10f texture2D;
+group(SYSTEM_GROUP) uniform DistanceOutput : *mutable rg16f texture2D;
+group(SYSTEM_GROUP) uniform ScrollSpaceOutput : *mutable r8 texture2D;
+
+#include "probe_shared.gpuh"
+
+workgroup Radiance : [1024]f32x3;
+workgroup Distance : [1024]f32;
+workgroup Direction : [1024]f32x3;
+
+enum FinalizeMode
+{
+	Radiance = 0u,
+	Distance = 1u
+};
+const RADIANCE_MODE = 0u;
+const DISTANCE_MODE = 1u;
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackUIntToFloat3(val : u32) f32x3
+{
+    var unpacked : f32x3;
+    unpacked.x = f32((val & 0x000003FF)) / 1023.0f;
+    unpacked.y = f32(((val >> 10) & 0x000003FF)) / 1023.0f;
+    unpacked.z = f32(((val >> 20) & 0x000003FF)) / 1023.0f;
+    return unpacked;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+RadianceHysteresis(previous : f32x3, current : f32x3, hysteresis : f32) f32x3
+{
+    if (DDGIMaxComponent(previous - current) > VolumeConstants.ChangeThreshold)
+    {
+        hysteresis = max(0.0f, hysteresis - 0.75f);
+    }
+    
+    const delta = (current - previous);
+    if (length(delta) > VolumeConstants.BrightnessThreshold)
+    {
+        current = previous + (delta * 0.25f);
+    } 
+    const ConstThreshold = f32x3(1.0f / 1024.0f);
+    var lerpDelta = (1.0f - hysteresis) * delta;
+    if (DDGIMaxComponent(current) < DDGIMaxComponent(previous))
+    {
+        lerpDelta = min(max(ConstThreshold, abs(lerpDelta)), abs(delta)) * sign(lerpDelta);
+    }
+    return previous + lerpDelta;
+}
+
+generate
+{
+	if declared<USE_COMPRESSED_RADIANCE>
+	{
+		//------------------------------------------------------------------------------
+		/**
+		*/
+		LoadRadiance(coords : i32x2, mode : FinalizeMode) f32x4
+		{
+			const value = fetch2D(VolumeConstants.ProbeRadiance, coords, 0).xy;
+			var res = f32x3(0);
+			if (mode == FinalizeMode.Radiance)
+			{
+				res.xyz = UnpackUIntToFloat3(castToU32(value.x));
+			}
+			res.w = value.y;
+			return res;
+		}
+	}
+	else
+	{
+		//------------------------------------------------------------------------------
+		/**
+		*/
+		LoadRadiance(coords : i32x2, mode : FinalizeMode) f32x4
+		{
+			return fetch2D(VolumeConstants.ProbeRadiance, coords, 0);
+		}
+	}
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+Blend(mode : FinalizeMode) void
+{
+    var earlyOut = false;
+    const NUM_TEXELS_PER_PROBE = i32(mode == FinalizeMode.Radiance ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
+    var result = f32x4(0); 
+    
+    const texel = i32x2(computeGetGlobalThreadIndices().xy);
+    const probeIndex = DDGIProbeIndex(texel, VolumeConstants.ProbeGridDimensions, NUM_TEXELS_PER_PROBE);
+    const groupIndex = i32(computeGetIndexInWorkgroup());
+    if (probeIndex < 0)
+    {
+        earlyOut = true;
+    }
+    
+    var prevProbeSpace : u32x3;
+    var probeSpace = i32x3(0);
+    var texelPosition : i32x2;
+    if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+    {
+        const storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
+        texelPosition = DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions);
+        
+        prevProbeSpace.x = castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01u;
+        prevProbeSpace.y = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x02u) >> 1u;
+        prevProbeSpace.z = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01u) >> 2u;
+        
+        const probeGridCoord = DDGIProbeCoords(probeIndex, VolumeConstants.ProbeGridDimensions);
+        probeSpace = (probeGridCoord + VolumeConstants.ProbeScrollOffsets) / VolumeConstants.ProbeGridDimensions;
+        probeSpace = probeSpace % 2;
+        
+        if ((VolumeConstants.Options & PARTIAL_UPDATE_OPTION) != 0)
+        {
+            if (prevProbeSpace.x == probeSpace.x && prevProbeSpace.y == probeSpace.y && prevProbeSpace.z == probeSpace.z)
+			{
+                earlyOut = true;
+			}
+        }
+    }
+    
+    if ((VolumeConstants.Options & PARTIAL_UPDATE_OPTION) != 0)
+    {
+        if (!earlyOut)
+        {
+            const numProbes = VolumeConstants.ProbeGridDimensions.x * VolumeConstants.ProbeGridDimensions.y * VolumeConstants.ProbeGridDimensions.z;
+            const probeRRIndex = (probeIndex < VolumeConstants.ProbeIndexStart) ? probeIndex + numProbes : probeIndex;
+            if (probeRRIndex >= VolumeConstants.ProbeIndexStart + VolumeConstants.ProbeIndexCount)
+			{
+                earlyOut = true;
+			}
+        }
+    }
+    
+    var probeTexCoords = u32x2(0);
+    var storageProbeIndex : i32;
+    if (!earlyOut)
+    {
+        if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+        {
+            storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
+            const intraProbeTexelOffset = computeGetGlobalThreadIndices().xy % u32x2(NUM_TEXELS_PER_PROBE, NUM_TEXELS_PER_PROBE);
+            probeTexCoords = DDGIThreadBaseCoord(storageProbeIndex, VolumeConstants.ProbeGridDimensions, NUM_TEXELS_PER_PROBE) + intraProbeTexelOffset;
+            probeTexCoords.xy = probeTexCoords.xy + u32x2(1) + (probeTexCoords.xy / NUM_TEXELS_PER_PROBE) * 2;
+        }
+        else
+        {
+            storageProbeIndex = probeIndex;
+            probeTexCoords = computeGetGlobalThreadIndices().xy + u32x2(1);
+            probeTexCoords.xy += (computeGetGlobalThreadIndices().xy / NUM_TEXELS_PER_PROBE) * 2;
+        }
+        
+        if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0)
+        {
+            texelPosition = DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions);
+            const probeState = castToI32(fetch2D(VolumeConstants.ProbeStates, texelPosition, 0).x);
+            if (probeState == PROBE_STATE_INACTIVE)
+            {
+                earlyOut = true;
+            }
+        }
+    }
+    
+    var probeOctantUV = f32x2(0);
+    probeOctantUV = DDGINormalizedOctahedralCoordinates(texel, NUM_TEXELS_PER_PROBE);
+    const probeRayDirection = DDGIOctahedralDirection(probeOctantUV);
+    
+    if (!earlyOut)
+    {
+        const totalIterations = i32(ceil(f32(VolumeConstants.RaysPerProbe) / f32(NUM_TEXELS_PER_PROBE * NUM_TEXELS_PER_PROBE)));
+        for (var iteration = 0; iteration < totalIterations; iteration++)
+        {
+            const rayIndex = groupIndex * totalIterations + iteration;
+            if (rayIndex >= VolumeConstants.RaysPerProbe) { break; }
+                
+            const value = LoadRadiance(i32x2(rayIndex, probeIndex), mode);
+            if (mode == FinalizeMode.Radiance) { Radiance[rayIndex] = value.xyz; }
+            Distance[rayIndex] = value.w;
+            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
+        }
+    }
+	memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+    
+    if (earlyOut)
+    {
+        return;
+    }
+
+    var rayIndex = 0;
+    if ((VolumeConstants.Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) != 0)
+    {
+        rayIndex = i32(DDGI_NUM_FIXED_RAYS);
+    }
+        
+    var backfaces : u32;
+    var maxBackfaces : u32;
+    if (mode == FinalizeMode.Radiance)
+    {
+        backfaces = 0u;
+        maxBackfaces = u32((VolumeConstants.RaysPerProbe - rayIndex) * 0.1f);
+    }
+    
+    
+    for (; rayIndex < VolumeConstants.RaysPerProbe; rayIndex++)
+    {
+        const rayDirection = Direction[rayIndex];
+        var weight = max(0.0f, dot(probeRayDirection, rayDirection));
+        const probeRayIndex = i32x2(rayIndex, probeIndex);
+        
+        if (mode == FinalizeMode.Radiance)
+        {
+            const probeRayRadiance = Radiance[rayIndex];
+            const probeRayDistance = Distance[rayIndex];
+            
+            if (probeRayDistance < 0.0f)
+            {
+                backfaces++;
+                if (backfaces >= maxBackfaces) { return; }
+                continue;
+            }
+            
+            result += f32x4(probeRayRadiance * weight, weight);
+        }
+        else
+        {
+            const probeMaxRayDistance = length(VolumeConstants.ProbeGridSpacing) * 1.5f;
+            weight = pow(weight, VolumeConstants.DistanceExponent);
+            
+            const probeRayDistance = min(abs(Distance[rayIndex]), probeMaxRayDistance);
+            
+            result += f32x4(probeRayDistance * weight, (probeRayDistance * probeRayDistance), 0.0f, weight);
+        }
+    }
+    
+    const epsilon = 1e-9f * f32(VolumeConstants.RaysPerProbe);
+    result.rgb *= 1.0f / max(2.0f * result.w, epsilon);
+    
+    
+    if (mode == FinalizeMode.Distance)
+    {
+        var probeSpacePacked = 0u;
+        probeSpacePacked = u32(probeSpace.x);
+        probeSpacePacked = u32(probeSpace.y) << 1u;
+        probeSpacePacked = u32(probeSpace.z) << 2u;
+		textureStore(ScrollSpaceOutput, texelPosition, f32x4(castToF32(probeSpacePacked), 0, 0, 0));
+    }
+    
+    var previous : f32x3;
+    if (mode == FinalizeMode.Radiance) { previous = textureLoad(IrradianceOutput, i32x2(probeTexCoords)).rgb; }
+    else { previous = textureLoad(DistanceOutput, i32x2(probeTexCoords)).rgb; }
+        
+    const hysteresis = VolumeConstants.Hysteresis;
+    
+    if (mode == FinalizeMode.Radiance)
+    {
+        result.xyz = pow(result.xyz, f32x3(VolumeConstants.InverseGammaEncoding));
+
+        if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+        {
+            if (probeSpace.x == prevProbeSpace.x && probeSpace.y == prevProbeSpace.y && probeSpace.z == prevProbeSpace.z)
+            {
+                result = f32x4(RadianceHysteresis(previous, result.rgb, hysteresis), 1.0f);
+            }
+        }
+        else
+        {
+            result = f32x4(RadianceHysteresis(previous, result.rgb, hysteresis), 1.0f);
+        }
+    }
+    else
+    {
+        if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+        {
+            if (probeSpace.x == prevProbeSpace.x && probeSpace.y == prevProbeSpace.y && probeSpace.z == prevProbeSpace.z)
+            {
+                result = f32x4(lerp(result.xyz, previous.xyz, hysteresis), 1.0f);
+            }
+        }
+        else
+        {
+            result = f32x4(lerp(result.xyz, previous.xyz, hysteresis), 1.0f);
+        }
+    }
+    
+    if (mode == FinalizeMode.Radiance) { textureStore(IrradianceOutput, i32x2(probeTexCoords), result); }
+    else { textureStore(DistanceOutput, i32x2(probeTexCoords), result); }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+BorderRows(mode : FinalizeMode) void
+{
+    const NUM_TEXELS_PER_PROBE = i32(mode == FinalizeMode.Radiance ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
+    
+    const probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
+    const probeSideLengthMinusOne = (probeSideLength - 1);
+    
+    var thread = computeGetGlobalThreadIndices().xy;
+    thread.y *= probeSideLength;
+    
+    const mod = i32(computeGetGlobalThreadIndices().x % probeSideLength);
+    if (mod == 0 || mod == probeSideLengthMinusOne) { return; }
+        
+    const probeStart = u32(thread.x / probeSideLength) * probeSideLength;
+    const offset = probeSideLengthMinusOne - (thread.x % probeSideLength);
+    
+    var copyCoordinates = u32x2(probeStart + offset, (thread.y + 1));
+     
+    var load : f32x4;
+    if (mode == FinalizeMode.Radiance)
+    {
+        load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+        textureStore(IrradianceOutput, i32x2(thread), load);
+        
+        thread.y += probeSideLengthMinusOne;
+        copyCoordinates = u32x2(probeStart + offset, thread.y - 1);
+        
+        load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+        textureStore(IrradianceOutput, i32x2(thread), load);
+    }
+    else if (mode == FinalizeMode.Distance)
+    {
+        load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+        textureStore(DistanceOutput, i32x2(thread), load);
+        
+        thread.y += probeSideLengthMinusOne;
+        copyCoordinates = u32x2(probeStart + offset, thread.y - 1);
+        
+        load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+        textureStore(DistanceOutput, i32x2(thread), load);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BorderColumns(mode : FinalizeMode) void
+{
+    const NUM_TEXELS_PER_PROBE = i32(mode == FinalizeMode.Radiance ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
+    
+    const probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
+    const probeSideLengthMinusOne = (probeSideLength - 1);
+    
+    var thread = computeGetGlobalThreadIndices().xy;
+    thread.x *= probeSideLength;
+    
+    var copyCoordinates = u32x2(0);
+    
+    const mod = i32(computeGetGlobalThreadIndices().y % probeSideLength);
+    if (mod == 0 || mod == probeSideLengthMinusOne)
+    {
+        copyCoordinates.x = thread.x + NUM_TEXELS_PER_PROBE;
+        copyCoordinates.y = thread.y - sign(mod - 1) * NUM_TEXELS_PER_PROBE;
+        
+        var load : f32x4;
+        if (mode == FinalizeMode.Radiance)
+        {
+            load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+            textureStore(IrradianceOutput, i32x2(thread), load);
+        }
+        else if (mode == FinalizeMode.Distance)
+        {
+            load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+            textureStore(DistanceOutput, i32x2(thread), load);
+        }
+        
+        thread.x += probeSideLengthMinusOne;
+        copyCoordinates.x = thread.x - NUM_TEXELS_PER_PROBE;
+        
+        if (mode == FinalizeMode.Radiance)
+        {
+            load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+            textureStore(IrradianceOutput, i32x2(thread), load);
+        }
+        else if (mode == FinalizeMode.Distance)
+        {
+            load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+            textureStore(DistanceOutput, i32x2(thread), load);
+        }
+        return;
+    }
+        
+    const probeStart = u32(thread.y / probeSideLength) * probeSideLength;
+    const offset = probeSideLengthMinusOne - (thread.y % probeSideLength);
+    
+    copyCoordinates = u32x2(thread.x + 1, probeStart + offset);
+     
+    var load : f32x4;
+    if (mode == FinalizeMode.Radiance)
+    {
+        load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+        textureStore(IrradianceOutput, i32x2(thread), load);
+    }
+    else if (mode == FinalizeMode.Distance)
+    {
+        load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+        textureStore(DistanceOutput, i32x2(thread), load);
+    }
+    
+    thread.x += probeSideLengthMinusOne;
+    copyCoordinates = u32x2(thread.x - 1, probeStart + offset);
+    
+    if (mode == FinalizeMode.Radiance)
+    {
+        load = textureLoad(IrradianceOutput, i32x2(copyCoordinates));
+        textureStore(IrradianceOutput, i32x2(thread), load);
+    }
+    else if (mode == FinalizeMode.Distance)
+    {
+        load = textureLoad(DistanceOutput, i32x2(copyCoordinates));
+        textureStore(DistanceOutput, i32x2(thread), load);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(NUM_IRRADIANCE_TEXELS_PER_PROBE, NUM_IRRADIANCE_TEXELS_PER_PROBE, 1))
+entry_point
+ProbeFinalizeRadiance() void
+{
+    Blend(FinalizeMode.Radiance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(NUM_IRRADIANCE_TEXELS_PER_PROBE, NUM_IRRADIANCE_TEXELS_PER_PROBE, 1))
+entry_point
+ProbeFinalizeDistance() void
+{
+    Blend(FinalizeMode.Distance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(8, 8, 1))
+entry_point
+ProbeFinalizeBorderRowsRadiance() void
+{
+    BorderRows(FinalizeMode.Radiance);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(8, 8, 1))
+entry_point
+ProbeFinalizeBorderColumnsRadiance() void
+{
+    BorderColumns(FinalizeMode.Radiance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(8, 8, 1))
+entry_point
+ProbeFinalizeBorderRowsDistance() void
+{
+    BorderRows(FinalizeMode.Distance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(8, 8, 1))
+entry_point
+ProbeFinalizeBorderColumnsDistance() void
+{
+    BorderColumns(FinalizeMode.Distance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeRadiance")
+program RadianceFinalize
+{
+    ComputeShader = ProbeFinalizeRadiance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeDistance")
+program DistanceFinalize
+{
+    ComputeShader = ProbeFinalizeDistance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeBorderRowsRadiance")
+program RadianceBorderRowsFixup
+{
+    ComputeShader = ProbeFinalizeBorderRowsRadiance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeBorderColumnsRadiance")
+program RadianceBorderColumnsFixup
+{
+    ComputeShader = ProbeFinalizeBorderColumnsRadiance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeBorderRowsDistance")
+program DistanceBorderRowsFixup
+{
+    ComputeShader = ProbeFinalizeBorderRowsDistance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeFinalizeBorderColumnsDistance")
+program DistanceBorderColumnsFixup
+{
+    ComputeShader = ProbeFinalizeBorderColumnsDistance;
+};

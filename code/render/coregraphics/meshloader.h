@@ -65,7 +65,7 @@ private:
 
     struct FinishedMesh
     {
-        uint64 submissionId;
+        uint64_t submissionId;
         uint bits;
         Util::Array<Memory::RangeAllocation> rangesToFree;
         CoreGraphics::CmdBufferId cmdBuf;

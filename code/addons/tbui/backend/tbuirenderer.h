@@ -19,7 +19,7 @@ class TBUIRenderer : public tb::TBRendererBatcher
 {
 public:
     /// 
-    tb::TBBitmap* CreateBitmap(int width, int height, uint32* data) override;
+    tb::TBBitmap* CreateBitmap(int width, int height, uint32_t* data) override;
     ///
     void RenderBatch(Batch* batch) override;
     ///

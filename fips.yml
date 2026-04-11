@@ -3,16 +3,12 @@ imports:
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
         group: gfx
-    fips-anyfx:
-        git: https://github.com/Duttenheim/fips-anyfx.git
+    fips-glew:
+        git: https://github.com/gscept/fips-glew.git
         group: gfx
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
-        group: misc
-    fips-cjson:
-        git: https://github.com/floooh/fips-cjson.git
-        cond: "FIPS_LINUX"
         group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
@@ -29,7 +25,7 @@ imports:
         group: misc
     physx:
         git: https://github.com/gscept/PhysX.git
-        branch: nebula
+        branch: nebula-5.6.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
     gliml:
@@ -47,6 +43,14 @@ imports:
     #    git: https://github.com/gscept/fips-ultralight.git
     fips-turbobadger:
         git: https://github.com/gscept/fips-turbobadger.git
+    gpulang:
+        git: https://github.com/gscept/GPULang.git
+        group: gpulang
+        
+    fips-recast:
+        git: https://github.com/gscept/fips-recast.git
+        group: recastnavigation
+
 exports:
     header-dirs :
         - .

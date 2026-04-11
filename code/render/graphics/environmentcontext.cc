@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 
 #include "environmentcontext.h"
-#include "system_shaders/shared.h"
 #include "graphicsserver.h"
 #include "lighting/lightcontext.h"
 #include "graphics/cameracontext.h"
@@ -61,7 +60,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         {
             Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
             Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
-        });
+        }, Graphics::ALL_STAGE_MASK);
 
     envState.bloomColor = Math::vec4(1.0f);
     envState.bloomIntensity = 0.65f;
@@ -135,7 +134,7 @@ CalculatePerezDistribution(float t, Math::vec4& A, Math::vec4& B, Math::vec4& C,
 void
 EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
-    Shared::PerTickParams tickParams = Graphics::GetTickParams();
+    Shared::PerTickParams::STRUCT tickParams = Graphics::GetTickParams();
     Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
     Math::vec4 sunDir = -transform.z_axis;
 
@@ -161,7 +160,7 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     tickParams.TonemapWeight = 9.0f;
     tickParams.Lum = 1.0f;
 
-    Math::mat4 cameraTransform = Graphics::CameraContext::GetView(Graphics::CameraContext::GetLODCamera());
+    Math::mat4 cameraTransform = Graphics::CameraContext::GetView(Graphics::CameraContext::GetLODCameras()[0]);
     Math::mat4 temp;
     temp.position = cameraTransform.position;
     temp.position.w = 1.0f;
@@ -218,7 +217,7 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         float col[4];
         envState.fogColor.storeu(col);
-        Shared::PerTickParams tickParams = Graphics::GetTickParams();
+        Shared::PerTickParams::STRUCT tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Environment Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);

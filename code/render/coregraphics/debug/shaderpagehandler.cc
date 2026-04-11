@@ -107,7 +107,7 @@ HttpStatus::Code
 ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream)
 {
     ShaderServer* shdServer = ShaderServer::Instance();
-    Resources::ResourceId id = resId.AsLongLong();
+    Resources::ResourceId id = resId.AsUInt64();
     Resources::ResourceName name = ShaderGetName(id);
 
     // check if shader actually exists
@@ -183,7 +183,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
                     const CoreGraphics::ShaderProgramId& id = programs.ValueAtIndex(i);
                     const CoreGraphics::ShaderFeature::Mask& mask = programs.KeyAtIndex(i);
                     htmlWriter->Begin(HtmlElement::TableRow);
-                        htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id).AsString());
+                        htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id));
                         htmlWriter->Element(HtmlElement::TableData, shdServer->FeatureMaskToString(mask));
                     htmlWriter->End(HtmlElement::TableRow);
                 }

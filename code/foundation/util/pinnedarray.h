@@ -654,12 +654,12 @@ inline void
 PinnedArray<MAX_ALLOCS, TYPE>::Fit()
 {
     // The start offset of the memory has to be aligned to the page size
-    SizeT numUsedBytes = Math::align(this->count * sizeof(TYPE), System::PageSize);
-    SizeT numNeededPages = numUsedBytes / System::PageSize;
-    SizeT numUsedPages = this->capacity * sizeof(TYPE) / System::PageSize;
-    SizeT numFreeablePages = numUsedPages - numNeededPages;
+    size_t numUsedBytes = Memory::align(this->count * sizeof(TYPE), (size_t)System::PageSize);
+    size_t numNeededPages = numUsedBytes / System::PageSize;
+    size_t numUsedPages = this->capacity * sizeof(TYPE) / (size_t)System::PageSize;
+    size_t numFreeablePages = numUsedPages - numNeededPages;
 
-    Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * System::PageSize);
+    Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * (size_t)System::PageSize);
     this->capacity = this->count;
 }
 
@@ -706,31 +706,31 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
     if (this->elements == nullptr)
     {
         SizeT pageSize = System::PageSize;
-        SizeT reservationSize = Math::align(MAX_ALLOCS * sizeof(TYPE), pageSize);
+        size_t reservationSize = Memory::align(MAX_ALLOCS * sizeof(TYPE), (size_t)pageSize);
         this->elements = (TYPE*)Memory::AllocVirtual(reservationSize);
     }
 
     SizeT pageSize = System::PageSize;
 
     // Total amount of bytes needed to fill new capacity
-    SizeT totalByteSize = newCapacity * sizeof(TYPE);
+    size_t totalByteSize = newCapacity * sizeof(TYPE);
 
     // Rounded up to the page size so we don't waste memory we allocate anyways
-    SizeT totalBytesNeeded = Math::align(totalByteSize, pageSize);
+    size_t totalBytesNeeded = Memory::align(totalByteSize, (size_t)pageSize);
 
 #if NEBULA_DEBUG
     if (totalBytesNeeded > MAX_ALLOCS * sizeof(TYPE))
     {
-        n_printf("[PinnedArray] MAX_ALLOCS '%d' and item size '%d' will waste '%d' byte(s) due to alignment of page size '%d'", MAX_ALLOCS, sizeof(TYPE), totalBytesNeeded - MAX_ALLOCS * sizeof(TYPE), pageSize);
+        n_printf("[PinnedArray] MAX_ALLOCS '%d' and item size '%lu' will waste '%lu' byte(s) due to alignment of page size '%d'", MAX_ALLOCS, sizeof(TYPE), totalBytesNeeded - MAX_ALLOCS * sizeof(TYPE), pageSize);
     }
 #endif
-    SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
-    SizeT offset = Math::align(this->capacity * sizeof(TYPE), pageSize);
+    size_t roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
+    size_t offset = Memory::align(this->capacity * sizeof(TYPE), (size_t)pageSize);
     if (totalBytesNeeded > offset)
     {
         // The amount of bytes we need to commit is the difference between the new and the old capacity
-        SizeT commitSize = Math::align((roundedUpNewCapacity - this->capacity) * sizeof(TYPE), pageSize);
-        this->capacity = roundedUpNewCapacity;
+        size_t commitSize = Memory::align((roundedUpNewCapacity - this->capacity) * sizeof(TYPE), (size_t)pageSize);
+        this->capacity = (uint)roundedUpNewCapacity;
         
         Memory::CommitVirtual(((byte*)this->elements) + offset, commitSize);
     }

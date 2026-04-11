@@ -1,0 +1,63 @@
+//------------------------------------------------------------------------------
+//  @file brdfhit.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/raytracing.gpuh>
+
+
+//------------------------------------------------------------------------------
+/**
+	TODO, add subsurface scattering support
+*/
+entry_point
+ClosestHit(
+    in ray_payload Result : LightResponsePayload,
+    ray_hit_attribute baryCoords : f32x2
+) void
+{
+    const obj = bufferLoad(TlasInstanceBuffer, tlasGetInstanceCustomIndex());
+    const barycentricCoords = f32x3(1.0f - baryCoords.x - baryCoords.y, baryCoords.x, baryCoords.y);
+
+    var indices : u32x3;
+    var uv : f32x2;
+    var normal, tangent : f32x3;
+    var sign : f32;
+    SampleGeometry(obj, blasGetPrimitiveIndex(), barycentricCoords, indices, uv, normal, tangent, sign);
+    
+    normal = tlasGetObjectToWorld() * f32x4(normal, 0);
+    tangent = tlasGetObjectToWorld() * f32x4(tangent, 0);
+    const tbn = TangentSpace(tangent, normal, sign);
+    
+    const mat = MaterialPointers.BSDFMaterials[obj.MaterialOffset];
+    const normals = sample2DLod(mat.NormalMap, NormalSampler, uv, 0);
+    const tNormal = TangentSpaceNormal(normals.xy, tbn);
+    
+    const facing = dot(normal, rayGetWorldDirection());
+    Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0u;
+
+    var albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0) * mat.MatAlbedoIntensity;
+    albedo.a *= mat.AlphaBlendFactor;
+
+    var material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
+    material[MAT_ROUGHNESS] *= mat.MatRoughnessIntensity;
+    material[MAT_METALLIC] += mat.MatMetallicIntensity;
+    
+    const worldPos = rayGetWorldOrigin() + rayGetWorldDirection() * rayGetHitDistance();
+    const radiance = CalculateLightRT(worldPos, rayGetWorldOrigin().xyz, rayGetHitDistance() / rayGetTMax(), albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
+
+    Result.alpha = albedo.a;
+    Result.albedo = albedo.rgb;
+    Result.radiance = radiance;
+    Result.normal = tNormal;
+    Result.material = material;
+    Result.depth = rayGetHitDistance();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Hit")
+program Main
+{
+    RayClosestHitShader = ClosestHit;
+};

@@ -82,7 +82,7 @@ IoServer::IoServer() :
     this->archiveCriticalSection.Leave();
 
     this->watcherCriticalSection.Enter();
-    #ifndef __linux__
+    
     if (!FileWatcher::HasInstance())
     {
         this->watcher = FileWatcher::Create();
@@ -92,7 +92,7 @@ IoServer::IoServer() :
     {
         this->watcher = FileWatcher::Instance();
     }
-    #endif
+
     this->watcherCriticalSection.Leave();
 
     this->httpClientRegistry = Http::HttpClientRegistry::Create();
@@ -706,6 +706,29 @@ IoServer::NativePath(const Util::String& path)
     std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
 #endif
     return u8path.string().c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+IoServer::GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive) const
+{
+    // transparent archive support
+    if (this->IsArchiveFileSystemEnabled() && prioritizeArchive)
+    {
+        Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithFile(uri);
+        if (archive.isvalid())
+        {
+            String pathInArchive = archive->ConvertToPathInArchive(uri.LocalPath());
+            return archive->GetIOInfo(pathInArchive, outInfo);
+        }
+    }
+
+    // doesn't exist as archive, check conventional filesystem
+    const String path = uri.GetHostAndLocalPath();
+    n_assert(path.IsValid());
+    return FSWrapper::GetIOInfo(path, outInfo);
 }
 
 //------------------------------------------------------------------------------

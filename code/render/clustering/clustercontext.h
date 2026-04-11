@@ -11,7 +11,6 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/window.h"
 #include <array>
-#include "system_shaders/cluster_generate.h"
 
 namespace Clustering
 {
@@ -40,8 +39,8 @@ public:
     static void OnRenderDebug(uint32_t flags);
 #endif
 
-    /// Update when window resized
-    static void WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height);
+    /// Update when framescript resizes
+    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 
     /// Get cluster AABB buffer
     static const CoreGraphics::BufferId* GetClusterBuffer();

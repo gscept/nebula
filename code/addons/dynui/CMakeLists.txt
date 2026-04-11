@@ -13,12 +13,14 @@ fips_files(
     imguiinputhandler.h
     imguicontext.cc
     imguicontext.h
+	imguidisplayeventhandler.cc
+	imguidisplayeventhandler.h
 )
 
 fips_dir(imgui/shaders)
-    add_shaders(imgui.fx)
+    compile_gpulang(imgui.gpul)
 fips_dir(im3d/shaders)
-    add_shaders(im3d.fx) 
+    compile_gpulang(im3d.gpul)
 
 fips_dir(console)
     fips_files(

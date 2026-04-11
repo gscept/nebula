@@ -20,20 +20,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-22.04]
+        name: [windows-latest, ubuntu-24.04]
         include:
           - name: windows-latest
             os: windows-latest
             config: win64-vstudio-debug
             physx: vc17
             physxkey: vc17
-            anyfx: anyfxcompiler-windows
-          - name: ubuntu-22.04
-            os: ubuntu-22.04
+            gpulang: win64
+          - name: ubuntu-24.04
+            os: ubuntu-24.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
-            anyfx: anyfxcompiler-linux
+            gpulang: linux
           
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -42,6 +42,13 @@ jobs:
       - name: setup-msbuild
         if: startsWith(matrix.name, 'windows')
         uses: microsoft/setup-msbuild@v1
+
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.304.1
+          vulkan-components: SPIRV-Tools, Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
            
       - name: Set up Python 3.x
         uses: actions/setup-python@v3
@@ -58,8 +65,8 @@ jobs:
       - name: Fix clang version
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          echo "CC=clang-14" >> $GITHUB_ENV
-          echo "CXX=clang++-14" >> $GITHUB_ENV
+          echo "CC=clang-16" >> $GITHUB_ENV
+          echo "CXX=clang++-16" >> $GITHUB_ENV
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
@@ -95,26 +102,26 @@ jobs:
         run: |
           python fips physx build ${{ matrix.physx }} debug
 
-      - name: Check Anyfx version
-        id: anyfx-rev
+      - name: Check GPULang version
+        id: gpulang-rev
         shell: bash
         run: |
-          pushd ../fips-anyfx
+          pushd ../gpulang
           echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd
                     
-      - name: Check for Anyfx cached build
-        id: cache-anyfx
+      - name: Check for GPULang cached build
+        id: cache-gpulang
         uses: actions/cache@v3
         with:
-          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/fips-anyfx
-          key: ${{ runner.os }}-anyfx-${{ steps.anyfx-rev.outputs.gitrev }}
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/gpulang
+          key: ${{ runner.os }}-gpulang-${{ steps.gpulang-rev.outputs.gitrev }}
 
-      - name: Build AnyfxCompiler
-        if: steps.cache-anyfx.outputs.cache-hit != 'true'
+      - name: Build GPULang Compiler
+        if: steps.cache-gpulang.outputs.cache-hit != 'true'
         run: |
-          pushd ../fips-anyfx
-          python fips build ${{ matrix.anyfx }}
+          pushd ../gpulang
+          python fips build ${{ matrix.gpulang }}
           popd
 
       # Runs a set of commands using the runners shell
@@ -129,9 +136,12 @@ jobs:
         run: |
           python fips build
 
-      - name: Run Tests
+      - name: Run Testmath
         run: |
            python fips run testmath
+
+      - name: Run Testfoundation
+        run: |
            python fips run testfoundation
            
   Notify:

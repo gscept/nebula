@@ -51,18 +51,16 @@ RenderTest::Run()
     CoreGraphics::WindowCreateInfo wndInfo = 
     {
         CoreGraphics::DisplayMode{100, 100, 640, 480},
-        "Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
+        "Render test!", "", CoreGraphics::AntiAliasQuality::None, nullptr, true, true, false
     };
-    CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
+    CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 640, 480));
-    Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
+    ViewId view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 640, 480));
     
     GraphicsEntityId cam = Graphics::CreateEntity();
     CameraContext::RegisterEntity(cam);
     CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::deg2rad(60.f), 1.0f, 1000.0f);
-    view->SetCamera(cam);
-    view->SetStage(stage);
+    ViewSetCamera(view, cam);
     
     IndexT frameIndex = -1;
     bool run = true;
@@ -95,7 +93,6 @@ RenderTest::Run()
     CameraContext::DeregisterEntity(cam);
     Graphics::DestroyEntity(cam);
 
-    gfxServer->DiscardStage(stage);
     gfxServer->DiscardView(view);
 
     gfxServer->Close();

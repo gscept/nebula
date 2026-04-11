@@ -85,6 +85,8 @@ public:
     scalar& operator[](const int index);
     /// read-only access to indexed component
     scalar operator[](const int index) const;
+    /// implicit vec3 conversion operator
+    operator vec3() const { return Math::vec3(this->x, this->y, this->z); }
 
     union
     {
@@ -394,7 +396,7 @@ length(const vec4& v)
 __forceinline scalar
 length3(const vec4& v)
 {
-    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.vec, v.vec, 0x71)));
+    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.vec, v.vec, 0x7F)));
 }
 
 //------------------------------------------------------------------------------
@@ -990,7 +992,7 @@ nearequal3(const vec4& v0, const vec4& v1, const vec4& epsilon)
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
     temp = _mm_cmple_ps(temp, epsilon.vec);
-    return (_mm_movemask_ps(temp) == 0x7) != 0;
+    return (_mm_movemask_ps(temp) & 7) == 0x7;
 }
 
 //------------------------------------------------------------------------------

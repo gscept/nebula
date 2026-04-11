@@ -13,6 +13,8 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceserver.h"
 
+#include "gpulang/render/system_shaders/text.h"
+
 #define FONT_SIZE 32.0f
 #define ONEOVERFONTSIZE 1/32.0f
 #define GLYPH_TEXTURE_SIZE 1024
@@ -71,7 +73,7 @@ VkTextRenderer::Open()
     vboInfo.size = MaxNumChars * 6;
     vboInfo.elementSize = VertexLayoutGetSize(this->layout);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
     this->vbo = CreateBuffer(vboInfo);
@@ -128,7 +130,7 @@ VkTextRenderer::Open()
     // setup random texture
     TextureCreateInfo texInfo;
     texInfo.name = "GlyphTexture"_atm;
-    texInfo.usage = TextureUsage::SampleTexture;
+    texInfo.usage = TextureUsage::Sample;
     texInfo.tag = "render_system"_atm;
     texInfo.data = bitmap;
     texInfo.dataSize = sizeof(unsigned char) * GLYPH_TEXTURE_SIZE * GLYPH_TEXTURE_SIZE;
@@ -139,7 +141,7 @@ VkTextRenderer::Open()
     this->glyphTexture = CreateTexture(texInfo);
 
     // create shader instance
-    const ShaderId shd = CoreGraphics::ShaderGet("shd:system_shaders/text.fxb");
+    const ShaderId shd = CoreGraphics::ShaderGet("shd:system_shaders/text.gplb");
     this->program = ShaderGetProgram(shd, CoreGraphics::ShaderFeatureMask("Static"));
     this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
     // get variable
@@ -147,7 +149,7 @@ VkTextRenderer::Open()
     this->texVar = ShaderGetResourceSlot(shd, "Texture");
     ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::InvalidSamplerId, false});
     ResourceTableCommitChanges(this->textTable);
-    this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
+    this->modelVar = offsetof(Text::TextData, TextProjectionModel);
 
     delete[] bitmap;
     delete[] ttf_buffer;
@@ -181,17 +183,17 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
     n_assert(this->IsOpen());
 
     // get display mode
-    const DisplayMode& displayMode = WindowGetDisplayMode(CoreGraphics::CurrentWindow);
+    const DisplayMode& displayMode = WindowGetDisplayMode(CoreGraphics::MainWindow);
 
     // calculate projection matrix
 #if __VULKAN__
-    mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
+    mat4 proj = orthooffcenter(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
 #else
-    mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), 0, (float)displayMode.GetHeight(), -1.0f, +1.0f);
+    mat4 proj = orthooffcenter(0, (float)displayMode.GetWidth(), 0, (float)displayMode.GetHeight(), -1.0f, +1.0f);
 #endif
 
     // apply shader and apply state
-    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program, CoreGraphics::GraphicsQueueType);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
     CoreGraphics::CmdSetResourceTable(cmdBuf, this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 

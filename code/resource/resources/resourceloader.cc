@@ -7,6 +7,7 @@
 #include "io/ioserver.h"
 #include "resourceserver.h"
 #include "util/bit.h"
+#include "profiling/profiling.h"
 
 using namespace IO;
 namespace Resources
@@ -213,6 +214,8 @@ ResourceLoader::ClearPendingUnloads()
 void
 ResourceLoader::Update(IndexT frameIndex)
 {
+    N_SCOPE(ResourceLoader_Update, Resources);
+
     // Update the state of round trip resources
     this->UpdateLoaderSyncState();
 
@@ -225,7 +228,7 @@ ResourceLoader::Update(IndexT frameIndex)
     }
 
     // Make a copy since ImmediateJob might add jobs to the dependentJobs list
-    Util::FixedArray<ResourceLoadJob, true> dependencyJobs = this->dependentJobs;
+    Util::FixedArray<ResourceLoadJob, false> dependencyJobs = this->dependentJobs;
     this->dependentJobs.Clear();
     for (const auto& job : dependencyJobs)
     {
@@ -325,7 +328,6 @@ ResourceLoader::RunCallbacks(Resource::State status, const Resources::ResourceId
         else if (status == Resource::Failed && cbl.failed != nullptr)
             cbl.failed(id);
         cbls.EraseIndexSwap(i);
-        cbl = {};
     }
 }
 

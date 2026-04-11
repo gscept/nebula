@@ -31,18 +31,18 @@ enum BufferAccessMode
     DeviceAndHost		// Buffer memory lives on both CPU and GPU and requires a flush/invalidate like HostCached
 };
 
-enum BufferUsageFlag
+enum class BufferUsage
 {
     InvalidBufferUsage              = 0x0,
-    TransferBufferSource            = 0x1,
-    TransferBufferDestination       = 0x2,
+    TransferSource                  = 0x1,
+    TransferDestination             = 0x2,
     ConstantBuffer                  = 0x4,
     ConstantTexelBuffer             = 0x8,
-    ReadWriteBuffer                 = 0x10,
+    ReadWrite                       = 0x10,
     ReadWriteTexelBuffer            = 0x20,
-    VertexBuffer                    = 0x40,
-    IndexBuffer                     = 0x80,
-    IndirectBuffer                  = 0x100,
+    Vertex                          = 0x40,
+    Index                           = 0x80,
+    IndirectDraw                    = 0x100,
     ShaderAddress                   = 0x200,
     AccelerationStructureData       = 0x400,    // The buffer holding acceleration structures
     AccelerationStructureScratch    = 0x800,    // Scratch buffer for building and updating acceleration structures
@@ -50,7 +50,7 @@ enum BufferUsageFlag
     AccelerationStructureInstances  = 0x2000,   // Acceleration structure instances buffer
     ShaderTable                     = 0x4000
 };
-typedef uint BufferUsageFlags;
+__ImplementEnumBitOperators(CoreGraphics::BufferUsage);
 
 enum BufferQueueSupport
 {
@@ -69,7 +69,7 @@ struct BufferCreateInfo
         , elementSize(1)
         , byteSize(0)
         , mode(DeviceLocal)
-        , usageFlags(InvalidBufferUsage)
+        , usageFlags(CoreGraphics::BufferUsage::InvalidBufferUsage)
         , queueSupport(AutomaticQueueSupport)
         , sparse(false)
         , data(nullptr)
@@ -77,15 +77,15 @@ struct BufferCreateInfo
     {}
 
     Util::StringAtom name;
-    SizeT size;                 // this should be the number of items, for vertex buffers, this is vertex count
-    SizeT elementSize;          // this should be the size of each item, for vertex buffers, this is the vertex byte size as received from the vertex layout
-    SizeT byteSize;             // if set, uses this for size, otherwise calculates the size from size and elementSize
+    size_t size;                 // this should be the number of items, for vertex buffers, this is vertex count
+    size_t elementSize;          // this should be the size of each item, for vertex buffers, this is the vertex byte size as received from the vertex layout
+    size_t byteSize;             // if not zero, this is a precomputed version of size * elementSize, and will be used instead
     BufferAccessMode mode;
-    BufferUsageFlags usageFlags;
+    BufferUsage usageFlags;
     BufferQueueSupportFlags queueSupport;
     bool sparse;
     const void* data;
-    uint dataSize;
+    size_t dataSize;
 };
 
 struct BufferSparsePage
@@ -101,15 +101,15 @@ const BufferId CreateBuffer(const BufferCreateInfo& info);
 void DestroyBuffer(const BufferId id);
 
 /// get type of buffer
-const BufferUsageFlags BufferGetType(const BufferId id);
+const BufferUsage BufferGetType(const BufferId id);
 /// get buffer size, which is the number of elements
-const uint64 BufferGetSize(const BufferId id);
+const uint64_t BufferGetSize(const BufferId id);
 /// get buffer element size, this is the size of a single element, like a vertex or index, and is multiplied with the size
-const uint64 BufferGetElementSize(const BufferId id);
+const uint64_t BufferGetElementSize(const BufferId id);
 /// get buffer total byte size
-const uint64 BufferGetByteSize(const BufferId id);
+const uint64_t BufferGetByteSize(const BufferId id);
 /// get maximum size of upload for BufferUpload
-const uint64 BufferGetUploadMaxSize();
+const uint64_t BufferGetUploadMaxSize();
 
 /// map memory
 void* BufferMap(const BufferId id);
@@ -119,28 +119,28 @@ template <class T> T* BufferMap(const BufferId id);
 void BufferUnmap(const BufferId id);
 
 /// update buffer data
-void BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset = 0);
+void BufferUpdate(const BufferId id, const void* data, const size_t size, const size_t offset = 0);
 
 /// update buffer directly on command buffer during frame update, asserts if size is too big
-void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const uint size, const uint offset);
+void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const size_t size, const size_t offset);
 /// update buffer data
-template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
+template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const size_t offset = 0);
 /// update buffer data as array
-template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
+template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const size_t offset = 0);
 /// Update buffer data as array
-template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const uint offset = 0);
+template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const size_t offset = 0);
 /// Update buffer data as array
-template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const uint offset = 0);
+template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const size_t offset = 0);
 /// upload data from pointer directly to buffer through submission context
-template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count = 1, const uint offset = 0);
+template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const size_t count = 1, const size_t offset = 0);
 
 /// fill buffer with data much like memset
 void BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern);
 
 /// flush any changes done to the buffer on the CPU side so they are visible on the GPU
-void BufferFlush(const BufferId id, uint64 offset = 0ull, uint64 size = NEBULA_WHOLE_BUFFER_SIZE);
+void BufferFlush(const BufferId id, uint64_t offset = 0ull, uint64_t size = NEBULA_WHOLE_BUFFER_SIZE);
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
-void BufferInvalidate(const BufferId id, uint64 offset = 0ull, uint64 size = NEBULA_WHOLE_BUFFER_SIZE);
+void BufferInvalidate(const BufferId id, uint64_t offset = 0ull, uint64_t size = NEBULA_WHOLE_BUFFER_SIZE);
 
 /// Evict a page
 void BufferSparseEvict(const BufferId id, IndexT pageIndex);
@@ -157,7 +157,7 @@ void BufferSparseCommitChanges(const BufferId id);
 CoreGraphics::DeviceAddress BufferGetDeviceAddress(const BufferId id);
 
 /// Shortcut for creating a staging buffer and copy
-void BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, const void* data, const uint size);
+void BufferCopyWithStaging(const CoreGraphics::BufferId dest, const size_t offset, const void* data, const size_t size);
 
 //------------------------------------------------------------------------------
 /**
@@ -174,7 +174,7 @@ BufferMap(const BufferId id)
 */
 template<class TYPE>
 inline void
-BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
+BufferUpdate(const BufferId id, const TYPE& data, const size_t offset)
 {
     BufferUpdate(id, (const void*)&data, sizeof(TYPE), offset);
 }
@@ -184,7 +184,7 @@ BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
 */
 template<class TYPE>
 inline void
-BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
+BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const size_t offset)
 {
     BufferUpdate(id, (const void*)data, sizeof(TYPE) * count, offset);
 }
@@ -193,7 +193,7 @@ BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const u
 /**
 */
 template<class TYPE>
-void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const uint offset)
+void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const size_t offset)
 {
     BufferUpdate(id, (const void*)data.Begin(), data.ByteSize(), offset);
 }
@@ -202,7 +202,7 @@ void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const u
 /**
 */
 template<class TYPE>
-void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const uint offset)
+void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const size_t offset)
 {
     BufferUpdate(id, (const void*)data.Begin(), data.ByteSize(), offset);
 }
@@ -212,7 +212,7 @@ void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, co
 */
 template<class TYPE>
 inline void
-BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count, const uint offset)
+BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const size_t count, const size_t offset)
 {
     BufferUpload(cmdBuf, id, (const void*)data, sizeof(TYPE) * count, offset);
 }
@@ -225,19 +225,15 @@ struct BufferSet
 {
     /// Default constructor
     BufferSet() {};
-    /// Constructor
-    BufferSet(const BufferCreateInfo& createInfo);
-    /// Move constructor
-    BufferSet(BufferSet&& rhs);
-    /// Move assignment
-    void operator=(BufferSet&& rhs);
+
+    /// Setup set
+    void Create(const BufferCreateInfo& createInfo);
+    /// Destroy
+    void Destroy();
 
     /// Get current buffer
     const CoreGraphics::BufferId Buffer();
     
-    /// Destructor
-    ~BufferSet();
-
     Util::FixedArray<CoreGraphics::BufferId> buffers;
 };
 
@@ -248,12 +244,11 @@ struct BufferWithStaging
 {
     /// Default constructor
     BufferWithStaging() {};
-    /// Constructor
-    BufferWithStaging(const BufferCreateInfo& createInfo);
-    /// Move constructor
-    BufferWithStaging(BufferWithStaging&& rhs);
-    /// Move assignment
-    void operator=(BufferWithStaging&& rhs);
+
+    /// Setup set
+    void Create(const BufferCreateInfo& createInfo);
+    /// Destroy
+    void Destroy();
 
     /// Get device buffer
     const CoreGraphics::BufferId DeviceBuffer();
@@ -263,9 +258,6 @@ struct BufferWithStaging
     /// Flush changes on staging buffer to device
     void Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes);
     
-    /// Destructor
-    ~BufferWithStaging();
-
     CoreGraphics::BufferId deviceBuffer;
     BufferSet hostBuffers;
 };

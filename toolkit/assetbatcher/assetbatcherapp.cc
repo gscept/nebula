@@ -103,7 +103,7 @@ AssetBatcherApp::OnBeforeRunLocal()
     ioServer->IterateFolders("tool:syswork/data/flatbuffer/", "*.fbs", printname);
     IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
-    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
+    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/physicsmaterials.json","phys:");
 }
 
 //------------------------------------------------------------------------------
@@ -204,9 +204,23 @@ AssetBatcherApp::DoWork()
         exportFlag = ExporterBase::Dir;
         dir = this->args.GetString("-asset");
     }
+    if (this->args.HasArg("-dir"))
+    {
+        exportFlag = ExporterBase::Dir;
+        dir = this->args.GetString("-dir");
+    }
+    if (this->args.HasArg("-file"))
+    {
+        exportFlag = ExporterBase::File;
+        file = this->args.GetString("-file");
+    }
     if (this->args.HasArg("-force"))
     {
         force = this->args.GetBoolFlag("-force");
+    }
+    if (this->args.HasArg("-rawlog"))
+    {
+        ToolkitUtil::disableTextColors = true;
     }
 
     Flat::FlatbufferInterface::Init();
@@ -219,6 +233,7 @@ AssetBatcherApp::DoWork()
         if (modeFlags.Find("fbx")) mode |= AssetExporter::FBX;
         if (modeFlags.Find("model")) mode |= AssetExporter::Models;
         if (modeFlags.Find("surface")) mode |= AssetExporter::Surfaces;
+        if (modeFlags.Find("particles")) mode |= AssetExporter::Particles;
         if (modeFlags.Find("texture")) mode |= AssetExporter::Textures;
         if (modeFlags.Find("physics")) mode |= AssetExporter::Physics;
         if (modeFlags.Find("gltf")) mode |= AssetExporter::GLTF;
@@ -250,7 +265,7 @@ AssetBatcherApp::DoWork()
     exporter->SetLogger(&this->logger);
     if (force)
     {
-        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
+        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceParticles | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
@@ -266,7 +281,6 @@ AssetBatcherApp::DoWork()
     }
     else
     {
-        
         switch (exportFlag)
         {
             case ExporterBase::All:
@@ -279,8 +293,8 @@ AssetBatcherApp::DoWork()
                     exporter->SetProgressMinMax(0, files * PRECISION);
                     exporter->ExportAll();
                 }
+                break;
             }
-            break;
             case ExporterBase::Dir:
             {
                 IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", sources[source]));
@@ -288,6 +302,16 @@ AssetBatcherApp::DoWork()
                 exporter->UpdateSource();
                 exporter->SetProgressMinMax(0, files * PRECISION);
                 exporter->ExportDir(dir);
+                break;
+            }
+            case ExporterBase::File:
+            {
+                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", dir));
+                exporter->UpdateSource();
+                IO::URI basePath("proj:work/assets");
+                exporter->SetCategory(dir.StripSubpath(basePath.LocalPath()));
+                exporter->SetProgressMinMax(0, 1 * PRECISION);
+                exporter->ExportFile("src:" + file);
                 break;
             }
         }
@@ -359,6 +383,7 @@ AssetBatcherApp::ShowHelp()
              "-source      -- select asset source from projectinfo, default all\n"
              "-work        -- batch a non-registered work folder into the project\n"
              "-mode        -- batch only a type of resource, can be: fbx, model, surface, texture, physics, gltf, audio\n"
+             "-rawlog      -- log text is output without ASCII colors or text style\n" 
              "-project     -- projectinfo override\n"
     );
 

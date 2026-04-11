@@ -12,7 +12,9 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/texture.h"
 #include <array>
-#include <system_shaders/lights_cluster.h>
+//#include <render/system_shaders/lights_cluster.h>
+#include "gpulang/render/system_shaders/lights_cluster.h"
+
 
 namespace Frame
 {
@@ -51,41 +53,62 @@ public:
     /// discard light context
     static void Discard();
 
+    struct DirectionalLightSetupInfo
+    {
+        Graphics::ViewId view;
+        Math::vec3 color = Math::vec3(1);
+        float intensity = 50.0f;
+        float zenith = 45_rad, azimuth = 0;
+        Graphics::StageMask stageMask = 0xFFFF;
+        bool castShadows = false;
+    };
+
     /// setup entity as global light
-    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const float zenith, const float azimuth, bool castShadows = false);
+    static void SetupDirectionalLight(const Graphics::GraphicsEntityId id, const DirectionalLightSetupInfo& info);
+
+    struct PointLightSetupInfo
+    {
+        Math::vec3 color = Math::vec3(1);
+        float intensity = 1.0f;
+        float range = 10.0f;
+        Graphics::StageMask stageMask = 0xFFFF;
+        bool castShadows = false;
+        CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId;
+    };
     /// Setup entity as point light source
-    static void SetupPointLight(
-        const Graphics::GraphicsEntityId id
-        , const Math::vec3& color
-        , const float intensity
-        , const float range
-        , bool castShadows = false
-        , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
-    );
+    static void SetupPointLight(const Graphics::GraphicsEntityId id, const PointLightSetupInfo& info);
+
+    struct SpotLightSetupInfo
+    {
+        Math::vec3 color = Math::vec3(1);
+        float intensity = 1.0f;
+        float innerConeAngle = 30_rad;
+        float outerConeAngle = 45_rad;
+        float range = 10.0f;
+        Graphics::StageMask stageMask = 0xFFFF;
+        bool castShadows = false;
+        CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId;
+    };
 
     /// Setup entity as spot light
     static void SetupSpotLight(
         const Graphics::GraphicsEntityId id
-        , const Math::vec3& color
-        , const float intensity
-        , const float innerConeAngle
-        , const float outerConeAngle
-        , const float range
-        , bool castShadows = false
-        , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
+        , const SpotLightSetupInfo& info
     );
 
+    struct AreaLightSetupInfo
+    {   
+        AreaLightShape shape;
+        Math::vec3 color = Math::vec3(1);
+        float intensity = 1.0f;
+        float range = 10.0f;
+        Graphics::StageMask stageMask = 0xFFFF;
+        bool twoSided = false;
+        bool castShadows = false;
+        bool renderMesh = false;
+    };
     /// Setup entity as area light
-    static void SetupAreaLight(
-        const Graphics::GraphicsEntityId id
-        , const AreaLightShape shape
-        , const Math::vec3& color
-        , const float intensity
-        , const float range
-        , bool twoSided = false
-        , bool castShadows = false
-        , bool renderMesh = false
-    );
+    static void SetupAreaLight(const Graphics::GraphicsEntityId id, const AreaLightSetupInfo& info);
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
@@ -117,11 +140,6 @@ public:
     /// Get light scale
     static const Math::vec3 GetScale(const Graphics::GraphicsEntityId id);
 
-    /// 
-    static Math::vec3 GetAmbient(const Graphics::GraphicsEntityId id);
-    ///
-    static void SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient);
-
     /// get the light type
     static LightType GetType(const Graphics::GraphicsEntityId id);
 
@@ -131,14 +149,14 @@ public:
     static void SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer);
 
     /// prepare light visibility
-    static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
     /// prepare light lists
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateLights(const Graphics::FrameContext& ctx);
     /// run framescript when visibility is done
     static void RunFrameScriptJobs(const Graphics::FrameContext& ctx);
     /// React to window resize event
-    static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 #ifndef PUBLIC_BUILD
     /// render debug
     static void OnRenderDebug(uint32_t flags);
@@ -152,32 +170,34 @@ public:
     /// get light lists buffer
     static const CoreGraphics::BufferId GetLightsBuffer();
     /// get light uniforms
-    static const LightsCluster::LightUniforms& GetLightUniforms();
+    static const LightsCluster::LightUniforms::STRUCT& GetLightUniforms();
     
 private:
 
     /// Set global light transform
-    static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
-    /// Set global light shadow transform
-    static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
+    static void SetDirectionalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
 
     enum
     {
-        Type,
-        Color,
-        Intensity,
-        ShadowCaster,
-        Range,
-        TypedLightId
+        Light_Entity,
+        Light_Type,
+        Light_Color,
+        Light_Intensity,
+        Light_ShadowCaster,
+        Light_Range,
+        Light_TypedLightId,
+        Light_StageMask
     };
 
     typedef Ids::IdAllocator<
-        LightType,              // type
-        Math::vec3,             // color
-        float,                  // intensity
-        bool,                   // shadow caster
-        float,
-        Ids::Id32               // typed light id (index into pointlights, spotlights and globallights)
+        Graphics::GraphicsEntityId,     // entity
+        LightType,                      // type
+        Math::vec3,                     // color
+        float,                          // intensity
+        bool,                           // shadow caster
+        float,                          // range
+        Ids::Id32,                      // typed light id (index into pointlights, spotlights and globallights)
+        Graphics::StageMask
     > GenericLightAllocator;
     static GenericLightAllocator genericLightAllocator;
 
@@ -189,43 +209,39 @@ private:
     enum
     {
         PointLight_Transform,
-        PointLight_ConstantBufferSet,
-        PointLight_ShadowConstantBufferSet,
-        PointLight_DynamicOffsets,
         PointLight_ProjectionTexture,
-        PointLight_Observer
+        PointLight_Observers,
+        PointLight_ShadowTiles,
+        PointLight_ShadowProjectionTransforms
     };
 
     typedef Ids::IdAllocator<
-        Math::transform44,          // transform
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
-        CoreGraphics::TextureId,    // projection (if invalid, don't use)
-        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+        Math::transform44,                              // transform
+        CoreGraphics::TextureId,                        // projection (if invalid, don't use)
+        std::array<Graphics::GraphicsEntityId, 6>,      // graphics entity used for observer stuff
+        std::array<Math::rectangle<int>, 6>,            // cascade shadow tiles
+        std::array<Math::mat4, 6>                       // cascade shadow tiles
     > PointLightAllocator;
     static PointLightAllocator pointLightAllocator;
 
     enum
     {
         SpotLight_Transform,
-        SpotLight_ConstantBufferSet,
-        SpotLight_ShadowConstantBufferSet,
-        SpotLight_DynamicOffsets,
         SpotLight_ConeAngles,
         SpotLight_ProjectionTexture,
         SpotLight_ProjectionTransform,
+        SpotLight_ShadowProjectionTransform,
+        SpotLight_ShadowTile,
         SpotLight_Observer
     };
 
     typedef Ids::IdAllocator<
         Math::transform44,          // transform
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
         std::array<float, 2>,       // cone angle
         CoreGraphics::TextureId,    // projection (if invalid, don't use)
         Math::mat4,                 // projection matrix
+        Math::mat4,                 // shadow projection transform
+        Math::rectangle<int>,       // shadow tile          
         Graphics::GraphicsEntityId  // graphics entity used for observer stuff
     > SpotLightAllocator;
     static SpotLightAllocator spotLightAllocator;
@@ -234,41 +250,50 @@ private:
     {
         AreaLight_Transform,
         AreaLight_Shape,
-        AreaLight_ConstantBufferSet,
-        AreaLight_ShadowConstantBufferSet,
-        AreaLight_DynamicOffsets,
         AreaLight_TwoSided,
-        AreaLight_Observer,
+        AreaLight_Observers,
+        AreaLight_ShadowProjectionTransforms,
+        AreaLight_ShadowTiles,
         AreaLight_RenderMesh,
     };
 
     typedef Ids::IdAllocator<
-        Math::transform44,          // transform
-        AreaLightShape,             // shape of area light
-        ConstantBufferSet,          // constant buffer binding for light
-        ConstantBufferSet,          // constant buffer binding for shadows
-        Util::FixedArray<uint>,     // dynamic offsets
-        bool,                       // two sides
-        Graphics::GraphicsEntityId, // graphics entity used for observer stuff
-        bool                        // render mesh as well
+        Math::transform44,                                  // transform
+        AreaLightShape,                                     // shape of area light
+        bool,                                               // two sides
+        std::array<Graphics::GraphicsEntityId, 2>,          // graphics entity used for observer stuff
+        std::array<Math::mat4, 2>,                          // shadow rendering projection transforms for front and back
+        std::array<Math::rectangle<int>, 2>,                // shadow rendering tiles for front and back
+        bool                                                // render mesh as well
     > AreaLightAllocator;
     static AreaLightAllocator areaLightAllocator;
 
     enum
     {
+        DirectionalLight_View,
         DirectionalLight_Direction,
-        DirectionalLight_Ambient,
         DirectionalLight_Transform,
-        DirectionalLight_ViewProjTransform,
-        DirectionalLight_CascadeObservers
+        DirectionalLight_CascadeObservers,
+        DirectionalLight_CascadeTiles,
+        DirectionalLight_CascadeDistances,
+        DirectionalLight_CascadeTransforms,
+    };
+
+    struct ShadowData
+    {
+        CoreGraphics::TextureId shadowMap;
+        CoreGraphics::TextureViewId shadowView;
+        CoreGraphics::PassId shadowPass;
     };
 
     typedef Ids::IdAllocator<
-        Math::vector,                               // direction
-        Math::vec3,                                 // ambient
-        Math::mat4,                                 // transform (basically just a rotation in the direction)
-        Math::mat4,                                 // transform for visibility and such
-        Util::Array<Graphics::GraphicsEntityId>     // view ids for cascades
+        Graphics::ViewId,                               // camera used for shadow mapping
+        Math::vector,                                   // direction
+        Math::mat4,                                     // transform (basically just a rotation in the direction)
+        Util::FixedArray<Graphics::GraphicsEntityId>,   // view ids for cascades
+        Util::FixedArray<Math::rectangle<int>>,         // cascade shadow tiles
+        Util::FixedArray<float>,                        // cascade distances       
+        Util::FixedArray<Math::mat4>                    // cascade transforms
     > DirectionalLightAllocator;
     static DirectionalLightAllocator directionalLightAllocator;
 
@@ -283,7 +308,7 @@ private:
     > ShadowCasterAllocator;
     
     static ShadowCasterAllocator shadowCasterAllocator;
-    static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterSliceMap;
+    static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterIndexMap;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();

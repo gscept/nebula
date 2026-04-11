@@ -6,7 +6,7 @@
 #include "material.h"
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 
 namespace Materials
 {
@@ -19,12 +19,13 @@ Threading::CriticalSection materialTextureLoadSection;
 /**
 */
 MaterialId
-CreateMaterial(const MaterialTemplates::Entry* entry)
+CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name)
 {
     Ids::Id32 id = materialAllocator.Alloc();
 
     //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
     materialAllocator.Set<Material_MinLOD>(id, 1.0f);
+    materialAllocator.Set<Material_Name>(id, name);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
@@ -37,7 +38,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
 
     // Create material buffer
     CoreGraphics::BufferCreateInfo bufInfo;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     bufInfo.byteSize = entry->bufferSize;
     bufInfo.mode = CoreGraphics::BufferAccessMode::HostCached;
     bufInfo.name = entry->bufferName;
@@ -114,17 +115,17 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             }
         }
 
-        uint64 instanceGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_INSTANCE_GROUP);
+        uint64_t instanceGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_INSTANCE_GROUP);
         uint it = 0;
         while (instanceGroupMask != 0)
         {
             if (AllBits(instanceGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                uint64 bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
+                uint64_t bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
-                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
+                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++, CoreGraphics::GraphicsQueueType), slot, 0, bufSize, 0, false, true });
             }
             instanceGroupMask &= ~(1 << it);
             it++;
@@ -168,7 +169,7 @@ DestroyMaterial(const MaterialId id)
 void
 MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const Resources::ResourceId tex)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
 
 #ifdef WITH_NEBULA_EDITOR
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
@@ -188,7 +189,7 @@ MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, c
 void
 MaterialSetTexture(const MaterialId mat, uint name, const Resources::ResourceId tex)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
 
 #ifdef WITH_NEBULA_EDITOR
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
@@ -216,7 +217,7 @@ MaterialSetTextureBindless(const MaterialId mat, uint name, const uint handle, c
 {
 
 #ifdef WITH_NEBULA_EDITOR
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
     textures[temp->texturesByHash[name]->textureIndex] = tex;
 #endif
@@ -271,7 +272,16 @@ MaterialSetBufferBinding(const MaterialId id, IndexT index)
 IndexT
 MaterialGetBufferBinding(const MaterialId id)
 {
-    return Ids::Index(materialAllocator.Get<Material_BufferOffset>(id.id));
+    return materialAllocator.Get<Material_BufferOffset>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom&
+MaterialGetName(const MaterialId id)
+{
+    return materialAllocator.Get<Material_Name>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -309,7 +319,7 @@ MaterialSetLowestLod(const MaterialId mat, float lod)
 //------------------------------------------------------------------------------
 /**
 */
-const MaterialTemplates::Entry*
+const MaterialTemplatesGPULang::Entry*
 MaterialGetTemplate(const MaterialId mat)
 {
     return materialAllocator.Get<Material_Template>(mat.id);
@@ -319,7 +329,7 @@ MaterialGetTemplate(const MaterialId mat)
 /**
 */
 const Materials::BatchIndex
-MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch)
+MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     return materialAllocator.Get<Material_Template>(mat.id)->passes[batch]->index;
 }

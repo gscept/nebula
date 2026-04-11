@@ -387,7 +387,10 @@ private:
     inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
     inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
     inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\
-    inline unsigned& operator&=(unsigned& a, type b) { a = a & static_cast<unsigned>(b); return a; }
+    inline unsigned& operator&=(unsigned& a, type b) { a = a & static_cast<unsigned>(b); return a; }\
+    inline bool HasFlags(type a, type flags) { return (a & flags) == flags; }\
+    inline bool HasFlags(unsigned a, type flags) { return (a & static_cast<unsigned>(flags)) == static_cast<unsigned>(flags); }\
+    inline bool HasFlags(type a, unsigned flags) { return (static_cast<unsigned>(a) & flags) == flags; }
 
 #define __ImplementEnumComparisonOperators(type) \
     inline bool operator>(type a, unsigned b) { return static_cast<unsigned>(a) > b; }\

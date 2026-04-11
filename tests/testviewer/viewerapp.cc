@@ -25,6 +25,7 @@
 #include "posteffects/histogramcontext.h"
 #include "posteffects/downsamplingcontext.h"
 #include "physicsinterface.h"
+#include "coregraphics/swapchain.h"
 
 #include "frame/default.h"
 #include "frame/shadows.h"
@@ -34,7 +35,7 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
-int currentScene = ClusteredSceneId;
+int currentScene = TerrainSceneId;
 
 namespace Tests
 {
@@ -122,18 +123,22 @@ SimpleViewerApplication::Open()
         CoreGraphics::WindowCreateInfo wndInfo =
         {
             CoreGraphics::DisplayMode{ 100, 100, width, height },
-            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false, false
+            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, nullptr, true, true, false, false
         };
-        this->wnd = CreateWindow(wndInfo);
+        this->wnd = CreateMainWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
         CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
         FrameScript_shadows::Initialize(1024, 1024);
         FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
 
-        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), Graphics::PRIMARY_STAGE_MASK, [](IndexT frameIndex, IndexT bufferIndex)
+        {
+            static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+            FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+            FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+        });
         gfxServer->SetCurrentView(this->view);
-        this->stage = gfxServer->CreateStage("stage1", true);
 
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
@@ -151,15 +156,7 @@ SimpleViewerApplication::Open()
         CameraContext::SetLODCamera(this->cam);
 
         Dynui::ImguiContext::Create();
-
-        Terrain::TerrainSetupSettings terSettings{
-            .minHeight = 0, .maxHeight = 1024.0f,      // min/max height 
-            //0, 0,
-            .worldSizeX = 8192, .worldSizeZ = 8192,   // world size in meters
-            .tileWidth = 256, .tileHeight = 256,     // tile size in meters
-            .quadsPerTileX = 16, .quadsPerTileY = 16        // 1 vertex every X meters
-        };
-        Terrain::TerrainContext::Create(terSettings);
+        Terrain::TerrainContext::Create();
 
         // setup vegetation
         //Vegetation::VegetationSetupSettings vegSettings{
@@ -192,23 +189,39 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
-        this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex)
+        this->gfxServer->AddEndFrameCall([](IndexT frameIndex, IndexT bufferIndex)
         {
-            static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
-            FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-            FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-            FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
-        });
-        this->gfxServer->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
-        {
-            Graphics::GraphicsServer::SwapInfo swapInfo;
-             swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-             {
-                 FrameScript_default::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-             };
-             swapInfo.submission = FrameScript_default::Submission_Scene;
-             swapInfo.swapSource = FrameScript_default::Export_ColorBuffer.tex;
-             Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo); 
+            CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
+            CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(CoreGraphics::MainWindow);
+
+            CoreGraphics::SwapchainSwap(swapchain);
+            CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+            // Allocate command buffer to run swap
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            beginInfo.submitOnce = true;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
+            FrameScript_default::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+            CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_default::Export_ColorBuffer.tex);
+
+            CoreGraphics::CmdEndMarker(cmdBuf);
+            CoreGraphics::CmdFinishQueries(cmdBuf);
+            CoreGraphics::CmdEndRecord(cmdBuf);
+            auto submission = CoreGraphics::SubmitCommandBuffers(
+                { cmdBuf }
+                , queue
+                , { FrameScript_default::Submission_Scene }
+#if NEBULA_GRAPHICS_DEBUG
+                , "Swap"
+#endif
+
+            );
+            CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
         });
         this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight)
         {
@@ -218,21 +231,21 @@ SimpleViewerApplication::Open()
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(
+        Lighting::LightContext::SetupDirectionalLight(
             this->globalLight,
-            Math::vec3(1, 1, 1),
-            10.0f,
-            Math::vec3(0, 0, 0),
-            60_rad,
-            0_rad,
-            true
+            {
+                .view = this->view,
+                .color = Math::vec3(1, 1, 1),
+                .intensity = 10.0f,
+                .zenith = (float)60_rad,
+                .azimuth = (float)0_rad,
+                .castShadows = true
+            }
         );
 
         this->ResetCamera();
         CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
-
-        this->view->SetCamera(this->cam);
-        this->view->SetStage(this->stage);
+        Graphics::ViewSetCamera(this->view, this->cam);
 
         // register visibility system
         ObserverContext::CreateBruteforceSystem({});
@@ -259,6 +272,9 @@ SimpleViewerApplication::Open()
             EnvironmentContext::OnBeforeFrame,
             EnvironmentContext::RenderUI,
             Particles::ParticleContext::UpdateParticles,
+            Decals::DecalContext::UpdateDecals,
+            Fog::VolumetricFogContext::UpdateFogVolumes,
+            Particles::ParticleContext::UpdateParticles,
             Terrain::TerrainContext::RenderUI
         };
 
@@ -269,14 +285,13 @@ SimpleViewerApplication::Open()
             Im3d::Im3dContext::OnPrepareView,
             PostEffects::SSAOContext::UpdateViewDependentResources,
             PostEffects::HistogramContext::UpdateViewResources,
-            Decals::DecalContext::UpdateViewDependentResources,
-            Fog::VolumetricFogContext::UpdateViewDependentResources,
-            Lighting::LightContext::UpdateViewDependentResources,
+            Lighting::LightContext::OnPrepareView,
             Terrain::TerrainContext::CullPatches
         };
 
         Util::Array<Graphics::ViewIndependentCall> postLogicCalls = 
         {
+            Dynui::ImguiContext::EndFrame,
             Clustering::ClusterContext::UpdateResources,
             ObserverContext::RunVisibilityTests,
             ObserverContext::GenerateDrawLists,
@@ -326,7 +341,6 @@ SimpleViewerApplication::Close()
     Jobs2::JobSystemUninit();
     App::Application::Close();
     DestroyWindow(this->wnd);
-    this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();
@@ -377,8 +391,8 @@ SimpleViewerApplication::Run()
 
         if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
 
-        if (keyboard->KeyPressed(Input::Key::LeftMenu) && this->cameraMode == 0
-            || this->cameraMode == 1)
+        if (keyboard->KeyPressed(Input::Key::LeftMenu) && (this->cameraMode == 0
+            || this->cameraMode == 1))
             this->UpdateCamera();
 
         if (keyboard->KeyPressed(Input::Key::F8))

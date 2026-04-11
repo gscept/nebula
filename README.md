@@ -53,7 +53,7 @@ Run `fips nebula` verb to set work and toolkit directory registry variables:
 In your project directory:
   
   1. `fips physx build vc17 debug` (if you are running VS 2022, use `vc16` or `vc15` for vs 2019/2017 instead)
-  2. `fips anyfx setup`
+  2. `fips gpulang setup`
 
 ## Iterating on the project
 Once the project is set up and working there are some common operations that you may have to perform.

@@ -12,7 +12,7 @@
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
 
-#include "system_shaders/particle.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models
@@ -108,15 +108,15 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ParticleSystemNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/particle.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/particle.gplb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 
     for (IndexT i = 0; i < ret.Size(); i++)
     {
-        BufferId cbo = GetConstantBuffer(i);
+        BufferId cbo = GetConstantBuffer(i, CoreGraphics::GraphicsQueueType);
         CoreGraphics::ResourceTableId table = ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
+        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::ParticleEmitter::BINDING, 0, sizeof(::Particle::ParticleEmitter::STRUCT), 0, false, true });
         ResourceTableCommitChanges(table);
         ret[i] = table;
     }

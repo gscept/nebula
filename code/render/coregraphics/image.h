@@ -32,60 +32,68 @@ struct ImageCreateInfoData
     void* data;
 };
 
+enum ImageContainer
+{
+    PNG,
+    JPEG,
+    TGA,
+    HDR
+};
+
+enum ImageChannelPrimitive
+{
+    Bit8UInt,
+    Bit16UInt,
+    Bit16Float,
+    Bit32UInt,
+    Bit32Float
+};
+
 /// create image from file path
 ImageId CreateImage(const ImageCreateInfoFile& info);
 /// create image from data buffer
 ImageId CreateImage(const ImageCreateInfoData& info);
+/// Create image from a texture and the pipeline stage it was last used with
+ImageId CreateImage(const CoreGraphics::TextureId tex, CoreGraphics::PipelineStage stage);
 /// destroy image
 void DestroyImage(const ImageId id);
 
 struct ImageDimensions
 {
-    SizeT width, height, depth;
+    SizeT width, height;
 };
 /// get image dimensions
 ImageDimensions ImageGetDimensions(const ImageId id);
 
-/// get pointer to buffer
-const byte* ImageGetBuffer(const ImageId id);
-/// get pointer to first element of red channel
-const byte* ImageGetRedPtr(const ImageId id);
-/// get pointer to first element of green channel
-const byte* ImageGetGreenPtr(const ImageId id);
-/// get pointer to first element of blue channel
-const byte* ImageGetBluePtr(const ImageId id);
-/// get pointer to first element if alpha channel
-const byte* ImageGetAlphaPtr(const ImageId id);
-/// get pixel stride, using the above pointers makes it possible to get all reds, blues, greens, etc.
+/// Get pointer to buffer
+const ubyte* ImageGetBuffer(const ImageId id);
+/// Get pixel stride in bytes
 const SizeT ImageGetPixelStride(const ImageId id);
+/// Get channel stride in bytes
+const SizeT ImageGetChannelStride(const ImageId id);
+/// Convert image primitive
+void ImageConvertPrimitive(const ImageId id, const ImageChannelPrimitive primitive, bool denormalize);
 
-enum ImageChannelPrimitive
-{
-    Bit8Uint,
-    Bit16Uint,
-    Bit16Float,
-    Bit32Uint,
-    Bit32Float
-};
+/// Save image to file
+bool ImageSaveToFile(const ImageId id, const ImageContainer container, const IO::URI& path);
+
 /// get channel primitive
 ImageChannelPrimitive ImageGetChannelPrimitive(const ImageId id);
 
-enum ImageContainer
-{
-    PNG,
-    JPEG,
-    DDS
-};
-
-
 struct ImageLoadInfo
 {
-    SizeT width, height, depth;
+    SizeT width, height, channels;
     ImageChannelPrimitive primitive;
     PixelFormat::Code format;
-    ImageContainer container;
     uint8_t redOffset, greenOffset, blueOffset, alphaOffset;
-    byte* buffer;
+
+    union ImageData
+    {
+        unsigned char* stbiData8;
+        unsigned short* stbiData16;
+        unsigned int* stbiData32;
+        float* stbiDataFloat;
+    } data;
 };
 
 typedef Ids::IdAllocator<

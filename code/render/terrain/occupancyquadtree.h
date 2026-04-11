@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    The occupancy quad tree implements a tree which allows for a quick search 
+    A quad tree designed to return regions of free 2D space.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -11,6 +11,8 @@
 #include "math/scalar.h"
 #include "util/fixedarray.h"
 #include "memory/arenaallocator.h"
+#include "imgui.h"
+
 namespace Terrain   
 {
 
@@ -23,13 +25,15 @@ public:
     ~OccupancyQuadTree();
 
     /// setup with a world size and a biggest allocation size
-    void Setup(uint worldSize, uint maxSize, uint minSize);
+    void Setup(uint textureSize, uint maxSize, uint minSize);
     /// allocate a region, return region
     Math::uint2 Allocate(uint size);
     /// deallocate region
     bool Deallocate(const Math::uint2 coord, uint size);
     /// check if region is alloced
     bool IsOccupied(const Math::uint2 coord, uint size);
+    /// Clear the tree
+    void Clear();
 
     /// debug render
     void DebugRender(ImDrawList* drawList, ImVec2 offset, float scale);
@@ -95,10 +99,10 @@ OccupancyQuadTree::~OccupancyQuadTree()
 /**
 */
 inline void 
-OccupancyQuadTree::Setup(uint worldSize, uint maxSize, uint minSize)
+OccupancyQuadTree::Setup(uint textureSize, uint maxSize, uint minSize)
 {
     this->minSize = minSize;
-    uint numNodes = worldSize / maxSize;
+    uint numNodes = textureSize / maxSize;
     this->topLevelNodes.Resize(numNodes);
     for (uint x = 0; x < numNodes; x++)
     {
@@ -109,6 +113,11 @@ OccupancyQuadTree::Setup(uint worldSize, uint maxSize, uint minSize)
             this->topLevelNodes[x][y].y = y * maxSize;
             this->topLevelNodes[x][y].size = maxSize;
             this->topLevelNodes[x][y].occupied = false;
+            this->topLevelNodes[x][y].occupancyCounter = 0;
+            this->topLevelNodes[x][y].topLeft = nullptr;
+            this->topLevelNodes[x][y].topRight = nullptr;
+            this->topLevelNodes[x][y].bottomLeft = nullptr;
+            this->topLevelNodes[x][y].bottomRight = nullptr;
         }
     }
 }
@@ -214,8 +223,6 @@ OccupancyQuadTree::RecursiveDeallocate(Node* node, Math::uint2 coord, uint size)
     {
         if (node->x == coord.x && node->y == coord.y)
         {
-            n_assert(node->occupancyCounter == 0);
-            n_assert(node->occupied == true);
             node->occupied = false;
             return true;
         }
@@ -310,6 +317,27 @@ OccupancyQuadTree::RecursiveSearch(Node* node, Math::uint2 coord, uint size)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+OccupancyQuadTree::Clear()
+{
+    this->allocator.Release();
+    for (uint x = 0; x < this->topLevelNodes.Size(); x++)
+    {
+        for (uint y = 0; y < this->topLevelNodes[x].Size(); y++)
+        {
+            this->topLevelNodes[x][y].topLeft = nullptr;
+            this->topLevelNodes[x][y].topRight = nullptr;
+            this->topLevelNodes[x][y].bottomLeft = nullptr;
+            this->topLevelNodes[x][y].bottomRight = nullptr;
+            this->topLevelNodes[x][y].occupied = false;
+            this->topLevelNodes[x][y].occupancyCounter = 0;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

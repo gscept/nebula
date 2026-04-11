@@ -40,7 +40,7 @@ TBUIBitmap::Init(int width, int height, unsigned int* data)
 
     CoreGraphics::TextureCreateInfo texInfo;
     texInfo.name = "tbui_generated_texture"_atm;
-    texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    texInfo.usage = CoreGraphics::TextureUsage::Sample;
     texInfo.tag = "tbui"_atm;
     texInfo.data = data;
     texInfo.dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::SRGBA8);

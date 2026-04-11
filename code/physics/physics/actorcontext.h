@@ -43,6 +43,10 @@ public:
     static ActorId CreatePlane(Math::plane const& plane, IndexT material, IndexT scene = 0);
     ///
     static ActorId CreateCapsule(float radius, float halfHeight, IndexT material, ActorType type, Math::mat4 const & transform, IndexT scene = 0);
+    /// Create a convex hull/mesh from vertex buffer. Assumes "xyz" points (sizeof(float) * 3).
+    /// @note You should consider cooking the hulls offline. This is relatively fast for
+    /// real-time generation of convex hulls, but won't yield as accurate results as offline.
+    static ActorId CreateConvexHull(float* vertices, int numVertices, IndexT material, ActorType type, Math::mat4 const& transform, IndexT scene = 0);
 
     ///
     static Actor& GetActor(ActorId id);

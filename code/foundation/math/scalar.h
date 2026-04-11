@@ -382,7 +382,7 @@ max(TYPE0 first, TYPE0 second, TYPEN... rest)
 
 //------------------------------------------------------------------------------
 /**
-    branchless max for uint32
+    branchless max for uint32_t
 */
 template<>
 __forceinline unsigned int
@@ -397,6 +397,16 @@ max(unsigned int a, unsigned int b)
 template<typename TYPE>
 __forceinline TYPE
 min(TYPE a, TYPE b)
+{
+    return (a < b) ? a : b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPEA, typename TYPEB>
+__forceinline TYPEA
+min(TYPEA a, TYPEB b)
 {
     return (a < b) ? a : b;
 }
@@ -726,42 +736,6 @@ mostsignificant(unsigned int val)
 
 //------------------------------------------------------------------------------
 /**
-*/
-__forceinline unsigned int
-align(unsigned int alignant, unsigned int alignment)
-{
-    return (alignant + alignment - 1) & ~(alignment - 1);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline uintptr_t
-alignptr(uintptr_t alignant, uintptr_t alignment)
-{
-    return (alignant + alignment - 1) & ~(alignment - 1);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline unsigned int
-align_down(unsigned int alignant, unsigned int alignment)
-{
-    return (alignant / alignment * alignment);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline uintptr_t
-align_downptr(uintptr_t alignant, uintptr_t alignment)
-{
-    return (alignant / alignment * alignment);
-}
-
-//------------------------------------------------------------------------------
-/**
     Integer division with rounding
 */
 __forceinline unsigned int
@@ -793,10 +767,10 @@ roundtopow2(unsigned int val)
 */
 struct randxorstate
 {
-    uint64 x[2];
+    uint64_t x[2];
 };
 
-__forceinline uint64
+__forceinline uint64_t
 randxor(randxorstate& state)
 {
     uint64_t t = state.x[0];

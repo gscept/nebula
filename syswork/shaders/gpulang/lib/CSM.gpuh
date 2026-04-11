@@ -1,0 +1,58 @@
+//------------------------------------------------------------------------------
+//  CSM.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/shadowbase.gpuh>
+#include <lib/std.gpuh>
+
+const DebugColors : [8]f32x4 =
+[
+    f32x4 (1.5f, 0.0f, 0.0f, 1.0f),
+    f32x4 (0.0f, 1.5f, 0.0f, 1.0f),
+    f32x4 (0.0f, 0.0f, 5.5f, 1.0f),
+    f32x4 (1.5f, 0.0f, 5.5f, 1.0f),
+    f32x4 (1.5f, 1.5f, 0.0f, 1.0f),
+    f32x4 (1.0f, 1.0f, 1.0f, 1.0f),
+    f32x4 (0.0f, 1.0f, 5.5f, 1.0f),
+    f32x4 ( 0.5f, 3.5f, 0.75f, 1.0f )
+];
+
+//------------------------------------------------------------------------------
+/**
+	CSM shadow sampling entry point
+*/
+CSMPS(
+	  TexShadow : f32x4
+	  , Distance : f32
+	  , ShadowViewProjection : [NUM_CASCADES]f32x4x4
+	  , CascadeDistances : [NUM_CASCADES]f32
+	  , Texture : u32
+	  , ShadowTileTexelSize : f32x2
+	  , ShadowBias : f32
+) f32
+{
+	var cascadeFound = false;
+
+	var cascadeIndex : i32 = 0;
+	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
+	{
+		if Distance < CascadeDistances[cascadeIndex]
+		{
+			cascadeFound = true;
+			break;
+		}
+	}
+
+	// if we have no matching cascade, return with a fully lit pixel
+	if !cascadeFound
+	{
+		return 1.0f;
+	}
+
+	const texCoordShadow = ShadowViewProjection[cascadeIndex] * TexShadow;
+
+	// calculate texture coordinate in shadow space
+	const occlusion = PCFShadow(Texture, texCoordShadow.z, texCoordShadow.xy, ShadowTileTexelSize, ShadowBias * exp2(f32(cascadeIndex)));
+	return occlusion;
+}

@@ -6,7 +6,7 @@
 #include "materialasseteditor.h"
 #include "editor/commandmanager.h"
 #include "materials/material.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 #include "coregraphics/textureloader.h"
 #include "dynui/imguicontext.h"
 #include "tinyfiledialogs.h"
@@ -17,6 +17,8 @@
 #include "toolkit-common/converters/binaryxmlconverter.h"
 
 #include "toolkitutil/surface/surfacebuilder.h"
+
+#include "visibility/visibilitycontext.h"
 
 namespace Presentation
 {
@@ -29,6 +31,8 @@ struct MaterialEditorItemData
     ImageHolder* originalImages;
     ubyte* originalConstants;
 };
+
+static CoreGraphics::MeshResourceId MaterialSphere = CoreGraphics::InvalidMeshResourceId;
 
 //------------------------------------------------------------------------------
 /**
@@ -154,9 +158,9 @@ struct CMDMaterialSetConstant : public Edit::Command
 void
 MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
-    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     auto itemData = (const MaterialEditorItemData*)item->data;
-    ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont);
     ImGui::Text(materialTemplate->name);
     ImGui::PopFont();
 
@@ -164,148 +168,163 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     bool applyChange = false;
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
-
-    for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
+    if (ImGui::BeginTable("Material Editor Contents", 2, ImGuiTableFlags_Resizable))
     {
-        auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
-        const MaterialTemplates::MaterialTemplateTexture* value = kvp.Value();
-
-        ImageHolder* textureInfo = &itemData->images[i];
-        Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
-        if (!name.IsEmpty())
+        ImGui::TableSetupScrollFreeze(2, 1);
+        ImGui::TableNextColumn();
+        assetEditor->viewport.Render();
+        ImGui::TableNextColumn();
+        for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
         {
-            ImGui::Text(kvp.Key());
-            bool pressed = false;
-            pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), &textureInfo->texture, ImVec2{ 32, 32 });
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
+            const MaterialTemplatesGPULang::MaterialTemplateTexture* value = kvp.Value();
+
+            ImageHolder* textureInfo = &itemData->images[i];
+            Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
+            if (!name.IsEmpty())
             {
-                if (ImGui::BeginTooltip())
+                ImGui::Text(kvp.Key());
+                bool pressed = false;
+                pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), &textureInfo->texture, ImVec2{ 32, 32 });
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
-                    ImGui::Image(&textureInfo->texture, ImVec2{ 256, 256 });
-                    ImGui::EndTooltip();
+                    if (ImGui::BeginTooltip())
+                    {
+                        ImGui::Image(&textureInfo->texture, ImVec2{ 256, 256 });
+                        ImGui::EndTooltip();
+                    }
                 }
-            }
-            ImGui::SameLine();
-            pressed |= ImGui::Button(Util::Format("%s###BUTTON%d", name.AsCharPtr(), i).AsCharPtr());
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_None))
-            {
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                ImGui::SameLine();
+                pressed |= ImGui::Button(Util::Format("%s###BUTTON%d", name.AsCharPtr(), i).AsCharPtr());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_None))
                 {
-                    ImGui::SetClipboardText(name.AsCharPtr());
-                    pressed = false;
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        ImGui::SetClipboardText(name.AsCharPtr());
+                        pressed = false;
+                    }
+                    else if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+                    {
+                        const char* clipboard = ImGui::GetClipboardText();
+                        if (clipboard != nullptr)
+                        {
+                            auto cmd = new CMDMaterialSetTexture;
+                            cmd->bindlessOffset = value->bindlessOffset;
+                            cmd->index = i;
+                            cmd->hash = value->hashedName;
+                            cmd->assetEditor = assetEditor;
+                            cmd->asset = clipboard;
+                            cmd->item = item;
+                            cmd->oldAsset = name;
+                            Edit::CommandManager::Execute(cmd);
+                        }
+                        pressed = false;
+                    }
                 }
-                else if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+                if (pressed)
                 {
-                    const char* clipboard = ImGui::GetClipboardText();
-                    if (clipboard != nullptr)
+                    // TODO: Replace file dialog with asset browser view/instance
+                    const char* patterns[] = { "*.dds" };
+                    const char* path = tinyfd_openFileDialog(kvp.Key(), IO::URI(name).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
+
+                    if (path != nullptr)
                     {
                         auto cmd = new CMDMaterialSetTexture;
                         cmd->bindlessOffset = value->bindlessOffset;
                         cmd->index = i;
                         cmd->hash = value->hashedName;
                         cmd->assetEditor = assetEditor;
-                        cmd->asset = clipboard;
+                        cmd->asset = path;
                         cmd->item = item;
                         cmd->oldAsset = name;
                         Edit::CommandManager::Execute(cmd);
                     }
-                    pressed = false;
                 }
             }
-            if (pressed)
-            {
-                // TODO: Replace file dialog with asset browser view/instance
-                const char* patterns[] = { "*.dds" };
-                const char* path = tinyfd_openFileDialog(kvp.Key(), IO::URI(name).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
+        }
 
-                if (path != nullptr)
+        uint textureCounter = 0;
+        for (IndexT i = 0; i < materialTemplate->values.Size(); i++)
+        {
+            auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
+            const MaterialTemplatesGPULang::MaterialTemplateValue* value = kvp.Value();
+            ubyte* imguiState = ArrayAllocStack<ubyte>(materialTemplate->bufferSize);
+            ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
+            memcpy(imguiState, currentState, materialTemplate->bufferSize);
+
+            // FIXME remove when done with gpulang transition
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wenum-compare-switch"
+    #endif
+            switch (value->type)
+            {
+                case MaterialTemplates::MaterialTemplateValue::Type::Bool:
                 {
-                    auto cmd = new CMDMaterialSetTexture;
-                    cmd->bindlessOffset = value->bindlessOffset;
-                    cmd->index = i;
-                    cmd->hash = value->hashedName;
-                    cmd->assetEditor = assetEditor;
-                    cmd->asset = path;
-                    cmd->item = item;
-                    cmd->oldAsset = name;
-                    Edit::CommandManager::Execute(cmd);
-                }  
+                    ImGui::Checkbox(kvp.Key(), (bool*)(imguiState + value->offset));
+                    break;
+                }
+                case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
+                {
+                    ImGui::DragFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
+                    break;
+                }
+                case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
+                {
+                    ImGui::DragFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
+                    break;
+                }
+                case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
+                {
+                    ImGui::DragFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
+                    break;
+                }
+                case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
+                {
+                    ImGui::DragFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.01f, 0.0f, FLT_MAX);
+                    break;
+                }
+                case MaterialTemplates::MaterialTemplateValue::Type::Color:
+                {
+                    ImGui::ColorEdit4(kvp.Key(), (float*)(imguiState + value->offset), ImGuiColorEditFlags_Float);
+                    break;
+                }
+                default:
+                    // TODO: Implement all types
+                    break;
             }
+    #if defined(__clang__)
+        #pragma clang diagnostic pop
+    #endif
+
+            // Issue command
+            if (ImGui::IsItemDeactivatedAfterEdit())
+            {
+                CMDMaterialSetConstant* cmd = new CMDMaterialSetConstant;
+                cmd->data = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
+                cmd->oldData = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
+                cmd->dataSize = materialTemplate->bufferSize;
+                cmd->assetEditor = assetEditor;
+                cmd->item = item;
+                memcpy(cmd->data, imguiState, cmd->dataSize);
+                memcpy(cmd->oldData, itemData->constants, cmd->dataSize);
+                Edit::CommandManager::Execute(cmd);
+            }
+
+            // Update live state
+            if (ImGui::IsItemEdited())
+            {
+                Materials::MaterialSetConstants(item->asset.material, imguiState, materialTemplate->bufferSize);
+            }
+
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && kvp.Value()->desc != nullptr)
+            {
+                ImGui::SetTooltip(kvp.Value()->desc);
+            }
+
+            ArrayFreeStack(materialTemplate->bufferSize, imguiState);
         }
-    }
-
-    uint textureCounter = 0;
-    for (IndexT i = 0; i < materialTemplate->values.Size(); i++)
-    {
-        auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
-        const MaterialTemplates::MaterialTemplateValue* value = kvp.Value();
-        ubyte* imguiState = ArrayAllocStack<ubyte>(materialTemplate->bufferSize);
-        ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
-        memcpy(imguiState, currentState, materialTemplate->bufferSize);
-
-        switch (value->type)
-        {
-            case MaterialTemplates::MaterialTemplateValue::Type::Bool:
-            {
-                ImGui::Checkbox(kvp.Key(), (bool*)(imguiState + value->offset));
-                break;
-            }
-            case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
-            {
-                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
-                break;
-            }
-            case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
-            {
-                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
-                break;
-            }
-            case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
-            {
-                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
-                break;
-            }
-            case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
-            {
-                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
-                break;
-            }
-            case MaterialTemplates::MaterialTemplateValue::Type::Color:
-            {
-                ImGui::ColorEdit4(kvp.Key(), (float*)(imguiState + value->offset), ImGuiColorEditFlags_Float);
-                break;
-            }
-            default:
-                // TODO: Implement all types
-                break;
-        }
-
-        // Issue command
-        if (ImGui::IsItemDeactivatedAfterEdit())
-        {
-            CMDMaterialSetConstant* cmd = new CMDMaterialSetConstant;
-            cmd->data = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
-            cmd->oldData = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
-            cmd->dataSize = materialTemplate->bufferSize;
-            cmd->assetEditor = assetEditor;
-            cmd->item = item;
-            memcpy(cmd->data, imguiState, cmd->dataSize);
-            memcpy(cmd->oldData, itemData->constants, cmd->dataSize);
-            Edit::CommandManager::Execute(cmd);
-        }
-
-        // Update live state
-        if (ImGui::IsItemEdited())
-        {
-            Materials::MaterialSetConstants(item->asset.material, imguiState, materialTemplate->bufferSize);
-        }
-
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && kvp.Value()->desc != nullptr)
-        {
-            ImGui::SetTooltip(kvp.Value()->desc);
-        }
-
-        ArrayFreeStack(materialTemplate->bufferSize, imguiState);
+        ImGui::EndTable();
     }
 }
 
@@ -316,7 +335,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 void
 MaterialSetup(AssetEditorItem* item)
 {
-    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
 
     // Allocate editor specific data
     MaterialEditorItemData* itemData = item->allocator.Alloc<MaterialEditorItemData>();
@@ -325,6 +344,25 @@ MaterialSetup(AssetEditorItem* item)
     itemData->originalConstants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
     itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
     item->data = itemData;
+
+    if (MaterialSphere == CoreGraphics::InvalidMeshResourceId)
+    {
+        MaterialSphere = Resources::CreateResource("sysmsh:material_knob.nvx", "preview", nullptr, nullptr, true, false).resourceId;
+    }
+
+    Models::ModelContext::RegisterEntity(item->previewObject);
+    Models::ModelContext::Setup(
+        item->previewObject,
+        Math::mat4(),
+        Math::bbox(),
+        item->asset.material,
+        CoreGraphics::MeshResourceGetMesh(MaterialSphere, 0),
+        0,
+        Graphics::StageMask(1 << 3)
+    );
+    Models::ModelContext::SetAlwaysVisible(item->previewObject);
+    Visibility::ObservableContext::RegisterEntity(item->previewObject);
+    Visibility::ObservableContext::Setup(item->previewObject, Visibility::VisibilityEntityType::Model);
 
     // Copy over material constants
     ubyte* currentData = Materials::MaterialGetConstants(item->asset.material);
@@ -360,7 +398,7 @@ MaterialSetup(AssetEditorItem* item)
 void 
 MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
-    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
     auto itemData = (const MaterialEditorItemData*)item->data;
     memcpy(itemData->originalConstants, itemData->constants, materialTemplate->bufferSize);
@@ -387,7 +425,7 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
                 for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
                 {
                     auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
-                    const MaterialTemplates::MaterialTemplateTexture* value = kvp.Value();
+                    const MaterialTemplatesGPULang::MaterialTemplateTexture* value = kvp.Value();
 
                     ImageHolder* textureInfo = &itemData->images[i];
                     Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
@@ -399,38 +437,41 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
                 for (IndexT i = 0; i < materialTemplate->values.Size(); i++)
                 {
                     auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
-                    const MaterialTemplates::MaterialTemplateValue* value = kvp.Value();
+                    const MaterialTemplatesGPULang::MaterialTemplateValue* value = kvp.Value();
                     ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
 
                     writer->BeginNode(kvp.Key());
                     switch (value->type)
                     {
-                        case MaterialTemplates::MaterialTemplateValue::Type::Bool:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Bool:
                         {
                             writer->SetString("value", Util::String::FromBool(*(bool*)(currentState + value->offset)));
                             break;
                         }
-                        case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Scalar:
                         {
                             writer->SetString("value", Util::String::FromFloat(*(float*)(currentState + value->offset)));
                             break;
                         }
-                        case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec2:
                         {
                             writer->SetString("value", Util::String::FromFloat2(*(Math::float2*)(currentState + value->offset)));
                             break;
                         }
-                        case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec3:
                         {
                             writer->SetString("value", Util::String::FromFloat3(*(Math::float3*)(currentState + value->offset)));
                             break;
                         }
-                        case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
-                        case MaterialTemplates::MaterialTemplateValue::Type::Color:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec4:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Color:
                         {
                             writer->SetString("value", Util::String::FromFloat4(*(Math::float4*)(currentState + value->offset)));
                             break;
                         }
+                        default:
+                            n_warning("unhandled material template type");
+                            break;
                     }
                     writer->EndNode();
                 }
@@ -459,14 +500,14 @@ void
 MaterialDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     auto itemData = (const MaterialEditorItemData*)item->data;
-    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     memcpy(itemData->constants, itemData->originalConstants, materialTemplate->bufferSize);
     Materials::MaterialSetConstants(item->asset.material, itemData->originalConstants, materialTemplate->bufferSize);
     Materials::MaterialInvalidate(item->asset.material);
 
     for (IndexT i = 0; i < materialTemplate->numTextures; i++)
     {
-        const MaterialTemplates::MaterialTemplateTexture* texBind = materialTemplate->textures.ValueAtIndex(i);
+        const MaterialTemplatesGPULang::MaterialTemplateTexture* texBind = materialTemplate->textures.ValueAtIndex(i);
         ImageHolder* currentImage = &itemData->images[i];
         ImageHolder* originalImage = &itemData->originalImages[i];
         if (currentImage->res != originalImage->res)
@@ -478,6 +519,15 @@ MaterialDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+MaterialShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
+{
+    Models::ModelContext::SetStageMask(item->previewObject, show ? 1 << 3 : 0x0);
 }
 
 } // namespace Presentation

@@ -221,6 +221,49 @@ PosixFSWrapper::GetFileSize(Handle handle)
 
 //------------------------------------------------------------------------------
 /**
+    Returns the size of a file in bytes.
+*/
+Stream::Size
+PosixFSWrapper::GetFileSize(const Util::String& path)
+{
+    n_assert(path.IsValid());
+    struct stat s;
+    int r = stat(path.AsCharPtr(), &s);
+    if (0 != r)
+    {
+        return 0;
+    }
+    return s.st_size;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+    Get file/folder io info via stat.
+*/
+bool 
+PosixFSWrapper::GetIOInfo(const IO::URI& path, IO::IOStat& outInfo)
+{
+    n_assert(path.IsValid());
+    struct stat s;
+    int r = stat(path.LocalPath().AsCharPtr(), &s);
+    if (0 != r)
+    {
+        return false;
+    }
+    outInfo.size = s.st_size;
+    outInfo.accessTime.time.tv_sec = s.st_atime;
+    outInfo.accessTime.time.tv_nsec = 0;
+    outInfo.modifiedTime.time.tv_sec = s.st_mtime;
+    outInfo.modifiedTime.time.tv_nsec = 0;
+    outInfo.creationTime.time.tv_sec = s.st_ctime;
+    outInfo.creationTime.time.tv_nsec = 0;
+    return true;
+}
+
+
+//------------------------------------------------------------------------------
+/**
     Set the read-only status of a file.
 */
 void
@@ -437,6 +480,7 @@ PosixFSWrapper::ListFiles(const String& dirPath, const String& pattern)
                 fileList.Append(result->d_name);
             }
         } while (result != nullptr);
+        closedir(dir);
     }
     return fileList;
 }
@@ -457,7 +501,6 @@ PosixFSWrapper::ListDirectories(const String& dirPath, const String& pattern)
     DIR * dir = opendir(dirPath.AsCharPtr());
     if (0 != dir)
     {
-        
         struct dirent *result = nullptr;
         do
         {
@@ -484,6 +527,7 @@ PosixFSWrapper::ListDirectories(const String& dirPath, const String& pattern)
                 dirList.Append(result->d_name);
             }
         } while (result != nullptr);
+        closedir(dir);
     }
     return dirList;
 }
@@ -554,6 +598,12 @@ String
 PosixFSWrapper::GetHomeDirectory()
 {
     char buf[MAXPATHLEN];
+#if NEBULA_DEBUG
+#ifdef NEBULA_PROJECT_ROOT
+    String EmbeddedHome = NEBULA_PROJECT_ROOT;
+    return String("file:///") + EmbeddedHome;
+#endif
+#endif
 #ifdef __APPLE__
     CoreFoundation::CFBundleRef mainBundle = CoreFoundation::CFBundleGetMainBundle();
     CoreFoundation::CFURLRef bundleURL = CoreFoundation::CFBundleCopyBundleURL(mainBundle);

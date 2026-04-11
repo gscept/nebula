@@ -33,12 +33,14 @@ const char* FontModeStrings[] =
     , "9"
 };
 
+bool disableTextColors = false;
+
 //------------------------------------------------------------------------------
 /**
 */
 Text::Text(const char* string, size_t size)
 {
-    this->string.Set(string, size);
+    this->string.Set(string, static_cast<SizeT>(size));
 }
 
 //------------------------------------------------------------------------------
@@ -63,6 +65,9 @@ Text::~Text()
 Text&
 Text::Color(const TextColor color)
 {
+    if (disableTextColors)
+        return *this;
+
     if (!this->format.IsEmpty())
         this->format += ";";
     this->format.Append(ColorStrings[(uint)color]);
@@ -75,6 +80,9 @@ Text::Color(const TextColor color)
 Text&
 Text::Style(const FontMode mode)
 {
+    if (disableTextColors)
+        return *this;
+
     if (!this->format.IsEmpty())
         this->format += ";";
     this->format.Append(FontModeStrings[(uint)mode]);
@@ -84,9 +92,12 @@ Text::Style(const FontMode mode)
 //------------------------------------------------------------------------------
 /**
 */
-const
-Util::String Text::AsString()
+const Util::String 
+Text::AsString()
 {
+    if (disableTextColors)
+        return this->string;
+
     return Util::String::Sprintf("\033[%sm%s%s\033[0m", this->format.AsCharPtr(), this->cursor.AsCharPtr(), this->string.AsCharPtr());
 }
 

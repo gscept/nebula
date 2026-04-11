@@ -23,6 +23,6 @@ add_custom_command(
 
 nebula_idl_compile(testcomponents.json)
 
-fips_deps(foundation application testbase scripting)
+fips_deps(foundation application testbase scripting nflatbuffer)
 target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]])
 nebula_end_app()

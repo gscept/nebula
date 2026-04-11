@@ -8,13 +8,13 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
+#include "graphics/graphicsserver.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/resourcetable.h"
 #include "model.h"
 #include "nodes/modelnode.h"
-
 namespace Jobs
 {
     struct JobFuncContext;
@@ -69,7 +69,7 @@ public:
     static void Create();
 
     /// setup
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK);
     /// Setup without a model resource
     static void Setup(
         const Graphics::GraphicsEntityId id
@@ -78,6 +78,7 @@ public:
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
 #if NEBULA_GRAPHICS_DEBUG
         , const Util::String debugName = ""
 #endif
@@ -85,6 +86,8 @@ public:
 
     /// change model for existing entity
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
+    /// Changes the material for the first node in the model
+    static void ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material);
     /// get model
     static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
 
@@ -94,6 +97,9 @@ public:
     static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
+    
+    /// Set the stage where this model can be seen
+    static void SetStageMask(const Graphics::GraphicsEntityId id, const Graphics::StageMask stageMask);
 
     /// Compute the bounding box for a model
     static Math::bbox ComputeBoundingBox(const Graphics::GraphicsEntityId id);
@@ -101,9 +107,9 @@ public:
     /// Get node index based on name
     static IndexT GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplatesGPULang::BatchGroup batch);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplatesGPULang::BatchGroup batch);
     /// Allocate constant memory for instance constants in this frame
     static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const Materials::BatchIndex batch);
     /// Allocate constant memory for instance constants in this frame
@@ -142,7 +148,7 @@ public:
         {
             Util::PinnedArray<0xFFFF, Math::mat4> origTransforms;
             Util::PinnedArray<0xFFFF, Math::mat4> nodeTransforms;
-            Util::PinnedArray<0xFFFF, uint32> nodeParents;
+            Util::PinnedArray<0xFFFF, uint32_t> nodeParents;
         } transformable;
 
         /// The bounding boxes are used by visibility and the states by rendering
@@ -153,17 +159,18 @@ public:
             Util::PinnedArray<0xFFFF, Util::Tuple<float, float>> nodeLodDistances;
             Util::PinnedArray<0xFFFF, float> nodeLods;
             Util::PinnedArray<0xFFFF, float> textureLods;
-            Util::PinnedArray<0xFFFF, uint32> nodeTransformIndex;
-            Util::PinnedArray<0xFFFF, uint64> nodeSortId;
+            Util::PinnedArray<0xFFFF, uint32_t> nodeTransformIndex;
+            Util::PinnedArray<0xFFFF, uint64_t> nodeSortId;
             Util::PinnedArray<0xFFFF, NodeInstanceFlags> nodeFlags;
             Util::PinnedArray<0xFFFF, Materials::MaterialId> nodeMaterials;
-            Util::PinnedArray<0xFFFF, const MaterialTemplates::Entry*> nodeMaterialTemplates;
+            Util::PinnedArray<0xFFFF, const MaterialTemplatesGPULang::Entry*> nodeMaterialTemplates;
             Util::PinnedArray<0xFFFF, NodeInstanceState> nodeStates;
             Util::PinnedArray<0xFFFF, Models::NodeType> nodeTypes;
             Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;
             Util::PinnedArray<0xFFFF, CoreGraphics::MeshId> nodeMeshes;
             Util::PinnedArray<0xFFFF, CoreGraphics::PrimitiveGroup> nodePrimitiveGroup;
-            Util::PinnedArray<0xFFFF, Util::Tuple<uint32, uint32>> nodeDrawModifiers;
+            Util::PinnedArray<0xFFFF, IndexT> nodePrimitiveGroupIndex;
+            Util::PinnedArray<0xFFFF, Util::Tuple<uint32_t, uint32_t>> nodeDrawModifiers;
 
             Util::PinnedArray<0xFFFF, void*> nodeSpecialData;
 #if NEBULA_GRAPHICS_DEBUG
@@ -181,6 +188,8 @@ public:
 
     /// Get model node instance states
     static const NodeInstanceRange& GetModelRenderableRange(const Graphics::GraphicsEntityId id);
+    /// Get stage for model
+    static const Graphics::StageMask GetModelStageMask(const Graphics::GraphicsEntityId id);
     /// Get model node instance transformables
     static const NodeInstanceRange& GetModelTransformableRange(const Graphics::GraphicsEntityId id);
     /// Get array to all model node states
@@ -214,15 +223,17 @@ private:
         Model_NodeInstanceStates,
         Model_NodeLookup,
         Model_Transform,
+        Model_StageMask,
         Model_Dirty
     };
     typedef Ids::IdAllocator<
         Resources::ResourceId,
-        Util::Array<uint32>,
+        Util::Array<uint32_t>,
         NodeInstanceRange,
         NodeInstanceRange,
         Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
+        Graphics::StageMask,           // stage
         bool                // transform is dirty
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;

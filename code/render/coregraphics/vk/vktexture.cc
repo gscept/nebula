@@ -257,24 +257,28 @@ SetupTexture(const TextureId id)
     // we automatically assign VK_IMAGE_USAGE_SAMPLED_BIT to sampled images, render textures and readwrite textures, but not for transfer textures
     constexpr uint Lookup[] =
     {
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         0x0 // Device exclusive?
     };
-    VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
+    VkImageUsageFlags usage = Util::BitmaskConvert(uint(loadInfo.usage), Lookup);
 
-    if (loadInfo.usage & TextureUsage::RenderTexture)
+    if (HasFlags(loadInfo.usage, TextureUsage::Render))
         usage |= (AnyBits(bits, ImageBits::DepthBits | ImageBits::StencilBits) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
+    // Add transfer dst bit if we need to clear the texture
+    if (loadInfo.clear)
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
     VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
     VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
 
     // if read-write, we will almost definitely use this texture on multiple queues
-    VkSharingMode sharingMode = (loadInfo.usage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    VkSharingMode sharingMode = (HasFlags(loadInfo.usage, TextureUsage::ReadWrite)) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const Util::Set<uint32_t>& queues = CoreGraphics::GetQueueIndices();
 
     if (queues.Size() <= 1)
@@ -505,7 +509,7 @@ SetupTexture(const TextureId id)
         , viewRange.layerCount);
 
     // If render target or texture has clear, transition to write and clear it
-    if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::RenderTexture))
+    if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::Render))
     {
         // The first barrier is to transition from the initial layout to transfer for clear
         CoreGraphics::CmdBarrier(cmdBuf,
@@ -561,7 +565,7 @@ SetupTexture(const TextureId id)
                 });
         }
     }
-    else if (AnyBits(loadInfo.usage, DeviceExclusive | ReadWriteTexture))
+    else if (AnyBits(loadInfo.usage, TextureUsage::DeviceExclusive | TextureUsage::ReadWrite))
     {
         // Transition device-only textures to read state
         CoreGraphics::CmdBarrier(cmdBuf,
@@ -605,9 +609,6 @@ SetupTexture(const TextureId id)
 const TextureId
 CreateTexture(const TextureCreateInfo& info)
 {
-    if (info.windowRelative)
-        n_assert(info.type == CoreGraphics::Texture2D);
-
     /// during the load-phase, we can safetly get the structs
     Ids::Id32 id = textureAllocator.Alloc();
 
@@ -643,7 +644,6 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.clear = adjustedInfo.clear;
     loadInfo.clearColorF4 = adjustedInfo.clearColorF4;
     loadInfo.defaultLayout = adjustedInfo.defaultLayout;
-    loadInfo.windowRelative = adjustedInfo.windowRelative;
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
@@ -675,9 +675,10 @@ CreateTexture(const TextureCreateInfo& info)
 /**
 */
 void
-DeleteTexture(const TextureId id)
+DestroyTexture(const TextureId id)
 {
     __Lock(textureAllocator, id.id);
+
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
 
@@ -742,23 +743,16 @@ DeleteTexture(const TextureId id)
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
     if (runtimeInfo.bind != 0xFFFFFFFF)
         Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+    runtimeInfo.bind = 0xFFFFFFFF;
     CoreGraphics::DelayedDeleteTexture(id);
     runtimeInfo.view = VK_NULL_HANDLE;
     loadInfo.img = VK_NULL_HANDLE;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyTexture(const TextureId id)
-{
-    DeleteTexture(id);
-    textureAllocator.Dealloc(id.id);
 
 #ifdef WITH_NEBULA_EDITOR
     TrackedTextures.EraseIndex(TrackedTextures.FindIndex(id));
 #endif
+
+    textureAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -880,37 +874,6 @@ TextureGetStencilBindlessHandle(const CoreGraphics::TextureId id)
     Ids::Id32 stencil = textureAllocator.ConstGet<Texture_LoadInfo>(id.id).stencilExtension;
     n_assert(stencil != Ids::InvalidId32);
     return textureStencilExtensionAllocator.ConstGet<TextureExtension_StencilBind>(stencil);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TextureWindowResized(const TextureId id)
-{
-    __Lock(textureAllocator, id.id);
-    VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
-    VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
-
-    if (loadInfo.windowRelative)
-    {
-        uint tmp = runtimeInfo.bind;
-        runtimeInfo.bind = 0xFFFFFFFF;
-        DeleteTexture(id);
-
-        // if the window has been resized, we need to update our dimensions based on relative size
-        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(loadInfo.window);
-        loadInfo.width = mode.GetWidth() * loadInfo.relativeDims.width;
-        loadInfo.height = mode.GetHeight() * loadInfo.relativeDims.height;
-        loadInfo.depth = 1;
-
-        runtimeInfo.bind = tmp;
-        SetupTexture(id);
-
-#if NEBULA_GRAPHICS_DEBUG
-        ObjectSetName(id, loadInfo.name.Value());
-#endif
-    }
 }
 
 //------------------------------------------------------------------------------

@@ -1,0 +1,77 @@
+//------------------------------------------------------------------------------
+//  text.gpul
+//
+//  Basic text shader
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+
+group(BATCH_GROUP) uniform Texture: *texture2D;
+
+/// Declaring used textures
+struct TextData
+{
+    TextProjectionModel : f32x4x4;
+};
+group(BATCH_GROUP) inline Text : *TextData;
+
+group(BATCH_GROUP) sampler_state TextureSampler
+{
+    Filter = FilterMode.Linear;
+};
+
+render_state TextState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+    Cull = CullFace.None;
+    ScissorEnabled = true;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x2,
+    binding(1) in uv : f32x2,
+    binding(2) in color : f32x4,
+    out UV : f32x2,
+    out Color : f32x4
+) void
+{
+    const pos = f32x4(position, 0, 1);    
+    Color = color;
+    UV = uv;
+    vertexExportCoordinates(Text.TextProjectionModel * pos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(
+    in UV : f32x2,
+    in Color : f32x4
+) void
+{
+    const texColor = textureSample(Texture, TextureSampler, UV).rrrr;
+    pixelExportColor(texColor * Color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = TextState;
+};

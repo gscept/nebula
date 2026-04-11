@@ -1,0 +1,9 @@
+//------------------------------------------------------------------------------
+//  downsample_cs_min.gpul
+//  Downsample compute shader using a min filter
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "downsample_include.gpuh"
+const Kernel = KernelMethod.Min;
+#include "downsample_cs.gpuh" 

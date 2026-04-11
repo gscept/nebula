@@ -1,0 +1,69 @@
+//------------------------------------------------------------------------------
+//  averagelum.gpul
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/shared.gpuh>
+
+render_state AverageLumState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false; 
+    DepthWriteEnabled = false;
+};
+
+uniform ColorSource : *texture2D;
+uniform PreviousLum : *texture2D;
+
+struct AverageLumData
+{
+    TimeDiff : f32;
+};
+uniform AverageLumBlock : *AverageLumData;
+
+sampler_state LuminanceSampler
+{
+    Filter = FilterMode.Point;
+};
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point 
+vsMain(
+    binding(0) in position : f32x3, 
+    binding(2) in uv : f32x2, 
+    out UV : f32x2
+) void 
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Performs a 2x2 kernel downscale, will only render 1 pixel
+*/
+entry_point
+psMain(in UV : f32x2) void
+{
+    const sample1 : f32x4 = textureFetch(ColorSource, i32x2(1, 0), 0);
+    const sample2 : f32x4 = textureFetch(ColorSource, i32x2(0, 1), 0);
+    const sample3 : f32x4 = textureFetch(ColorSource, i32x2(1, 1), 0);
+    const sample4 : f32x4 = textureFetch(ColorSource, i32x2(0, 0), 0);
+    const currentLum : f32 = dot((sample1 + sample2 + sample3 + sample4).xyz * 0.25f, Luminance);
+    const lastLum : f32 = textureFetch(PreviousLum, i32x2(0, 0), 0).x;
+
+    var lum : f32 = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * AverageLumBlock.TimeDiff));
+    lum = max(0.25f, lum);
+    pixelExportColor(lum, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = AverageLumState;
+};

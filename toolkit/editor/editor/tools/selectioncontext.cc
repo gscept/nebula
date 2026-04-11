@@ -94,7 +94,7 @@ SelectionContext::PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 
                              ? SelectionMode::Append
                              : SelectionMode::Replace;
 
-    Math::vec2 mousePos = mouse->GetScreenPosition();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
     //TODO: move mousepos to viewport space
     mousePos -= viewPortPosition;
     mousePos = {mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y};
@@ -244,7 +244,7 @@ SelectionContext::GetSelectedEntityUnderMouse(
     Editor::Entity closestEntity = Editor::Entity::Invalid();
 
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Math::vec2 mousePos = mouse->GetScreenPosition();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
 
     mousePos -= viewPortPosition;
     mousePos = {mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y};

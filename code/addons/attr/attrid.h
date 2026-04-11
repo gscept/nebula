@@ -73,6 +73,10 @@ public:
     int GetIntDefValue() const;
     /// get uint default value
     uint GetUIntDefValue() const;
+    /// get int default value
+    int GetInt64DefValue() const;
+    /// get uint default value
+    uint GetUInt64DefValue() const;
     /// get floar default value
     float GetFloatDefValue() const;
     /// get string default value
@@ -359,6 +363,28 @@ AttrId::GetUIntDefValue() const
 {
     n_assert(0 != this->defPtr);
     return this->defPtr->GetDefaultValue().GetUInt();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+int
+AttrId::GetInt64DefValue() const
+{
+    n_assert(0 != this->defPtr);
+    return this->defPtr->GetDefaultValue().GetInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+uint
+AttrId::GetUInt64DefValue() const
+{
+    n_assert(0 != this->defPtr);
+    return this->defPtr->GetDefaultValue().GetUInt64();
 }
 
 //------------------------------------------------------------------------------

@@ -38,29 +38,31 @@ def convert_xml(input_file, output_file):
         if surface_tag is None:
             raise ValueError("Expected <Surface> tag within <Nebula>, but none was found.")
 
-        # Create a new <Params> element
-        params_tag = ET.Element("Params")
+        if surface_tag.find("Param") is not None:
 
-        # Iterate through <Param> elements within <Surface>
-        for param in surface_tag.findall("Param"):
-            name = param.get("name")
-            value = param.get("value")
+            # Create a new <Params> element
+            params_tag = ET.Element("Params")
 
-            if name and value:
-                # Create a new tag for each name and set the "value" attribute
-                new_tag = ET.Element(name)
-                new_tag.set("value", value)  # Set the value as an attribute
-                params_tag.append(new_tag)
+            # Iterate through <Param> elements within <Surface>
+            for param in surface_tag.findall("Param"):
+                name = param.get("name")
+                value = param.get("value")
 
-        # Remove all existing <Param> elements from <Surface>
-        for param in surface_tag.findall("Param"):
-            surface_tag.remove(param)
+                if name and value:
+                    # Create a new tag for each name and set the "value" attribute
+                    new_tag = ET.Element(name)
+                    new_tag.set("value", value)  # Set the value as an attribute
+                    params_tag.append(new_tag)
 
-        # Add the new <Params> tag to <Surface>
-        surface_tag.append(params_tag)
+            # Remove all existing <Param> elements from <Surface>
+            for param in surface_tag.findall("Param"):
+                surface_tag.remove(param)
+
+            # Add the new <Params> tag to <Surface>
+            surface_tag.append(params_tag)
 
         # Pretty-print the XML by adding indentation
-        indent_xml(root)
+        #indent_xml(root)
 
         # Write the formatted XML to the output file
         tree.write(output_file, encoding="utf-8", xml_declaration=True)

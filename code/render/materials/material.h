@@ -23,6 +23,12 @@ struct Entry;
 enum class BatchGroup;
 };
 
+namespace MaterialTemplatesGPULang
+{
+struct Entry;
+enum class BatchGroup;
+};
+
 namespace Materials
 {
 
@@ -48,7 +54,7 @@ struct MaterialBindlessBufferBinding
 #endif
 
 /// Create material
-MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
+MaterialId CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
@@ -68,6 +74,8 @@ void MaterialSetBufferBinding(const MaterialId id, IndexT index);
 /// Get material GPU buffer binding
 IndexT MaterialGetBufferBinding(const MaterialId id);
 
+/// Get name of material
+const Util::StringAtom& MaterialGetName(const MaterialId id);
 
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
@@ -78,9 +86,9 @@ void MaterialSetLowestLod(const MaterialId mat, float lod);
 void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index);
 
 /// Get material shader config
-const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
+const MaterialTemplatesGPULang::Entry* MaterialGetTemplate(const MaterialId mat);
 /// Get batch index from code
-const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch);
+const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplatesGPULang::BatchGroup batch);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
 
@@ -119,6 +127,7 @@ struct MaterialTexture
 
 enum
 {
+    Material_Name,
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
@@ -137,6 +146,7 @@ enum
 
 
 typedef Ids::IdAllocator<
+    Util::StringAtom,
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
@@ -146,7 +156,7 @@ typedef Ids::IdAllocator<
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
     IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
-    const MaterialTemplates::Entry*                                                 // template
+    const MaterialTemplatesGPULang::Entry*                                                 // template
 #ifdef WITH_NEBULA_EDITOR
     , Util::Array<Resources::ResourceId>
     , MaterialBindlessBufferBinding

@@ -14,7 +14,7 @@ namespace TBUI
 /**
 */
 tb::TBBitmap*
-TBUIRenderer::CreateBitmap(int width, int height, uint32* data)
+TBUIRenderer::CreateBitmap(int width, int height, uint32_t* data)
 {
     TBUIBitmap* bitmap = new TBUIBitmap(this);
     if (!bitmap->Init(width, height, data))

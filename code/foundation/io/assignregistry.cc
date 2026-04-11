@@ -300,7 +300,7 @@ AssignRegistry::ResolveAssignsInString(const String& uriString) const
 {
     this->critSect.Enter();
     String result = uriString;
-
+    
     // check for assigns
     int colonIndex;
     while ((colonIndex = result.FindCharIndex(':', 0)) > 0)
@@ -336,6 +336,23 @@ AssignRegistry::ResolveAssignsInString(const String& uriString) const
     result.TrimRight("/");
     this->critSect.Leave();
     return result;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssignRegistry::PrintAll() const
+{
+    this->critSect.Enter();
+    auto keys = this->assignTable.KeysAsArray();
+    for (int i = 0; i < keys.Size(); i++)
+    {
+        Util::String assign = this->assignTable[keys[i]];
+        Util::String path = IO::URI(this->assignTable[keys[i]]).LocalPath();
+        n_printf("%-10s  =>   %-24s  =>  %s\n", (keys[i] + ":").AsCharPtr(), assign.AsCharPtr(), path.AsCharPtr());
+    }
+    this->critSect.Leave();
 }
 
 } // namespace IO

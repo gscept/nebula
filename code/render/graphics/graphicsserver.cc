@@ -6,11 +6,10 @@
 #include "graphicsserver.h"
 #include "graphicscontext.h"
 #include "view.h"
-#include "stage.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/textureloader.h"
-#include "coregraphics/shaderloader.h"
 #include "coregraphics/meshloader.h"
+#include "coregraphics/gpulangshaderloader.h"
 #include "coreanimation/animationloader.h"
 #include "characters/skeletonloader.h"
 #include "models/modelloader.h"
@@ -40,9 +39,12 @@ __ImplementSingleton(Graphics::GraphicsServer);
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsServer::GraphicsServer() :
-    isOpen(false)
-    , resizeCall(nullptr)
+GraphicsServer::GraphicsServer()
+    : resizeCall(nullptr)
+    , isOpen(false)
+    , maxWindowHeight(0)
+    , maxWindowWidth(0)
+
 {
     __ConstructSingleton;
 }
@@ -95,13 +97,13 @@ GraphicsServer::Open()
             64_MB,                  // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        .maxOcclusionQueries = 0x1000,
-        .maxTimestampQueries = 0x400,
+        .maxOcclusionQueries = 0x100000,
+        .maxTimestampQueries = 0x40000,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = args.GetBoolFlag("-gfxvalidation"),
         .features = {
-            .enableRayTracing = !args.GetBoolFlag("-disableraytracing"),
+            .enableRayTracing = args.GetBoolFlag("-enableraytracing"),
             .enableMeshShaders = !args.GetBoolFlag("-disablemeshshaders"),
             .enableVariableRateShading = !args.GetBoolFlag("-disablevariablerateshading"),
 #if NEBULA_GRAPHICS_DEBUG
@@ -114,7 +116,7 @@ GraphicsServer::Open()
     if (this->graphicsDevice)
     {
         // Setup shader server
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("gplb", CoreGraphics::GPULangShaderLoader::RTTI);
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
 
@@ -139,7 +141,7 @@ GraphicsServer::Open()
         const unsigned char white[6] = {0xFF};
         const unsigned char black[6] = {0x00};
         CoreGraphics::TextureCreateInfo texInfo;
-        texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+        texInfo.usage = CoreGraphics::TextureUsage::Sample;
 
         texInfo.tag = "system";
         texInfo.format = CoreGraphics::PixelFormat::R8;
@@ -257,7 +259,6 @@ GraphicsServer::Close()
     this->timer->StopTime();
     this->timer = nullptr;
 
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
@@ -275,6 +276,14 @@ GraphicsServer::Close()
 void
 GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state)
 {
+    // Make sure the context is made aware of all the views created thus far
+    for (auto& view : this->views)
+    {
+        if (context->OnViewCreated)
+        {
+            context->OnViewCreated(view);
+        }
+    }
     this->contexts.Append(context);
     this->states.Append(state);
 }
@@ -294,24 +303,26 @@ GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
-    CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+    bool ret = false;
+    const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wndId);
 
-    CoreGraphics::WaitAndClearPendingCommands();
-
-    // First, call the resize callback to trigger an update of the frame scripts
-    if (this->resizeCall != nullptr)
-        this->resizeCall(mode.GetWidth(), mode.GetHeight());
-
-    for (IndexT i = 0; i < this->contexts.Size(); ++i)
+    // Only resize if bigger
+    if (this->maxWindowWidth < mode.GetWidth() || this->maxWindowHeight < mode.GetHeight())
     {
-        if (this->contexts[i]->OnWindowResized != nullptr)
-        {
-            this->contexts[i]->OnWindowResized(wndId.id, mode.GetWidth(), mode.GetHeight());
-        }
+        this->maxWindowWidth = Math::max(mode.GetWidth(), this->maxWindowWidth);
+        this->maxWindowHeight = Math::max(mode.GetHeight(), this->maxWindowHeight);
+
+        // First, call the resize callback to trigger an update of the frame scripts
+        if (this->resizeCall != nullptr)
+            this->resizeCall(this->maxWindowWidth, this->maxWindowHeight);
+
+        ret = true;
     }
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -346,35 +357,88 @@ GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::Stage>
-GraphicsServer::CreateStage(const Util::StringAtom& name, bool main)
+void
+GraphicsServer::AddWindow(const CoreGraphics::WindowId window)
 {
-    Ptr<Stage> stage = Stage::Create();
-    this->stages.Append(stage);
-    return stage;
+    n_assert(this->windows.Find(window) == nullptr);
+    this->windows.Append(window);
+
+    // Don't resize if it's the main window
+    if (window != CoreGraphics::MainWindow)
+        this->OnWindowResized(window);
+    else
+    {
+        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+        this->maxWindowWidth = mode.GetWidth();
+        this->maxWindowHeight = mode.GetHeight();
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
+GraphicsServer::RemoveWindow(const CoreGraphics::WindowId window)
 {
-    IndexT i = this->stages.FindIndex(stage);
-    n_assert(i != InvalidIndex);
-    this->stages.EraseIndex(i);
+    auto it = this->windows.Find(window);
+    n_assert(it != nullptr);
+    this->windows.Erase(it);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
+const Util::Array<CoreGraphics::WindowId>&
+GraphicsServer::GetWindows() const
+{
+    return this->windows;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ViewId
+GraphicsServer::CreateView(
+    const Util::StringAtom& name
+    , bool(*render)(const Math::rectangle<int>&, IndexT, IndexT)
+    , const Math::rectangle<int>& viewport
+    , Graphics::StageMask stageMask
+    , std::function<void(IndexT, IndexT)> preViewCallback
+    , std::function<void(IndexT, IndexT)> postViewCallback
+)
 {
     n_assert(viewport.width() > 0 && viewport.height() > 0);
-    Ptr<View> view = View::Create();
-    view->SetFrameScript(render);
-    view->SetViewport(viewport);
+
+    Graphics::ViewCreateInfo info;
+    info.frameScript = render;
+    info.viewport = viewport;
+    info.stageMask = stageMask;
+    ViewId view = Graphics::CreateView(info);
+
+    this->views.Append(view);
+    this->viewsByName.Add(name, view);
+    this->preViewCallbacks.Append(preViewCallback);
+    this->postViewCallbacks.Append(postViewCallback);
+
+    // invoke all interested contexts
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnViewCreated != nullptr)
+            this->contexts[i]->OnViewCreated(view);
+    }
+    return view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ViewId
+GraphicsServer::CreateView(const Util::StringAtom& name)
+{
+    Graphics::ViewCreateInfo info;
+    ViewId view = Graphics::CreateView(info);
+
     this->views.Append(view);
     this->viewsByName.Add(name, view);
 
@@ -391,28 +455,8 @@ GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Mat
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name)
-{
-    Ptr<View> view = View::Create();
-    view->func = nullptr;
-    this->views.Append(view);
-
-    // invoke all interested contexts
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->OnViewCreated != nullptr)
-            this->contexts[i]->OnViewCreated(view);
-    }
-    return view;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-GraphicsServer::DiscardView(const Ptr<View>& view)
+GraphicsServer::DiscardView(const ViewId view)
 {
     IndexT idx = this->views.FindIndex(view);
     n_assert(idx != InvalidIndex);
@@ -429,9 +473,36 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 /**
 */
 void
-GraphicsServer::SetCurrentView(const Ptr<View>& view)
+GraphicsServer::SetCurrentView(const ViewId view)
 {
     this->currentView = view;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetView(const Util::StringAtom& name)
+{
+    return this->viewsByName[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Graphics::ViewId
+GraphicsServer::GetCurrentView() const
+{
+    return this->currentView;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex))
+{
+    this->endFrameCallbacks.Append(func);
 }
 
 //------------------------------------------------------------------------------
@@ -493,29 +564,28 @@ GraphicsServer::RunPreLogic()
     // Go through views and call before view
     for (IndexT i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
+        const ViewId view = this->views[i];
 
-        if (!view->enabled)
+        if (!ViewIsEnabled(view))
             continue;
 
         // begin frame on view, this will construct view build jobs
         this->currentView = view;
-        view->UpdateConstants();
         N_MARKER_BEGIN(ContextPerView, Graphics);
         for (auto& call : this->preLogicViewCalls)
         {
             call(view, this->frameContext);
         }
         N_MARKER_END();
-        this->currentView = nullptr;
+        this->currentView = InvalidViewId;
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-
-void GraphicsServer::RunPostLogic()
+void
+GraphicsServer::RunPostLogic()
 {
     N_SCOPE(PostLogic, Graphics);
 
@@ -525,27 +595,6 @@ void GraphicsServer::RunPostLogic()
         call(this->frameContext);
     }
     N_MARKER_END();
-
-    // Go through views and call before view
-    for (IndexT i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
-            continue;
-
-        this->currentView = view;
-        N_MARKER_BEGIN(ContextPerView, Graphics);
-        for (auto& call : this->postLogicViewCalls)
-        {
-            call(view, this->frameContext);
-        }
-        N_MARKER_END();
-        this->currentView = nullptr;
-    }
-
-    // Consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -557,27 +606,56 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    for (auto& cb : this->preViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
-    }
-
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
+        const ViewId view = this->views[i];
+            
+        if (!ViewIsEnabled(view))
             continue;
 
         this->currentView = view;
-        view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-        this->currentView = nullptr;
-    }
 
-    for (auto& cb : this->postViewCallbacks)
-    {
-        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_BEGIN(ViewPreRender, Graphics)
+        for (auto& call : this->postLogicViewCalls)
+        {
+            call(view, this->frameContext);
+        }
+        N_MARKER_END()
+        ViewApply(view);
+
+        N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
+        auto& preViewCallback = this->preViewCallbacks[i];
+        if (preViewCallback != nullptr)
+            preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
+
+        if (ViewRender(view, this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
+        {
+            Math::rectangle<int> viewport = ViewGetViewport(view);
+
+            // First, call the resize callback to trigger an update of the frame scripts
+            if (this->resizeCall != nullptr)
+            {
+                this->resizeCall(viewport.width(), viewport.height());
+            }
+            for (IndexT i = 0; i < this->contexts.Size(); ++i)
+            {
+                if (this->contexts[i]->OnViewportResized != nullptr)
+                {
+                    this->contexts[i]->OnViewportResized(FrameScript_default::ID, viewport.width(), viewport.height());
+                }
+            }
+
+            CoreGraphics::InvalidateGraphicsPipelineCache();
+        }
+        this->currentView = InvalidViewId;
+
+        N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
+        auto& postViewCallback = this->postViewCallbacks[i];
+        if (postViewCallback != nullptr)
+            postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        N_MARKER_END()
     }
 }
 
@@ -589,41 +667,25 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    n_assert_msg(this->swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
+    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
 
-    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
-    CoreGraphics::SwapchainSwap(swapchain);
-    CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+    for (auto& func : this->endFrameCallbacks)
+    {
+        func(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
 
-    // Allocate command buffer to run swap
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
-    CoreGraphics::CmdBufferBeginInfo beginInfo;
-    beginInfo.submitDuringPass = false;
-    beginInfo.resubmittable = false;
-    beginInfo.submitOnce = true;
-    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+    for (auto& wnd : this->windows)
+    {
+        CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
 
-    this->swapInfo.syncFunc(cmdBuf);
-    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, this->swapInfo.swapSource);
+        CoreGraphics::SemaphoreId displaySemaphore = CoreGraphics::SwapchainGetCurrentDisplaySemaphore(swapchain);
+        CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
+        displaySemaphores.Append(displaySemaphore);
+        presentSemaphores.Append(presentSemaphore);
+    }
 
-    CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::CmdFinishQueries(cmdBuf);
-    CoreGraphics::CmdEndRecord(cmdBuf);
-
-    auto submission = CoreGraphics::SubmitCommandBuffers(
-        {cmdBuf}
-        , queue
-        , { this->swapInfo.submission }
-#if NEBULA_GRAPHICS_DEBUG
-        , "Swap"
-#endif
-
-    );
-    CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
-
-    // Finish submuissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
+    // Finish submissions
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, presentSemaphores);
 }
 
 //------------------------------------------------------------------------------
@@ -636,7 +698,7 @@ GraphicsServer::NewFrame()
     CoreGraphics::NewFrame();
 
     // Consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(false);
+    //CoreGraphics::ResourceTableBlock(false);
 }
 
 } // namespace Graphics

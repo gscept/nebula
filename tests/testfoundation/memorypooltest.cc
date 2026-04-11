@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "memorypooltest.h"
-//#include "memory/memorypool.h"
+#include "memory/memorypool.h"
 
 namespace Test
 {
@@ -19,13 +19,14 @@ void
 MemoryPoolTest::Run()
 {
 // FIXME FIXME FIXME
-/*
+
     const SizeT blockSize = 45;
     const SizeT numBlocks = 4;
-    MemoryPool memPool("TestPool", blockSize, numBlocks);
+    MemoryPool memPool;
+    memPool.Setup(Memory::DefaultHeap, blockSize, numBlocks);
 
-    VERIFY(Util::String("TestPool") == memPool.GetName());
     VERIFY(memPool.GetBlockSize() == blockSize);
+	VERIFY(memPool.GetNumBlocks() == numBlocks);
 
     // do some allocations
     void* ptr[numBlocks] = { 0 };
@@ -33,14 +34,18 @@ MemoryPoolTest::Run()
     for (i = 0; i < numBlocks; i++)
     {
         ptr[i] = memPool.Alloc();
+		VERIFY(0 != ptr[i]);
     }
+	// next allocation should fail
+	void* failPtr = memPool.Alloc();
+	VERIFY(0 == failPtr);
 
     // ..and free them again
     for (i = 0; i < numBlocks; i++)
     {
         memPool.Free(ptr[i]);
     }
-*/
+
 }
 
 } // namespace Test

@@ -12,6 +12,7 @@
 #include "physics/debugui.h"
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/scene.h"
+#include "graphics/cameracontext.h"
 
 using namespace Editor;
 
@@ -24,7 +25,7 @@ __ImplementClass(Presentation::Physics, 'PtPh', Presentation::BaseWindow);
 */
 Physics::Physics()
 {
-    // empty
+    this->additionalFlags = ImGuiWindowFlags_(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
 //------------------------------------------------------------------------------
@@ -46,14 +47,14 @@ Physics::Run(SaveMode save)
         Ptr<Scene> sceneWindow = Presentation::WindowServer::Instance()->GetWindow("Scene View").downcast<Presentation::Scene>();
         if (sceneWindow.isvalid())
         {
-            this->defaultCamera = sceneWindow->viewPort.GetView()->GetCamera();
+            this->defaultCamera = ViewGetCamera(sceneWindow->viewPort.GetView());
         }
     }
     if (this->defaultCamera == Graphics::GraphicsEntityId::Invalid())
     {
         return;
     }
-    ::Physics::RenderUI(this->defaultCamera);
+    ::Physics::RenderUI(Graphics::CameraContext::GetView(this->defaultCamera));
 }
 
 } // namespace Presentation

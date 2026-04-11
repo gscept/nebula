@@ -66,8 +66,8 @@ namespace Tests
 // ======================================================
 
 int fps = 0;
-uint32 frame_counter_total = 0;
-uint32 frame_counter = 0;
+uint32_t frame_counter_total = 0;
+uint32_t frame_counter = 0;
 double frame_counter_reset_time = 0;
 
 const char* girl_names[] = {"Maja",   "Alice",   "Julia",   "Linnéa",   "Wilma",   "Ella",    "Elsa",     "Emma",     "Alva",

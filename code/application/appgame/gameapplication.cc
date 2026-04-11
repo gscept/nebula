@@ -6,6 +6,7 @@
 
 #include "appgame/gameapplication.h"
 
+#include "core/sysfunc.h"
 #include "options.h"
 #include "core/debug/corepagehandler.h"
 #include "threading/debug/threadpagehandler.h"
@@ -20,13 +21,12 @@
 #include "input/inputserver.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "nflatbuffer/flatbufferinterface.h"
-
 #include "profiling/profiling.h"
 
 namespace App
 {
 __ImplementSingleton(App::GameApplication);
-IndexT GameApplication::FrameIndex = -1;
+IndexT GameApplication::FrameIndex = 1;
 bool GameApplication::editorEnabled = false;
 
 using namespace Util;
@@ -39,10 +39,10 @@ using namespace Debug;
 /**
 */
 GameApplication::GameApplication() :
-    exitHandler(this)
 #if __NEBULA_HTTP__
-    ,defaultTcpPort(2100)
+    defaultTcpPort(2100),
 #endif
+    exitHandler(this)
 {
     __ConstructSingleton;
 }
@@ -121,7 +121,7 @@ GameApplication::Open()
 
 
 #if NEBULA_ENABLE_PROFILING
-        Profiling::ProfilingRegisterThread();
+        Profiling::ProfilingRegisterThread(15);
 #endif
 
         // attach a log file console handler
@@ -190,7 +190,6 @@ GameApplication::Close()
 
     this->CleanupGameFeatures();
     this->gameServer->RemoveGameFeature(this->baseGameFeature);
-    this->baseGameFeature->Release();
     this->baseGameFeature = nullptr;
 
     this->gameServer = nullptr;
@@ -223,6 +222,9 @@ GameApplication::Close()
     Application::Close();
 }
 
+
+
+
 //------------------------------------------------------------------------------
 /**
     Run the application. This method will return when the application wishes
@@ -246,13 +248,15 @@ GameApplication::StepFrame()
 {
     _start_timer(GameApplicationFrameTimeAll);
 
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingNewFrame();
+#endif
+
 #if __NEBULA_HTTP__
     this->httpServerProxy->HandlePendingRequests();
 #endif
 
-#if NEBULA_ENABLE_PROFILING
-    Profiling::ProfilingNewFrame();
-#endif
+    N_SCOPE(StepFrame, Game)
 
     Jobs2::JobNewFrame();
 

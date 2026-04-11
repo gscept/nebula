@@ -1,0 +1,194 @@
+//------------------------------------------------------------------------------
+//  hbaoblur_cs.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+
+struct HBAOBlurData
+{
+    PowerExponent : f32;
+    BlurFalloff : f32;
+    BlurDepthThreshold : f32;
+};
+uniform HBAOBlur : *HBAOBlurData;
+
+sampler_state LinearState
+{
+    //Samplers = {HBAOReadLinear};
+    Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+sampler_state PointState
+{
+    //Samplers = {HBAOReadPoint};
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+uniform HBAOX : *texture2D;
+uniform HBAOY : *texture2D;
+uniform HBAORG : *mutable rg16f texture2D;
+uniform HBAOR : *mutable r16f texture2D;
+
+const KERNEL_RADIUS = 16;
+const KERNEL_RADIUS_FLOAT = 16.0f;
+const HALF_KERNEL_RADIUS = KERNEL_RADIUS / 2;
+
+const HBAO_TILE_WIDTH = 256;
+
+const SHARED_MEM_SIZE = KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS;
+workgroup SharedMemory : [SHARED_MEM_SIZE]f32x2;
+
+//------------------------------------------------------------------------------
+/**
+*/
+CrossBilateralWeight(r : f32, d : f32, d0 : f32) f32
+{
+    return exp2(-r*r*HBAOBlur.BlurFalloff) * f32(abs(d - d0) < HBAOBlur.BlurDepthThreshold);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(SHARED_MEM_SIZE)
+entry_point
+csMainX() void
+{
+    // get full resolution and inverse full resolution
+    const size = textureGetSizeMip(HBAOX, 0u);
+    
+    const localThreadIndices = computeGetLocalThreadIndices();
+    const workgroupIndices = computeGetWorkgroupIndices();
+    
+    // calculate offsets
+    const         tileStart = i32(workgroupIndices.x) * HBAO_TILE_WIDTH;
+    const           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const        apronStart = i32(tileStart) - KERNEL_RADIUS;
+    const          apronEnd = tileEnd   + KERNEL_RADIUS;
+    
+    const x = max(0, apronStart + i32(localThreadIndices.x));
+    const y = i32(workgroupIndices.y);
+    SharedMemory[localThreadIndices.x] = textureFetch(HBAOX, i32x2(x, y), 0).xy;
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+    
+    const writePos = tileStart + localThreadIndices.x;
+    const tileEndClamped = min(tileEnd, i32(size.x));
+    
+    if (writePos < tileEndClamped)
+    {
+        // Fetch (ao,z) at the kernel center
+        const AoDepth = textureFetch(HBAOX, i32x2(writePos, y), 0).xy;
+        var ao_total = AoDepth.x;
+        const center_d = AoDepth.y;
+        var w_total = 1.0f;
+
+        for (var i = 0.0f; i < HALF_KERNEL_RADIUS; ++i)
+        {
+            // Sample the pre-filtered data with step size = 2 pixels
+            const r = 2.0f*i + (-KERNEL_RADIUS_FLOAT + 0.5f);
+            const j = 2*u32(i) + localThreadIndices.x;
+            const samp = SharedMemory[j];
+            const w = CrossBilateralWeight(r, samp.y, center_d);
+            ao_total += w * samp.x;
+            w_total += w;
+        }
+
+        for (var i = 0.0f; i < HALF_KERNEL_RADIUS; ++i)
+        {
+            // Sample the pre-filtered data with step size = 2 pixels
+            const r = 2.0f*i + 1.5f;
+            const j = 2*u32(i) + localThreadIndices.x + KERNEL_RADIUS + 1;
+            const samp = SharedMemory[j];
+            const w = CrossBilateralWeight(r, samp.y, center_d);
+            ao_total += w * samp.x;
+            w_total += w;
+        }
+        
+        const ao = ao_total / w_total;
+        textureStore(HBAORG, i32x2(writePos,y), f32x4(ao, center_d, 0, 0));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(SHARED_MEM_SIZE)
+entry_point
+csMainY() void
+{
+    // get full resolution and inverse full resolution
+    const size = textureGetSizeMip(HBAOY, 0u);
+    const inverseSize = 1.0f / f32x2(size);
+    
+    const localThreadIndices = computeGetLocalThreadIndices();
+    const workgroupIndices = computeGetWorkgroupIndices();
+    
+    // calculate offsets
+    const         tileStart = i32(workgroupIndices.x) * HBAO_TILE_WIDTH;
+    const           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const        apronStart = i32(tileStart) - KERNEL_RADIUS;
+    const          apronEnd = tileEnd   + KERNEL_RADIUS;
+    
+    const x = i32(workgroupIndices.y);
+    const y = max(0, apronStart + i32(localThreadIndices.x));
+    SharedMemory[localThreadIndices.x] = textureFetch(HBAOY, i32x2(x, y), 0).xy;
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+    
+    const writePos = tileStart + localThreadIndices.x;
+    const tileEndClamped = min(tileEnd, i32(size.y));
+    
+    if (writePos < tileEndClamped)
+    {
+        // Fetch (ao,z) at the kernel center
+        const AoDepth = textureFetch(HBAOY, i32x2(x, writePos), 0).xy;
+        var ao_total = AoDepth.x;
+        const center_d = AoDepth.y;
+        var w_total = 1.0f;
+
+        for (var i = 0.0f; i < HALF_KERNEL_RADIUS; ++i)
+        {
+            // Sample the pre-filtered data with step size = 2 pixels
+            const r = 2.0f*i + (-KERNEL_RADIUS_FLOAT + 0.5f);
+            const j = 2*u32(i) + localThreadIndices.x;
+            const samp = SharedMemory[j];
+            const w = CrossBilateralWeight(r, samp.y, center_d);
+            ao_total += w * samp.x;
+            w_total += w;
+        }
+
+        for (var i = 0.0f; i < HALF_KERNEL_RADIUS; ++i)
+        {
+            // Sample the pre-filtered data with step size = 2 pixels
+            const r = 2.0f*i + 1.5f;
+            const j = 2*u32(i) + localThreadIndices.x + KERNEL_RADIUS + 1;
+            const samp = SharedMemory[j];
+            const w = CrossBilateralWeight(r, samp.y, center_d);
+            ao_total += w * samp.x;
+            w_total += w;
+        }
+        
+        const ao = ao_total / w_total;
+        textureStore(HBAOR, i32x2(x, writePos), f32x4(ao, 0, 0, 0));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program BlurX
+{
+    ComputeShader = csMainX;
+};
+
+@Mask("Alt1")
+program BlurY
+{
+    ComputeShader = csMainY;
+};

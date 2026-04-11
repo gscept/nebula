@@ -113,7 +113,7 @@ Built in scalar-types are:
 - 8 bit: `byte`, `bool`
 - 16 bit: `short`, `ushort`
 - 32 bit: `int`, `uint`, `float`
-- 64 bit: `int64`, `uint64`, `double`
+- 64 bit: `int64`, `uint64_t`, `double`
 
 Built in non-scalar types are:
 

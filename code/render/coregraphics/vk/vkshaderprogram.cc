@@ -6,7 +6,6 @@
 #include "vkshaderprogram.h"
 #include "vkgraphicsdevice.h"
 #include "coregraphics/shaderserver.h"
-#include "lowlevel/vk/vkrenderstate.h"
 #include "vkresourcetable.h"
 
 using namespace Util;
@@ -16,14 +15,26 @@ namespace Vulkan
 
 uint32_t UniqueIdCounter = 0;
 ShaderProgramAllocator shaderProgramAlloc;
+
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderName, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout)
+VkShaderProgramSetup(
+    const Ids::Id24 id,
+    const Resources::ResourceName& shaderName,
+    GPULang::Deserialize::Program* program,
+    const CoreGraphics::ResourcePipelineId& pipelineLayout
+)
 {
-    String mask = program->GetAnnotationString("Mask").c_str();
-    String name = program->name.c_str();
+    String mask, name;
+    for (size_t i = 0; i < program->annotationCount; i++)
+    {
+        String annot = String(program->annotations[i].name, program->annotations[i].nameLength);
+        if (annot == "Mask")
+            mask = String(program->annotations[i].data.s.string, program->annotations[i].data.s.length);
+    }
+    name = String(program->name, program->nameLength);
     
     VkShaderProgramSetupInfo& setup = shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(id);
     VkProgramReflectionInfo& refl = shaderProgramAlloc.Get<ShaderProgram_ReflectionInfo>(id);
@@ -31,42 +42,42 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
     runtime.layout = ResourcePipelineGetVk(pipelineLayout);
     runtime.pipeline = VK_NULL_HANDLE;
     runtime.uniqueId = UniqueIdCounter++;
-    setup.mask = CoreGraphics::ShaderFeatureMask(mask);
+    setup.mask = CoreGraphics::ShaderFeatureMask(mask.IsEmpty() ? name : mask);
     setup.name = name;
     setup.dev = Vulkan::GetCurrentDevice();
-    VkShaderProgramCreateShader(setup.dev, &runtime.vs, program->shaderBlock.vs.binarySize, program->shaderBlock.vs.binary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.hs, program->shaderBlock.hs.binarySize, program->shaderBlock.hs.binary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.ds, program->shaderBlock.ds.binarySize, program->shaderBlock.ds.binary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.gs, program->shaderBlock.gs.binarySize, program->shaderBlock.gs.binary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.ps, program->shaderBlock.ps.binarySize, program->shaderBlock.ps.binary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.cs, program->shaderBlock.cs.binarySize, program->shaderBlock.cs.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.vs, &program->shaders[GPULang::Deserialize::Program::ShaderStages::VertexShader]);
+    VkShaderProgramCreateShader(setup.dev, &runtime.hs, &program->shaders[GPULang::Deserialize::Program::ShaderStages::HullShader]);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ds, &program->shaders[GPULang::Deserialize::Program::ShaderStages::DomainShader]);
+    VkShaderProgramCreateShader(setup.dev, &runtime.gs, &program->shaders[GPULang::Deserialize::Program::ShaderStages::GeometryShader]);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ps, &program->shaders[GPULang::Deserialize::Program::ShaderStages::PixelShader]);
+    VkShaderProgramCreateShader(setup.dev, &runtime.cs, &program->shaders[GPULang::Deserialize::Program::ShaderStages::ComputeShader]);
     if (CoreGraphics::RayTracingSupported)
     {
-        VkShaderProgramCreateShader(setup.dev, &runtime.rg, program->shaderBlock.rg.binarySize, program->shaderBlock.rg.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.ra, program->shaderBlock.ra.binarySize, program->shaderBlock.ra.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.rc, program->shaderBlock.rc.binarySize, program->shaderBlock.rc.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.rm, program->shaderBlock.rm.binarySize, program->shaderBlock.rm.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.ri, program->shaderBlock.ri.binarySize, program->shaderBlock.ri.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.ca, program->shaderBlock.ca.binarySize, program->shaderBlock.ca.binary);
+        VkShaderProgramCreateShader(setup.dev, &runtime.rg, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayGenShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.ra, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayAnyHitShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.rc, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayClosestHitShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.rm, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayMissShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.ri, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayIntersectionShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.ca, &program->shaders[GPULang::Deserialize::Program::ShaderStages::RayCallableShader]);
     }
 
     if (CoreGraphics::MeshShadersSupported)
     {
-        VkShaderProgramCreateShader(setup.dev, &runtime.ts, program->shaderBlock.ts.binarySize, program->shaderBlock.ts.binary);
-        VkShaderProgramCreateShader(setup.dev, &runtime.ms, program->shaderBlock.ms.binarySize, program->shaderBlock.ms.binary);
+        VkShaderProgramCreateShader(setup.dev, &runtime.ts, &program->shaders[GPULang::Deserialize::Program::ShaderStages::TaskShader]);
+        VkShaderProgramCreateShader(setup.dev, &runtime.ms, &program->shaders[GPULang::Deserialize::Program::ShaderStages::MeshShader]);
     }
 
-    for (size_t i = 0; i < program->vsInputSlots.size(); i++)
+    for (size_t i = 0; i < program->vsInputLength; i++)
     {
-        refl.vsInputSlots.Append(program->vsInputSlots[i]);
+        refl.vsInputSlots.Append(program->vsInputs[i]);
     }
-    refl.name = program->name.c_str();
+    refl.name = name;
 
     // if we have a compute shader, it will be the one we use, otherwise use the graphics one
     if (runtime.cs)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.cs, Util::String::Sprintf("%s - Program: %s - CS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.cs, Util::String::Sprintf("%s - Program: %s - CS", shaderName.Value(), name.AsCharPtr()).AsCharPtr());
 #endif
 
         VkShaderProgramSetupAsCompute(setup, runtime);
@@ -107,17 +118,211 @@ VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned
 /**
 */
 void
-VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime)
+VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, GPULang::Deserialize::Program::Shader* binary)
+{
+    if (binary->binaryLength > 0)
+    {
+        VkShaderModuleCreateInfo info =
+        {
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            NULL,
+            0,                                      // flags
+            binary->binaryLength, // Vulkan expects the binary to be uint32, so we must assume size is in units of 4 bytes
+            binary->binary
+        };
+
+        // create shader
+        VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
+        assert(res == VK_SUCCESS);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkStencilOp
+StencilOpFromGPULang(GPULang::Serialization::StencilOp op)
+{
+    switch (op)
+    {
+        case GPULang::Serialization::StencilOp::StencilKeepOp: return VkStencilOp::VK_STENCIL_OP_KEEP;
+        case GPULang::Serialization::StencilOp::StencilZeroOp: return VkStencilOp::VK_STENCIL_OP_ZERO;
+        case GPULang::Serialization::StencilOp::StencilReplaceOp: return VkStencilOp::VK_STENCIL_OP_REPLACE;
+        case GPULang::Serialization::StencilOp::StencilIncrementClampOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+        case GPULang::Serialization::StencilOp::StencilDecrementClampOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+        case GPULang::Serialization::StencilOp::StencilInvertOp: return VkStencilOp::VK_STENCIL_OP_INVERT;
+        case GPULang::Serialization::StencilOp::StencilIncrementWrapOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_WRAP;
+        case GPULang::Serialization::StencilOp::StencilDecrementWrapOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_WRAP;
+    }
+    n_error("Invalid GPULang stencil op");
+    return VkStencilOp::VK_STENCIL_OP_KEEP;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkCompareOp
+CompareOpFromGPULang(GPULang::Serialization::CompareMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::Serialization::CompareMode::NeverCompare: return VK_COMPARE_OP_NEVER;
+        case GPULang::Serialization::CompareMode::LessCompare: return VK_COMPARE_OP_LESS;
+        case GPULang::Serialization::CompareMode::LessEqualCompare: return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case GPULang::Serialization::CompareMode::GreaterCompare: return VK_COMPARE_OP_GREATER;
+        case GPULang::Serialization::CompareMode::GreaterEqualCompare: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case GPULang::Serialization::CompareMode::NotEqualCompare: return VK_COMPARE_OP_NOT_EQUAL;
+        case GPULang::Serialization::CompareMode::EqualCompare: return VK_COMPARE_OP_EQUAL;
+        case GPULang::Serialization::CompareMode::AlwaysCompare: return VK_COMPARE_OP_ALWAYS;
+    }
+    n_error("Invalid GPULang compare mode");
+    return VK_COMPARE_OP_ALWAYS;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPolygonMode
+PolygonModeFromGPULang(GPULang::Serialization::RasterizationMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::Serialization::RasterizationMode::FillMode: return VK_POLYGON_MODE_FILL;
+        case GPULang::Serialization::RasterizationMode::LineMode: return VK_POLYGON_MODE_LINE;
+        case GPULang::Serialization::RasterizationMode::PointMode: return VK_POLYGON_MODE_POINT;
+    }
+    n_error("Invalid GPULang polygon mode");
+    return VK_POLYGON_MODE_FILL;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkFrontFace
+PolygonModeFromGPULang(GPULang::Serialization::WindingOrderMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::Serialization::WindingOrderMode::ClockwiseMode: return VK_FRONT_FACE_CLOCKWISE;
+        case GPULang::Serialization::WindingOrderMode::CounterClockwiseMode: return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    }
+    n_error("Invalid GPULang winding order mode");
+    return VK_FRONT_FACE_CLOCKWISE;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkLogicOp
+LogicOpFromGPULang(GPULang::Serialization::LogicOp op)
+{
+    switch (op)
+    {
+        case GPULang::Serialization::LogicOp::LogicClearOp: return VK_LOGIC_OP_CLEAR;
+        case GPULang::Serialization::LogicOp::LogicAndOp: return VK_LOGIC_OP_AND;
+        case GPULang::Serialization::LogicOp::LogicAndReverseOp: return VK_LOGIC_OP_AND_REVERSE;
+        case GPULang::Serialization::LogicOp::LogicCopyOp: return VK_LOGIC_OP_COPY;
+        case GPULang::Serialization::LogicOp::LogicAndInvertedOp: return VK_LOGIC_OP_AND_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicNoOp: return VK_LOGIC_OP_NO_OP;
+        case GPULang::Serialization::LogicOp::LogicXorOp: return VK_LOGIC_OP_XOR;
+        case GPULang::Serialization::LogicOp::LogicOrOp: return VK_LOGIC_OP_OR;
+        case GPULang::Serialization::LogicOp::LogicNorOp: return VK_LOGIC_OP_NOR;
+        case GPULang::Serialization::LogicOp::LogicEquivalentOp: return VK_LOGIC_OP_EQUIVALENT;
+        case GPULang::Serialization::LogicOp::LogicInvertOp: return VK_LOGIC_OP_INVERT;
+        case GPULang::Serialization::LogicOp::LogicOrReverseOp: return VK_LOGIC_OP_OR_REVERSE;
+        case GPULang::Serialization::LogicOp::LogicCopyInvertedOp: return VK_LOGIC_OP_COPY_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicOrInvertedOp: return VK_LOGIC_OP_OR_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicNandOp: return VK_LOGIC_OP_NAND;
+        case GPULang::Serialization::LogicOp::LogicSetOp: return VK_LOGIC_OP_SET;
+    }
+
+    n_error("Invalid GPULang logic op");
+    return VK_LOGIC_OP_CLEAR;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkBlendFactor
+BlendFactorFromGPULang(GPULang::Serialization::BlendFactor factor)
+{
+    switch (factor)
+    {
+        case GPULang::Serialization::BlendFactor::ZeroFactor: return VK_BLEND_FACTOR_ZERO;
+        case GPULang::Serialization::BlendFactor::OneFactor: return VK_BLEND_FACTOR_ONE;
+        case GPULang::Serialization::BlendFactor::SourceColorFactor: return VK_BLEND_FACTOR_SRC_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusSourceColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+        case GPULang::Serialization::BlendFactor::DestinationColorFactor: return VK_BLEND_FACTOR_DST_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusDestinationColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+        case GPULang::Serialization::BlendFactor::SourceAlphaFactor: return VK_BLEND_FACTOR_SRC_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusSourceAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        case GPULang::Serialization::BlendFactor::DestinationAlphaFactor: return VK_BLEND_FACTOR_DST_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusDestinationAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+        case GPULang::Serialization::BlendFactor::ConstantColorFactor: return VK_BLEND_FACTOR_CONSTANT_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusConstantColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+        case GPULang::Serialization::BlendFactor::ConstantAlphaFactor: return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusConstantAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+        case GPULang::Serialization::BlendFactor::SourceAlphaSaturateFactor: return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+        case GPULang::Serialization::BlendFactor::Source1ColorFactor: return VK_BLEND_FACTOR_SRC1_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusSource1ColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+        case GPULang::Serialization::BlendFactor::Source1AlphaFactor: return VK_BLEND_FACTOR_SRC1_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusSource1AlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+    }
+    n_error("Invalid GPULang blend factor");
+    return VK_BLEND_FACTOR_ZERO; // Handle invalid cases gracefully
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkBlendOp
+BlendOpFromGPULang(GPULang::Serialization::BlendOp op)
+{
+    switch (op)
+    {
+        case GPULang::Serialization::BlendOp::AddOp: return VK_BLEND_OP_ADD;
+        case GPULang::Serialization::BlendOp::SubtractOp: return VK_BLEND_OP_SUBTRACT;
+        case GPULang::Serialization::BlendOp::ReverseSubtractOp: return VK_BLEND_OP_REVERSE_SUBTRACT;
+        case GPULang::Serialization::BlendOp::MinOp: return VK_BLEND_OP_MIN;
+        case GPULang::Serialization::BlendOp::MaxOp: return VK_BLEND_OP_MAX;
+    }
+    n_error("Invalid GPULang blend op");
+    return VK_BLEND_OP_ADD;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkCullModeFlags
+CullModeFromGPULang(GPULang::Serialization::CullMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::Serialization::CullMode::BackMode: return VK_CULL_MODE_BACK_BIT;
+        case GPULang::Serialization::CullMode::FrontMode:return VK_CULL_MODE_FRONT_BIT;
+        case GPULang::Serialization::CullMode::FrontAndBackMode: return VK_CULL_MODE_FRONT_AND_BACK;
+        case GPULang::Serialization::CullMode::NoCullMode: return VK_CULL_MODE_NONE;
+    }
+
+    n_error("Invalid GPULang cull mode");
+    return VK_CULL_MODE_BACK_BIT;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkShaderProgramSetupAsGraphics(GPULang::Deserialize::Program* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime)
 {
     // we have to keep track of how many shaders we are using, AnyFX makes every function 'main'
     unsigned shaderIdx = 0;
     static const char* name = "main";
     memset(runtime.graphicsShaderInfos, 0, sizeof(runtime.graphicsShaderInfos));
 
-    runtime.stencilFrontRef = program->renderState->renderSettings.stencilFrontRef;
-    runtime.stencilBackRef = program->renderState->renderSettings.stencilBackRef;
-    runtime.stencilReadMask = program->renderState->renderSettings.stencilReadMask;
-    runtime.stencilWriteMask = program->renderState->renderSettings.stencilWriteMask;
+    runtime.stencilFrontRef = program->renderState->frontStencilState.referenceMask;
+    runtime.stencilBackRef = program->renderState->backStencilState.referenceMask;
+    runtime.stencilReadMask = program->renderState->frontStencilState.compareMask;
+    runtime.stencilWriteMask = program->renderState->frontStencilState.writeMask;
 
     // attach vertex shader
     if (0 != runtime.vs)
@@ -135,7 +340,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.vs, Util::String::Sprintf("%s - Program: %s - VS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.vs, Util::String::Sprintf("%s - Program: %s - VS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -154,7 +359,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ts, Util::String::Sprintf("%s - Program: %s - TS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ts, Util::String::Sprintf("%s - Program: %s - TS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -173,7 +378,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ms, Util::String::Sprintf("%s - Program: %s - MS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ms, Util::String::Sprintf("%s - Program: %s - MS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -192,7 +397,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.hs, Util::String::Sprintf("%s - Program: %s - HS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.hs, Util::String::Sprintf("%s - Program: %s - HS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -211,7 +416,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ds, Util::String::Sprintf("%s - Program: %s - DS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ds, Util::String::Sprintf("%s - Program: %s - DS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -230,7 +435,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.gs, Util::String::Sprintf("%s - Program: %s - GS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.gs, Util::String::Sprintf("%s - Program: %s - GS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -249,7 +454,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ps, Util::String::Sprintf("%s - Program: %s - PS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ps, Util::String::Sprintf("%s - Program: %s - PS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
@@ -268,38 +473,72 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ms, Util::String::Sprintf("%s - Program: %s - MS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ms, Util::String::Sprintf("%s - Program: %s - MS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     runtime.stageCount = shaderIdx;
-
-    // retrieve implementation specific state
-    AnyFX::VkRenderState* vkRenderState = static_cast<AnyFX::VkRenderState*>(program->renderState);
-
     runtime.rasterizerInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr,
         0
     };
-    vkRenderState->SetupRasterization(&runtime.rasterizerInfo);
+    runtime.rasterizerInfo.depthClampEnable = program->renderState->depthClampEnabled;
+    runtime.rasterizerInfo.rasterizerDiscardEnable = program->renderState->noPixels;
+    runtime.rasterizerInfo.polygonMode = PolygonModeFromGPULang(program->renderState->rasterizationMode);
+    runtime.rasterizerInfo.cullMode = CullModeFromGPULang(program->renderState->cullMode);
+    runtime.rasterizerInfo.frontFace = PolygonModeFromGPULang(program->renderState->windingOrderMode);
+    runtime.rasterizerInfo.depthBiasEnable = program->renderState->depthBiasEnabled;
+    runtime.rasterizerInfo.depthBiasConstantFactor = program->renderState->depthBiasFactor;
+    runtime.rasterizerInfo.depthBiasClamp = program->renderState->depthBiasClamp;
+    runtime.rasterizerInfo.depthBiasSlopeFactor = program->renderState->depthBiasSlopeFactor;
+    runtime.rasterizerInfo.lineWidth = program->renderState->lineWidth;
 
     runtime.multisampleInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         nullptr,
-        0
+        0,
+        (VkSampleCountFlagBits)program->renderState->samples,
+        program->renderState->sampleShadingEnabled,
+        program->renderState->minSampleShading,
+        nullptr, // FIX
+        program->renderState->alphaToCoverageEnabled,
+        program->renderState->alphaToOneEnabled
     };
-    vkRenderState->SetupMultisample(&runtime.multisampleInfo);
 
     runtime.depthStencilInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr,
-        0
+        0,
+        program->renderState->depthTestEnabled,
+        program->renderState->depthWriteEnabled,
+        CompareOpFromGPULang(program->renderState->depthCompare),
+        program->renderState->depthBoundsTestEnabled,
+        program->renderState->stencilEnabled,
+        {
+            StencilOpFromGPULang(program->renderState->frontStencilState.fail),
+            StencilOpFromGPULang(program->renderState->frontStencilState.pass),
+            StencilOpFromGPULang(program->renderState->frontStencilState.depthFail),
+            CompareOpFromGPULang(program->renderState->frontStencilState.compare),
+            program->renderState->frontStencilState.compareMask,
+            program->renderState->frontStencilState.writeMask,
+            program->renderState->frontStencilState.referenceMask,
+        },
+        {
+            StencilOpFromGPULang(program->renderState->backStencilState.fail),
+            StencilOpFromGPULang(program->renderState->backStencilState.pass),
+            StencilOpFromGPULang(program->renderState->backStencilState.depthFail),
+            CompareOpFromGPULang(program->renderState->backStencilState.compare),
+            program->renderState->backStencilState.compareMask,
+            program->renderState->backStencilState.writeMask,
+            program->renderState->backStencilState.referenceMask,
+        },
+        program->renderState->minDepthBounds,
+        program->renderState->maxDepthBounds,
     };
-    vkRenderState->SetupDepthStencil(&runtime.depthStencilInfo);
 
     runtime.colorBlendInfo =
     {
@@ -307,7 +546,26 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         nullptr,
         0
     };
-    vkRenderState->SetupBlend(&runtime.colorBlendInfo, runtime.colorBlendAttachments);
+    runtime.colorBlendInfo.logicOp = LogicOpFromGPULang(program->renderState->logicOp);
+    runtime.colorBlendInfo.logicOpEnable = program->renderState->logicOpEnabled;
+    runtime.colorBlendInfo.blendConstants[0] = program->renderState->blendConstants[0];
+    runtime.colorBlendInfo.blendConstants[1] = program->renderState->blendConstants[1];
+    runtime.colorBlendInfo.blendConstants[2] = program->renderState->blendConstants[2];
+    runtime.colorBlendInfo.blendConstants[3] = program->renderState->blendConstants[3];
+    for (uint i = 0; i < 8; i++)
+    {
+        runtime.colorBlendAttachments[i] =
+        {
+            program->renderState->blendStates[i].blendEnabled,
+            BlendFactorFromGPULang(program->renderState->blendStates[i].sourceColorBlendFactor),
+            BlendFactorFromGPULang(program->renderState->blendStates[i].destinationColorBlendFactor),
+            BlendOpFromGPULang(program->renderState->blendStates[i].colorBlendOp),
+            BlendFactorFromGPULang(program->renderState->blendStates[i].sourceAlphaBlendFactor),
+            BlendFactorFromGPULang(program->renderState->blendStates[i].destinationAlphaBlendFactor),
+            BlendOpFromGPULang(program->renderState->blendStates[i].alphaBlendOp),
+            program->renderState->blendStates[i].colorComponentMask
+        };
+    }
 
     runtime.tessInfo =
     {
@@ -324,7 +582,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         0,
         0,
         nullptr,
-        program->numVsInputs,
+        (uint32_t)program->vsInputLength,
         nullptr
     };
 
@@ -393,53 +651,58 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 /**
 */
 void
-VkShaderProgramSetupAsRaytracing(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
+VkShaderProgramSetupAsRaytracing(
+    GPULang::Deserialize::Program* program,
+    const Resources::ResourceName& shaderName,
+    VkShaderProgramSetupInfo& setup,
+    VkShaderProgramRuntimeInfo& runtime
+)
 {
-    if (runtime.rg)
+     if (runtime.rg)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.rg, Util::String::Sprintf("%s - Program: %s - RGS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.rg, Util::String::Sprintf("%s - Program: %s - RGS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     if (runtime.ca)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ca, Util::String::Sprintf("%s - Program: %s - CAS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ca, Util::String::Sprintf("%s - Program: %s - CAS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     if (runtime.ra)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ra, Util::String::Sprintf("%s - Program: %s - RAS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ra, Util::String::Sprintf("%s - Program: %s - RAS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     if (runtime.rc)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.rc, Util::String::Sprintf("%s - Program: %s - RCS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.rc, Util::String::Sprintf("%s - Program: %s - RCS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     if (runtime.rm)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.rm, Util::String::Sprintf("%s - Program: %s - RMS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.rm, Util::String::Sprintf("%s - Program: %s - RMS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     if (runtime.ri)
     {
 #if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::ObjectSetName(runtime.ri, Util::String::Sprintf("%s - Program: %s - RIS", shaderName.Value(), program->name.c_str()).AsCharPtr());
+        CoreGraphics::ObjectSetName(runtime.ri, Util::String::Sprintf("%s - Program: %s - RIS", shaderName.Value(), program->name).AsCharPtr());
 #endif
     }
 
     // Just setup some data, we actually create the pipeline when we combine shaders later
     runtime.rayPayloadSize = program->rayPayloadSize;
-    runtime.hitAttributeSize = program->hitAttributeSize;
+    runtime.hitAttributeSize = program->rayHitAttributeSize;
     runtime.type = CoreGraphics::RayTracingPipeline;
 }
 

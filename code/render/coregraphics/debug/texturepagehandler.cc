@@ -171,7 +171,7 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
     
     // get input args
     ResourceName name = ResourceName(query["img"]);
-    ResourceId id = name.AsString().AsLongLong();
+    ResourceId id = name.AsString().AsUInt64();
     ImageFileFormat::Code format = ImageFileFormat::InvalidImageFileFormat;
     if (query.Contains("fmt"))
     {
@@ -213,7 +213,7 @@ TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Pt
 {
     // lookup the texture in the ResourceServer
     const Ptr<ResourceServer>& resManager = ResourceServer::Instance();
-    Resources::ResourceId id = resId.AsLongLong();
+    Resources::ResourceId id = resId.AsUInt64();
 
     if (!resManager->HasResource(id))
     {

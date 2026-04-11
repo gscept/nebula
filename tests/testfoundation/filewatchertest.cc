@@ -46,6 +46,7 @@ FileWatcherTest::Run()
         case IO::Created: fileAdded++; break;
         case IO::Modified: fileModified++ ; break;
         case IO::Deleted: fileDeleted++; break;
+        default: break;
         }        
     });
     watcher->Watch("temp2", false, WatchFlags(WatchFlags::Creation | WatchFlags::NameChanged | WatchFlags::Write), [&fileAdded, &fileModified, &fileDeleted](IO::WatchEvent const& ev)
@@ -56,6 +57,7 @@ FileWatcherTest::Run()
         case IO::Created: fileAdded++; break;
         case IO::Modified: fileModified++; break;
         case IO::Deleted: fileDeleted++; break;
+        default: break;
         }
     });
     Core::SysFunc::Sleep(0.2);

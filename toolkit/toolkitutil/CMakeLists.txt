@@ -5,10 +5,10 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
     
-    fips_deps(foundation render physics application)
+    fips_deps(foundation render physics application db)
 
     if(FIPS_WINDOWS)
-        fips_libs(CMP_Core_MT CMP_Framework_MT)
+        fips_libs(CMP_Core_MD CMP_Framework_MD)
     else()
         fips_libs(xml2 CMP_Framework CMP_Common CMP_Core CMP_Core_SSE CMP_Core_AVX512 CMP_Core_AVX CMP_Compressonator CMP_GpuDecode Image_DDS Image_EXR Image_KTX Image_TGA)
     endif()
@@ -30,6 +30,13 @@ fips_begin_lib(toolkitutil)
             fips_files(
                 assetexporter.cc
                 assetexporter.h
+            )
+        fips_dir(filedb)
+            fips_files(
+                filedbattrs.cc
+                filedbattrs.h
+                filedb.cc
+                filedb.h
             )
         fips_dir(model/animutil)
             fips_files(
@@ -214,5 +221,10 @@ ENDIF()
                 surfaceexporter.h
                 surfacebuilder.h
                 surfacebuilder.cc
+            )
+        fips_dir(particle)
+            fips_files(
+                particleexporter.cc
+                particleexporter.h
             )
 fips_end_lib()

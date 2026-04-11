@@ -74,12 +74,12 @@ CreateBuffer(const BufferCreateInfo& info)
     }
     else
     {
-        if (info.usageFlags & CoreGraphics::TransferBufferSource)
+        if (HasFlags(info.usageFlags, CoreGraphics::BufferUsage::TransferSource))
         {
             queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
-        if (info.usageFlags & CoreGraphics::TransferBufferDestination)
+        if (HasFlags(info.usageFlags, CoreGraphics::BufferUsage::TransferDestination))
         {
             queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
@@ -105,7 +105,7 @@ CreateBuffer(const BufferCreateInfo& info)
         VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
     };
 
-    flags = Util::BitmaskConvert(info.usageFlags, UsageLookup);
+    flags = Util::BitmaskConvert(uint(info.usageFlags), UsageLookup);
     VkBufferCreateFlags createFlags = 0x0;
 
     // force add destination bit if we have data to be uploaded
@@ -121,7 +121,7 @@ CreateBuffer(const BufferCreateInfo& info)
     }
 
     // start by creating buffer
-    uint size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
+    size_t size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
     VkBufferCreateInfo bufinfo =
     {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -151,10 +151,10 @@ CreateBuffer(const BufferCreateInfo& info)
     VkMemoryRequirements memoryReqs;
     vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
 
-    uint baseAlignment = memoryReqs.alignment;
-    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
+    size_t baseAlignment = memoryReqs.alignment;
+    if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::AccelerationStructureInstances))
         baseAlignment = 16;
-    if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
+    if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::ShaderTable))
         baseAlignment = Math::max(baseAlignment, CoreGraphics::ShaderGroupAlignment);
 
     if (info.sparse)
@@ -166,7 +166,7 @@ CreateBuffer(const BufferCreateInfo& info)
         n_assert(memoryReqs.size < CoreGraphics::SparseAddressSize);
 
         table.memoryReqs = memoryReqs;
-        table.bindCounts = size / baseAlignment;
+        table.bindCounts = uint(size / baseAlignment);
         table.pages.Resize(table.bindCounts);
 
         SizeT offset = 0;
@@ -205,8 +205,8 @@ CreateBuffer(const BufferCreateInfo& info)
                     VkMappedMemoryRange range;
                     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
                     range.pNext = nullptr;
-                    range.offset = Math::align_down(alloc.offset, CoreGraphics::MemoryRangeGranularity);
-                    range.size = Math::align(alloc.size, CoreGraphics::MemoryRangeGranularity);
+                    range.offset = Memory::align_down(alloc.offset, CoreGraphics::MemoryRangeGranularity);
+                    range.size = Memory::align(alloc.size, CoreGraphics::MemoryRangeGranularity);
                     range.memory = alloc.mem;
                     VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
                     n_assert(res == VK_SUCCESS);
@@ -292,7 +292,7 @@ DestroyBuffer(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const BufferUsageFlags
+const BufferUsage
 BufferGetType(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).usageFlags;
@@ -301,7 +301,7 @@ BufferGetType(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).size;
@@ -310,7 +310,7 @@ BufferGetSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetElementSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).elementSize;
@@ -319,7 +319,7 @@ BufferGetElementSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetByteSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).byteSize;
@@ -328,7 +328,7 @@ BufferGetByteSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetUploadMaxSize()
 {
     return 65536;
@@ -358,13 +358,13 @@ BufferUnmap(const BufferId id)
 /**
 */
 void
-BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset)
+BufferUpdate(const BufferId id, const void* data, const size_t size, const size_t offset)
 {
     const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
 
 #if NEBULA_DEBUG
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
-    n_assert(size + offset <= (uint)setup.byteSize);
+    n_assert(size + offset <= setup.byteSize);
 #endif
     byte* buf = (byte*)map.mappedMemory + offset;
     memcpy(buf, data, size);
@@ -374,7 +374,7 @@ BufferUpdate(const BufferId id, const void* data, const uint size, const uint of
 /**
 */
 void
-BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const uint size, const uint offset)
+BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const size_t size, const size_t offset)
 {
     n_assert(size <= (uint)BufferGetUploadMaxSize());
     CoreGraphics::CmdUpdateBuffer(cmdBuf, id, offset, size, data);
@@ -388,7 +388,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 {
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
 
-    uint64 remainingBytes = setup.byteSize;
+    uint64_t remainingBytes = setup.byteSize;
     uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
     int chunkOffset = 0;
     for (uint i = 0; i < numChunks; i++)
@@ -407,7 +407,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 /**
 */
 void
-BufferFlush(const BufferId id, uint64 offset, uint64 size)
+BufferFlush(const BufferId id, uint64_t offset, uint64_t size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
@@ -418,7 +418,7 @@ BufferFlush(const BufferId id, uint64 offset, uint64 size)
 /**
 */
 void
-BufferInvalidate(const BufferId id, uint64 offset, uint64 size)
+BufferInvalidate(const BufferId id, uint64_t offset, uint64_t size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
@@ -561,12 +561,12 @@ BufferGetDeviceAddress(const BufferId id)
 /**
 */
 void
-BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, const void* data, const uint size)
+BufferCopyWithStaging(const CoreGraphics::BufferId dest, const size_t offset, const void* data, const size_t size)
 {
     // Create buffer to copy from
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.byteSize = size;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     bufInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
     bufInfo.data = data;

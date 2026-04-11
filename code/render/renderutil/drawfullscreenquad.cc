@@ -67,7 +67,7 @@ DrawFullScreenQuad::Setup()
         info.size = 3;
         info.elementSize = CoreGraphics::VertexLayoutGetSize(DrawFullScreenQuad::vertexLayout);
         info.mode = CoreGraphics::DeviceLocal;
-        info.usageFlags = CoreGraphics::VertexBuffer;
+        info.usageFlags = CoreGraphics::BufferUsage::Vertex;
         info.data = v;
         info.dataSize = sizeof(v);
         DrawFullScreenQuad::vertexBuffer = CreateBuffer(info);

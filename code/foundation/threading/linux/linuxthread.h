@@ -12,6 +12,7 @@
 #include "threading/threadid.h"
 #include "threading/event.h"
 #include "system/cpu.h"
+#include <sys/resource.h>
 
 //------------------------------------------------------------------------------
 namespace Linux

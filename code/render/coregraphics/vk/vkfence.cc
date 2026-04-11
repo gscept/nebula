@@ -89,7 +89,7 @@ FenceReset(const FenceId id)
 /**
 */
 bool 
-FenceWait(const FenceId id, const uint64 time)
+FenceWait(const FenceId id, const uint64_t time)
 {
     VkFence fence = fenceAllocator.Get<1>(id.id).fence;
     VkDevice dev = fenceAllocator.Get<0>(id.id);
@@ -101,7 +101,7 @@ FenceWait(const FenceId id, const uint64 time)
 /**
 */
 bool 
-FenceWaitAndReset(const FenceId id, const uint64 time)
+FenceWaitAndReset(const FenceId id, const uint64_t time)
 {
     VkFence fence = fenceAllocator.Get<1>(id.id).fence;
     VkDevice dev = fenceAllocator.Get<0>(id.id);
@@ -111,7 +111,7 @@ FenceWaitAndReset(const FenceId id, const uint64 time)
         res = vkResetFences(dev, 1, &fence);
         n_assert(res == VK_SUCCESS);
     }
-    return res == VK_SUCCESS || res == VK_TIMEOUT;
+    return res == VK_SUCCESS;
 }
 
 } // namespace CoreGraphics

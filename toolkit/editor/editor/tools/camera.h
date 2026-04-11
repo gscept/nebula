@@ -10,7 +10,7 @@
 #include "renderutil/freecamerautil.h"
 #include "input/inputserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
+#include "graphics/camerasettings.h"
 
 namespace Editor
 {
@@ -33,8 +33,8 @@ public:
 	Camera();
 	~Camera();
 
-	void AttachToView(const Ptr<Graphics::View>& view);
-	void Setup(SizeT screenWidth, SizeT screenHeight);
+	void AttachToView(const Graphics::ViewId view);
+	void Setup(SizeT screenWidth, SizeT screenHeight, Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK);
 	void Update();
 	void Reset();
 
@@ -55,6 +55,7 @@ public:
 
     Math::mat4 GetProjectionTransform() const;
 
+    const Graphics::CameraSettings& GetCameraSettings() const;
 
 
 public:
@@ -72,13 +73,11 @@ private:
     
     SizeT screenWidth = 0;
     SizeT screenHeight = 0;
+    Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK;
 
     CameraMode cameraMode = CameraMode::FREECAM;
     ProjectionMode projectionMode = ProjectionMode::PERSPECTIVE;
-	float zoomIn = 0.0f;
-	float zoomOut = 0.0f;
-	Math::float2 panning{ 0.0f,0.0f };
-	Math::float2 orbiting{ 0.0f,0.0f };
+
 	RenderUtil::MayaCameraUtil mayaCameraUtil;
 	RenderUtil::FreeCameraUtil freeCamUtil;
 	Math::vec3 defaultViewPoint;

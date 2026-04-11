@@ -33,55 +33,6 @@ using namespace Input;
 namespace Im3d
 {
 
-class Im3dInputHandler : public Input::InputHandler
-{
-    __DeclareClass(Im3dInputHandler);
-public:
-    /// constructor
-    Im3dInputHandler() {}
-    /// destructor
-    virtual ~Im3dInputHandler() {}
-
-    /// capture input to this event handler
-    virtual void BeginCapture()
-    {
-        Input::InputServer::Instance()->ObtainMouseCapture(this);
-        Input::InputServer::Instance()->ObtainKeyboardCapture(this);
-    }
-    /// end input capturing to this event handler
-    virtual void EndCapture()
-    {
-        Input::InputServer::Instance()->ReleaseMouseCapture(this);
-        Input::InputServer::Instance()->ReleaseKeyboardCapture(this);
-    }
-
-protected:
-
-    /// called when an input event should be processed
-    virtual bool OnEvent(const Input::InputEvent& inputEvent)
-    {
-        switch (inputEvent.GetType())
-        {
-#ifndef _DEBUG
-        case Input::InputEvent::AppObtainFocus:
-        case Input::InputEvent::AppLoseFocus:
-#endif
-        case Input::InputEvent::Reset:
-            this->OnReset();
-            break;
-
-        default:
-            return Im3dContext::HandleInput(inputEvent);
-        }
-        return false;
-    }
-
-private:
-    
-};
-
-__ImplementClass(Im3d::Im3dInputHandler, 'IM3H', Input::InputHandler);
-
 
 struct Im3dState
 {
@@ -105,7 +56,6 @@ struct Im3dState
     float cellSize = 1.0f;
     Math::vec4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Math::vec2 gridOffset{ 0, 0 };
-    Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;
     Math::vec2 viewPortPosition{ 0.0f, 0.0f };
@@ -138,11 +88,8 @@ Im3dContext::Create()
 {
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    imState.inputHandler = Im3dInputHandler::Create();
-    //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
-
     // allocate im3d shader
-    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.fxb");
+    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.gplb");
     imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Lines"));
     imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Lines"));
     imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Points"));
@@ -161,7 +108,7 @@ Im3dContext::Create()
     vboInfo.size = 100000 * 3;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(imState.vlo);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
     imState.vbo = CoreGraphics::CreateBuffer(vboInfo);
@@ -169,31 +116,31 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    FrameScript_default::RegisterSubgraph_Im3D_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_Im3D_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         Render(cmdBuf, frame);
     });
-    FrameScript_default::RegisterSubgraphPipelines_Im3D_Pass([](const CoreGraphics::PassId pass, const uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_Im3D_Render([](const CoreGraphics::RenderPassId pass)
     {
         if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
-        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
-        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
-        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
-        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
-        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
+        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
     });
     Im3d::NewFrame();
 
@@ -205,8 +152,6 @@ Im3dContext::Create()
 void
 Im3dContext::Discard()
 {
-    Input::InputServer::Instance()->RemoveInputHandler(imState.inputHandler.upcast<InputHandler>());
-    imState.inputHandler = nullptr;
     CoreGraphics::BufferUnmap(imState.vbo);
 
     CoreGraphics::DestroyBuffer(imState.vbo);
@@ -243,6 +188,25 @@ Im3dContext::DrawLine(const Math::line& line, const float size, const Math::vec4
 {
     if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
     Im3d::DrawLine(line.start(), line.end(), size, Im3d::Vec4(color));
+    if (renderFlags & CheckDepth) Im3d::PopLayerId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawQuad(const Math::point& a, const Math::point& b, const Math::point& c, const Math::point& d, const Math::vec4 color, uint32_t renderFlags)
+{
+    if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetColor(Im3d::Vec4(color));
+    if (renderFlags & Wireframe) 
+    {
+        Im3d::DrawQuad(Im3d::Vec3(a), Im3d::Vec3(b), Im3d::Vec3(c), Im3d::Vec3(d));
+    }
+    else
+    {
+        Im3d::DrawQuadFilled(Im3d::Vec3(a), Im3d::Vec3(b), Im3d::Vec3(c), Im3d::Vec3(d));
+    }
     if (renderFlags & CheckDepth) Im3d::PopLayerId();
 }
 
@@ -368,21 +332,68 @@ Im3dContext::DrawSphere(const Math::point& pos, float radius, const Math::vec4& 
     Im3d::PopDrawState();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void Im3dContext::DrawCylinder(const Math::point& start, const Math::point& end, float radius, const Math::vec4& color)
+{
+    Im3d::PushDrawState();
+    
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::DrawCylinder(Vec3(start), Vec3(end), radius, 16);
+    
+    Im3d::PopDrawState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Im3dContext::DrawCone(const Math::point& start, const Math::point& end, float startRadius, float endRadius, const Math::vec4& color, uint32_t renderFlags)
+{
+    Im3d::PushDrawState();
+
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::DrawCone2(Vec3(start), Vec3(end), startRadius, endRadius, 16);
+
+    Im3d::PopDrawState();
+}
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+Im3dContext::DrawAxes(Math::mat4 viewProjection)
+{
+    Im3d::PushDrawState();
+
+    Im3d::SetSize(2.0f);
+    Im3d::PushMatrix(viewProjection);
+    Im3d::DrawXyzAxes();
+    Im3d::PopMatrix();
+
+    Im3d::PopDrawState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     AppData& ad = GetAppData();
 
-    const Math::rectangle<int>& viewport = view->GetViewport();
+    if (view != GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
+    const Math::rectangle<int>& viewport = ViewGetViewport(view);
 
     ad.m_deltaTime = ctx.frameTime;
     ad.m_viewportSize = Vec2((float)viewport.width(), (float)viewport.height());
     
-    Graphics::GraphicsEntityId cam = view->GetCamera();
+    Graphics::GraphicsEntityId cam = ViewGetCamera(view);
     Math::mat4 transform = inverse(CameraContext::GetView(cam));
     ad.m_viewOrigin = xyz(transform.position);
     ad.m_viewDirection = -xyz(transform.z_axis);
@@ -396,7 +407,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
-    Math::vec2 mousePos = Math::vec2::divide(mouse->GetScreenPosition() - imState.viewPortPosition, imState.viewPortSize);
+    Math::vec2 mousePos = Math::vec2::divide(mouse->GetPixelPosition() - imState.viewPortPosition, imState.viewPortSize);
     
     mousePos *= 2.0f;
     mousePos -= Math::vec2(1.0f, 1.0f);

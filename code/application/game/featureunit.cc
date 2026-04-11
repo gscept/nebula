@@ -281,6 +281,9 @@ FeatureUnit::OnBeforeLoad(World* world)
 void
 FeatureUnit::OnBeforeCleanup(World* world)
 {
+    // TODO: We should call destroy on all entities, thus automatically allowing
+    //       managers to clean up components by just doing their decay routine.
+
     for (IndexT i = 0; i < this->managers.Size(); ++i)
     {
         this->managers[i]->OnCleanup(world);

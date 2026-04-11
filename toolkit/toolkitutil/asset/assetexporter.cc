@@ -43,6 +43,8 @@ AssetExporter::Open()
     ExporterBase::Open();
     this->surfaceExporter = ToolkitUtil::SurfaceExporter::Create();
     this->surfaceExporter->Open();
+    this->particleExporter = ToolkitUtil::ParticleExporter::Create();
+    this->particleExporter->Open();
     this->modelBuilder = ToolkitUtil::ModelBuilder::Create();
     this->textureExporter.Setup();
 }
@@ -55,6 +57,8 @@ AssetExporter::Close()
 {
     this->surfaceExporter->Close();
     this->surfaceExporter = nullptr;
+    this->particleExporter->Close();
+    this->particleExporter = nullptr;
     this->modelBuilder = nullptr;
     this->textureExporter.Discard();
     this->textureAttrTable.Discard();
@@ -91,7 +95,7 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->gltfExporter->SetTextureConverter(&this->textureExporter);
         this->gltfExporter->Open();
         this->gltfExporter->SetForce(this->force || (this->mode & ExportModes::ForceGLTF) != 0);
-        this->gltfExporter->SetCategory(category);
+        this->gltfExporter->SetCategory(this->category);
         this->gltfExporter->SetLogger(this->logger);
         this->gltfExporter->SetFile(fileName);
         this->gltfExporter->ExportFile(file);
@@ -103,7 +107,7 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
         this->fbxExporter->Open();
         this->fbxExporter->SetForce(this->force || (this->mode & ExportModes::ForceFBX) != 0);
-        this->fbxExporter->SetCategory(category);
+        this->fbxExporter->SetCategory(this->category);
         this->fbxExporter->SetLogger(this->logger);
         this->fbxExporter->SetFile(fileName);
         this->fbxExporter->ExportFile(file);
@@ -164,6 +168,12 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->surfaceExporter->SetLogger(this->logger);
         this->surfaceExporter->SetForce(this->force || (this->mode & ExportModes::ForceSurfaces) != 0);
         this->surfaceExporter->ExportFile(file);
+    }
+    else if ((this->mode & ExportModes::Particles) && ext == "par")
+    {
+        this->particleExporter->SetLogger(this->logger);
+        this->particleExporter->SetForce(this->force || (this->mode & ExportModes::ForceParticles) != 0);
+        this->particleExporter->ExportFile(file);
     }
     else if ((this->mode & ExportModes::Audio) &&
              (
@@ -324,6 +334,25 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     {
         this->logger->Print("\nSurfaces ------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.sur");
+        if (files.IsEmpty())
+        {
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                this->ExportFile(assetPath + files[fileIndex]);
+                log.AddEntry(console, "Surface", files[fileIndex]);
+            }
+        }
+    }
+
+    if (this->mode & ExportModes::Particles)
+    {
+        this->logger->Print("\nParticles ------------\n");
+        Array<String> files = ioServer->ListFiles(assetPath, "*.par");
         if (files.IsEmpty())
         {
             this->logger->Print("Nothing to export\n");

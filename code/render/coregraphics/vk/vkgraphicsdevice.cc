@@ -23,6 +23,8 @@
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vktextureview.h"
 #include "coregraphics/vk/vkaccelerationstructure.h"
+#include "coregraphics/vk/vkswapchain.h"
+#include "coregraphics/vk/vkpipeline.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 
@@ -61,7 +63,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        Threading::AtomicCounter endAddress;
+        Threading::AtomicCounter64 endAddress;
         struct FlushedRanges
         {
             SizeT flushedStart;
@@ -99,9 +101,13 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
             , Util::Array<NvidiaAftermathCheckpoint
             #endif
             >>> commandBuffers;
+        Util::Array<Util::Tuple<VkDevice, VkCommandPool>> commandPools;
         Util::Array<Util::Tuple<VkDevice, VkDescriptorPool, VkDescriptorSet, uint*>> resourceTables;
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
         Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
+        Util::Array<Util::Tuple<VkDevice, VkSemaphore>> semaphores;
+        Util::Array<Util::Tuple<VkDevice, VkSwapchainKHR, Util::Array<VkImageView>>> swapchains;
+        Util::Array<Util::Tuple<VkDevice, VkPipeline>> pipelines;
         Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
@@ -439,24 +445,6 @@ GetMemoryProperties()
 //------------------------------------------------------------------------------
 /**
 */
-VkSemaphore
-GetRenderingSemaphore()
-{
-    return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkFence
-GetPresentFence()
-{
-    return FenceGetVk(state.presentFences[state.currentBufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 DelayedDeleteVkBuffer(const VkDevice dev, const VkBuffer buf)
 {
@@ -511,14 +499,52 @@ VkPipeline
 GetOrCreatePipeline(
     CoreGraphics::PassId pass
     , uint subpass
+    , CoreGraphics::RenderPassId renderPass
     , CoreGraphics::ShaderProgramId program
     , const CoreGraphics::InputAssemblyKey inputAssembly
     , const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
-    VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
+    VkPipeline pipeline = state.database.GetCompiledPipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info);
     _incr_counter(state.NumPipelinesBuilt, 1);
     return pipeline;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::PipelineId
+PipelineExists(CoreGraphics::PassId pass, uint subpass, CoreGraphics::RenderPassId renderPass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    return state.database.GetPipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CachePipeline(
+    CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::RenderPassId renderPass
+    , CoreGraphics::ShaderProgramId program
+    , const CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& info
+    , const CoreGraphics::PipelineId pipeline)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    state.database.CachePipeline(Util::MakePair(pass, renderPass), subpass, program, inputAssembly, info, pipeline);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InvalidatePipeline(const CoreGraphics::PipelineId id)
+{
+    Threading::CriticalScope scope(&pipelineMutex);
+    state.database.InvalidatePipeline(id);
 }
 
 //------------------------------------------------------------------------------
@@ -572,6 +598,12 @@ ClearPending()
     }
     pendingDeletes.commandBuffers.Clear();
 
+    for (auto& [dev, pool] : pendingDeletes.commandPools)
+    {
+        vkDestroyCommandPool(dev, pool, nullptr);
+    }
+    pendingDeletes.commandPools.Clear();
+
     for (const auto& [dev, buf] : pendingDeletes.buffers)
     {
         n_assert(dev != nullptr);
@@ -612,6 +644,26 @@ ClearPending()
         vkDestroyAccelerationStructureKHR(dev, as, nullptr);
     }
     pendingDeletes.ases.Clear();
+
+    for (const auto& [dev, sem] : pendingDeletes.semaphores)
+    {
+        vkDestroySemaphore(dev, sem, nullptr);
+    }
+    pendingDeletes.semaphores.Clear();
+
+    for (const auto& [dev, swapchain, views] : pendingDeletes.swapchains)
+    {
+        for (const auto& view : views)
+            vkDestroyImageView(dev, view, nullptr);
+        vkDestroySwapchainKHR(dev, swapchain, nullptr);
+    }
+    pendingDeletes.swapchains.Clear();
+
+    for (const auto& [dev, pipeline] : pendingDeletes.pipelines)
+    {
+        vkDestroyPipeline(dev, pipeline, nullptr);
+    }
+    pendingDeletes.pipelines.Clear();
 
     for (const auto& alloc : pendingDeletes.allocs)
     {
@@ -740,9 +792,9 @@ bool NvidiaCheckpointsSupported = false;
 
 uint ReadWriteBufferAlignment = UINT_MAX;
 uint ConstantBufferAlignment = UINT_MAX;
-uint64 MaxConstantBufferSize = UINT_MAX;
+uint64_t MaxConstantBufferSize = UINT_MAX;
 uint MaxPushConstantSize = UINT_MAX;
-uint64 SparseAddressSize = UINT_MAX;
+uint64_t SparseAddressSize = UINT_MAX;
 
 uint MaxPerStageConstantBuffers = UINT_MAX;
 uint MaxPerStageReadWriteBuffers = UINT_MAX;
@@ -760,12 +812,12 @@ uint MaxResourceTableReadWriteImages = UINT_MAX;
 uint MaxResourceTableSamplers = UINT_MAX;
 uint MaxResourceTableInputAttachments = UINT_MAX;
 
-uint MemoryRangeGranularity = UINT_MAX;
+size_t MemoryRangeGranularity = UINT_MAX;
 uint TimestampPeriod = UINT_MAX;
 
 uint AccelerationStructureScratchAlignment = UINT_MAX;
-uint ShaderGroupAlignment = UINT_MAX;
-uint64 ShaderGroupSize = UINT_MAX;
+size_t ShaderGroupAlignment = UINT_MAX;
+size_t ShaderGroupSize = UINT_MAX;
 uint MaxRecursionDepth = UINT_MAX;
 
 using namespace Vulkan;
@@ -1031,42 +1083,53 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 prios.Begin()
             });
     }
+    state.frameProfilingMarkers.Resize(CoreGraphics::QueueType::NumQueueTypes);
 
     // get physical device features
     //VkPhysicalDeviceFeatures features;
     //vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
-    VkPhysicalDeviceDiagnosticsConfigFeaturesNV nvidiaDeviceDiagnosticsFeature =
+    VkPhysicalDeviceFeatures2 features2 =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
-        .pNext = nullptr,
-        .diagnosticsConfig = false
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = nullptr
     };
+    vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
-    VkPhysicalDeviceVulkan11Features vk11Features =
+    VkPhysicalDeviceVulkan13Features vk13Features =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
-        .pNext = &nvidiaDeviceDiagnosticsFeature,
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+        .pNext = nullptr,
+        .dynamicRendering = true
     };
 
     VkPhysicalDeviceVulkan12Features vk12Features =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-        .pNext = &vk11Features,
+        .pNext = &vk13Features,
+        .shaderFloat16 = true,
+        .descriptorBindingUniformBufferUpdateAfterBind = true,
+        .descriptorBindingSampledImageUpdateAfterBind = true,
+        .descriptorBindingStorageImageUpdateAfterBind = true,
+        .descriptorBindingStorageBufferUpdateAfterBind = true,
+        .descriptorBindingPartiallyBound = true,
+        .hostQueryReset = true,
+        .timelineSemaphore = true,
+        .bufferDeviceAddress = true,
     };
 
-    VkPhysicalDeviceFeatures2 features2 =
+    VkPhysicalDeviceVulkan11Features vk11Features =
     {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .pNext = &vk12Features
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+        .pNext = &vk12Features,
+        .variablePointersStorageBuffer = true,
+        .variablePointers = true
     };
-    vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
-    vk11Features.pNext = nullptr;
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
-        .pNext = &vk12Features,
+        .pNext = &vk11Features,
         .vertexInputDynamicState = true
     };
     void* lastExtension = &dynamicVertexFeatures;
@@ -1076,16 +1139,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
         .pNext = lastExtension,
-        .taskShader = true,
-        .meshShader = true,
+        .taskShader = CoreGraphics::MeshShadersSupported,
+        .meshShader = CoreGraphics::MeshShadersSupported,
         .multiviewMeshShader = false,
         .primitiveFragmentShadingRateMeshShader = CoreGraphics::VariableRateShadingSupported,
         .meshShaderQueries = false,
     };
-    if (CoreGraphics::MeshShadersSupported)
-    {
-        lastExtension = &meshShadersFeatures;
-    }
+    lastExtension = &meshShadersFeatures;
 #pragma endregion
 
 #pragma region Variable Rate Shading Features
@@ -1141,7 +1201,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .pNext = lastExtension,
         .flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV  | VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV
     };
-    nvidiaDeviceDiagnosticsFeature =
+    VkPhysicalDeviceDiagnosticsConfigFeaturesNV nvidiaDeviceDiagnosticsFeature =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
         .pNext = &nvidiaCheckpointConfig,
@@ -1234,36 +1294,21 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.name = "Global Constant Buffer";
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
-    cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
-    state.globalConstantBuffer.Resize(info.numBufferedFrames);
+    cboInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
+    state.globalConstantBufferGraphics.Resize(info.numBufferedFrames);
+    state.globalConstantBufferCompute.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
         auto gfxCboInfo = cboInfo;
         gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        state.globalConstantBuffer[i] = CreateBuffer(gfxCboInfo);
+        state.globalConstantBufferGraphics[i] = CreateBuffer(gfxCboInfo);
+        state.globalConstantBufferCompute[i] = CreateBuffer(gfxCboInfo);
     }
+
+    state.inflightFrames.Resize(info.numBufferedFrames);
+    state.inflightFrames.Fill(false);
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
-
-#ifdef CreateSemaphore
-#pragma push_macro("CreateSemaphore")
-#undef CreateSemaphore
-#endif
-
-    state.presentFences.Resize(info.numBufferedFrames);
-    state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
-    for (i = 0; i < info.numBufferedFrames; i++)
-    {
-        state.presentFences[i] = CreateFence({true});
-        state.renderingFinishedSemaphores[i] = CreateSemaphore({
-#if NEBULA_GRAPHICS_DEBUG
-            .name = "Present",
-#endif
-            .type = SemaphoreType::Binary });
-    }
-
-#pragma pop_macro("CreateSemaphore")
-
 
     // Setup "special" command buffers
     CoreGraphics::CmdBufferPoolCreateInfo setupResourcePoolInfo;
@@ -1336,7 +1381,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             bufInfo.byteSize = byteSize;
             bufInfo.mode = CoreGraphics::HostLocal;
             bufInfo.queueSupport = GraphicsQueueSupport | ComputeQueueSupport;
-            bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
+            bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination;
             queries.queryBuffer[i] = CoreGraphics::CreateBuffer(bufInfo);
         }
     }
@@ -1349,11 +1394,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     vboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     vboInfo.usageFlags =
-        CoreGraphics::BufferUsageFlag::VertexBuffer
-        | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
+        CoreGraphics::BufferUsage::Vertex
+        | CoreGraphics::BufferUsage::TransferDestination
+        | CoreGraphics::BufferUsage::ReadWrite
+        | CoreGraphics::BufferUsage::ShaderAddress
+        | CoreGraphics::BufferUsage::AccelerationStructureInput;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
     state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 2048);
 
@@ -1363,20 +1408,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     iboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     iboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     iboInfo.usageFlags =
-        CoreGraphics::BufferUsageFlag::IndexBuffer
-        | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
+        CoreGraphics::BufferUsage::Index
+        | CoreGraphics::BufferUsage::TransferDestination
+        | CoreGraphics::BufferUsage::ReadWrite
+        | CoreGraphics::BufferUsage::ShaderAddress
+        | CoreGraphics::BufferUsage::AccelerationStructureInput;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
     state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 2048);
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
-    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
+    uploadInfo.byteSize = Memory::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
-    uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+    uploadInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
 
     state.uploadAllocationsToFree.Resize(info.numBufferedFrames);
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
@@ -1455,19 +1500,12 @@ DestroyGraphicsDevice()
     {
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
         {
-            DestroyBuffer(state.globalConstantBuffer[i]);
+            DestroyBuffer(state.globalConstantBufferGraphics[i]);
+            DestroyBuffer(state.globalConstantBufferCompute[i]);
         }
     }
 
     state.database.Discard();
-
-    IndexT i;
-    for (i = 0; i < state.renderingFinishedSemaphores.Size(); i++)
-    {
-        FenceWait(state.presentFences[i], UINT64_MAX);
-        DestroyFence(state.presentFences[i]);
-        DestroySemaphore(state.renderingFinishedSemaphores[i]);
-    }
 
 #if NEBULA_VULKAN_DEBUG
     if (state.enableValidation)
@@ -1663,7 +1701,7 @@ UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 /**
 */
 bool
-PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index)
+PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64_t index)
 {
     return state.queueHandler.Poll(queue, index);
 }
@@ -1724,6 +1762,16 @@ SubmitCommandBuffers(
 #endif
 
     return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmitCommandBufferImmediate(CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::QueueType type, CoreGraphics::FenceId event)
+{
+    VkFence fence = CoreGraphics::FenceGetVk(event);
+    state.queueHandler.SubmitImmediate(type, CmdBufferGetVk(cmdBuf), fence);
 }
 
 //------------------------------------------------------------------------------
@@ -1830,26 +1878,26 @@ LockConstantUpdates()
     Set constants for preallocated memory
 */
 void
-SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
+SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size, CoreGraphics::QueueType queue)
 {
-    BufferUpdate(state.globalConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    BufferUpdate((queue == CoreGraphics::QueueType::GraphicsQueueType ? state.globalConstantBufferGraphics : state.globalConstantBufferCompute)[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 ConstantBufferOffset
-AllocateConstantBufferMemory(uint size)
+AllocateConstantBufferMemory(size_t size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
     // Calculate aligned upper bound
-    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
+    size_t alignedSize = Memory::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
-    int ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
+    size_t ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalConstantBufferMaxValue)
@@ -1866,9 +1914,9 @@ AllocateConstantBufferMemory(uint size)
 /**
 */
 CoreGraphics::BufferId
-GetConstantBuffer(IndexT i)
+GetConstantBuffer(IndexT i, CoreGraphics::QueueType queue)
 {
-    return state.globalConstantBuffer[i];
+    return queue == CoreGraphics::QueueType::GraphicsQueueType ? state.globalConstantBufferGraphics[i] : state.globalConstantBufferCompute[i];
 }
 
 //------------------------------------------------------------------------------
@@ -1884,7 +1932,7 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 /**
 */
 void
-FinishFrame(IndexT frameIndex)
+FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores)
 {
     if (state.currentFrameIndex != frameIndex)
     {
@@ -1894,13 +1942,25 @@ FinishFrame(IndexT frameIndex)
         state.currentFrameIndex = frameIndex;
     }
 
-    // Signal rendering finished semaphore just before submitting graphics queue
-    state.queueHandler.AppendPresentSignal(
-        ComputeQueueType,
-        SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
-    );
+    for (auto& sem : backbufferSemaphores)
+    {
+        state.queueHandler.AppendWaitSemaphore(
+            GraphicsQueueType,
+            SemaphoreGetVk(sem)
+        );
+    }
+
+    for (auto& sem : renderingSemaphores)
+    {
+        // Signal rendering finished semaphore just before submitting graphics queue
+        state.queueHandler.AppendSignalSemaphore(
+            GraphicsQueueType,
+            SemaphoreGetVk(sem)
+        );
+    }
 
     state.queueHandler.FlushSubmissions(nullptr);
+    state.inflightFrames[state.currentBufferedFrameIndex] = true;
 
     if (!state.sparseBufferBinds.IsEmpty() || !state.sparseImageBinds.IsEmpty())
     {
@@ -1946,13 +2006,17 @@ WaitAndClearPendingCommands()
 
     for (int buffer = 0; buffer < state.maxNumBufferedFrames; buffer++)
     {
-        state.currentBufferedFrameIndex = buffer;
-        Vulkan::ClearPending();
-
-        // Reset queries
-        for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
+        // Only clear frames in flight
+        if (state.inflightFrames[buffer])
         {
-            state.queries[buffer].queryFreeCount[i] = 0;
+            state.currentBufferedFrameIndex = buffer;
+            Vulkan::ClearPending();
+
+            // Reset queries
+            for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
+            {
+                state.queries[buffer].queryFreeCount[i] = 0;
+            }
         }
     }
 }
@@ -2011,6 +2075,19 @@ DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id)
     Util::Array<NvidiaAftermathCheckpoint> checkpoints = CmdBufferMoveVkNvCheckpoints(id);
 #endif
     state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Append(Util::MakeTuple(dev, pool, buf, std::move(checkpoints)));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteCommandBufferPool(const CoreGraphics::CmdBufferPoolId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CmdBufferPoolGetVkDevice(id);
+    VkCommandPool pool = CmdBufferPoolGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].commandPools.Append(Util::MakeTuple(dev, pool));
+
 }
 
 //------------------------------------------------------------------------------
@@ -2079,6 +2156,43 @@ DelayedDeleteTlas(const CoreGraphics::TlasId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+DelayedDeleteSemaphore(const CoreGraphics::SemaphoreId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::SemaphoreGetVkDevice(id);
+    VkSemaphore sem = CoreGraphics::SemaphoreGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].semaphores.Append(Util::MakeTuple(dev, sem));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteSwapchain(const CoreGraphics::SwapchainId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::SwapchainGetVkDevice(id);
+    VkSwapchainKHR swap = CoreGraphics::SwapchainGetVkSwapchain(id);
+    const Util::Array<VkImageView>& views = CoreGraphics::SwapchainGetVkImageViews(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].swapchains.Append(Util::MakeTuple(dev, swap, views));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeletePipeline(const CoreGraphics::PipelineId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::PipelineGetVkDevice(id);
+    VkPipeline pipe = CoreGraphics::PipelineGetVkPipeline(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].pipelines.Append(Util::MakeTuple(dev, pipe));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 AllocateQueries(const CoreGraphics::QueryType type, uint numQueries)
 {
@@ -2102,7 +2216,7 @@ FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryT
     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::HostRead, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global);
     for (IndexT i = 0; i < numCopies; i++)
     {
-        vkCmdCopyQueryPoolResults(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], starts[i], counts[i], BufferGetVk(state.queries[state.currentBufferedFrameIndex].queryBuffer[type]), starts[i] * sizeof(uint64_t), sizeof(uint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+        vkCmdCopyQueryPoolResults(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], starts[i], counts[i], BufferGetVk(state.queries[state.currentBufferedFrameIndex].queryBuffer[type]), starts[i] * sizeof(uint64_t), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
         // Finally reset the query pool
         vkCmdResetQueryPool(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], starts[i], counts[i]);
@@ -2134,10 +2248,10 @@ Threading::CriticalSection vertexAllocationMutex;
 /**
 */
 const VertexAlloc
-AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
+AllocateVertices(const size_t numVertices, const size_t vertexSize)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    const uint size = numVertices * vertexSize;
+    const size_t size = numVertices * vertexSize;
     Memory::RangeAllocation alloc = state.vertexAllocator.Alloc(size);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, size);
@@ -2148,13 +2262,13 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 /**
 */
 const VertexAlloc
-AllocateVertices(const SizeT bytes)
+AllocateVertices(const size_t bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
     Memory::RangeAllocation alloc = state.vertexAllocator.Alloc(bytes);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, bytes);
-    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
@@ -2189,7 +2303,7 @@ AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
     Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size, indexSize);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
-    return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
@@ -2202,7 +2316,7 @@ AllocateIndices(const SizeT bytes)
     Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes, 4);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
-    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
@@ -2230,13 +2344,13 @@ GetIndexBuffer()
 */
 Threading::CriticalSection UploadLock;
 Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
-AllocateUpload(const SizeT numBytes, const SizeT alignment)
+AllocateUpload(const size_t numBytes, const size_t alignment)
 {
     Threading::CriticalScope _0(&UploadLock);
 
     // Calculate aligned upper bound
-    SizeT adjustedAlignment = Math::max(alignment, (SizeT)CoreGraphics::MemoryRangeGranularity);
-    const SizeT alignedBytes = numBytes + adjustedAlignment - 1;
+    size_t adjustedAlignment = Math::max(alignment, CoreGraphics::MemoryRangeGranularity);
+    const size_t alignedBytes = numBytes + adjustedAlignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
     Memory::RangeAllocation alloc = state.uploadAllocator.Alloc(numBytes, adjustedAlignment);
@@ -2251,7 +2365,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 /**
 */
 void
-UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const void* data, SizeT size)
+UploadInternal(const CoreGraphics::BufferId buffer, const size_t offset, const void* data, size_t size)
 {
     // For upload, we don't make any attempts acquiring the buffer
     CoreGraphics::BufferUpdate(buffer, data, size, offset);
@@ -2285,7 +2399,7 @@ FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations)
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
             range.offset = allocations[i].offset; //uploadBuffer.interval.start;
-            range.size = Math::align(allocations[i].size, CoreGraphics::MemoryRangeGranularity);// (DeviceSize)size;
+            range.size = Memory::align(allocations[i].size, CoreGraphics::MemoryRangeGranularity);// (DeviceSize)size;
             range.memory = BufferGetVkMemory(state.uploadBuffer);
         }
 
@@ -2311,11 +2425,20 @@ EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocatio
 /**
 */
 void
-ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, const uint64& offset)
+InvalidateGraphicsPipelineCache()
+{
+    state.database.RecreatePipelines();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64_t* data, const uint64_t& offset)
 {
     const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;
-    uint64 begin = data[marker.gpuBegin];
-    uint64 end = data[marker.gpuEnd];
+    uint64_t begin = data[marker.gpuBegin];
+    uint64_t end = data[marker.gpuEnd];
     marker.start = (begin - offset) * timestampPeriod;
     marker.duration = (end - begin) * timestampPeriod;
 
@@ -2350,17 +2473,18 @@ NewFrame()
     waitEventsThisFrame.Clear();
 
     // Go through the query timestamp results and set the time in the markers
-    state.frameProfilingMarkers.Clear();
     for (IndexT queue = 0; queue < QueueType::NumQueueTypes; queue++)
     {
+        state.frameProfilingMarkers[queue].Clear();
+
         if (!state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers.IsEmpty())
         {
             CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
             CoreGraphics::BufferInvalidate(buf);
-            uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
+            uint64_t* data = (uint64_t*)CoreGraphics::BufferMap(buf);
 
             const auto& markersPerBuffer = state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers;
-            uint64 offset = UINT64_MAX;
+            uint64_t offset = UINT64_MAX;
 
             offset = Math::min(offset, data[state.pendingMarkers[queue][state.currentBufferedFrameIndex].baseOffset[0]]);
 
@@ -2372,7 +2496,7 @@ NewFrame()
                     ParseMarkersAndTime(marker, data, offset);
 
                     // Add to combined markers to graphics device for this frame
-                    state.frameProfilingMarkers.Append(marker);
+                    state.frameProfilingMarkers[queue].Append(marker);
                 }
             }
             CoreGraphics::BufferUnmap(buf);
@@ -2381,6 +2505,7 @@ NewFrame()
 
     // Cleanup resources
     Vulkan::ClearPending();
+    state.inflightFrames[state.currentBufferedFrameIndex] = false; // Flag this frame as being written to
 
     // Reset queries
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
@@ -2466,9 +2591,9 @@ SetRenderWireframe(bool b)
 /**
 */
 const Util::Array<FrameProfilingMarker>&
-GetProfilingMarkers()
+GetProfilingMarkers(CoreGraphics::QueueType queue)
 {
-    return state.frameProfilingMarkers;
+    return state.frameProfilingMarkers[queue];
 }
 
 //------------------------------------------------------------------------------

@@ -85,8 +85,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
                     Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
-                    uint32 numInstances = 0;
-                    uint32 baseInstance = 0;
+                    uint32_t numInstances = 0;
+                    uint32_t baseInstance = 0;
                     CoreGraphics::PrimitiveGroup primGroup;
                     CoreGraphics::MeshId mesh = InvalidMeshId;
 
@@ -179,8 +179,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
                     Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
-                    uint32 baseNumInstances = 0;
-                    uint32 baseBaseInstance = 0;
+                    uint32_t baseNumInstances = 0;
+                    uint32_t baseBaseInstance = 0;
                     CoreGraphics::PrimitiveGroup primGroup;
                     CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
 

@@ -54,6 +54,12 @@ public:
     int GetInt(const IntAttrId& attrId) const;
     /// get int value with default if not exists
     int GetInt(const IntAttrId& attrId, int defaultValue) const;
+    /// set int64 value
+    void SetInt64(const Int64AttrId& attrId, int64_t val);
+    /// get int64 value
+    int64_t GetInt64(const Int64AttrId& attrId) const;
+    /// get int64 value with default if not exists
+    int64_t GetInt64(const Int64AttrId& attrId, int64_t defaultValue) const;
     /// set string value
     void SetString(const StringAttrId& attrId, const Util::String& val);
     /// get string value
@@ -190,6 +196,41 @@ AttributeContainer::GetInt(const IntAttrId& attrId, int defaultValue) const
     if (this->HasAttr(attrId))
     {
         return this->GetInt(attrId);
+    }
+    else
+    {
+        return defaultValue;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeContainer::SetInt64(const Int64AttrId& attrId, int64_t val)
+{
+    this->SetAttr(Attribute(attrId, val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+AttributeContainer::GetInt64(const Int64AttrId& attrId) const
+{
+    n_assert(this->attrs.Contains(attrId));
+    return this->attrs[attrId].GetInt64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int64_t
+AttributeContainer::GetInt64(const Int64AttrId& attrId, int64_t defaultValue) const
+{
+    if (this->HasAttr(attrId))
+    {
+        return this->GetInt64(attrId);
     }
     else
     {

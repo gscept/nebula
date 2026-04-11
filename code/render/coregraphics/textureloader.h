@@ -58,7 +58,7 @@ private:
     // Then, we have to wait for the GPU to finish before we can issue a mip finish on the loader thread
     struct MipHandoverLoaderThread
     {
-        uint64 handoverSubmissionId;
+        uint64_t handoverSubmissionId;
         uint bits;
         Util::Array<Memory::RangeAllocation> rangesToFree;
         CoreGraphics::CmdBufferId uploadBuffer, receiveBuffer;

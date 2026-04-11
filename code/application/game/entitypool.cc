@@ -25,6 +25,7 @@ EntityPool::EntityPool()
 bool
 EntityPool::Allocate(Entity& e)
 {
+    memset(&e, 0, sizeof(Entity));
     // make sure we don't run out of generations too fast
     // by always deallocating at least n entities before recycling
     if (this->freeIds.Size() < 1024)

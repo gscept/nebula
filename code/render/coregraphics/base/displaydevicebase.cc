@@ -190,6 +190,15 @@ DisplayDeviceBase::GetAdapterInfo(Adapter::Code adapter)
 //------------------------------------------------------------------------------
 /**
 */
+Util::FixedArray<CoreGraphics::Monitor>
+DisplayDeviceBase::GetMonitors()
+{
+    return Util::FixedArray<CoreGraphics::Monitor>();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::WindowId
 DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa)
 {
@@ -201,34 +210,10 @@ DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& ic
     CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(info);
 
     // add to list, and set to current if this is the first
-    if (this->windows.IsEmpty()) this->currentWindow = wnd;
     this->windows.Append(wnd);
 
     return wnd;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::WindowId
-DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
-{
-    CoreGraphics::WindowId wnd = CoreGraphics::EmbedWindow(windowData);
-
-    // add to list, and set to current if this is the first
-    if (this->windows.IsEmpty()) this->currentWindow = wnd;
-    this->windows.Append(wnd);
-    return wnd;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
-{
-    CoreGraphics::WindowMakeCurrent(id);
-    this->currentWindow = id;
-}
 
 } // namespace DisplayDevice

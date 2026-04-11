@@ -29,6 +29,8 @@
 #include "tb_node_tree.h"
 #include "tb_widgets_reader.h"
 
+#include "gpulang/tbui/tbui.h"
+
 #ifdef TB_FONT_RENDERER_TBBF
 void register_tbbf_font_renderer();
 #endif
@@ -130,6 +132,8 @@ GetSpecialKey(Input::Key::Code code)
         return tb::TB_KEY_F11;
     case Input::Key::Code::F12:
         return tb::TB_KEY_F12;
+    default: 
+        break;
     }
 
     return key;
@@ -188,7 +192,7 @@ TBUIContext::Create()
     }
 
     n_assert(FrameSync::FrameSyncTimer::HasInstance());
-    __bundle.OnWindowResized = TBUIContext::OnWindowResized;
+    __bundle.OnViewportResized = TBUIContext::OnViewportResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     if (!tb::tb_core_is_initialized())
     {
@@ -241,7 +245,7 @@ TBUIContext::Create()
         if (font)
         {
             font->RenderGlyphs(
-                " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~•·åäöÅÄÖ"
+                " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~â€¢Â·Ã¥Ã¤Ã¶Ã…Ã„Ã–"
             );
         }
         tb::TBWidgetsAnimationManager::Init();
@@ -249,13 +253,13 @@ TBUIContext::Create()
         // setup state
         {
             // allocate shader
-            state.shader = CoreGraphics::ShaderGet("shd:tbui.fxb");
+            state.shader = CoreGraphics::ShaderGet("shd:tbui.gplb");
             state.shaderProgram = CoreGraphics::ShaderGetProgram(state.shader, CoreGraphics::ShaderFeatureMask("Static"));
 
             state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.shader, NEBULA_BATCH_GROUP);
 
-            state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "TextProjectionModel");
-            state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "Texture");
+            state.textProjectionConstant = offsetof(Tbui::TBUIData, TextProjectionModel);
+            state.textureConstant = offsetof(Tbui::TBUIData, Texture);
 
             // create vertex buffer
             Util::Array<CoreGraphics::VertexComponent> components;
@@ -264,18 +268,18 @@ TBUIContext::Create()
             components.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::UByte4N, 0));
             state.vertexLayout = CoreGraphics::CreateVertexLayout({.name = "TBUI Vertex Layout", .comps = components});
 
-            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
-                [](const CoreGraphics::PassId pass, uint subpass)
+            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Render([](const CoreGraphics::RenderPassId pass)
                 {
                     CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
                     if (state.pipeline != CoreGraphics::InvalidPipelineId)
                         CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, pass, subpass, inputAssembly});
+                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, CoreGraphics::InvalidPassId, 0, pass, inputAssembly});
                 }
             );
 
-            FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
+            FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Render(
                 [](const CoreGraphics::CmdBufferId cmdBuf,
+                   const CoreGraphics::QueueType queue,
                    const Math::rectangle<int>& viewport,
                    const IndexT frame,
                    const IndexT bufferIndex)
@@ -292,7 +296,7 @@ TBUIContext::Create()
             vboInfo.size = 1;
             vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vertexLayout);
             vboInfo.mode = CoreGraphics::HostCached;
-            vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+            vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
             vboInfo.data = nullptr;
             vboInfo.dataSize = 0;
             state.vbos.Resize(numBuffers);
@@ -373,7 +377,7 @@ TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
 /**
 */
 void
-TBUIContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+TBUIContext::OnViewportResized(const uint framescriptHash, SizeT width, SizeT height)
 {
     for (auto& view : views)
     {
@@ -514,9 +518,9 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
 
     // create orthogonal matrix
 #if __VULKAN__
-    Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
+    Math::mat4 proj = Math::orthooffcenter(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
 #else
-    Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
+    Math::mat4 proj = Math::orthooffcenter(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
 #endif
 
     Math::mat4 transform = Math::mat4::identity;
@@ -542,7 +546,7 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(TBUIContext::state.vertexLayout);
         vboInfo.byteSize = requiredVertexBufferSize;
         vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
         TBUIContext::state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);

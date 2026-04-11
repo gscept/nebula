@@ -1,0 +1,192 @@
+//------------------------------------------------------------------------------
+//  skinned.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/geometrybase.gpuh>
+#include <lib/standard_shading.gpuh>
+#include <lib/skinning.gpuh>
+
+//------------------------------------------------------------------------------
+//  Depth prepass methods
+//------------------------------------------------------------------------------
+@Mask("Skinned|Depth")
+program SkinnedDepth
+{
+    VertexShader = vsDepthSkinned;
+    PixelShader = psDepthOnly;
+    RenderState = DepthState;
+};
+
+@Mask("Skinned|Depth|DoubleSided")
+program SkinnedDepthDoubleSided 
+{
+    VertexShader = vsDepthSkinned;
+    PixelShader = psDepthOnly;
+    RenderState = DepthStateDoubleSided; 
+};
+
+@Mask("Skinned|Depth|AlphaMask")
+program SkinnedDepthAlphaMask
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+};
+
+@Mask("Skinned|Depth|AlphaMask|DoubleSided")
+program SkinnedDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+}; 
+
+//------------------------------------------------------------------------------
+//  Standard methods
+//------------------------------------------------------------------------------
+@Mask("Skinned")
+program Skinned
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned|AlphaTest")
+program SkinnedAlphaTest
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Alpha;
+};
+
+//------------------------------------------------------------------------------
+//  IBL + PBR methods
+//------------------------------------------------------------------------------
+
+@Mask("Skinned|Environment")
+program SkinnedEnvironment
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned|Environment|AlphaTest")
+program SkinnedEnvironmentAlphaTest
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Alpha;
+};
+
+//------------------------------------------------------------------------------
+//  Alpha methods
+//------------------------------------------------------------------------------
+@Mask("Skinned|Alpha")
+program SkinnedAlpha
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+};
+
+@Mask("Skinned|Alpha|Environment")
+program SkinnedAlphaEnvironment
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+};
+/*
+SimpleTechnique(
+    Skinned, 
+    "Skinned", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = SimpleColor, 
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+SimpleTechnique(
+    SkinnedAlphaTest, 
+    "Skinned|AlphaTest", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+//------------------------------------------------------------------------------
+//  IBL + PBR methods
+//------------------------------------------------------------------------------
+
+SimpleTechnique(
+    SkinnedEnvironment, 
+    "Skinned|Environment", 
+    vsSkinned(),
+    psStandard(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+SimpleTechnique(
+    SkinnedEnvironmentAlphaTest, 
+    "Skinned|Environment|AlphaTest", 
+    vsSkinned(),
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+
+//------------------------------------------------------------------------------
+//  Alpha methods
+//------------------------------------------------------------------------------
+SimpleTechnique(
+    SkinnedAlpha, 
+    "Skinned|Alpha", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaState);
+    
+SimpleTechnique(
+    SkinnedAlphaEnvironment, 
+    "Skinned|Alpha|Environment", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaState);
+*/

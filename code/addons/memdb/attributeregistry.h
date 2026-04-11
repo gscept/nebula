@@ -66,7 +66,8 @@ template <typename ATTRIBUTE>
 AttributeId
 GetAttributeId()
 {
-    static_assert(std::is_trivially_destructible<ATTRIBUTE>());
+    static_assert(!std::is_polymorphic<ATTRIBUTE>(), "ATTRIBUTE must not be polymorpic.");
+    static_assert(!std::is_abstract<ATTRIBUTE>(), "ATTRIBUTE must not be abstract.");
     static const uint16_t id = MemDb::GenerateNewAttributeId();
     return AttributeId(id);
 }

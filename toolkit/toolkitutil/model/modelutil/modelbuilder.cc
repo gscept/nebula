@@ -169,7 +169,7 @@ ModelBuilder::WritePhysics()
                         col.extents = colBox.extents();
                         newShape->collider->data.Set(col);
                         newShape->collider->name = iter->name;
-                        newShape->collider->type = Physics::ColliderType_Cube;
+                        newShape->collider->type = Physics::ColliderType_Box;
                     }
                     break;
                     case UseBoundingSphere:
@@ -223,7 +223,7 @@ ModelBuilder::WritePhysics()
                     col.extents = colBox.extents();
                     newShape->collider->data.Set(col);
                     newShape->collider->name = iter->name;
-                    newShape->collider->type = Physics::ColliderType_Cube;
+                    newShape->collider->type = Physics::ColliderType_Box;
                     body->shapes.push_back(std::move(newShape));
                 }
 
@@ -249,7 +249,7 @@ ModelBuilder::WritePhysics()
                         col.extents = colBox.extents();
                         newShape->collider->data.Set(col);
                         newShape->collider->name = skinIter.name;
-                        newShape->collider->type = Physics::ColliderType_Cube;
+                        newShape->collider->type = Physics::ColliderType_Box;
                         body->shapes.push_back(std::move(newShape));
                     }
                 }

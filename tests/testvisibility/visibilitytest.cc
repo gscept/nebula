@@ -72,12 +72,11 @@ VisibilityTest::Run()
     CoreGraphics::WindowCreateInfo wndInfo =
     {
         CoreGraphics::DisplayMode{ 100, 100, 1024, 768 },
-        "Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
+        "Render test!", "", CoreGraphics::AntiAliasQuality::None, nullptr, true, true, false
     };
-    CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
+    CoreGraphics::WindowId wnd = CreateMainWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
-    Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
+    ViewId view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
 
     // create contexts, this could and should be bundled together
     CameraContext::Create();
@@ -93,8 +92,7 @@ VisibilityTest::Run()
     GraphicsEntityId cam = Graphics::CreateEntity();
     CameraContext::RegisterEntity(cam);
     CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::deg2rad(60.f), 0.01f, 1000.0f);
-    view->SetCamera(cam);
-    view->SetStage(stage);
+    ViewSetCamera(view, cam);
 
     // setup scene
     GraphicsEntityId ent = Graphics::CreateEntity();
@@ -122,7 +120,17 @@ VisibilityTest::Run()
 
     GraphicsEntityId globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(globalLight);
-    Lighting::LightContext::SetupGlobalLight(globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), 85_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(
+        globalLight, 
+        {
+            .view = view,
+            .color = Math::vec3(1, 1, 1),
+            .intensity = 1.0f,
+            .zenith = (float)85_rad,
+            .azimuth = (float)0_rad,
+            .castShadows = true
+        }
+    );
 
     // register visibility system
     ObserverContext::CreateBruteforceSystem({});
@@ -256,7 +264,6 @@ VisibilityTest::Run()
     }
 
     DestroyWindow(wnd);
-    gfxServer->DiscardStage(stage);
     gfxServer->DiscardView(view);
 
     gfxServer->Close();

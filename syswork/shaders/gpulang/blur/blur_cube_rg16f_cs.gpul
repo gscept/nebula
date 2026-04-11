@@ -1,0 +1,26 @@
+//------------------------------------------------------------------------------
+//  blur_cube_rg16f_cs.gpul
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <blur/blur_include.gpuh>
+const BlurKernel = BlurKernelSize.Size8;
+const ImageFormatType = ImageFormat.Rg16f;
+const ImageIsArray : b8 = true;
+#include "blur_cs.gpuh"
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("BlurX")
+program BlurX
+{
+    ComputeShader = csMainX;
+};
+
+@Mask("BlurY")
+program BlurY
+{
+    ComputeShader = csMainY;
+};

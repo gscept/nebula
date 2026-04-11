@@ -31,6 +31,7 @@ struct ShaderProgramId;
 struct BarrierId;
 struct EventId;
 struct PassId;
+struct RenderPassId;
 struct PipelineId;
 struct BlasId;
 struct TlasId;
@@ -76,7 +77,7 @@ struct TextureCopy
 
 struct BufferCopy
 {
-    uint offset;
+    size_t offset;
     uint rowLength = 0;     // for buffer to image copies
     uint imageHeight = 0;   // for buffer to image copies
 };
@@ -91,6 +92,7 @@ struct FrameProfilingMarker
     IndexT gpuEnd;
     uint64_t start;
     uint64_t duration;
+    uint64_t cpuBegin;
     Util::Array<FrameProfilingMarker> children;
 };
 #endif
@@ -110,12 +112,13 @@ struct CmdBufferPoolCreateInfo
     bool shortlived : 1;    // Hint if the buffers allocated from this pool will be short lived
     
     CmdBufferPoolCreateInfo()
-        : queue(CoreGraphics::InvalidQueueType)
-        , resetable(false)
-        , shortlived(false)
-#if NEBULA_GRAPHICS_DEBUG
-        , name(nullptr)
-#endif
+        : 
+        #if NEBULA_GRAPHICS_DEBUG
+        name(nullptr),
+        #endif
+        queue(CoreGraphics::InvalidQueueType),
+        resetable(false),
+        shortlived(false)
     {};
 };
 
@@ -145,6 +148,12 @@ struct CmdBufferCreateInfo
 #endif
     {};
 };
+
+#if NEBULA_GRAPHICS_DEBUG
+#define NEBULA_GRAPHICS_DEBUG_SET_NAME(cmd, x) cmd.name = x
+#else
+#define NEBULA_GRAPHICS_DEBUG_SET_NAME(cmd, x)
+#endif
 
 struct CmdBufferBeginInfo
 {
@@ -183,20 +192,20 @@ void CmdEndRecord(const CmdBufferId id);
 void CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info);
 
 /// Set vertex buffer
-void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, size_t bufferOffset);
 /// Set vertex layout
 void CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl);
 /// Set index buffer
-void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, size_t bufferOffset);
 /// Set the type of topology used
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 
 /// Set shader program
-void CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, bool bindGlobals = true);
+void CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, bool bindGlobals = true);
 /// Set resource table
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint, true>& offsets = nullptr);
 /// Set resource table using raw offsets
-void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
+void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32_t numOffsets, uint32_t* offsets);
 /// Set push constants
 void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far
@@ -204,7 +213,7 @@ void CmdSetGraphicsPipeline(const CmdBufferId id);
 /// Set graphics pipeline directly
 void CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline);
 /// Set ray tracing pipeline
-void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline);
+void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline, const CoreGraphics::QueueType queue);
 
 /// Insert pipeline barrier
 void CmdBarrier(
@@ -297,6 +306,10 @@ void CmdBeginPass(const CmdBufferId id, const CoreGraphics::PassId pass);
 void CmdNextSubpass(const CmdBufferId id);
 /// End pass
 void CmdEndPass(const CmdBufferId id);
+/// Begin render pass
+void CmdBeginRenderPass(const CmdBufferId id, const CoreGraphics::RenderPassId pass);
+/// End render pass
+void CmdEndRenderPass(const CmdBufferId id);
 /// Draw primitives
 void CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw primitives instanced
@@ -355,7 +368,7 @@ void CmdCopy(
     , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
     , const Util::Array<CoreGraphics::BufferCopy, 4>& to
-    , const SizeT size
+    , const size_t size
 );
 /// Copy from buffer to texture
 void CmdCopy(
@@ -393,8 +406,8 @@ void CmdSetStencilWriteMask(const CmdBufferId id, const uint writeMask);
 void CmdUpdateBuffer(
     const CmdBufferId id
     , const CoreGraphics::BufferId buffer
-    , uint offset
-    , uint size
+    , size_t offset
+    , size_t size
     , const void* data
 );
 
@@ -415,6 +428,10 @@ void CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* n
 void CmdEndMarker(const CmdBufferId id);
 /// Insert marker without a beginning and end
 void CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name);
+#else
+inline void CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name){}
+inline void CmdEndMarker(const CmdBufferId id){}
+inline void CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name){}
 #endif
 
 /// Finish queries

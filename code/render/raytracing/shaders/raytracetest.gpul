@@ -1,0 +1,76 @@
+//------------------------------------------------------------------------------
+//  raytracetest.gpul
+//  (C) 2026 gscept
+//------------------------------------------------------------------------------
+#include <lib/raytracing.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+#include <lib/pbr.gpuh>
+
+group(SYSTEM_GROUP) uniform RaytracingOutput : *mutable rgba16f texture2D;
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+Raygen(ray_payload Result : LightResponsePayload) void
+{
+    const pixelCenter = f32x2(rayGetLaunchIndex().xy) + f32x2(0.5);
+    const inUV = pixelCenter / f32x2(rayGetLaunchSize().xy);
+    const d = inUV * 2.0 - 1.0;
+
+    const origin = ViewConstants.InvView * f32x4(0, 0, 0, 1);
+    const target = ViewConstants.InvProjection * f32x4(d.x, d.y, 1, 1);
+    const direction = ViewConstants.InvView * f32x4(normalize(target.xyz), 0);
+
+    Result.bits = 0x0u;
+    Result.albedo = f32x3(0);
+    Result.material = f32x4(0);
+    Result.radiance = f32x3(0);
+    Result.alpha = 0.0f;
+    Result.normal = f32x3(0);
+    Result.depth = 0.0f;
+
+    // Ray trace against BVH
+    traceRay(TLAS, RayFlags.CullBackFacing, 0xFFu, 0u, 0u, 0u, origin.xyz, direction.xyz, 0.01f, 10000.0f, Result);
+
+    var light = f32x3(0);
+    if ((Result.bits & RAY_MISS_BIT) != 0)
+    {
+        const dir = normalize(direction.xyz);
+		var atmo = f32x3(0);
+		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+		{
+			const li = LightLists.DirectionalLights[i];
+			if li.stageMask & ViewConstants.StageMask
+			{
+				light += CalculateAtmosphericScattering(dir, li.direction) * li.color;
+			}
+		}
+        
+    }
+    else
+    {
+        light = Result.radiance;
+    }
+
+    textureStore(RaytracingOutput, i32x2(rayGetLaunchIndex().xy), f32x4(light, 0.0f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+Miss(in ray_payload Result : LightResponsePayload) void
+{
+    Result.bits |= RAY_MISS_BIT;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("test")
+program Main
+{
+    RayGenerationShader = Raygen;
+    RayMissShader = Miss;
+};

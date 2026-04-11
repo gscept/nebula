@@ -17,15 +17,15 @@ struct MaterialVariant
 
     /// Nullptr constructor
     MaterialVariant()
-        : mem(nullptr)
-        , needsDeref(false)
+        : needsDeref(false)
+        , mem(nullptr)
         , size(0)
     {};
 
     /// Copy constructor
     MaterialVariant(const MaterialVariant& rhs)
-        : mem(rhs.mem)
-        , needsDeref(rhs.needsDeref)
+        : needsDeref(rhs.needsDeref)
+        , mem(rhs.mem)
         , size(rhs.size)
     {
     }
@@ -40,8 +40,8 @@ struct MaterialVariant
 
     /// Move constructor
     MaterialVariant(MaterialVariant&& rhs)
-        : mem(rhs.mem)
-        , needsDeref(rhs.needsDeref)
+        : needsDeref(rhs.needsDeref)
+        , mem(rhs.mem)
         , size(rhs.size)
     {
         rhs.mem = nullptr;
@@ -63,8 +63,8 @@ struct MaterialVariant
 
     /// Nullptr constructor
     MaterialVariant(std::nullptr_t)
-        : mem(nullptr)
-        , needsDeref(false)
+        : needsDeref(false)
+        , mem(nullptr)
         , size(0)
     {}
 

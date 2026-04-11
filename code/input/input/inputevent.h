@@ -30,6 +30,7 @@ public:
 
         AppObtainFocus,         // application window obtained focus (or minimized, etc)
         AppLoseFocus,           // application window lost focus
+        AppClose,               // application window closed
         Reset,                  // InputServer::Reset() has been called
         KeyDown,                // a key has been pressed
         KeyUp,                  // a key has been released
@@ -53,6 +54,10 @@ public:
     /// default constructor
     InputEvent();
 
+    /// Set window
+    ///void SetWindow(const CoreGraphics::WindowId window);
+    /// Get window
+    ///const CoreGraphics::WindowId GetWindow() const;
     /// set event type
     void SetType(Type t);
     /// get event type
@@ -90,6 +95,7 @@ private:
     Char character;
     IndexT deviceIndex;
     MouseButton::Code mouseButton;
+    //CoreGraphics::WindowId window;
     Math::vec2 absMousePos;
     Math::vec2 normMousePos;
 };
@@ -107,6 +113,24 @@ InputEvent::InputEvent() :
 {
     // empty
 }
+
+/////------------------------------------------------------------------------------
+////**
+///*/
+///inline void
+///InputEvent::SetWindow(const CoreGraphics::WindowId wnd)
+///{
+///    this->window = wnd;
+///}
+///
+/////------------------------------------------------------------------------------
+////**
+///*/
+///inline const CoreGraphics::WindowId
+///InputEvent::GetWindow() const
+///{
+///    return this->window;
+///}
 
 //------------------------------------------------------------------------------
 /**
@@ -245,6 +269,7 @@ InputEvent::TypeToString(Type t)
         case InvalidType:               return "InvalidTyp";
         case AppObtainFocus:            return "AppObtainFocus";
         case AppLoseFocus:              return "AppLoseFocus";
+        case AppClose:                  return "AppClose";
         case Reset:                     return "Reset";
         case KeyDown:                   return "KeyDown";
         case KeyUp:                     return "KeyUp";

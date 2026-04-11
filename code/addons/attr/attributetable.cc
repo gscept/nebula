@@ -366,7 +366,6 @@ AttributeTable::GetValueTypeSize(ValueType type) const
     case IntType:       return sizeof(int);
     case UIntType:      return sizeof(uint);
     case Int64Type:     return sizeof(uint64_t);
-    case UInt64Type:    return sizeof(int64_t);
     case BoolType:      return sizeof(int);     // not a bug!
     case FloatType:     return sizeof(float);
     case Vec4Type:    return sizeof(vec4);
@@ -591,6 +590,10 @@ AttributeTable::CopyRow(IndexT srcRowIndex, IndexT dstRowIndex)
         case IntType:
             this->SetInt(colIndex, dstRowIndex, this->GetInt(colIndex, srcRowIndex));
             break;
+        
+        case Int64Type:
+            this->SetInt64(colIndex, dstRowIndex, this->GetInt64(colIndex, srcRowIndex));
+            break;
 
         case FloatType:
             this->SetFloat(colIndex, dstRowIndex, this->GetFloat(colIndex, srcRowIndex));
@@ -656,6 +659,10 @@ AttributeTable::CopyExtRow(AttributeTable* other, IndexT otherRowIndex, bool cre
             {
             case IntType:
                 this->SetInt(attrId, myRowIndex, other->GetInt(otherColIndex, otherRowIndex));
+                break;
+
+            case Int64Type:
+                this->SetInt64(attrId, myRowIndex, other->GetInt64(otherColIndex, otherRowIndex));
                 break;
 
             case FloatType:
@@ -1085,6 +1092,7 @@ AttributeTable::SetRowToDefaultValues(IndexT rowIndex)
         {
         case IntType:       this->SetInt(colIndex, rowIndex, colAttrId.GetIntDefValue()); break;
         case UIntType:      this->SetUInt(colIndex, rowIndex, colAttrId.GetUIntDefValue()); break;
+        case Int64Type:     this->SetInt64(colIndex, rowIndex, colAttrId.GetInt64DefValue()); break;
         case FloatType:     this->SetFloat(colIndex, rowIndex, colAttrId.GetFloatDefValue()); break;
         case BoolType:      this->SetBool(colIndex, rowIndex, colAttrId.GetBoolDefValue()); break;
         case Vec4Type:      this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
@@ -1126,6 +1134,16 @@ AttributeTable::SetColumnToDefaultValues(IndexT colIndex)
         for (rowIndex = 0; rowIndex < this->GetNumRows(); rowIndex++)
         {
             this->SetUInt(colIndex, rowIndex, def);
+        }
+    }
+    break;
+
+    case Int64Type:
+    {
+        int64_t def = colAttrId.GetInt64DefValue();
+        for (rowIndex = 0; rowIndex < this->GetNumRows(); rowIndex++)
+        {
+            this->SetInt64(colIndex, rowIndex, def);
         }
     }
     break;
@@ -1392,6 +1410,7 @@ AttributeTable::DeleteRowData(IndexT rowIndex)
         switch (colAttrId.GetValueType())
         {
         case IntType:
+        case Int64Type:
         case FloatType:
         case BoolType:
         case Vec4Type:

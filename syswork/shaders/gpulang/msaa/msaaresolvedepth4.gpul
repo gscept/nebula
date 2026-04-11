@@ -1,0 +1,19 @@
+//------------------------------------------------------------------------------
+//  msaaresolvedepth4.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "msaaresolve_include.gpuh"
+const Kernel = KernelMethod.Zero;
+const Samples = 4u;
+const Format = ImageFormat.R32f;
+#include "msaaresolve.gpuh" 
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Resolve")
+program Prog
+{
+    ComputeShader = main;
+};

@@ -26,6 +26,7 @@
 */    
 #include "util/array.h"
 #include "util/keyvaluepair.h"
+#include <utility>
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -59,8 +60,12 @@ public:
     void BeginBulkAdd();
     /// add a key/value pair
     IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
+    /// add a key/value pair, consuming rvalues
+    IndexT Add(KeyValuePair<KEYTYPE, VALUETYPE>&& kvp);
     /// add a key and associated value
     IndexT Add(const KEYTYPE& key, const VALUETYPE& value);
+    /// add a key and associated value, consuming rvalues
+    IndexT Add(KEYTYPE&& key, VALUETYPE&& value);
     /// creates a new entry of VALUETYPE if key does not exist, or returns the existing element
     VALUETYPE& Emplace(const KEYTYPE& key);
     /// end a bulk insert (this will sort the internal array)
@@ -84,7 +89,9 @@ public:
     /// get a value at given index
     const VALUETYPE& ValueAtIndex(IndexT index) const;
     /// get key/value pair at index
-    KeyValuePair<KEYTYPE, VALUETYPE>& KeyValuePairAtIndex(IndexT index) const;
+    KeyValuePair<KEYTYPE, VALUETYPE>& KeyValuePairAtIndex(IndexT index);
+    /// get key/value pair at index
+    const KeyValuePair<KEYTYPE, VALUETYPE>& KeyValuePairAtIndex(IndexT index) const;
     /// get all keys as an Util::Array
     Array<KEYTYPE> KeysAsArray() const;
     /// get all keys as an Util::Array
@@ -249,6 +256,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline void
 Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 {
+    if (&rhs == this) return;
     this->BeginBulkAdd();
     IndexT i;
     for (i = 0; i < rhs.keyValuePairs.Size(); i++)
@@ -282,6 +290,24 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 */
 template<class KEYTYPE, class VALUETYPE>
 inline IndexT
+Dictionary<KEYTYPE, VALUETYPE>::Add(KeyValuePair<KEYTYPE, VALUETYPE>&& kvp)
+{
+    if (this->inBulkInsert)
+    {
+        this->keyValuePairs.Append(std::move(kvp));
+        return this->keyValuePairs.Size() - 1;
+    }
+    else
+    {
+        return this->keyValuePairs.InsertSorted(std::move(kvp));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
 #if NEBULA_BOUNDSCHECKS
@@ -297,6 +323,16 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
     {
         return this->keyValuePairs.InsertSorted(kvp);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE>
+inline IndexT
+Dictionary<KEYTYPE, VALUETYPE>::Add(KEYTYPE&& key, VALUETYPE&& value)
+{
+    return this->Add(KeyValuePair<KEYTYPE, VALUETYPE>(std::move(key), std::move(value)));
 }
 
 //------------------------------------------------------------------------------
@@ -431,6 +467,19 @@ Dictionary<KEYTYPE, VALUETYPE>::ValueAtIndex(IndexT index) const
 */
 template<class KEYTYPE, class VALUETYPE> 
 inline KeyValuePair<KEYTYPE, VALUETYPE>&
+Dictionary<KEYTYPE, VALUETYPE>::KeyValuePairAtIndex(IndexT index)
+{
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(!this->inBulkInsert);
+    #endif
+    return this->keyValuePairs[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE> 
+inline const KeyValuePair<KEYTYPE, VALUETYPE>&
 Dictionary<KEYTYPE, VALUETYPE>::KeyValuePairAtIndex(IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
@@ -446,7 +495,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key)
 {
-    int keyValuePairIndex = this->FindIndex(key);
+    IndexT keyValuePairIndex = this->FindIndex(key);
     #if NEBULA_BOUNDSCHECKS
     n_assert(InvalidIndex != keyValuePairIndex);
     #endif   
@@ -460,7 +509,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline const VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key) const
 {
-    int keyValuePairIndex = this->FindIndex(key);
+    IndexT keyValuePairIndex = this->FindIndex(key);
     #if NEBULA_BOUNDSCHECKS
     n_assert(InvalidIndex != keyValuePairIndex);
     #endif
@@ -561,7 +610,7 @@ template<class KEYTYPE, class VALUETYPE>
 inline void
 Dictionary<KEYTYPE, VALUETYPE>::emplace(KEYTYPE&&key, VALUETYPE&&value)
 {
-    this->Add(key, value);
+    this->Add(std::move(key), std::move(value));
 }
 } // namespace Util
 //------------------------------------------------------------------------------

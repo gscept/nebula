@@ -10,8 +10,7 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
-#include "system_shaders/cluster_generate.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 #include "materials/shaderconfig.h"
 
 namespace Raytracing
@@ -61,11 +60,11 @@ public:
         , const CoreGraphics::VertexAlloc& vertices
         , const CoreGraphics::VertexAlloc& indices
         , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-        , const SizeT vertexOffsetStride
-        , const SizeT patchVertexStride
+        , const size_t vertexOffsetStride
+        , const size_t patchVertexStride
         , const Util::Array<Math::mat4> transforms
         , const uint materialTableOffset
-        , const MaterialTemplates::MaterialProperties shader
+        , const MaterialTemplatesGPULang::MaterialProperties shader
         , const CoreGraphics::VertexLayoutType vertexLayout
     );
     /// Invalidate a BLAS (for example, when the mesh has morphed) associated with a graphics entity
@@ -78,7 +77,7 @@ public:
     /// Wait for jobs to finish
     static void WaitForJobs(const Graphics::FrameContext& ctx);
     /// Update view constants
-    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateResources(const Graphics::FrameContext& ctx);
 
     /// Get light grid resources
     static CoreGraphics::ResourceTableId GetLightGridResourceTable(IndexT bufferIndex);

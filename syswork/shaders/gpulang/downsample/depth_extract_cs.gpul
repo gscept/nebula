@@ -1,0 +1,28 @@
+//------------------------------------------------------------------------------
+//  depth_extract_cs.gpul
+//  Read depth
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+uniform ZBufferInput: *texture2D;
+uniform DepthOutput: *mutable r32f texture2D;
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(64)
+entry_point
+csMain() void
+{
+    const threadIndices = computeGetGlobalThreadIndices();
+    const depth = textureFetch(ZBufferInput, i32x2(threadIndices.xy), 0).r;
+    textureStore(DepthOutput, i32x2(threadIndices.xy), f32x4(depth));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Extract")
+program Extract
+{
+    ComputeShader = csMain;
+};

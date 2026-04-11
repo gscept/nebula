@@ -1,0 +1,107 @@
+//------------------------------------------------------------------------------
+//  msaaresolve.fxh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "../lib/shared.gpuh"
+
+struct ResolveData
+{
+    source : u32;
+    width : u32;
+};
+uniform ResolveConstants : *ResolveData;
+
+generate
+{
+    if !declared<Format> 
+    {
+        const Format = ImageFormat.R32f;
+    }
+
+    if !declared<Kernel>
+    {
+        const Kernel = KernelMethod.Zero;
+    }
+
+    if !declared<Samples>
+    {
+        const Samples = 4;
+    }
+
+    if Format == ImageFormat.R32f
+    {
+        alias dataType as f32;
+        uniform Resolve : *mutable r32f texture2D;
+        Sample(uv: i32x2, samp: u32) f32 { return fetch2DMS(ResolveConstants.source, uv, samp).x; }
+        Empty() dataType { return f32(0.0f); }
+    }
+    else if Format == ImageFormat.R11g11b10f
+    {
+        alias dataType as f32x3;
+        uniform Resolve : *mutable r11g11b10f texture2D;
+        Sample(uv: i32x2, samp: u32) f32x3 { return fetch2DMS(ResolveConstants.source, uv, samp).xyz; }
+        Empty() dataType { return f32x3(0.0f); }
+    }
+
+    if Kernel == KernelMethod.Zero 
+    {
+        Reduce(uv: i32x2) void 
+        { 
+            const samp = Sample(uv, 0u);
+            textureStore(Resolve, uv, samp);
+        }
+    }
+    else if Kernel == KernelMethod.Min
+    {
+        Reduce(uv: i32x2) void 
+        {
+            var result = dataType(0);
+            for (var i = 0u; i < Samples; i++)
+            {
+                const samp = Sample(uv, i);
+                result = min(result, samp);
+            }
+            textureStore(Resolve, uv, result);
+        }
+    }
+    else if Kernel == KernelMethod.Max
+    {
+        Reduce(uv: i32x2) void 
+        {
+            var result = dataType(0);
+            for (var i = 0u; i < Samples; i++)
+            {
+                const samp = Sample(uv, i);
+                result = max(result, samp);
+            }
+            textureStore(Resolve, uv, result);
+        }
+    }
+    else if Kernel == KernelMethod.Avg
+    {
+        Reduce(uv: i32x2) void 
+        {
+            var result = dataType(0);
+            for (var i = 0u; i < Samples; i++)
+            {
+                const samp = Sample(uv, i);
+                result += samp;
+            }
+            textureStore(Resolve, uv, result / Samples);
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(64)
+entry_point
+main() void
+{
+    var result = Empty();
+    const uv = i32x2(computeGetGlobalThreadIndices().xy);
+    if (uv.x >= ResolveConstants.width) { return; }
+
+    Reduce(uv);
+}

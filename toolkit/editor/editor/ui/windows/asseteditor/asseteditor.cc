@@ -20,8 +20,9 @@
 #include "modelasseteditor.h"
 #include "skeletonasseteditor.h"
 #include "textureasseteditor.h"
+#include "particleasseteditor.h"
 
-#include "materials/material_interfaces.h"
+#include "materials/gpulang/material_interfaces.h"
 
 namespace Presentation
 {
@@ -39,6 +40,8 @@ __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 */
 AssetEditor::AssetEditor()
 {
+    this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
+
 }
 
 //------------------------------------------------------------------------------
@@ -73,56 +76,86 @@ EmptyEditor()
     ImGui::Text(EmptyString);
 }
 
+using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
+using ShowFunc = void(*)(AssetEditor*, AssetEditorItem*, bool);
+using SetupFunc = void(*)(AssetEditorItem*);
+
+static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSetup,
+    MeshSetup,
+    nullptr,
+    ModelSetup,
+    nullptr,
+    TextureSetup,
+    ParticleSetup
+};
+
+static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialSave,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+};
+static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialEditor,
+    MeshEditor,
+    nullptr,
+    ModelEditor,
+    nullptr,
+    TextureEditor,
+    ParticleEditor
+};
+
+static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialDiscard,
+    MeshDiscard,
+    nullptr,
+    ModelDiscard,
+    nullptr,
+    nullptr,
+    ParticleDiscard
+};
+
+static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] = 
+{
+    nullptr, // LEAVE THIS ONE AS IT IS
+    MaterialShow,
+    MeshShow,
+    nullptr,
+    ModelShow,
+    nullptr,
+    nullptr,
+    ParticleShow
+};
+
+static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
+{
+    "None %s",
+    "[Material] %s",
+    "[Mesh] %s",
+    "[Skeleton] %s",
+    "[Model] %s",
+    "[Animation] %s",
+    "[Texture] %s",
+    "[Particle] %s"
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 AssetEditor::Run(SaveMode save)
 {
-    using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
-    static const EditorFunc SavingFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSave,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-    static const EditorFunc RenderFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialEditor,
-        MeshEditor,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureEditor
-    };
-
-    static const EditorFunc DiscardFunctions[(uint)AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialDiscard,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr
-    };
-
-    static const char* Labels[(uint)AssetType::NumAssetTypes] =
-    {
-        "None %s",
-        "[Material] %s",
-        "[Mesh] %s",
-        "[Skeleton] %s",
-        "[Model] %s",
-        "[Animation] %s",
-        "[Texture] %s"
-    };
-
     static const char* PopupText = "Unsaved changes";
     if (!assetEditorState.items.IsEmpty())
     {
@@ -138,7 +171,7 @@ AssetEditor::Run(SaveMode save)
                         func(this, &item);
                 }
 
-                bool open;
+                bool open = true;
                 Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
@@ -224,6 +257,16 @@ AssetEditor::Run(SaveMode save)
                         }
                     }
                     ImGui::EndTabItem();
+
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, true);
+                }
+                else
+                {
+                    auto& hideFunc = ShowFunctions[(uint)item.assetType];
+                    if (hideFunc)
+                        hideFunc(this, &item, false);
                 }
             }
             ImGui::EndTabBar();
@@ -238,23 +281,22 @@ AssetEditor::Run(SaveMode save)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+AssetEditor::Update()
+{
+    this->viewport.Update();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Setup(AssetEditorItem* item)
 {
     item->allocator.Release();
     item->data = nullptr;
-    using SetupFunc = void(*)(AssetEditorItem*);
 
-    static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
-    {
-        nullptr, // LEAVE THIS ONE AS IT IS
-        MaterialSetup,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        TextureSetup
-    };
+    item->previewObject = Graphics::CreateEntity();
 
     const SetupFunc& func = SetupFuncs[(uint)item->assetType];
     if (func)
@@ -277,9 +319,15 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
         }
     }
 
+    if (!Resources::ResourceServer::Instance()->HasStreamLoader(asset.AsString().GetFileExtension()))
+    {
+        // we just ignore for now
+        return;
+    }
+
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
-        [this, asset, type](Resources::ResourceId id)
+        [asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;

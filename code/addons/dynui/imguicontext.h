@@ -37,8 +37,13 @@ struct ImguiTextureId
     uint green : 1 = 1;
     uint blue : 1 = 1;
     uint alpha : 1 = 1;
-    
+    uint splat : 1 = 0;
 };
+
+extern ImFont* ImguiNormalFont;
+extern ImFont* ImguiSmallFont;
+extern ImFont* ImguiBoldFont;
+extern ImFont* ImguiItFont;
 
 class ImguiContext : public Graphics::GraphicsContext
 {
@@ -63,47 +68,12 @@ public:
     static void ResetKeyDownState();
 
     /// called if the window size has changed
-    static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+    static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);
     /// called before frame
     static void NewFrame(const Graphics::FrameContext& ctx);
 
-    struct ImguiState
-    {
-        CoreGraphics::ShaderId uiShader;
-        CoreGraphics::ShaderProgramId prog;
-        CoreGraphics::PipelineId pipeline;
-
-#if WITH_NEBULA_EDITOR
-        CoreGraphics::PipelineId editorPipeline;
-#endif
-
-        ImguiTextureId fontTexture;
-        //CoreGraphics::TextureId fontTexture;
-
-        Util::FixedArray<CoreGraphics::BufferId> vbos;
-        Util::FixedArray<CoreGraphics::BufferId> ibos;
-        CoreGraphics::VertexLayoutId vlo;
-
-        IndexT textProjectionConstant;
-        IndexT packedTextureInfo;
-        IndexT rangeMinConstant;
-        IndexT rangeMaxConstant;
-        IndexT colorMaskConstant;
-        CoreGraphics::ResourceTableId resourceTable;
-        //Ptr<CoreGraphics::BufferLock> vboBufferLock;
-        //Ptr<CoreGraphics::BufferLock> iboBufferLock;
-        Util::FixedArray<byte*> vertexPtrs;
-        Util::FixedArray<byte*> indexPtrs;
-
-        ImFont* normalFont;
-        ImFont* smallFont;
-        ImFont* boldFont;
-        ImFont* itFont;
-
-        Ptr<ImguiInputHandler> inputHandler;
-        bool dockOverViewport;
-    };
-    static ImguiState state;
+    /// called after frame
+    static void EndFrame(const Graphics::FrameContext& ctx);
 
 private:
     static void RecoverImGuiContextErrors();

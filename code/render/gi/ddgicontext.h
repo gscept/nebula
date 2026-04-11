@@ -8,8 +8,8 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <gi/shaders/probe_finalize.h>
-#include <gi/shaders/probe_update.h>
+#include "gpulang/render/gi/shaders/probe_finalize.h"
+#include "gpulang/render/gi/shaders/probe_update.h"
 
 #include "graphics/graphicscontext.h"
 namespace GI
@@ -24,7 +24,7 @@ union DDGIOptions
         uint relocate : 1;              // Relocate probes to avoid them being stuck inside geometry
         uint lowPrecisionTextures : 1;  // Use more compact texture formats at the expense of quality
     } flags;
-    uint32 bits = 0x0;
+    uint32_t bits = 0x0;
 };
 
 class DDGIContext : public Graphics::GraphicsContext
@@ -60,6 +60,7 @@ public:
         float blend = 0.0f;
         float updateBudget = 1.0f;
 
+        Graphics::StageMask stageMask;
         DDGIOptions options;
     };
 
@@ -71,7 +72,7 @@ public:
     static void SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size);
 
     /// prepare light lists
-    static void UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_BUILD
     static void OnRenderDebug(uint32_t flags);
@@ -104,8 +105,10 @@ private:
         float blendCutoff = 0.0f;
         float blend = 0.0f;
         
-        ProbeUpdate::VolumeConstants volumeConstants;
+        ProbeUpdate::VolumeConstants::STRUCT volumeConstants;
         DDGIOptions options;
+
+        Graphics::StageMask stageMask;
 
 #ifndef PUBLIC_BUILD
         CoreGraphics::ResourceTableId debugResourceTable;

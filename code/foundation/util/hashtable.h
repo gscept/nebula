@@ -127,7 +127,7 @@ private:
     bool inBulkAdd;
 
     /// if type is integral, just use that value directly
-    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return uint32_t(key % this->hashArray.Size()); };
+    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { using UNSIGNED = typename std::make_unsigned<HASHKEY>::type; return uint32_t(UNSIGNED(key) % UNSIGNED(this->hashArray.Size())); };
     /// if not, call the function on HashCode on HASHKEY
     template <typename HASHKEY> const uint32_t GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size(); };
     /// if type is pointer, convert using questionable method
@@ -279,7 +279,9 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator=(HashTable<KEYTY
     {
         this->hashArray = std::move(rhs.hashArray);
         this->bulkDirty = rhs.bulkDirty;
+        this->inBulkAdd = rhs.inBulkAdd;
         this->size = rhs.size;
+        rhs.inBulkAdd = false;
         rhs.size = 0;
     }
 }
@@ -299,21 +301,17 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator[](const KEYTYPE&
     #if NEBULA_BOUNDSCHECKS    
     n_assert(0 != numHashElements); // element with key doesn't exist
     #endif
-    if (1 == numHashElements)
-    {
-        // no hash collisions, just return the only existing element
-        return hashElements[0].Value();
-    }
-    else
+    IndexT hashElementIndex = InvalidIndex;
+    if (numHashElements > 0)
     {
         // here's a hash collision, find the right key
         // with a binary search
-    IndexT hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
-        #if NEBULA_BOUNDSCHECKS
-        n_assert(InvalidIndex != hashElementIndex);
-        #endif
-        return hashElements[hashElementIndex].Value();
+        hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
     }
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(InvalidIndex != hashElementIndex);
+    #endif
+    return hashElements[hashElementIndex].Value();
 }
 
 //------------------------------------------------------------------------------
@@ -630,6 +628,11 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator++(int)
 {
     const FixedArray<StackArray<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> >& arr = *this->arr;
 
+    if (this->hashIndex >= arr.Size())
+    {
+        // already at end, do nothing
+        return *this;
+    }
     // always increment bucket index
     this->bucketIndex++;
     if (arr[this->hashIndex].Size() > this->bucketIndex)
@@ -672,7 +675,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator==(const Iterator& rhs) const
 {
-    return this->key == rhs.key;
+    return (this->arr == rhs.arr) && (this->hashIndex == rhs.hashIndex) && (this->bucketIndex == rhs.bucketIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -682,7 +685,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 const bool
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Iterator::operator!=(const Iterator& rhs) const
 {
-    return this->key != rhs.key;
+    return !(*this == rhs);
 }
 } // namespace Util
 //------------------------------------------------------------------------------

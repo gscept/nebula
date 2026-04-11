@@ -139,6 +139,8 @@ public:
     IndexT FindStringIndex(const String& s, IndexT startIndex = 0) const;
     /// return index of character in string, or InvalidIndex if not found
     IndexT FindCharIndex(char c, IndexT startIndex = 0) const;
+    /// return index of character in string, or InvalidIndex if not found
+    IndexT FindCharIndexReverse(char c, IndexT startIndex = 0) const;
     /// returns true if string begins with string
     bool BeginsWithString(const String& s) const;
     /// returns true if string ends with string
@@ -178,8 +180,8 @@ public:
     void SetCharPtr(const char* s);
     /// set as char ptr, with explicit length
     void Set(const char* ptr, SizeT length);
-    /// set as char ptr, with explicit length. will assert if size_t exceeds 2^32
-    void Set(const char* ptr, size_t length);
+    ///// set as char ptr, with explicit length. will assert if size_t exceeds 2^32
+    //void Set(const char* ptr, size_t length);
     /// set as byte value
     void SetByte(byte val);
     /// set as ubyte value
@@ -192,6 +194,10 @@ public:
     void SetInt(int val);
     /// set as uint value
     void SetUInt(uint val);
+    /// set as int64 value
+    void SetInt64(int64_t val);
+    /// set as uint64 value
+    void SetUInt64(uint64_t val);
     /// set as long value
     void SetLong(long val);
     /// set as long value
@@ -260,8 +266,12 @@ public:
     const char* Get() const;
     /// return contents as integer
     int AsInt() const;
-    /// return contents as long long
-    long long AsLongLong() const;
+    /// return contents as int64_t
+    int64_t AsInt64() const;
+    /// return contents as unsigned integer
+    uint32_t AsUInt() const;
+    /// return contents as unsigned uint64_t
+    uint64_t AsUInt64() const;
     /// return contents as float
     float AsFloat() const;
     /// return contents as bool
@@ -318,6 +328,10 @@ public:
     static String FromInt(int i);
     /// construct a string from a uint
     static String FromUInt(uint i);
+    /// construct a string from a int64
+    static String FromInt64(int64_t i);
+    /// construct a string from a uint64
+    static String FromUInt64(uint64_t i);
     /// construct a string from a long
     static String FromLong(long i);
     /// construct a string from a size_t
@@ -383,8 +397,14 @@ public:
     String ExtractDirName() const;
     /// extract path until last slash
     String ExtractToLastSlash() const;
+    /// strip subpath
+    String StripSubpath(const String& subpath) const;
     /// replace illegal filename characters
     void ReplaceIllegalFilenameChars(char replacement);
+    /// append a directory/file to the path (adds separator if necessary)
+    void AppendPath(const String& path);
+    /// append a directory/file to the path (adds separator if necessary)
+    static String AppendPath(const String& base, const String& path);
 
     /// helpers to interface with libraries that expect std::string like apis
     inline const char* c_str() const { return this->AsCharPtr(); }
@@ -392,6 +412,8 @@ public:
     inline size_t length() const { return this->Length(); }
     ///
     inline bool empty() const { return this->IsEmpty(); }
+    ///
+    inline const char* data() const { return this->AsCharPtr(); }
 
     /// test if provided character is a digit (0..9)
     static bool IsDigit(char c);
@@ -523,6 +545,8 @@ String::String(String&& rhs) noexcept:
     if (rhs.heapBuffer)
     {
         rhs.heapBuffer = nullptr;
+        rhs.strLen = 0;
+        rhs.heapBufferSize = 0;
         this->localBuffer[0] = 0;
     }
     else
@@ -532,6 +556,10 @@ String::String(String&& rhs) noexcept:
             Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
         }
         this->localBuffer[this->strLen] = 0;
+        rhs.heapBuffer = nullptr;
+        rhs.strLen = 0;
+        rhs.heapBufferSize = 0;
+
     }
 }
 
@@ -791,6 +819,26 @@ String::ExtractToLastSlash() const
 
 //------------------------------------------------------------------------------
 /**
+*/
+inline String
+String::StripSubpath(const String& subpath) const
+{
+    String copy = *this;
+    copy.ConvertBackslashes();
+    IndexT it = 0;
+    while (it < copy.strLen && it < subpath.strLen)
+    {
+        if (subpath[it] != copy[it])
+            break;
+        it++;
+    }
+    while (copy[it] == '/')
+        it++;
+    return copy.ExtractToEnd(it);
+}
+
+//------------------------------------------------------------------------------
+/**
     Return true if the string only contains characters which are in the defined
     character set.
 */
@@ -899,6 +947,28 @@ String::FromUInt(uint i)
 {
     String str;
     str.SetUInt(i);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromInt64(int64_t i)
+{   
+    String str;
+    str.SetInt64(i);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromUInt64(uint64_t i)
+{
+    String str;
+    str.SetUInt64(i);
     return str;
 }
 
@@ -1182,6 +1252,33 @@ String::AppendMat4(const Math::mat4& val)
 }
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+String::AppendPath(const String& path)
+{
+    if (!this->IsEmpty() && this->FindCharIndexReverse('/') != (this->strLen - 1))
+    {
+        this->AppendChar('/');
+    }
+    this->Append(path);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::AppendPath(const String& base, const String& path)
+{
+    String result = base;
+    if (!result.IsEmpty() && result.FindCharIndexReverse('/') != (result.strLen - 1))
+    {
+        result.AppendChar('/');
+    }
+    result.Append(path);
+    return result;
+}
 
 //------------------------------------------------------------------------------
 /**

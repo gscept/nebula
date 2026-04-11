@@ -85,14 +85,14 @@ LoadMips(CoreGraphics::CmdBufferId cmdBuf, TextureStreamData* streamData, uint b
     uint loadedBits = 0x0;
     while (bitsToLoad != 0x0)
     {
-        uint mipIndexToLoad = Util::FirstOne(bitsToLoad);
+        uint mipIndexToLoad = Util::FirstBitSetIndex(bitsToLoad);
         uint mipToLoad = streamData->numMips - 1 - mipIndexToLoad;
 
         uint layerMask = streamData->layers[mipToLoad];
         uint numLayers = Util::PopCnt(layerMask);
         while (layerMask != 0x0)
         {
-            uint layer = Util::FirstOne(layerMask);
+            uint layer = Util::FirstBitSetIndex(layerMask);
             Memory::RangeAllocation alloc;
 
             // Attempt to upload, if it fails we continue from here next time
@@ -123,11 +123,11 @@ FinishMips(CoreGraphics::CmdBufferId transferCommands, CoreGraphics::CmdBufferId
     // Finish the mips by handing them over
     Util::FixedArray<TextureBarrierInfo, true> barriers(Util::PopCnt(mipBits) * streamData->numLayers);
 
-    uint mipIndexToLoad = Util::FirstOne(mipBits);
+    uint mipIndexToLoad = Util::FirstBitSetIndex(mipBits);
     uint barrierCounter = 0;
     while (mipBits != 0x0)
     {
-        uint mipIndexToLoad = Util::FirstOne(mipBits);
+        uint mipIndexToLoad = Util::FirstBitSetIndex(mipBits);
         uint mipToLoad = streamData->numMips - 1 - mipIndexToLoad;
 
         for (uint layer = 0; layer < streamData->numLayers; layer++)
@@ -386,7 +386,7 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
                     loadedBits |= handover.bits;
                     pendingBits &= ~handover.bits;
 
-                    TextureSetHighestLod(texture, streamData->numMips - 1 - Util::LastOne(loadedBits));
+                    TextureSetHighestLod(texture, streamData->numMips - 1 - Util::LastBitSetIndex(loadedBits));
 
                     // Erase the handover entry for this job
                     handovers.EraseIndex(i);

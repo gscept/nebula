@@ -21,7 +21,9 @@ namespace CoreGraphics
 {
 struct VertexAlloc
 {
-    uint size, offset, node;
+    size_t size;
+    size_t offset;
+    uint node;
 };
 
 struct CmdBufferId;
@@ -31,7 +33,7 @@ ID_24_8_TYPE(MeshId);
 struct VertexStream
 {
     BufferId vertexBuffer;
-    SizeT offset;
+    size_t offset;
     IndexT index;
 };
 
@@ -39,11 +41,11 @@ struct MeshCreateInfo
 {
     Resources::ResourceName name;
     Util::StackArray<VertexStream, 4> streams;
-    SizeT indexBufferOffset;
-    BufferId indexBuffer;
-    IndexType::Code indexType;
-    VertexLayoutId vertexLayout;
-    CoreGraphics::PrimitiveTopology::Code topology;
+    size_t indexBufferOffset;
+    BufferId indexBuffer = CoreGraphics::InvalidBufferId;
+    IndexType::Code indexType = IndexType::None;
+    VertexLayoutId vertexLayout = CoreGraphics::InvalidVertexLayoutId;
+    CoreGraphics::PrimitiveTopology::Code topology = CoreGraphics::PrimitiveTopology::InvalidPrimitiveTopology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
 
@@ -61,11 +63,11 @@ const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// Set vertex buffer
 const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
-const uint64 MeshGetVertexOffset(const MeshId id, const IndexT stream);
+const uint64_t MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset
-const uint64 MeshGetIndexOffset(const MeshId id);
+const uint64_t MeshGetIndexOffset(const MeshId id);
 /// Get index type
 const IndexType::Code MeshGetIndexType(const MeshId id);
 /// Get topology
@@ -85,7 +87,7 @@ enum
 struct __Mesh
 {
     Util::StackArray<VertexStream, 4> streams;
-    SizeT indexBufferOffset;
+    size_t indexBufferOffset;
     BufferId indexBuffer;
     IndexType::Code indexType;
     VertexLayoutId vertexLayout;

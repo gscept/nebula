@@ -6,6 +6,9 @@ endif()
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
 cmake_policy(SET CMP0147 NEW)
 endif()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.0")
+cmake_policy(SET CMP0184 NEW)
+endif()
 cmake_policy(SET CMP0079 NEW)
 
 SET(NROOT ${CMAKE_CURRENT_LIST_DIR}/..)
@@ -17,19 +20,64 @@ option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
+option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
+option(N_SHADER_PROFILE_BUILDS "Profile shader compilation, slows down compilation time" OFF)
+option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
+option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation time" ON)
+option(N_SHADER_DEBUG "Output textual version of shader binary code to binary output folder" OFF)
+option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
+option(N_SANITIZERS "Build with sanitizers (only supported on linux)" OFF)
 
+if(N_USE_COMPILETIME_PROJECT_ROOT)
+    if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
+        FILE(READ "${CMAKE_BINARY_DIR}/project_root.txt" PRJ_ROOT)
+        add_definitions(-DNEBULA_PROJECT_ROOT=\"${PRJ_ROOT}\")
+    endif()
+endif()
+
+if (N_SHADER_PROFILE_BUILDS)
+    set(shader_compiler_args ${shader_compiler_args} "-p")
+endif()
+
+if (N_SHADER_SYMBOLS)
+    set(shader_compiler_args ${shader_compiler_args} "-s")
+else()
+    set(shader_compiler_args ${shader_compiler_args} "-Ox")
+endif()
+
+if (N_SHADER_DEBUG)
+    set(shader_compiler_args ${shader_compiler_args} "-d")
+endif()
+
+if (N_SHADER_VALIDATION)
+    set(shader_compiler_args ${shader_compiler_args} "-v")
+endif()
+
+add_definitions(-DNEBULA_BINARY_FOLDER=\"${FIPS_PROJECT_DEPLOY_DIR}\")
 
 include(create_resource)
+include(CMakeDependentOption)
+
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCH)
+if(ARCH STREQUAL "amd64" OR ARCH STREQUAL "x86_64")
+    set(ARCH "x86_64")
+    add_definitions(-DNEBULA_SIMD_X64=1)
+    set(WINDOWS_SIMD_FLAGS "/arch:AVX")
+    set(LINUX_SIMD_FLAGS "-msse4 -mavx")
+elseif(ARCH STREQUAL "arm64" OR ARCH STREQUAL "aarch64")
+    set(ARCH "aarch64")
+    set(WINDOWS_SIMD_FLAGS "/arch:NEON")
+    add_definitions(-DNEBULA_SIMD_AARCH64=1)
+else()
+    message(WARNING "Unsupported Architecture ${ARCH}")
+endif()
 
 if(FIPS_WINDOWS)
-    option(N_STATIC_BUILD "Use static runtime in windows builds" ON)
-    if(N_STATIC_BUILD)
-         add_definitions(-D__N_STATIC_BUILD)
-    endif()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX /fp:fast /GS- /wd4324 /wd4100 /wd4996 /wd4458 /wd4201 /wd4505 /wd4244 /wd4018 /permissive- /Zc:rvalueCast /W3")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX /fp:fast /GS-")
-    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /RTC1 /RTCc /JMC")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /RTC1 /JMC")
+    set(CMAKE_MSVC_RUNTIME_CHECKS "$<$<CONFIG:Debug,RelWithDebInfo>:StackFrameErrorCheck;UninitializedVariable>")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WINDOWS_SIMD_FLAGS} /fp:fast /GS- /wd4324 /wd4100 /wd4996 /wd4458 /wd4201 /wd4505 /wd4244 /wd4018 /permissive- /Zc:rvalueCast /W3")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WINDOWS_SIMD_FLAGS} /fp:fast /GS-")
+    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /JMC")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /JMC")
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Qpar")
     if (N_DEBUG_SYMBOLS)
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/DEBUG")
@@ -37,10 +85,16 @@ if(FIPS_WINDOWS)
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG "/DEBUG:full")
     add_definitions(-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
 elseif(FIPS_LINUX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
-    set(CXX_WARNING_FLAGS "-Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-copy -Wno-deprecated-volatile -Wno-unused-function -Wno-unknown-pragmas -Wno-ignored-pragmas -Wno-missing-braces -Wno-overloaded-virtual -Wno-unused-variable -Wno-tautological-constant-out-of-range-compare -w")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx ${CXX_WARNING_FLAGS} ")
+    if (N_SANITIZERS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined ${LINUX_SIMD_FLAGS}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address,undefined ${LINUX_SIMD_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address,undefined")
+    endif()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive ${LINUX_SIMD_FLAGS} -march=native -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LINUX_SIMD_FLAGS} -march=native -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
+    set(CXX_WARNING_FLAGS "-Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-copy -Wno-deprecated-volatile -Wno-unused-function -Wno-reorder-ctor -Wno-unknown-pragmas -Wno-ignored-pragmas -Wno-missing-braces -Wno-overloaded-virtual -Wno-unused-variable -Wno-tautological-constant-out-of-range-compare -Wno-unused-but-set-variable -Wno-inconsistent-missing-override -Wno-switch -Wno-nontrivial-memcall -Wno-deprecated-literal-operator -Wno-nan-infinity-disabled -Wno-unknown-warning-option")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_WARNING_FLAGS} ")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack")
 
     
 endif()
@@ -72,7 +126,7 @@ find_package(Python 3.7 COMPONENTS Development REQUIRED)
 #physx
 
 SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation)
-SET(PX_LIBRARY_STATIC_NAMES PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK  PhysXVehicle PhysXVehicle2)
+SET(PX_LIBRARY_STATIC_NAMES PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle2)
 SET(PX_LINK_PREFIX _static_64)
 
 macro(find_physx_libraries build_dir target_variable)
@@ -105,8 +159,8 @@ if(FIPS_WINDOWS)
     add_library(PxLibs INTERFACE)
     target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBS}> $<$<CONFIG:Release>:${PX_RELEASE_LIBS}>)
 else()
-    SET(PX_DIR_LINUX ${FIPS_DEPLOY_DIR}/physx/bin/linux.clang/checked/)
-    SET(PX_LIBRARY_NAMES PhysX PhysXCooking PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle  PhysXCommon PhysXFoundation)
+    SET(PX_DIR_LINUX ${FIPS_DEPLOY_DIR}/physx/bin/linux.x86_64/checked/)
+    SET(PX_LIBRARY_NAMES PhysX PhysXCooking PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle2  PhysXCommon PhysXFoundation)
     SET(PX_POST _static_64.a)
     SET(PX_LIBRARIES)
     foreach(CUR_LIB ${PX_LIBRARY_NAMES})
@@ -135,8 +189,6 @@ if(N_RENDERER_VULKAN)
     add_definitions(-D__VULKAN__)
     add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
 endif()
-
-option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
 option(USE_DOTNET "Build with .NET support" OFF)
 
@@ -169,8 +221,8 @@ macro(nebula_flatc root)
         set(fbs ${datadir}${fb})
         set(output ${abs_output_folder}/${out_header})
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
-                PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
+                COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -185,17 +237,16 @@ macro(nebula_flatc root)
     endforeach()
 endmacro()
 
-macro(add_shader_intern)
+macro(compile_gpulang_intern)
     set(shd ${ARGV0})
     set(nebula_shader ${ARGV1})
-    if(SHADERC)
-        if(N_NEBULA_DEBUG_SHADERS)
-            set(shader_debug "-debug")
-        endif()
+    if(GPULANGC)
+        unset(shader_compiler_args CACHE) # remove from cache if it exists
+
 
         if (nebula_shader)
             set(foldername system_shaders/${CurDir})
-            set(base_path ${NROOT}/syswork/shaders/vk)
+            set(base_path ${NROOT}/syswork/shaders/gpulang)
         else()
             set(foldername ${CurDir})
             set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
@@ -206,35 +257,27 @@ macro(add_shader_intern)
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
 
-        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.fxb)
-        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}${basename}.h)
-
+        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.gplb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
-        set(depoutput ${CMAKE_BINARY_DIR}/${foldername}${basename}.dep)
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shader_dependencies/gpulang/${CurTargetName}/)
+        set(depoutput ${CMAKE_BINARY_DIR}/shader_dependencies/gpulang/${CurTargetName}/${foldername}${basename}_gpulang.dep)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I  ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h -t shader)
+            execute_process(COMMAND ${GPULANGC} ${shd} -M -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${depoutput})
         endif()
 
-        # sadly this doesnt work for some reason
-        #add_custom_command(OUTPUT ${depoutput}
-        #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
-        #DEPENDS ${SHADERC} ${shd}
-        #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-        #COMMENT ""
-        #VERBATIM
-        #)
         if(EXISTS ${depoutput})
             file(READ ${depoutput} deps)
         endif()
 
         add_custom_command(OUTPUT ${binaryOutput}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
+            COMMAND ${GPULANGC} ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
             MAIN_DEPENDENCY ${shd}
-            DEPENDS ${SHADERC} ${deps}
+            DEPENDS ${GPULANGC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
             COMMENT ""
             VERBATIM
@@ -248,7 +291,7 @@ macro(add_shader_intern)
 
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
-            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${CMAKE_BINARY_DIR}/${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_debug} ${shader_profile} -g 3")
         endif()
     endif()
 endmacro()
@@ -272,11 +315,11 @@ macro(nebula_idl_compile)
         STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")
         add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
+            COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
             WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
             DEPENDS ${NROOT}/fips-files/generators/NIDL.py
-            VERBATIM PRE_BUILD)
+            VERBATIM)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
         target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
@@ -308,29 +351,28 @@ macro(nebula_project_material_template_add)
     endforeach()
 endmacro()
 
-macro(nebula_material_template_compile)
-    set(out_header "materialtemplates.h")
-    set(out_source "materialtemplates.cc")
-    set(out_shader "material_interfaces.fx")
-    set(out_shader_header "material_interfaces.h")
+macro(nebula_material_template_gpulang_compile)
+    set(out_header "materialtemplatesgpulang.h")
+    set(out_source "materialtemplatesgpulang.cc")
+    set(out_shader "material_interfaces.gpul")
+    set(out_shader_header "material_interfaces_gpulang.h")
 
-    set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials")
+    set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang")
     file(MAKE_DIRECTORY ${abs_output_folder})
-    add_custom_target(materialtemplates
-        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files} ${SHADERC} ${NROOT}/syswork/shaders/vk "${abs_output_folder}"
+    add_custom_target(materialtemplates_gpulang
+        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplategpulangc.py ${material_definition_files} ${GPULANGC} ${NROOT}/syswork/shaders/gpulang "${abs_output_folder}"
         BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" "${abs_output_folder}/${out_shader_header}"
         WORKING_DIRECTORY "${NROOT}"
         SOURCES ${material_definition_files}
-        DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files}
+        DEPENDS ${NROOT}/fips-files/generators/materialtemplategpulangc.py ${material_definition_files}
         VERBATIM)
-    add_dependencies(render materialtemplates)
-    set_target_properties(materialtemplates PROPERTIES FOLDER "Material Definitions")
-    source_group("materials\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
-    source_group("materials\\Templates" FILES "${out_header}" "${out_source}" "${out_shader}")
-    target_sources(render PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
+    set_target_properties(materialtemplates_gpulang PROPERTIES FOLDER "Material Definitions")
+    source_group("materials\\gpulang\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
+    source_group("materials\\gpulang\\Templates" FILES "${out_header}" "${out_source}" "${out_shader}")
+    target_sources(render PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" "${abs_output_folder}/${out_shader_header}")
 
     target_include_directories(render PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
-    add_dependencies(render materialtemplates)
+    add_dependencies(render materialtemplates_gpulang)
 endmacro()
 
 macro(nebula_framescript_add)
@@ -590,46 +632,46 @@ macro(set_nebula_export_dir)
     endif()
 endmacro()
 
-macro(add_shaders_recursive)
+macro(compile_gpulang_recursive)
 
     set(base_path ${ARGV0})
     set(full_path ${ARGV1})
     set(system_shader ARGV3)
     file(GLOB CHILDREN LIST_DIRECTORIES true ${full_path}/*)
-    file(GLOB FXH ${full_path}/*.fxh)
-    file(GLOB FX ${full_path}/*.fx)
+    file(GLOB GPUH ${full_path}/*.gpuh)
+    file(GLOB GPUL ${full_path}/*.gpul)
     file(RELATIVE_PATH DIR ${base_path} ${full_path})
-    if (FXH)
-        fips_files(${FXH})
+    if (GPUH)
+        fips_files(${GPUH})
         if (system_shader)    
-            SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\${DIR}" FILES ${FXH})
+            SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\gpulang\\${DIR}" FILES ${GPUH})
         endif()
     endif()
     set(CurDir ${DIR}/)
-    foreach(shd ${FX})
-        add_shader_intern(${shd} ${system_shader})
+    foreach(shd ${GPUL})
+        compile_gpulang_intern(${shd} ${system_shader})
     endforeach()
     set(CurDir "")
 
     if (system_shader)
-        SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\${DIR}" FILES ${FX})
+        SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\gpulang\\${DIR}" FILES ${GPUL})
     endif()
     
     foreach(CHILD ${CHILDREN})
         if (IS_DIRECTORY ${CHILD})
-            add_shaders_recursive(${base_path} ${CHILD} ${system_shader})
+            compile_gpulang_recursive(${base_path} ${CHILD} ${system_shader})
         endif()
     endforeach()
 endmacro()
 
 macro(add_nebula_shaders)
-    if(NOT SHADERC)
-        MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
+    if(NOT GPULANGC)
+        MESSAGE(WARNING "Not compiling shaders, GPULang not found, did you run fips gpulang setup?")
     else()
         set_nebula_export_dir()
         
-        add_shaders_recursive("${NROOT}/syswork/shaders/vk" "${NROOT}/syswork/shaders/vk" true)
-        add_shaders_recursive("${workdir}/syswork/shaders/vk" "${workdir}/syswork/shaders/vk" false)
+        compile_gpulang_recursive("${NROOT}/syswork/shaders/gpulang" "${NROOT}/syswork/shaders/gpulang" true)
+        compile_gpulang_recursive("${workdir}/syswork/shaders/gpulang" "${workdir}/syswork/shaders/gpulang" false)
         
         # add configurations for the .vscode anyfx linter
         execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/syswork/shaders/vk)
@@ -665,23 +707,14 @@ macro(nebula_add_blueprints)
     endif()    
 endmacro()
 
-macro(add_shaders)
-    if(NOT SHADERC)
-        MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
+macro(compile_gpulang)
+    if(NOT GPULANGC)
+        MESSAGE(WARNING "Not compiling shaders, GPULang not found, did you run fips gpulang setup?")
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
-            add_shader_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
+            compile_gpulang_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
         endforeach()
-
-        # add configurations for the .vscode anyfx linter
-        SET(folders)
-        foreach(shd ${ARGN})
-            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} DIRECTORY)
-            list(APPEND folders ${foldername})
-        endforeach()
-        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})
-
     endif()
 endmacro()
 
@@ -707,13 +740,13 @@ macro(nebula_end_app)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/")
     endif()
     if (target_has_shaders)
-        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders")
     endif()
     if (target_has_flatc)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated/")
     endif()
     if (target_has_materials)
-        nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()
@@ -725,6 +758,12 @@ macro(nebula_end_app)
     if(N_DEBUG_SYMBOLS)
         target_compile_options(${curtarget} PRIVATE $<IF:$<CONFIG:Debug>,/Zi,/Z7>)
     endif()
+
+    add_custom_command(TARGET ${curtarget} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/icon.png"
+            "$<TARGET_FILE_DIR:${curtarget}>/icon.png"
+    )
 endmacro()
 
 macro(nebula_begin_module name)
@@ -748,13 +787,13 @@ macro(nebula_end_module)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/")
     endif()
     if (target_has_shaders)
-        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders")
     endif()
     if (target_has_flatc)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated")
     endif()
     if (target_has_materials)
-        nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()
@@ -784,13 +823,13 @@ macro(nebula_end_lib)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/")
     endif()
     if (target_has_shaders)
-        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders")
     endif()
     if (target_has_flatc)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated")
     endif()
     if (target_has_materials)
-        nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()

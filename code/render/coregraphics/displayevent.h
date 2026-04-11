@@ -35,6 +35,7 @@ public:
         WindowRestored,
         ToggleFullscreenWindowed,
         WindowResized,
+        WindowMoved,
         SetCursor,
         Paint,
         SetFocus,
@@ -57,7 +58,7 @@ public:
     /// constructor with event code and window id
     DisplayEvent(Code c, CoreGraphics::WindowId wnd);
     /// constructor with event code and mouse pos
-    DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos);
+    DisplayEvent(Code c, CoreGraphics::WindowId wnd, const Math::vec2& absPos, const Math::vec2& normPos);
     /// constructor with key code
     DisplayEvent(Code c, Input::Key::Code k);
     /// constructor with character
@@ -143,9 +144,9 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos) :
+DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd, const Math::vec2& absPos, const Math::vec2& normPos) :
     code(c),
-    windowId(Ids::InvalidId32),
+    windowId(wnd),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),

@@ -13,6 +13,11 @@
 #include "nflatbuffer/nebula_flat.h"
 #include "util/blob.h"
 #include "io/ioserver.h"
+
+// Flatbuffers defines ERROR on Windows, undefine it to avoid conflicts
+#ifdef ERROR
+#undef ERROR
+#endif
 #include "flatbuffers/idl.h"
 
 #define SerializeFlatbufferText(TYPE, ITEM) Flat::FlatbufferInterface::SerializeHelper<TYPE>(ITEM, TYPE##Identifier())

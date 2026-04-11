@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "io/zipfs/zipfileentry.h"
+#include "timing/calendartime.h"
 
 namespace IO
 {
@@ -55,6 +56,18 @@ ZipFileEntry::Setup(const StringAtom& n, unzFile h, CriticalSection* critSect)
     res = unzGetCurrentFileInfo64(this->zipFileHandle, &fileInfo, 0, 0, 0, 0, 0, 0);
     n_assert(UNZ_OK == res);
     this->uncompressedSize = fileInfo.uncompressed_size;
+    this->compressedSize = fileInfo.compressed_size;
+    // convert the file time from MS-DOS format to Nebula's FileTime
+    const uint32_t dosDateTime = fileInfo.dos_date;
+
+    Timing::CalendarTime t;
+    t.SetSecond((dosDateTime & 0x1F) * 2);          // 0..58 (2-second steps)
+    t.SetMinute(int((dosDateTime >> 5) & 0x3F));    // 0..59
+    t.SetHour(int((dosDateTime >> 11) & 0x1F));     // 0..23
+    t.SetDay(int((dosDateTime >> 16) & 0x1F));      // 1..31
+    t.SetMonth(Timing::CalendarTime::Month(((dosDateTime >> 21) & 0x0F)));       // 1..12
+    t.SetYear(int(((dosDateTime >> 25) & 0x7F) + 80));      // years since 1980
+    this->createdTime = Timing::CalendarTime::LocalTimeToFileTime(t);
 }
 
 //------------------------------------------------------------------------------

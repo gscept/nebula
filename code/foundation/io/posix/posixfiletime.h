@@ -22,6 +22,8 @@ public:
     PosixFileTime();
     /// construct from string
     PosixFileTime(const Util::String& str);
+    /// construct from epoch time
+    PosixFileTime(uint64_t epochTime);
     /// operator ==
     friend bool operator==(const PosixFileTime& a, const PosixFileTime& b);
     /// operator !=
@@ -40,6 +42,10 @@ public:
 
     /// convert to string
     Util::String AsString() const;
+    /// convert to epoch time
+    uint64_t AsEpochTime() const;
+    /// set from epoch time
+    void SetFromEpochTime(uint64_t epochTime);
 
 private:
     friend class PosixFSWrapper;
@@ -56,6 +62,14 @@ PosixFileTime::PosixFileTime()
 {
     time.tv_sec = 0;
     time.tv_nsec = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/inline
+PosixFileTime::PosixFileTime(uint64_t epochTime)
+{
+    this->SetFromEpochTime(epochTime);
 }
 
 //------------------------------------------------------------------------------
@@ -126,6 +140,24 @@ operator <(const PosixFileTime& a, const PosixFileTime& b)
     if (a.time.tv_nsec < b.time.tv_nsec) return true;
     return false;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/inline void
+PosixFileTime::SetFromEpochTime(uint64_t epochTime)
+{
+    this->time.tv_sec = epochTime / 1000ULL;
+    this->time.tv_nsec = (epochTime % 1000ULL) * 1000000ULL;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/inline uint64_t
+PosixFileTime::AsEpochTime() const
+{
+    return (this->time.tv_sec * 1000ULL) + (this->time.tv_nsec / 1000000ULL);
+}
+
 
 }; // namespace Posix
 //------------------------------------------------------------------------------

@@ -14,21 +14,15 @@
 #include "coregraphics/resourcetable.h"
 #include "vkshaderprogram.h"
 
-namespace AnyFX
-{
-class ShaderEffect;
-}
-
 namespace Vulkan
 {
 
 const VkProgramReflectionInfo& ShaderGetProgramReflection(const CoreGraphics::ShaderProgramId shaderProgramId);
 
-/// create descriptor set layout
 void ShaderSetup(
     VkDevice dev,
     const Util::StringAtom& name,
-    AnyFX::ShaderEffect* effect,
+    GPULang::Loader* loader,
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
     Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
@@ -72,8 +66,6 @@ typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::BufferId>> UniformB
 typedef Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId> ProgramMap;
 struct VkShaderRuntimeInfo
 {
-    CoreGraphics::ShaderFeature::Mask activeMask;
-    CoreGraphics::ShaderProgramId activeShaderProgram;
     ProgramMap programMap;
 };
 
@@ -109,7 +101,6 @@ struct VkReflectionInfo
 
     struct Variable
     {
-        AnyFX::VariableType type;
         Util::StringAtom name;
         Util::StringAtom blockName;
         uint32_t blockSet;
@@ -118,7 +109,7 @@ struct VkReflectionInfo
     Util::Dictionary<Util::StringAtom, Variable> variablesByName;
     Util::Array<Variable> variables;
 
-    Util::Array<uint64> uniformBuffersMask;
+    Util::Array<uint64_t> uniformBuffersMask;
 };
 
 enum

@@ -1,0 +1,91 @@
+//------------------------------------------------------------------------------
+//  givolumecull.gpul
+//  (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/clustering.gpuh"
+
+uniform DebugOutput : *mutable rgba16f texture2D;
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csCull() void 
+{
+    const index1D = computeGetGlobalThreadIndices().x;
+
+    if (index1D > GIVolumeUniforms.NumGIVolumeClusters) { return ; }
+
+    const aabb = bufferLoad(ClusterAABBs, index1D);
+
+    var flags = 0u;
+
+    // update PBR decals
+    var numVolumes = 0u;
+    for (var i = 0u; i < GIVolumeUniforms.NumGIVolumes; i++)
+    {
+        const volume = GIVolumeLists.GIVolumes[i];
+        if (TestAABBAABB(aabb, volume.bboxMin, volume.bboxMax))
+        {
+            GIIndexLists.GIVolumeIndexLists[index1D * MAX_GI_VOLUMES_PER_CLUSTER + numVolumes] = i;
+            numVolumes++;
+        }
+    }
+    GIIndexLists.GIVolumeCountList[index1D] = numVolumes;
+
+    // update feature flags if we have any decals
+    if (numVolumes > 0) { flags |= CLUSTER_GI_VOLUME_BIT; }
+
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.AcquireRelease);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csDebug() void
+{
+    const coord = i32x2(computeGetGlobalThreadIndices().xy);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+
+    // convert screen coord to view-space position
+    const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+
+    const viewDepth = CalculateViewDepth(ViewConstants.View, worldPos.xyz);
+
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    var color = f32x4(0, 0, 0, 0);
+    if (CheckFlags(flag, CLUSTER_GI_VOLUME_BIT))
+    {
+        const count = GIIndexLists.GIVolumeCountList[idx];
+        color.r = count / f32(GIVolumeUniforms.NumGIVolumes);
+    }
+    
+    textureStore(DebugOutput, i32x2(coord), color);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Cull")
+program CullGIVolumes
+{
+    ComputeShader = csCull;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Debug")
+program ClusterDebug
+{
+    ComputeShader = csDebug;
+};

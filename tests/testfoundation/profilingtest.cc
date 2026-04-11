@@ -106,6 +106,9 @@ ProfilingTest::Run()
     // wait for thread to finish
     thread->Stop();
 
+    // Progress to next frame
+    ProfilingNewFrame();
+
     const Util::Array<ProfilingContext>& contexts = ProfilingGetContexts();
     IndexT i;
     for (i = 0; i < contexts.Size(); i++)

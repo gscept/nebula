@@ -15,13 +15,13 @@
 #include "framesync/framesynctimer.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
-#include "stage.h"
 #include "graphicsentity.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/textrenderer.h"
+#include "graphics/view.h"
 #include "debug/debughandler.h"
 
 namespace Graphics
@@ -37,12 +37,13 @@ struct FrameContext
 };
 
 using ViewIndependentCall = void(*)(const Graphics::FrameContext& ctx);
-using ViewDependentCall = void(*)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+using ViewDependentCall = void(*)(const ViewId view, const Graphics::FrameContext& ctx);
+
 
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
 struct GraphicsContextState;
-class View;
+struct ViewId;
 class GraphicsServer : public Core::RefCounted
 {
     __DeclareClass(GraphicsServer);
@@ -66,40 +67,36 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
+    Graphics::ViewId CreateView(
+        const Util::StringAtom& name
+        , bool(*renderFunction)(const Math::rectangle<int>&, IndexT, IndexT)
+        , const Math::rectangle<int>& viewport
+        , Graphics::StageMask stageMask = PRIMARY_STAGE_MASK
+        , std::function<void(IndexT, IndexT)> preViewCallback = nullptr
+        , std::function<void(IndexT, IndexT)> postViewCallback = nullptr
+    );
     /// create a new view without a framescript
-    Ptr<View> CreateView(const Util::StringAtom& name);
+    Graphics::ViewId CreateView(const Util::StringAtom& name);
     /// Get view by name
-    const Ptr<View>& GetView(const Util::StringAtom& name);
+    const Graphics::ViewId GetView(const Util::StringAtom& name);
     /// discard view
-    void DiscardView(const Ptr<View>& view);
+    void DiscardView(const Graphics::ViewId view);
     /// get current view
-    const Ptr<View>& GetCurrentView() const;
+    const Graphics::ViewId GetCurrentView() const;
     /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
-    void SetCurrentView(const Ptr<View>& view);
+    void SetCurrentView(const Graphics::ViewId view);
 
-    using PreViewCallback = void(*)(IndexT, IndexT);
-    using PostViewCallback = void(*)(IndexT, IndexT);
-    /// Add callback for rendering before the views are processed
-    void AddPreViewCall(PreViewCallback callback);
-    /// Add callback for rendering after the views are processed
-    void AddPostViewCall(PostViewCallback callback);
+    /// Add callback to run just before frame is finished
+    void AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex));
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
 
-    struct SwapInfo
-    {
-        void (*syncFunc)(CoreGraphics::CmdBufferId) = nullptr;
-        CoreGraphics::TextureId swapSource = CoreGraphics::InvalidTextureId;
-        CoreGraphics::SubmissionWaitEvent submission;
-    };
-    /// Setup the swap info
-    void SetSwapInfo(const SwapInfo& info);
-
-    /// create a new stage
-    Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
-    /// discard stage
-    void DiscardStage(const Ptr<Stage>& stage); 
+    /// Add window to update
+    void AddWindow(const CoreGraphics::WindowId window);
+    /// Remove window
+    void RemoveWindow(const CoreGraphics::WindowId window);
+    /// Get windows
+    const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
 
     /// Setup pre game logic graphics calls
     void SetupPreLogicCalls(const Util::Array<ViewIndependentCall>& calls);
@@ -138,7 +135,7 @@ public:
     void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
     
     /// call when the window has been resized
-    void OnWindowResized(CoreGraphics::WindowId wndId);
+    bool OnWindowResized(CoreGraphics::WindowId wndId);
 
 private:
 
@@ -151,14 +148,13 @@ private:
     Util::Array<GraphicsContextFunctionBundle*> contexts;
     Util::Array<GraphicsContextState*> states;
 
-    Util::Array<Ptr<Stage>> stages;
-    Util::Dictionary<Util::StringAtom, Ptr<View>> viewsByName;
-    Util::Array<Ptr<View>> views;
-    Ptr<View> currentView;
+    Util::Dictionary<Util::StringAtom, Graphics::ViewId> viewsByName;
+    Util::Array<Graphics::ViewId> views;
+    Graphics::ViewId currentView;
 
-
-    Util::Array<PreViewCallback> preViewCallbacks;
-    Util::Array<PostViewCallback> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> preViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> postViewCallbacks;
+    Util::Array<std::function<void(IndexT, IndexT)>> endFrameCallbacks;
 
     void (*resizeCall) (const SizeT, const SizeT);
 
@@ -171,7 +167,8 @@ private:
     Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
 
-    SwapInfo swapInfo;
+    Util::Array<CoreGraphics::WindowId> windows;
+    SizeT maxWindowWidth, maxWindowHeight;
 
     bool isOpen;
 };
@@ -217,37 +214,11 @@ DeregisterEntity(const GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<View>&
-GraphicsServer::GetView(const Util::StringAtom& name)
+template<typename ... CONTEXTS>
+static void
+DeregisterEntityImmediate(const GraphicsEntityId id)
 {
-    return this->viewsByName[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Ptr<View>&
-GraphicsServer::GetCurrentView() const
-{
-    return this->currentView;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPreViewCall(PreViewCallback callback)
-{
-    this->preViewCallbacks.Append(callback);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::AddPostViewCall(PostViewCallback callback)
-{
-    this->postViewCallbacks.Append(callback);
+    (CONTEXTS::DeregisterEntityImmediate(id), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -257,15 +228,6 @@ inline void
 GraphicsServer::SetResizeCall(void(*func)(const SizeT windowWidth, const SizeT windowHeight))
 {
     this->resizeCall = func;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-GraphicsServer::SetSwapInfo(const SwapInfo& info)
-{
-    this->swapInfo = info;
 }
 
 //------------------------------------------------------------------------------

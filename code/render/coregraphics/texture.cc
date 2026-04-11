@@ -171,7 +171,6 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     rt.clear = info.clear;
     rt.clearColorF4 = info.clearColorF4;
     rt.samples = info.samples;
-    rt.windowRelative = info.windowRelative;
     rt.bindless = info.bindless;
     rt.sparse = info.sparse;
     rt.window = CoreGraphics::InvalidWindowId;
@@ -182,20 +181,6 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     // correct depth-stencil formats if layout is shader read
     if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphics::ImageLayout::ShaderRead)
         rt.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
-
-    if (rt.windowRelative)
-    {
-        CoreGraphics::WindowId wnd = CoreGraphics::CurrentWindow;
-        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
-        rt.width = SizeT(Math::ceil(mode.GetWidth() * info.width));
-        rt.height = SizeT(Math::ceil(mode.GetHeight() * info.height));
-        rt.depth = 1;
-        rt.window = wnd;
-
-        rt.widthScale = info.width;
-        rt.heightScale = info.height;
-        rt.depthScale = info.depth;
-    }
 
     // if the mip value is set to auto generate mips, generate mip chain
     if (info.mips == TextureAutoMips)

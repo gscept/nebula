@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/commandbuffer.h"
 #include "graphics/graphicsentity.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 
 namespace Frame
 {
@@ -40,8 +40,8 @@ struct TextureImport
 };
 
 /// Draw
-void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex);
+void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex);
 /// Draw instanced
-void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex);
+void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex);
 
 } // namespace Frame

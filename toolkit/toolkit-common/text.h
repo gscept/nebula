@@ -11,6 +11,8 @@
 namespace ToolkitUtil
 {
 
+extern bool disableTextColors;
+
 enum class TextColor
 {
     Default,

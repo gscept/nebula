@@ -10,7 +10,6 @@
 #include "renderutil/freecamerautil.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "graphics/cameracontext.h"
 #include "resources/resourceserver.h"
 #include "models/modelcontext.h"
@@ -64,8 +63,7 @@ protected:
     Ptr<IO::IoServer> ioServer;
 
     CoreGraphics::WindowId wnd;
-    Ptr<Graphics::View> view;
-    Ptr<Graphics::Stage> stage;
+    Graphics::ViewId view;
 
     Graphics::GraphicsEntityId cam;
     

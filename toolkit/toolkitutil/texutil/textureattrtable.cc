@@ -275,11 +275,12 @@ TextureAttrTable::Save( const Util::String& path )
 
     String nameString = name.AsString();
     nameString.StripFileExtension();
+    nameString = nameString.StripSubpath(IO::URI("tex:").LocalPath());
 
     // get attributes
     const TextureAttrs& attrs = this->texAttrs[mapIndex];
 
-    String tablePath = "src:assets/" + path + ".xml";
+    String tablePath = "src:assets/" + nameString + ".xml";
     Ptr<Stream> stream = ioServer->CreateStream(tablePath);
     Ptr<XmlWriter> xmlWriter = XmlWriter::Create();
     xmlWriter->SetStream(stream);

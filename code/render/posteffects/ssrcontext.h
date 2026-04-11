@@ -30,7 +30,7 @@ public:
     static void Setup(const Ptr<Frame::FrameScript>& script);
 
     /// update view resources
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
 private:
 

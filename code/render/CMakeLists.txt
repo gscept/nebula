@@ -1,18 +1,18 @@
 #-------------------------------------------------------------------------------
 # Render
 #-------------------------------------------------------------------------------
-
-FIND_PROGRAM(SHADERC
-       NAMES anyfxcompiler.exe anyfxcompiler
-       PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
-       NO_DEFAULT_PATH
-       )
+       
+FIND_PROGRAM(GPULANGC
+    NAMES gpulangc.exe gpulangc
+    PATHS ${FIPS_DEPLOY_DIR}/gpulang/win64 ${FIPS_DEPLOY_DIR}/gpulang/linux
+    NO_DEFAULT_PATH
+)
 
 nebula_begin_module(render)
     add_nebula_shaders()
     set(target_has_shaders 1)
     target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
-    fips_deps(foundation input resource anyfx imgui options)
+    fips_deps(foundation input resource gpulang_reflection imgui options)
     if (TARGET system_resources-res)
         target_link_libraries(render $<TARGET_OBJECTS:system_resources-res>)
     endif()
@@ -141,6 +141,8 @@ ENDIF()
                 event.h
                 fence.h
                 graphicsdevice.h
+                gpulangshaderloader.cc
+                gpulangshaderloader.h
                 image.cc
                 image.h
                 imagefileformat.cc
@@ -184,8 +186,6 @@ ENDIF()
                 shaperenderer.cc
                 shaperenderer.h
                 sparsebuffer.h
-                shaderloader.cc
-                shaderloader.h
                 streamtexturesaver.h
                 swapchain.h
                 textelement.cc
@@ -341,6 +341,8 @@ ENDIF()
                 vkvertexlayout.h
             )
     endif()
+        fips_dir(coregraphics/stb)
+            fips_files(stb_image_write_16bit.h)
         fips_dir(debug)
             fips_files(
                 framescriptinspector.cc
@@ -418,7 +420,7 @@ ENDIF()
                 ddgicontext.h
             )
         fips_dir(gi/shaders)
-            add_shaders(probe_shared.fxh probe_update.fx probe_finalize.fx probe_debug.fx gi_volume_cull.fx probe_relocate_and_classify.fx)
+			compile_gpulang(probe_shared.gpuh probe_update.gpul probe_finalize.gpul probe_debug.gpul gi_volume_cull.gpul probe_relocate_and_classify.gpul)
         fips_dir(graphics) 
             fips_files(
 				bindlessregistry.cc
@@ -433,30 +435,23 @@ ENDIF()
 				globalconstants.h
                 graphicscontext.cc
                 graphicscontext.h
+                graphicsdisplayeventhandler.cc
+                graphicsdisplayeventhandler.h
                 graphicsentity.h
                 graphicsserver.cc
                 graphicsserver.h
-                stage.cc
-                stage.h
                 view.cc
                 view.h
             )
-        fips_dir(graphics/glfw)
-                fips_files(
-                    glfwgraphicsdisplayeventhandler.h
-                    glfwgraphicsdisplayeventhandler.cc
-                )
 
-        fips_dir(input/glfw GROUP "input/glfw")
+        fips_dir(input GROUP "input")
             fips_files(
-                glfwinputdisplayeventhandler.cc
-                glfwinputdisplayeventhandler.h
+                inputdisplayeventhandler.cc
+                inputdisplayeventhandler.h
             )
 
     fips_dir(lighting)
         fips_files(
-            csmutil.cc
-            csmutil.h
             lightcontext.cc
             lightcontext.h
             lightprobecontext.cc
@@ -564,7 +559,7 @@ ENDIF()
             raytracingcontext.h
         )
         fips_dir(raytracing/shaders)
-            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx terrainhit.fx)
+            compile_gpulang(raytracetest.gpul gltfhit.gpul brdfhit.gpul bsdfhit.gpul particlehit.gpul light_grid_cs.gpul terrainhit.gpul)
 
         fips_dir(renderutil)
         fips_files(
@@ -629,9 +624,7 @@ ENDIF()
                 texturetilecache.h
             )
         fips_dir(terrain/shaders)
-            add_shaders(
-                terrain_include.fxh terrain.fx terrain_tile_write.fx terrain_mesh_generate.fx
-            )
+            compile_gpulang(terrain_include.gpuh terrain.gpul terrain_tile_write.gpul terrain_mesh_generate.gpul)
 
         fips_dir(vegetation)
             fips_files(
@@ -665,6 +658,7 @@ ENDIF()
                 visibilitysystem.h
                 visibilitysystem.cc
             )
+
 
 nebula_end_module()
 

@@ -5,6 +5,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/posix/posixguid.h"
+#include <uuid/uuid.h>
+#include "util/hash.h"
 
 namespace Posix
 {
@@ -14,23 +16,13 @@ using namespace Util;
 /**
 */
 void
-PosixGuid::operator=(const PosixGuid& rhs)
-{
-    if (this != &rhs)
-    {
-        uuid_copy(this->uuid, rhs.uuid);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 PosixGuid::operator=(const String& rhs)
 {
     n_assert(rhs.IsValid());
-    int result = uuid_parse(rhs.AsCharPtr(), this->uuid);
-    n_assert(0 != result);
+    uuid_t uid;
+    int result = uuid_parse(rhs.AsCharPtr(), uid);
+    n_assert(-1 != result);
+    Memory::Copy(uid, &hi, sizeof(uuid_t));
 }
 
 //------------------------------------------------------------------------------
@@ -39,8 +31,7 @@ PosixGuid::operator=(const String& rhs)
 bool
 PosixGuid::operator==(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return (0 == result);
+    return hi == rhs.hi && lo == rhs.lo;
 }
 
 //------------------------------------------------------------------------------
@@ -49,8 +40,7 @@ PosixGuid::operator==(const PosixGuid& rhs) const
 bool
 PosixGuid::operator!=(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return (0 != result);
+    return !(rhs == *this);
 }
 
 //------------------------------------------------------------------------------
@@ -59,8 +49,15 @@ PosixGuid::operator!=(const PosixGuid& rhs) const
 bool
 PosixGuid::operator<(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return (-1 == result);
+    if (hi < rhs.hi)
+    {
+        return true;
+    }
+    else if (hi == rhs.hi)
+    {
+        return lo < rhs.lo;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -69,8 +66,7 @@ PosixGuid::operator<(const PosixGuid& rhs) const
 bool
 PosixGuid::operator<=(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return ((-1 == result) || (0 == result));
+    return *this < rhs || *this == rhs;
 }
 
 //------------------------------------------------------------------------------
@@ -79,8 +75,15 @@ PosixGuid::operator<=(const PosixGuid& rhs) const
 bool
 PosixGuid::operator>(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return (1 == result);
+    if (hi > rhs.hi)
+    {
+        return true;
+    }
+    else if (hi == rhs.hi)
+    {
+        return lo > rhs.lo;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -89,8 +92,7 @@ PosixGuid::operator>(const PosixGuid& rhs) const
 bool
 PosixGuid::operator>=(const PosixGuid& rhs) const
 {
-    int result = uuid_compare(this->uuid, rhs.uuid);
-    return ((1 == result) || (0 == result));
+    return *this > rhs || *this == rhs;
 }
 
 //------------------------------------------------------------------------------
@@ -99,8 +101,7 @@ PosixGuid::operator>=(const PosixGuid& rhs) const
 bool
 PosixGuid::IsValid() const
 {
-    int result = uuid_is_null(this->uuid);
-    return (0 == result);
+    return lo > 0 || hi > 0;
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +110,9 @@ PosixGuid::IsValid() const
 void
 PosixGuid::Generate()
 {
-    uuid_generate(this->uuid);
+    uuid_t uid;
+    uuid_generate(uid);
+    Memory::Copy(uid, &hi, sizeof(uuid_t));
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +122,7 @@ String
 PosixGuid::AsString() const
 {
     char uuidStr[37];
-    uuid_unparse(this->uuid, uuidStr);
+    uuid_unparse((const unsigned char*)&this->hi, uuidStr);
     String result = uuidStr;
     return result;
 }
@@ -133,7 +136,7 @@ PosixGuid::AsString() const
 SizeT
 PosixGuid::AsBinary(const unsigned char*& outPtr) const
 {
-    outPtr = (const unsigned char*) &this->uuid;
+    outPtr = (const unsigned char*) &this->hi;
     return sizeof(uuid_t);
 }
 
@@ -144,8 +147,10 @@ PosixGuid
 PosixGuid::FromString(const Util::String& str)
 {
     PosixGuid newGuid;
-    int success = uuid_parse(str.AsCharPtr(), newGuid.uuid);
+    uuid_t uid;
+    int success = uuid_parse(str.AsCharPtr(), uid);
     n_assert(0 == success);
+    Memory::Copy(uid, &newGuid.hi, sizeof(uuid_t));
     return newGuid;
 }
 
@@ -156,9 +161,9 @@ PosixGuid::FromString(const Util::String& str)
 PosixGuid
 PosixGuid::FromBinary(const unsigned char* ptr, SizeT numBytes)
 {
-    n_assert((0 != ptr) && (numBytes == sizeof(uuid_t)));
+    n_assert((0 != ptr) && (numBytes == sizeof(uint64_t) * 2));
     PosixGuid newGuid;
-    Memory::Copy(ptr, &(newGuid.uuid), sizeof(uuid_t));
+    Memory::Copy(ptr, &(newGuid.hi), sizeof(uuid_t));
     return newGuid;
 }
 
@@ -167,11 +172,10 @@ PosixGuid::FromBinary(const unsigned char* ptr, SizeT numBytes)
     This method returns a hash code for the uuid, compatible with 
     Util::HashTable.
 */
-IndexT
+uint32_t
 PosixGuid::HashCode() const
 {
-    n_error("Must implement PosixGuid::HashCode()");
-    return 0;
+    return Util::Hash((const unsigned char*)&hi, sizeof(uuid_t));
 }
 
 }; // namespace Posix

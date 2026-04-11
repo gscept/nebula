@@ -32,11 +32,7 @@
 #include "coregraphics/buffer.h"
 #include "util/variant.h"
 #include "util/dictionary.h"
-
-namespace AnyFX
-{
-class ShaderEffect;
-}
+#include "api/loader.h"
 
 namespace CoreGraphics
 {
@@ -53,10 +49,10 @@ ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programGeneration, shaderId,
 
 ID_32_TYPE(DerivativeStateId);          // 32 bits derivative state (already created from an ordinary state)
 
-struct ShaderCreateInfo
+struct GPULangShaderCreateInfo
 {
     Resources::ResourceName name;
-    AnyFX::ShaderEffect* effect;
+    GPULang::Loader* loader;
 };
 
 enum ShaderConstantType
@@ -83,11 +79,9 @@ enum ShaderConstantType
 const Util::String ConstantTypeToString(const ShaderConstantType& type);
 
 /// Create new shader
-const ShaderId CreateShader(const ShaderCreateInfo& info);
+const ShaderId CreateShader(const GPULangShaderCreateInfo& info);
 /// Destroy shader
 void DestroyShader(const ShaderId id);
-/// Reload shader
-void ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect);
 
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
@@ -107,7 +101,7 @@ const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbInde
 /// create constant buffer from index
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
 /// Calculate buffer index using binding mask and slot
-const uint ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot);
+const uint ShaderCalculateConstantBufferIndex(const uint64_t bindingMask, const IndexT slot);
 
 /// Get name of shader
 const Resources::ResourceName ShaderGetName(const ShaderId id);
@@ -119,16 +113,10 @@ const ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i
 const ShaderConstantType ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name);
 /// get name of variable by index
 const Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
-/// get constant buffer binding by name
-const IndexT ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name);
-/// get constant buffer binding by index
-const IndexT ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex);
 /// get name of constant buffer wherein constant with name resides
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const Util::StringAtom& name);
 /// get name of constant buffer where in constant with index resides
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const IndexT cIndex);
-/// get count of constant buffer bindings (for iteration)
-const SizeT ShaderGetConstantBindingsCount(const ShaderId id);
 /// get group to which constant is bound (the constant buffer which it resides in)
 const IndexT ShaderGetConstantGroup(const ShaderId id, const Util::StringAtom& name);
 /// get binding inside group of the constant buffer the constant lies in
@@ -150,9 +138,9 @@ const IndexT ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT
 /// get group of constant buffer
 const IndexT ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i);
 /// Get mask of constant buffers
-const uint64 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group);
+const uint64_t ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group);
 /// Get size of constant buffer at binding point
-const uint64 ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i);
+const uint64_t ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i);
 
 /// get slot of any shader resource
 const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);
@@ -160,7 +148,7 @@ const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& na
 /// get programs
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
-const Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
+const Util::String& ShaderProgramGetName(const ShaderProgramId id);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask);

@@ -2,7 +2,7 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
-if(FIPS_LINUX)
+if(FIPS_LINUX OR FIPS_MACOS)
     FIND_PACKAGE(CURL)
 endif()
 
@@ -14,9 +14,9 @@ endif()
 
 nebula_begin_module(foundation)
     
-    target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h)
+    target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h ${CMAKE_CURRENT_SOURCE_DIR}/math/mat4.h ${CMAKE_CURRENT_SOURCE_DIR}/io/binaryreader.h)
     if(FIPS_LINUX)
-        fips_libs(uuid cjson stdc++fs)
+        fips_libs(uuid stdc++fs)
     endif()
     target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml nflatbuffer)
@@ -60,6 +60,7 @@ nebula_begin_module(foundation)
                 rtti.h
                 rttimacros.h
                 singleton.h
+                simd.h
                 sysfunc.h
                 types.h
                 weakptr.h
@@ -99,6 +100,7 @@ nebula_begin_module(foundation)
             blob.h
             bvh.h
             color.h
+            color.cc
             commandlineargs.cc
             commandlineargs.h
             crc.cc
@@ -112,11 +114,14 @@ nebula_begin_module(foundation)
             globalstringatomtable.cc
             globalstringatomtable.h
             guid.h
+            hash.cc
+            hash.h
             hashtable.h
             keyvaluepair.h
             list.h
             localstringatomtable.cc
             localstringatomtable.h
+			occupancyquadtree.h
             pinnedarray.h
             priorityarray.h
             quadtree.h
@@ -213,6 +218,8 @@ nebula_begin_module(foundation)
             textreader.h
             textwriter.cc
             textwriter.h
+            urn.cc
+            urn.h
             uri.cc
             uri.h
             xmlreader.cc
@@ -624,7 +631,8 @@ nebula_begin_module(foundation)
             memory/posix/posixmemory.h
             memory/posix/posixmemoryconfig.cc
             memory/posix/posixmemoryconfig.h
-            memory/posix/posixmemorypool.cc
+            memory/base/genericmemorypool.cc
+            memory/base/genericmemorypool.h
             util/posix/posixguid.cc
             util/posix/posixguid.h
             io/posix/posixconsolehandler.cc
@@ -686,11 +694,12 @@ nebula_begin_module(foundation)
             posixbarrier.h
             posixcriticalsection.h
             posixevent.h
-            posixinterlocked.h
 
             posixthread.cc
             posixthread.h
         )
+        fips_dir(threading/gcc GROUP "threading/gcc")
+        fips_files(gccinterlocked.cc)
     endif()
 nebula_end_module()
 #FIXME cant add python include dir globally as it clashes with antlr4

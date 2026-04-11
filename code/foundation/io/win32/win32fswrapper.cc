@@ -10,6 +10,8 @@
 #include "util/win32/win32stringconverter.h"
 #endif
 #include <direct.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace Win32
 {
@@ -260,6 +262,54 @@ Win32FSWrapper::GetFileSize(Handle handle)
 {
     n_assert(0 != handle);
     return ::GetFileSize(handle, NULL);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Returns the size of a file in bytes.
+*/
+Stream::Size
+Win32FSWrapper::GetFileSize(const Util::String& path)
+{
+    n_assert(path.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    struct _stat64 buf;
+    if(_wstat64((LPCWSTR)widePath, &buf) == 0)
+    {
+        return buf.st_size;
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+    get file/folder io info via stat
+*/
+bool 
+Win32FSWrapper::GetIOInfo(const IO::URI& uri, IO::IOStat& outInfo)
+{
+    n_assert(uri.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(uri.LocalPath(), widePath, sizeof(widePath));
+    struct _stat64 buf;
+    const static auto ToFileTime = [](const __time64_t& t) -> FILETIME
+    {
+        FILETIME ft;
+        LONGLONG ll = int64_t(t) * 10000000 + 116444736000000000; // convert to 100-nanosecond intervals and add epoch difference
+        ft.dwLowDateTime = (DWORD)(ll & 0xFFFFFFFF);
+        ft.dwHighDateTime = (DWORD)(ll >> 32);
+        return ft;
+    };
+    if(_wstat64((LPCWSTR)widePath, &buf) == 0)
+    {
+        outInfo.size = buf.st_size;
+        outInfo.accessTime.time = ToFileTime(buf.st_atime);
+        outInfo.modifiedTime.time = ToFileTime(buf.st_mtime);
+        outInfo.creationTime.time = ToFileTime(buf.st_ctime);
+        return true;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

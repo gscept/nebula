@@ -14,6 +14,8 @@
 
 #include "frame/default.h"
 
+#include "gpulang/render/system_shaders/shapes.h"
+
 using namespace Base;
 using namespace Threading;
 using namespace Math;
@@ -62,7 +64,7 @@ VkShapeRenderer::Open()
     ShapeRendererBase::Open();
 
     // create shape shader instance
-    CoreGraphics::ShaderId shapesShader = CoreGraphics::ShaderGet("shd:system_shaders/shapes.fxb"_atm);
+    CoreGraphics::ShaderId shapesShader = CoreGraphics::ShaderGet("shd:system_shaders/shapes.gplb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
     this->meshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
@@ -97,9 +99,9 @@ VkShapeRenderer::Open()
     }
 
     // lookup ModelViewProjection shader variable
-    this->model = ShaderGetConstantBinding(shapesShader, "ShapeModel");
-    this->diffuseColor = ShaderGetConstantBinding(shapesShader, "ShapeColor");
-    this->lineWidth = ShaderGetConstantBinding(shapesShader, "LineWidth");
+    this->model = offsetof(Shapes::ShapeConstants, ShapeModel);
+    this->diffuseColor = offsetof(Shapes::ShapeConstants, ShapeColor);
+    this->lineWidth = offsetof(Shapes::ShapeConstants, LineWidth);
 
     this->programs[ShaderTypes::Primitives] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives"));
     this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives|NoDepth"));
@@ -115,7 +117,7 @@ VkShapeRenderer::Open()
     // also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
     this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ .name = "Vulkan Shape Renderer"_atm, .comps = comps });
 
-    FrameScript_default::RegisterSubgraph_DebugShapes_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DebugShapes_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         auto thisPtr = static_cast<Vulkan::VkShapeRenderer*>(VkShapeRenderer::Instance());
         thisPtr->DrawShapes(cmdBuf);
@@ -178,7 +180,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
 
     if (this->numIndicesThisFrame > this->indexBufferCapacity)
         this->GrowIndexBuffer();
-    if (this->numVerticesThisFrame > this->vertexBufferCapacity)
+    if (this->numVerticesThisFrame > this->vertexBufferCapacity[this->vertexBufferActiveIndex])
         this->GrowVertexBuffer();
 
     for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
@@ -210,7 +212,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
             }
 
             // apply shader
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType], CoreGraphics::GraphicsQueueType);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
 
             // flush any buffered primitives
@@ -232,7 +234,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     {
         if (this->shapes[shaderType].Size() > 0)
         {
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType], CoreGraphics::GraphicsQueueType);
             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
             IndexT i;
@@ -406,7 +408,7 @@ VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
             const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
             const Math::vec4 color(1);
             const float lineThickness = this->unindexed[j].lineThicknesses[i];
-            const uint64& vertexOffset = this->unindexed[j].firstVertexOffset[i];
+            const uint64_t& vertexOffset = this->unindexed[j].firstVertexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
@@ -441,8 +443,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
             const Math::mat4& modelTransform = this->indexed[j].transforms[i];
             const Math::vec4 color(1);
             const float lineThickness = this->unindexed[j].lineThicknesses[i];
-            const uint64& vertexOffset = this->indexed[j].firstVertexOffset[i];
-            const uint64& indexOffset = this->indexed[j].firstIndexOffset[i];
+            const uint64_t& vertexOffset = this->indexed[j].firstVertexOffset[i];
+            const uint64_t& indexOffset = this->indexed[j].firstIndexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
@@ -469,7 +471,7 @@ VkShapeRenderer::GrowIndexBuffer()
     iboInfo.size = this->numIndicesThisFrame;
     iboInfo.elementSize = IndexType::SizeOf(IndexType::Index32);
     iboInfo.mode = CoreGraphics::HostCached;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = nullptr;
     iboInfo.dataSize = 0;
 
@@ -501,7 +503,7 @@ VkShapeRenderer::GrowVertexBuffer()
     vboInfo.size = this->numVerticesThisFrame;
     vboInfo.elementSize = VertexLayoutGetSize(this->vertexLayout);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
 
@@ -514,7 +516,7 @@ VkShapeRenderer::GrowVertexBuffer()
     if (this->vbos[this->vertexBufferActiveIndex] != InvalidBufferId)
         DestroyBuffer(this->vbos[this->vertexBufferActiveIndex]);
 
-    this->vertexBufferCapacity = this->numVerticesThisFrame;
+    this->vertexBufferCapacity[this->vertexBufferActiveIndex] = this->numVerticesThisFrame;
 
     // finally allocate new buffer
     this->vbos[this->vertexBufferActiveIndex] = CreateBuffer(vboInfo);

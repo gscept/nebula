@@ -37,7 +37,7 @@ struct Nsk3Skeleton
     uint numJoints;
 };
 
-struct Nsk3Joint
+struct NEBULA_ALIGN16 Nsk3Joint
 {
     Util::String name;
     float bind[16];

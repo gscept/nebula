@@ -1,0 +1,100 @@
+//------------------------------------------------------------------------------
+//  @file probe_debug.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/ddgi.gpuh>
+
+#include "probe_shared.gpuh"
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+DebugVS(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    out Normal : f32x3,
+    out WorldPosition : f32x3,
+    out Instance : u32
+) void
+{
+    var probeWorldPosition : f32x3;
+    if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
+	{
+        probeWorldPosition = DDGIProbeWorldPositionWithOffset(i32(vertexGetInstanceIndex()), VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing, VolumeConstants.ProbeOffsets);
+	}
+    else
+	{
+        probeWorldPosition = DDGIProbeWorldPosition(i32(vertexGetInstanceIndex()), VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing);
+	}
+    WorldPosition = probeWorldPosition;
+    
+    Normal = normal;
+    Instance = vertexGetInstanceIndex();
+    vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(position * VolumeConstants.DebugSize + probeWorldPosition, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+DebugPS(
+    in normal : f32x3
+    , in worldPos : f32x3
+    , in no_interpolate instance : u32
+) void
+{
+    var volumeArg : GIVolume;
+    volumeArg.Offset = VolumeConstants.Offset;
+    volumeArg.Rotation = VolumeConstants.Rotation;
+    volumeArg.GridCounts = VolumeConstants.ProbeGridDimensions;
+    volumeArg.GridSpacing = VolumeConstants.ProbeGridSpacing;
+    volumeArg.ScrollOffsets = VolumeConstants.ProbeScrollOffsets;
+    volumeArg.NumIrradianceTexels = VolumeConstants.NumIrradianceTexels;
+    volumeArg.NumDistanceTexels = VolumeConstants.NumDistanceTexels;
+    volumeArg.EncodingGamma = VolumeConstants.IrradianceGamma;
+    volumeArg.Irradiance = VolumeConstants.ProbeIrradiance;
+    volumeArg.Distances = VolumeConstants.ProbeDistances;
+    volumeArg.Offsets = VolumeConstants.ProbeOffsets;
+    volumeArg.States = VolumeConstants.ProbeStates; 
+    
+    if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0)
+    {
+        const probeTexel = DDGIProbeTexelPosition(instance, VolumeConstants.ProbeGridDimensions);
+        const status = fetch2D(VolumeConstants.ProbeStates, probeTexel, 0).r;
+        if (status == PROBE_STATE_INACTIVE)
+        {
+			pixelExportColor(f32x4(lerp(f32x3(1,0,0), f32x3(0,0,1), f32x3(hash12(pixelGetCoordinates().xy))), 1), 0);
+            return;
+        }
+    }
+    
+    const irradiance = EvaluateDDGIIrradiance(worldPos, f32x3(0), normal, volumeArg, VolumeConstants.Options);
+	pixelExportColor(f32x4(irradiance, 1), 0);
+}
+
+render_state DefaultState
+{
+    DepthWriteEnabled = true;
+    DepthTestEnabled = true;
+    DepthTestFunction = CompareMode.Equal;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Debug")
+program Debug
+{
+    VertexShader = DebugVS;
+    PixelShader = DebugPS;
+    RenderState = DefaultState;
+};

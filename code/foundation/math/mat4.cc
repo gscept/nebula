@@ -319,5 +319,4 @@ vec3 aseuler(const mat4& m)
     return vec3(Math::rad2deg(x), Math::rad2deg(y), Math::rad2deg(z));
 }
 
-
 } // namespace Math

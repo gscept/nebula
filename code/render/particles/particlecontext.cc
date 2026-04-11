@@ -13,7 +13,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
-#include "system_shaders/particle.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 using namespace Graphics;
 using namespace Models;
@@ -117,7 +117,7 @@ ParticleContext::Create()
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
     vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
     CoreGraphics::BufferId vbo = CoreGraphics::CreateBuffer(vboInfo);
@@ -128,7 +128,7 @@ ParticleContext::Create()
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
     iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
     CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
@@ -150,6 +150,7 @@ ParticleContext::Create()
     meshInfo.primitiveGroups.Append(group);
     meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
     meshInfo.vertexLayout = emitterLayout;
+    meshInfo.indexType = CoreGraphics::IndexType::Index16;
     ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 
     // setup particle geometry buffer
@@ -162,7 +163,7 @@ ParticleContext::Create()
     vboInfo.size = 4;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(cornerLayout);
     vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.dataSize = sizeof(cornerVertexData);
     vboInfo.data = cornerVertexData;
     state.geometryVbo = CoreGraphics::CreateBuffer(vboInfo);
@@ -173,7 +174,7 @@ ParticleContext::Create()
     iboInfo.size = 6;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index16);
     iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = cornerIndexData;
     iboInfo.dataSize = sizeof(cornerIndexData);
     state.geometryIbo = CoreGraphics::CreateBuffer(iboInfo);
@@ -442,7 +443,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 /**
 */
 void 
-ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+ParticleContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(PrepareView, Particles);
 
@@ -459,9 +460,9 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
         // Run job to update constants, can be per-view because of the billboard flag
         Jobs2::JobDispatch(
             [
-                allSystems = allSystems.ConstBegin()
-                , models = graphicsEntities.ConstBegin()
-                , invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera())
+                allSystems = allSystems.Begin()
+                , models = graphicsEntities.Begin()
+                , invViewMatrix = Graphics::CameraContext::GetTransform(ViewGetCamera(view))
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
@@ -491,19 +492,19 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
 
-                        alignas (16) ::Particle::ParticleObjectBlock block;
+                        alignas (16) ::Particle::ParticleEmitterData block;
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
                             system.transform = system.transform * invViewMatrix;
-                        system.transform.store(block.EmitterTransform);
+                        system.transform.store(&block.EmitterTransform[0][0]);
 
                         // update parameters
                         block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
                         block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                         // allocate block
-                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetConstants(block);
+                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetConstants(block, CoreGraphics::GraphicsQueueType);
                         renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
                     }
                     else
@@ -546,7 +547,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.size = state.numParticlesThisFrame;
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
         vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
 

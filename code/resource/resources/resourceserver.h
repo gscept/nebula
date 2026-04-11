@@ -79,6 +79,8 @@ public:
     void DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamLoader() const;
+    /// query if a stream loader is registered for a given extension
+    bool HasStreamLoader(const Util::StringAtom& ext) const;
 
     /// Wait for all loader threads
     void WaitForLoaderThread();
@@ -196,6 +198,17 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
 
     // create container and cast to actual resource type
     loader->ReloadResource(res, success, failed);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+ResourceServer::HasStreamLoader(const Util::StringAtom& ext) const
+{
+    IndexT i = this->extensionMap.FindIndex(ext);
+    return i != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------

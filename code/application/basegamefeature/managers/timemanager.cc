@@ -6,6 +6,7 @@
 #include "timemanager.h"
 #include "timing/time.h"
 #include "framesync/framesynctimer.h"
+#include "profiling/profiling.h"
 
 using namespace Timing;
 using namespace Core;
@@ -175,6 +176,7 @@ TimeManager::OnDeactivate()
 void
 TimeManager::OnBeginFrame()
 {
+    N_MARKER_BEGIN(TimeManagerOnBeginFrame, Game);
     using namespace Time;
 
 	if (state->frameSyncTimerOwner)
@@ -200,6 +202,7 @@ TimeManager::OnBeginFrame()
             state->timeSources[i].frameTime = 0;
         }
     }
+    N_MARKER_END();
 }
 
 } // namespace Game

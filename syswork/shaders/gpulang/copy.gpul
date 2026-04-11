@@ -1,0 +1,58 @@
+//------------------------------------------------------------------------------
+//  copy.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+
+uniform CopyBuffer : *texture2D;
+sampler_state CopySampler
+{
+    Filter = FilterMode.Linear;
+};
+
+render_state CopyState
+{
+    Cull = CullFace.None;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2) void 
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+}
+
+enum RenderTargetOutput : i32
+{
+    Color
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(in uv : f32x2) void
+{
+    pixelExportColor(textureSampleLod(CopyBuffer, CopySampler, uv, 0), i32(RenderTargetOutput.Color)); 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = CopyState;
+};

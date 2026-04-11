@@ -14,6 +14,13 @@ import genutil as util
 import IDLC
 import IDLC.filewriter
 
+def fnv1a(s: str) -> int:
+    hash_ = 0x811C9DC5  # FNV offset basis
+    for b in s.encode("utf-8"):
+        hash_ ^= b
+        hash_ = (hash_ * 0x01000193) & 0xFFFFFFFF  # 32-bit overflow
+    return hash_
+
 def Error(object, msg):
     print('[Frame Script Compiler] error({}): {}'.format(object, msg))
     sys.exit(-1)
@@ -34,7 +41,7 @@ def DeclareResourceDependencies(list_name, parser, deps, file):
         elif dep.tex:
             textures.add(dep)
         else:
-            Error("Unknown resource {}".format(dep.name))
+            Error(list_name, "Unknown resource '{}'".format(dep.name))
         
     if len(textures) > 0:
         file.WriteLine("const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
@@ -171,6 +178,7 @@ class LocalTextureDefinition:
         self.relativeSize = None
         self.depthFormat = False
         self.stencilFormat = False
+        self.samples = 1
         self.bits = list()
 
         if 'fixedSize' in node:
@@ -185,6 +193,9 @@ class LocalTextureDefinition:
             self.mips = node['mips']
         if 'layers' in node:
             self.layers = node['layers']
+
+        if 'samples' in node:
+            self.samples = node['samples']
 
         if 'format' not in node:
             Error(self.name, 'Local texture must declare format')
@@ -203,10 +214,13 @@ class LocalTextureDefinition:
         else:
             self.usage = 'Render'
 
+        if self.samples > 1 and self.mips != 1:
+            Error(self.name, 'Multi sampling and mips can\'t be used together')
+            
         usageBits = self.usage.split("|")
         self.usage = ""
         for bit in usageBits:
-            self.usage += "CoreGraphics::TextureUsage::{}Texture".format(bit)
+            self.usage += "CoreGraphics::TextureUsage::{}".format(bit)
             if bit != usageBits[-1]:
                 self.usage += " | "
 
@@ -214,6 +228,10 @@ class LocalTextureDefinition:
             self.type = node['type']
         else:
             self.type = 'Texture2D'
+
+        global textureTypes
+        if self.type not in textureTypes:
+            Error(self.type, f'Invalid texture type {self.type}')
 
     def HasDepthFormat(self):
         return self.depthFormat
@@ -242,13 +260,20 @@ class LocalTextureDefinition:
             file.WriteLine("}")
             file.WriteLine("CoreGraphics::TextureCreateInfo info;")
             file.WriteLine('info.name = "{}";'.format(self.name))
-            file.WriteLine("info.type = CoreGraphics::{};".format(self.type))
-            file.WriteLine("info.format = CoreGraphics::PixelFormat::Code::{};".format(self.format))
-            file.WriteLine("info.width = {} * frameWidth;".format(self.relativeSize[0]))
-            file.WriteLine("info.height = {} * frameHeight;".format(self.relativeSize[1]))
-            file.WriteLine("info.usage = {};".format(self.usage))
-            file.WriteLine("info.mips = {};".format("CoreGraphics::TextureAutoMips" if self.mips == "auto" else self.mips))
-            file.WriteLine("info.layers = {};".format(self.layers))
+            file.WriteLine(f"info.type = CoreGraphics::{self.type};")
+            file.WriteLine(f"info.format = CoreGraphics::PixelFormat::Code::{self.format};")
+            file.WriteLine(f"info.width = Math::ceil({self.relativeSize[0]} * frameWidth);")
+            file.WriteLine(f"info.height = Math::ceil({self.relativeSize[1]} * frameHeight);")
+            file.WriteLine(f"info.usage = {self.usage};")
+            file.WriteLine(f"info.mips = {"CoreGraphics::TextureAutoMips" if self.mips == "auto" else self.mips};")
+            file.WriteLine(f"info.layers = {self.layers};")
+            file.WriteLine(f"info.samples = {self.samples};")
+            if self.depthFormat or self.stencilFormat:
+                file.WriteLine("info.clearDepthStencil.depth = 1.0f;")
+                file.WriteLine("info.clearDepthStencil.stencil = 0.0f;")
+            else:
+                file.WriteLine("info.clearColorF4 = Math::float4{ 0.0f, 0.0f, 0.0f, 1.0f };")
+            file.WriteLine("info.clear = true;")
             file.WriteLine("Textures[(uint)TextureIndex::{}] = CoreGraphics::CreateTexture(info);".format(self.name))
             file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(info.format);".format(self.name, self.name))
             file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = CoreGraphics::PipelineStage::InvalidStage;".format(self.name))
@@ -300,11 +325,12 @@ class ResourceDependencyDefinition:
         return self(parser, dict(name = name, stage = stage))
 
 class SubgraphDefinition:
-    def __init__(self, parser, node, p, subp):
-        self.name = "{}_{}".format(node['name'].replace(" ", ""), "Pass" if p is not None else "Compute")
+    def __init__(self, parser, node, p, subp, rp):
+        self.name = "{}_{}".format(node['name'].replace(" ", ""), "Pass" if p is not None else "Render" if rp is not None else "Compute")
         self.disabledBindings = list()
         self.p = p
         self.subp = subp
+        self.rp = rp
         self.queue = parser.queue
         if "disabled" in node:
             for binding in node['disabled']:
@@ -312,7 +338,7 @@ class SubgraphDefinition:
 
         parser.externs.append(self)
 
-        if self.p is not None and self.subp is not None:
+        if self.p is not None and self.subp is not None or self.rp is not None:
             parser.pipelines.append(self)
 
     def FormatExtern(self, file, parser):
@@ -321,21 +347,36 @@ class SubgraphDefinition:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
         file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> SubgraphTextureDependencies_{};'.format(self.name))
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
-        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);\n".format(self.name))
-        file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
+        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
+        file.WriteLine("void (*Subgraph_Sync_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
+        if self.p is not None and self.subp is not None:
+            file.WriteLine(f"void (*SubgraphPipelines_{self.name})(const CoreGraphics::PassId, const uint);\n")
+        if self.rp is not None:
+            file.WriteLine(f"void (*SubgraphPipelines_{self.name})(const CoreGraphics::RenderPassId);\n")
 
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine('void')
-        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
+        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Subgraph_{} = func;".format(self.name))
         file.WriteLine("SubgraphTextureDependencies_{} = textureDeps;".format(self.name))
         file.WriteLine("SubgraphBufferDependencies_{} = bufferDeps;".format(self.name))
         file.DecreaseIndent()
-        file.WriteLine("}")
+        file.WriteLine("}\n")
+
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
+        file.WriteLine('void')
+        file.WriteLine('RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT))'.format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("Subgraph_Sync_{} = func;".format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine("}\n")
 
         if self.p is not None and self.subp is not None:
             file.WriteLine("//------------------------------------------------------------------------------")
@@ -349,22 +390,43 @@ class SubgraphDefinition:
             file.DecreaseIndent()
             file.WriteLine("}")     
 
+        if self.rp is not None:
+            file.WriteLine("//------------------------------------------------------------------------------")
+            file.WriteLine("/**")
+            file.WriteLine("*/")
+            file.WriteLine('void')
+            file.WriteLine('RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::RenderPassId))'.format(self.name))
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine("SubgraphPipelines_{} = func;".format(self.name))
+            file.DecreaseIndent()
+            file.WriteLine("}")     
+
     def FormatPipeline(self, file):
         file.WriteLine("")
         file.WriteLine("if (SubgraphPipelines_{} != nullptr)".format(self.name))
         file.IncreaseIndent()
-        file.WriteLine("SubgraphPipelines_{}(Pass_{}, {});".format(self.name, self.p.name, self.subp.index))
+        if self.rp is not None:
+            file.WriteLine(f"SubgraphPipelines_{self.name}(Render_{self.rp.name});")
+        else:
+            file.WriteLine(f"SubgraphPipelines_{self.name}(Pass_{self.p.name}, {self.subp.index});")
         file.DecreaseIndent()
+        file.WriteLine("#ifdef NEBULA_DEBUG")
         file.WriteLine("else")
         file.IncreaseIndent()
         global framescriptName
         file.WriteLine('n_warning("[Frame Script {}] No registered pipeline creation callback is registered for {}\\n");'.format(framescriptName, self.name))
         file.DecreaseIndent()
+        file.WriteLine("#endif")
 
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
-        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
+        if self.rp is not None:
+            file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::RenderPassId));'.format(self.name))
+
+        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT));'.format(self.name))
     
     def FormatSource(self, file):
         file.WriteLine("")
@@ -376,7 +438,7 @@ class SubgraphDefinition:
         file.IncreaseIndent()
         if self.subp == None:
             file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.queue, self.name, self.name))
-        file.WriteLine('Subgraph_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(self.name))
+        file.WriteLine('Subgraph_{}(cmdBuf, CoreGraphics::{}QueueType, viewport, frameIndex, bufferIndex);'.format(self.name, self.queue))
         file.DecreaseIndent()
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
 
@@ -394,13 +456,13 @@ class BatchDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplates::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
+        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, Graphics::ViewGetCamera(view), bufferIndex);".format(self.name))    
     
     def FormatSetup(self, file):
         pass
 
 class FullscreenEffectDefinition:
-    def __init__(self, parser, node, p):
+    def __init__(self, parser, node, p, rp):
         self.name = node['name'].replace(" ", "")
         self.shader = node['shader']
         self.mask = node['mask']
@@ -410,6 +472,7 @@ class FullscreenEffectDefinition:
         for var in node['variables']:
             self.variables.append(dict(name = var['semantic'], value = var['value'], type = var['type']))
         self.p = p
+        self.rp = rp
         parser.externs.append(self)
 
     def FormatHeader(self, file):
@@ -423,7 +486,7 @@ class FullscreenEffectDefinition:
 
     def FormatExtern(self, file, parser):
         file.WriteLine("")
-        file.WriteLine('#include "{}.h"'.format(self.shader))
+        file.WriteLine('#include "gpulang/render/{}.h"'.format(self.shader))
         file.WriteLine("CoreGraphics::PipelineId FullScreenEffect_{}_Pipeline;".format(self.name))
         file.WriteLine("CoreGraphics::BufferId FullScreenEffect_{}_Constants;".format(self.name))
         file.WriteLine("CoreGraphics::ResourceTableId FullScreenEffect_{}_ResourceTable;".format(self.name))
@@ -435,29 +498,39 @@ class FullscreenEffectDefinition:
         file.WriteLine("{")
         file.IncreaseIndent()
 
-        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.fxb");'.format(self.shader))
+        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.gplb");'.format(self.shader))
         file.WriteLine('CoreGraphics::ShaderProgramId prog = CoreGraphics::ShaderGetProgram(shad, CoreGraphics::ShaderFeatureMask("{}"));'.format(self.mask))
-        file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
-        file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
-        file.WriteLine('{}::{} state;'.format(self.namespace, self.constantBlockName))
+        file.WriteLine('if (FullScreenEffect_{}_Pipeline != CoreGraphics::InvalidPipelineId)'.format(self.name))
+        file.WriteLine('{')
+        file.IncreaseIndent()
+        file.WriteLine('CoreGraphics::DestroyGraphicsPipeline(FullScreenEffect_{}_Pipeline);'.format(self.name))
+        file.WriteLine('CoreGraphics::DestroyResourceTable(FullScreenEffect_{}_ResourceTable);'.format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine('}')
+        if self.p is not None:
+            file.WriteLine(f"FullScreenEffect_{self.name}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{self.p.name}, 0, CoreGraphics::InvalidRenderPassId, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});")
+        else:
+            file.WriteLine(f"FullScreenEffect_{self.name}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, CoreGraphics::InvalidPassId, 0, Render_{self.rp.name}, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});")
+        file.WriteLine(f'FullScreenEffect_{self.name}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);')
+        file.WriteLine(f'{self.namespace}::{self.constantBlockName}::STRUCT state;')
         for var in self.variables:
             type = var['type']
             if type == "textureHandle":
-                file.WriteLine('state.{} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{}]);'.format(var['name'], var['value']))
+                file.WriteLine(f'state.{var["name"]} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{var["value"]}]);')
             elif type == "texture":
-                file.WriteLine('CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{}], {}::Table_Batch::{}_SLOT));'.format(var['value'], self.namespace, var['name']))
+                file.WriteLine(f'CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{var["value"]}], {self.namespace}::{var["name"]}::BINDING));')
             else:
-                file.WriteLine('state.{} = {};'.format(var['name'], var['value']))
+                file.WriteLine(f'state.{var["name"]} = {var["value"]};')
         file.WriteLine('CoreGraphics::BufferCreateInfo bufInfo;')
         file.WriteLine('bufInfo.name = "FullscreenEffect_{}_Constants";'.format(self.name))
-        file.WriteLine('bufInfo.byteSize = sizeof({}::{});'.format(self.namespace, self.constantBlockName))
+        file.WriteLine('bufInfo.byteSize = sizeof({}::{}::STRUCT);'.format(self.namespace, self.constantBlockName))
         file.WriteLine('bufInfo.data = &state;')
         file.WriteLine('bufInfo.dataSize = bufInfo.byteSize;')
-        file.WriteLine('bufInfo.mode = CoreGraphics::HostLocal;')
-        file.WriteLine('bufInfo.usageFlags = CoreGraphics::ConstantBuffer;')
+        file.WriteLine('bufInfo.mode = CoreGraphics::DeviceLocal;')
+        file.WriteLine('bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
-        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::Table_Batch::{}_SLOT));'.format(self.name, self.name, self.constantBlockName))
+        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, {}::{}::BINDING));'.format(self.name, self.name, self.namespace, self.constantBlockName))
         file.WriteLine('CoreGraphics::ResourceTableCommitChanges(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
@@ -524,6 +597,9 @@ class CopyDefinition:
         file.WriteLine("}")
     
     def FormatSource(self, file):
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
         SyncResourceDependencies("Copy_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine("Copy_{}(cmdBuf);".format(self.name))
 
@@ -715,11 +791,17 @@ class AttachmentDefinition:
         self.clearColor = None
         self.clearDepth = None
         self.clearStencil = None
+        self.resolve = None
         self.storeLoadFlags = list()
         if self.name not in parser.localTextureDict:
             Error(self.name, "Attachment references undeclared texture")
         else:
             self.ref = parser.localTextureDict[self.name]
+
+        if "resolve" in node:
+            self.resolve = node['resolve']
+            if self.resolve not in parser.localTextureDict:
+                Error(self.name, "Attachment references undeclared texture")
 
         if "clear" in node:
             self.clearColor = node['clear']
@@ -806,11 +888,11 @@ class SubpassDefinition:
         self.ops = list()
         for op in node["ops"]:
             if 'subgraph' in op:
-                self.ops.append(SubgraphDefinition(parser, op['subgraph'], parent, self))
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], parent, self, None))
             elif 'batch' in op:
                 self.ops.append(BatchDefinition(parser, op['batch']))
             elif 'fullscreen_effect' in op:
-                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], parent))
+                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], parent, None))
 
 
     def FormatHeader(self, file):
@@ -818,10 +900,6 @@ class SubpassDefinition:
         for op in self.ops:
             op.FormatHeader(file)
             
-    def FormatExtern(self, file, parser):
-        numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
-        file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
-
     def FormatExtern(self, file, parser):
         numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
         file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
@@ -981,6 +1059,10 @@ class PassDefinition:
             for op in subpass.ops:
                 if type(op) == SubgraphDefinition:
                     file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, self.queue, op.name, op.name))
+                    file.WriteLine('if (Subgraph_Sync_{} != nullptr)'.format(op.name))
+                    file.WriteLine('{')
+                    file.WriteLine('    Subgraph_Sync_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(op.name))
+                    file.WriteLine('}')
 
         for attachment in self.attachments: 
             file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
@@ -989,9 +1071,9 @@ class PassDefinition:
         
         for subpass in self.subpasses:
             if subpass.depth:
-                file.WriteLine('Subpass_{}_Viewports[Pass_{}_Attachment_{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, self.name, subpass.depth['name'], subpass.depth['ref'].ref.relativeSize[0], subpass.depth['ref'].ref.relativeSize[1]))
-            for attachment in subpass.attachments:
-                file.WriteLine('Subpass_{}_Viewports[Pass_{}_Attachment_{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, self.name, attachment['name'], attachment['ref'].ref.relativeSize[0], attachment['ref'].ref.relativeSize[1]))
+                file.WriteLine('Subpass_{}_Viewports[{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, 0, subpass.depth['ref'].ref.relativeSize[0], subpass.depth['ref'].ref.relativeSize[1]))
+            for i, attachment in enumerate(subpass.attachments):
+                file.WriteLine('Subpass_{}_Viewports[{}] = Math::rectangle<int>(0, 0, viewport.width() * {}, viewport.height() * {});'.format(subpass.name, i + 1 if subpass.depth else i, attachment['ref'].ref.relativeSize[0], attachment['ref'].ref.relativeSize[1]))
             file.WriteLine('CoreGraphics::CmdSetViewports(cmdBuf, Subpass_{}_Viewports);'.format(subpass.name))
             file.WriteLine('CoreGraphics::CmdSetScissors(cmdBuf, Subpass_{}_Viewports);'.format(subpass.name))
             if subpass != self.subpasses[0]:
@@ -1009,6 +1091,259 @@ class PassDefinition:
         file.WriteLine("Initialize_Pass_{}();".format(self.name))
         for sub in self.subpasses:
             sub.FormatSetup(file)
+
+class RenderDefinition:
+    def __init__(self, parser, node):
+        self.name = node['name'].replace(" ", "")
+        self.targets = list()
+        self.targetDict = {}
+        self.resourceDependencies = list()
+        self.queue = parser.queue
+        self.depthAttachment = None
+        parser.externs.append(self)
+        parser.passes.append(self)
+
+        if 'resource_dependencies' in node:
+            for dependency in node['resource_dependencies']:
+                dep = ResourceDependencyDefinition(parser = parser, node = dependency)
+                self.resourceDependencies.append(dep)
+
+        if "targets" in node:
+            for at in node["targets"]:
+                attachment = AttachmentDefinition(parser, at)
+                self.targets.append(attachment)
+                self.targetDict[attachment.name] = attachment
+                self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.name, stage = "ColorWrite", parser = parser))
+                if attachment.resolve is not None:
+                    self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.resolve, stage = "ColorWrite", parser = parser))
+
+        if "depth" in node:
+            self.depthAttachment = AttachmentDefinition(parser, node["depth"])
+            self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = self.depthAttachment.name, stage = "DepthStencilWrite", parser = parser))
+
+        self.ops = list()
+        for op in node["ops"]:
+            if 'subgraph' in op:
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None, self))
+            elif 'batch' in op:
+                self.ops.append(BatchDefinition(parser, op['batch']))
+            elif 'fullscreen_effect' in op:
+                self.ops.append(FullscreenEffectDefinition(parser, op['fullscreen_effect'], None, self))
+
+    def FormatExtern(self, file, parser):
+
+        file.WriteLine("")
+        file.WriteLine(f'CoreGraphics::RenderPassId Render_{self.name};')
+        file.WriteLine(f'Util::FixedArray<Shared::RenderTargetParameters> Render_{self.name}_RenderTargetDimensions({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
+        file.WriteLine(f'Util::FixedArray<Math::rectangle<int>> Render_{self.name}_Viewports({len(self.targets) + (1 if self.depthAttachment is not None else 0)});')
+
+        DeclareResourceDependencies("Render_{}".format(self.name), parser, self.resourceDependencies, file)   
+        
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
+        file.WriteLine("void")
+        file.WriteLine("Initialize_Render_{}()".format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        
+        file.WriteLine("if (Render_{} != CoreGraphics::InvalidRenderPassId)".format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("CoreGraphics::DestroyRenderPass(Render_{});".format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine("}")
+
+        file.WriteLine(f'CoreGraphics::RenderPassCreateInfo info;')
+        
+        file.WriteLine(f'info.name = "Render_{self.name}";')
+        file.WriteLine(f'info.area = Math::rectangle<int>(0, 0, 0, 0);')
+        if self.depthAttachment is not None:
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine(f'CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{self.depthAttachment.name}]);')
+            file.WriteLine(f'info.area.right = Math::max(dims.width, info.area.right);')
+            file.WriteLine(f'info.area.bottom = Math::max(dims.height, info.area.bottom);')
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        for target in self.targets:
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine(f'CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{target.name}]);')
+            file.WriteLine(f'info.area.right = Math::max(dims.width, info.area.right);')
+            file.WriteLine(f'info.area.bottom = Math::max(dims.height, info.area.bottom);')
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        file.WriteLine(f'info.colorTargets.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorTargetLayouts.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorTargetFlags.Resize({len(self.targets)});')
+        file.WriteLine(f'info.colorClearValues.Resize({len(self.targets)});')
+        file.WriteLine(f'info.resolveTargets.Resize({len(self.targets)});')
+        file.WriteLine(f'info.resolveLayouts.Resize({len(self.targets)});')
+        for idx, target in enumerate(self.targets):
+            file.WriteLine("{")
+            file.IncreaseIndent()
+            file.WriteLine("CoreGraphics::TextureViewCreateInfo viewInfo;")
+            file.WriteLine(f'viewInfo.name = "[Attachment] {target.name} in {self.name}";')
+            file.WriteLine(f"viewInfo.tex = Textures[(uint)TextureIndex::{target.name}];")
+            file.WriteLine(f"viewInfo.format = CoreGraphics::PixelFormat::Code::{target.ref.format};")
+            file.WriteLine(f"viewInfo.startMip = 0;")
+            file.WriteLine(f"viewInfo.numMips = 1;")
+            file.WriteLine(f"viewInfo.startLayer = 0;")
+            file.WriteLine(f"viewInfo.numLayers = {target.ref.layers};")            
+
+            bits = ""
+            for bit in target.ref.bits:
+                bits += "CoreGraphics::ImageBits::{}".format(bit)
+                if bit != target.ref.bits[-1]:
+                    bits += " | "
+            file.WriteLine("viewInfo.bits = {};".format(bits))
+            
+            file.WriteLine("Math::vec4 clearValue = Math::vec4(0.0f);")
+            flags = "CoreGraphics::AttachmentFlagBits::NoFlags"
+            if target.clearColor is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::Clear"
+            for flag in target.storeLoadFlags:
+                flags += " | CoreGraphics::AttachmentFlagBits::{}".format(flag) 
+
+            if target.clearColor is not None:
+                file.WriteLine(f"clearValue = Math::vec4({target.clearColor[0]}, {target.clearColor[1]}, {target.clearColor[2]}, {target.clearColor[3]});")
+
+            file.WriteLine(f'info.colorTargets[{idx}] = CoreGraphics::CreateTextureView(viewInfo);')
+            file.WriteLine(f'info.colorTargetLayouts[{idx}] = CoreGraphics::ImageLayout::ColorRenderTexture;')
+            file.WriteLine(f'info.colorTargetFlags[{idx}] = {flags};')
+            file.WriteLine(f'info.colorClearValues[{idx}] = clearValue;')
+            if target.resolve is not None:
+                file.WriteLine("CoreGraphics::TextureViewCreateInfo resolveViewInfo;")
+                file.WriteLine(f'resolveViewInfo.name = "[Attachment] {target.resolve} in {self.name}_Resolve";')
+                file.WriteLine(f"resolveViewInfo.tex = Textures[(uint)TextureIndex::{target.resolve}];")
+                file.WriteLine(f"resolveViewInfo.format = CoreGraphics::PixelFormat::Code::{target.ref.format};")
+                file.WriteLine(f"resolveViewInfo.startMip = 0;")
+                file.WriteLine(f"resolveViewInfo.numMips = 1;")
+                file.WriteLine(f"resolveViewInfo.startLayer = 0;")
+                file.WriteLine(f"resolveViewInfo.bits = {bits};")
+                file.WriteLine(f"resolveViewInfo.numLayers = {target.ref.layers};")     
+                file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::CreateTextureView(resolveViewInfo);')
+                file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::ColorRenderTexture;')
+            else:
+                file.WriteLine(f'info.resolveTargets[{idx}] = CoreGraphics::InvalidTextureViewId;')
+                file.WriteLine(f'info.resolveLayouts[{idx}] = CoreGraphics::ImageLayout::Undefined;')
+
+            file.DecreaseIndent()
+            file.WriteLine("}")
+        
+        if self.depthAttachment != None:
+            file.WriteLine("CoreGraphics::TextureViewCreateInfo viewInfo;")
+            file.WriteLine(f'viewInfo.name = "[Attachment] {self.depthAttachment.name} in {self.name}";')
+            file.WriteLine(f"viewInfo.tex = Textures[(uint)TextureIndex::{self.depthAttachment.name}];")
+            file.WriteLine(f"viewInfo.format = CoreGraphics::PixelFormat::Code::{self.depthAttachment.ref.format};")
+            file.WriteLine(f"viewInfo.startMip = 0;")
+            file.WriteLine(f"viewInfo.numMips = 1;")
+            file.WriteLine(f"viewInfo.startLayer = 0;")
+            file.WriteLine(f"viewInfo.numLayers = {self.depthAttachment.ref.layers};")      
+
+            bits = ""
+            for bit in self.depthAttachment.ref.bits:
+                bits += "CoreGraphics::ImageBits::{}".format(bit)
+                if bit != self.depthAttachment.ref.bits[-1]:
+                    bits += " | "
+            file.WriteLine("viewInfo.bits = {};".format(bits))
+
+            file.WriteLine("Math::vec4 clearValue = Math::vec4(0.0f);")
+            if self.depthAttachment.clearDepth is not None:
+                file.WriteLine(f"clearValue.x = {self.depthAttachment.clearDepth};")
+            if self.depthAttachment.clearStencil is not None:
+                file.WriteLine(f"clearValue.y = {self.depthAttachment.clearStencil};")
+            flags = "CoreGraphics::AttachmentFlagBits::NoFlags"
+            if self.depthAttachment.clearDepth is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::Clear"
+            if self.depthAttachment.clearStencil is not None:
+                flags += " | CoreGraphics::AttachmentFlagBits::ClearStencil"
+            for flag in self.depthAttachment.storeLoadFlags:
+                flags += " | CoreGraphics::AttachmentFlagBits::{}".format(flag) 
+
+            file.WriteLine(f'info.depthTarget = CoreGraphics::CreateTextureView(viewInfo);')
+            file.WriteLine(f'info.depthTargetLayout = CoreGraphics::ImageLayout::DepthStencilRenderTexture;')
+            if self.depthAttachment.resolve is not None:
+                file.WriteLine("CoreGraphics::TextureViewCreateInfo resolveViewInfo;")
+                file.WriteLine(f'resolveViewInfo.name = "[Attachment] {self.depthAttachment.resolve} in {self.name}_Resolve";')
+                file.WriteLine(f"resolveViewInfo.tex = Textures[(uint)TextureIndex::{self.depthAttachment.resolve}];")
+                file.WriteLine(f"resolveViewInfo.format = CoreGraphics::PixelFormat::Code::{self.depthAttachment.ref.format};")
+                file.WriteLine(f"resolveViewInfo.startMip = 0;")
+                file.WriteLine(f"resolveViewInfo.numMips = 1;")
+                file.WriteLine(f"resolveViewInfo.startLayer = 0;")
+                file.WriteLine(f"resolveViewInfo.bits = {bits};")
+                file.WriteLine(f"resolveViewInfo.numLayers = {self.depthAttachment.ref.layers};")    
+                file.WriteLine(f'info.depthResolveTarget = CreateTextureView(resolveViewInfo);')
+                file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::DepthStencilRenderTexture;')
+            else:                
+                file.WriteLine(f'info.depthResolveTarget = CoreGraphics::InvalidTextureViewId;')
+                file.WriteLine(f'info.depthResolveTargetLayout = CoreGraphics::ImageLayout::Undefined;')
+            file.WriteLine(f'info.depthFlags = {flags};')
+            file.WriteLine(f'info.depthClearValue = clearValue;')
+        file.WriteLine(f'Render_{self.name} = CoreGraphics::CreateRenderPass(info);')
+            
+
+        file.DecreaseIndent()
+        file.WriteLine("}")
+
+    def FormatHeader(self, file):
+        file.WriteLine('extern Util::FixedArray<Shared::RenderTargetParameters> Render_{}_RenderTargetDimensions;'.format(self.name, len(self.targets)))
+        file.WriteLine('extern Util::FixedArray<Math::rectangle<int>> Render_{}_Viewports;'.format(self.name))
+
+        idx = 0
+        if self.depthAttachment != None:
+            file.WriteLine(f"static const int Render_{self.name}_DepthAttachment = {idx};")
+            idx += 1
+
+        for target in self.targets:
+            file.WriteLine(f"static const int Render_{self.name}_Attachment_{target.name} = {idx};")
+            idx += 1
+
+        for op in self.ops:
+            op.FormatHeader(file)
+
+    def FormatSource(self, file):
+        file.WriteLine("")
+        SyncResourceDependencies("Render_{}".format(self.name), self.resourceDependencies, self.queue, file)
+        file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, "{}");'.format(self.name))
+        file.IncreaseIndent()
+
+        for op in self.ops:
+            if type(op) == SubgraphDefinition:
+                file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, self.queue, op.name, op.name))
+                file.WriteLine('if (Subgraph_Sync_{} != nullptr)'.format(op.name))
+                file.WriteLine('{')
+                file.WriteLine('    Subgraph_Sync_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(op.name))
+                file.WriteLine('}')
+
+        i = 0
+        if self.depthAttachment != None:
+            file.WriteLine(f'Render_{self.name}_Viewports[{i}] = Math::rectangle<int>(0, 0, viewport.width() * {self.depthAttachment.ref.relativeSize[0]}, viewport.height() * {self.depthAttachment.ref.relativeSize[1]});')
+            i += 1
+        for target in self.targets:
+            file.WriteLine(f'Render_{self.name}_Viewports[{i}] = Math::rectangle<int>(0, 0, viewport.width() * {target.ref.relativeSize[0]}, viewport.height() * {target.ref.relativeSize[1]});')
+            i += 1
+        file.WriteLine(f'CoreGraphics::CmdSetViewports(cmdBuf, Render_{self.name}_Viewports);')
+        file.WriteLine(f'CoreGraphics::CmdSetScissors(cmdBuf, Render_{self.name}_Viewports);')
+
+        if self.depthAttachment != None:
+            file.WriteLine(f'Render_{self.name}_RenderTargetDimensions[Render_{self.name}_DepthAttachment] = Shared::RenderTargetParameters{{ {{ viewport.width() * {self.depthAttachment.ref.relativeSize[0]}f, viewport.height() * {self.depthAttachment.ref.relativeSize[1]}f, 1 / float(viewport.width()) * {self.depthAttachment.ref.relativeSize[0]}f, 1 / float(viewport.height()) * {self.depthAttachment.ref.relativeSize[1]}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{self.depthAttachment.ref.name}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{self.depthAttachment.ref.name}].second }} }};')
+        for target in self.targets: 
+            file.WriteLine(f'Render_{self.name}_RenderTargetDimensions[Render_{self.name}_Attachment_{target.name}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {target.ref.relativeSize[0]}f, viewport.height() * {target.ref.relativeSize[1]}f, 1 / float(viewport.width()) * {target.ref.relativeSize[0]}f, 1 / float(viewport.height()) * {target.ref.relativeSize[1]}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{target.ref.name}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{target.ref.name}].second }} }};')
+        file.WriteLine(f'CoreGraphics::RenderPassSetRenderTargetParameters(cmdBuf, Render_{self.name}, Render_{self.name}_RenderTargetDimensions);')
+        file.WriteLine(f"CoreGraphics::CmdBeginRenderPass(cmdBuf, Render_{self.name});")
+
+        for op in self.ops:
+            op.FormatSource(file)
+
+        file.WriteLine(f"CoreGraphics::CmdEndRenderPass(cmdBuf);")
+        file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
+        
+    def FormatSetup(self, file):
+        file.WriteLine("Initialize_Render_{}();".format(self.name))
+        for op in self.ops:
+            op.FormatSetup(file)
 
 class SubmissionDefinition:
     def __init__(self, parser, node):
@@ -1035,7 +1370,9 @@ class SubmissionDefinition:
 
         for op in node['ops']:
             if 'subgraph' in op:
-                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None))
+                self.ops.append(SubgraphDefinition(parser, op['subgraph'], None, None, None))
+            elif 'render' in op:
+                self.ops.append(RenderDefinition(parser, op['render']))
             elif 'pass' in op:
                 self.ops.append(PassDefinition(parser, op['pass']))
             elif 'copy' in op:
@@ -1224,6 +1561,9 @@ class FrameScriptGenerator:
                         sub = SubmissionDefinition(self, imp)
                         self.submissions.append(sub)
 
+    
+
+
     #------------------------------------------------------------------------------
     ##
     #
@@ -1244,11 +1584,13 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
-        file.WriteLine('#include "system_shaders/shared.h"')
+        file.WriteLine('#include "profiling/profiling.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
         file.WriteLine("")
+
+        file.WriteLine("extern uint ID;")
 
         file.WriteLine("enum class TextureIndex")
         file.WriteLine("{")
@@ -1310,9 +1652,11 @@ class FrameScriptGenerator:
         for submission in self.submissions:
             file.WriteLine("extern CoreGraphics::SubmissionWaitEvent Submission_{};".format(submission.name))
 
+        file.WriteLine("extern int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("extern int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         file.WriteLine("/// Execute FrameScript_{}".format(self.name))
-        file.WriteLine("void Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);")
+        file.WriteLine("bool Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);")
 
         file.WriteLine("}} // namespace FrameScript_{}".format(self.name))
 
@@ -1321,7 +1665,6 @@ class FrameScriptGenerator:
     #
     def FormatSource(self, file):
         file.WriteLine("// Frame Script #version:{}#".format(self.version))
-        file.WriteLine("#pragma once")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.IncreaseIndent()
@@ -1331,7 +1674,7 @@ class FrameScriptGenerator:
         file.WriteLine("*/")
         file.WriteLine("")
         file.WriteLine('#include "{}.h"'.format(self.name))
-        file.WriteLine('#include "materials/materialtemplates.h"')
+        file.WriteLine('#include "materials/gpulang/materialtemplatesgpulang.h"')
         file.WriteLine('#include "materials/materialloader.h"')
         file.WriteLine('#include "graphics/globalconstants.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
@@ -1342,6 +1685,7 @@ class FrameScriptGenerator:
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
+        file.WriteLine("uint ID = {};".format(fnv1a(self.name)))
 
         for submission in self.submissions:
             file.WriteLine("CoreGraphics::SubmissionWaitEvent Submission_{};".format(submission.name))
@@ -1360,6 +1704,8 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::QueueType BufferCurrentQueues[(uint)BufferIndex::Num] = {};")
 
+        file.WriteLine("int FrameScript_{}_Width;".format(self.name))
+        file.WriteLine("int FrameScript_{}_Height;".format(self.name))
         file.WriteLine("")
         for extern in self.externs:
             extern.FormatExtern(file, self)
@@ -1375,11 +1721,12 @@ class FrameScriptGenerator:
         file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")
 
         if len(self.importTextures + self.localTextures) > 0:
-            file.WriteLine("for (const auto [index, stage] : textureDeps)")
+            file.WriteLine("for (const auto & [index, stage] : textureDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(TextureCurrentStage[(uint)index], queue);")
-            file.WriteLine("if ((stage != lastStage) && Textures[(uint)index] != CoreGraphics::InvalidTextureId)")
+            file.WriteLine("bool newStageWrites = PipelineStageWrites(stage);")
+            file.WriteLine("if ((stage != lastStage || newStageWrites) && Textures[(uint)index] != CoreGraphics::InvalidTextureId)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("scope.AddTexture(TextureImageBits[(uint)index], Textures[(uint)index], lastStage, stage);")
@@ -1391,11 +1738,12 @@ class FrameScriptGenerator:
             file.WriteLine("}")
 
         if len(self.importBuffers) > 0:
-            file.WriteLine("for (const auto [index, stage] : bufferDeps)")
+            file.WriteLine("for (const auto & [index, stage] : bufferDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(BufferCurrentStage[(uint)index], queue);")
-            file.WriteLine("if ((stage != lastStage) && Buffers[(uint)index] != CoreGraphics::InvalidBufferId)")
+            file.WriteLine("bool newStageWrites = PipelineStageWrites(stage);")
+            file.WriteLine("if ((stage != lastStage || newStageWrites) && Buffers[(uint)index] != CoreGraphics::InvalidBufferId)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("scope.AddBuffer(Buffers[(uint)index], lastStage, stage);")
@@ -1473,6 +1821,8 @@ class FrameScriptGenerator:
         file.WriteLine("Initialize(const uint frameWidth, const uint frameHeight)")
         file.WriteLine("{")
         file.IncreaseIndent()
+        file.WriteLine("FrameScript_{}_Width = frameWidth;".format(self.name))
+        file.WriteLine("FrameScript_{}_Height = frameHeight;".format(self.name))
         file.WriteLine("InitializeTextures(frameWidth, frameHeight);")
         file.WriteLine("InitializeSubmissions();")
         file.DecreaseIndent()
@@ -1494,11 +1844,20 @@ class FrameScriptGenerator:
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
-        file.WriteLine("void")
+        file.WriteLine("bool")
         file.WriteLine("Run(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex)")
         file.WriteLine("{")
         file.IncreaseIndent()
-        file.WriteLine("const Ptr<Graphics::View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
+        file.WriteLine("bool didResize = false;")
+        file.WriteLine("if (viewport.width() > FrameScript_{}_Width || viewport.height() > FrameScript_{}_Height)".format(self.name, self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("Initialize(Math::max(viewport.width(), FrameScript_{}_Width), Math::max(viewport.height(), FrameScript_{}_Height));".format(self.name, self.name))
+        file.WriteLine("InitializePipelines();")
+        file.WriteLine("didResize = true;")
+        file.DecreaseIndent()
+        file.WriteLine("}")
+        file.WriteLine("const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();")
         for submission in self.submissions:
             if submission.lastSubmit:
                 submission.FormatSource(file, self.importTextures)
@@ -1507,6 +1866,7 @@ class FrameScriptGenerator:
 
         for exportTexture in self.exportTextures:
             file.WriteLine("Export_{} = {{ .index = (uint)TextureIndex::{}, .tex = Textures[(uint)TextureIndex::{}], .stage = TextureCurrentStage[(uint)TextureIndex::{}] }};".format(exportTexture.name, exportTexture.name, exportTexture.name, exportTexture.name))
+        file.WriteLine("return didResize;")
         file.DecreaseIndent()
         file.WriteLine("}")
 
@@ -1518,6 +1878,10 @@ if __name__ == '__main__':
 
     generator = FrameScriptGenerator()
     generator.SetVersion(Version)
+
+    if len(sys.argv) != 4:
+        print("Usage: framescriptc <input> <output header> <output source>")
+        exit(1)
     file = sys.argv[-3]
     outH = sys.argv[-2]
     outS = sys.argv[-1]
@@ -1538,6 +1902,8 @@ if __name__ == '__main__':
 
     queues = set(['Graphics', 'Compute', 'Transfer', 'Sparse'])
     framescriptName = Path(file).stem
+
+    textureTypes = set(['Texture1D', 'Texture2D', 'Texture3D', 'TextureCube', 'Texture1DArray', 'Texture2DArray', 'TextureCubeArray'])
 
     headerF = IDLC.filewriter.FileWriter()
     headerF.Open(outH)

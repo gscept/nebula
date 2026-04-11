@@ -64,8 +64,8 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineInt64WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Int64TypeClass, int64_t> NAME(#NAME, "int64", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareUInt64(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::UInt64TypeClass, uint64_t> NAME;
-#define DefineUInt64(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::UInt64TypeClass, uint64_t> NAME(#NAME, "uint64", FOURCC,ACCESSMODE, uint64_t(0));
-#define DefineUInt64WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::UInt64TypeClass, uint64_t> NAME(#NAME, "uint64", FOURCC,ACCESSMODE,DEFVAL);
+#define DefineUInt64(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::UInt64TypeClass, uint64_t> NAME(#NAME, "uint64_t", FOURCC,ACCESSMODE, uint64_t(0));
+#define DefineUInt64WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::UInt64TypeClass, uint64_t> NAME(#NAME, "uint64_t", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareFloat(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::FloatTypeClass, float> NAME;
 #define DefineFloat(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::FloatTypeClass, float> NAME(#NAME, "float", FOURCC,ACCESSMODE, float(0.0f));

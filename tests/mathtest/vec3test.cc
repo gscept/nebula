@@ -216,28 +216,15 @@ print(v2);
     // normalize
     v0.set(2.5f, 0.0f, 0.0f);
     v1 = normalize(v0);
-    VERIFY(v1 == vec3(1.0f, 0.0f, 0.0f));
+    VERIFY(nearequal(v1, vec4(1.0f, 0.0f, 0.0f, 0.0f), E));
+    v1 = normalizeapprox(v0);
+    VERIFY(nearequal(v1, vec4(1.0f, 0.0f, 0.0f, 0.0f), E));
     v0.set(4.0f, 2.0f, 3.0f);
     v1 = normalize(v0);
     VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 0.371390671f), E));
-
-    // transform (point and vector)
-    /* turn back when we have mat3
-    mat4 m = translation(1.0f, 2.0f, 3.0f);
-    v0.set(1.0f, 0.0f, 0.0f, 1.0f);
-    v1 = matrix44::transform(v0, m);
-    VERIFY(v1 == float4(2.0f, 2.0f, 3.0f, 1.0f));
-    v0.set(1.0f, 0.0f, 0.0f, 0.0f);
-    v1 = matrix44::transform(v0, m);
-    VERIFY(v0 == float4(1.0f, 0.0f, 0.0f, 0.0f));
-    const matrix44 m0(float4(1.0f, 0.0f, 0.0f, 0.0f),
-                      float4(0.0f, 1.0f, 0.0f, 0.0f),
-                      float4(0.0f, 0.0f, 1.0f, 0.0f),
-                      float4(1.0f, 2.0f, 3.0f, 1.0f));
-    const float4 in(0.0f, 0.0f, 0.0f, 1.0f);
-    const float4 out = matrix44::transform(in, m0);
-    VERIFY(float4equal(out, float4(1.0f, 2.0f, 3.0f, 1.0f)));
-    */
+    v1 = normalizeapprox(v0);
+    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 0.371390671f), E));
+  
     // component-wise comparison
     const vec3 v0000(0.0f, 0.0f, 0.0f);
     const vec3 v0011(0.0f, 0.0f, 1.0f);

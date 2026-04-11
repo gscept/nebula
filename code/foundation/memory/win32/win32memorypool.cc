@@ -51,7 +51,6 @@ Win32MemoryPool::~Win32MemoryPool()
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: name must be a static string!
 */
 void
 Win32MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBlocks_)

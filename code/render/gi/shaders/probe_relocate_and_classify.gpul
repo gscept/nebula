@@ -1,0 +1,155 @@
+//------------------------------------------------------------------------------
+//  @file probe_relocate.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/ddgi.gpuh>
+
+group(SYSTEM_GROUP) uniform ProbeOffsetsOutput : *mutable rgba16f texture2D;
+group(SYSTEM_GROUP) uniform ProbeStateOutput : *mutable r8 texture2D;
+
+
+#include <probe_shared.gpuh>
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(8,4,1))
+entry_point
+ProbeRelocationAndClassify() void
+{
+    const texel = i32x2(computeGetGlobalThreadIndices().xy);
+    const probeIndex = DDGIProbeIndex(texel, VolumeConstants.ProbeGridDimensions);
+    
+    const numProbes = VolumeConstants.ProbeGridDimensions.x * VolumeConstants.ProbeGridDimensions.y * VolumeConstants.ProbeGridDimensions.z;
+    if (probeIndex >= numProbes) { return; }
+    
+    const probeRRIndex = (probeIndex < VolumeConstants.ProbeIndexStart) ? probeIndex + numProbes : probeIndex;
+    if (probeRRIndex >= VolumeConstants.ProbeIndexStart + VolumeConstants.ProbeIndexCount) { return; }
+        
+    var storageProbeIndex : i32;
+    if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+	{
+        storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
+	}
+    else
+	{
+        storageProbeIndex = probeIndex;
+	}
+    
+    const offsetTexelPosition = i32x2(DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions));
+    
+    var currentOffset = DDGIDecodeProbeOffsets(offsetTexelPosition, VolumeConstants.ProbeGridSpacing, VolumeConstants.ProbeOffsets);
+    
+    var closestBackfaceIndex = -1;
+    var closestFrontfaceIndex = -1;
+    var farthestFrontfaceIndex = -1;
+    var closestBackfaceDistance = 1e27f;
+    var closestFrontfaceDistance = 1e27f;
+    var farthestFrontfaceDistance = 0.0f;
+    var backfaceCount = 0.0f;
+    
+    const numRays = min(i32(VolumeConstants.RaysPerProbe), i32(DDGI_NUM_FIXED_RAYS));
+    
+    for (var rayIndex = 0; rayIndex < numRays; rayIndex++)
+    {
+        const rayTexCoord = i32x2(rayIndex, probeIndex);
+        
+        var hitDistance = fetch2D(VolumeConstants.ProbeRadiance, rayTexCoord, 0).w;
+
+        if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
+        {
+            if (hitDistance < 0.0f)
+            {
+                backfaceCount++;
+                hitDistance = hitDistance * -5.0f;
+                if (hitDistance < closestBackfaceDistance)
+                {
+                    closestBackfaceDistance = hitDistance;
+                    closestBackfaceIndex = rayIndex;
+                }
+            }
+            else
+            {
+                if (hitDistance < closestFrontfaceDistance)
+                {
+                    closestFrontfaceDistance = hitDistance;
+                    closestFrontfaceIndex = rayIndex;
+                }
+                else if (hitDistance > farthestFrontfaceDistance)
+                {
+                    farthestFrontfaceDistance = hitDistance;
+                    farthestFrontfaceIndex = rayIndex;
+                }
+            }
+        }
+        else
+        {
+            if (hitDistance < 0.0f)
+            {
+                backfaceCount++;
+                continue;
+            }
+            closestFrontfaceDistance = min(closestFrontfaceDistance, hitDistance);
+        }
+    }
+    
+    if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
+    {
+        var fulloffset = f32x3(1e27);
+        if (closestBackfaceIndex != -1 && (f32(backfaceCount) / numRays) > VolumeConstants.BackfaceThreshold)
+        {
+            var closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options));
+            fulloffset = currentOffset + closestBackfaceDirection * (VolumeConstants.ProbeDistanceScale + 1.0f);
+        }
+        else if (closestFrontfaceDistance < VolumeConstants.MinFrontfaceDistance)
+        {
+            var closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            var farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            
+            if (dot(closestFrontfaceDirection, farthestFrontfaceDirection) <= 0.f)
+            {
+                farthestFrontfaceDistance *= min(farthestFrontfaceDistance, 1.0f);
+                
+                fulloffset = currentOffset + farthestFrontfaceDirection * VolumeConstants.ProbeDistanceScale;
+            }
+        }
+        else if (closestFrontfaceDistance > VolumeConstants.MinFrontfaceDistance + VolumeConstants.ProbeDistanceScale)
+        {
+            const moveBackMargin = min(closestFrontfaceDistance - VolumeConstants.MinFrontfaceDistance, length(currentOffset));
+            const moveBackDirection = normalize(-currentOffset);
+            fulloffset = currentOffset + (moveBackMargin * moveBackDirection);
+        }
+        
+        const normalizedOffset = fulloffset / VolumeConstants.ProbeGridSpacing;
+        if (dot(normalizedOffset, normalizedOffset) < 0.2025f)
+        {
+            currentOffset = fulloffset;
+        }
+        
+        textureStore(ProbeOffsetsOutput, offsetTexelPosition, f32x4(currentOffset / VolumeConstants.ProbeGridSpacing, 0.0f));
+    }
+
+    if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0)
+    {
+        const geometryBounds = VolumeConstants.ProbeGridSpacing * 2;
+        if (all(f32x3(closestFrontfaceDistance) <= geometryBounds) && (f32(backfaceCount) / numRays) < VolumeConstants.BackfaceThreshold)
+        {
+            textureStore(ProbeStateOutput, offsetTexelPosition, f32x4(PROBE_STATE_ACTIVE));
+        }
+        else
+        {
+            textureStore(ProbeStateOutput, offsetTexelPosition, f32x4(PROBE_STATE_INACTIVE));
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeRelocateAndClassify")
+program ProbeRelocate
+{
+    ComputeShader = ProbeRelocationAndClassify;
+};

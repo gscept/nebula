@@ -21,23 +21,23 @@ public:
     /// default constructor
     DisplayMode();
     /// windowed mode constructor
-    DisplayMode(uint x, uint y, SizeT w, SizeT h);
+    DisplayMode(int x, int y, SizeT w, SizeT h);
     /// fullscreen constructor
     DisplayMode(SizeT w, SizeT h, PixelFormat::Code p);
     /// generic constructor
-    DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p);
+    DisplayMode(int x, int y, SizeT w, SizeT h, PixelFormat::Code p);
     /// equality operator
     bool operator==(const DisplayMode& rhs) const;
     /// inequality operator
     bool operator!=(const DisplayMode& rhs) const;
     /// set x position
-    void SetXPos(uint x);
+    void SetXPos(int x);
     /// get x position
-    uint GetXPos() const;
+    int GetXPos() const;
     /// set y position
-    void SetYPos(uint y);
+    void SetYPos(int y);
     /// get y position
-    uint GetYPos() const;
+    int GetYPos() const;
     /// set width
     void SetWidth(SizeT w);
     /// get width
@@ -67,8 +67,8 @@ public:
 
 private:
     
-    uint xPos;
-    uint yPos;
+    int xPos;
+    int yPos;
     SizeT width;
     SizeT height;
     uint refreshRate;
@@ -100,7 +100,7 @@ DisplayMode::DisplayMode() :
     This constructor is suitable for windowed modes.
 */
 inline
-DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h) :
+DisplayMode::DisplayMode(int x, int y, SizeT w, SizeT h) :
     xPos(x),
     yPos(y),
     width(w),
@@ -135,7 +135,7 @@ DisplayMode::DisplayMode(SizeT w, SizeT h, PixelFormat::Code p) :
 /**
 */
 inline
-DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p) :
+DisplayMode::DisplayMode(int x, int y, SizeT w, SizeT h, PixelFormat::Code p) :
     xPos(x),
     yPos(y),
     width(w),
@@ -177,7 +177,7 @@ DisplayMode::operator!=(const DisplayMode& rhs) const
 /**
 */
 inline void
-DisplayMode::SetXPos(uint x)
+DisplayMode::SetXPos(int x)
 {
     this->xPos = x;
 }
@@ -185,7 +185,7 @@ DisplayMode::SetXPos(uint x)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint
+inline int
 DisplayMode::GetXPos() const
 {
     return this->xPos;
@@ -195,7 +195,7 @@ DisplayMode::GetXPos() const
 /**
 */
 inline void
-DisplayMode::SetYPos(uint y)
+DisplayMode::SetYPos(int y)
 {
     this->yPos = y;
 }
@@ -203,7 +203,7 @@ DisplayMode::SetYPos(uint y)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint
+inline int
 DisplayMode::GetYPos() const
 {
     return this->yPos;

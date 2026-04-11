@@ -114,7 +114,7 @@ public:
     /// Setup indexed primitives draw
     void SetupIndexPrimitives(
         const Util::Array<RenderShape::RenderShapeVertex> vertices
-        , const Util::Array<uint16> indices
+        , const Util::Array<uint16_t> indices
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
@@ -124,7 +124,7 @@ public:
     /// Setup indexed primitives draw
     void SetupIndexPrimitives(
         const Util::Array<RenderShape::RenderShapeVertex> vertices
-        , const Util::Array<uint32> indices
+        , const Util::Array<uint32_t> indices
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity

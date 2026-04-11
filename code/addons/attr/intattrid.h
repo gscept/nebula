@@ -93,5 +93,84 @@ IntAttrId::operator!=(const IntAttrId& rhs) const
     return (this->defPtr != rhs.defPtr);
 }
 
+class Int64AttrId : public AttrId
+{
+public:
+    /// construct from generic attribute id
+    Int64AttrId(const AttrId& rhs);
+    /// construct from attribute definition
+    Int64AttrId(const AttributeDefinition<Int64TypeClass,int64_t>& rhs);
+    /// construct from name
+    Int64AttrId(const Util::String& rhs);
+    /// construct from fourcc code
+    Int64AttrId(const Util::FourCC& rhs);
+    /// equality operator
+    bool operator==(const Int64AttrId& rhs) const;
+    /// inequality operator
+    bool operator!=(const Int64AttrId& rhs) const;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Int64AttrId::Int64AttrId(const AttrId& rhs) :
+    AttrId(rhs)
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Int64AttrId::Int64AttrId(const AttributeDefinition<Int64TypeClass,int64_t>& rhs) :
+    AttrId(&rhs)
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Int64AttrId::Int64AttrId(const Util::String& rhs)
+{
+    this->defPtr = AttributeDefinitionBase::FindByName(rhs);
+    n_assert(this->GetValueType() == Int64Type);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Int64AttrId::Int64AttrId(const Util::FourCC& rhs)
+{
+    this->defPtr = AttributeDefinitionBase::FindByFourCC(rhs);
+    n_assert(this->GetValueType() == Int64Type);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+bool
+Int64AttrId::operator==(const Int64AttrId& rhs) const
+{
+    n_assert((0 != this->defPtr) && (0 != rhs.defPtr));
+    return (this->defPtr == rhs.defPtr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+bool
+Int64AttrId::operator!=(const Int64AttrId& rhs) const
+{
+    n_assert((0 != this->defPtr) && (0 != rhs.defPtr));
+    return (this->defPtr != rhs.defPtr);
+}
+
 } // namespace Attr
 //------------------------------------------------------------------------------

@@ -1,16 +1,14 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // vkshaderserver.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include "vkshaderserver.h"
-#include "effectfactory.h"
 #include "vkgraphicsdevice.h"
 #include "vktexture.h"
 
 #include "graphics/bindlessregistry.h"
 
-#include "system_shaders/shared.h"
 
 using namespace Resources;
 using namespace CoreGraphics;
@@ -43,8 +41,6 @@ VkShaderServer::Open()
 {
     n_assert(!this->IsOpen());
 
-    // create anyfx factory
-    this->factory = new(AnyFX::EffectFactory);
     ShaderServerBase::Open();
 
     this->pendingViews.SetSignalOnEnqueueEnabled(false);
@@ -58,7 +54,6 @@ void
 VkShaderServer::Close()
 {
     n_assert(this->IsOpen());
-    delete this->factory;
 
     // We need to wait for the GPU to finish here since we are
     // actually unloading shaders and resource table pools after this point

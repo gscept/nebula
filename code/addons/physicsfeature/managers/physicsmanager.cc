@@ -5,17 +5,16 @@
 #include "application/stdneb.h"
 #include "physicsmanager.h"
 #include "game/gameserver.h"
+#include "physics/charactercontext.h"
 #include "physicsinterface.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
 #include "components/physicsfeature.h"
-#include "graphicsfeature/graphicsfeatureunit.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
-#include "graphicsfeature/components/model.h"
 
 namespace PhysicsFeature
 {
@@ -45,17 +44,10 @@ PhysicsManager::~PhysicsManager()
 void
 PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor* actor)
 {
-    auto res = actor->resource;
-    if (res == "mdl:")
+    if (actor->actorId != 0xFFFFFFFF)
     {
-        n_assert(world->HasComponent<GraphicsFeature::Model>(entity));
-        Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(entity).resource.Value();
-        Util::String fileName = modelRes.ExtractFileName();
-        fileName.StripFileExtension();
-        res = Util::String::Sprintf(
-            "phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr()
-        );
-        actor->resource = res;
+        // Assumes the actor has been setup externally, just skip it.
+        return;
     }
 
     Math::transform worldTransform = Math::transform(
@@ -64,7 +56,7 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
         world->GetComponent<Game::Scale>(entity)
     );
 
-    Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
+    Resources::ResourceId resId = Resources::CreateResource(actor->resource, "PHYS", nullptr, nullptr, true);
     Physics::ActorId actorid =
         Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id64(entity));
     actor->actorId = actorid.id;
@@ -172,6 +164,7 @@ PhysicsManager::OnCleanup(Game::World* world)
 {
     n_assert(PhysicsManager::HasInstance());
 
+    // TODO: cleanup should just call decay on everything...
     Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetComponentId<PhysicsActor>();
     filterInfo.access[0] = Game::AccessMode::WRITE;

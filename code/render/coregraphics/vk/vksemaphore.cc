@@ -24,7 +24,18 @@ SemaphoreGetVk(const CoreGraphics::SemaphoreId& id)
     if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
     else                                            return semaphoreAllocator.Get<Semaphore_VkHandle>(id.id);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkDevice
+SemaphoreGetVkDevice(const CoreGraphics::SemaphoreId& id)
+{
+    if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
+    else                                            return semaphoreAllocator.Get<Semaphore_Device>(id.id);
 }
+
+} // namespace Vulkan
 
 namespace CoreGraphics
 {
@@ -91,7 +102,7 @@ DestroySemaphore(const SemaphoreId& semaphore)
 //------------------------------------------------------------------------------
 /**
 */
-uint64 
+uint64_t 
 SemaphoreGetValue(const SemaphoreId& semaphore)
 {
     return semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id);

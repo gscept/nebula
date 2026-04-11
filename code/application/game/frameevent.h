@@ -37,9 +37,12 @@ public:
     ~FrameEvent();
 
     class Batch;
-
+    /// Runs the frame event.
     void Run(World* world);
+    /// Adds a processor to the frame event.
     void AddProcessor(Processor* processor);
+    /// Removes a processor for the frame event. Does not free the memory, you need to handle this yourself.
+    void RemoveProcessor(Processor* processor);
 
     /// prefilter all processors. Should not be done per frame - instead use CacheTable if you need to do incremental caching
     void Prefilter(World* world, bool force = false);

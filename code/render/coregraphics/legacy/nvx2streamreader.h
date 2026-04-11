@@ -67,9 +67,9 @@ public:
     /// get number of edges
     SizeT GetNumEdges() const;
     /// Get vertex base offset
-    SizeT GetBaseVertexOffset() const;
+    size_t GetBaseVertexOffset() const;
     /// Get index base offset
-    SizeT GetBaseIndexOffset() const;
+    size_t GetBaseIndexOffset() const;
     /// get vertex components
     const Util::Array<CoreGraphics::VertexComponent>& GetVertexComponents() const;
 
@@ -252,7 +252,7 @@ Nvx2StreamReader::GetNumEdges() const
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT 
+inline size_t
 Nvx2StreamReader::GetBaseVertexOffset() const
 {
     return this->vertexAllocation.offset;
@@ -261,7 +261,7 @@ Nvx2StreamReader::GetBaseVertexOffset() const
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT 
+inline size_t
 Nvx2StreamReader::GetBaseIndexOffset() const
 {
     return this->indexAllocation.offset;

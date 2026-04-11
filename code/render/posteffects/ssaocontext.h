@@ -29,10 +29,10 @@ public:
     static void Setup();
 
     /// update view resources
-    static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    static void UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 
     /// Update when window resized
-    static void WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height);
+    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 private:
 
     /// implement an empty alloc

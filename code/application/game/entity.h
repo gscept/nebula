@@ -70,7 +70,7 @@ struct Entity::Traits
         "id"
     };
     static constexpr const char* field_typenames[num_fields] = {
-        "uint64"
+        "uint64_t"
     };
     static constexpr size_t field_byte_offsets[num_fields] = { 0 };
 

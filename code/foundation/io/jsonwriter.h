@@ -15,6 +15,7 @@
 #include "util/stringatom.h"
 #include "util/variant.h"
 #include "util/blob.h"
+#include "util/bitfield.h"
 
 namespace pjson
 {
@@ -108,7 +109,10 @@ template<> void JsonWriter::Add(const char& value, const Util::String& name);
 template<> void JsonWriter::Add(const uchar& value, const Util::String& name);
 template<> void JsonWriter::Add(const int& value, const Util::String& name);
 template<> void JsonWriter::Add(const unsigned int& value, const Util::String& name);
+template<> void JsonWriter::Add(const int16_t& value, const Util::String& name);
+template<> void JsonWriter::Add(const uint16_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const float& value, const Util::String& name);
+template<> void JsonWriter::Add(const double& value, const Util::String& name);
 template<> void JsonWriter::Add(const Math::vec3& value, const Util::String& name);
 template<> void JsonWriter::Add(const Math::vec4& value, const Util::String& name);
 template<> void JsonWriter::Add(const Math::vec2& value, const Util::String& name);

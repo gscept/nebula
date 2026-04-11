@@ -22,7 +22,7 @@ PosixCalendarTime::FromPosixSystemTime(const timeval & t)
     CalendarTime calTime;
     struct tm st;
     gmtime_r(&(t.tv_sec), &st);
-    calTime.year    = st.tm_year;
+    calTime.year    = st.tm_year + 1900;
     calTime.month   = (Month)(st.tm_mon + 1);
     calTime.weekday = (Weekday)st.tm_wday;;
     calTime.day     = st.tm_mday;

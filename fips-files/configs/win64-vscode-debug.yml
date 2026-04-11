@@ -7,7 +7,7 @@ defines:
     N_USE_VULKAN: ON
     __X64__: ON
     N_DEBUG_SYMBOLS: ON
-    PX_TARGET: win.x86_64.vc143.mt
+    PX_TARGET: win.x86_64.vc143.md
 vscode_exclude_from_workspace: 
     [
         #nebula-toolkit,
@@ -23,15 +23,12 @@ vscode_exclude_from_workspace:
         fips-stb,
         fips-pybind11,
         fips-imgui,
-        fips-cjson,
         fips-stackwalker,
         fips-devil,
         fips-lua,
         fips-libpng,
         fips-libjpeg,
-        fips-anyfx,
         fips-vulkanheaders,
-        fips-glew,
         fips-glslang,
         fips-glfw
     ]

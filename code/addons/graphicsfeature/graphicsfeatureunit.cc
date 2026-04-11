@@ -41,6 +41,7 @@
 #include "components/decal.h"
 #include "components/lighting.h"
 #include "components/model.h"
+#include "components/terrain.h"
 
 #include "scripting/deargui.h"
 
@@ -93,6 +94,7 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<DDGIVolume>({.decay = true, .OnInit = &GraphicsManager::InitDDGIVolume});
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
+    this->RegisterComponentType<Terrain>({ .decay = true, .OnInit = &GraphicsManager::InitTerrain });
     this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();
 }
@@ -131,15 +133,18 @@ GraphicsFeatureUnit::OnActivate()
     {
         CoreGraphics::DisplayMode {100, 100, width, height},
         this->title,
-        "",
+        "icon.png",
         CoreGraphics::AntiAliasQuality::None,
+        nullptr,
         true,
         true,
-        false
+        false,
+        true
     };
-    this->wnd = CreateWindow(wndInfo);
+    this->mainWindow = CreateMainWindow(wndInfo);
+    Graphics::GraphicsServer::Instance()->AddWindow(this->mainWindow);
 
-    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->mainWindow);
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
@@ -149,9 +154,11 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
     }
 #endif
-    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
-    this->defaultStage = gfxServer->CreateStage("defaultStage", true);
-    this->defaultView->SetStage(this->defaultStage);
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), 1u, [](IndexT frameIndex, IndexT bufferIndex) {
+        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+    });
     this->globalLight = Graphics::CreateEntity();
 
     Im3d::Im3dContext::Create();
@@ -172,85 +179,14 @@ GraphicsFeatureUnit::OnActivate()
         .maxNumAllowedInstances = 0xFFFF,
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
-    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
-
-    if (terrainSettings && terrainSettings->config && terrainSettings->config->use)
-    {
-        Terrain::TerrainSetupSettings settings {
-            terrainSettings->config->min_height,
-            terrainSettings->config->max_height, // Min/max height
-            terrainSettings->config->world_size_width,
-            terrainSettings->config->world_size_height, // World size in meters
-            terrainSettings->config->tile_size_width,
-            terrainSettings->config->tile_size_height, // Tile size in meters
-            terrainSettings->config->quads_per_tile_width,
-            terrainSettings->config->quads_per_tile_height, // Amount of quads per tile
-        };
-        Terrain::TerrainContext::Create(settings);
-        Terrain::TerrainContext::SetSun(this->globalLight);
-
-        this->terrain.entity = Graphics::CreateEntity();
-        Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
-        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings->instance->height, terrainSettings->instance->decision, terrainSettings->config->raytracing);
-
-        for (IndexT i = 0; i < terrainSettings->biomes.size(); i++)
-        {
-            const std::unique_ptr<App::TerrainBiomeSettingsT>& settings = terrainSettings->biomes[i];
-
-            Terrain::BiomeParameters biomeParams =
-            {
-                .slopeThreshold = settings->parameters->slope_threshold,
-                .heightThreshold = settings->parameters->height_threshold,
-                .uvScaleFactor = settings->parameters->uv_scale_factor
-            };
-            Terrain::BiomeSettings biomeSettings = Terrain::BiomeSettingsBuilder()
-                .Parameters(biomeParams)
-                .FlatMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->flat_material->albedo)
-                    .Normal(settings->flat_material->normal)
-                    .Material(settings->flat_material->material)
-                    .Finish()
-                )
-                .SlopeMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->slope_material->albedo)
-                    .Normal(settings->slope_material->normal)
-                    .Material(settings->slope_material->material)
-                    .Finish()
-                )
-                .HeightMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->height_material->albedo)
-                    .Normal(settings->height_material->normal)
-                    .Material(settings->height_material->material)
-                    .Finish()
-                )
-                .HeightSlopeMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->height_slope_material->albedo)
-                    .Normal(settings->height_slope_material->normal)
-                    .Material(settings->height_slope_material->material)
-                    .Finish()
-                )
-                .Mask(settings->mask)
-                .Finish();
-
-            Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(biomeSettings);
-            this->terrain.biomes.Append(biome);
-        }
-
-        if (vegetationSettings && vegetationSettings->use)
-        {
-            Vegetation::VegetationSetupSettings vegSettings {
-                terrainSettings->config->min_height,
-                terrainSettings->config->max_height, // min/max height
-                Math::vec2 {terrainSettings->config->world_size_width, terrainSettings->config->world_size_height}};
-            Vegetation::VegetationContext::Create(vegSettings);
-        }
-    }
+    Clustering::ClusterContext::Create(0.01f, 1000.0f, this->mainWindow);
 
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Fog::VolumetricFogContext::Create();
     GI::DDGIContext::Create();
+    ::Terrain::TerrainContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
@@ -263,26 +199,23 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::DownsamplingContext::Setup();
 
     Graphics::SetupBufferConstants();
-    this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
-        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
-        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
-    });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
-        FrameScript_default::Initialize(windowWidth, windowHeight);
-        FrameScript_default::SetupPipelines();
-#if WITH_NEBULA_EDITOR
-        if (App::GameApplication::IsEditorEnabled())
-        {
-            FrameScript_editorframe::Initialize(windowWidth, windowHeight);
-            FrameScript_editorframe::SetupPipelines();
-        }
-#endif
+        Graphics::SetupBufferConstants();
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
+    Lighting::LightContext::SetupDirectionalLight(
+        this->globalLight,
+        {
+            .view = this->defaultView,
+            .color = Math::vec3(1),
+            .intensity = 50.000f,
+            .zenith = (float)70.0_rad,
+            .azimuth = (float)0_rad,
+            .stageMask = Graphics::PRIMARY_STAGE_MASK,
+            .castShadows = true
+        }
+    );
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -302,32 +235,35 @@ GraphicsFeatureUnit::OnActivate()
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
         Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
+        Decals::DecalContext::UpdateDecals,
+        Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
+        Raytracing::RaytracingContext::UpdateResources,
+        ::Terrain::TerrainContext::RenderUI,
+        ObserverContext::RunVisibilityTests,
+        ObserverContext::GenerateDrawLists,
     };
 
     Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
     {
-        Lighting::LightContext::OnPrepareView,
         Particles::ParticleContext::OnPrepareView,
         Im3d::Im3dContext::OnPrepareView,
         PostEffects::SSAOContext::UpdateViewDependentResources,
         PostEffects::HistogramContext::UpdateViewResources,
-        Decals::DecalContext::UpdateViewDependentResources,
-        Fog::VolumetricFogContext::UpdateViewDependentResources,
-        Lighting::LightContext::UpdateViewDependentResources,
-        Raytracing::RaytracingContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
+        Lighting::LightContext::OnPrepareView,
+        ::Terrain::TerrainContext::CullPatches
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =
     {
+        Dynui::ImguiContext::EndFrame,
         Clustering::ClusterContext::UpdateResources,
-        ObserverContext::RunVisibilityTests,
-        ObserverContext::GenerateDrawLists,
         Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
         ModelContext::WaitForWork,
+        Lighting::LightContext::UpdateLights,
         Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
         Particles::ParticleContext::WaitForParticleUpdates,
@@ -336,19 +272,8 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
+        ::Terrain::TerrainContext::UpdateLOD
     };
-
-    if (terrainSettings->config && terrainSettings->config->use)
-    {
-        preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
-        preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
-        postLogicViewCalls.Append(Terrain::TerrainContext::UpdateLOD);
-
-        if (vegetationSettings->use)
-        {
-            postLogicViewCalls.Append(Vegetation::VegetationContext::UpdateViewResources);
-        }
-    }
 
     this->gfxServer->SetupPreLogicCalls(preLogicCalls);
     this->gfxServer->SetupPreLogicViewCalls(preLogicViewCalls);
@@ -390,8 +315,7 @@ GraphicsFeatureUnit::OnDeactivate()
     TBUI::TBUIContext::Discard();
 #endif
     FeatureUnit::OnDeactivate();
-    DestroyWindow(this->wnd);
-    this->gfxServer->DiscardStage(this->defaultStage);
+    CoreGraphics::DestroyWindow(this->mainWindow);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();
@@ -410,11 +334,22 @@ GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
 
+    // Do potential new-frame stuff for window, such as resize
+    N_MARKER_BEGIN(ResizeWindows, App)
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowNewFrame(window);
+    N_MARKER_END()
+
     this->inputServer->BeginFrame();
 
+    N_MARKER_BEGIN(PollWindows, CoreGraphics)
     CoreGraphics::WindowPollEvents();
-    CoreGraphics::WindowMakeCurrent(this->wnd);
+    N_MARKER_END()
+
+    N_MARKER_BEGIN(Input, Input)
     this->inputServer->OnFrame();
+    N_MARKER_END()
 
     this->gfxServer->RunPreLogic();
 
@@ -460,15 +395,16 @@ GraphicsFeatureUnit::OnEndFrame()
     // Finish up the frame and present the current framebuffer
     this->gfxServer->EndFrame();
     N_MARKER_BEGIN(Present, App);
-    CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
+    const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
+    for (const auto& window : windows)
+        CoreGraphics::WindowPresent(window, App::GameApplication::FrameIndex);
+    
     N_MARKER_END();
 
     // Trigger a new frame
     this->gfxServer->NewFrame();
     this->inputServer->EndFrame();
 
-    // Do potential new-frame stuff for window, such as resize
-    CoreGraphics::WindowNewFrame(this->wnd);
 }
 
 //------------------------------------------------------------------------------

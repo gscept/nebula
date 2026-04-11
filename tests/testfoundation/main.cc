@@ -12,6 +12,7 @@
 #include "arraytest.h"
 #include "arrayallocatortest.h"
 #include "stacktest.h"
+#include "arraystacktest.h"
 #include "listtest.h"
 #include "dictionarytest.h"
 #include "fixedarraytest.h"
@@ -24,6 +25,7 @@
 #include "fileservertest.h"
 #include "filewatchertest.h"
 #include "uritest.h"
+#include "urntest.h"
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
 #include "pinnedarraytest.h"
@@ -89,7 +91,7 @@ __cdecl main()
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
     // FIXME 
-    // testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
+    testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
     testRunner->AttachTestCase(MemoryPoolTest::Create());
     testRunner->AttachTestCase(Matrix44Test::Create());
     testRunner->AttachTestCase(Float4Test::Create());
@@ -100,10 +102,12 @@ __cdecl main()
     testRunner->AttachTestCase(CmdLineArgsTest::Create());
     testRunner->AttachTestCase(MediaTypeTest::Create());
     testRunner->AttachTestCase(URITest::Create());
+    testRunner->AttachTestCase(URNTest::Create());
     testRunner->AttachTestCase(StringTest::Create());   
     testRunner->AttachTestCase(ArrayTest::Create());
     testRunner->AttachTestCase(PinnedArrayTest::Create());
     testRunner->AttachTestCase(StackArrayTest::Create());
+    testRunner->AttachTestCase(ArrayStackTest::Create());
     testRunner->AttachTestCase(StackTest::Create());
     testRunner->AttachTestCase(ListTest::Create());
     testRunner->AttachTestCase(DictionaryTest::Create());

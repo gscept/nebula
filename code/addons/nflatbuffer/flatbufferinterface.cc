@@ -12,6 +12,8 @@
 #include "util/stringatom.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/idl.h"
+#include "idl_gen_binary.h"
+#include "flatbuffers/code_generator.h"
 
 using namespace Flat;
 
@@ -290,7 +292,11 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
             target += "/";
             if (IO::IoServer::Instance()->CreateDirectory(target))
             {
-                result = flatbuffers::GenerateBinary(*parser, target.AsCharPtr(), filename.AsCharPtr());
+                std::unique_ptr<flatbuffers::RealFileSaver> file_saver(new flatbuffers::RealFileSaver());
+                parser->opts.file_saver = file_saver.get();
+                std::unique_ptr<flatbuffers::CodeGenerator> generator = flatbuffers::NewBinaryCodeGenerator();
+                result = generator->GenerateCode(*parser, target.AsCharPtr(), filename.AsCharPtr());
+                parser->opts.file_saver = nullptr;
             }
         }
     }

@@ -9,6 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "dynui/imguicontext.h"
 #include "editor/tools/camera.h"
 
 namespace Graphics{ class Stage; class View; }
@@ -34,11 +35,11 @@ public:
     Viewport();
     ~Viewport();
     
-    void Init(Util::String const& viewName);
-    void Init(Ptr<Graphics::View> const& view);
+    void Init(Util::String const& viewName, const Graphics::StageMask mask = Graphics::PRIMARY_STAGE_MASK);
+    void Init(const Graphics::ViewId view);
 
     void Render();
-    void SetStage(Ptr<Graphics::Stage> const& stage);
+    void SetStage(const uint16_t stage);
     void SetFrameBuffer(Util::String const& name);
 
     void Update();
@@ -48,9 +49,11 @@ public:
         return this->focused;
     }
 
-    const Ptr<Graphics::View> GetView() const;
+    const Graphics::ViewId GetView() const;
 
     Editor::Camera camera;
+    Math::vec2 lastViewportImagePositionAbsolute;
+    Math::vec2 lastViewportImageSizeAbsolute;
     /// the latest actual position of the viewport. This is in normalized space (0...1)
     Math::vec2 lastViewportImagePosition;
     /// the latest actual size of the viewport. This is in normalized space (0...1)
@@ -59,9 +62,11 @@ public:
 private:
     RenderMode renderMode = TexturedLit;
 
-    Ptr<Graphics::Stage> stage;
-    Ptr<Graphics::View> view;
+    Graphics::ViewId view;
+    Graphics::GraphicsEntityId directionalLight;
 
+    CoreGraphics::TextureId targetTexture;
+    Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
 
     bool focused = false;

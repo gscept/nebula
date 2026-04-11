@@ -44,6 +44,9 @@ public:
     URI ConvertToArchiveURI(const URI& fileURI) const;
     /// convert an absolute path to local path inside archive, returns empty string if absPath doesn't point into this archive
     Util::String ConvertToPathInArchive(const Util::String& absPath) const;
+    ///
+    bool GetIOInfo(const IO::URI& path, IO::IOStat& outInfo);
+
 
 private:
     friend class ZipFileSystem;

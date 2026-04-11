@@ -88,9 +88,9 @@ public:
     VisibilitySystem();
 
     /// setup observers
-    virtual void PrepareObservers(const Math::mat4* transforms, bool* orthoFlags, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
+    virtual void PrepareObservers(const Math::mat4* transforms, const bool* orthoFlags, const Graphics::StageMask* stages, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
     /// prepare system with entities to insert into the structure
-    virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
+    virtual void PrepareEntities(const Math::bbox* transforms, const uint32_t* ranges, const Graphics::StageMask* stages, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
     virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters);
 
@@ -108,6 +108,7 @@ protected:
     {
         const Math::mat4* transforms;
         const bool* isOrtho;
+        const Graphics::StageMask* stages;
         Util::Array<Math::ClipStatus::Type>* results;
         SizeT count;
         Util::Array<Threading::AtomicCounter> completionCounters;
@@ -117,8 +118,9 @@ protected:
     {
         const Math::bbox* boxes;
         const Graphics::GraphicsEntityId* entities;
-        const uint32* ids;
+        const uint32_t* ids;
         const uint32_t* entityFlags;
+        const Graphics::StageMask* stages;
         SizeT count;
     } ent;
 };

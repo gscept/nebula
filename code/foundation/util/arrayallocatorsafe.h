@@ -165,14 +165,14 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>&& rhs)
 {
-    this->allocationLock.Lock();
-    rhs.allocationLock.Lock();
+    bool locked = this->allocationLock.Lock();
+    bool rhsLocked = rhs.allocationLock.Lock();
     this->objects = rhs.objects;
     this->size = rhs.size;
     rhs.Clear();
 
-    this->allocationLock.Unlock();
-    rhs.allocationLock.Unlock();
+    if (locked) this->allocationLock.Unlock();
+    if (rhsLocked) rhs.allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------
@@ -182,10 +182,10 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::ArrayAllocatorSafe(const ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>& rhs)
 {
-    this->allocationLock.Lock();
+    bool locked = this->allocationLock.Lock();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->allocationLock.Unlock();
+    if (locked) this->allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------
@@ -205,10 +205,10 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline void 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::operator=(const ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>& rhs)
 {
-    this->allocationLock.Lock();
+    bool locked = this->allocationLock.Lock();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->allocationLock.Unlock();
+    if (locked) this->allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------
@@ -218,14 +218,14 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::operator=(ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>&& rhs)
 {
-    this->allocationLock.Lock();
-    rhs.allocationLock.Lock();
+    bool locked = this->allocationLock.Lock();
+    bool rhsLocked = rhs.allocationLock.Lock();
     this->objects = rhs.objects;
     this->size = rhs.size;
     rhs.Clear();
 
-    this->allocationLock.Unlock();
-    rhs.allocationLock.Unlock();
+    if (locked) this->allocationLock.Unlock();
+    if (rhsLocked) rhs.allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------
@@ -236,11 +236,11 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline uint32_t
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Alloc()
 {
-    this->allocationLock.Lock();
+    bool locked = this->allocationLock.Lock();
     alloc_for_each_in_tuple(this->objects);
     auto i = this->size++;
     this->owners.Append(Threading::Thread::GetMyThreadId());
-    this->allocationLock.Unlock();
+    if (locked) this->allocationLock.Unlock();
     return i;
 }
 
@@ -279,7 +279,6 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline const uint32_t
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Size() const
 {
-    n_assert2(this->numReaders > 0, "Size requires a read lock");
     return this->size;
 }
 
@@ -303,10 +302,10 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Clear()
 {
-    this->allocationLock.Enter();
+    this->allocationLock.Lock();
     clear_for_each_in_tuple(this->objects);
     this->size = 0;
-    this->allocationLock.Leave();
+    this->allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------

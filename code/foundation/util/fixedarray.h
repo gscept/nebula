@@ -67,6 +67,8 @@ public:
     bool IsEmpty() const;
     /// clear the array, free elements
     void Clear();
+    /// Reset the size and destroy all elements
+    void Reset();
     /// fill the entire array with a value
     void Fill(const TYPE& val);
     /// fill array range with element
@@ -75,6 +77,10 @@ public:
     Iterator Begin() const;
     /// get iterator past last element
     Iterator End() const;
+    /// return reference to first element
+    TYPE& Front() const;
+    /// return reference to last element
+    TYPE& Back() const;
     /// find identical element in unsorted array (slow)
     Iterator Find(const TYPE& val) const;
     /// find index of identical element in unsorted array (slow)
@@ -564,6 +570,29 @@ FixedArray<TYPE, StackAlloc>::Clear()
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE, bool StackAlloc>
+inline void FixedArray<TYPE, StackAlloc>::Reset()
+{
+    if (this->count > 0)
+    {
+        if (std::is_trivially_destructible<TYPE>::value)
+        {
+            memset(this->elements, 0, this->count * sizeof(TYPE));
+        }
+        else
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i].~TYPE();
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE, bool StackAlloc> void
 FixedArray<TYPE, StackAlloc>::Fill(const TYPE& val)
 {
@@ -607,6 +636,24 @@ template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Ite
 FixedArray<TYPE, StackAlloc>::End() const
 {
     return this->elements + this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+inline TYPE& FixedArray<TYPE, StackAlloc>::Front() const
+{
+    return this->elements[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+inline TYPE& FixedArray<TYPE, StackAlloc>::Back() const
+{
+    return this->elements[this->count - 1];
 }
 
 //------------------------------------------------------------------------------
@@ -746,11 +793,7 @@ FixedArray<TYPE, StackAlloc>::end() const
 template<class TYPE, bool StackAlloc> void
 FixedArray<TYPE, StackAlloc>::resize(size_t s)
 {
-    if (s > this->capacity)
-    {
-        this->GrowTo(s);
-    }
-    this->count = s;
+    n_error("Trying to resize a fixed array");
 }
 
 //------------------------------------------------------------------------------

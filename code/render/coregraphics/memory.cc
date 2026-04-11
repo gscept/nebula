@@ -85,6 +85,8 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
         this->blockPool.Dealloc(alloc.blockIndex);
         this->blocks[alloc.blockIndex] = DeviceMemory(0);
         this->blockMappedPointers[alloc.blockIndex] = nullptr;
+        this->heap->space += this->blockSize;
+        this->size -= this->blockSize;  
     }
 
     return true;
@@ -98,7 +100,11 @@ MemoryPool::Clear()
 {
     for (IndexT i = 0; i < this->blocks.Size(); i++)
         if (this->blocks[i] != DeviceMemory(0))
+        {
             this->DestroyBlock(this->blocks[i]);
+            this->heap->space += this->blockSize;
+            this->size -= this->blockSize;
+        }
 
     this->blocks.Clear();
     this->allocators.Clear();

@@ -13,6 +13,7 @@
 #include "math/point.h"
 #include "math/vector.h"
 #include "math/line.h"
+#include "math/mat4.h"
 #include "scalar.h"
 #include "clipstatus.h"
 
@@ -46,6 +47,11 @@ struct plane
         struct
         {
             float a, b, c, d;
+        };
+        struct
+        {
+            Math::float3 normal;
+            float distance;
         };
     };
 };

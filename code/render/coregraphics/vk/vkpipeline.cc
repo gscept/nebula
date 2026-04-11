@@ -9,9 +9,30 @@
 #include "vkpipeline.h"
 #include "vktypes.h"
 #include "vkgraphicsdevice.h"
+#include "vkpass.h"
 namespace Vulkan
 {
+
 Ids::IdAllocator<Pipeline> pipelineAllocator;
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkDevice
+PipelineGetVkDevice(const CoreGraphics::PipelineId id)
+{
+    return pipelineAllocator.Get<0>(id.id).dev;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPipeline
+PipelineGetVkPipeline(const CoreGraphics::PipelineId id)
+{
+    return pipelineAllocator.Get<0>(id.id).pipeline;
+}
 };
 
 namespace CoreGraphics
@@ -24,11 +45,11 @@ using namespace Vulkan;
 PipelineId
 CreateGraphicsPipeline(const PipelineCreateInfo& info)
 {
-    Ids::Id32 ret = pipelineAllocator.Alloc();
-    Pipeline& obj = pipelineAllocator.Get<0>(ret);
-
     VkGraphicsPipelineCreateInfo shaderInfo;
     VkShaderProgramRuntimeInfo& programInfo = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
+    const VkPipelineRenderingCreateInfo* renderPassInfo = nullptr;
+    VkPipelineViewportStateCreateInfo viewportInfo;
+
 
     // Setup blend info
     VkPipelineColorBlendStateCreateInfo blendInfo;
@@ -53,6 +74,23 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     multisampleInfo.sampleShadingEnable = programInfo.multisampleInfo.sampleShadingEnable;
     multisampleInfo.pSampleMask = programInfo.multisampleInfo.pSampleMask;
 
+    VkPipelineVertexInputStateCreateInfo dummyVertexInput{};
+    dummyVertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    dummyVertexInput.pNext = nullptr;
+    dummyVertexInput.flags = 0x0;
+
+    VkPipelineInputAssemblyStateCreateInfo inputInfo{};
+    inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputInfo.pNext = nullptr;
+    inputInfo.flags = 0x0;
+    inputInfo.topology = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
+    inputInfo.primitiveRestartEnable = info.inputAssembly.primRestart;
+
+    InputAssemblyKey translatedKey;
+    translatedKey.topo = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
+    translatedKey.primRestart = info.inputAssembly.primRestart;
+
+
     shaderInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     shaderInfo.pNext = nullptr;
     shaderInfo.flags = 0x0;
@@ -67,17 +105,79 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     shaderInfo.layout = programInfo.layout;
     shaderInfo.stageCount = programInfo.stageCount;
     shaderInfo.pStages = programInfo.graphicsShaderInfos;
+    shaderInfo.pVertexInputState = &dummyVertexInput;
+    shaderInfo.pInputAssemblyState = &inputInfo;
+    shaderInfo.renderPass = VK_NULL_HANDLE;
+    shaderInfo.subpass = 0;
 
-    // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics
-    InputAssemblyKey translatedKey;
-    translatedKey.topo = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
-    translatedKey.primRestart = info.inputAssembly.primRestart;
-    VkPipeline pipeline = Vulkan::GetOrCreatePipeline(info.pass, info.subpass, info.shader, translatedKey, shaderInfo);
+    if (info.renderPass != CoreGraphics::InvalidRenderPassId)
+    {
+        const VkPipelineRenderingCreateInfo* renderPassInfo = &RenderPassGetVkPipelineInfo(info.renderPass);
+        const VkRenderingInfo& renderingInfo = RenderPassGetVk(info.renderPass);
+        shaderInfo.pNext = renderPassInfo;
+        blendInfo.attachmentCount = renderPassInfo->colorAttachmentCount;
+        multisampleInfo.rasterizationSamples = VkTypes::AsVkSampleFlags(RenderPassGetNumSamples(info.renderPass));
 
-    obj.pipeline = pipeline;
-    obj.layout = programInfo.layout;
-    obj.pass = info.pass;
-    return PipelineId{ ret };
+        viewportInfo =
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            (uint32_t)renderingInfo.colorAttachmentCount + (renderingInfo.pDepthAttachment != nullptr ? 1u : 0u),
+            nullptr,
+            (uint32_t)renderingInfo.colorAttachmentCount + (renderingInfo.pDepthAttachment != nullptr ? 1u : 0u),
+            nullptr
+        };
+        shaderInfo.pViewportState = &viewportInfo;
+    }
+    else
+    {
+        VkRenderPassBeginInfo passBeginInfo = PassGetVkRenderPassBeginInfo(info.pass);
+        VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(info.pass);
+
+        blendInfo.attachmentCount = PassGetNumSubpassAttachments(info.pass, info.subpass);
+        shaderInfo.renderPass = passBeginInfo.renderPass;
+        shaderInfo.subpass = info.subpass;
+
+        shaderInfo.pViewportState = passInfo.pViewportState;
+    }
+
+    if (!info.ignoreCache)
+    {
+        CoreGraphics::PipelineId cachedPipeline = Vulkan::PipelineExists(info.pass, info.subpass, info.renderPass, info.shader, translatedKey, shaderInfo);
+        if (cachedPipeline == CoreGraphics::InvalidPipelineId)
+        {
+            Ids::Id32 ret = pipelineAllocator.Alloc();
+            Pipeline& obj = pipelineAllocator.Get<0>(ret);
+            obj.dev = Vulkan::GetCurrentDevice();
+            obj.renderPass = info.renderPass;
+
+            VkResult res = vkCreateGraphicsPipelines(obj.dev, Vulkan::GetPipelineCache(), 1, &shaderInfo, nullptr, &obj.pipeline);
+            n_assert(res == VK_SUCCESS);
+            obj.layout = programInfo.layout;
+            obj.pass = info.pass;
+
+            Vulkan::CachePipeline(info.pass, info.subpass, info.renderPass, info.shader, translatedKey, shaderInfo, ret);
+            return PipelineId{ ret };
+        }
+        else
+        {
+            return cachedPipeline;
+        }
+    }
+    else
+    {
+        Ids::Id32 ret = pipelineAllocator.Alloc();
+        Pipeline& obj = pipelineAllocator.Get<0>(ret);
+        obj.dev = Vulkan::GetCurrentDevice();
+
+        VkResult res = vkCreateGraphicsPipelines(obj.dev, Vulkan::GetPipelineCache(), 1, &shaderInfo, nullptr, &obj.pipeline);
+        n_assert(res == VK_SUCCESS);
+        obj.layout = programInfo.layout;
+        obj.pass = info.pass;
+        obj.renderPass = info.renderPass;
+        return PipelineId{ ret };
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -86,10 +186,8 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
 void
 DestroyGraphicsPipeline(const PipelineId pipeline)
 {
-    Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id);
-    obj.pipeline = VK_NULL_HANDLE;
-    obj.layout = VK_NULL_HANDLE;
-    obj.pass = CoreGraphics::InvalidPassId;
+    CoreGraphics::InvalidatePipeline(pipeline);
+    CoreGraphics::DelayedDeletePipeline(pipeline);
     pipelineAllocator.Dealloc(pipeline.id);
 }
 
@@ -344,17 +442,17 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         switch (group)
         {
             case ShaderGroup::Gen:
-                genHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                genHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Intersect:
             case ShaderGroup::Hit:
-                hitHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                hitHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Miss:
-                missHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                missHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Callable:
-                callableHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
+                callableHandleData.AppendArray(parseBuf, (SizeT)CoreGraphics::ShaderGroupSize);
                 break;
 
         }
@@ -373,14 +471,14 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         // Create buffers for the different shader groups
         CoreGraphics::BufferCreateInfo tableInfo;
         tableInfo.byteSize = data.Size();
-        tableInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderTable | CoreGraphics::BufferUsageFlag::ShaderAddress;
+        tableInfo.usageFlags = CoreGraphics::BufferUsage::ShaderTable | CoreGraphics::BufferUsage::ShaderAddress;
         tableInfo.queueSupport = queueType == CoreGraphics::ComputeQueueType ? CoreGraphics::BufferQueueSupport::ComputeQueueSupport : CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
         tableInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
         tableInfo.data = data.Begin();
         tableInfo.dataSize = data.Size();
         auto ret = CoreGraphics::CreateBuffer(tableInfo);
         tableEntry.baseAddress = CoreGraphics::BufferGetDeviceAddress(ret);
-        tableEntry.numEntries = data.Size() / CoreGraphics::ShaderGroupSize;
+        tableEntry.numEntries = data.Size() / (SizeT)CoreGraphics::ShaderGroupSize;
         tableEntry.entrySize = data.Size();
         return ret;
     };

@@ -30,14 +30,14 @@ GeometryHelpers::CreateRectangle()
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.elementSize = sizeof(Vertex);
     vboInfo.size = 4;
-    vboInfo.usageFlags = CoreGraphics::BufferUsageFlag::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = vertices;
     vboInfo.dataSize = sizeof(vertices);
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.elementSize = sizeof(ushort);
     iboInfo.size = 6;
-    iboInfo.usageFlags = CoreGraphics::BufferUsageFlag::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
 
@@ -99,14 +99,14 @@ GeometryHelpers::CreateDisk(SizeT numPoints)
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.elementSize = sizeof(Vertex);
     vboInfo.size = vertices.Size();
-    vboInfo.usageFlags = CoreGraphics::BufferUsageFlag::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = vertices.Begin();
     vboInfo.dataSize = vertices.ByteSize();
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.elementSize = sizeof(ushort);
     iboInfo.size = indices.Size();
-    iboInfo.usageFlags = CoreGraphics::BufferUsageFlag::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = indices.Begin();
     iboInfo.dataSize = indices.ByteSize();
 

@@ -16,6 +16,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <inttypes.h>
+
 // fixing Windows defines...
 #ifdef DeleteFile
 #undef DeleteFile
@@ -32,15 +34,6 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 typedef unsigned char  ubyte;
-
-typedef uint64_t uint64;
-typedef int64_t int64;
-typedef uint32_t uint32;
-typedef int32_t int32;
-typedef uint16_t uint16;
-typedef int16_t int16;
-typedef uint8_t uint8;
-typedef int8_t int8;
 
 typedef uintptr_t uintptr;
 typedef ptrdiff_t ptrdiff;
@@ -74,10 +67,11 @@ UnsetBits(const MASK mask, const BITS bit)
     return MASK(uint(mask) & ~uint(bit));
 }
 
-#define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+#define N_ARGB(a,r,g,b) ((uint32_t)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
 #define N_RGBA(r,g,b,a) N_ARGB(a,r,g,b)
 #define N_XRGB(r,g,b)   N_ARGB(0xff,r,g,b)
-#define N_COLORVALUE(r,g,b,a) N_RGBA((uint)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
+#define N_COLORVALUE(r,g,b,a) N_RGBA((uint32_t)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
+#define N_IP_ADDR(a,b,c,d) (uint32_t)((((a)&0xff)<<24)|(((b)&0xff)<<16)|(((c)&0xff)<<8)|((d)&0xff))
 
 //------------------------------------------------------------------------------
 /**
@@ -134,17 +128,12 @@ typedef unsigned char byte;
 #error "Unsupported platform!"
 #endif
 
-#if __MAYA__
-#define ThreadLocal
-#elif __WIN32__
+#if __WIN32__
 #define ThreadLocal __declspec(thread)
 #elif __linux__
 #define ThreadLocal __thread
-#if (__OSX__ || __APPLE__)
-// thread locals are not allowed on osx, so we define thread local as nothing to prevent problems
-#undef ThreadLocal
-#define ThreadLocal
-#endif
+#elif (__OSX__ || __APPLE__)
+#define ThreadLocal thread_local
 #else
 #error "Unsupported platform!"
 #endif

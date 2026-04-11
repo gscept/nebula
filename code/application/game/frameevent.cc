@@ -26,7 +26,10 @@ FrameBatchJob(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             return;
 
         ProcessorJobInput const& input = context->inputs[index];
-        input.processor->callback(context->world, *input.view);
+        if (input.processor->active)
+        {
+            input.processor->callback(context->world, *input.view);
+        }
     }
 }
 
@@ -72,8 +75,7 @@ FrameEvent::AddProcessor(Processor* processor)
     // try to insert into existing batches
     for (i = 0; i < this->batches.Size(); i++)
     {
-        if (this->batches[i]->async == processor->async &&
-            this->batches[i]->order == processor->order)
+        if (this->batches[i]->async == processor->async && this->batches[i]->order == processor->order)
         {
             accepted = this->batches[i]->TryInsert(processor);
             if (accepted)
@@ -94,6 +96,15 @@ FrameEvent::AddProcessor(Processor* processor)
         n_assert(res);
         this->batches.Insert(i, batch);
     }
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+FrameEvent::RemoveProcessor(Processor* processor)
+{
+    n_error("Not implemented!");
 }
 
 //------------------------------------------------------------------------------
@@ -212,7 +223,8 @@ FrameEvent::Batch::Prefilter(World* world, bool force)
         Processor* processor = this->processors[i];
         if (!processor->cacheValid || force)
         {
-            processor->cache = world->GetDatabase()->Query(GetInclusiveTableMask(processor->filter), GetExclusiveTableMask(processor->filter));
+            processor->cache =
+                world->GetDatabase()->Query(GetInclusiveTableMask(processor->filter), GetExclusiveTableMask(processor->filter));
             processor->cacheValid = true;
         }
     }
@@ -272,6 +284,15 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     {
         Processor* processor = this->processors[i];
 
+        if (!processor->active)
+            continue;
+
+#ifdef NEBULA_ENABLE_PROFILING
+        // TODO: Async batch processors will have the same timings for now. We should figure out some good way of measuring their elapsed time.
+        processor->timer.Reset();
+        processor->timer.Start();
+#endif
+
 #ifdef WITH_NEBULA_EDITOR
         if (Game::EditorState::HasInstance())
         {
@@ -282,11 +303,22 @@ FrameEvent::Batch::ExecuteAsync(World* world)
 #endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
-
     }
 
     if (numJobs == 0)
+    {
+#ifdef NEBULA_ENABLE_PROFILING
+        for (IndexT i = 0; i < this->processors.Size(); i++)
+        {
+            Processor* processor = this->processors[i];
+            if (!processor->active)
+                continue;
+
+            processor->timer.Stop();
+        }
+#endif
         return;
+    }
 
     ProcessorJobContext context;
     context.world = world;
@@ -306,6 +338,17 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     Jobs2::JobDispatch(FrameBatchJob, numJobs, 1, context, nullptr, nullptr, &event);
     event.Wait();
 
+#ifdef NEBULA_ENABLE_PROFILING
+    for (IndexT i = 0; i < this->processors.Size(); i++)
+    {
+        Processor* processor = this->processors[i];
+        if (!processor->active)
+            continue;
+
+        processor->timer.Stop();
+    }
+#endif
+
     delete[] context.inputs;
 }
 
@@ -319,6 +362,9 @@ FrameEvent::Batch::ExecuteSequential(World* world)
     {
         Processor* processor = this->processors[i];
 
+        if (!processor->active)
+            continue;
+
 #ifdef WITH_NEBULA_EDITOR
         if (Game::EditorState::HasInstance())
         {
@@ -328,11 +374,20 @@ FrameEvent::Batch::ExecuteSequential(World* world)
         }
 #endif
 
+#ifdef NEBULA_ENABLE_PROFILING
+        processor->timer.Reset();
+        processor->timer.Start();
+#endif
+
         Dataset data = world->Query(processor->filter, processor->cache);
         for (int v = 0; v < data.numViews; v++)
         {
             processor->callback(world, data.views[v]);
         }
+
+#ifdef NEBULA_ENABLE_PROFILING
+        processor->timer.Stop();
+#endif
     }
 }
 
@@ -514,4 +569,3 @@ FramePipeline::GetFrameEvents() const
 }
 
 } // namespace Game
-

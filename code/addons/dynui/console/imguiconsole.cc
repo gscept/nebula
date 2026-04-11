@@ -653,7 +653,10 @@ ImguiConsole::EvaluateCVar(Util::Array<Util::String> const& splits)
     if (cVar)
     {
         if (splits.Size() > 1)
+        {
             Core::CVarParseWrite(cVar, splits[1].AsCharPtr());
+            Core::CVarSetModified(cVar, true);
+        }
         else
         {
             Util::String valueString;

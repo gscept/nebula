@@ -53,15 +53,45 @@ SizeClassificationAllocatorTest::Run()
     alloc2 = allocator.Alloc(64, 256);
     VERIFY(alloc2.offset == alloc2.OOM);
 
-    // Allocating with 128 alignment should work
+    // Allocating with 128 alignment should work, and should be padded enough to hold the value aligned
     alloc3 = allocator.Alloc(64, 128);
     VERIFY(alloc3.offset == 128);
 
-    // One more alloc should fit, the allocation above should be 128 in size due to alignment
+    // The memory starts at byte 128 and needs to be 64 byte long
+    VERIFY((alloc3.offset + 64 - 1) <= alloc3.size);
+
+    // the previous block needs 191 bytes due to alignment which leaves space for 64 before reaching 256
     alloc4 = allocator.Alloc(64);
-    VERIFY(alloc4.offset == 64);
-    alloc5 = allocator.Alloc(64);
-    VERIFY(alloc5.offset == alloc5.OOM);
+    VERIFY(alloc4.offset == alloc4.OOM);
+
+    uint randomAlignments[] = { 64, 128, 256 };
+
+    RangeAllocator randomAllocator(20000, 2048);
+    Util::Array<uint> pending = { 10000, 5000, 10000, 2500, 7500, 5000 };
+    while (!pending.IsEmpty())
+    {
+        Util::Array<RangeAllocation> allocations;
+        Util::Array<uint> indices;
+        uint counter = 0;
+        for (int i = pending.Size() - 1; i >= 0; i--)
+        {
+            auto a = randomAllocator.Alloc(pending[i], randomAlignments[i % 3]);
+            if (a.offset != a.OOM)
+            {
+                allocations.Append(a);
+                pending.PopBack();
+                indices.Append(counter++);
+            }
+        }
+
+        for (int i = indices.Size() - 1; i >= 0; i--)
+        {
+            randomAllocator.Dealloc(allocations[indices[i]]);
+        }
+    }
+
+    VERIFY(randomAllocator.freeStorage == randomAllocator.size);
+
 }
 
 }; // namespace Test

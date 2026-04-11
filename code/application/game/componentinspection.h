@@ -19,6 +19,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
+#include "util/bitfield.h"
 #include "util/color.h"
 #include "imgui.h"
 
@@ -118,9 +119,11 @@ ComponentDrawFuncT(Game::Entity owner, ComponentId component, void* data, bool* 
 template<> void ComponentDrawFuncT<Game::Entity>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<bool>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int>(Game::Entity, ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<int64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int64_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<uint>(Game::Entity, ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<uint64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint64_t>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint16_t>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int16_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::StringAtom>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::mat4>(Game::Entity, ComponentId, void*, bool*);
@@ -131,5 +134,8 @@ template<> void ComponentDrawFuncT<Game::Position>(Game::Entity, ComponentId, vo
 template<> void ComponentDrawFuncT<Game::Orientation>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Scale>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::Color>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::BitField<16>>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::BitField<32>>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::BitField<64>>(Game::Entity, ComponentId, void*, bool*);
 
 } // namespace Game

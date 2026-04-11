@@ -20,7 +20,9 @@ struct PipelineCreateInfo
     CoreGraphics::ShaderProgramId shader;
     CoreGraphics::PassId pass;
     uint subpass;
+    CoreGraphics::RenderPassId renderPass;
     CoreGraphics::InputAssemblyKey inputAssembly;
+    bool ignoreCache = false;
 };
 
 /// Create new pipeline

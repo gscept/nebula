@@ -130,7 +130,7 @@ static CURLoption MethodToCurl(HttpMethod::Code code)
     switch (code)
     {
         case HttpMethod::Code::Post: return CURLOPT_POST;
-        case HttpMethod::Code::Put: return CURLOPT_PUT;
+        case HttpMethod::Code::Put: return CURLOPT_UPLOAD;
         case HttpMethod::Code::Get: return CURLOPT_HTTPGET;
         default: break;
     }

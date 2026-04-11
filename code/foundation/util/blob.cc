@@ -22,6 +22,15 @@ Memory::Heap* Blob::DataHeap = 0;
 int
 Blob::BinaryCompare(const Blob& rhs) const
 {
+    if (this->size == 0 || rhs.size == 0)
+    {
+        if (this->size == rhs.size)
+        {
+            return 0;
+        }
+        return this->size > rhs.size ? 1 : -1;
+    }
+
     n_assert(0 != this->ptr);
     n_assert(0 != rhs.ptr);
     if (this->size == rhs.size)
@@ -45,10 +54,11 @@ Blob::BinaryCompare(const Blob& rhs) const
 void
 Blob::SetFromBase64(const void* ptr, size_t size)
 {
+    n_assert((ptr != nullptr) || (size == 0));
     n_assert(size < INT_MAX);
     size_t allocsize = BASE64_DECODE_OUT_SIZE(size);
-    this->Reserve(allocsize);
-    int ret = base64_decode((char*)ptr, (SizeT)size, (unsigned char*)this->ptr);    
+    this->SetSize(allocsize);
+    int ret = base64_decode((char*)ptr, (SizeT)size, (unsigned char*)this->ptr);
     n_assert(ret >= 0);
     this->size = ret;
 }
@@ -78,8 +88,10 @@ Blob::SetFromFile(const IO::URI & uri)
 {
     Ptr<IO::FileStream> file = IO::IoServer::Instance()->CreateStream(uri).downcast<IO::FileStream>();
     n_assert(file->Open());
-    this->Reserve(file->GetSize());
-    file->Read(this->ptr, file->GetSize());
+    const size_t fileSize = file->GetSize();
+    this->SetSize(fileSize);
+    const size_t bytesRead = file->Read(this->ptr, fileSize);
+    n_assert(bytesRead == fileSize);
     file->Close();
 }
 

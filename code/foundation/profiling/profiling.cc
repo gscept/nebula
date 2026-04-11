@@ -9,6 +9,7 @@ namespace Profiling
 {
 
 Util::Array<ProfilingContext> profilingContexts;
+Util::Array<ProfilingContext> profilingContextsLastFrame;
 Util::Array<Threading::CriticalSection*> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 Threading::CriticalSection categoryLock;
@@ -90,6 +91,7 @@ ProfilingNewFrame()
     for (IndexT i = 0; i < profilingContexts.Size(); i++)
     {
         Threading::CriticalScope lock(contextMutexes[i]);
+        profilingContextsLastFrame[i] = profilingContexts[i];
         n_assert(profilingContexts[i].scopes.IsEmpty());
         profilingContexts[i].topLevelScopes.Clear();
         profilingContexts[i].timer.Reset();
@@ -111,12 +113,13 @@ ProfilingGetTime()
 /**
 */
 void 
-ProfilingRegisterThread()
+ProfilingRegisterThread(int priority)
 {
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
     ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
-    profilingContexts.Append(ProfilingContext());
+    profilingContexts.Append(ProfilingContext(priority));
+    profilingContextsLastFrame.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
     contextMutexes.Append(new Threading::CriticalSection);
 }
@@ -128,10 +131,10 @@ const Util::Array<ProfilingScope>&
 ProfilingGetScopes(Threading::ThreadId thread)
 {
 #if NEBULA_DEBUG
-    n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
+    n_assert(profilingContextsLastFrame[thread].topLevelScopes.IsEmpty());
 #endif
     Threading::CriticalScope lock(&categoryLock);
-    return profilingContexts[thread].topLevelScopes;
+    return profilingContextsLastFrame[thread].topLevelScopes;
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +143,7 @@ ProfilingGetScopes(Threading::ThreadId thread)
 const Util::Array<ProfilingContext>
 ProfilingGetContexts()
 {
-    return profilingContexts;
+    return profilingContextsLastFrame;
 }
 
 //------------------------------------------------------------------------------
@@ -157,14 +160,14 @@ ProfilingClear()
 }
 
 Threading::CriticalSection counterLock;
-Util::Dictionary<const char*, uint64> counters;
-Util::Dictionary<const char*, Util::Pair<uint64, uint64>> budgetCounters;
+Util::Dictionary<const char*, uint64_t> counters;
+Util::Dictionary<const char*, Util::Pair<uint64_t, uint64_t>> budgetCounters;
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-ProfilingIncreaseCounter(const char* id, uint64 value)
+ProfilingIncreaseCounter(const char* id, uint64_t value)
 {
     counterLock.Enter();
     IndexT idx = counters.FindIndex(id);
@@ -181,7 +184,7 @@ ProfilingIncreaseCounter(const char* id, uint64 value)
 /**
 */
 void 
-ProfilingDecreaseCounter(const char* id, uint64 value)
+ProfilingDecreaseCounter(const char* id, uint64_t value)
 {
     counterLock.Enter();
     IndexT idx = counters.FindIndex(id);
@@ -193,7 +196,7 @@ ProfilingDecreaseCounter(const char* id, uint64 value)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<const char*, uint64>&
+const Util::Dictionary<const char*, uint64_t>&
 ProfilingGetCounters()
 {
     return counters;
@@ -203,7 +206,7 @@ ProfilingGetCounters()
 /**
 */
 void
-ProfilingSetupBudgetCounter(const char* id, uint64 budget)
+ProfilingSetupBudgetCounter(const char* id, uint64_t budget)
 {
     counterLock.Enter();
 
@@ -219,7 +222,7 @@ ProfilingSetupBudgetCounter(const char* id, uint64 budget)
 /**
 */
 void
-ProfilingBudgetIncreaseCounter(const char* id, uint64 value)
+ProfilingBudgetIncreaseCounter(const char* id, uint64_t value)
 {
     IndexT idx = budgetCounters.FindIndex(id);
     n_assert(idx != InvalidIndex);
@@ -230,7 +233,7 @@ ProfilingBudgetIncreaseCounter(const char* id, uint64 value)
 /**
 */
 void
-ProfilingBudgetDecreaseCounter(const char* id, uint64 value)
+ProfilingBudgetDecreaseCounter(const char* id, uint64_t value)
 {
     IndexT idx = budgetCounters.FindIndex(id);
     n_assert(idx != InvalidIndex);
@@ -253,7 +256,7 @@ ProfilingBudgetResetCounter(const char* id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>&
+const Util::Dictionary<const char*, Util::Pair<uint64_t, uint64_t>>&
 ProfilingGetBudgetCounters()
 {
     return budgetCounters;

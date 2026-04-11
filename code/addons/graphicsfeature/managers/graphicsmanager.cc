@@ -21,6 +21,7 @@
 #include "game/componentinspection.h"
 #include "decals/decalcontext.h"
 #include "gi/ddgicontext.h"
+#include "terrain/terraincontext.h"
 
 namespace GraphicsFeature
 {
@@ -52,15 +53,12 @@ RegisterModelEntity(
     Resources::ResourceName const res,
     Resources::ResourceName const anim,
     Resources::ResourceName const skeleton,
+    uint const stage,
     bool const raytracing,
     Math::mat4 const& t
 )
 {
     Models::ModelContext::RegisterEntity(gid);
-    if (raytracing && CoreGraphics::RayTracingSupported)
-    {
-        Raytracing::RaytracingContext::RegisterEntity(gid);
-    }
     Models::ModelContext::Setup(
         gid,
         res,
@@ -74,6 +72,7 @@ RegisterModelEntity(
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
             if (raytracing && CoreGraphics::RayTracingSupported)
             {
+                Raytracing::RaytracingContext::RegisterEntity(gid);
                 Raytracing::RaytracingContext::SetupModel(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
             }
             if (anim.IsValid() && skeleton.IsValid())
@@ -82,7 +81,8 @@ RegisterModelEntity(
                 Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
                 Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
             }
-        }
+        },
+        stage
     );
 }
 
@@ -170,6 +170,7 @@ DeregisterDDGIVolume(Graphics::GraphicsEntityId gfxId)
 void
 GraphicsManager::OnDecay()
 {
+    N_MARKER_BEGIN(GraphicsManagerOnDecay, Game);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
     // Decay models
@@ -219,6 +220,7 @@ GraphicsManager::OnDecay()
         DDGIVolume* volume = ddgiVolumeData + i;
         DeregisterDDGIVolume(volume->graphicsEntityId);
     }
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
@@ -383,7 +385,14 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     // TODO: Cookie projection support
     Lighting::LightContext::SetupPointLight(
-        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows
+        light->graphicsEntityId,
+        {
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .castShadows = light->castShadows
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
 }
@@ -404,12 +413,15 @@ GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLigh
     // TODO: Cookie projection support
     Lighting::LightContext::SetupSpotLight(
         light->graphicsEntityId,
-        light->color.vec,
-        light->intensity,
-        Math::deg2rad(light->innerConeAngle),
-        Math::deg2rad(light->outerConeAngle),
-        light->range,
-        light->castShadows
+        {
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .innerConeAngle = Math::deg2rad(light->innerConeAngle),
+            .outerConeAngle = Math::deg2rad(light->outerConeAngle),
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .castShadows = light->castShadows
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
@@ -430,13 +442,16 @@ GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLigh
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     Lighting::LightContext::SetupAreaLight(
         light->graphicsEntityId,
-        (Lighting::LightContext::AreaLightShape)light->shape,
-        light->color.vec,
-        light->intensity,
-        light->range,
-        light->twoSided,
-        light->castShadows,
-        light->renderMesh
+        {
+            .shape = (Lighting::LightContext::AreaLightShape)light->shape,
+            .color = light->color.vec,
+            .intensity = light->intensity,
+            .range = light->range,
+            .stageMask = light->stageMask,
+            .twoSided = light->twoSided,
+            .castShadows = light->castShadows,
+            .renderMesh = light->renderMesh
+        }
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
@@ -501,6 +516,51 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
 /**
 */
 void
+GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* terrain)
+{
+    terrain->graphicsEntityId = Graphics::CreateEntity().id;
+    ::Terrain::TerrainContext::RegisterEntity(terrain->graphicsEntityId);
+    ::Terrain::TerrainCreateInfo createInfo;
+    createInfo.minHeight = terrain->minHeight;
+    createInfo.maxHeight = terrain->maxHeight;
+    createInfo.quadsPerTileX = terrain->quadsPerTileX;
+    createInfo.quadsPerTileY = terrain->quadsPerTileZ;
+    createInfo.tileWidth = terrain->tileWidth;
+    createInfo.tileHeight = terrain->tileHeight;
+    createInfo.width = terrain->worldSizeX;
+    createInfo.height = terrain->worldSizeZ;
+    createInfo.heightMap = terrain->heightMap;
+    createInfo.decisionMap = terrain->decisionMap;
+    createInfo.enableRayTracing = terrain->enableRaytracing;
+    ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
+
+    for (auto const& biome : terrain->biomes)
+    {
+        ::Terrain::BiomeSettings settings;
+        settings.biomeMask = biome.mask;
+        settings.materials[0].albedo = biome.flat.albedo;
+        settings.materials[0].material = biome.flat.material;
+        settings.materials[0].normal = biome.flat.normals;
+        settings.materials[1].albedo = biome.slope.albedo;
+        settings.materials[1].material = biome.slope.material;
+        settings.materials[1].normal = biome.slope.normals;
+        settings.materials[2].albedo = biome.height.albedo;
+        settings.materials[2].material = biome.height.material;
+        settings.materials[2].normal = biome.height.normals;
+        settings.materials[3].albedo = biome.heightSlope.albedo;
+        settings.materials[3].material = biome.heightSlope.material;
+        settings.materials[3].normal = biome.heightSlope.normals;
+        settings.biomeParameters.heightThreshold = biome.heightThreshold;
+        settings.biomeParameters.slopeThreshold = biome.slopeThreshold;
+        settings.biomeParameters.uvScaleFactor = biome.uvScaleFactor;
+        ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model)
 {
     auto res = model->resource;
@@ -510,7 +570,7 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
     Game::Scale scale = world->GetComponent<Game::Scale>(entity);
     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
     RegisterModelEntity(
-        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform
+        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->stages.GetBits(0), model->raytracing, worldTransform
     );
 }
 

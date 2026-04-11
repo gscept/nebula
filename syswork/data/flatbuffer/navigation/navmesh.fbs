@@ -1,0 +1,33 @@
+include "foundation/math.fbs";
+include "navigation/agentkinds.fbs";
+include "navigation/navmeshsettings.fbs";
+
+namespace Navigation;
+
+table NavAreaModifier
+{
+	area_id : ubyte;
+	convex_area_points : [Flat.Vec3];
+}
+
+table GeometryEntry
+{
+	resource : string;
+	transform : Flat.Mat4 (native_inline);
+}
+
+table NavMesh
+{
+	name : string;
+	agent_kind : Agent (cpp_ptr_type: "std::shared_ptr");
+	navmesh_settings : NavMeshSettings (cpp_ptr_type: "std::shared_ptr");
+	sources : [GeometryEntry] (cpp_ptr_type: "std::shared_ptr");
+	area_modifiers : [NavAreaModifier] (cpp_ptr_type: "std::shared_ptr");
+	bounds_center : Flat.Vec3 (native_inline);
+	bounds_extents : Flat.Vec3 (native_inline);
+	file : string;
+}
+
+root_type NavMesh;
+file_identifier "NAVM";
+file_extension "navmesh";

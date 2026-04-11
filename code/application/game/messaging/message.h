@@ -172,7 +172,7 @@ private:
     template<std::size_t...Is>
     void send_expander(MessageQueue& data, const IndexT cid, const SizeT index, std::index_sequence<Is...>)
     {
-        this->callbacks.Get<1>(cid)(std::get<Is>(data.Get<0>(index))...);
+        this->callbacks.template Get<1>(cid)(std::get<Is>(data.template Get<0>(index))...);
     }
 
     void send_expander(MessageQueue& data, const IndexT cid, const SizeT index)
@@ -251,7 +251,7 @@ Message<MSG, TYPES...>::Send(TYPES ... values)
     for (SizeT i = 0; i < size; ++i)
     {
         // n_assert(instance->callbacks.Get<1>(i).GetObject() != nullptr);
-        instance->callbacks.Get<1>(i)(values...);
+        instance->callbacks.template Get<1>(i)(values...);
     }
 }
 

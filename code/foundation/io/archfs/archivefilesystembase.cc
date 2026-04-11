@@ -79,6 +79,7 @@ ArchiveFileSystemBase::Mount(const URI& uri)
 {
     return MountEmbedded(uri, "");
 }
+
 //------------------------------------------------------------------------------
 /**
     This "mounts" an archive file by creating a new Archive object

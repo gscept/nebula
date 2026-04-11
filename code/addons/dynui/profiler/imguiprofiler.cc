@@ -41,7 +41,7 @@ ImguiProfiler::Capture()
     if (!this->pauseProfiling)
     {
         this->profilingContexts = Profiling::ProfilingGetContexts();
-        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers(CoreGraphics::GraphicsQueueType);
     }
 }
 
@@ -63,8 +63,8 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
 
-    const uint32 numColors = sizeof(colors) / sizeof(ImU32);
-    uint32 colorIndex = scope.category.HashCode() % numColors;
+    const uint32_t numColors = sizeof(colors) / sizeof(ImU32);
+    uint32_t colorIndex = scope.category.HashCode() % numColors;
 
     // convert to milliseconds
     float startX = pos.x + (scope.start / frameTime) * canvas.x;
@@ -208,7 +208,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                 {
                     if (ImGui::CollapsingHeader(ctx.threadName.Value(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+                        ImGui::PushFont(Dynui::ImguiSmallFont);
 
                         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                         canvasSize.x *= timeWindow;
@@ -238,7 +238,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                 }
                 if (ImGui::CollapsingHeader("GPU"))
                 {
-                    ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+                    ImGui::PushFont(Dynui::ImguiSmallFont);
 
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -282,13 +282,13 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
             }
             if (ImGui::CollapsingHeader("Memory"))
             {
-                ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+                ImGui::PushFont(Dynui::ImguiSmallFont);
 
-                Util::Dictionary<const char*, uint64> counters = Profiling::ProfilingGetCounters();
+                Util::Dictionary<const char*, uint64_t> counters = Profiling::ProfilingGetCounters();
                 for (IndexT i = 0; i < counters.Size(); i++)
                 {
                     const char* name = counters.KeyAtIndex(i);
-                    uint64 val = counters.ValueAtIndex(i);
+                    uint64_t val = counters.ValueAtIndex(i);
                     if (val >= 1_GB)
                         ImGui::LabelText(name, "%.2f GB allocated", val / float(1_GB));
                     else if (val >= 1_MB)
@@ -299,11 +299,11 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                         ImGui::LabelText(name, "%lu B allocated", val);
                 }
 
-                const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>& budgetCounters = Profiling::ProfilingGetBudgetCounters();
+                const Util::Dictionary<const char*, Util::Pair<uint64_t, uint64_t>>& budgetCounters = Profiling::ProfilingGetBudgetCounters();
                 for (IndexT i = 0; i < budgetCounters.Size(); i++)
                 {
                     const char* name = budgetCounters.KeyAtIndex(i);
-                    const Util::Pair<uint64, uint64>& val = budgetCounters.ValueAtIndex(i);
+                    const Util::Pair<uint64_t, uint64_t>& val = budgetCounters.ValueAtIndex(i);
                     if (val.first >= 1_GB)
                         ImGui::LabelText(name, "%.2f GB allocated, %.2f GB left", val.first / float(1_GB), (val.first - val.second) / float(1_GB));
                     else if (val.first >= 1_MB)

@@ -1,0 +1,245 @@
+//------------------------------------------------------------------------------
+//  @file probe_update.gpul
+//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/raytracing.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/ddgi.gpuh>
+
+group(SYSTEM_GROUP) uniform RadianceOutput : *mutable rgba32f texture2D;
+
+#include "probe_shared.gpuh"
+
+//------------------------------------------------------------------------------
+/**
+*/
+GetOutputPixel(rayIndex : u32x2, numSamples : u32) i32x2
+{
+    const row = rayIndex.x / numSamples;
+    const column = (rayIndex.x % numSamples) * numSamples + rayIndex.y;
+    return i32x2(row, column); 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/ 
+GetProbeTexel(probe : i32, probeGridDimensions : i32x3) i32x2
+{
+    return i32x2(probe % (probeGridDimensions.x * probeGridDimensions.y), probe / (probeGridDimensions.x * probeGridDimensions.y));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FloatToUInt(v : f32, scale : f32) u32
+{
+    return u32(floor(v * scale + 0.5f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PackFloat3ToUInt(val : f32x3) u32
+{
+    return FloatToUInt(val.x, 1023.0f) | (FloatToUInt(val.y, 1023.0f) << 10) | (FloatToUInt(val.z, 1023.0f) << 20);
+}
+
+generate
+{
+	if declared<USE_COMPRESSED_RADIANCE>
+	{
+		//------------------------------------------------------------------------------
+		/**
+		*/
+		StoreRadianceAndDepth(coordinate : i32x2, radiance : f32x3, depth : f32) void
+		{
+			const ValueThreshold = 1 / 255.0f;
+			if (DDGIMaxComponent(radiance) <= ValueThreshold) { radiance = f32x3(0); }
+			radiance *= VolumeConstants.IrradianceScale;
+			textureStore(RadianceOutput, coordinate, f32x4(
+					castToF32(
+						PackFloat3ToUInt(
+							clamp(radiance, vec3(0.0f), vec3(1.0f))
+						)
+					), depth, 0.0f, 0.0f));
+		}
+	}
+	else
+	{
+		//------------------------------------------------------------------------------
+		/**
+		*/
+		StoreRadianceAndDepth(coordinate : i32x2, radiance : f32x3, depth : f32) void
+		{
+			const ValueThreshold = 1 / 255.0f;
+			if (DDGIMaxComponent(radiance) <= ValueThreshold) { radiance = f32x3(0); }
+			radiance *= VolumeConstants.IrradianceScale;
+			textureStore(RadianceOutput, coordinate, f32x4(radiance, depth));
+		}
+	}
+};
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+RayGen(ray_payload payload : LightResponsePayload) void
+{
+    //payload.radiance = f32x3(0);
+    payload.normal = f32x3(0, 1, 0);
+    const rayIndex = i32(rayGetLaunchIndex().x);
+    const probeIndex = i32(rayGetLaunchIndex().y);
+
+    var storageProbeIndex : i32;
+    if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+    {
+        storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
+    }
+    else
+    {
+        storageProbeIndex = probeIndex;
+    }
+    const texelPosition = DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions);
+    
+    const numProbes = VolumeConstants.ProbeGridDimensions.x * VolumeConstants.ProbeGridDimensions.y * VolumeConstants.ProbeGridDimensions.z;
+    const probeRRIndex = (probeIndex < VolumeConstants.ProbeIndexStart) ? probeIndex + numProbes : probeIndex;
+    if (probeRRIndex >= VolumeConstants.ProbeIndexStart + VolumeConstants.ProbeIndexCount) { return; }
+
+    const state = castToI32(fetch2D(VolumeConstants.ProbeStates, texelPosition, 0).x);
+    if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0)
+    {
+        if (state == PROBE_STATE_INACTIVE && rayIndex >= DDGI_NUM_FIXED_RAYS)
+        {
+            return;
+        }
+    }
+    
+    var probeWorldPosition : f32x3;
+    if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
+    {
+        if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+        {
+            probeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing, VolumeConstants.ProbeScrollOffsets, VolumeConstants.ProbeOffsets);
+        }
+        else
+        {
+            probeWorldPosition = DDGIProbeWorldPositionWithOffset(probeIndex, VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing, VolumeConstants.ProbeOffsets);
+        }
+    }
+    else
+    {
+        probeWorldPosition = DDGIProbeWorldPosition(probeIndex, VolumeConstants.Offset, VolumeConstants.Rotation, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeGridSpacing);
+    }
+    
+    var probeRayDirection = DDGIGetProbeDirection(rayIndex, u32(probeIndex), VolumeConstants.TemporalRotation, VolumeConstants.Options); 
+
+    const MaxDistance = 10000.0f;
+    payload.bits = 0x0u;
+    payload.albedo = f32x3(0);
+    payload.material = f32x4(0);
+    payload.radiance = f32x3(0);
+    payload.alpha = 0.0f;
+    payload.normal = f32x3(0);
+    payload.depth = 0.0f;
+
+    traceRay(TLAS, RayFlags.None , 0xff, 0, 0, 0, probeWorldPosition, probeRayDirection, 0.01f, MaxDistance, payload);
+    if ((payload.bits & RAY_MISS_BIT) != 0)
+    {
+		var atmo = f32x3(0);
+		for (var i = 0u; i < LightUniforms.NumDirectionalLights; i++)
+		{
+			const li = LightLists.DirectionalLights[i];
+			if li.stageMask & ViewConstants.StageMask
+			{
+				const dir = normalize(probeRayDirection);
+				atmo += CalculateAtmosphericScattering(dir, li.direction.xyz) * li.color.rgb;
+			}
+		}
+        StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), atmo, 1e27f);
+        return;
+    }
+    
+    // If hit is back face and it's not a 2 sided material two-sided material
+    if ((payload.bits & (RAY_BACK_FACE_BIT | RAY_MATERIAL_TWO_SIDED_BIT)) == RAY_BACK_FACE_BIT)
+    {
+        StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), f32x3(0), -payload.depth * 0.2f);
+        return;
+
+    }
+    
+    // If probe is inactive, store depth in case it needs to be reactivated
+    if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0 && state == PROBE_STATE_INACTIVE)
+    {
+        StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), f32x3(0), payload.depth);
+        return;
+    }
+    
+    // TODO: Calculate light
+    // If all conditions fall through, light the probe
+    var probeLighting = f32x3(0);
+    const albedo = payload.albedo - payload.albedo * payload.material[MAT_METALLIC];
+    
+    var volumeArg : GIVolume;
+    volumeArg.Offset = VolumeConstants.Offset;
+    volumeArg.Rotation = VolumeConstants.Rotation;
+    volumeArg.GridCounts = VolumeConstants.ProbeGridDimensions;
+    volumeArg.GridSpacing = VolumeConstants.ProbeGridSpacing;
+    volumeArg.ScrollOffsets = VolumeConstants.ProbeScrollOffsets;
+    volumeArg.NumIrradianceTexels = VolumeConstants.NumIrradianceTexels;
+    volumeArg.NumDistanceTexels = VolumeConstants.NumDistanceTexels;
+    volumeArg.EncodingGamma = VolumeConstants.IrradianceGamma;
+    volumeArg.Irradiance = VolumeConstants.ProbeIrradiance;
+    volumeArg.Distances = VolumeConstants.ProbeDistances;
+    volumeArg.Offsets = VolumeConstants.ProbeOffsets;
+    volumeArg.States = VolumeConstants.ProbeStates;
+    volumeArg.NormalBias = VolumeConstants.NormalBias;
+    volumeArg.ViewBias = VolumeConstants.ViewBias;
+    volumeArg.IrradianceScale = VolumeConstants.IrradianceScale; 
+    volumeArg.Options = VolumeConstants.Options;
+    
+    const worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
+    
+    const light = payload.radiance;
+
+    const relativePos = abs(worldSpacePos - VolumeConstants.Offset);
+    if (relativePos.x > VolumeConstants.Scale.x || relativePos.y > VolumeConstants.Scale.y || relativePos.z > VolumeConstants.Scale.z)
+    {
+        probeLighting = f32x3(0);
+    }
+    else
+    {
+        const surfaceBias = DDGISurfaceBias(payload.normal, probeRayDirection, VolumeConstants.NormalBias, VolumeConstants.ViewBias);
+        const irradiance = EvaluateDDGIIrradiance(worldSpacePos, surfaceBias, payload.normal, volumeArg, VolumeConstants.Options);
+        
+        const maxAlbedo = 0.9f;
+        probeLighting = irradiance * (min(albedo, maxAlbedo) / PI);
+        probeLighting /= VolumeConstants.IrradianceScale;
+    }
+    
+    StoreRadianceAndDepth(i32x2(rayGetLaunchIndex().xy), max(f32x3(0), light + probeLighting), payload.depth);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+Miss(in ray_payload payload : LightResponsePayload) void
+{
+    payload.bits |= RAY_MISS_BIT;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("ProbeRayGen")
+program Main
+{
+    RayGenerationShader = RayGen;
+    RayMissShader = Miss;
+};

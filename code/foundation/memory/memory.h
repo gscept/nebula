@@ -10,6 +10,75 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
+#include "core/types.h"
+
+namespace Memory
+{
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline unsigned int
+align(unsigned int alignant, unsigned int alignment)
+{
+    return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline unsigned int
+align(int alignant, int alignment)
+{
+    return ((unsigned int)alignant + (unsigned int)alignment - 1) & ~((unsigned int)alignment - 1);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline size_t
+align(size_t alignant, size_t alignment)
+{
+    return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline uintptr_t
+alignptr(uintptr_t alignant, uintptr_t alignment)
+{
+    return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline unsigned int
+align_down(unsigned int alignant, unsigned int alignment)
+{
+    return (alignant / alignment * alignment);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline size_t
+align_down(size_t alignant, size_t alignment)
+{
+    return (alignant / alignment * alignment);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline uintptr_t
+align_downptr(uintptr_t alignant, uintptr_t alignment)
+{
+    return (alignant / alignment * alignment);
+}
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -46,8 +115,19 @@ operator"" _GB(const unsigned long long val)
 #error "UNKNOWN PLATFORM"
 #endif
 
-extern thread_local char ThreadLocalMiniHeap[];
-extern thread_local size_t ThreadLocalMiniHeapIterator;
+struct ThreadLocalMiniHeap
+{
+    ThreadLocalMiniHeap();
+    ~ThreadLocalMiniHeap();
+    
+    void Realloc(size_t numBytes);
+
+    char* heap;
+    size_t iterator;
+    size_t capacity;
+};
+
+extern thread_local ThreadLocalMiniHeap N_ThreadLocalMiniHeap;
 
 //------------------------------------------------------------------------------
 /**
@@ -74,8 +154,21 @@ template<typename TYPE>
 TYPE*
 ArrayAllocStack(size_t size)
 {
-    TYPE* buffer = (TYPE*)(ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator);
-    ThreadLocalMiniHeapIterator += size * sizeof(TYPE);
+    if (size == 0) return nullptr;
+    TYPE* buffer = (TYPE*)(N_ThreadLocalMiniHeap.heap + N_ThreadLocalMiniHeap.iterator);
+    const size_t bytes = size * sizeof(TYPE) + (sizeof(void*) - 1);
+    buffer = (TYPE*)Memory::alignptr((uintptr_t)buffer, sizeof(void*));
+        
+    // Bounds check. This can never be disabled, as we might go OOB, which can
+    // cause buffer overflows and other security issues.
+    if (N_ThreadLocalMiniHeap.iterator + bytes >= N_ThreadLocalMiniHeap.capacity)
+    {
+        // If you run into this error, you're using too much stack memory.
+        // Consider using a separate allocator!
+        n_error("ArrayAllocStack is out of bounds!");
+        return nullptr;
+    }
+    
     if constexpr (!std::is_trivially_constructible<TYPE>::value)
     {
         for (size_t i = 0; i < size; ++i)
@@ -83,6 +176,7 @@ ArrayAllocStack(size_t size)
             ::new(&buffer[i]) TYPE;
         }
     }
+    N_ThreadLocalMiniHeap.iterator += bytes;
     return buffer;
 }
 
@@ -110,7 +204,11 @@ template<typename TYPE>
 void
 ArrayFreeStack(size_t size, TYPE* buffer)
 {
-    char* topPtr = (ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator - size * sizeof(TYPE));
+    if (size == 0)
+        return;
+    const size_t bytes = size * sizeof(TYPE) + (sizeof(void*) - 1);
+    char* topPtr = (N_ThreadLocalMiniHeap.heap + N_ThreadLocalMiniHeap.iterator - bytes);
+    topPtr = (char*)Memory::alignptr((uintptr_t)topPtr, sizeof(void*));
     n_assert(buffer == (TYPE*)topPtr);
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
     {
@@ -119,5 +217,5 @@ ArrayFreeStack(size_t size, TYPE* buffer)
             buffer[i].~TYPE();
         }
     }
-    ThreadLocalMiniHeapIterator -= size * sizeof(TYPE);
+    N_ThreadLocalMiniHeap.iterator -= bytes;
 }

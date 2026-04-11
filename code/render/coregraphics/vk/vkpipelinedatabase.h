@@ -23,6 +23,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
 #include "memory/arenaallocator.h"
+#include "coregraphics/pipeline.h"
 
 namespace Vulkan
 {
@@ -56,30 +57,39 @@ public:
     void Discard();
 
     /// set pass
-    void SetPass(const CoreGraphics::PassId pass);
+    void SetPass(const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass);
     /// set subpass
     void SetSubpass(uint32_t subpass);
     /// set shader
     void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// Set input assembly
     void SetInputAssembly(const CoreGraphics::InputAssemblyKey key);
-    /// gets pipeline if it already exists, or creates if exists
-    VkPipeline GetCompiledPipeline();
-    /// Gets the pipeline associated with a set of state, or returns a previously created one
-    VkPipeline GetCompiledPipeline(
-        const CoreGraphics::PassId pass
+    /// Get if there is a pipeline associated with the current state
+    CoreGraphics::PipelineId GetPipeline(
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo);
-    /// Create pipeline
-    VkPipeline CreatePipeline(
-        const CoreGraphics::PassId pass
+    /// Inject pipeline, used for pipelines created outside of the database
+    void CachePipeline(
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo
-    );
+        , CoreGraphics::PipelineId pipeline);
+    /// Invalidate a pipeline
+    void InvalidatePipeline(const CoreGraphics::PipelineId pipeline);
+    /// gets pipeline if it already exists, or creates if exists
+    VkPipeline GetCompiledPipeline();
+    /// Gets the pipeline associated with a set of state, or returns a previously created one
+    VkPipeline GetCompiledPipeline(
+        const Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> pass
+        , const uint32_t subpass
+        , const CoreGraphics::ShaderProgramId program
+        , const CoreGraphics::InputAssemblyKey inputAssembly
+        , const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// resets all iterators
     void Reset();
 
@@ -92,7 +102,7 @@ private:
 
     VkDevice dev;
     VkPipelineCache cache;
-    CoreGraphics::PassId currentPass;
+    Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId> currentPass;
     uint32_t currentSubpass;
     CoreGraphics::ShaderProgramId currentShaderProgram;
     VkGraphicsPipelineCreateInfo currentShaderInfo;
@@ -125,10 +135,10 @@ private:
     };
     struct Tier4Node : public BaseNode
     {
-        VkPipeline pipeline = VK_NULL_HANDLE;
+        CoreGraphics::PipelineId pipeline = CoreGraphics::InvalidPipelineId;
     };
 
-    Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;
+    Util::Dictionary<Util::Pair<CoreGraphics::PassId, CoreGraphics::RenderPassId>, Tier1Node*> tier1;
     
     Memory::ArenaAllocator<BIG_CHUNK> tierNodeAllocator;
 

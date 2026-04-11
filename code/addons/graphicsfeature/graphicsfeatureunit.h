@@ -12,7 +12,6 @@
 #include "game/featureunit.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
-#include "graphics/stage.h"
 #include "input/inputserver.h"
 #include "managers/cameramanager.h"
 #include "core/cvar.h"
@@ -61,9 +60,7 @@ public:
     void SetGraphicsDebugging(bool value);
 
     /// retrieve the default view
-    Ptr<Graphics::View> GetDefaultView() const;
-    /// retrieve the default stage
-    Ptr<Graphics::Stage> GetDefaultStage() const;
+    Graphics::ViewId GetDefaultView() const;
 
     /// retrieve the default view handle
     ViewHandle GetDefaultViewHandle() const;
@@ -71,30 +68,21 @@ public:
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
 
-    /// Setup terrain biome, run before OnActivate
-    void SetupTerrainBiome(const Terrain::BiomeSettings& biomeParameters);
-
 
     Graphics::GraphicsEntityId globalLight;
 
 private:
     IO::URI defaultFrameScript;
     Util::StringAtom title;
-    Ptr<Graphics::View> defaultView;
-    Ptr<Graphics::Stage> defaultStage;
+    Graphics::ViewId defaultView;
 
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
-    CoreGraphics::WindowId wnd;
+    CoreGraphics::WindowId mainWindow;
 
     Ptr<Game::Manager> graphicsManager;
     Ptr<Game::Manager> cameraManager;
 
-    struct TerrainInstance
-    {
-        Graphics::GraphicsEntityId entity;
-        Util::Array<Terrain::TerrainBiomeId> biomes;
-    } terrain;
     ViewHandle defaultViewHandle;
 
     Core::CVar* r_debug;
@@ -117,24 +105,19 @@ inline void
 GraphicsFeatureUnit::SetWindowTitle(const Util::StringAtom& title)
 {
     this->title = title;
+    if (this->mainWindow != CoreGraphics::InvalidWindowId)
+    {
+        CoreGraphics::WindowSetTitle(this->mainWindow, title.AsString());
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Ptr<Graphics::View>
+inline Graphics::ViewId
 GraphicsFeatureUnit::GetDefaultView() const
 {
     return this->defaultView;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Ptr<Graphics::Stage>
-GraphicsFeatureUnit::GetDefaultStage() const
-{
-    return this->defaultStage;
 }
 
 //------------------------------------------------------------------------------
