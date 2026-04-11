@@ -134,9 +134,13 @@ public:
     /// for range-based iteration
     Iterator begin() const;
     Iterator end() const;
+    size_t size() const;
+    void push_back(const TYPE& item);
 private:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
+    /// destroy and immediately reconstruct an element in-place
+    void Reset(TYPE* elm);
     /// copy content
     void Copy(const ArrayStack<TYPE, STACK_SIZE>& src);
     /// delete content
@@ -367,6 +371,19 @@ ArrayStack<TYPE, STACK_SIZE>::Destroy(TYPE* elm)
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE, int STACK_SIZE> void
+ArrayStack<TYPE, STACK_SIZE>::Reset(TYPE* elm)
+{
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+    {
+        this->Destroy(elm);
+        ::new ((void*)elm) TYPE();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE, int STACK_SIZE>
 ArrayStack<TYPE, STACK_SIZE>::~ArrayStack()
 {
@@ -382,7 +399,7 @@ ArrayStack<TYPE, STACK_SIZE>::Realloc(SizeT _capacity, SizeT _grow)
     this->Delete();
     this->grow = _grow;
     this->capacity = _capacity;
-    this->count = 0;
+    this->count = _capacity;
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
@@ -414,10 +431,10 @@ ArrayStack<TYPE, STACK_SIZE>::operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs)
                 this->elements[i] = rhs.elements[i];
             }
 
-            // properly destroy remaining original elements
+            // properly reset remaining original elements
             for (; i < this->count; i++)
             {
-                this->Destroy(&(this->elements[i]));
+                this->Reset(&(this->elements[i]));
             }
             this->grow = rhs.grow;
             this->count = rhs.count;
@@ -437,8 +454,14 @@ ArrayStack<TYPE, STACK_SIZE>::operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs)
 template<class TYPE, int STACK_SIZE>
 inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept
 {
+    if (this == &rhs)
+    {
+        return;
+    }
     if (this->elements && this->capacity > STACK_SIZE)
+    {
         delete[] this->elements;
+    }
 
     this->capacity = rhs.capacity;
     this->count = rhs.count;
@@ -454,7 +477,9 @@ inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>
         this->elements = this->smallVector;
     }
     else
+    {
         this->elements = rhs.elements;
+    }
 
     rhs.count = 0;
     rhs.capacity = 0;
@@ -559,10 +584,10 @@ ArrayStack<TYPE, STACK_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
             this->elements[toIndex + i] = this->elements[fromIndex + i];
         }
 
-        // destroy remaining elements
+        // reset remaining elements
         for (i = (fromIndex + i) - 1; i < this->count; i++)
         {
-            this->Destroy(&(this->elements[i]));
+            this->Reset(&(this->elements[i]));
         }
     }
     else
@@ -574,10 +599,10 @@ ArrayStack<TYPE, STACK_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
             this->elements[toIndex + i] = this->elements[fromIndex + i];
         }
 
-        // destroy freed elements
+        // reset freed elements
         for (i = int(fromIndex); i < int(toIndex); i++)
         {
-            this->Destroy(&(this->elements[i]));
+            this->Reset(&(this->elements[i]));
         }
     }
 
@@ -635,7 +660,7 @@ ArrayStack<TYPE, STACK_SIZE>::AppendArray(const ArrayStack<TYPE, STACK_SIZE>& rh
     IndexT i;
     for (i = 0; i < rhs.count; i++)
     {
-        this->elements[this->count + i] = std::forward<TYPE>(rhs.elements[i]);
+        this->elements[this->count + i] = rhs.elements[i];
     }
     this->count += rhs.count;
 }
@@ -656,7 +681,7 @@ ArrayStack<TYPE, STACK_SIZE>::AppendArray(const TYPE* arr, const SizeT count)
     IndexT i;
     for (i = 0; i < count; i++)
     {
-        this->elements[this->count + i] = std::forward<TYPE>(arr[i]);
+        this->elements[this->count + i] = arr[i];
     }
     this->count += count;
 }
@@ -691,6 +716,24 @@ template<class TYPE, int STACK_SIZE> const SizeT
 ArrayStack<TYPE, STACK_SIZE>::Size() const
 {
     return this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE> size_t
+ArrayStack<TYPE, STACK_SIZE>::size() const
+{
+    return this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE> void
+ArrayStack<TYPE, STACK_SIZE>::push_back(const TYPE& item)
+{
+    this->Append(item);
 }
 
 //------------------------------------------------------------------------------
@@ -831,10 +874,12 @@ ArrayStack<TYPE, STACK_SIZE>::EraseIndexSwap(IndexT index)
     IndexT lastElementIndex = this->count - 1;
     if (index < lastElementIndex)
     {
-        if constexpr (!std::is_trivially_move_assignable<TYPE>::value)
-            this->elements[index] = std::move(this->elements[lastElementIndex]);
-        else
-            this->elements[index] = this->elements[lastElementIndex];
+        this->elements[index] = std::move(this->elements[lastElementIndex]);
+        this->Reset(&(this->elements[lastElementIndex]));
+    }
+    else
+    {
+        this->Reset(&(this->elements[index]));
     }
     this->count--;
 }
@@ -873,7 +918,7 @@ template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::EraseBack()
 {
     n_assert(this->count > 0);
-    this->Destroy(&(this->elements[this->count - 1]));
+    this->Reset(&(this->elements[this->count - 1]));
     this->count--;
 }
 
@@ -883,7 +928,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseBack()
 template<class TYPE, int STACK_SIZE> void 
 ArrayStack<TYPE, STACK_SIZE>::EraseFront()
 {
-    this->Erase(0);
+    this->EraseIndex(0);
 }
 
 //------------------------------------------------------------------------------
@@ -918,7 +963,7 @@ ArrayStack<TYPE, STACK_SIZE>::Clear()
     IndexT i;
     for (i = 0; i < this->count; i++)
     {
-        this->Destroy(&(this->elements[i]));
+        this->Reset(&(this->elements[i]));
     }
     this->count = 0;
 }
@@ -1066,6 +1111,7 @@ ArrayStack<TYPE, STACK_SIZE>::Fill(IndexT first, SizeT num, const TYPE& elm)
     if ((first + num) > this->count)
     {
         this->GrowTo(first + num);
+        this->count = first + num;
     }
     IndexT i;
     for (i = first; i < (first + num); i++)

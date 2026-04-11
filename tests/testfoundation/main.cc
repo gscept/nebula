@@ -12,6 +12,7 @@
 #include "arraytest.h"
 #include "arrayallocatortest.h"
 #include "stacktest.h"
+#include "arraystacktest.h"
 #include "listtest.h"
 #include "dictionarytest.h"
 #include "fixedarraytest.h"
@@ -106,6 +107,7 @@ __cdecl main()
     testRunner->AttachTestCase(ArrayTest::Create());
     testRunner->AttachTestCase(PinnedArrayTest::Create());
     testRunner->AttachTestCase(StackArrayTest::Create());
+    testRunner->AttachTestCase(ArrayStackTest::Create());
     testRunner->AttachTestCase(StackTest::Create());
     testRunner->AttachTestCase(ListTest::Create());
     testRunner->AttachTestCase(DictionaryTest::Create());

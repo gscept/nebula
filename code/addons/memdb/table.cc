@@ -493,7 +493,7 @@ Table::SerializeInstance(RowId row) const
         SizeT const typeSize = AttributeRegistry::TypeSize(attribute);
         instanceSize += typeSize;
     }
-    blob.Reserve(instanceSize);
+    blob.SetSize(instanceSize);
 
     uint32_t offset = 0;
     for (uint32_t i = 0; i < this->attributes.Size(); i++)

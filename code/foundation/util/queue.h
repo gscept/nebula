@@ -4,7 +4,6 @@
     @class Util::Queue
     
     Faster queue class that apart from Enqueue has constant time operations.
-    Assumes that items can be trivially moved by using memmove.
                 
     @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
@@ -13,12 +12,7 @@
 #include "math/scalar.h"
 #include "util/round.h"
 #include <type_traits>
-
-#if (__cplusplus >= 201703L ) || (_MSVC_LANG >= 201703L)
-#define IFCONSTEXPR if constexpr
-#else
-#define IFCONSTEXPR if
-#endif
+#include <new>
 
 
 //------------------------------------------------------------------------------
@@ -142,7 +136,7 @@ Queue<TYPE>::~Queue()
     if (this->data)
     {
         this->Clear();
-        delete[] this->data;
+        ::operator delete[](this->data);
     }    
     this->data = nullptr;
 }
@@ -154,12 +148,15 @@ Queue<TYPE>::~Queue()
 template<class TYPE>
 Queue<TYPE>::Queue(const Queue<TYPE>& rhs):
     data(nullptr),
+    grow(16),
+    start(0),
+    size(0),
     capacity(0)
 {
     this->Reserve(rhs.size);
     for (IndexT i = 0; i < rhs.size; i++)
     {
-        this->data[i] = rhs[i];
+        ::new ((void*)&this->data[i]) TYPE(rhs[i]);
     }    
     this->size = rhs.size;
     this->grow = rhs.grow;
@@ -191,10 +188,11 @@ Queue<TYPE>::operator=(const Queue<TYPE>& rhs)
 {
     if (this != &rhs)
     {
+        this->Clear();
         this->Reserve(rhs.size);
         for (IndexT i = 0; i < rhs.size; i++)
         {
-            this->data[i] = rhs[i];
+            ::new ((void*)&this->data[i]) TYPE(rhs[i]);
         }
         this->size = rhs.size;
         this->grow = rhs.grow;
@@ -211,6 +209,11 @@ Queue<TYPE>::operator=(Queue<TYPE>&& rhs)
 {
     if (this != &rhs)
     {
+        if (this->data)
+        {
+            this->Clear();
+            ::operator delete[](this->data);
+        }
         this->data = rhs.data;
         this->size = rhs.size;
         this->grow = rhs.grow;
@@ -218,6 +221,7 @@ Queue<TYPE>::operator=(Queue<TYPE>&& rhs)
         this->start = rhs.start;
         rhs.data = nullptr;
         rhs.size = 0;
+        rhs.capacity = 0;
     }
 }
 
@@ -294,25 +298,62 @@ Util::Queue<TYPE>::EraseIndex(const IndexT i)
     {
         IndexT idx = this->MapIndex(i);
 
-        this->DestroyElement<TYPE>(idx);
-
-        // check if wrapped around
-        if (idx < this->start)
+        if constexpr(std::is_trivially_copyable_v<TYPE>)
         {
-            for (IndexT j = 0; j < this->size - i; ++j)
+            // Trivially-copyable: plain byte assignment is safe; no construction/destruction needed
+            // check if wrapped around
+            if (idx < this->start)
             {
-                this->data[idx] = this->data[idx+1];
-                idx++;
+                for (IndexT j = 0; j < this->size - i - 1; ++j)
+                {
+                    this->data[idx] = this->data[idx + 1];
+                    idx++;
+                }
+            }
+            else
+            {
+                for (IndexT j = 0; j < i; j++)
+                {
+                    this->data[idx] = this->data[idx - 1];
+                    --idx;
+                }
+                this->start = this->MapIndex(1);
             }
         }
         else
         {
-            for (IndexT j = 0; j < i; j++)
+            // Non-trivially-copyable: erased slot is dead after DestroyElement.
+            // Use placement-new for the first write into the dead slot, move-assign for the rest,
+            // then explicitly destroy the vacated tail slot.
+            this->DestroyElement<TYPE>(idx);
+            // check if wrapped around
+            if (idx < this->start)
             {
-                this->data[idx] = this->data[idx-1];
-                --idx;
+                SizeT remaining = this->size - i - 1;
+                if (remaining > 0)
+                {
+                    ::new ((void*)&this->data[idx]) TYPE(std::move(this->data[idx + 1]));
+                    idx++;
+                    for (IndexT j = 1; j < remaining; ++j)
+                    {
+                        this->data[idx] = std::move(this->data[idx + 1]);
+                        idx++;
+                    }
+                    this->data[idx].~TYPE();
+                }
             }
-            this->start = this->MapIndex(1);
+            else
+            {
+                ::new ((void*)&this->data[idx]) TYPE(std::move(this->data[idx - 1]));
+                --idx;
+                for (IndexT j = 1; j < i; ++j)
+                {
+                    this->data[idx] = std::move(this->data[idx - 1]);
+                    --idx;
+                }
+                this->data[idx].~TYPE();
+                this->start = this->MapIndex(1);
+            }
         }
         --this->size;
     }
@@ -342,13 +383,13 @@ Queue<TYPE>::Reserve(SizeT num)
         // round up to next multiple of 64                
         num = num<64? num: Util::Round::RoundUp(num, 64);
 
-        TYPE * newdata = new TYPE[num];
+        TYPE * newdata = (TYPE*)::operator new[](num * sizeof(TYPE));
 
         // check if empty
         if (this->capacity > 0)
         {
             // we could use SFINAE here as well, but as its a single if in a (rare) call its not worth the bother
-            IFCONSTEXPR(std::is_trivially_copyable_v<TYPE>)
+            if constexpr(std::is_trivially_copyable_v<TYPE>)
             {
                 if (this->size > 0)
                 {
@@ -367,7 +408,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 }
                 if (this->data != nullptr)
                 {
-                    delete[] this->data;
+                    ::operator delete[](this->data);
                 }
             }
             else
@@ -375,13 +416,13 @@ Queue<TYPE>::Reserve(SizeT num)
                 for (IndexT i = 0; i < this->size; i++)
                 {
                     IndexT idx = this->MapIndex(i);
-                    n_assert(idx < this->size);
-                    newdata[i] = std::move(this->data[idx]);
+                    n_assert(idx < this->capacity);
+                    ::new ((void*)&newdata[i]) TYPE(std::move(this->data[idx]));
                     this->DestroyElement<TYPE>(idx);
                 }
                 if (this->data != nullptr)
                 {
-                    delete[] this->data;
+                    ::operator delete[](this->data);
                 }
             }
         }
@@ -465,7 +506,7 @@ Queue<TYPE>::Enqueue(const TYPE& e)
     {
         this->Grow();
     }
-    this->data[this->MapIndex(this->size++)] = e;
+    ::new ((void*)&this->data[this->MapIndex(this->size++)]) TYPE(e);
 }
 
 //------------------------------------------------------------------------------
@@ -481,7 +522,7 @@ Queue<TYPE>::Enqueue(TYPE&& e)
         this->Grow();
     }
     
-    this->data[this->MapIndex(this->size++)]= std::move(e);
+    ::new ((void*)&this->data[this->MapIndex(this->size++)]) TYPE(std::move(e));
 }
 
 //------------------------------------------------------------------------------
@@ -494,15 +535,8 @@ Queue<TYPE>::Dequeue()
 {    
     n_assert(this->size > 0);
 
-    TYPE t = this->data[this->start];
-    #if __cplusplus > 201703L
-    if constexpr (!std::is_nothrow_destructible_v<TYPE>)
-    {
-        (&(this->data[this->start]))->~TYPE();
-    }
-    #else
+    TYPE t = std::move(this->data[this->start]);
     this->DestroyElement<TYPE>(this->start);
-    #endif
     this->start = this->MapIndex(1);
     --this->size;
     return t;

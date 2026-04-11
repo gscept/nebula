@@ -155,10 +155,16 @@ public:
     TYPE PopBack();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
+    /// insert rvalue element before element at index
+    void Insert(IndexT index, TYPE&& elm);
     /// insert element into sorted array, return index where element was included
     IndexT InsertSorted(const TYPE& elm);
+    /// insert rvalue element into sorted array, return index where element was included
+    IndexT InsertSorted(TYPE&& elm);
     /// insert element at the first non-identical position, return index of inclusion position
     IndexT InsertAtEndOfIdenticalRange(IndexT startIndex, const TYPE& elm);
+    /// insert rvalue element at the first non-identical position, return index of inclusion position
+    IndexT InsertAtEndOfIdenticalRange(IndexT startIndex, TYPE&& elm);
     /// test if the array is sorted, this is a slow operation!
     bool IsSorted() const;
     /// clear array (calls destructors)
@@ -223,6 +229,13 @@ public:
     /// grow array with grow value
     void Grow();
 protected:
+    template<typename ELEM>
+    void InsertInternal(IndexT index, ELEM&& elm);
+    template<typename ELEM>
+    IndexT InsertAtEndOfIdenticalRangeInternal(IndexT startIndex, ELEM&& elm);
+    template<typename ELEM>
+    IndexT InsertSortedInternal(ELEM&& elm);
+
     template<class T, bool S>
     friend class FixedArray;
 
@@ -1206,18 +1219,39 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 void
 Array<TYPE, SMALL_VECTOR_SIZE>::Insert(IndexT index, const TYPE& elm)
 {
+    this->InsertInternal(index, elm);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+void
+Array<TYPE, SMALL_VECTOR_SIZE>::Insert(IndexT index, TYPE&& elm)
+{
+    this->InsertInternal(index, std::move(elm));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+template<typename ELEM>
+void
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertInternal(IndexT index, ELEM&& elm)
+{
     #if NEBULA_BOUNDSCHECKS
     n_assert(index <= this->count && (index >= 0));
     #endif
     if (index == this->count)
     {
         // special case: append element to back
-        this->Append(elm);
+        this->Append(std::forward<ELEM>(elm));
     }
     else
     {
         this->Move(index, index + 1);
-        this->elements[index] = elm;
+        this->elements[index] = std::forward<ELEM>(elm);
     }
 }
 
@@ -1807,18 +1841,43 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 IndexT
 Array<TYPE, SMALL_VECTOR_SIZE>::InsertAtEndOfIdenticalRange(IndexT startIndex, const TYPE& elm)
 {
+    return this->InsertAtEndOfIdenticalRangeInternal(startIndex, elm);
+}
+
+//------------------------------------------------------------------------------
+/**
+    This inserts an rvalue element at the end of a range of identical elements
+    starting at a given index. Performance is O(n). Returns the index
+    at which the element was added.
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+IndexT
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertAtEndOfIdenticalRange(IndexT startIndex, TYPE&& elm)
+{
+    return this->InsertAtEndOfIdenticalRangeInternal(startIndex, std::move(elm));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+template<typename ELEM>
+IndexT
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertAtEndOfIdenticalRangeInternal(IndexT startIndex, ELEM&& elm)
+{
+    const TYPE& probe = elm;
     IndexT i = startIndex + 1;
     for (; i < this->count; i++)
     {
-        if (this->elements[i] != elm)
+        if (this->elements[i] != probe)
         {
-            this->Insert(i, elm);
+            this->InsertInternal(i, std::forward<ELEM>(elm));
             return i;
         }
     }
 
     // fallthrough: new element needs to be appended to end
-    this->Append(elm);
+    this->Append(std::forward<ELEM>(elm));
     return (this->Size() - 1);
 }
 
@@ -1831,11 +1890,35 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 IndexT
 Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(const TYPE& elm)
 {
+    return this->InsertSortedInternal(elm);
+}
+
+//------------------------------------------------------------------------------
+/**
+    This inserts the rvalue element into a sorted array. Returns the index
+    at which the element was inserted.
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+IndexT
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(TYPE&& elm)
+{
+    return this->InsertSortedInternal(std::move(elm));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+template<typename ELEM>
+IndexT
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertSortedInternal(ELEM&& elm)
+{
+    const TYPE& probe = elm;
     SizeT num = this->Size();
     if (num == 0)
     {
         // array is currently empty
-        this->Append(elm);
+        this->Append(std::forward<ELEM>(elm));
         return this->Size() - 1;
     }
     else
@@ -1849,12 +1932,12 @@ Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(const TYPE& elm)
             if (0 != (half = num/2)) 
             {
                 mid = lo + ((num & 1) ? half : (half - 1));
-                if (elm < this->elements[mid])
+                if (probe < this->elements[mid])
                 {
                     hi = mid - 1;
                     num = num & 1 ? half : half - 1;
                 } 
-                else if (elm > this->elements[mid]) 
+                else if (probe > this->elements[mid]) 
                 {
                     lo = mid + 1;
                     num = half;
@@ -1863,26 +1946,26 @@ Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(const TYPE& elm)
                 {
                     // element already exists at [mid], append the
                     // new element to the end of the range
-                    return this->InsertAtEndOfIdenticalRange(mid, elm);
+                    return this->InsertAtEndOfIdenticalRangeInternal(mid, std::forward<ELEM>(elm));
                 }
             } 
             else if (0 != num) 
             {
-                if (elm < this->elements[lo])
+                if (probe < this->elements[lo])
                 {
-                    this->Insert(lo, elm);
+                    this->InsertInternal(lo, std::forward<ELEM>(elm));
                     return lo;
                 }
-                else if (elm > this->elements[lo])
+                else if (probe > this->elements[lo])
                 {
-                    this->Insert(lo + 1, elm);
+                    this->InsertInternal(lo + 1, std::forward<ELEM>(elm));
                     return lo + 1;
                 }
                 else      
                 {
                     // element already exists at [low], append 
                     // the new element to the end of the range
-                    return this->InsertAtEndOfIdenticalRange(lo, elm);
+                    return this->InsertAtEndOfIdenticalRangeInternal(lo, std::forward<ELEM>(elm));
                 }
             } 
             else 
@@ -1890,18 +1973,18 @@ Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(const TYPE& elm)
                 #if NEBULA_BOUNDSCHECKS
                 n_assert(0 == lo);
                 #endif
-                this->Insert(lo, elm);
+                this->InsertInternal(lo, std::forward<ELEM>(elm));
                 return lo;
             }
         }
-        if (elm < this->elements[lo])
+        if (probe < this->elements[lo])
         {
-            this->Insert(lo, elm);
+            this->InsertInternal(lo, std::forward<ELEM>(elm));
             return lo;
         }
-        else if (elm > this->elements[lo])
+        else if (probe > this->elements[lo])
         {
-            this->Insert(lo + 1, elm);
+            this->InsertInternal(lo + 1, std::forward<ELEM>(elm));
             return lo + 1;
         }
         else
