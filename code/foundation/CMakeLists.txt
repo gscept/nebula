@@ -689,7 +689,7 @@ nebula_begin_module(foundation)
     elseif(FIPS_LINUX)
         fips_dir(threading/linux GROUP "threading/linux")
         fips_files(
-            posixevent.h
+            linuxevent.h
             linuxthread.cc
             linuxthread.h
         )
