@@ -258,13 +258,13 @@ BlobTest::Run()
     {
         const char bigSrc[] = "longerdata";
         const char smallSrc[] = "short";
-        Util::Blob big(bigSrc, sizeof(bigSrc));
-        Util::Blob small(smallSrc, sizeof(smallSrc));
-        VERIFY(big != small);
-        VERIFY(big > small);
-        VERIFY(big >= small);
-        VERIFY(small < big);
-        VERIFY(small <= big);
+        Util::Blob bigBlob(bigSrc, sizeof(bigSrc));
+        Util::Blob smallBlob(smallSrc, sizeof(smallSrc));
+        VERIFY(bigBlob != smallBlob);
+        VERIFY(bigBlob > smallBlob);
+        VERIFY(bigBlob >= smallBlob);
+        VERIFY(smallBlob < bigBlob);
+        VERIFY(smallBlob <= bigBlob);
     }
 
     // Comparisons: same size, different content
