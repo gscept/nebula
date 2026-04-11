@@ -296,7 +296,7 @@ StringTest::Run()
     // FromBlob/AsBlob round-trip
     {
         Util::Blob blob;
-        blob.Reserve(5);
+        blob.SetSize(5);
         unsigned char* data = (unsigned char*)blob.GetPtr();
         data[0] = 0xAB;
         data[1] = 0xCD;

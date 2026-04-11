@@ -1276,7 +1276,7 @@ String::AsBlob() const
     Util::Blob b;
     n_assert((this->strLen & 1) == 0);
     SizeT s = this->strLen >> 1;
-    b.Reserve(s);
+    b.SetSize(s);
     unsigned char * ptr = (unsigned char*)b.GetPtr();
     const unsigned char* src = (const unsigned char*)this->AsCharPtr();
     SizeT c = 0;
