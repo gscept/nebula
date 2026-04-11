@@ -50,4 +50,8 @@
             "Value":       "proj:work/materials"
          }
       ],
+      "Addons":
+      [
+         "tbui",
+      ],
 }

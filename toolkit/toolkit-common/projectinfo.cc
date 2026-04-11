@@ -200,11 +200,8 @@ ProjectInfo::ParseProjectInfoFile(const IO::URI & path)
 
         if (jsonReader->SetToFirstChild()) do
         {
-            if (!jsonReader->HasChildren())
-            {
-                this->attrs.Add(jsonReader->GetCurrentNodeName(), jsonReader->GetString());
-            }
-            else
+            String thing = jsonReader->GetCurrentNodeName();
+            if (jsonReader->HasChildren())
             {
                 String currentKey = jsonReader->GetCurrentNodeName();
                 Dictionary<String, String> values;
@@ -215,6 +212,10 @@ ProjectInfo::ParseProjectInfoFile(const IO::URI & path)
                 } 
                 while (jsonReader->SetToNextChild());
                 this->listAttrs.Add(currentKey, values);
+            }
+            else if (jsonReader->IsString())
+            {
+                this->attrs.Add(jsonReader->GetCurrentNodeName(), jsonReader->GetString());
             }
         } 
         while (jsonReader->SetToNextChild());
