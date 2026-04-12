@@ -20,6 +20,7 @@
 #include "tools/pathconverter.h"
 #include "io/assignregistry.h"
 #include "tools/livebatcher.h"
+#include "editor/ui/windows/navigation.h"
 
 #include "game/editorstate.h"
 
@@ -53,6 +54,10 @@ Create()
     n_assert(res == ToolkitUtil::ProjectInfo::Success);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("int", projectInfo.GetAttr("IntermediateDir")));
     IO::IoServer::Instance()->CreateDirectory("int:");
+
+    // Load optional runtime hooks up-front so tool windows do not trigger
+    // first-use loading in the middle of interaction.
+    Presentation::EnsureNavigationUiHookLoaded();
 
     LiveBatcher::Setup();
 

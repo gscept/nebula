@@ -13,6 +13,7 @@
 #include "idtest.h"
 #include "databasetest.h"
 #include "entitysystemtest.h"
+#include "moduletest.h"
 #include "scriptingtest.h"
 
 #include "testcomponents.h"
@@ -80,6 +81,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     GameAppTest gameApp;
     gameApp.SetCompanyName("Test Company");
     gameApp.SetAppTitle("NEBULA GAME-TESTS");
+    gameApp.SetCmdLineArgs(args);
 
     Game::BlueprintManager::SetBlueprintsFilename("blueprints_test.json", "bin:");
 
@@ -97,6 +99,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(IdTest::Create());
     testRunner->AttachTestCase(DatabaseTest::Create());
     testRunner->AttachTestCase(EntitySystemTest::Create());
+    testRunner->AttachTestCase(ModuleTest::Create());
     //testRunner->AttachTestCase(ScriptingTest::Create());
     
     bool result = testRunner->Run(); 

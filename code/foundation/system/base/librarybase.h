@@ -20,6 +20,8 @@ class Library
 public:
     /// constructor
     Library();
+    /// destructor
+    virtual ~Library() = default;
 
     /// set the executable path
     void SetPath(const IO::URI& uri);

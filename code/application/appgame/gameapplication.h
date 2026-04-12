@@ -23,6 +23,7 @@
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
 #include "basegamefeature/basegamefeatureunit.h"
+#include "game/modulemanager.h"
 
 //------------------------------------------------------------------------------
 namespace App
@@ -57,6 +58,8 @@ protected:
     virtual void CleanupGameFeatures(); 
     /// setup app from cmd lines
     virtual void SetupAppFromCmdLineArgs();
+    /// parse runtime module startup options from command line
+    virtual void SetupRuntimeModulesFromCmdLineArgs();
     
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
@@ -64,6 +67,9 @@ protected:
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
+    Ptr<Game::ModuleManager> moduleManager;
+    Util::Array<Game::RuntimeModuleConfig> runtimeModuleConfigs;
+    bool runtimeModuleStrictMode;
 
 
     static bool editorEnabled;

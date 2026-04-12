@@ -658,6 +658,8 @@ nebula_begin_module(foundation)
             system/posix/posixsysteminfo.cc
             system/posix/posixenvironment.cc
             system/posix/posixenvironment.h
+            system/posix/posixlibrary.cc
+            system/posix/posixlibrary.h
             system/posix/posixsettings.cc
             system/posix/posixsettings.h
         )

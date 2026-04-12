@@ -42,6 +42,7 @@ GameApplication::GameApplication() :
 #if __NEBULA_HTTP__
     defaultTcpPort(2100),
 #endif
+    runtimeModuleStrictMode(false),
     exitHandler(this)
 {
     __ConstructSingleton;
@@ -110,6 +111,8 @@ GameApplication::Open()
 
         Options::InitOptions();
 
+        this->SetupRuntimeModulesFromCmdLineArgs();
+
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = System::NumCpuCores;
         jobSystemInfo.name = "JobSystem";
@@ -159,6 +162,20 @@ GameApplication::Open()
 
         // create and add new game features
         this->SetupGameFeatures();
+
+        if (this->runtimeModuleConfigs.Size() > 0)
+        {
+            this->moduleManager = Game::ModuleManager::Create();
+            const bool loaded = this->moduleManager->LoadModules(this->runtimeModuleConfigs, this->gameServer, this->runtimeModuleStrictMode);
+            if (!loaded && this->runtimeModuleStrictMode)
+            {
+                n_warning("GameApplication::Open(): runtime module loading failed in strict mode\n");
+                this->moduleManager->UnloadModules(this->gameServer);
+                this->moduleManager = nullptr;
+                return false;
+            }
+        }
+
         // open the game server
         this->gameServer->Open();
         // start the game
@@ -186,9 +203,16 @@ GameApplication::Close()
     this->gameServer->Stop();
     this->gameServer->CleanupWorld(Game::GetWorld(WORLD_DEFAULT));
 
+    if (this->moduleManager.isvalid())
+    {
+        this->moduleManager->UnloadModules(this->gameServer);
+        this->moduleManager = nullptr;
+    }
+
     this->gameServer->Close();
 
     this->CleanupGameFeatures();
+
     this->gameServer->RemoveGameFeature(this->baseGameFeature);
     this->baseGameFeature = nullptr;
 
@@ -320,6 +344,133 @@ GameApplication::SetupAppFromCmdLineArgs()
         this->SetAppTitle(args.GetString("-appname"));
     }
     editorEnabled = args.GetBoolFlag("-editor");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GameApplication::SetupRuntimeModulesFromCmdLineArgs()
+{
+    this->runtimeModuleConfigs.Clear();
+    this->runtimeModuleStrictMode = false;
+    const Util::CommandLineArgs& args = this->GetCmdLineArgs();
+
+    auto findModuleConfig = [this](const Util::String& moduleName) -> IndexT
+    {
+        Util::String check = moduleName;
+        check.ToLower();
+        for (IndexT i = 0; i < this->runtimeModuleConfigs.Size(); i++)
+        {
+            Util::String candidate = this->runtimeModuleConfigs[i].name;
+            candidate.ToLower();
+            if (candidate == check)
+                return i;
+        }
+        return InvalidIndex;
+    };
+
+    // Initialize runtime modules from project settings. CLI flags can then
+    // override these values on a per-module basis.
+    for (IndexT i = 0; i < (IndexT)Options::ProjectSettings.runtime_modules.size(); i++)
+    {
+        const std::unique_ptr<App::RuntimeModuleSettingsT>& moduleSettings = Options::ProjectSettings.runtime_modules[i];
+        if (!moduleSettings)
+            continue;
+
+        if (moduleSettings->name.empty())
+            continue;
+
+        Game::RuntimeModuleConfig config;
+        config.name = moduleSettings->name.c_str();
+        config.path = moduleSettings->path.c_str();
+        config.enabled = moduleSettings->enabled;
+        config.required = moduleSettings->required;
+        this->runtimeModuleConfigs.Append(config);
+    }
+
+    this->runtimeModuleStrictMode = Options::ProjectSettings.runtime_modules_strict;
+
+    if (args.HasArg("-module"))
+    {
+        Util::Array<Util::String> modules = args.GetStrings("-module");
+        for (IndexT i = 0; i < modules.Size(); i++)
+        {
+            if (!modules[i].IsValid())
+                continue;
+
+            IndexT index = findModuleConfig(modules[i]);
+            if (index == InvalidIndex)
+            {
+                Game::RuntimeModuleConfig config;
+                config.name = modules[i];
+                config.enabled = true;
+                this->runtimeModuleConfigs.Append(config);
+            }
+            else
+            {
+                this->runtimeModuleConfigs[index].enabled = true;
+            }
+        }
+    }
+
+    if (args.HasArg("-modulepath"))
+    {
+        Util::Array<Util::String> mappings = args.GetStrings("-modulepath");
+        for (IndexT i = 0; i < mappings.Size(); i++)
+        {
+            Util::Array<Util::String> pair;
+            mappings[i].Tokenize("=", pair);
+            if (pair.Size() != 2)
+            {
+                n_warning("GameApplication: ignoring invalid -modulepath value '%s' (expected name=path)\n", mappings[i].AsCharPtr());
+                continue;
+            }
+
+            IndexT index = findModuleConfig(pair[0]);
+            if (index == InvalidIndex)
+            {
+                Game::RuntimeModuleConfig config;
+                config.name = pair[0];
+                config.path = pair[1];
+                config.enabled = true;
+                this->runtimeModuleConfigs.Append(config);
+            }
+            else
+            {
+                this->runtimeModuleConfigs[index].path = pair[1];
+            }
+        }
+    }
+
+    if (args.HasArg("-nomodule"))
+    {
+        Util::Array<Util::String> disabledModules = args.GetStrings("-nomodule");
+        for (IndexT i = 0; i < disabledModules.Size(); i++)
+        {
+            if (!disabledModules[i].IsValid())
+                continue;
+
+            IndexT index = findModuleConfig(disabledModules[i]);
+            if (index == InvalidIndex)
+            {
+                Game::RuntimeModuleConfig config;
+                config.name = disabledModules[i];
+                config.enabled = false;
+                this->runtimeModuleConfigs.Append(config);
+            }
+            else
+            {
+                this->runtimeModuleConfigs[index].enabled = false;
+            }
+        }
+    }
+
+    if (args.GetBoolFlag("-modulestrict"))
+    {
+        this->runtimeModuleStrictMode = true;
+    }
+
 }
 
 } // namespace App

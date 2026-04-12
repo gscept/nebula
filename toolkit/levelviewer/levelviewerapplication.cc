@@ -114,6 +114,38 @@ LevelViewerGameStateApplication::SetupStateHandlers()
 //------------------------------------------------------------------------------
 /**
 */
+void
+LevelViewerGameStateApplication::SetupRuntimeModulesFromCmdLineArgs()
+{
+    GameApplication::SetupRuntimeModulesFromCmdLineArgs();
+
+    Util::String moduleName = "navigationfeaturemodule";
+    bool found = false;
+    for (IndexT i = 0; i < this->runtimeModuleConfigs.Size(); i++)
+    {
+        Util::String candidate = this->runtimeModuleConfigs[i].name;
+        candidate.ToLower();
+        if (candidate == moduleName)
+        {
+            this->runtimeModuleConfigs[i].enabled = true;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        Game::RuntimeModuleConfig config;
+        config.name = moduleName;
+        config.enabled = true;
+        config.required = false;
+        this->runtimeModuleConfigs.Append(config);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 LevelViewerGameStateApplication::SetupGameFeatures()
 {
@@ -158,15 +190,12 @@ LevelViewerGameStateApplication::SetupGameFeatures()
     // create post effect
     this->postEffectFeature = PostEffect::PostEffectFeatureUnit::Create();
 
-    this->navigationFeature = Navigation::NavigationFeatureUnit::Create();
-
     // attach features  
     this->gameServer->AttachGameFeature(this->baseGameFeature.upcast<Game::FeatureUnit>());    
     this->gameServer->AttachGameFeature(this->effectFeature.cast<Game::FeatureUnit>());
     this->gameServer->AttachGameFeature(this->graphicsFeature.cast<Game::FeatureUnit>());
     this->gameServer->AttachGameFeature(this->scriptingFeature.upcast<Game::FeatureUnit>());
     this->gameServer->AttachGameFeature(this->physicsFeature.upcast<Game::FeatureUnit>());        
-    this->gameServer->AttachGameFeature(this->navigationFeature.cast<Game::FeatureUnit>());
     
     // setup intermediate gui
     this->imgui = Dynui::ImguiAddon::Create();
@@ -238,8 +267,6 @@ LevelViewerGameStateApplication::CleanupGameFeatures()
     this->imgui = 0;
 
     this->remoteClient = 0;
-    this->gameServer->RemoveGameFeature(this->navigationFeature.upcast<Game::FeatureUnit>());
-    this->navigationFeature = 0;
     this->gameServer->RemoveGameFeature(this->postEffectFeature.upcast<Game::FeatureUnit>());
     this->postEffectFeature = 0;
     this->gameServer->RemoveGameFeature(this->uiFeature.upcast<Game::FeatureUnit>());
