@@ -357,6 +357,45 @@ Mat4Test::Run()
                                   vec4(-0.861614943, 0.496286869, 0.106390685, 0.000000f),
                                   vec4(-0.398986936, -0.532691121, -0.746357560, 0.000000f),
                                   vec4( 0.000000f,  0.000000f,  0.000000f, 1.000000f))));
+
+    // wrapper helpers + transform semantics
+    const vec3 trsPos(3.0f, -2.0f, 7.0f);
+    const quat trsRot = rotationquataxis(normalize(vec3(0.5f, 1.0f, -0.25f)), 0.37f);
+    const vec3 trsScale(2.0f, 2.0f, 2.0f);
+
+    // trs() is documented shorthand for affine(scale, rotation, position)
+    const mat4 mTrs = trs(trsPos, trsRot, trsScale);
+    const mat4 mAffine = affine(trsScale, trsRot, trsPos);
+    VERIFY(matnearequal(mTrs, mAffine));
+
+    // isidentity should only be true for identity matrix
+    VERIFY(isidentity(mat4::identity));
+    VERIFY(!isidentity(translation(1.0f, 2.0f, 3.0f)));
+
+    // get_scale should extract axis lengths from an affine matrix
+    vec4 extractedScale;
+    mAffine.get_scale(extractedScale);
+    VERIFY(nearequal(extractedScale, vec4(trsScale, 1.0f), E4));
+
+    // point receives translation, vector does not
+    const mat4 translationOnly = translation(5.0f, -3.0f, 2.0f);
+    const point pIn(1.0f, 2.0f, 3.0f);
+    const vector vIn(1.0f, 2.0f, 3.0f);
+    const point pOut = translationOnly * pIn;
+    const vector vOut = translationOnly * vIn;
+    VERIFY(nearequal3(pOut, vec4(6.0f, -1.0f, 5.0f, 1.0f), vec4(0.0001f)));
+    VERIFY(nearequal3(vOut, vec4(1.0f, 2.0f, 3.0f, 0.0f), vec4(0.0001f)));
+
+    // projection wrapper dispatch should match configured handedness
+#if PROJECTION_HANDEDNESS_LH
+    VERIFY(matnearequal(lookat(eye, at, up), lookatlh(eye, at, up)));
+    VERIFY(matnearequal(perspfov(70.0f, 3.0f / 4.0f, 0.1f, 50.0f), perspfovlh(70.0f, 3.0f / 4.0f, 0.1f, 50.0f)));
+    VERIFY(matnearequal(ortho(1280.0f, 1024.0f, 0.1f, 100.0f), ortholh(1280.0f, 1024.0f, 0.1f, 100.0f)));
+#else
+    VERIFY(matnearequal(lookat(eye, at, up), lookatrh(eye, at, up)));
+    VERIFY(matnearequal(perspfov(70.0f, 3.0f / 4.0f, 0.1f, 50.0f), perspfovrh(70.0f, 3.0f / 4.0f, 0.1f, 50.0f)));
+    VERIFY(matnearequal(ortho(1280.0f, 1024.0f, 0.1f, 100.0f), orthorh(1280.0f, 1024.0f, 0.1f, 100.0f)));
+#endif
 }
 
 } // namespace Test

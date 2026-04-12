@@ -60,7 +60,7 @@ transform::Set(const Math::vec3& pos, const Math::quat& rot, const Math::vec3& i
 {
     this->rotation = rot;
     this->position = pos;
-    this->position = inScale;
+    this->scale = inScale;
 }
 
 
@@ -77,7 +77,7 @@ transform::GetRelative(const transform& child)
     result.scale = multiply(scale, invChildScale);
     quat invChildRot = inverse(child.rotation);
     result.rotation = rotation * invChildRot;
-    result.position = multiply(rotate(result.rotation, (position - child.position)), invChildScale);
+    result.position = multiply(rotate(invChildRot, (position - child.position)), invChildScale);
     return result;
 }
 

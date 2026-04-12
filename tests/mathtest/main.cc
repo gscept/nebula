@@ -19,6 +19,7 @@
 #include "pointtest.h"
 #include "planetest.h"
 #include "bboxtest.h"
+#include "transformtest.h"
 #include "testbase/stackdebug.h"
 
 ImplementNebulaApplication();
@@ -54,6 +55,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(PointTest::Create());
     testRunner->AttachTestCase(PlaneTest::Create());
     testRunner->AttachTestCase(BBoxTest::Create());
+    testRunner->AttachTestCase(TransformTest::Create());
 
     bool result = testRunner->Run(); 
 
