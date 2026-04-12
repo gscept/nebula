@@ -2,7 +2,11 @@
 # Game
 #-------------------------------------------------------------------------------
 
-nebula_begin_module(application)
+if(FIPS_WINDOWS)
+    nebula_begin_module(application)
+else()
+    nebula_begin_shared_module(application)
+endif()
     nebula_add_blueprints()
     target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(foundation resource memdb imgui input options)
@@ -94,7 +98,11 @@ nebula_begin_module(application)
     fips_dir(.)
 
 nebula_flatc(SYSTEM game/level.fbs)
-nebula_end_module()
+if(FIPS_WINDOWS)
+    nebula_end_module()
+else()
+    nebula_end_shared_module()
+endif()
 
 if(FIPS_WINDOWS)
 target_link_options(application PUBLIC "/WHOLEARCHIVE:application")

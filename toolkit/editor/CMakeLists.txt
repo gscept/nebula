@@ -165,3 +165,11 @@ fips_dir(editor)
         )
 fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common toolkitutil)
 nebula_end_module()
+
+nebula_begin_shared_module(editorfeaturemodule)
+target_include_directories(editorfeaturemodule PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+fips_files(
+    editorfeaturemodule.cc
+)
+fips_deps(editor application)
+nebula_end_shared_module()
