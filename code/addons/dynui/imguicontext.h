@@ -20,6 +20,9 @@
 #include "memory/arenaallocator.h"
 #include "frame/framecode.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
+
 struct ImDrawData;
 struct ImFont;
 struct ImVec2;
@@ -80,11 +83,7 @@ private:
     static void RecoverImGuiContextErrors();
 };
 
-} // namespace Dynui
+/// Helper function to recreate the ImGUI close button used for windows and tabs
+void ImGuiCloseButton(bool& toggle, int id);
 
-/// Add two ImVec2
-ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs);
-/// Subtract two ImVec2
-ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs);
-ImVec2 operator*(const ImVec2& lhs, const ImVec2& rhs);
-ImVec2 operator*(const ImVec2& lhs, const float x);
+} // namespace Dynui

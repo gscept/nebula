@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Particle context controls playing and enabling/disabling of particle emitters
+    Particle context controls playing and enabling/disabling of particle attrs
     inside a model.
 
     @copyright

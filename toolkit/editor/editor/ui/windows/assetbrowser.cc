@@ -106,7 +106,7 @@ public:
 };
 __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
 
-using NewFunc = void(*)(const Ptr<IO::Stream>& file);
+using NewFunc = void(*)(const Ptr<IO::Stream>& file, const Util::String& path);
 static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
 {
     nullptr,  
@@ -667,7 +667,7 @@ retry:
     stream->Open();
 
     if (NewFuncs[(uint)type] != nullptr)
-        NewFuncs[(uint)type](stream);
+        NewFuncs[(uint)type](stream, newFilePath);
 
     db.AddFile(
         logger,

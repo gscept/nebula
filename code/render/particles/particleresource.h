@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    A ParticleResource contains the data for a particle effect, such as emitters and meshes
+    A ParticleResource contains the data for a particle effect, such as attrs and meshes
 
     @copyright
     (C) 2026 Individual contributors, see AUTHORS file
@@ -22,12 +22,12 @@ struct ParticleEmitters
 {
     Util::Array<Util::StringAtom> name;
     Util::Array<Resources::ResourceId> meshes;
-    Util::Array<Resources::ResourceId> albedo, material, normals;
+    Util::Array<Resources::ResourceId> materials;
     Util::Array<Math::mat4> transform;
-    Util::Array<EmitterAttrs> emitters;
+    Util::Array<EmitterAttrs> attrs;
 };
 
-/// Get emitters
+/// Get attrs
 const ParticleEmitters& ParticleResourceGetEmitters(const ParticleResourceId id);
 
 #if WITH_NEBULA_EDITOR

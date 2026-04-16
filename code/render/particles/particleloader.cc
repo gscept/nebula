@@ -97,9 +97,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 resource.meshes.Append(Resources::InvalidResourceId);
 
             resource.name.Append(reader->GetOptString("name", "emitter"));
-            resource.albedo.Append(Resources::CreateResource(reader->GetOptString("albedo", "systex:white.dds"), job.tag));
-            resource.material.Append(Resources::CreateResource(reader->GetOptString("material", "systex:default_material.dds"), job.tag));
-            resource.normals.Append(Resources::CreateResource(reader->GetOptString("normals", "systex:nobump.dds"), job.tag));
+            resource.materials.Append(Resources::CreateResource(reader->GetString("material"), job.tag));
             resource.transform.Append(reader->GetOptMat4("transform", Math::mat4()));
 
             reader->SetToNode("floats");
@@ -138,7 +136,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 attrs.SetEnvelope((Particles::EmitterAttrs::EnvelopeAttr)i, curve);
             }
             reader->SetToParent();
-            resource.emitters.Append(attrs);
+            resource.attrs.Append(attrs);
         } while (reader->SetToNextChild());
 
         particleResourceAllocator.Set<ParticleResource_Resource>(id.id, resource);

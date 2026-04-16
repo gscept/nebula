@@ -12,8 +12,10 @@
 #include "io/jsonwriter.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/textureloader.h"
+#include "materials/materialloader.h"
 #include "tinyfiledialogs.h"
 #include "editor/tools/pathconverter.h"
+#include "materialasseteditor.h"
 
 #include "dynui/imguicontext.h"
 
@@ -65,8 +67,9 @@ struct ParticleAssetItemData
         Util::StringAtom name;
         Particles::EmitterAttrs* attrs;
         Resources::ResourceName mesh = "";
-        ImageHolder albedo, material, normals;
+        Materials::MaterialId material = Materials::InvalidMaterialId;
         Math::mat4 transform;
+        AssetEditorItem materialItem;
     };
     Util::Array<ParticleAsset> emitters;
 };
@@ -133,7 +136,6 @@ ParticleSerialize(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAsset
     writer->SetStream(stream);
     writer->Open();
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
-
     writer->BeginArray("emitters");
 
     for (SizeT i = 0; i < emitters.Size(); i++)
@@ -142,9 +144,7 @@ ParticleSerialize(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAsset
 
         writer->Add(emitters[i].name, "name");
         writer->Add(emitters[i].mesh.Value(), "mesh");
-        writer->Add(texLoader->GetName(emitters[i].albedo.res), "albedo");
-        writer->Add(texLoader->GetName(emitters[i].material.res), "material");
-        writer->Add(texLoader->GetName(emitters[i].normals.res), "normals");
+        writer->Add(Materials::MaterialGetName(emitters[i].material), "material");
         writer->Add(emitters[i].transform, "transform");
 
         writer->BeginObject("floats");
@@ -198,8 +198,38 @@ ParticleSerialize(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAsset
 //------------------------------------------------------------------------------
 /**
 */
+void
+DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
+{
+    ImVec2 size = ImVec2(Math::min(100, ImGui::GetContentRegionAvail().x), ImGui::GetTextLineHeight());
+    ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+    ImVec2 points[4];
+    const float* values = curve.GetValues();
+    float keyPos0 = curve.GetKeyPos0();
+    float keyPos1 = curve.GetKeyPos1();
+    points[0] = cursorPos + ImVec2(0.0f, (0.5f + values[0]) * size.y);
+    points[1] = cursorPos + ImVec2(size.x * keyPos0, (0.5f + values[1]) * size.y);
+    points[2] = cursorPos + ImVec2(size.x * keyPos1, (0.5f + values[2]) * size.y);
+    points[3] = cursorPos + ImVec2(size.x * 1.0f, (0.5f + values[3]) * size.y);
+    draw_list->AddRectFilled(cursorPos, cursorPos + size, ImGui::GetColorU32(ImGuiCol_FrameBg));
+    draw_list->PushClipRect(cursorPos, cursorPos + size);
+    draw_list->AddBezierCubic(points[0], points[1], points[2], points[3], ImGui::GetColorU32(ImGuiCol_ButtonActive), 2.0f, 64);
+    draw_list->AddRect(cursorPos, cursorPos + size, ImGui::GetColorU32(ImGuiCol_Border));
+    draw_list->PopClipRect();
+    ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + 0x789);
+    bool ret = ImGui::InvisibleButton("", size);
+    if (ImGui::IsItemClicked())
+    {
+        toggled = !toggled;
+    }
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
-DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
+DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
 {
     bool changed = false;
 
@@ -228,6 +258,8 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
     }
     ImGui::PopID();
 
+    Dynui::ImGuiCloseButton(toggled, reinterpret_cast<intptr_t>(&curve));
+
     const float* values = curve.GetValues();
     float keyPos0 = curve.GetKeyPos0();
     float keyPos1 = curve.GetKeyPos1();
@@ -245,26 +277,26 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
     ImVec2 narrowRegion = region - ImVec2(INNER_WINDOW_PADDING, INNER_WINDOW_PADDING) * 2;
     ImGuiIO io = ImGui::GetIO();
 
-    static ImColor Colors[] =
+    ImU32 Colors[] =
     {
-        IM_COL32(100, 100, 100, 255), // key point 0 fill
-        IM_COL32(128, 128, 128, 255), // key point 0 outline
-        IM_COL32(255, 79, 9, 255),    // control point 0
-        IM_COL32(255, 79, 9, 255),    // control point 1
-        IM_COL32(100, 100, 100, 255), // key point 1 fill
-        IM_COL32(128, 128, 128, 255), // key point 1 outline
+        ImGui::GetColorU32(ImGuiCol_ButtonActive),     // key point 0 fill
+        ImGui::GetColorU32(ImGuiCol_ButtonHovered),      // key point 0 outline
+        ImGui::GetColorU32(ImGuiCol_ButtonActive),        // control point 0
+        ImGui::GetColorU32(ImGuiCol_ButtonActive),        // control point 1
+        ImGui::GetColorU32(ImGuiCol_ButtonActive),     // key point 1 fill
+        ImGui::GetColorU32(ImGuiCol_ButtonHovered),      // key point 1 outline
     };
     
     ImVec2 window = ImVec2(Math::min(narrowRegion.x, MIN_CURVE_WINDOW_WIDTH), Math::min(narrowRegion.y, MIN_CURVE_WINDOW_HEIGHT));
-    points[0] = narrowCursor + ImVec2(0.0f, values[0] * window.y);
-    points[1] = narrowCursor + ImVec2(narrowRegion.x * keyPos0, values[1] * window.y);
-    points[2] = narrowCursor + ImVec2(narrowRegion.x * keyPos1, values[2] * window.y);
-    points[3] = narrowCursor + ImVec2(narrowRegion.x * 1.0f, values[3] * window.y);
-    draw_list->AddRectFilled(cursorPos, cursorPos + ImVec2(region.x, MIN_CURVE_WINDOW_HEIGHT), IM_COL32(50, 50, 50, 255), 8.0f);
-    draw_list->AddRect(narrowCursor, narrowCursor + ImVec2(narrowRegion.x, MIN_CURVE_WINDOW_HEIGHT - INNER_WINDOW_PADDING*2), IM_COL32(100, 100, 100, 255), 2.0f);
-    draw_list->AddBezierCubic(points[0], points[1], points[2], points[3], IM_COL32(100, 100, 100, 255), 2.0f, 64);
-    draw_list->AddLine(points[0], points[1], IM_COL32(128, 128, 128, 255));
-    draw_list->AddLine(points[2], points[3], IM_COL32(128, 128, 128, 255));
+    points[0] = narrowCursor + ImVec2(0.0f, (0.5f + values[0]) * window.y);
+    points[1] = narrowCursor + ImVec2(narrowRegion.x * keyPos0, (0.5f + values[1]) * window.y);
+    points[2] = narrowCursor + ImVec2(narrowRegion.x * keyPos1, (0.5f + values[2]) * window.y);
+    points[3] = narrowCursor + ImVec2(narrowRegion.x * 1.0f, (0.5f + values[3]) * window.y);
+    draw_list->AddRectFilled(cursorPos, cursorPos + ImVec2(region.x, MIN_CURVE_WINDOW_HEIGHT), ImGui::GetColorU32(ImGuiCol_FrameBg), 8.0f);
+    draw_list->AddRect(narrowCursor, narrowCursor + ImVec2(narrowRegion.x, MIN_CURVE_WINDOW_HEIGHT - INNER_WINDOW_PADDING*2), ImGui::GetColorU32(ImGuiCol_FrameBgActive), 2.0f);
+    draw_list->AddBezierCubic(points[0], points[1], points[2], points[3], ImGui::GetColorU32(ImGuiCol_SeparatorActive), 2.0f, 64);
+    draw_list->AddLine(points[0], points[1], ImGui::GetColorU32(ImGuiCol_ButtonActive));
+    draw_list->AddLine(points[2], points[3], ImGui::GetColorU32(ImGuiCol_ButtonActive));
     draw_list->AddCircleFilled(points[0], HANDLE_SIZE,          Colors[0]);
     draw_list->AddCircleFilled(points[0], HANDLE_SIZE * 0.75,   Colors[1]);
     draw_list->AddCircleFilled(points[1], HANDLE_SIZE,          Colors[2]);
@@ -282,10 +314,10 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
 
         if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
         {
-            float y_val = limits[0] + modifyValues[i] * (limits[1] - limits[0]);
+            float y_val = limits[0] + (1.0f - (modifyValues[i] + 0.5f)) * (limits[1] - limits[0]);
             if (i == 1)
             {
-                keyPos0 = Math::clamp((io.MousePos.x - cursorPos.x) / region.x, 0.0f, 1.0f);
+                keyPos0 = Math::clamp((io.MousePos.x - cursorPos.x) / region.x, 0.f, 1.f);
                 Util::String text = Util::Format("X: %f, Y: %f", keyPos0, y_val);
                 ImVec2 size = ImGui::CalcTextSize(text.AsCharPtr());
                 ImVec2 pos = ImVec2(Math::min(points[i].x + 3, cursorPos.x + region.x - size.x - 3), points[i].y + 3);
@@ -293,7 +325,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
             }
             else if (i == 2)
             {
-                keyPos1 = Math::clamp((io.MousePos.x - cursorPos.x) / region.x, 0.0f, 1.0f);
+                keyPos1 = Math::clamp((io.MousePos.x - cursorPos.x) / region.x, 0.f, 1.f);
                 Util::String text = Util::Format("X: %f, Y: %f", keyPos1, y_val);
                 ImVec2 size = ImGui::CalcTextSize(text.AsCharPtr());
                 ImVec2 pos = ImVec2(Math::min(points[i].x + 3, cursorPos.x + region.x - size.x - 3), points[i].y + 3);
@@ -306,7 +338,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve)
                 ImVec2 pos = ImVec2(Math::min(points[i].x + 3, cursorPos.x + region.x - size.x - 3), points[i].y + 3);
                 draw_list->AddText(pos, IM_COL32(255, 255, 255, 255), Util::Format("Y: %f", y_val).AsCharPtr());
             }
-            modifyValues[i] = Math::clamp((io.MousePos.y - cursorPos.y) / window.y, 0.0f, 1.0f);
+            modifyValues[i] = Math::clamp(((io.MousePos.y - cursorPos.y) / window.y) - 0.5f, -0.5f, 0.5f);
             changed = true;
         }
 
@@ -330,13 +362,28 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     ParticleAssetItemData* data = static_cast<ParticleAssetItemData*>(item->data);
 
     static const int PARAM_PADDING = 12;
+    static bool EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::NumEnvelopeAttrs] = { false };
 #define CURVE_PARAM(desc, attr) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();\
         ImGui::Text(#desc); \
         Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr); \
-        if (DrawCurve(draw_list, curve)) \
-            data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
+        ImGui::SameLine();\
+        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr]); \
+        ImGui::SetCursorScreenPos(cursorPos + ImVec2(0, ImGui::GetTextLineHeight() + 5));\
+        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])\
+        {\
+            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attr);\
+            {\
+                if (DrawCurve(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
+                {\
+                    data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
+                    assetEditor->Edit();\
+                }\
+            }\
+            ImGui::PopID();\
+        }\
     }
 
 #define FLOAT_PARAM(desc, attr) \
@@ -345,7 +392,10 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         ImGui::Text(#desc); \
         float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attr); \
         if (ImGui::DragFloat("##" #attr, &f, 0.1f, 0.0f, 10000.0f)) \
+        {\
             data->emitters[selectedEmitter].attrs->SetFloat(Particles::EmitterAttrs::FloatAttr::attr, f); \
+            assetEditor->Edit();\
+        }\
     }
 
 #define INT_PARAM(desc, attr) \
@@ -354,7 +404,10 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         ImGui::Text(#desc); \
         int f = data->emitters[selectedEmitter].attrs->GetInt(Particles::EmitterAttrs::IntAttr::attr); \
         if (ImGui::DragInt("##" #attr, &f, 1.0f, 0, 10000)) \
+        {\
             data->emitters[selectedEmitter].attrs->SetInt(Particles::EmitterAttrs::IntAttr::attr, f); \
+            assetEditor->Edit();\
+        }\
     }
 
 #define BOOL_PARAM(desc, attr) \
@@ -363,7 +416,10 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         ImGui::Text(#desc); \
         bool f = data->emitters[selectedEmitter].attrs->etBool(Particles::EmitterAttrs::BoolAttr::attr); \
         if (ImGui::Checkbox("##" #attr, &f)) \
+        {\
             data->emitters[selectedEmitter].attrs->SetBool(Particles::EmitterAttrs::BoolAttr::attr, f); \
+            assetEditor->Edit();\
+        }\
     }
     static uint selectedEmitter = -1;
     if (ImGui::BeginListBox("Emitters"))
@@ -434,33 +490,10 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         }\
     }\
 }
-
-            bool imagePressed = false;
-            const char* name = nullptr;
-            Util::String path;
-
-            MATERIAL_TEXTURE(Albedo, albedo)
-            MATERIAL_TEXTURE(Material, material)
-            MATERIAL_TEXTURE(Normals, normals)
-
-            if (imagePressed)
+            // Use the material editor to edit a particles material
+            if (selectedEmitter != -1)
             {
-                // TODO: Replace file dialog with asset browser view/instance
-                const char* patterns[] = { "*.dds" };
-                const char* result = tinyfd_openFileDialog(name, IO::URI(path).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
-
-                if (result != nullptr)
-                {
-                    //auto cmd = new CMDMaterialSetTexture;
-                    //cmd->bindlessOffset = value->bindlessOffset;
-                    //cmd->index = i;
-                    //cmd->hash = value->hashedName;
-                    //cmd->assetEditor = assetEditor;
-                    //cmd->asset = path;
-                    //cmd->item = item;
-                    //cmd->oldAsset = name;
-                    //Edit::CommandManager::Execute(cmd);
-                }
+                MaterialEditor(assetEditor, &data->emitters[selectedEmitter].materialItem);
             }
         }
     }
@@ -480,25 +513,50 @@ ParticleSetup(AssetEditorItem* item)
     {
         ParticleAssetItemData::ParticleAsset emitter;
         emitter.name = emitters.name[i];
-        emitter.albedo.res = emitters.albedo[i];
-        emitter.albedo.texture.layer = 0;
-        emitter.albedo.texture.mip = 0;
-        emitter.albedo.texture.nebulaHandle = emitters.albedo[i].resource;
-        emitter.material.res = emitters.material[i];
-        emitter.material.texture.layer = 0;
-        emitter.material.texture.mip = 0;
-        emitter.material.texture.nebulaHandle = emitters.material[i].resource;
-        emitter.normals.res = emitters.normals[i];
-        emitter.normals.texture.layer = 0;
-        emitter.normals.texture.mip = 0;
-        emitter.normals.texture.nebulaHandle = emitters.normals[i].resource;
-        emitter.attrs = &emitters.emitters[i];
+        emitter.material = emitters.materials[i];
+        emitter.attrs = &emitters.attrs[i];
         emitter.transform = emitters.transform[i];
         if (emitters.meshes[i] != Resources::InvalidResourceId)
             emitter.mesh = Resources::ResourceServer::Instance()->GetName(emitters.meshes[i]);
         else
             emitter.mesh = "";
         itemData->emitters.Append(emitter);
+
+        const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+        MaterialEditorItemData* itemData = item->allocator.Alloc<MaterialEditorItemData>();
+        itemData->constants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
+        itemData->images = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
+        itemData->originalConstants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
+        itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
+        item->data = itemData;
+        emitter.materialItem.data = itemData;
+
+        // Copy over material constants
+        ubyte* currentData = Materials::MaterialGetConstants(item->asset.material);
+        memcpy(itemData->constants, currentData, materialTemplate->bufferSize);
+        memcpy(itemData->originalConstants, currentData, materialTemplate->bufferSize);
+
+        for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
+        {
+            auto kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
+            Resources::ResourceId res = Materials::MaterialGetTexture(item->asset.material, kvp.Value()->textureIndex);
+            if (res.resourceId == Resources::InvalidResourceId.resourceId)
+                res = Resources::CreateResource(kvp.Value()->resource, "editor");
+            Resources::CreateResourceListener(res, [itemData, i](Resources::ResourceId res)
+            {
+                itemData->images[i].res = res;
+                itemData->images[i].texture.layer = 0;
+                itemData->images[i].texture.mip = 0;
+                itemData->images[i].texture.nebulaHandle = res.resource;
+                memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
+            });
+
+            itemData->images[i].res = res;
+            itemData->images[i].texture.layer = 0;
+            itemData->images[i].texture.mip = 0;
+            itemData->images[i].texture.nebulaHandle = res.resource;
+            memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
+        }
     }
 }
 
@@ -514,6 +572,8 @@ ParticleSave(AssetEditor* assetEditor, AssetEditorItem* item)
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
     ParticleSerialize(stream, static_cast<ParticleAssetItemData*>(item->data)->emitters);
+
+    
 }
 
 //------------------------------------------------------------------------------
@@ -537,9 +597,62 @@ ParticleShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
 /**
 */
 void
-ParticleNew(const Ptr<IO::Stream>& stream)
+ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path)
 {
     ParticleAssetItemData::ParticleAsset res;
+    Particles::EmitterAttrs attrs;
+    res.attrs = &attrs;
+
+    // Setup new material
+    MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__ParticleLit.entry;
+    Util::String newMaterialPath = path;
+    newMaterialPath.ChangeFileExtension("sur");
+    res.material = Materials::CreateMaterial(matTemplate, newMaterialPath);
+
+    MaterialEditorItemData itemData;
+    itemData.constants = ArrayAllocStack<ubyte>(matTemplate->bufferSize);
+    itemData.images = ArrayAllocStack<ImageHolder>(matTemplate->numTextures);
+    itemData.originalConstants = ArrayAllocStack<ubyte>(matTemplate->bufferSize);
+    itemData.originalImages = ArrayAllocStack<ImageHolder>(matTemplate->numTextures);
+
+    ubyte* currentData = Materials::MaterialGetConstants(res.material);
+    memcpy(itemData.constants, currentData, matTemplate->bufferSize);
+    memcpy(itemData.originalConstants, currentData, matTemplate->bufferSize);
+
+    for (IndexT i = 0; i < matTemplate->textures.Size(); i++)
+    {
+        auto kvp = matTemplate->textures.KeyValuePairAtIndex(i);
+        Resources::ResourceId tex = Materials::MaterialGetTexture(res.material, kvp.Value()->textureIndex);
+        if (tex.resourceId == Resources::InvalidResourceId.resourceId)
+            tex = Resources::CreateResource(kvp.Value()->resource, "editor");
+        Resources::CreateResourceListener(tex, [itemData, i](Resources::ResourceId res)
+        {
+            itemData.images[i].res = res;
+            itemData.images[i].texture.layer = 0;
+            itemData.images[i].texture.mip = 0;
+            itemData.images[i].texture.nebulaHandle = res.resource;
+            memcpy(&itemData.originalImages[i], &itemData.images[i], sizeof(ImageHolder));
+        });
+
+        itemData.images[i].res = tex;
+        itemData.images[i].texture.layer = 0;
+        itemData.images[i].texture.mip = 0;
+        itemData.images[i].texture.nebulaHandle = tex.resource;
+        memcpy(&itemData.originalImages[i], &itemData.images[i], sizeof(ImageHolder));
+    }
+
+    memcpy(itemData.originalImages, itemData.images, sizeof(ImageHolder) * matTemplate->numTextures);
+
+    Ptr<IO::FileStream> matStream = IO::FileStream::Create();
+    matStream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+    matStream->SetURI(newMaterialPath);
+    MaterialSerialize(matStream, &itemData, res.material, matTemplate);
+
+    ArrayFreeStack(matTemplate->numTextures, itemData.originalImages);
+    ArrayFreeStack(matTemplate->bufferSize, itemData.originalConstants);
+    ArrayFreeStack(matTemplate->numTextures, itemData.images);
+    ArrayFreeStack(matTemplate->bufferSize, itemData.constants);
+
     ParticleSerialize(stream, { res });
 }
 
