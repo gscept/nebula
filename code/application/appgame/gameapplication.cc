@@ -302,6 +302,14 @@ GameApplication::StepFrame()
     // trigger end of frame for feature units
     this->gameServer->OnEndFrame();
 
+    // Process pending module reloads after all OnEndFrame callbacks have returned.
+    // Must be called from application-layer code so the frame containing the reload
+    // request has fully completed before the module is unloaded/reloaded.
+    if (this->moduleManager.isvalid())
+    {
+        this->moduleManager->ProcessPendingReloads(this->gameServer);
+    }
+
     GameApplication::FrameIndex++;
 
     _stop_timer(GameApplicationFrameTimeAll);
@@ -329,6 +337,15 @@ void
 GameApplication::CleanupGameFeatures()
 {
     // cleanup your features in derived class
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<Game::ModuleManager>
+GameApplication::GetModuleManager() const
+{
+    return this->moduleManager;
 }
 
 //------------------------------------------------------------------------------

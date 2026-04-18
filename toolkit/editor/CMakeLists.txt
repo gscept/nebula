@@ -163,7 +163,9 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common toolkitutil)
+fips_deps(foundation application render toolkit-common toolkitutil)
+target_link_libraries(editor graphicsfeature physicsfeature audio dynui scripting)
+set_property(TARGET editor PROPERTY INTERFACE_LINK_LIBRARIES "foundation;application;render;toolkit-common;toolkitutil")
 nebula_end_module()
 
 nebula_begin_shared_module(editorfeaturemodule)
@@ -171,5 +173,5 @@ target_include_directories(editorfeaturemodule PUBLIC ${CMAKE_CURRENT_SOURCE_DIR
 fips_files(
     editorfeaturemodule.cc
 )
-fips_deps(editor application)
+fips_deps(editor application render scripting)
 nebula_end_shared_module()

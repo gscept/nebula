@@ -6,6 +6,7 @@
 #include "core/factory.h"
 #include "game/moduleinterface.h"
 #include "editorfeature/editorfeatureunit.h"
+#include "cr/cr.h"
 
 #if __WIN32__
 #define NEBULA_MODULE_EXPORT extern "C" __declspec(dllexport)
@@ -36,4 +37,29 @@ NEBULA_MODULE_EXPORT void
 NebulaModuleDestroyFeature(void* feature)
 {
     (void)feature;
+}
+
+//------------------------------------------------------------------------------
+// cr plugin entry point — handles plugin lifecycle events from a cr host.
+//------------------------------------------------------------------------------
+CR_EXPORT int
+cr_main(struct cr_plugin* ctx, enum cr_op operation)
+{
+    (void)ctx;
+    switch (operation)
+    {
+        case CR_LOAD:
+            // Module just loaded or reloaded; nothing to restore for now.
+            break;
+        case CR_UNLOAD:
+            // About to be unloaded for a reload; flush any pending work here.
+            break;
+        case CR_CLOSE:
+            // Final shutdown; nothing extra needed — Nebula module teardown
+            // is handled via NebulaModuleDestroyFeature / OnDeactivate.
+            break;
+        default:
+            break;
+    }
+    return 0;
 }

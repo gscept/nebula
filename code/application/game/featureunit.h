@@ -97,6 +97,8 @@ public:
 
 protected:
     Util::Array<Ptr<Manager>> managers; 
+    /// Components registered by this feature; unregistered in OnRemove.
+    Util::Array<ComponentId> registeredComponents;
     bool active;
 
     /// cmdline args for configuration from cmdline
@@ -120,6 +122,7 @@ FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
     Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
     Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
     Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
+    this->registeredComponents.Append(cid);
 
     return cid;
 }

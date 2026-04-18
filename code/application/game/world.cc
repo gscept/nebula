@@ -891,19 +891,68 @@ void
 World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds)
 {
     MemDb::TableSignature signature;
+    MemDb::TableSignature baseSignature;
 
     if (this->HasInstance(entity))
     {
         EntityMapping const mapping = this->GetEntityMapping(entity);
         MemDb::Table const& tbl = this->db->GetTable(mapping.table);
         signature = tbl.GetSignature();
+        baseSignature = signature;
     }
 
-    SizeT i;
-    for (i = 0; i < numCmds; i++)
+    // Keep only the last staged value per component for this entity.
+    Util::Array<AddStagedComponentCommand> uniqueCmds;
+    uniqueCmds.Reserve(numCmds);
+    for (SizeT i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
-        signature.SetBit(cmd->componentId);
+
+        if (cmd->componentId == Game::ComponentId::Invalid())
+        {
+            continue;
+        }
+
+        if (!MemDb::AttributeRegistry::IsRegistered(cmd->componentId))
+        {
+            continue;
+        }
+
+        IndexT existing = InvalidIndex;
+        for (IndexT j = 0; j < uniqueCmds.Size(); j++)
+        {
+            if (uniqueCmds[j].componentId == cmd->componentId)
+            {
+                existing = j;
+                break;
+            }
+        }
+
+        if (existing != InvalidIndex)
+        {
+            uniqueCmds[existing] = *cmd;
+        }
+        else
+        {
+            uniqueCmds.Append(*cmd);
+        }
+    }
+
+    if (uniqueCmds.IsEmpty())
+    {
+        return;
+    }
+
+    Util::Array<ComponentId> componentsToAdd;
+    componentsToAdd.Reserve(uniqueCmds.Size());
+    for (IndexT i = 0; i < uniqueCmds.Size(); i++)
+    {
+        ComponentId cid = uniqueCmds[i].componentId;
+        if (!baseSignature.IsSet(cid))
+        {
+            componentsToAdd.Append(cid);
+        }
+        signature.SetBit(cid);
     }
 
     MemDb::TableId newCategoryId = this->db->FindTable(signature);
@@ -917,7 +966,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
             EntityMapping const mapping = this->GetEntityMapping(entity);
             MemDb::Table const& tbl = this->db->GetTable(mapping.table);
             Util::Array<Game::ComponentId> const& cols = tbl.GetAttributes();
-            info.components.SetSize(cols.Size() + numCmds);
+            info.components.SetSize(cols.Size() + componentsToAdd.Size());
 
             for (i = 0; i < cols.Size(); ++i)
             {
@@ -926,14 +975,14 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
         }
         else
         {
-            info.components.SetSize(numCmds);
+            info.components.SetSize(componentsToAdd.Size());
         }
 
-        SizeT end = i + numCmds;
+        SizeT end = i + componentsToAdd.Size();
         IndexT cmdIndex = 0;
         for (; i < end; ++i, ++cmdIndex)
         {
-            info.components[i] = cmds[cmdIndex].componentId;
+            info.components[i] = componentsToAdd[cmdIndex];
         }
 
         newCategoryId = this->CreateEntityTable(info);
@@ -943,9 +992,9 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
 
     MemDb::Table& newTable = this->db->GetTable(newCategoryId);
 
-    for (i = 0; i < numCmds; i++)
+    for (IndexT i = 0; i < uniqueCmds.Size(); i++)
     {
-        auto const* cmd = cmds + i;
+        auto const* cmd = uniqueCmds.Begin() + i;
 
         auto attrIndex = newTable.GetAttributeIndex(cmd->componentId);
         void* ptr = newTable.GetValuePointer(attrIndex, newInstance);
@@ -963,10 +1012,24 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
     MemDb::Table& tbl = this->db->GetTable(mapping.table);
     MemDb::TableSignature signature = this->db->GetTable(mapping.table).GetSignature();
 
+    Util::Array<RemoveComponentCommand> validCmds;
+    validCmds.Reserve(numCmds);
+
     SizeT i;
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
+
+        // During hot-reload teardown, queued remove commands may reference components
+        // that have already been unregistered. Ignore those stale commands.
+        if (!MemDb::AttributeRegistry::IsRegistered(cmd->componentId))
+            continue;
+
+        if (!signature.IsSet(cmd->componentId))
+            continue;
+
+        validCmds.Append(*cmd);
+
 #if NEBULA_DEBUG
         /*
         if (!signature.IsSet(cmd->componentId))
@@ -979,33 +1042,42 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
         signature.ClearBit(cmd->componentId);
     }
 
+    if (validCmds.IsEmpty())
+    {
+        return;
+    }
+
     MemDb::TableId newCategoryId = this->db->FindTable(signature);
     if (newCategoryId == MemDb::InvalidTableId)
     {
         EntityTableCreateInfo info;
         auto const& attributes = tbl.GetAttributes();
-        info.components.SetSize(attributes.Size() - numCmds);
+        info.components.SetSize(attributes.Size() - validCmds.Size());
         IndexT cIndex = 0;
         for (IndexT i = 0; i < attributes.Size(); ++i)
         {
             IndexT k = 0;
-            for (k = 0; k < numCmds; k++)
+            for (k = 0; k < validCmds.Size(); k++)
             {
                 // check if the component should remain in the entity
-                if (attributes[i] == cmds[k].componentId)
+                if (attributes[i] == validCmds[k].componentId)
                     break;
             }
-            if (k == numCmds) // keep the component, otherwise discard it
+            if (k == validCmds.Size()) // keep the component, otherwise discard it
                 info.components[cIndex++] = attributes[i];
         }
 
         newCategoryId = this->CreateEntityTable(info);
     }
 
-    for (i = 0; i < numCmds; i++)
+    for (i = 0; i < validCmds.Size(); i++)
     {
-        auto const* cmd = cmds + i;
-        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance);
+        auto const& cmd = validCmds[i];
+        MemDb::ColumnIndex col = tbl.GetAttributeIndex(cmd.componentId);
+        if (col != MemDb::ColumnIndex::Invalid())
+        {
+            this->DecayComponent(cmd.componentId, mapping.table, col, mapping.instance);
+        }
     }
 
     this->Migrate(entity, newCategoryId);

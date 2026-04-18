@@ -44,7 +44,14 @@ FeatureUnit::OnAttach()
 void
 FeatureUnit::OnRemove()
 {
-    // empty
+    for (IndexT i = this->registeredComponents.Size() - 1; i >= 0; i--)
+    {
+        const ComponentId cid = this->registeredComponents[i];
+        Game::ComponentInspection::Unregister(cid);
+        Game::ComponentSerialization::Unregister(cid);
+    }
+
+    this->registeredComponents.Clear();
 }
 
 //------------------------------------------------------------------------------

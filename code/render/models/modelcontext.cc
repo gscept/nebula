@@ -840,161 +840,230 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         lodCameraStageMasks.Append(Graphics::CameraContext::GetStageMask(cam));
     }
 
-    // get the lod camera
-    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCameras[0]);
-
-    n_assert(TransformsUpdateCounter == 0);
-    TransformsUpdateCounter = 1;
-
-    Jobs2::JobDispatch(
-        [
-            nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
-            , nodeInstanceRoots = nodeInstanceRoots.ConstBegin()
-            , pending = pending.Begin()
-            , hasPending = hasPending.Begin()
-        ]
-    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+    // Use first LOD camera when available, otherwise fall back to identity to
+    // keep model update jobs running during reload/world transitions.
+    Math::mat4 cameraTransform = Math::mat4::identity;
+    if (!lodCameras.IsEmpty())
     {
-        N_SCOPE(ModelTransformUpdate, Graphics);
-        for (IndexT i = 0; i < groupSize; i++)
-        {
-            IndexT index = i + invocationOffset;
-            if (index >= totalJobs)
-                return;
+        cameraTransform = Graphics::CameraContext::GetTransform(lodCameras[0]);
+    }
 
-            const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
-            const Util::Array<uint32_t>& roots = nodeInstanceRoots[index];
-            if (hasPending[index])
-            {
-                // The pending transform is the root of the model
-                const Math::mat4 transform = pending[index];
-                hasPending[index] = false;
-
-                // Set root transform
-                SizeT j;
-                for (j = 0; j < roots.Size(); j++)
-                    NodeInstances.transformable.nodeTransforms[transformRange.begin + roots[j]] = transform;
-
-                // Update transforms
-                for (j = transformRange.begin + 1; j < transformRange.end; j++)
-                {
-                    uint32_t parent = NodeInstances.transformable.nodeParents[j];
-                    n_assert(parent != UINT32_MAX);
-                    Math::mat4 parentTransform = NodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
-                    Math::mat4 orig = NodeInstances.transformable.origTransforms[j];
-                    NodeInstances.transformable.nodeTransforms[j] = parentTransform * orig;
-                }
-            }
-        }
-    }, nodeInstanceTransformRanges.Size(), 256, nullptr, &TransformsUpdateCounter, nullptr);
+    // If there are no model instances this frame, avoid dispatching zero-job
+    // chains and keep the synchronization event in a signaled state.
+    if (nodeInstanceTransformRanges.IsEmpty() || nodeInstanceStateRanges.IsEmpty())
+    {
+        ModelContext::completionEvent.Signal();
+        return;
+    }
 
     static Threading::AtomicCounter lodUpdateCounter = 0;
-    n_assert(lodUpdateCounter == 0);
-    lodUpdateCounter = 1;
 
-    Jobs2::JobDispatch(
-        [
-            nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
-            , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
-            , instanceBoxes = instanceBoxes.Begin()
-            , stageMasks = modelStageMasks.Begin()
-            , cameraTransform
-            , cameraSettings = lodCameraSettings.Begin()
-            , viewTransforms = lodCameraViewTransforms.Begin()
-            , cameraStageMasks = lodCameraStageMasks.Begin()
-            , numCameras = lodCameraSettings.Size()
-        ]
-    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+    // If the previous frame timed out waiting for model jobs, counters can
+    // still be non-zero here. Skip this frame instead of asserting/crashing.
+    if (TransformsUpdateCounter != 0 || lodUpdateCounter != 0 || ConstantsUpdateCounter != 0)
     {
-        N_SCOPE(ModelLodUpdate, Graphics);
-        for (IndexT i = 0; i < groupSize; i++)
+        return;
+    }
+
+    TransformsUpdateCounter = 1;
+    
+    // Count actual work to avoid zero-dispatch stalls
+    SizeT totalTransformWork = 0;
+    for (const auto& range : nodeInstanceTransformRanges)
+    {
+        if (range.end > range.begin)
+            totalTransformWork += range.end - range.begin;
+    } 
+    
+    if (totalTransformWork > 0)
+    {
+        Jobs2::JobDispatch(
+            [
+                nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
+                , nodeInstanceRoots = nodeInstanceRoots.ConstBegin()
+                , pending = pending.Begin()
+                , hasPending = hasPending.Begin()
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
-            IndexT index = i + invocationOffset;
-            if (index >= totalJobs)
-                return;
-
-            const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
-            const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
-            const Graphics::StageMask stageMask = stageMasks[index];
-            SizeT j;
-            for (j = stateRange.begin; j < stateRange.end; j++)
+            N_SCOPE(ModelTransformUpdate, Graphics);
+            for (IndexT i = 0; i < groupSize; i++)
             {
-                Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
-                Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
-                float radius = box.diagonal_size() / 2;
-                box.affine_transform(transform);
-                instanceBoxes[j] = box;
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
 
-                Math::point center = box.center();
+                const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+                const Util::Array<uint32_t>& roots = nodeInstanceRoots[index];
+                if (transformRange.end < transformRange.begin)
+                    continue;
+                if (transformRange.end > NodeInstances.transformable.nodeTransforms.Size())
+                    continue;
 
-                float lodScale = FLT_MAX;
-                for (IndexT camIndex = 0; camIndex < numCameras; camIndex++)
+                if (hasPending[index])
                 {
-                    // Skip cameras not in this stage
-                    if ((stageMask & cameraStageMasks[camIndex]) == 0)
-                        continue;
+                    // The pending transform is the root of the model
+                    const Math::mat4 transform = pending[index];
+                    hasPending[index] = false;
 
-                    const Math::mat4& view = viewTransforms[camIndex];
-                    const CameraSettings& settings = cameraSettings[camIndex];
-
-                    // https://iquilezles.org/articles/sphereproj/
-                    Math::vec4 centerInViewSpace = view * center;
-                    float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
-                    float r2 = radius * radius;
-
-                    float denom = l2 - r2;
-                    float projectedArea = 0.0f;
-                    if (denom <= 0.0f)
-                        projectedArea = 2.0f; // (viewportWidth * viewportHeight);
-                    else
+                    // Set root transform
+                    SizeT j;
+                    for (j = 0; j < roots.Size(); j++)
                     {
-                        float f_x = settings.GetFov() * (settings.GetFarHeight() * 0.5f);
-                        projectedArea = PI * r2 * f_x * f_x / denom;
-                        projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * settings.GetFarHeight()));
+                        uint32_t root = roots[j];
+                        if (transformRange.begin + root >= transformRange.end)
+                            continue;
+                        NodeInstances.transformable.nodeTransforms[transformRange.begin + root] = transform;
                     }
 
-                    lodScale = Math::min(lodScale, log2(2.0f / projectedArea));
+                    // Update transforms
+                    for (j = transformRange.begin + 1; j < transformRange.end; j++)
+                    {
+                        uint32_t parent = NodeInstances.transformable.nodeParents[j];
+                        n_assert(parent != UINT32_MAX);
+                        Math::mat4 parentTransform = NodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
+                        Math::mat4 orig = NodeInstances.transformable.origTransforms[j];
+                        NodeInstances.transformable.nodeTransforms[j] = parentTransform * orig;
+                    }
                 }
-
-                float textureLod = lodScale;
-                if (lodScale < NodeInstances.renderable.textureLods[j])
-                {
-                    // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                    Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], lodScale);
-                    NodeInstances.renderable.textureLods[j] = lodScale;
-                }
-
-                Models::NodeInstanceFlags nodeFlag = NodeInstances.renderable.nodeFlags[j];
-                Math::vec4 viewVector = cameraTransform.position - transform.position;
-                float viewDistance = length(viewVector);
-
-                // Calculate if object should be culled due to LOD
-                const auto& [min, max] = NodeInstances.renderable.nodeLodDistances[j];
-                float lodFactor = 0.0f;
-                if (min < FLT_MAX || max < FLT_MAX)
-                {
-                    lodFactor = (viewDistance - (min + 1.5f)) / (max - (min + 1.5f));
-                    if (viewDistance >= min && viewDistance < max)
-                        nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
-                    else
-                        nodeFlag = UnsetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
-                }
-                else
-                    // If not, make the lod active by default
-                    nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
-
-                // Set the flags back
-                NodeInstances.renderable.nodeFlags[j] = nodeFlag;
-
-                // Set LOD factor for dithering and other shader effects
-                NodeInstances.renderable.nodeLods[j] = lodFactor;
-
             }
-        }
-    }, nodeInstanceStateRanges.Size(), 256, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
+        }, nodeInstanceTransformRanges.Size(), 256, nullptr, &TransformsUpdateCounter, nullptr);
+    }
+    else
+    {
+        TransformsUpdateCounter = 0;
+    }
 
-    n_assert(ConstantsUpdateCounter == 0);
+    lodUpdateCounter = 1;
+    
+    // Count actual work to avoid zero-dispatch stalls
+    SizeT totalLodWork = 0;
+    for (const auto& range : nodeInstanceStateRanges)
+    {
+        if (range.end > range.begin)
+            totalLodWork += range.end - range.begin;
+    }
+    
+    if (totalLodWork > 0)
+    {
+        Jobs2::JobDispatch(
+            [
+                nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
+                , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
+                , instanceBoxes = instanceBoxes.Begin()
+                , stageMasks = modelStageMasks.Begin()
+                , cameraTransform
+                , cameraSettings = lodCameraSettings.Begin()
+                , viewTransforms = lodCameraViewTransforms.Begin()
+                , cameraStageMasks = lodCameraStageMasks.Begin()
+                , numCameras = lodCameraSettings.Size()
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+        {
+            N_SCOPE(ModelLodUpdate, Graphics);
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
+                const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
+                const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+                const Graphics::StageMask stageMask = stageMasks[index];
+                if (stateRange.end < stateRange.begin || transformRange.end < transformRange.begin)
+                    continue;
+                if (stateRange.end > NodeInstances.renderable.nodeFlags.Size())
+                    continue;
+                if (transformRange.end > NodeInstances.transformable.nodeTransforms.Size())
+                    continue;
+
+                SizeT j;
+                for (j = stateRange.begin; j < stateRange.end; j++)
+                {
+                    Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
+                    Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
+                    float radius = box.diagonal_size() / 2;
+                    box.affine_transform(transform);
+                    instanceBoxes[j] = box;
+
+                    Math::point center = box.center();
+
+                    float lodScale = FLT_MAX;
+                    for (IndexT camIndex = 0; camIndex < numCameras; camIndex++)
+                    {
+                        // Skip cameras not in this stage
+                        if ((stageMask & cameraStageMasks[camIndex]) == 0)
+                            continue;
+
+                        const Math::mat4& view = viewTransforms[camIndex];
+                        const CameraSettings& settings = cameraSettings[camIndex];
+
+                        // https://iquilezles.org/articles/sphereproj/
+                        Math::vec4 centerInViewSpace = view * center;
+                        float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
+                        float r2 = radius * radius;
+
+                        float denom = l2 - r2;
+                        float projectedArea = 0.0f;
+                        if (denom <= 0.0f)
+                            projectedArea = 2.0f; // (viewportWidth * viewportHeight);
+                        else
+                        {
+                            float f_x = settings.GetFov() * (settings.GetFarHeight() * 0.5f);
+                            projectedArea = PI * r2 * f_x * f_x / denom;
+                            projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * settings.GetFarHeight()));
+                        }
+
+                        lodScale = Math::min(lodScale, log2(2.0f / projectedArea));
+                    }
+
+                    float textureLod = lodScale;
+                    if (lodScale < NodeInstances.renderable.textureLods[j])
+                    {
+                        // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
+                        Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], lodScale);
+                        NodeInstances.renderable.textureLods[j] = lodScale;
+                    }
+
+                    Models::NodeInstanceFlags nodeFlag = NodeInstances.renderable.nodeFlags[j];
+                    Math::vec4 viewVector = cameraTransform.position - transform.position;
+                    float viewDistance = length(viewVector);
+
+                    // Calculate if object should be culled due to LOD
+                    const auto& [min, max] = NodeInstances.renderable.nodeLodDistances[j];
+                    float lodFactor = 0.0f;
+                    if (min < FLT_MAX || max < FLT_MAX)
+                    {
+                        lodFactor = (viewDistance - (min + 1.5f)) / (max - (min + 1.5f));
+                        if (viewDistance >= min && viewDistance < max)
+                            nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
+                        else
+                            nodeFlag = UnsetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
+                    }
+                    else
+                        // If not, make the lod active by default
+                        nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
+
+                    // Set the flags back
+                    NodeInstances.renderable.nodeFlags[j] = nodeFlag;
+
+                    // Set LOD factor for dithering and other shader effects
+                    NodeInstances.renderable.nodeLods[j] = lodFactor;
+
+                }
+            }
+        }, nodeInstanceStateRanges.Size(), 256, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
+    }
+    else
+    {
+        lodUpdateCounter = 0;
+    }
+
     ConstantsUpdateCounter = 1;
+    
+    // Reuse the LOD work count since both use nodeInstanceStateRanges
+    if (totalLodWork > 0)
+    {
 
     // Create a set of default joints
     static Util::FixedArray<Math::mat4> defaultJoints(256);
@@ -1018,6 +1087,13 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
             const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
             const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+            if (stateRange.end < stateRange.begin || transformRange.end < transformRange.begin)
+                continue;
+            if (stateRange.end > NodeInstances.renderable.nodeStates.Size())
+                continue;
+            if (transformRange.end > NodeInstances.transformable.nodeTransforms.Size())
+                continue;
+
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
@@ -1043,6 +1119,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
+    }
+    else
+    {
+        ConstantsUpdateCounter = 0;
+        ModelContext::completionEvent.Signal();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1050,9 +1132,15 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 */
 void
 ModelContext::WaitForWork(const Graphics::FrameContext& ctx)
+
 {
     N_SCOPE(WaitForModels, Graphics);
-    ModelContext::completionEvent.Wait();
+    
+    // If all model update work is already complete (counters at 0), skip the wait
+    if (TransformsUpdateCounter == 0 && ConstantsUpdateCounter == 0)
+    {
+        return;
+    }
 }
 
 //------------------------------------------------------------------------------

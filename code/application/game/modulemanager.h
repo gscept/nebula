@@ -48,14 +48,22 @@ public:
     /// get number of loaded modules
     SizeT GetNumLoadedModules() const;
 
+    /// queue a reload of the named module to be executed at the next frame boundary
+    void QueueModuleReload(const Util::String& moduleName);
+    /// process all pending module reloads; call once per frame from application layer after OnEndFrame
+    void ProcessPendingReloads(GameServer* gameServer);
+
 private:
     struct LoadedModule;
 
     bool LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* gameServer, bool strictMode);
-    void UnloadModule(LoadedModule& loaded, GameServer* gameServer);
+    bool UnloadModule(LoadedModule& loaded, GameServer* gameServer);
     Util::String ResolveLibraryPath(const RuntimeModuleConfig& moduleConfig) const;
+    /// unload then reload a single module by name; internal use by ProcessPendingReloads
+    bool ReloadModuleByName(const Util::String& moduleName, GameServer* gameServer);
 
     Util::Array<LoadedModule> loadedModules;
+    Util::Array<Util::String> pendingReloads;
 };
 
 } // namespace Game

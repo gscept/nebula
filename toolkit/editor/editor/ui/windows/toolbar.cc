@@ -89,6 +89,19 @@ Toolbar::Run(SaveMode save)
     if (ImGui::Button("Pause")) { PauseGame(); }
     ImGui::SameLine();
     if (ImGui::Button("Stop")) { StopGame(); }
+
+    IMGUI_VERTICAL_SEPARATOR;
+
+    if (ImGui::Button("Reload Editor"))
+    {
+        Editor::RequestModuleReload();
+    }
+    const Util::String& reloadStatus = Editor::GetLastReloadStatus();
+    if (reloadStatus.IsValid())
+    {
+        ImGui::SameLine();
+        ImGui::TextUnformatted(reloadStatus.AsCharPtr());
+    }
 }
 
 } // namespace Presentation

@@ -50,6 +50,9 @@ public:
     ///
     static bool IsEditorEnabled();
 
+    /// return the module manager (may be nullptr if no runtime modules are configured)
+    Ptr<Game::ModuleManager> GetModuleManager() const;
+
 
 protected:
     /// setup game features

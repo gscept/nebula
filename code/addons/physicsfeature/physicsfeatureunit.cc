@@ -171,7 +171,11 @@ PhysicsFeatureUnit::OnBeginFrame()
 
     for (auto const& scene : this->physicsWorlds)
     {
-        Physics::EndSimulating(scene.Value());
+        IndexT sceneId = scene.Value();
+        if (Physics::IsSceneActive(sceneId))
+        {
+            Physics::EndSimulating(sceneId);
+        }
     }
     simulating = false;
 #endif
@@ -186,11 +190,17 @@ PhysicsFeatureUnit::OnDecay()
     FeatureUnit::OnDecay();
 #if USE_SYNC_UPDATE == 0
     Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
+    bool startedSimulation = false;
     for (auto const& scene : this->physicsWorlds)
     {
-        Physics::BeginSimulating(time->frameTime, scene.Value());
+        IndexT sceneId = scene.Value();
+        if (Physics::IsSceneActive(sceneId))
+        {
+            Physics::BeginSimulating(time->frameTime, sceneId);
+            startedSimulation = true;
+        }
     }
-    simulating = true;
+    simulating = startedSimulation;
 #endif
 }
 

@@ -16,6 +16,9 @@ namespace MemDb
 class AttributeRegistry
 {
 public:
+    /// return true if registry singleton has been created
+    static bool HasInstance();
+
     /// register a type (templated)
     template<typename TYPE>
     static AttributeId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
@@ -26,6 +29,8 @@ public:
     /// Check if a type is registered
     template <typename TYPE>
     static bool IsRegistered();
+    /// Check if an attribute id is currently registered
+    static bool IsRegistered(AttributeId descriptor);
 
     /// register a POD, mem-copyable type
     static AttributeId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
@@ -42,6 +47,8 @@ public:
     static void const* const DefaultValue(AttributeId descriptor);
     /// get an array of all attributes
     static Util::FixedArray<Attribute*> const& GetAllAttributes();
+    /// unregister an attribute by id (safe no-op if missing)
+    static void Unregister(AttributeId descriptor);
 
 private:
     static AttributeRegistry* Instance();
@@ -86,6 +93,26 @@ AttributeRegistry::IsRegistered()
         return reg->componentDescriptions[id.id] != nullptr;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::IsRegistered(AttributeId descriptor)
+{
+    if (!AttributeRegistry::HasInstance())
+    {
+        return false;
+    }
+
+    auto* reg = Instance();
+    if (descriptor.id < 0 || descriptor.id >= reg->componentDescriptions.Size())
+    {
+        return false;
+    }
+
+    return reg->componentDescriptions[descriptor.id] != nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -228,16 +255,13 @@ AttributeRegistry::GetAttributeId(Util::StringAtom name)
 inline Attribute*
 AttributeRegistry::GetAttribute(AttributeId descriptor)
 {
-    auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
+    if (!AttributeRegistry::IsRegistered(descriptor))
     {
-        n_assert2(
-            reg->componentDescriptions[descriptor.id] != nullptr, "Trying to get description of attribute that is not registered!"
-        );
-        return reg->componentDescriptions[descriptor.id];
+        return nullptr;
     }
-    
-    return nullptr;
+
+    auto* reg = Instance();
+    return reg->componentDescriptions[descriptor.id];
 }
 
 //------------------------------------------------------------------------------
@@ -246,8 +270,12 @@ AttributeRegistry::GetAttribute(AttributeId descriptor)
 inline SizeT
 AttributeRegistry::TypeSize(AttributeId descriptor)
 {
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        return 0;
+    }
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->typeSize;
 }
 
@@ -257,8 +285,12 @@ AttributeRegistry::TypeSize(AttributeId descriptor)
 inline uint32_t
 AttributeRegistry::Flags(AttributeId descriptor)
 {
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        return 0;
+    }
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->externalFlags;
 }
 
@@ -268,8 +300,12 @@ AttributeRegistry::Flags(AttributeId descriptor)
 inline void const* const
 AttributeRegistry::DefaultValue(AttributeId descriptor)
 {
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        return nullptr;
+    }
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->defVal;
 }
 
@@ -281,6 +317,38 @@ AttributeRegistry::GetAllAttributes()
 {
     auto* reg = Instance();
     return reg->componentDescriptions;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeRegistry::Unregister(AttributeId descriptor)
+{
+    if (!AttributeRegistry::HasInstance())
+    {
+        return;
+    }
+
+    auto* reg = Instance();
+    if (descriptor.id < 0 || descriptor.id >= reg->componentDescriptions.Size())
+    {
+        return;
+    }
+
+    Attribute* desc = reg->componentDescriptions[descriptor.id];
+    if (desc == nullptr)
+    {
+        return;
+    }
+
+    if (reg->registry.Contains(desc->name))
+    {
+        reg->registry.Erase(desc->name);
+    }
+
+    delete desc;
+    reg->componentDescriptions[descriptor.id] = nullptr;
 }
 
 } // namespace MemDb

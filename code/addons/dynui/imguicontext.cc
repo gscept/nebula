@@ -100,8 +100,19 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
     //const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
     IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+    if (currentBuffer < 0 || currentBuffer >= state.vbos.Size() || currentBuffer >= state.ibos.Size())
+    {
+        n_warning("ImguiDrawFunction(): buffer index %d out of bounds (vbos=%d, ibos=%d), skipping UI draw", currentBuffer, state.vbos.Size(), state.ibos.Size());
+        return;
+    }
     BufferId vbo = state.vbos[currentBuffer];
     BufferId ibo = state.ibos[currentBuffer];
+
+    if (vbo == CoreGraphics::InvalidBufferId || ibo == CoreGraphics::InvalidBufferId)
+    {
+        n_warning("ImguiDrawFunction(): invalid UI buffers for buffered frame %d, skipping UI draw", currentBuffer);
+        return;
+    }
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
 
@@ -497,8 +508,13 @@ ImguiContext::Create()
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
-                CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
-                CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+                if (currentBuffer >= 0 && currentBuffer < state.vbos.Size() && currentBuffer < state.ibos.Size())
+                {
+                    if (state.vbos[currentBuffer] != CoreGraphics::InvalidBufferId)
+                        CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
+                    if (state.ibos[currentBuffer] != CoreGraphics::InvalidBufferId)
+                        CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+                }
             });
     }
     else
@@ -550,8 +566,17 @@ ImguiContext::Create()
                     ImguiDrawFunction(cmdBuf, viewport, ImGui::GetDrawData());
                 }
                 IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
-                CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
-                CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+                if (currentBuffer >= 0 && currentBuffer < state.vbos.Size() && currentBuffer < state.ibos.Size())
+                {
+                    if (state.vbos[currentBuffer] != CoreGraphics::InvalidBufferId)
+                    {
+                        CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
+                    }
+                    if (state.ibos[currentBuffer] != CoreGraphics::InvalidBufferId)
+                    {
+                        CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+                    }
+                }
             });
     }
 

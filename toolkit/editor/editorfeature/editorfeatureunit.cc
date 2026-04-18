@@ -81,7 +81,7 @@ EditorFeatureUnit::OnActivate()
         // TODO: move this to a game manager that is created by the editor
 
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdateModelTransforms"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdateModelTransforms"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -92,9 +92,9 @@ EditorFeatureUnit::OnActivate()
                     Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
                 }
             )
-            .Build();
+            .Build());
 
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdatePointLightPositions"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdatePointLightPositions"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -106,9 +106,9 @@ EditorFeatureUnit::OnActivate()
                     Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
                 }
             )
-            .Build();
+            .Build());
 
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdateSpotLightTransform"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdateSpotLightTransform"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -122,9 +122,9 @@ EditorFeatureUnit::OnActivate()
                     Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
                 }
             )
-            .Build();
+            .Build());
 
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdateAreaLightTransform"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdateAreaLightTransform"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -140,9 +140,9 @@ EditorFeatureUnit::OnActivate()
                     Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
                 }
             )
-            .Build();
+            .Build());
 
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdateDecalTransform"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdateDecalTransform"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -157,9 +157,9 @@ EditorFeatureUnit::OnActivate()
                     Decals::DecalContext::SetTransform(decal.graphicsEntityId, transform);
                 }
             )
-            .Build();
+            .Build());
 
-        Game::ProcessorBuilder(world, "EditorGameManager.UpdateDDGIVolumeTransform"_atm)
+        this->processors.Append(Game::ProcessorBuilder(world, "EditorGameManager.UpdateDDGIVolumeTransform"_atm)
             .On("OnEndFrame")
             .OnlyModified()
             .RunInEditor()
@@ -174,7 +174,7 @@ EditorFeatureUnit::OnActivate()
                     GI::DDGIContext::SetSize(volume.graphicsEntityId, scale);
                 }
             )
-            .Build();
+            .Build());
 
         //if (!Editor::ConnectToBackend(...))
         //    Editor::SpawnLocalBackend();
@@ -187,11 +187,44 @@ EditorFeatureUnit::OnActivate()
 void
 EditorFeatureUnit::OnDeactivate()
 {
+    this->RemoveEditorProcessors();
     FeatureUnit::OnDeactivate();
     if (this->args.GetBoolFlag("-editor"))
     {
         Editor::Destroy();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureUnit::RemoveEditorProcessors()
+{
+    if (this->processors.IsEmpty())
+        return;
+
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::FrameEvent* frameEvent = nullptr;
+    if (world != nullptr)
+    {
+        frameEvent = world->GetFramePipeline().GetFrameEvent("OnEndFrame");
+    }
+
+    for (IndexT i = 0; i < this->processors.Size(); i++)
+    {
+        if (this->processors[i] == nullptr)
+            continue;
+
+        if (frameEvent != nullptr)
+        {
+            frameEvent->RemoveProcessor(this->processors[i]);
+        }
+
+        delete this->processors[i];
+    }
+
+    this->processors.Clear();
 }
 
 //------------------------------------------------------------------------------

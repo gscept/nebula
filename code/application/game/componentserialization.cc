@@ -80,6 +80,22 @@ ComponentSerialization::Override(ComponentId component, DeserializeJsonFunc dese
     Singleton->serializers[component.id].deserializeJson = deserialize;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentSerialization::Unregister(ComponentId component)
+{
+    if (Singleton == nullptr)
+        return;
+
+    if (component.id >= Singleton->serializers.Size())
+        return;
+
+    Singleton->serializers[component.id].deserializeJson = nullptr;
+    Singleton->serializers[component.id].serializeJson = nullptr;
+}
+
 void
 ComponentSerialization::OverrideType(OverridableType type, DeserializeJsonFunc deserialize, SerializeJsonFunc serialize)
 {

@@ -194,7 +194,7 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 ModuleManager::UnloadModule(LoadedModule& loaded, GameServer* gameServer)
 {
     if (loaded.feature.isvalid())
@@ -206,7 +206,7 @@ ModuleManager::UnloadModule(LoadedModule& loaded, GameServer* gameServer)
         if (loaded.feature->GetRefCount() > 1)
         {
             std::fprintf(stderr, "ModuleManager: module '%s' still has external references on unload (%d), keeping shared library loaded\n", loaded.config.name.AsCharPtr(), loaded.feature->GetRefCount());
-            return;
+            return false;
         }
 
         loaded.feature = nullptr;
@@ -221,6 +221,8 @@ ModuleManager::UnloadModule(LoadedModule& loaded, GameServer* gameServer)
         delete loaded.library;
         loaded.library = nullptr;
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -270,6 +272,93 @@ ModuleManager::ResolveLibraryPath(const RuntimeModuleConfig& moduleConfig) const
 #endif
 
     return path;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModuleManager::QueueModuleReload(const Util::String& moduleName)
+{
+    // Deduplicate: only queue a reload once per frame
+    for (IndexT i = 0; i < this->pendingReloads.Size(); i++)
+    {
+        if (this->pendingReloads[i] == moduleName)
+            return;
+    }
+    std::fprintf(stdout, "ModuleManager: reload of '%s' queued for next frame boundary\n", moduleName.AsCharPtr());
+    this->pendingReloads.Append(moduleName);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModuleManager::ProcessPendingReloads(GameServer* gameServer)
+{
+    if (this->pendingReloads.IsEmpty())
+        return;
+
+    // Snapshot and clear the queue before processing so that reloads triggered
+    // during the reload itself are deferred to the following frame.
+    Util::Array<Util::String> toProcess = this->pendingReloads;
+    this->pendingReloads.Clear();
+
+    for (IndexT i = 0; i < toProcess.Size(); i++)
+    {
+        this->ReloadModuleByName(toProcess[i], gameServer);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ModuleManager::ReloadModuleByName(const Util::String& moduleName, GameServer* gameServer)
+{
+    // Find the loaded module entry
+    Util::String nameLower = moduleName;
+    nameLower.ToLower();
+
+    IndexT idx = InvalidIndex;
+    for (IndexT i = 0; i < this->loadedModules.Size(); i++)
+    {
+        Util::String n = this->loadedModules[i].config.name;
+        n.ToLower();
+        if (n == nameLower)
+        {
+            idx = i;
+            break;
+        }
+    }
+
+    if (idx == InvalidIndex)
+    {
+        std::fprintf(stderr, "ModuleManager: reload of '%s' failed: module is not loaded\n", moduleName.AsCharPtr());
+        return false;
+    }
+
+    // Save config so we can re-load with the same settings
+    RuntimeModuleConfig config = this->loadedModules[idx].config;
+
+    std::fprintf(stdout, "ModuleManager: reloading '%s'...\n", moduleName.AsCharPtr());
+
+    if (!this->UnloadModule(this->loadedModules[idx], gameServer))
+    {
+        std::fprintf(stderr, "ModuleManager: reload of '%s' blocked: module could not be safely unloaded\n", moduleName.AsCharPtr());
+        return false;
+    }
+
+    this->loadedModules.EraseIndex(idx);
+
+    if (!this->LoadModule(config, gameServer, false))
+    {
+        std::fprintf(stderr, "ModuleManager: reload of '%s' failed during load\n", moduleName.AsCharPtr());
+        return false;
+    }
+
+    std::fprintf(stdout, "ModuleManager: reload of '%s' complete\n", moduleName.AsCharPtr());
+    return true;
 }
 
 } // namespace Game
