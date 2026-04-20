@@ -57,12 +57,85 @@ namespace Particles
 
 __ImplementClass(ParticleLoader, 'PALD', Resources::ResourceLoader)
 
+CoreGraphics::MeshId DefaultEmitterMesh;
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 ParticleLoader::Setup()
 {
+
+    struct VectorB4N
+    {
+        char x : 8;
+        char y : 8;
+        char z : 8;
+        char w : 8;
+    };
+
+    VectorB4N normal;
+    normal.x = 0;
+    normal.y = 127;
+    normal.z = 0;
+    normal.w = 0;
+
+    VectorB4N tangent;
+    tangent.x = 0;
+    tangent.y = 0;
+    tangent.z = 127;
+    tangent.w = 0;
+
+    float vertex[] = { 0, 0, 0, 0, 0 };
+    memcpy(&vertex[3], &normal, 4);
+    memcpy(&vertex[4], &tangent, 4);
+
+    Util::Array<CoreGraphics::VertexComponent> emitterComponents;
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, CoreGraphics::VertexComponent::Float3, 0));
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, CoreGraphics::VertexComponent::Byte4N, 0));
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, CoreGraphics::VertexComponent::Byte4N, 0));
+    CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ .name = "Emitter"_atm, .comps = emitterComponents });
+
+    CoreGraphics::BufferCreateInfo vboInfo;
+    vboInfo.name = "Single Point Particle Emitter VBO";
+    vboInfo.size = 1;
+    vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
+    vboInfo.mode = CoreGraphics::HostLocal;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
+    vboInfo.data = vertex;
+    vboInfo.dataSize = sizeof(vertex);
+    CoreGraphics::BufferId vbo = CoreGraphics::CreateBuffer(vboInfo);
+
+    uint indices[] = { 0 };
+    CoreGraphics::BufferCreateInfo iboInfo;
+    iboInfo.name = "Single Point Particle Emitter IBO";
+    iboInfo.size = 1;
+    iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
+    iboInfo.mode = CoreGraphics::HostLocal;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
+    iboInfo.data = indices;
+    iboInfo.dataSize = sizeof(indices);
+    CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
+
+    CoreGraphics::PrimitiveGroup group;
+    group.SetBaseIndex(0);
+    group.SetBaseVertex(0);
+    group.SetNumIndices(1);
+    group.SetNumVertices(1);
+
+    // setup single point emitter mesh
+    CoreGraphics::MeshCreateInfo meshInfo;
+    CoreGraphics::VertexStream stream;
+    stream.vertexBuffer = vbo;
+    stream.index = 0;
+    meshInfo.streams.Append(stream);
+    meshInfo.indexBuffer = ibo;
+    meshInfo.name = "Single Point Particle Emitter Mesh";
+    meshInfo.primitiveGroups.Append(group);
+    meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
+    meshInfo.vertexLayout = emitterLayout;
+    meshInfo.indexType = CoreGraphics::IndexType::Index16;
+    DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -97,7 +170,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 resource.meshes.Append(Resources::InvalidResourceId);
 
             resource.name.Append(reader->GetOptString("name", "emitter"));
-            resource.materials.Append(Resources::CreateResource(reader->GetString("material"), job.tag));
+            resource.materials.Append(Resources::CreateResource(reader->GetString("material"), job.tag, nullptr, nullptr, true, false));
             resource.transform.Append(reader->GetOptMat4("transform", Math::mat4()));
 
             reader->SetToNode("floats");

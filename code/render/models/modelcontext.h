@@ -68,9 +68,15 @@ public:
     /// create context
     static void Create();
 
-    /// setup
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback, const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK);
-    /// Setup without a model resource
+    /// Setup from a model resource
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const Resources::ResourceName& name
+        , const Util::StringAtom& tag
+        , std::function<void()> finishedCallback
+        , const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
+    );
+    /// Setup with a mesh and material
     static void Setup(
         const Graphics::GraphicsEntityId id
         , const Math::mat4 transform
@@ -78,6 +84,19 @@ public:
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
+        , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
+#if NEBULA_GRAPHICS_DEBUG
+        , const Util::String debugName = ""
+#endif
+    );
+    /// Setup with a list of meshes, materials, bounding boxes and transforms
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const Util::Array<Math::mat4>& transforms
+        , const Util::Array<CoreGraphics::MeshId>& meshes
+        , const Util::Array<Materials::MaterialId>& materials
+        , const Util::Array<Math::bbox>& boundingBoxes
+        , const Util::Array<IndexT>& primitiveGroups
         , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
 #if NEBULA_GRAPHICS_DEBUG
         , const Util::String debugName = ""

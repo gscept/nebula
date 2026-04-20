@@ -13,6 +13,8 @@
 namespace Particles
 {
 
+extern CoreGraphics::MeshId DefaultEmitterMesh;
+
 class ParticleLoader : public Resources::ResourceLoader
 {
     __DeclareClass(ParticleLoader);
@@ -23,10 +25,13 @@ public:
 
     /// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
     ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+
 private:
 
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
+
+
 };
 
 } // namespace Particles

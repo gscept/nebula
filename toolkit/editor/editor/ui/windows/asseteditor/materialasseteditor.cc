@@ -161,11 +161,18 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     bool applyChange = false;
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
-    if (ImGui::BeginTable("Material Editor Contents", 2, ImGuiTableFlags_Resizable))
+    if (ImGui::BeginTable("Material Editor Contents", itemData->renderViewport ? 2 : 1, ImGuiTableFlags_Resizable))
     {
-        ImGui::TableSetupScrollFreeze(2, 1);
-        ImGui::TableNextColumn();
-        assetEditor->viewport.Render();
+        if (itemData->renderViewport)
+        {
+            ImGui::TableSetupScrollFreeze(2, 1);
+            ImGui::TableNextColumn();
+            assetEditor->viewport.Render();
+        }
+        else
+        {
+            ImGui::TableSetupScrollFreeze(1, 1);
+        }
         ImGui::TableNextColumn();
         for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
         {

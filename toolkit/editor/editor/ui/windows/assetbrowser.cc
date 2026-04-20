@@ -686,7 +686,7 @@ retry:
 void
 AssetBrowser::DisplayFileTree()
 {
-     Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders; 
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders; 
     this->fileDB.GetRootFolders(rootFolders);
 
     static char buffer[NEBULA_MAXPATH];

@@ -14,6 +14,7 @@ namespace Presentation
 
 struct MaterialEditorItemData
 {
+    bool renderViewport = true;
     ImageHolder* images;
     ubyte* constants;
 

@@ -12,6 +12,7 @@
 #include "particles/envelopesamplebuffer.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "particleloader.h"
 
 #include "gpulang/render/system_shaders/particle.h"
 
@@ -27,7 +28,6 @@ extern void JobStep(const ParticleJobUniformData* perSystemUniforms, const float
              const Particle* particles_input, Particle* particles_output,
              ParticleJobSliceOutputData* sliceOutput);
 
-CoreGraphics::MeshId ParticleContext::DefaultEmitterMesh;
 const Timing::Time DefaultStepTime = 1.0f / 60.0f;
 Timing::Time StepTime = 1.0f / 60.0f;
 
@@ -82,83 +82,13 @@ ParticleContext::Create()
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    struct VectorB4N
-    {
-        char x : 8;
-        char y : 8;
-        char z : 8;
-        char w : 8;
-    };
-
-    VectorB4N normal;
-    normal.x = 0;
-    normal.y = 127;
-    normal.z = 0;
-    normal.w = 0;
-
-    VectorB4N tangent;
-    tangent.x = 0;
-    tangent.y = 0;
-    tangent.z = 127;
-    tangent.w = 0;
-
-    float vertex[] = { 0, 0, 0, 0, 0 };
-    memcpy(&vertex[3], &normal, 4);
-    memcpy(&vertex[4], &tangent, 4);
-
-    Util::Array<CoreGraphics::VertexComponent> emitterComponents;
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, CoreGraphics::VertexComponent::Float3, 0));
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, CoreGraphics::VertexComponent::Byte4N, 0));
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, CoreGraphics::VertexComponent::Byte4N, 0));
-    CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ .name = "Emitter"_atm, .comps = emitterComponents });
-
-    CoreGraphics::BufferCreateInfo vboInfo;
-    vboInfo.name = "Single Point Particle Emitter VBO";
-    vboInfo.size = 1;
-    vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
-    vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
-    vboInfo.data = vertex;
-    vboInfo.dataSize = sizeof(vertex);
-    CoreGraphics::BufferId vbo = CoreGraphics::CreateBuffer(vboInfo);
-
-    uint indices[] = { 0 };
-    CoreGraphics::BufferCreateInfo iboInfo;
-    iboInfo.name = "Single Point Particle Emitter IBO";
-    iboInfo.size = 1;
-    iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
-    iboInfo.data = indices;
-    iboInfo.dataSize = sizeof(indices);
-    CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
-
-    CoreGraphics::PrimitiveGroup group;
-    group.SetBaseIndex(0);
-    group.SetBaseVertex(0);
-    group.SetNumIndices(1);
-    group.SetNumVertices(1);
-
-    // setup single point emitter mesh
-    CoreGraphics::MeshCreateInfo meshInfo;
-    CoreGraphics::VertexStream stream;
-    stream.vertexBuffer = vbo;
-    stream.index = 0;
-    meshInfo.streams.Append(stream);
-    meshInfo.indexBuffer = ibo;
-    meshInfo.name = "Single Point Particle Emitter Mesh";
-    meshInfo.primitiveGroups.Append(group);
-    meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
-    meshInfo.vertexLayout = emitterLayout;
-    meshInfo.indexType = CoreGraphics::IndexType::Index16;
-    ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
-
     // setup particle geometry buffer
     Util::Array<CoreGraphics::VertexComponent> cornerComponents;
     cornerComponents.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
     float cornerVertexData[] = { 0, 0,  1, 0,  1, 1,  0, 1 };
     CoreGraphics::VertexLayoutId cornerLayout = CoreGraphics::CreateVertexLayout({ .name = "Corner"_atm, .comps = cornerComponents });
 
+    CoreGraphics::BufferCreateInfo vboInfo, iboInfo;
     vboInfo.name = "Particle Geometry Vertex Buffer";
     vboInfo.size = 4;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(cornerLayout);
@@ -214,70 +144,108 @@ ParticleContext::Create()
 /**
 */
 void 
-ParticleContext::Setup(const Graphics::GraphicsEntityId id)
+ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& particleResource, Graphics::StageMask stageMask)
 {
     const ContextEntityId cid = GetContextId(id);
     n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in ParticleContext", id.HashCode());
 
-    // get model context
-    const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before particle!", id.HashCode());
-    particleContextAllocator.Get<ModelId>(cid.id) = mdlId;
-    particleContextAllocator.Set<ModelContextId>(cid.id, id);
-
-    // get node map
-    Util::Array<ParticleSystemRuntime>& systems = particleContextAllocator.Get<ParticleSystems>(cid.id);
-
-    // get ranges
-    const Models::NodeInstanceRange& range = ModelContext::GetModelRenderableRange(id);
-    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
-    
-    // setup nodes
-    IndexT i;
-    for (i = range.begin; i < range.end; i++)
-    {
-        Models::ModelNode* node = renderables.nodes[i];
-        if (node->type == ParticleSystemNodeType)
+    Particles::ParticleResourceId particleRes = Resources::CreateResource(particleResource, "particle", [stageMask, id, cid](Resources::ResourceId res)
         {
-            Models::ParticleSystemNode* pNode = reinterpret_cast<Models::ParticleSystemNode*>(node);
-            const Particles::EmitterAttrs& attrs = pNode->GetEmitterAttrs();
-            float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
-            float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
-
-            ParticleSystemRuntime& system = systems.Emplace();
-            system.renderableIndex = i - range.begin;
-            system.emissionCounter = 0;
-            system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
-            system.outputCapacity = 0;
-            system.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
-            system.uniformData.gravity = Math::vector(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
-            system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
-            system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
-            system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
-
-            // Setup one mesh per runtime, remember this is only a container
-            system.meshPerFrame.Resize(CoreGraphics::GetNumBufferedFrames());
-            for (IndexT i = 0; i < system.meshPerFrame.Size(); i++)
+            const Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetEmitters(res);
+            Util::Array<Math::bbox> boundingBoxes;
+            Util::Array<IndexT> primitiveGroups;
+            Util::Array<CoreGraphics::MeshId> meshes;
+            Util::Array<Materials::MaterialId> materials;
+            boundingBoxes.Reserve(emitters.meshes.Size());
+            for (IndexT i = 0; i < emitters.meshes.Size(); i++)
             {
-                CoreGraphics::MeshCreateInfo meshInfo;
-                meshInfo.indexBuffer = ParticleContext::GetParticleIndexBuffer();
-                meshInfo.indexType = CoreGraphics::IndexType::Index16;
-                meshInfo.vertexLayout = ParticleContext::GetParticleVertexLayout();
-                CoreGraphics::VertexStream cornerStream, pointStream;
-                cornerStream.index = 0;
-                cornerStream.offset = 0;
-                cornerStream.vertexBuffer = ParticleContext::GetParticleVertexBuffer();
-                pointStream.index = 0;
-                pointStream.offset = 0;
-                pointStream.vertexBuffer = state.vbos[i];
-
-                meshInfo.streams.Append(cornerStream);
-                meshInfo.streams.Append(pointStream);
-                meshInfo.primitiveGroups.Append(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
-                system.meshPerFrame[i] = CoreGraphics::CreateMesh(meshInfo);
+                float activityDist = emitters.attrs[i].GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
+                Math::bbox box(emitters.transform[i].position, Math::vec3(activityDist));
+                boundingBoxes.Append(box);
+                primitiveGroups.Append(0);
+                if (emitters.meshes[i] == Resources::InvalidResourceId)
+                {
+                    meshes.Append(Particles::DefaultEmitterMesh);
+                }
+                else
+                {
+                    meshes.Append(emitters.meshes[i].resource);
+                }
+                materials.Append(emitters.materials[i].resource);
             }
+
+            // Register as a model (for rendering purposes)
+            Models::ModelContext::RegisterEntity(id);
+            Models::ModelContext::Setup(
+                id,
+                emitters.transform,
+                meshes,
+                materials,
+                boundingBoxes,
+                primitiveGroups,
+                stageMask
+            );
+
+            const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
+            particleContextAllocator.Set<ModelId>(cid.id, mdlId);
+            particleContextAllocator.Set<ModelContextId>(cid.id, id);
+
+            // get ranges
+            const Models::NodeInstanceRange& range = ModelContext::GetModelRenderableRange(id);
+            const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
+
+            Util::Array<ParticleSystemRuntime>& systems = particleContextAllocator.Get<ParticleSystems>(cid.id);
+            IndexT i;
+            for (i = range.begin; i < range.end; i++)
+            {
+               
+                const Particles::EmitterAttrs& attrs = emitters.attrs[i - range.begin];
+                float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
+                float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
+
+                ParticleSystemRuntime& system = systems.Emplace();
+                system.attrs = attrs;
+                system.emitterMesh.Setup(meshes[i - range.begin], 0);
+                system.renderableIndex = i - range.begin;
+                system.emissionCounter = 0;
+                system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
+                system.outputCapacity = 0;
+                system.sampleBuffer.Setup(attrs, ParticleContextNumEnvelopeSamples);
+                system.uniformData.sampleBuffer = system.sampleBuffer.GetSampleBuffer();
+                system.uniformData.gravity = Math::vector(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
+                system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
+                system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
+                system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
+
+                // Setup one mesh per runtime, remember this is only a container
+                system.meshPerFrame.Resize(CoreGraphics::GetNumBufferedFrames());
+                for (IndexT j = 0; j < system.meshPerFrame.Size(); j++)
+                {
+                    CoreGraphics::MeshCreateInfo meshInfo;
+                    meshInfo.indexBuffer = ParticleContext::GetParticleIndexBuffer();
+                    meshInfo.indexType = CoreGraphics::IndexType::Index16;
+                    meshInfo.vertexLayout = ParticleContext::GetParticleVertexLayout();
+                    meshInfo.topology = CoreGraphics::PrimitiveTopology::TriangleList;
+                    CoreGraphics::VertexStream cornerStream, pointStream;
+                    cornerStream.index = 0;
+                    cornerStream.offset = 0;
+                    cornerStream.vertexBuffer = ParticleContext::GetParticleVertexBuffer();
+                    pointStream.index = 0;
+                    pointStream.offset = 0;
+                    pointStream.vertexBuffer = state.vbos[j];
+
+                    meshInfo.streams.Append(cornerStream);
+                    meshInfo.streams.Append(pointStream);
+                    meshInfo.primitiveGroups.Append(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
+                    system.meshPerFrame[j] = CoreGraphics::CreateMesh(meshInfo);
+                }
+            }
+        },
+        [](Resources::ResourceId res)
+        {
+
         }
-    }
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -374,6 +342,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 
     n_assert(allSystemsCompleteCounter == 0);
     allSystemsCompleteCounter = runtimes.Size();
+    n_assert(ParticleContext::ConstantUpdateCounter == 0);
 
     IndexT i;
     for (i = 0; i < runtimes.Size(); i++)
@@ -405,13 +374,11 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                 ParticleSystemRuntime& system = systems[j];
                 system.transform = transformables.nodeTransforms[transformRange.begin + renderables.nodeTransformIndex[stateRange.begin + system.renderableIndex]];
 
-                auto node = reinterpret_cast<Models::ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
-
 #if NEBULA_USED_FIXED_PARTICLE_UPDATE_TIME
                 IndexT curStep = 0;
                 while (runtime.stepTime <= ctx.time)
                 {
-                    ParticleContext::EmitParticles(runtime, system, node, ParticleContext::StepTime);
+                    ParticleContext::EmitParticles(runtime, system, ParticleContext::StepTime);
                     bool isLastJob = (runtime.stepTime + ParticleContext::StepTime) > ctx.time;
                     ParticleContext::RunParticleStep(runtime, system, ParticleContext::StepTime, isLastJob);
                     runtime.stepTime += ParticleContext::StepTime;
@@ -420,7 +387,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 #else
                 if (!runtime.stopping)
                 {
-                    ParticleContext::EmitParticles(runtime, system, node, float(timeDiff));
+                    ParticleContext::EmitParticles(runtime, system, float(timeDiff));
                 }
                 ParticleContext::RunParticleStep(runtime, system, float(timeDiff), true);
                 runtime.stepTime += timeDiff;
@@ -454,8 +421,7 @@ ParticleContext::OnPrepareView(const Graphics::ViewId view, const Graphics::Fram
     {
         const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
-        n_assert(ParticleContext::ConstantUpdateCounter == 0);
-        ParticleContext::ConstantUpdateCounter = 1;
+        ParticleContext::ConstantUpdateCounter++;
 
         // Run job to update constants, can be per-view because of the billboard flag
         Jobs2::JobDispatch(
@@ -490,18 +456,16 @@ ParticleContext::OnPrepareView(const Graphics::ViewId view, const Graphics::Fram
                         SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
                         Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numLivingParticles);
 
-                        ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
-
                         alignas (16) ::Particle::ParticleEmitterData block;
 
                         // update system transform
-                        if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
+                        if (system.attrs.GetBool(Particles::EmitterAttrs::Billboard))
                             system.transform = system.transform * invViewMatrix;
                         system.transform.store(&block.EmitterTransform[0][0]);
 
                         // update parameters
-                        block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
-                        block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
+                        block.NumAnimPhases = system.attrs.GetInt(EmitterAttrs::AnimPhases);
+                        block.AnimFramesPerSecond = system.attrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                         // allocate block
                         CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetConstants(block, CoreGraphics::GraphicsQueueType);
@@ -675,19 +639,16 @@ ParticleContext::OnRenderDebug(uint32_t flags)
 /**
 */
 void 
-ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, Models::ParticleSystemNode* node, float stepTime)
+ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime)
 {
     N_SCOPE(EmitParticles, Particles);
 
     // get the (wrapped around if looping) time since emission has started
-    const Particles::EmitterAttrs& attrs = node->GetEmitterAttrs();
-    const Particles::EmitterMesh& mesh = node->GetEmitterMesh();
-    const Particles::EnvelopeSampleBuffer& buffer = node->GetSampleBuffer();
     rt.emissionStartTimeOffset += stepTime;
-    Timing::Time emDuration = attrs.GetFloat(EmitterAttrs::EmissionDuration);
-    Timing::Time startDelay = attrs.GetFloat(EmitterAttrs::StartDelay);
+    Timing::Time emDuration = srt.attrs.GetFloat(EmitterAttrs::EmissionDuration);
+    Timing::Time startDelay = srt.attrs.GetFloat(EmitterAttrs::StartDelay);
     Timing::Time loopTime = emDuration + startDelay;
-    bool looping = attrs.GetBool(EmitterAttrs::Looping);
+    bool looping = srt.attrs.GetBool(EmitterAttrs::Looping);
     if (looping && (rt.emissionStartTimeOffset > loopTime))
     {
         // a wrap-around
@@ -715,7 +676,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
     IndexT emSampleIndex = IndexT(relEmissionTime * (Particles::ParticleContextNumEnvelopeSamples - 1));
 
     // lookup current emission frequency
-    float emFrequency = buffer.LookupSamples(emSampleIndex)[EmitterAttrs::EmissionFrequency];
+    float emFrequency = srt.sampleBuffer.LookupSamples(emSampleIndex)[EmitterAttrs::EmissionFrequency];
     if (emFrequency > N_TINY)
     {
         Timing::Time emTimeStep = 1.0 / emFrequency;
@@ -729,7 +690,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
             // handle pre-calc if necessary, this will instantly produce
             // a number of particles to let the particle system
             // appear as if has been emitting for quite a while already
-            float preCalcTime = attrs.GetFloat(EmitterAttrs::PrecalcTime);
+            float preCalcTime = srt.attrs.GetFloat(EmitterAttrs::PrecalcTime);
             if (preCalcTime > N_TINY)
             {
                 // during pre-calculation we need to update the particle system,
@@ -744,7 +705,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
                 }
                 while (rt.prevEmissionTime < preCalcTime)
                 {
-                    ParticleContext::EmitParticle(rt, srt, attrs, mesh, buffer, emSampleIndex, 0.0f);
+                    ParticleContext::EmitParticle(rt, srt, emSampleIndex, 0.0f);
                     rt.prevEmissionTime += emTimeStep;
                     updateTime += emTimeStep;
                     if (updateTime >= updateStep)
@@ -773,7 +734,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
         while ((rt.prevEmissionTime + emTimeStep) <= rt.stepTime)
         {
             rt.prevEmissionTime += emTimeStep;
-            ParticleContext::EmitParticle(rt, srt, attrs, mesh, buffer, emSampleIndex, (float)(rt.stepTime - rt.prevEmissionTime));
+            ParticleContext::EmitParticle(rt, srt, emSampleIndex, (float)(rt.stepTime - rt.prevEmissionTime));
         }
     }
 }
@@ -782,7 +743,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
 /**
 */
 void 
-ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge)
+ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, IndexT sampleIndex, float initialAge)
 {
     N_SCOPE(EmitParticle, Particles);
     n_assert(initialAge >= 0.0f);
@@ -790,11 +751,11 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     using namespace Math;
 
     Particle particle;
-    float* particleEnvSamples = buffer.LookupSamples(0);
-    float* emissionEnvSamples = buffer.LookupSamples(sampleIndex);
+    float* particleEnvSamples = srt.sampleBuffer.LookupSamples(0);
+    float* emissionEnvSamples = srt.sampleBuffer.LookupSamples(sampleIndex);
 
     // lookup pseudo-random emitter vertex from the emitter mesh
-    const EmitterMesh::EmitterPoint& emPoint = mesh.GetEmitterPoint(srt.emissionCounter++);
+    const EmitterMesh::EmitterPoint& emPoint = srt.emitterMesh.GetEmitterPoint(srt.emissionCounter++);
 
     // setup particle position and start position
     particle.position = srt.transform * emPoint.position;
@@ -811,10 +772,10 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 
     vec3 dummy, dummy2;
     quat qrot;
-    decompose(srt.transform, dummy, qrot, dummy2);
+    Math::decompose(srt.transform, dummy, qrot, dummy2);
     emNormal = rotationquat(qrot) * emNormal;
     // compute start velocity
-    float velocityVariation = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::VelocityRandomize));
+    float velocityVariation = 1.0f - (Math::rand() * srt.attrs.GetFloat(EmitterAttrs::VelocityRandomize));
     float startVelocity = emissionEnvSamples[EmitterAttrs::StartVelocity] * velocityVariation;
 
     // setup particle velocity vector
@@ -822,7 +783,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 
     // setup uvMinMax to a random texture tile
     // FIXME: what's up with the horizontal flip?
-    float texTile = Math::clamp(attrs.GetFloat(EmitterAttrs::TextureTile), 1.0f, 16.0f);
+    float texTile = Math::clamp(srt.attrs.GetFloat(EmitterAttrs::TextureTile), 1.0f, 16.0f);
     float step = 1.0f / texTile;
     float tileIndex = floorf(Math::rand() * texTile);
     float vMin = step * tileIndex;
@@ -833,11 +794,11 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     particle.color.load(&(particleEnvSamples[EmitterAttrs::Red]));
 
     // setup rotation and rotationVariation
-    float startRotMin = attrs.GetFloat(EmitterAttrs::StartRotationMin);
-    float startRotMax = attrs.GetFloat(EmitterAttrs::StartRotationMax);
+    float startRotMin = srt.attrs.GetFloat(EmitterAttrs::StartRotationMin);
+    float startRotMax = srt.attrs.GetFloat(EmitterAttrs::StartRotationMax);
     particle.rotation = Math::clamp(Math::rand(), startRotMin, startRotMax);
-    float rotVar = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::RotationRandomize));
-    if (attrs.GetBool(EmitterAttrs::RandomizeRotation) && (Math::rand() < 0.5f))
+    float rotVar = 1.0f - (Math::rand() * srt.attrs.GetFloat(EmitterAttrs::RotationRandomize));
+    if (srt.attrs.GetBool(EmitterAttrs::RandomizeRotation) && (Math::rand() < 0.5f))
     {
         rotVar = -rotVar;
     }
@@ -845,7 +806,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 
     // setup particle size and size variation
     particle.size = particleEnvSamples[EmitterAttrs::Size];
-    particle.sizeVariation = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::SizeRandomize));
+    particle.sizeVariation = 1.0f - (Math::rand() * srt.attrs.GetFloat(EmitterAttrs::SizeRandomize));
 
     // setup particle age and oneDivLifetime, clamp lifetime to 1.0f if there's a risk we will divide by 0
     float lifeTime = emissionEnvSamples[EmitterAttrs::LifeTime];
@@ -896,7 +857,11 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 
     // if no particles, no need to run the step update
     if (srt.particles.Size() == 0)
+    {
+        // Reduce systems complete counter manually
+        allSystemsCompleteCounter--;
         return;
+    }
 
     n_assert(srt.particles.GetBuffer());
 

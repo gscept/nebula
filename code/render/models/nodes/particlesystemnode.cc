@@ -11,6 +11,7 @@
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
+#include "particles/particleloader.h"
 
 #include "gpulang/render/system_shaders/particle.h"
 
@@ -68,7 +69,7 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
     else
     {
         this->meshResource = InvalidResourceId;
-        this->mesh = ParticleContext::DefaultEmitterMesh;
+        this->mesh = Particles::DefaultEmitterMesh;
     }
 }
 

@@ -1244,6 +1244,18 @@ String::ChangeAssignPrefix(const Util::String& newPref)
 //------------------------------------------------------------------------------
 /**
 */
+void
+String::ChangeAssignMapping(const Util::String& newMapping, const Util::String& oldMapping)
+{
+    IndexT start = this->FindStringIndex(oldMapping);
+    n_assert(start != InvalidIndex);
+    *this = this->ExtractToEnd(start + oldMapping.Length());
+    this->ChangeAssignPrefix(newMapping);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 String
 String::FromBlob(const Util::Blob& b)
 {
