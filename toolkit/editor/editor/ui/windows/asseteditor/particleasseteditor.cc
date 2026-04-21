@@ -207,7 +207,7 @@ DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& t
     ImVec2 cursorPos = ImGui::GetCursorScreenPos();
     ImVec2 points[4];
     const float* limits = curve.GetLimits();
-    float normalizationFactor = limits[1] - limits[0];
+    float normalizationFactor = 1.0f / (limits[1] - limits[0]);
 
     const float* values = curve.GetValues();
     float keyPos0 = curve.GetKeyPos0();
@@ -259,7 +259,9 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
         changed = true;
         for (uint i = 0; i < 4; i++)
         {
-            modifyValues[i] = Math::clamp(modifyValues[i], limits[0], limits[1]);
+            float newValue = modifyValues[i];
+            float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
+            modifyValues[i] = Math::clamp(modifyValues[i], modifyLimits[0], modifyLimits[1]);
         }
     }
     ImGui::PopID();
@@ -272,7 +274,9 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
         changed = true;
         for (uint i = 0; i < 4; i++)
         {
-            modifyValues[i] = Math::clamp(modifyValues[i], limits[0], limits[1]);
+            float newValue = modifyValues[i];
+            float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
+            modifyValues[i] = Math::clamp(modifyValues[i], modifyLimits[0], modifyLimits[1]);
         }
     }
     ImGui::PopID();
@@ -302,7 +306,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
         ImGui::GetColorU32(ImGuiCol_ButtonHovered),      // key point 1 outline
     };
 
-    float normalizationFactor = limits[1] - limits[0];
+    float normalizationFactor = 1.0f / (limits[1] - limits[0]);
     
     ImVec2 window = ImVec2(Math::min(narrowRegion.x, MIN_CURVE_WINDOW_WIDTH), Math::min(narrowRegion.y, MIN_CURVE_WINDOW_HEIGHT));
     points[0] = narrowCursor + ImVec2(0.0f, (1.0f - values[0] * normalizationFactor) * window.y);
@@ -331,7 +335,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
 
         if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
         {
-            float y_val = limits[0] + modifyValues[i] * normalizationFactor;
+            float y_val = modifyValues[i];
             if (i == 1)
             {
                 keyPos0 = Math::clamp((io.MousePos.x - cursorPos.x) / region.x, 0.f, 1.f);
@@ -355,7 +359,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
                 ImVec2 pos = ImVec2(Math::min(points[i].x + 3, cursorPos.x + region.x - size.x - 3), points[i].y + 3);
                 draw_list->AddText(pos, IM_COL32(255, 255, 255, 255), Util::Format("Y: %f", y_val).AsCharPtr());
             }
-            modifyValues[i] = Math::clamp(1.0f - ((io.MousePos.y - cursorPos.y) / window.y), 0.0f, 1.0f);
+            modifyValues[i] = Math::clamp((1.0f - ((io.MousePos.y - cursorPos.y) / window.y)) * (1.0f / normalizationFactor), limits[0], limits[1]);
             changed = true;
         }
 
@@ -609,6 +613,17 @@ ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path)
     ParticleAssetItemData::ParticleAsset res;
     res.name = "New Particle Emitter";
     Particles::EmitterAttrs attrs;
+
+    #define INIT_CURVE_ONE(curve)\
+        auto curve = attrs.GetEnvelope(Particles::EmitterAttrs::curve);\
+        curve.Setup(1,1,1,1, 0.33, 0.66, 0, 0, Particles::EnvelopeCurve::Sine);
+
+    INIT_CURVE_ONE(Red);
+    INIT_CURVE_ONE(Blue);
+    INIT_CURVE_ONE(Green);
+    INIT_CURVE_ONE(Alpha);
+    INIT_CURVE_ONE(LifeTime);
+    INIT_CURVE_ONE(EmissionFrequency);
     res.attrs = &attrs;
 
     // Setup new material
