@@ -31,15 +31,15 @@ ID_24_8_TYPE(MeshId);
 struct VertexStream
 {
     BufferId vertexBuffer;
-    size_t offset;
-    IndexT index;
+    size_t offset = 0;
+    IndexT index = 0;
 };
 
 struct MeshCreateInfo
 {
     Resources::ResourceName name;
     Util::StackArray<VertexStream, 4> streams;
-    size_t indexBufferOffset;
+    size_t indexBufferOffset = 0;
     BufferId indexBuffer = CoreGraphics::InvalidBufferId;
     IndexType::Code indexType = IndexType::None;
     VertexLayoutId vertexLayout = CoreGraphics::InvalidVertexLayoutId;

@@ -5,6 +5,7 @@
 
 #include "lib/std.gpuh"
 #include "lib/shared.gpuh"
+#include "lib/objects_shared.gpuh"
 
 struct CornerVertex
 {
@@ -14,16 +15,6 @@ struct CornerVertex
     worldBinormal : f32x3;
     UV : f32x2;
 };
-
-struct ParticleEmitterData
-{
-    EmitterTransform : f32x4x4;
-
-    NumAnimPhases : i32;
-    AnimFramesPerSecond : f32;
-};
-
-group(DYNAMIC_OFFSET_GROUP) uniform ParticleEmitter : *ParticleEmitterData;
 
 /**
     ComputeCornerVertex

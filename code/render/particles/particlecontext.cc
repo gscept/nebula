@@ -12,6 +12,7 @@
 #include "particles/envelopesamplebuffer.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "visibility/visibilitycontext.h"
 #include "particleloader.h"
 
 #include "gpulang/render/system_shaders/particle.h"
@@ -110,11 +111,11 @@ ParticleContext::Create()
     state.geometryIbo = CoreGraphics::CreateBuffer(iboInfo);
 
     // save vertex components so we can allocate a buffer later
-    state.particleComponents.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
-    state.particleComponents.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::stretchPosition
-    state.particleComponents.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::color
-    state.particleComponents.Append(CoreGraphics::VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::uvMinMax
-    state.particleComponents.Append(CoreGraphics::VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
+    state.particleComponents.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
+    state.particleComponents.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::stretchPosition
+    state.particleComponents.Append(CoreGraphics::VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::color
+    state.particleComponents.Append(CoreGraphics::VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::uvMinMax
+    state.particleComponents.Append(CoreGraphics::VertexComponent(5, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
 
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     state.vbos.Resize(numFrames);
@@ -186,6 +187,9 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
                 stageMask
             );
 
+            Visibility::ObservableContext::RegisterEntity(id);
+            Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+
             const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
             particleContextAllocator.Set<ModelId>(cid.id, mdlId);
             particleContextAllocator.Set<ModelContextId>(cid.id, id);
@@ -230,7 +234,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
                     cornerStream.index = 0;
                     cornerStream.offset = 0;
                     cornerStream.vertexBuffer = ParticleContext::GetParticleVertexBuffer();
-                    pointStream.index = 0;
+                    pointStream.index = 1;
                     pointStream.offset = 0;
                     pointStream.vertexBuffer = state.vbos[j];
 
@@ -363,6 +367,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);
+        IndexT frame = CoreGraphics::GetBufferedFrameIndex();
 
         if (runtime.playing && !systems.IsEmpty())
         {
@@ -372,6 +377,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
             for (j = 0; j < systems.Size(); j++)
             {
                 ParticleSystemRuntime& system = systems[j];
+                renderables.nodeMeshes[stateRange.begin + system.renderableIndex] = system.meshPerFrame[frame];
                 system.transform = transformables.nodeTransforms[transformRange.begin + renderables.nodeTransformIndex[stateRange.begin + system.renderableIndex]];
 
 #if NEBULA_USED_FIXED_PARTICLE_UPDATE_TIME
@@ -453,6 +459,16 @@ ParticleContext::OnPrepareView(const Graphics::ViewId view, const Graphics::Fram
                     if (system.outputData.numLivingParticles > 0)
                     {
                         renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
+
+                        CoreGraphics::PrimitiveGroup primGroup;
+                        primGroup.SetBaseIndex(0);
+                        primGroup.SetNumIndices(system.outputData.numLivingParticles * 2 * 3);
+                        primGroup.SetBaseVertex(0);
+                        primGroup.SetNumVertices(0);
+                        renderables.nodePrimitiveGroup[stateRange.begin + system.renderableIndex] = primGroup;
+                        renderables.nodePrimitiveGroupIndex[stateRange.begin + system.renderableIndex] = 0;
+                        renderables.nodeDrawModifiers[stateRange.begin + system.renderableIndex] = Util::MakeTuple(system.outputData.numLivingParticles, 0);
+
                         SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
                         Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numLivingParticles);
 
@@ -492,8 +508,8 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     N_SCOPE(WaitForParticleJobs, Particles);
     ParticleContext::totalCompletionEvent.Wait();
 
-    if (state.numParticlesThisFrame == 0)
-        return;
+    //if (state.numParticlesThisFrame == 0)
+    //    return;
 
     // get node map
     Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
@@ -565,8 +581,6 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
             // Update mesh to make sure we're using the right VBO
             const IndexT nodeIndex = stateRange.begin + system.renderableIndex;
             CoreGraphics::MeshSetVertexBuffer(system.meshPerFrame[frame], state.vbos[frame], 1);
-            renderables.nodeMeshes[nodeIndex] = system.meshPerFrame[frame];
-            renderables.nodeDrawModifiers[nodeIndex] = Util::MakeTuple(numParticles, baseVertex);
             system.baseVertex = baseVertex;
 
             // Bump base vertex with number of particles from this system
@@ -575,7 +589,8 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     }
 
     // flush changes
-    CoreGraphics::BufferFlush(state.vbos[frame]);
+    if (state.numParticlesThisFrame > 0)
+        CoreGraphics::BufferFlush(state.vbos[frame]);
 }
 
 //------------------------------------------------------------------------------
@@ -622,10 +637,10 @@ void
 ParticleContext::OnRenderDebug(uint32_t flags)
 {
     CoreGraphics::ShapeRenderer* shapeRenderer = CoreGraphics::ShapeRenderer::Instance();
-    Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+    const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
     for (IndexT i = 0; i < allSystems.Size(); i++)
     {
-        Util::Array<ParticleSystemRuntime> runtimes = allSystems[i];
+        const Util::Array<ParticleSystemRuntime>& runtimes = allSystems[i];
         for (IndexT j = 0; j < runtimes.Size(); j++)
         {
             // for each system, make a white box

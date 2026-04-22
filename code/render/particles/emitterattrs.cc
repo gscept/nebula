@@ -18,6 +18,10 @@ EmitterAttrs::EmitterAttrs()
     Memory::Clear(&this->intAttributes, sizeof(this->intAttributes));
     Memory::Clear(&this->boolAttributes, sizeof(this->boolAttributes));
     Memory::Clear(this->vec4Values, sizeof(this->vec4Values));
+    n_static_assert(NumFloatAttrs == lengthof(FloatAttrNames));
+    n_static_assert(NumBoolAttrs == lengthof(BoolAttrNames));
+    n_static_assert(NumIntAttrs == lengthof(IntAttrNames));
+    n_static_assert(NumEnvelopeAttrs == lengthof(EnvelopeAttrNames));
 }
 
 

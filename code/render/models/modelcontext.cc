@@ -192,32 +192,17 @@ ModelContext::Setup(
             // Okay, so how this basically has to work is that there are 4 different dynamic offset constant indices in the entire engine.
             // Any change of this will break this code, so consider improving this in the future by providing a way to overload the binding point
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
-            if (sNode->GetType() == Models::ParticleSystemNodeType)
-            {
-                state.instancingConstantsIndex = ::Particle::Instances::BINDING;
-                state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
-                state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
-                state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
+            state.instancingConstantsIndex = ::Particle::Instances::BINDING;
+            state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
+            state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
+            state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
 
-                state.resourceTableOffsets.Resize(4);
-                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
-                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
-                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
-                state.resourceTableOffsets[state.particleConstantsIndex] = 0;
+            state.resourceTableOffsets.Resize(4);
+            state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+            state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+            state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+            state.resourceTableOffsets[state.particleConstantsIndex] = 0;
 
-            }
-            else
-            {
-                state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
-                state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
-                state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
-                state.particleConstantsIndex = InvalidIndex;
-
-                state.resourceTableOffsets.Resize(3);
-                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
-                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
-                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
-            }
             uint index = (uint)stateRange.allocation.offset + i;
 
             NodeInstances.renderable.nodeStates[index] = state;
@@ -317,13 +302,14 @@ ModelContext::Setup(
     state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
     state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
     state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
-    state.particleConstantsIndex = InvalidIndex;
+    state.particleConstantsIndex = ObjectsShared::ParticleEmitter::BINDING;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
-    state.resourceTableOffsets.Resize(3);
+    state.resourceTableOffsets.Resize(4);
     state.resourceTableOffsets[state.objectConstantsIndex] = 0;
     state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
     state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+    state.resourceTableOffsets[state.particleConstantsIndex] = 0;
 
     if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
     {
@@ -439,13 +425,14 @@ ModelContext::Setup(
         state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
         state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
         state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
-        state.particleConstantsIndex = InvalidIndex;
+        state.particleConstantsIndex = ObjectsShared::ParticleEmitter::BINDING;
         state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
-        state.resourceTableOffsets.Resize(3);
+        state.resourceTableOffsets.Resize(4);
         state.resourceTableOffsets[state.objectConstantsIndex] = 0;
         state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
         state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+        state.resourceTableOffsets[state.particleConstantsIndex] = 0;
 
         if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
         {
@@ -489,7 +476,7 @@ ModelContext::Setup(
             NodeInstances.renderable.nodes[index] = nullptr;
             NodeInstances.renderable.nodeMeshes[index] = meshes[i];
             NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(meshes[i], primitiveGroups[i]);
-            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = i;
+            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = primitiveGroups[i];
             NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
             modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, i);
 
