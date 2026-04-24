@@ -62,6 +62,8 @@ const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
 const uint64_t MeshGetVertexOffset(const MeshId id, const IndexT stream);
+/// Set mesh vertex offset
+void MeshSetVertexOffset(const MeshId id, const IndexT stream, uint64_t offset);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset

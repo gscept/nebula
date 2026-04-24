@@ -80,6 +80,11 @@ public:
     static void OnRenderDebug(uint32_t flags);
 #endif
 
+#ifdef WITH_NEBULA_EDITOR
+    /// Recalculate samples
+    static void RecalculateEnvelopeSamples(const Graphics::GraphicsEntityId id);
+#endif
+
     static Threading::AtomicCounter ConstantUpdateCounter;
     static Threading::Event totalCompletionEvent;
 private:
@@ -106,7 +111,7 @@ private:
 
     struct ParticleSystemRuntime
     {
-        Particles::EmitterAttrs attrs;
+        const Particles::EmitterAttrs* attrs;
         Particles::EnvelopeSampleBuffer sampleBuffer;
         Particles::EmitterMesh emitterMesh;
         uint32_t renderableIndex;
