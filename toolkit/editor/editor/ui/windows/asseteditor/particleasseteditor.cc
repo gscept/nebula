@@ -508,6 +508,7 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 CURVE_PARAM(Velocity weight, VelocityFactor)
                 CURVE_PARAM(Mass, Mass)
                 CURVE_PARAM(Time scale, TimeManipulator)
+                FLOAT_PARAM(Gravity, Gravity)
             }
             if (ImGui::CollapsingHeader("Material"))
             {
@@ -666,10 +667,15 @@ ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path)
     INIT_CURVE_ONE(Alpha);
     INIT_CURVE_ONE(LifeTime);
     INIT_CURVE_ONE(EmissionFrequency);
-    INIT_CURVE_ONE(Size)
+    INIT_CURVE_ONE(Size);
+    INIT_CURVE_ONE(StartVelocity);
+    INIT_CURVE_ONE(VelocityFactor);
+    INIT_CURVE_ONE(AirResistance);
     attrs.SetFloat(Particles::EmitterAttrs::SizeRandomize, 1.0f);
     attrs.SetFloat(Particles::EmitterAttrs::EmissionDuration, 10);
     attrs.SetBool(Particles::EmitterAttrs::Looping, true);
+    attrs.SetFloat(Particles::EmitterAttrs::Gravity, 9.81f);
+    
     res.attrs = &attrs;
 
     // Setup new material
