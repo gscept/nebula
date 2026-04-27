@@ -84,8 +84,7 @@ void ParticleUpdateAge(const float stepTime, const Particle& in, Particle& out)
 __forceinline
 void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput)
 {
-    if (in.relAge < 1.0f && in.color.w > 0.001f)
-        ++sliceOutput->numLivingParticles;
+    ++sliceOutput->numLivingParticles;
 
     // copy the *const* members
     out.startPosition = in.startPosition;

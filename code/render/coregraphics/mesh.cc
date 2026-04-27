@@ -105,7 +105,7 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 void
 MeshSetVertexOffset(const MeshId id, const IndexT stream, uint64_t offset)
 {
-    meshAllocator.Get<Mesh_Internals>(id.id).streams[stream].offset = offset;
+    meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].offset = offset;
 }
 
 //------------------------------------------------------------------------------

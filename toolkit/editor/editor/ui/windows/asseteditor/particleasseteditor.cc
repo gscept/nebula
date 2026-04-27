@@ -407,6 +407,8 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 {\
                     data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
                     assetEditor->Edit();\
+                    Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+                    Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
                 }\
             }\
             ImGui::PopID();\
@@ -423,6 +425,8 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {\
             data->emitters[selectedEmitter].attrs->SetFloat(Particles::EmitterAttrs::FloatAttr::attr, f); \
             assetEditor->Edit();\
+            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
 
@@ -435,6 +439,8 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {\
             data->emitters[selectedEmitter].attrs->SetInt(Particles::EmitterAttrs::IntAttr::attr, f); \
             assetEditor->Edit();\
+            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
 
@@ -447,6 +453,8 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {\
             data->emitters[selectedEmitter].attrs->SetBool(Particles::EmitterAttrs::BoolAttr::attr, f); \
             assetEditor->Edit();\
+            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
     static uint selectedEmitter = -1;

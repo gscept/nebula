@@ -544,6 +544,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 
     IndexT baseVertex = 0;
 
+
     // Walk through systems again and update index and vertex buffers
     float* buf = (float*)state.mappedVertices[frame];
     Math::vec4 tmp;
@@ -660,6 +661,9 @@ ParticleContext::RecalculateEnvelopeSamples(const Graphics::GraphicsEntityId id)
     for (auto& system : systems)
     {
         system.sampleBuffer.Discard();
+        system.particles.Reset();
+        system.numParticles = 0;
+        system.outputData.numLivingParticles = 0;
         system.sampleBuffer.Setup(*system.attrs, ParticleContextNumEnvelopeSamples);
     }
 }
