@@ -665,6 +665,10 @@ ParticleContext::RecalculateEnvelopeSamples(const Graphics::GraphicsEntityId id)
         system.numParticles = 0;
         system.outputData.numLivingParticles = 0;
         system.sampleBuffer.Setup(*system.attrs, ParticleContextNumEnvelopeSamples);
+
+        float maxFreq = system.attrs->GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
+        float maxLifeTime = system.attrs->GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
+        system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
     }
 }
 #endif
