@@ -116,6 +116,7 @@ private:
         Particles::EmitterMesh emitterMesh;
         uint32_t renderableIndex;
         Util::RingBuffer<Particle> particles;
+        Util::Array<Particle> particlesToRender;
         Math::mat4 transform;
         Math::bbox boundingBox;
         SizeT emissionCounter;

@@ -204,6 +204,18 @@ template <typename CTX> void JobAppendSequence(
     , const CTX& context
 );
 
+/// Append job to sequence with an automatic dependency on the previous job, to run on a single thread
+template <typename LAMBDA> void JobAppendSequence(
+    LAMBDA&& func
+    , const SizeT numInvocations
+    , const SizeT groupSize
+);
+
+template <typename LAMBDA> void JobAppendSequence(
+    LAMBDA&& func
+    , const SizeT numInvocations
+);
+
 /// Flush queued jobs
 void JobEndSequence(Threading::Event* signalEvent = nullptr);
 
@@ -466,6 +478,92 @@ template<typename CTX> void
 JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const CTX& context)
 {
     JobAppendSequence(func, numInvocations, numInvocations, context);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename LAMBDA> void 
+JobAppendSequence(
+    LAMBDA&& func,
+    const SizeT numInvocations, 
+    const SizeT groupSize
+)
+{
+    n_assert(numInvocations > 0);
+    n_assert(sequenceThread == Threading::Thread::GetMyThreadId());
+    n_assert(sequenceNode != nullptr);
+
+    // Calculate the number of actual jobs based on invocations and group size
+    SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
+
+    /*
+    // Calculate allocation size which is node + counters + data context
+    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
+    auto node = (JobNode*)mem;
+
+    // Copy over wait counters
+    node->job.waitCounters = nullptr;
+    if (waitCounters.Size() > 0)
+    {
+        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode));
+        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+    }
+    */
+
+    // Calculate allocation size which is node + counters + data context
+    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(Threading::AtomicCounter);
+    if (prevDoneCounter != nullptr)
+        dynamicAllocSize += sizeof(Threading::AtomicCounter*);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
+    auto node = (JobNode*)mem;
+
+    if (prevDoneCounter != nullptr)
+    {
+        node->job.numWaitCounters = 1;
+        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(Threading::AtomicCounter));
+        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::AtomicCounter*));
+    }
+    else
+    {
+        node->job.numWaitCounters = 0;
+        node->job.waitCounters = nullptr;
+    }
+
+    // Move context
+    node->job.l = std::move(func);
+    node->job.func = nullptr;
+    node->job.remainingGroups = numJobs;
+    node->job.groupCompletionCounter = numJobs;
+    node->job.numInvocations = numInvocations;
+    node->job.groupSize = groupSize;
+    
+    node->job.doneCounter = (Threading::AtomicCounter*)(mem + sizeof(JobNode));
+    *node->job.doneCounter = 1;
+    prevDoneCounter = node->job.doneCounter;
+    node->job.signalEvent = nullptr;
+    node->next = nullptr;
+
+    // The remainingGroups counter for the sequence node is the length of the sequence chain
+    if (sequenceTail == nullptr)
+        sequenceNode->sequence = node;
+    else
+        sequenceTail->next = node;
+
+    sequenceTail = node;
+
+    // Queue job
+    //ctx.queuedJobs.Append(node);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename LAMBDA> void 
+JobAppendSequence(LAMBDA&& func, const SizeT numInvocations)
+{
+    JobAppendSequence(func, numInvocations, numInvocations);
 }
 
 } // namespace Jobs2

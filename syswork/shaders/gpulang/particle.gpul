@@ -110,9 +110,17 @@ vsUnlit(
                                         rotSize.z);
                                         
     UV = cornerVert.UV;
-    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+    if ParticleEmitter.CameraAligned == 1
+    {
+        ViewSpacePos = cornerVert.worldPos;
+        vertexExportCoordinates(ViewConstants.Projection * cornerVert.worldPos);
+    }
+    else
+    {
+        ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+        vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
+    }
     Color = color;
-    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
 }
 
 //------------------------------------------------------------------------------

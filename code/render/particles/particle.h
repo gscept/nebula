@@ -72,6 +72,7 @@ namespace Particles
     {
         Math::bbox bbox;
         unsigned int numLivingParticles;
+        unsigned int numParticlesToRender;
     };
 
     struct ParticleJobContext
