@@ -121,7 +121,6 @@ private:
         Math::bbox boundingBox;
         SizeT emissionCounter;
 
-        ParticleJobUniformData uniformData;
         SizeT outputCapacity;
         ParticleJobSliceOutputData outputData;
 

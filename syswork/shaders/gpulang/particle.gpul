@@ -107,19 +107,12 @@ vsUnlit(
                                         stretchPos,
                                         uvMinMax,
                                         f32x2(rotSize.x, rotSize.y),
-                                        rotSize.z);
+                                        rotSize.z,
+                                        ParticleEmitter.CameraAligned == 1);
                                         
     UV = cornerVert.UV;
-    if ParticleEmitter.CameraAligned == 1
-    {
-        ViewSpacePos = cornerVert.worldPos;
-        vertexExportCoordinates(ViewConstants.Projection * cornerVert.worldPos);
-    }
-    else
-    {
-        ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
-        vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
-    }
+    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
     Color = color;
 }
 
@@ -147,7 +140,8 @@ vsLit(
                                         stretchPos,
                                         uvMinMax,
                                         f32x2(rotSize.x, rotSize.y),
-                                        rotSize.z);
+                                        rotSize.z,
+                                        ParticleEmitter.CameraAligned == 1);
                                         
     Normal = cornerVert.worldNormal;
     Tangent = cornerVert.worldTangent;
@@ -264,13 +258,13 @@ psLit(in WorldSpacePos : f32x4,
     in UV : f32x2) void
 {   
     const pixelCoord = pixelGetCoordinates();
-    const albedo =       sample2D(BSDFConstants.AlbedoMap, ParticleSampler, UV);
+    const albedo =       sample2D(BSDFConstants.AlbedoMap, ParticleSampler, UV) * Color;
     const material =     sample2D(BSDFConstants.ParameterMap, ParticleSampler, UV);
 
     const depth = fetch2D(PerTickParams.DepthBufferCopy, i32x2(pixelCoord.xy), 0).r;
     const particleDepth = pixelCoord.z;
     const AlphaMod = saturate(abs(depth - particleDepth) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
-    const finalAlpha = albedo.a * Color.a * AlphaMod;
+    const finalAlpha = albedo.a * AlphaMod;
     if (finalAlpha < 0.001f) { discard; }
 
     var tNormal = f32x3(0,0,0);

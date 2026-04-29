@@ -430,6 +430,20 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         }\
     }
 
+#define FLOAT_PARAM_LIMITS(desc, attr, min, max) \
+    { \
+        ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
+        ImGui::Text(#desc); \
+        float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attr); \
+        if (ImGui::DragFloat("##" #attr, &f, 0.1f, min, max)) \
+        {\
+            data->emitters[selectedEmitter].attrs->SetFloat(Particles::EmitterAttrs::FloatAttr::attr, f); \
+            assetEditor->Edit();\
+            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
+        }\
+    }
+
 #define INT_PARAM(desc, attr) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
@@ -476,58 +490,70 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     {
         if (ImGui::BeginTable("ParticleEditorTable", 2, ImGuiTableFlags_Resizable))
         {
-            ImGui::TableSetupScrollFreeze(2, 1);
+            ImGui::TableSetupScrollFreeze(1, 1);
             ImGui::TableNextColumn();
             assetEditor->viewport.Render();
             ImGui::TableNextColumn();
-            CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
-            uint i = selectedEmitter;
-            if (ImGui::CollapsingHeader("Emission"))
-            {
-                CURVE_PARAM(Emission Frequency, EmissionFrequency)
-                FLOAT_PARAM(Emission Duration (in seconds), EmissionDuration)
-                FLOAT_PARAM(Start rotation max (in radians), StartRotationMax)
-                FLOAT_PARAM(Start rotation min (in radians), StartRotationMin)
 
-                CURVE_PARAM(Life Time, LifeTime)
-                CURVE_PARAM(Spread Min, SpreadMin)
-                CURVE_PARAM(Spread Max, SpreadMax)
-
-                FLOAT_PARAM(Precalculation Time, PrecalcTime)
-                FLOAT_PARAM(Start Delay (in seconds), StartDelay)
-                BOOL_PARAM(Loop, Looping)
-            }
-            if (ImGui::CollapsingHeader("Movement"))
+            if (ImGui::BeginChild("ParticleParameters"))
             {
-                CURVE_PARAM(Initial velocity, StartVelocity)
-                CURVE_PARAM(Rotation velocity, RotationVelocity)
-                CURVE_PARAM(Size, Size)
-                CURVE_PARAM(Spread min, SpreadMin)
-                CURVE_PARAM(Spread max, SpreadMax)
-                CURVE_PARAM(Air resistance, AirResistance)
-                CURVE_PARAM(Velocity weight, VelocityFactor)
-                CURVE_PARAM(Mass, Mass)
-                CURVE_PARAM(Time scale, TimeManipulator)
-                FLOAT_PARAM(Gravity, Gravity)
-            }
-            if (ImGui::CollapsingHeader("Material"))
-            {
-                FLOAT_PARAM(Tile Size (in pixels), TextureTile)
-                INT_PARAM(Tiles per row, AnimPhases)
-                FLOAT_PARAM(Tile Change time (per second), PhasesPerSecond)
-                BOOL_PARAM(Face camera, Billboard)
-                BOOL_PARAM(Camera fade, ViewAngleFade)
-
-                // Use the material editor to edit a particles material
-                if (selectedEmitter != -1)
+                CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
+                uint i = selectedEmitter;
+                if (ImGui::CollapsingHeader("Emission"))
                 {
-                    MaterialEditor(assetEditor, &data->emitters[selectedEmitter].materialItem);
-                }
+                    CURVE_PARAM(Emission Frequency, EmissionFrequency)
+                    FLOAT_PARAM(Emission Duration(in seconds), EmissionDuration)
+                    CURVE_PARAM(Life Time, LifeTime)
+                    FLOAT_PARAM(Start rotation max(in radians), StartRotationMax)
+                    FLOAT_PARAM(Start rotation min(in radians), StartRotationMin)
+                    CURVE_PARAM(Spread Min, SpreadMin)
+                    CURVE_PARAM(Spread Max, SpreadMax)
 
-                CURVE_PARAM(Red Tint, Red)
-                CURVE_PARAM(Green Tint, Green)
-                CURVE_PARAM(Blue Tint, Blue)
-                CURVE_PARAM(Opacity, Alpha)
+                    FLOAT_PARAM(Precalculation Time, PrecalcTime)
+                    FLOAT_PARAM(Start Delay(in seconds), StartDelay)
+
+                    BOOL_PARAM(Loop, Looping)
+                }
+                if (ImGui::CollapsingHeader("Movement"))
+                {
+                    CURVE_PARAM(Initial velocity, StartVelocity)
+                    CURVE_PARAM(Rotation velocity, RotationVelocity)
+                    CURVE_PARAM(Spread min, SpreadMin)
+                    CURVE_PARAM(Spread max, SpreadMax)
+                    CURVE_PARAM(Air resistance, AirResistance)
+                    CURVE_PARAM(Velocity weight, VelocityFactor)
+                    CURVE_PARAM(Mass, Mass)
+                    CURVE_PARAM(Time scale, TimeManipulator)
+                    FLOAT_PARAM_LIMITS(Gravity, Gravity, -1000, 1000)
+                }
+                if (ImGui::CollapsingHeader("Shape"))
+                {
+                    CURVE_PARAM(Size, Size)
+                    FLOAT_PARAM(Size Random Seed, SizeRandomize)
+                    BOOL_PARAM(Stretch, StretchToStart);
+                    FLOAT_PARAM(Stretch Length, ParticleStretch)
+                }
+                if (ImGui::CollapsingHeader("Material"))
+                {
+                    FLOAT_PARAM(Tile Size(in pixels), TextureTile)
+                    INT_PARAM(Tiles per row, AnimPhases)
+                    FLOAT_PARAM(Tile Change time(per second), PhasesPerSecond)
+                    BOOL_PARAM(Face camera, Billboard)
+                    ImGui::SameLine();
+                    BOOL_PARAM(Camera fade, ViewAngleFade)
+
+                    // Use the material editor to edit a particles material
+                    if (selectedEmitter != -1)
+                    {
+                        MaterialEditor(assetEditor, &data->emitters[selectedEmitter].materialItem);
+                    }
+
+                    CURVE_PARAM(Red Tint, Red)
+                    CURVE_PARAM(Green Tint, Green)
+                    CURVE_PARAM(Blue Tint, Blue)
+                    CURVE_PARAM(Opacity, Alpha)
+                }
+                ImGui::EndChild();
             }
             ImGui::EndTable();
         }
@@ -556,7 +582,7 @@ ParticleSetup(AssetEditorItem* item)
         else
             emitter.mesh = "";
 
-        const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+        const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(emitter.material);
         MaterialEditorItemData* matItemData = item->allocator.Alloc<MaterialEditorItemData>();
         matItemData->constants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
         matItemData->images = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
@@ -564,19 +590,19 @@ ParticleSetup(AssetEditorItem* item)
         matItemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
         emitter.materialItem.data = matItemData;
         matItemData->renderViewport = false;
-        emitter.materialItem.asset.material = item->asset.material;
+        emitter.materialItem.asset.material = emitter.material;
         emitter.materialItem.assetType = Presentation::AssetEditor::AssetType::Material;
         itemData->emitters.Append(emitter);
 
         // Copy over material constants
-        ubyte* currentData = Materials::MaterialGetConstants(item->asset.material);
+        ubyte* currentData = Materials::MaterialGetConstants(emitter.material);
         memcpy(matItemData->constants, currentData, materialTemplate->bufferSize);
         memcpy(matItemData->originalConstants, currentData, materialTemplate->bufferSize);
 
         for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
         {
             auto kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
-            Resources::ResourceId res = Materials::MaterialGetTexture(item->asset.material, kvp.Value()->textureIndex);
+            Resources::ResourceId res = Materials::MaterialGetTexture(emitter.material, kvp.Value()->textureIndex);
             if (res.resourceId == Resources::InvalidResourceId.resourceId)
                 res = Resources::CreateResource(kvp.Value()->resource, "editor");
             Resources::CreateResourceListener(res, [matItemData, i](Resources::ResourceId res)
@@ -661,20 +687,29 @@ ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path)
             attrs.SetEnvelope(Particles::EmitterAttrs::curve, curve);\
         }
 
+    #define INIT_CURVE(curve, value)\
+        {\
+            auto curve = attrs.GetEnvelope(Particles::EmitterAttrs::curve);\
+            curve.Setup(value, value, value, value, 0.33, 0.66, 0, 0, Particles::EnvelopeCurve::Sine);\
+            curve.SetLimits(0, value);\
+            attrs.SetEnvelope(Particles::EmitterAttrs::curve, curve);\
+        }
+
     INIT_CURVE_ONE(Red);
     INIT_CURVE_ONE(Blue);
     INIT_CURVE_ONE(Green);
     INIT_CURVE_ONE(Alpha);
     INIT_CURVE_ONE(LifeTime);
-    INIT_CURVE_ONE(EmissionFrequency);
+    INIT_CURVE(EmissionFrequency, 10);
     INIT_CURVE_ONE(Size);
     INIT_CURVE_ONE(StartVelocity);
     INIT_CURVE_ONE(VelocityFactor);
     INIT_CURVE_ONE(AirResistance);
-    attrs.SetFloat(Particles::EmitterAttrs::SizeRandomize, 1.0f);
+    attrs.SetFloat(Particles::EmitterAttrs::SizeRandomize, 0.0f);
     attrs.SetFloat(Particles::EmitterAttrs::EmissionDuration, 10);
     attrs.SetBool(Particles::EmitterAttrs::Looping, true);
-    attrs.SetFloat(Particles::EmitterAttrs::Gravity, 9.81f);
+    attrs.SetFloat(Particles::EmitterAttrs::Gravity, -9.81f);
+    attrs.SetVec4(Particles::EmitterAttrs::WindDirection, Math::vec4(0, 0, 0, 0));
     
     res.attrs = &attrs;
 

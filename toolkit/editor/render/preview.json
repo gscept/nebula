@@ -206,7 +206,7 @@
                             "targets": [
                                 {
                                     "name": "PreviewSceneMS",
-                                    "flags": "Store",
+                                    "flags": "Store|Load",
                                     "resolve": "PreviewScene"
                                 }
                             ],

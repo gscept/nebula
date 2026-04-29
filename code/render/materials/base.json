@@ -282,7 +282,7 @@
                     },
                     {
                         "name": "MatMetallicIntensity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.0
                     },
                     {
                         "name": "AlbedoMap",
@@ -784,11 +784,11 @@
                     },
                     {
                         "name": "MatMetallicIntensity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.0
                     },
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "systex:white.dds"
                     },
                     {
                         "name": "ParameterMap",

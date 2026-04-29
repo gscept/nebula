@@ -273,11 +273,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
                 system.particlesToRender.Resize(1 + SizeT(maxFreq * maxLifeTime));
                 system.outputCapacity = 0;
                 system.sampleBuffer.Setup(attrs, ParticleContextNumEnvelopeSamples);
-                system.uniformData.sampleBuffer = system.sampleBuffer.GetSampleBuffer();
-                system.uniformData.gravity = Math::vector(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
-                system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
-                system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
-                system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
+                
 
                 CoreGraphics::PrimitiveGroup primGroup;
                 primGroup.SetBaseIndex(0);
@@ -514,7 +510,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                         renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
                         renderables.nodeDrawModifiers[stateRange.begin + system.renderableIndex] = Util::MakeTuple(system.outputData.numParticlesToRender, 0);
 
-                        SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
+                        renderables.nodeFlags[stateRange.begin + system.renderableIndex] = SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
                         Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numParticlesToRender);
 
                         alignas (16) ::Particle::ParticleEmitterData block;
@@ -532,7 +528,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                         renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
                     }
                     else
-                        UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
+                        renderables.nodeFlags[stateRange.begin + system.renderableIndex] = UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
                 }
             }
 
@@ -623,7 +619,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         for (j = 0; j < systems.Size(); j++)
         {
             ParticleSystemRuntime& system = systems[j];
-            SizeT numParticles = 0;
+            SizeT numParticles = system.outputData.numParticlesToRender;
 
             // stream update vertex buffer region
             IndexT k;
@@ -638,7 +634,6 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 float cosRot = Math::cos(particle.rotation);
                 tmp.set(sinRot, cosRot, particle.size, particle.particleId);
                 tmp.stream(buf); buf += 4;
-                numParticles++;
             }
 
             // Update the meshes offset for stream 1 to offset it by the allocation this frame, and the offset for this specific system
@@ -973,6 +968,13 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 
     n_assert(srt.particles.GetBuffer());
 
+    ParticleJobUniformData uniforms;
+    uniforms.sampleBuffer = srt.sampleBuffer.GetSampleBuffer();
+    uniforms.gravity = srt.attrs->GetFloat(Particles::EmitterAttrs::Gravity);
+    uniforms.stretchTime = srt.attrs->GetFloat(Particles::EmitterAttrs::ParticleStretch);
+    uniforms.stretchToStart = srt.attrs->GetBool(Particles::EmitterAttrs::StretchToStart);
+    uniforms.windVector = srt.attrs->GetVec4(Particles::EmitterAttrs::WindDirection);
+
     // Sequence job
     Jobs2::JobAppendSequence(
         [
@@ -980,7 +982,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
             outputParticles = srt.particles.GetBuffer(),
             livingParticles = srt.particlesToRender.Begin(),
             output = &srt.outputData,
-            uniformData = &srt.uniformData,
+            uniformData = uniforms,
             stepTime,
             numParticles = srt.particles.Size()
         ]
@@ -994,7 +996,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
         output->bbox = Math::bbox();
 
         // Take a job step
-        JobStep(uniformData, stepTime, numParticles, inputParticles, outputParticles, livingParticles, output);
+        JobStep(&uniformData, stepTime, numParticles, inputParticles, outputParticles, livingParticles, output);
     }, 1);
 }
 

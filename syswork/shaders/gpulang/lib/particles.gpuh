@@ -22,12 +22,14 @@ struct CornerVertex
     rotation into account.
 */
 ComputeCornerVertex(
-                    corner : f32x2,
-                    position : f32x4,
-                    stretchPos : f32x4,
-                    uvMinMax : f32x4,
-                    rotate : f32x2,
-                    size : f32) CornerVertex
+    corner : f32x2,
+    position : f32x4,
+    stretchPos : f32x4,
+    uvMinMax : f32x4,
+    rotate : f32x2,
+    size : f32,
+    cameraFacing : b8
+) CornerVertex
 {
 
     var outputVert : CornerVertex;
@@ -43,7 +45,12 @@ ComputeCornerVertex(
     extrude = extrude * rotMatrix;
 
     // transform to world space
-    const worldExtrude = ParticleEmitter.EmitterTransform * f32x4(extrude, 0.0, 0.0);
+    var emitterTransform = ParticleEmitter.EmitterTransform;
+    if cameraFacing
+    {
+        emitterTransform = emitterTransform * ViewConstants.InvView;
+    }
+    const worldExtrude = emitterTransform * f32x4(extrude, 0.0, 0.0);
 
     // depending on corner, use position or stretchPos as center point
     // also compute uv coordinates (v: texture tiling, x: anim phases)
