@@ -39,6 +39,7 @@ struct ParticleEmitterData
 {
     EmitterTransform : f32x4x4;
 
+    CameraFade : i32;
     CameraAligned : i32;
     NumAnimPhases : i32;
     AnimFramesPerSecond : f32;

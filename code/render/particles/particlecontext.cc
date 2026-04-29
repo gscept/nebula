@@ -518,6 +518,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                         // update system transform
                         system.transform.store(&block.EmitterTransform[0][0]);
                         block.CameraAligned = system.attrs->GetBool(Particles::EmitterAttrs::Billboard);
+                        block.CameraFade = system.attrs->GetBool(Particles::EmitterAttrs::ViewAngleFade);
 
                         // update parameters
                         block.NumAnimPhases = system.attrs->GetInt(EmitterAttrs::AnimPhases);
@@ -899,12 +900,8 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, I
     // setup rotation and rotationVariation
     float startRotMin = srt.attrs->GetFloat(EmitterAttrs::StartRotationMin);
     float startRotMax = srt.attrs->GetFloat(EmitterAttrs::StartRotationMax);
-    particle.rotation = Math::clamp(Math::rand(), startRotMin, startRotMax);
+    particle.rotation = startRotMin + Math::rand() * (startRotMax - startRotMin);
     float rotVar = 1.0f - (Math::rand() * srt.attrs->GetFloat(EmitterAttrs::RotationRandomize));
-    if (srt.attrs->GetBool(EmitterAttrs::RandomizeRotation) && (Math::rand() < 0.5f))
-    {
-        rotVar = -rotVar;
-    }
     particle.rotationVariation = rotVar;
 
     // setup particle size and size variation

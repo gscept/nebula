@@ -103,7 +103,6 @@ public:
     enum BoolAttr
     {
         Looping = 0,
-        RandomizeRotation,
         StretchToStart,
         RenderOldestFirst,
         ViewAngleFade,

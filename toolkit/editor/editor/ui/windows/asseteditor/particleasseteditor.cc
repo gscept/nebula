@@ -240,7 +240,7 @@ DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& t
 /**
 */
 bool
-DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
+DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, float max, bool& toggled)
 {
     bool changed = false;
 
@@ -259,8 +259,9 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
     memcpy(modifyLimits, limits, sizeof(modifyLimits));
     ImGui::PushItemWidth(itemWidth);
     ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + 0x123);
-    if (ImGui::DragFloat("Min", &modifyLimits[0], 0.5f, 0.0f, 10000.0f))
+    if (ImGui::DragFloat("Min", &modifyLimits[0], 0.5f, min, max))
     {
+        modifyLimits[1] = Math::max(modifyLimits[0], modifyLimits[1]);
         curve.SetLimits(modifyLimits[0], modifyLimits[1]);
         changed = true;
         for (uint i = 0; i < 4; i++)
@@ -274,8 +275,9 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
     ImGui::SameLine();
     ImGui::PushItemWidth(itemWidth);
     ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + 0x456);
-    if (ImGui::DragFloat("Max", &modifyLimits[1], 0.5f, 0.0f, 10000.0f))
+    if (ImGui::DragFloat("Max", &modifyLimits[1], 0.5f, min, max))
     {
+        modifyLimits[0] = Math::min(modifyLimits[0], modifyLimits[1]);
         curve.SetLimits(modifyLimits[0], modifyLimits[1]);
         changed = true;
         for (uint i = 0; i < 4; i++)
@@ -403,7 +405,34 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {\
             ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attr);\
             {\
-                if (DrawCurve(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
+                if (DrawCurve(draw_list, curve, 0.0f, 10000.0f, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
+                {\
+                    data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
+                    assetEditor->Edit();\
+                    Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+                    Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
+                }\
+            }\
+            ImGui::PopID();\
+        }\
+        ImGui::Dummy(ImVec2(0,0));\
+    }
+
+
+#define CURVE_PARAM_LIMITS(desc, attr, min, max) \
+    { \
+        ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();\
+        ImGui::Text(#desc); \
+        Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr); \
+        ImGui::SameLine();\
+        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr]); \
+        ImGui::SetCursorScreenPos(cursorPos + ImVec2(0, ImGui::GetTextLineHeight() + 5));\
+        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])\
+        {\
+            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attr);\
+            {\
+                if (DrawCurve(draw_list, curve, min, max, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
                 {\
                     data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
                     assetEditor->Edit();\
@@ -504,8 +533,6 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                     CURVE_PARAM(Emission Frequency, EmissionFrequency)
                     FLOAT_PARAM(Emission Duration(in seconds), EmissionDuration)
                     CURVE_PARAM(Life Time, LifeTime)
-                    FLOAT_PARAM(Start rotation max(in radians), StartRotationMax)
-                    FLOAT_PARAM(Start rotation min(in radians), StartRotationMin)
                     CURVE_PARAM(Spread Min, SpreadMin)
                     CURVE_PARAM(Spread Max, SpreadMax)
 
@@ -517,14 +544,20 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 if (ImGui::CollapsingHeader("Movement"))
                 {
                     CURVE_PARAM(Initial velocity, StartVelocity)
+                    FLOAT_PARAM(Velocity randomization factor, VelocityRandomize)
+
                     CURVE_PARAM(Rotation velocity, RotationVelocity)
+                    FLOAT_PARAM(Start rotation max(in radians), StartRotationMax)
+                    FLOAT_PARAM(Start rotation min(in radians), StartRotationMin)
+                    FLOAT_PARAM(Rotation randomization factor, RotationRandomize)
+                    
                     CURVE_PARAM(Spread min, SpreadMin)
                     CURVE_PARAM(Spread max, SpreadMax)
                     CURVE_PARAM(Air resistance, AirResistance)
                     CURVE_PARAM(Velocity weight, VelocityFactor)
                     CURVE_PARAM(Mass, Mass)
                     CURVE_PARAM(Time scale, TimeManipulator)
-                    FLOAT_PARAM_LIMITS(Gravity, Gravity, -1000, 1000)
+                    FLOAT_PARAM_LIMITS(Gravity, Gravity, -100, 100)
                 }
                 if (ImGui::CollapsingHeader("Shape"))
                 {
@@ -540,7 +573,7 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                     FLOAT_PARAM(Tile Change time(per second), PhasesPerSecond)
                     BOOL_PARAM(Face camera, Billboard)
                     ImGui::SameLine();
-                    BOOL_PARAM(Camera fade, ViewAngleFade)
+                    BOOL_PARAM(Fade at grazing angles, ViewAngleFade)
 
                     // Use the material editor to edit a particles material
                     if (selectedEmitter != -1)
@@ -548,10 +581,10 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                         MaterialEditor(assetEditor, &data->emitters[selectedEmitter].materialItem);
                     }
 
-                    CURVE_PARAM(Red Tint, Red)
-                    CURVE_PARAM(Green Tint, Green)
-                    CURVE_PARAM(Blue Tint, Blue)
-                    CURVE_PARAM(Opacity, Alpha)
+                    CURVE_PARAM_LIMITS(Red Tint, Red, 0, 1)
+                    CURVE_PARAM_LIMITS(Green Tint, Green, 0, 1)
+                    CURVE_PARAM_LIMITS(Blue Tint, Blue, 0, 1)
+                    CURVE_PARAM_LIMITS(Opacity, Alpha, 0, 1)
                 }
                 ImGui::EndChild();
             }
@@ -701,8 +734,10 @@ ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path)
     INIT_CURVE_ONE(Alpha);
     INIT_CURVE_ONE(LifeTime);
     INIT_CURVE(EmissionFrequency, 10);
+    INIT_CURVE(SpreadMin, 10);
+    INIT_CURVE(SpreadMax, 10);
     INIT_CURVE_ONE(Size);
-    INIT_CURVE_ONE(StartVelocity);
+    INIT_CURVE(StartVelocity, 10);
     INIT_CURVE_ONE(VelocityFactor);
     INIT_CURVE_ONE(AirResistance);
     attrs.SetFloat(Particles::EmitterAttrs::SizeRandomize, 0.0f);

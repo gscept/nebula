@@ -12,7 +12,7 @@ struct CornerVertex
     worldPos : f32x4;
     worldNormal : f32x3;
     worldTangent : f32x3;
-    worldBinormal : f32x3;
+    sign : f32;
     UV : f32x2;
 };
 
@@ -77,11 +77,10 @@ ComputeCornerVertex(
 
     // setup normal, tangent, binormal in world space
     const viewTangent  = rotMatrix * f32x2(-1.0, 0.0);
-    const viewBinormal = rotMatrix * f32x2(0.0, 1.0);
 
-    const emitterRotation = GetRotation(ParticleEmitter.EmitterTransform);
-    outputVert.worldNormal   = ParticleEmitter.EmitterTransform[2].xyz;
+    const emitterRotation = GetRotation(emitterTransform);
+    outputVert.worldNormal   = emitterTransform[2].xyz;
     outputVert.worldTangent  = emitterRotation * f32x3(viewTangent, 0);
-    outputVert.worldBinormal = emitterRotation * f32x3(viewBinormal, 0);
+    outputVert.sign = determinant(emitterTransform) < 0.0 ? -1.0 : 1.0;
     return outputVert;
 }
