@@ -124,14 +124,38 @@ Vec4Test::Run()
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f) && (fUnalignedStore[3] == 4.0f));
 
     // 255, 127, 0, 0 -> 1, 0.5, 0, 0
-    const uint ubyte4 = 0xFF7F0000;
-    v2.load_ubyte4n(&ubyte4);
-    VERIFY(nearequal(v2, vec4(0.0f, 0.0f, 0.5f, 1.0f), E1));
+    struct VectorB4N
+    {
+        char x : 8;
+        char y : 8;
+        char z : 8;
+        char w : 8;
+    };
+    VectorB4N vec;
+    vec.x = -127;
+    vec.y = 127;
+    vec.z = 0;
+    vec.w = 0;
 
     // 255, 127, 0, 0 -> 1, 0, -1, -1
-    v2.load_byte4n(&ubyte4);
-    VERIFY(nearequal(v2, vec4(-1.0f, -1.0f, 0.0f, 1.0f), E1));
+    v2.load_byte4n(&vec);
+    VERIFY(nearequal(v2, vec4(-1.0f, 1.0f, 0.0f, 0.0f), E1));
 
+    struct VectorUB4N
+    {
+        unsigned char x : 8;
+        unsigned char y : 8;
+        unsigned char z : 8;
+        unsigned char w : 8;
+    };
+    VectorUB4N uvec;
+    uvec.x = 255;
+    uvec.y = 128;
+    uvec.z = 0;
+    uvec.w = 0;
+
+    v2.load_ubyte4n(&uvec);
+    VERIFY(nearequal(v2, vec4(1.0f, 0.5f, 0.0f, 0.0f), E1));
 
 /*
     // load_ubyte4n_signed
