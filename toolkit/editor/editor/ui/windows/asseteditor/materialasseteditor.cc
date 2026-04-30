@@ -23,14 +23,7 @@
 namespace Presentation
 {
 
-struct MaterialEditorItemData
-{
-    ImageHolder* images;
-    ubyte* constants;
 
-    ImageHolder* originalImages;
-    ubyte* originalConstants;
-};
 
 static CoreGraphics::MeshResourceId MaterialSphere = CoreGraphics::InvalidMeshResourceId;
 
@@ -168,11 +161,18 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     bool applyChange = false;
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
-    if (ImGui::BeginTable("Material Editor Contents", 2, ImGuiTableFlags_Resizable))
+    if (ImGui::BeginTable("Material Editor Contents", itemData->renderViewport ? 2 : 1, ImGuiTableFlags_Resizable))
     {
-        ImGui::TableSetupScrollFreeze(2, 1);
-        ImGui::TableNextColumn();
-        assetEditor->viewport.Render();
+        if (itemData->renderViewport)
+        {
+            ImGui::TableSetupScrollFreeze(2, 1);
+            ImGui::TableNextColumn();
+            assetEditor->viewport.Render();
+        }
+        else
+        {
+            ImGui::TableSetupScrollFreeze(1, 1);
+        }
         ImGui::TableNextColumn();
         for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
         {
@@ -411,77 +411,7 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
     stream->SetURI(outFile);
 
-    Ptr<IO::XmlWriter> writer = IO::XmlWriter::Create();
-    writer->SetStream(stream);
-    bool isOpen = writer->Open();
-    n_assert(isOpen);
-    writer->BeginNode("Nebula");
-    {
-        writer->BeginNode("Surface");
-        {
-            writer->SetString("template", materialTemplate->name);
-            writer->BeginNode("Params");
-            {
-                for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
-                {
-                    auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
-                    const MaterialTemplatesGPULang::MaterialTemplateTexture* value = kvp.Value();
-
-                    ImageHolder* textureInfo = &itemData->images[i];
-                    Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
-                    name.StripFileExtension();
-                    writer->BeginNode(kvp.Key());
-                        writer->SetString("value", name);
-                    writer->EndNode();
-                }
-                for (IndexT i = 0; i < materialTemplate->values.Size(); i++)
-                {
-                    auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
-                    const MaterialTemplatesGPULang::MaterialTemplateValue* value = kvp.Value();
-                    ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
-
-                    writer->BeginNode(kvp.Key());
-                    switch (value->type)
-                    {
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Bool:
-                        {
-                            writer->SetString("value", Util::String::FromBool(*(bool*)(currentState + value->offset)));
-                            break;
-                        }
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Scalar:
-                        {
-                            writer->SetString("value", Util::String::FromFloat(*(float*)(currentState + value->offset)));
-                            break;
-                        }
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec2:
-                        {
-                            writer->SetString("value", Util::String::FromFloat2(*(Math::float2*)(currentState + value->offset)));
-                            break;
-                        }
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec3:
-                        {
-                            writer->SetString("value", Util::String::FromFloat3(*(Math::float3*)(currentState + value->offset)));
-                            break;
-                        }
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec4:
-                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Color:
-                        {
-                            writer->SetString("value", Util::String::FromFloat4(*(Math::float4*)(currentState + value->offset)));
-                            break;
-                        }
-                        default:
-                            n_warning("unhandled material template type");
-                            break;
-                    }
-                    writer->EndNode();
-                }
-            }
-            writer->EndNode();
-        }
-        writer->EndNode();
-    }
-    writer->EndNode();
-    writer->Close();
+    MaterialSerialize(stream, itemData, item->asset.material, materialTemplate);
 
     // Also perform export
     ToolkitUtil::BinaryXmlConverter converter;
@@ -528,6 +458,86 @@ void
 MaterialShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
 {
     Models::ModelContext::SetStageMask(item->previewObject, show ? 1 << 3 : 0x0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+MaterialSerialize(const Ptr<IO::Stream>& stream, const MaterialEditorItemData* data, Materials::MaterialId mat, const MaterialTemplatesGPULang::Entry* materialTemplate)
+{
+    Ptr<IO::XmlWriter> writer = IO::XmlWriter::Create();
+    writer->SetStream(stream);
+    bool isOpen = writer->Open();
+    n_assert(isOpen);
+    CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
+    writer->BeginNode("Nebula");
+    {
+        writer->BeginNode("Surface");
+        {
+            writer->SetString("template", materialTemplate->name);
+            writer->BeginNode("Params");
+            {
+                for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
+                {
+                    auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
+                    const MaterialTemplatesGPULang::MaterialTemplateTexture* value = kvp.Value();
+
+                    ImageHolder* textureInfo = &data->images[i];
+                    Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
+                    name.StripFileExtension();
+                    writer->BeginNode(kvp.Key());
+                    writer->SetString("value", name);
+                    writer->EndNode();
+                }
+                for (IndexT i = 0; i < materialTemplate->values.Size(); i++)
+                {
+                    auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
+                    const MaterialTemplatesGPULang::MaterialTemplateValue* value = kvp.Value();
+                    ubyte* currentState = Materials::MaterialGetConstants(mat);
+
+                    writer->BeginNode(kvp.Key());
+                    switch (value->type)
+                    {
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Bool:
+                        {
+                            writer->SetString("value", Util::String::FromBool(*(bool*)(currentState + value->offset)));
+                            break;
+                        }
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Scalar:
+                        {
+                            writer->SetString("value", Util::String::FromFloat(*(float*)(currentState + value->offset)));
+                            break;
+                        }
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec2:
+                        {
+                            writer->SetString("value", Util::String::FromFloat2(*(Math::float2*)(currentState + value->offset)));
+                            break;
+                        }
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec3:
+                        {
+                            writer->SetString("value", Util::String::FromFloat3(*(Math::float3*)(currentState + value->offset)));
+                            break;
+                        }
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Vec4:
+                        case MaterialTemplatesGPULang::MaterialTemplateValue::Type::Color:
+                        {
+                            writer->SetString("value", Util::String::FromFloat4(*(Math::float4*)(currentState + value->offset)));
+                            break;
+                        }
+                        default:
+                            n_warning("unhandled material template type");
+                            break;
+                    }
+                    writer->EndNode();
+                }
+            }
+            writer->EndNode();
+        }
+        writer->EndNode();
+    }
+    writer->EndNode();
+    writer->Close();
 }
 
 } // namespace Presentation

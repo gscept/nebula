@@ -1339,6 +1339,7 @@ class RenderDefinition:
 
         file.WriteLine(f"CoreGraphics::CmdEndRenderPass(cmdBuf);")
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
+        file.DecreaseIndent()
         
     def FormatSetup(self, file):
         file.WriteLine("Initialize_Render_{}();".format(self.name))

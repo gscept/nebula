@@ -36,9 +36,7 @@ using namespace Math;
 const float* LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*EmitterAttrs::NumEnvelopeAttrs], IndexT sampleIndex);
 /// update bounding box (min, max) with vector v
 void UpdateBbox(const vec4& v, vec4& min, vec4& max);
-/// update the age of one particle
-void ParticleUpdateAge(const float stepTime, const Particle& in, Particle& out);
-/// integrate the particle state with a given time-step
+/// integrate the particle state with a given time-step, retursn true if input particle is valid
 void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput);
 /// update particle system step
 void JobStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, unsigned int numParticles, const Particle* particles_input, Particle* particles_output, ParticleJobSliceOutputData* sliceOutput);
@@ -58,8 +56,7 @@ LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline 
-void
+__forceinline void
 UpdateBbox(const vec4& v, vec4& min, vec4& max)
 {
     min = minimize(min, v);
@@ -69,21 +66,17 @@ UpdateBbox(const vec4& v, vec4& min, vec4& max)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline
-void ParticleUpdateAge(const float stepTime, const Particle& in, Particle& out)
+__forceinline void
+ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput)
 {
     // update particle's age
     out.oneDivLifeTime = in.oneDivLifeTime;
     out.age = in.age + stepTime;
     out.relAge = in.relAge + stepTime * in.oneDivLifeTime;
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline
-void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput)
-{
+    if (out.relAge >= 1.0f)
+        return;
+
     ++sliceOutput->numLivingParticles;
 
     // copy the *const* members
@@ -149,19 +142,22 @@ void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float s
 */
 void
 JobStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, unsigned int numParticles,
-             const Particle* particles_input, Particle* particles_output, 
+             const Particle* particles_input, Particle* particles_output, Particle* livingParticles,
              ParticleJobSliceOutputData* sliceOutput)
 {
-    unsigned int i;
+    unsigned int inputIndex;
+    unsigned int renderIndex = 0;
     sliceOutput->bbox.begin_extend();
-    for (i = 0; i < numParticles; i++)
+    for (inputIndex = 0; inputIndex < numParticles; inputIndex++)
     {
-        const Particle &in = particles_input[i];
-        Particle &out = particles_output[i];
-        ParticleUpdateAge(stepTime, in, out);
-        if (out.relAge < 1.0f)
+        const Particle &in = particles_input[inputIndex];
+        Particle &out = particles_output[inputIndex];
+        ParticleStep(perSystemUniforms, stepTime, in, out, sliceOutput);
+
+        if (out.relAge < 1.0f && out.color.w > 0.001f)
         {
-            ParticleStep(perSystemUniforms, stepTime, in, out, sliceOutput);
+            livingParticles[renderIndex++] = out;
+            sliceOutput->numParticlesToRender++;
         }
     }
     sliceOutput->bbox.end_extend();

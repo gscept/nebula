@@ -317,6 +317,7 @@ JobBeginSequence(
     }
 
     // Setup sequence node with a dummy function
+    sequenceNode->job.l.callable = nullptr;
     sequenceNode->job.func = JobSequencePlaceholder;
     sequenceNode->job.remainingGroups = 1;
     sequenceNode->job.numInvocations = 0;

@@ -389,6 +389,8 @@ public:
     void StripAssignPrefix();
     /// change assign prefix
     void ChangeAssignPrefix(const Util::String& newPref);
+    /// Change assign mapping (not just the prefix)
+    void ChangeAssignMapping(const Util::String& newMapping, const Util::String& oldMapping);
     /// extract the part after the last directory separator
     String ExtractFileName() const;
     /// extract the last directory of the path

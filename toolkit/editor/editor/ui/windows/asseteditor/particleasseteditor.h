@@ -14,8 +14,9 @@ namespace Presentation
 
 void ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item);
 void ParticleSetup(AssetEditorItem* item);
+void ParticleSave(AssetEditor* assetEditor, AssetEditorItem* item);
 void ParticleDiscard(AssetEditor* assetEditor, AssetEditorItem* item);
 void ParticleShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show);
 
-void ParticleNew(const Ptr<IO::Stream>& stream);
+void ParticleNew(const Ptr<IO::Stream>& stream, const Util::String& path);
 } // namespace Presentation

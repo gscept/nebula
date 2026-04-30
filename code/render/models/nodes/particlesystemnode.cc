@@ -11,6 +11,7 @@
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
+#include "particles/particleloader.h"
 
 #include "gpulang/render/system_shaders/particle.h"
 
@@ -68,7 +69,7 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
     else
     {
         this->meshResource = InvalidResourceId;
-        this->mesh = ParticleContext::DefaultEmitterMesh;
+        this->mesh = Particles::DefaultEmitterMesh;
     }
 }
 
@@ -274,10 +275,6 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     else if (FourCC('PPCT') == fourcc)
     {
         this->emitterAttrs.SetFloat(EmitterAttrs::PrecalcTime, reader->ReadFloat());
-    }
-    else if (FourCC('PRRD') == fourcc)
-    {
-        this->emitterAttrs.SetBool(EmitterAttrs::RandomizeRotation, (1 == reader->ReadInt()));
     }
     else if (FourCC('PSDL') == fourcc)
     {

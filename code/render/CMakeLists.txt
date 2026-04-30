@@ -589,6 +589,10 @@ ENDIF()
                 particlecontext.h
                 particlejob.cc
                 particlerenderinfo.h
+                particleloader.cc
+                particleloader.h
+                particleresource.h
+                particleresource.cc
             )
 
     IF(FALSE)

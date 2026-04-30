@@ -192,32 +192,17 @@ ModelContext::Setup(
             // Okay, so how this basically has to work is that there are 4 different dynamic offset constant indices in the entire engine.
             // Any change of this will break this code, so consider improving this in the future by providing a way to overload the binding point
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
-            if (sNode->GetType() == Models::ParticleSystemNodeType)
-            {
-                state.instancingConstantsIndex = ::Particle::Instances::BINDING;
-                state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
-                state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
-                state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
+            state.instancingConstantsIndex = ::Particle::Instances::BINDING;
+            state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
+            state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
+            state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
 
-                state.resourceTableOffsets.Resize(4);
-                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
-                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
-                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
-                state.resourceTableOffsets[state.particleConstantsIndex] = 0;
+            state.resourceTableOffsets.Resize(4);
+            state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+            state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+            state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+            state.resourceTableOffsets[state.particleConstantsIndex] = 0;
 
-            }
-            else
-            {
-                state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
-                state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
-                state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
-                state.particleConstantsIndex = InvalidIndex;
-
-                state.resourceTableOffsets.Resize(3);
-                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
-                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
-                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
-            }
             uint index = (uint)stateRange.allocation.offset + i;
 
             NodeInstances.renderable.nodeStates[index] = state;
@@ -317,13 +302,14 @@ ModelContext::Setup(
     state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
     state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
     state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
-    state.particleConstantsIndex = InvalidIndex;
+    state.particleConstantsIndex = ObjectsShared::ParticleEmitter::BINDING;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
-    state.resourceTableOffsets.Resize(3);
+    state.resourceTableOffsets.Resize(4);
     state.resourceTableOffsets[state.objectConstantsIndex] = 0;
     state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
     state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+    state.resourceTableOffsets[state.particleConstantsIndex] = 0;
 
     if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
     {
@@ -382,9 +368,131 @@ ModelContext::Setup(
         NodeInstances.renderable.nodeSortId[index] = sortId;
     }
 
+    modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::Setup(
+    const Graphics::GraphicsEntityId id
+    , const Util::Array<Math::mat4>& transforms
+    , const Util::Array<CoreGraphics::MeshId>& meshes
+    , const Util::Array<Materials::MaterialId>& materials
+    , const Util::Array<Math::bbox>& boundingBoxes
+    , const Util::Array<IndexT>& primitiveGroups
+    , const Graphics::StageMask stageMask
+    , const Util::String debugName
+)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+
+     // Setup transforms
+    transformRange.allocation = TransformInstanceAllocator.Alloc(transforms.Size());
+    transformRange.begin = (uint)transformRange.allocation.offset;
+    transformRange.end = (uint)transformRange.allocation.offset + transforms.Size();
+
+    if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
+    {
+        NodeInstances.transformable.nodeParents.Extend(transformRange.end);
+        NodeInstances.transformable.origTransforms.Extend(transformRange.end);
+        NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
+    }
+
+    for (SizeT i = 0; i < transforms.Size(); i++)
+    {
+        const uint index = (uint)transformRange.allocation.offset + i;
+
+        NodeInstances.transformable.origTransforms[index] = Math::mat4();
+        NodeInstances.transformable.nodeTransforms[index] = transforms[i];
+        NodeInstances.transformable.nodeParents[index] = UINT32_MAX;
+        roots.Append(i);
+    }
+
+    // Setup node states
+    stateRange.allocation = RenderInstanceAllocator.Alloc(materials.Size());
+    stateRange.begin = (uint)stateRange.allocation.offset;
+    stateRange.end = (uint)stateRange.allocation.offset + materials.Size();
+
+    for (SizeT i = 0; i < materials.Size(); i++)
+    {
+        NodeInstanceState state;
+        state.materialInstance = CreateMaterialInstance(materials[i]);
+        state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
+        state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
+        state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
+        state.particleConstantsIndex = ObjectsShared::ParticleEmitter::BINDING;
+        state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
+
+        state.resourceTableOffsets.Resize(4);
+        state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+        state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+        state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+        state.resourceTableOffsets[state.particleConstantsIndex] = 0;
+
+        if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
+        {
+            NodeInstances.renderable.nodeStates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
+            NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLods.Extend(stateRange.end);
+            NodeInstances.renderable.textureLods.Extend(stateRange.end);
+            NodeInstances.renderable.nodeFlags.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterials.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterialTemplates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTypes.Extend(stateRange.end);
+            NodeInstances.renderable.nodes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroupIndex.Extend(stateRange.end);
+            NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
+            NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
+
+#if NEBULA_GRAPHICS_DEBUG
+            NodeInstances.renderable.nodeNames.Extend(stateRange.end);
+#endif
+        }
+        for (SizeT i = 0; i < materials.Size(); i++)
+        {
+            uint index = (uint)stateRange.allocation.offset + i;
+
+            NodeInstances.renderable.nodeStates[index] = state;
+            NodeInstances.renderable.nodeTransformIndex[index] = i;
+            NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
+            NodeInstances.renderable.origBoundingBoxes[index] = boundingBoxes[i];
+            NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
+            NodeInstances.renderable.nodeLods[index] = 0.0f;
+            NodeInstances.renderable.textureLods[index] = 1.0f;
+            NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
+            NodeInstances.renderable.nodeMaterials[index] = materials[i];
+            NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(materials[i]);
+            NodeInstances.renderable.nodeTypes[index] = Models::PrimitiveNodeType;
+            NodeInstances.renderable.nodes[index] = nullptr;
+            NodeInstances.renderable.nodeMeshes[index] = meshes[i];
+            NodeInstances.renderable.nodePrimitiveGroup[index] = MeshGetPrimitiveGroup(meshes[i], primitiveGroups[i]);
+            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = primitiveGroups[i];
+            NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
+            modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, i);
+
+#if NEBULA_GRAPHICS_DEBUG
+            NodeInstances.renderable.nodeNames[index] = debugName;
+#endif
+
+    // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
+            auto sortCode = Materials::MaterialGetSortCode(materials[i]);
+            assert(sortCode < 0xFFF0000000000000);
+            uint64_t sortId = ((uint64_t)sortCode << 52);
+            NodeInstances.renderable.nodeSortId[index] = sortId;
+        }
+    }
 
     modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
-
 }
 
 //------------------------------------------------------------------------------

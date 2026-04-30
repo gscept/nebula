@@ -9,6 +9,8 @@
 
 #include "util/string.h"
 #include "core/refcounted.h"
+
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 
 //------------------------------------------------------------------------------

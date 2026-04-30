@@ -481,7 +481,7 @@ ImguiConsole::RenderContent()
     }
     ImGui::NextColumn();
     
-    if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways, &TextEditCallback, (void*)this))
+    if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
     {
         char* input_end = this->command + strlen(this->command);
         while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;

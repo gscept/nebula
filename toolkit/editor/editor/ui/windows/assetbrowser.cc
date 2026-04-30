@@ -106,7 +106,7 @@ public:
 };
 __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
 
-using NewFunc = void(*)(const Ptr<IO::Stream>& file);
+using NewFunc = void(*)(const Ptr<IO::Stream>& file, const Util::String& path);
 static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
 {
     nullptr,  
@@ -443,6 +443,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 return AssetEditor::AssetType::Animation;
             case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
+            case ToolkitUtil::FileType::Particle:
+                return AssetEditor::AssetType::Particle;
             case ToolkitUtil::FileType::Audio:
             case ToolkitUtil::FileType::Text:
             case ToolkitUtil::FileType::Frame:
@@ -641,18 +643,22 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 /**
 */
 void
-NewAsset(const Util::String& requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
+NewAsset(Util::String requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
 {
     Util::String folderPath = db.GetFolderPath(folderEntry);
     Util::Array<ToolkitUtil::FileDB::FileInfo> files(32, 8);
     db.GetFilesInFolder(folderEntry, files);
     Util::String newFilePath = Util::Format("%s/%s", folderPath.AsCharPtr(), requestedFileName.AsCharPtr());
 retry:
+    SizeT counter = 0;
     for (const auto& file : files)
     {
-        if (file.name == newFilePath)
+        if (file.name == requestedFileName)
         {
-            newFilePath = newFilePath + "_copy";
+            Util::String ext = requestedFileName.GetFileExtension();
+            requestedFileName.StripFileExtension();
+            requestedFileName += Util::String::Sprintf(" (%d).%s", counter++, ext.AsCharPtr());
+            newFilePath = Util::Format("%s/%s", folderPath.AsCharPtr(), requestedFileName.AsCharPtr());
             goto retry;
         }
     }
@@ -661,7 +667,7 @@ retry:
     stream->Open();
 
     if (NewFuncs[(uint)type] != nullptr)
-        NewFuncs[(uint)type](stream);
+        NewFuncs[(uint)type](stream, newFilePath);
 
     db.AddFile(
         logger,
@@ -680,7 +686,7 @@ retry:
 void
 AssetBrowser::DisplayFileTree()
 {
-     Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders; 
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders; 
     this->fileDB.GetRootFolders(rootFolders);
 
     static char buffer[NEBULA_MAXPATH];
@@ -949,7 +955,7 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     }
 
     // Particle files
-    if (ext == "nps")
+    if (ext == "par")
     {
         return ToolkitUtil::FileType::Particle;
     }

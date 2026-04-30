@@ -1,8 +1,6 @@
 #pragma once
 //------------------------------------------------------------------------------
-/**
-    @struct CoreGraphics::MeshCreateInfo
-    
+/**    
     Mesh collects vertex and index buffers with primitive groups which can be used to render with
 
     @copyright
@@ -33,15 +31,15 @@ ID_24_8_TYPE(MeshId);
 struct VertexStream
 {
     BufferId vertexBuffer;
-    size_t offset;
-    IndexT index;
+    size_t offset = 0;
+    IndexT index = 0;
 };
 
 struct MeshCreateInfo
 {
     Resources::ResourceName name;
     Util::StackArray<VertexStream, 4> streams;
-    size_t indexBufferOffset;
+    size_t indexBufferOffset = 0;
     BufferId indexBuffer = CoreGraphics::InvalidBufferId;
     IndexType::Code indexType = IndexType::None;
     VertexLayoutId vertexLayout = CoreGraphics::InvalidVertexLayoutId;
@@ -64,6 +62,8 @@ const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
 const uint64_t MeshGetVertexOffset(const MeshId id, const IndexT stream);
+/// Set mesh vertex offset
+void MeshSetVertexOffset(const MeshId id, const IndexT stream, uint64_t offset);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset

@@ -20,8 +20,12 @@
 #include "memory/arenaallocator.h"
 #include "frame/framecode.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
+
 struct ImDrawData;
 struct ImFont;
+struct ImVec2;
 namespace Dynui
 {
 
@@ -78,5 +82,8 @@ public:
 private:
     static void RecoverImGuiContextErrors();
 };
+
+/// Helper function to recreate the ImGUI close button used for windows and tabs
+void ImGuiCloseButton(bool& toggle, int id);
 
 } // namespace Dynui

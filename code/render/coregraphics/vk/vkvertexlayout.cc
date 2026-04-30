@@ -132,6 +132,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     vertexLayoutAllocator.Set<VertexSignature_StreamSize>(id, streamSizes);
     dynamicBindInfo.binds.Resize(numUsedStreams);
 
+
     vertexInfo =
     {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

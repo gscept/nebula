@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Particle context controls playing and enabling/disabling of particle emitters
+    Particle context controls playing and enabling/disabling of particle attrs
     inside a model.
 
     @copyright
@@ -12,6 +12,7 @@
 #include "models/model.h"
 #include "models/nodes/modelnode.h"
 #include "models/nodes/particlesystemnode.h"
+#include "particleresource.h"
 #include "jobs/jobs.h"
 #include "jobs2/jobs2.h"
 #include "util/ringbuffer.h"
@@ -42,7 +43,11 @@ public:
     static void Create();
     
     /// setup particle context on model
-    static void Setup(const Graphics::GraphicsEntityId id);
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const Resources::ResourceName& particleResource
+        , Graphics::StageMask stageMask = Graphics::ALL_STAGE_MASK
+    );
 
     /// show particle based on index fetched from GetParticleId
     static void ShowParticle(const Graphics::GraphicsEntityId id);
@@ -75,7 +80,10 @@ public:
     static void OnRenderDebug(uint32_t flags);
 #endif
 
-    static CoreGraphics::MeshId DefaultEmitterMesh;
+#ifdef WITH_NEBULA_EDITOR
+    /// Recalculate samples
+    static void RecalculateEnvelopeSamples(const Graphics::GraphicsEntityId id);
+#endif
 
     static Threading::AtomicCounter ConstantUpdateCounter;
     static Threading::Event totalCompletionEvent;
@@ -103,13 +111,16 @@ private:
 
     struct ParticleSystemRuntime
     {
+        const Particles::EmitterAttrs* attrs;
+        Particles::EnvelopeSampleBuffer sampleBuffer;
+        Particles::EmitterMesh emitterMesh;
         uint32_t renderableIndex;
         Util::RingBuffer<Particle> particles;
+        Util::Array<Particle> particlesToRender;
         Math::mat4 transform;
         Math::bbox boundingBox;
         SizeT emissionCounter;
 
-        ParticleJobUniformData uniformData;
         SizeT outputCapacity;
         ParticleJobSliceOutputData outputData;
 
@@ -121,12 +132,14 @@ private:
 
     enum
     {
+        ParticleResource,
         ParticleSystems,
         ModelId,
         Runtime,
         ModelContextId
     };
     typedef Ids::IdAllocator<
+        Particles::ParticleResourceId, 
         Util::Array<ParticleSystemRuntime>,
         Graphics::ContextEntityId,
         ParticleRuntime,
@@ -135,9 +148,9 @@ private:
     static ParticleContextAllocator particleContextAllocator;
 
     /// internal function for emitting new particles
-    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, Models::ParticleSystemNode* node, float stepTime);
+    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime);
     /// internal function for emitting single particle
-    static void EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge);
+    static void EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, IndexT sampleIndex, float initialAge);
     /// internal function to emit a job for updating particles
     static void RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime, bool generateVtxList);
 

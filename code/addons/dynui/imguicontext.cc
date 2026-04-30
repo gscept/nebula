@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "imguicontext.h"
-#include "imgui.h"
-#include "imgui_internal.h"
 #include "graphics/graphicsserver.h"
 #include "resources/resourceserver.h"
 #include "math/rectangle.h"
@@ -18,6 +16,7 @@
 #include "core/cvar.h"
 #include "appgame/gameapplication.h"
 
+#include "imgui_internal.h"
 #include "frame/default.h"
 #if WITH_NEBULA_EDITOR
 #include "frame/editorframe.h"
@@ -625,7 +624,7 @@ ImguiContext::Create()
 
     style.WindowPadding = { 10.0f, 10.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 8, 3 };//{ 16, 3 };
+    style.FramePadding = { 4, 4 };//{ 16, 3 };
     style.ItemInnerSpacing = { 2, 2 };
     style.ItemSpacing = { 2, 2 };
     style.IndentSpacing = 10.0f;
@@ -1163,6 +1162,43 @@ ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
     ImGui::EndFrame();
                     
     ImGui::UpdatePlatformWindows();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImGuiCloseButton(bool& toggle, int id)
+{
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    // Close button
+    ImGui::SameLine();
+    ImFont* font = ImGui::GetFont();
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec2 closeButtonSize = ImVec2(font->FontSize, font->FontSize) + style.FramePadding * 2.0f;
+    ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - closeButtonSize.x, 0.0f));
+    ImGui::SameLine();
+    ImGui::PushID(id + 0xAAA);
+    float cross_extent = font->FontSize * 0.5f * 0.7071f - 1.0f;
+    ImVec2 closeButtonBegin = ImGui::GetCursorScreenPos();
+    ImVec2 closeButtonEnd = closeButtonBegin + closeButtonSize;
+    ImVec2 center = (closeButtonBegin + closeButtonEnd) * 0.5f;
+    center -= ImVec2(0.5f, 0.5f);
+    //ImGui::SetCursorPos(closeButtonBegin - closeButtonSize * 0.5f);
+    if (ImGui::InvisibleButton("", closeButtonSize))
+    {
+        toggle = !toggle;
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+        draw_list->AddCircleFilled(center + ImVec2(0.5f, 0.5f), font->FontSize * 0.5f, col);
+    }
+    ImU32 cross_col = ImGui::GetColorU32(ImGuiCol_Text);
+    draw_list->AddLine(center + ImVec2(+cross_extent, +cross_extent), center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
+    draw_list->AddLine(center + ImVec2(+cross_extent, -cross_extent), center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
+    ImGui::PopID();
 }
 
 } // namespace Dynui

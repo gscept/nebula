@@ -206,7 +206,7 @@
                             "targets": [
                                 {
                                     "name": "PreviewSceneMS",
-                                    "flags": "Store",
+                                    "flags": "Store|Load",
                                     "resolve": "PreviewScene"
                                 }
                             ],
@@ -214,6 +214,11 @@
                                 {
                                     "batch": {
                                         "name": "FlatGeometryAlphaLit"
+                                    }
+                                },
+                                {
+                                    "batch": {
+                                        "name": "ParticleLit"
                                     }
                                 }
                             ]
