@@ -200,6 +200,24 @@ ParticleSerialize(const Ptr<IO::Stream>& stream, const Util::Array<ParticleAsset
 //------------------------------------------------------------------------------
 /**
 */
+float
+NormalizeValue(float value, float min, float max)
+{
+    return (value - min) / (max - min);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+DenormalizeValue(float value, float min, float max)
+{
+    return min + value * (max - min);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& toggled)
 {
@@ -215,10 +233,10 @@ DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& t
     float padding = 2.0f;
     size.x -= padding;
     size.y -= padding;
-    points[0] = cursorPos + ImVec2(0, (1.0f - values[0] * normalizationFactor) * size.y);
-    points[1] = cursorPos + ImVec2(size.x * keyPos0, (1.0f - values[1] * normalizationFactor) * size.y);
-    points[2] = cursorPos + ImVec2(size.x * keyPos1, (1.0f - values[2] * normalizationFactor) * size.y);
-    points[3] = cursorPos + ImVec2(size.x * 1.0f, (1.0f - values[3] * normalizationFactor) * size.y);
+    points[0] = cursorPos + ImVec2(0, (1.0f - NormalizeValue(values[0], limits[0], limits[1])) * size.y);
+    points[1] = cursorPos + ImVec2(size.x * keyPos0, (1.0f - NormalizeValue(values[1], limits[0], limits[1])) * size.y);
+    points[2] = cursorPos + ImVec2(size.x * keyPos1, (1.0f - NormalizeValue(values[2], limits[0], limits[1])) * size.y);
+    points[3] = cursorPos + ImVec2(size.x * 1.0f, (1.0f - NormalizeValue(values[3], limits[0], limits[1])) * size.y);
 
     ImVec2 paddedCursorMin = cursorPos - ImVec2(padding, padding);
     ImVec2 paddedCursorMax = cursorPos + size + ImVec2(padding, padding);
@@ -262,14 +280,14 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
     if (ImGui::DragFloat("Min", &modifyLimits[0], 0.5f, min, max))
     {
         modifyLimits[1] = Math::max(modifyLimits[0], modifyLimits[1]);
-        curve.SetLimits(modifyLimits[0], modifyLimits[1]);
         changed = true;
         for (uint i = 0; i < 4; i++)
         {
             float newValue = modifyValues[i];
-            float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
-            modifyValues[i] = Math::clamp(normalizedValue, modifyLimits[0], modifyLimits[1]);
+            float normalizedValue = NormalizeValue(newValue, limits[0], limits[1]);
+            modifyValues[i] = DenormalizeValue(normalizedValue, modifyLimits[0], modifyLimits[1]);
         }
+        curve.SetLimits(modifyLimits[0], modifyLimits[1]);
     }
     ImGui::PopID();
     ImGui::SameLine();
@@ -278,14 +296,15 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
     if (ImGui::DragFloat("Max", &modifyLimits[1], 0.5f, min, max))
     {
         modifyLimits[0] = Math::min(modifyLimits[0], modifyLimits[1]);
-        curve.SetLimits(modifyLimits[0], modifyLimits[1]);
         changed = true;
         for (uint i = 0; i < 4; i++)
         {
             float newValue = modifyValues[i];
-            float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
-            modifyValues[i] = Math::clamp(normalizedValue, modifyLimits[0], modifyLimits[1]);
+            float normalizedValue = NormalizeValue(newValue, limits[0], limits[1]);
+            modifyValues[i] = DenormalizeValue(normalizedValue, modifyLimits[0], modifyLimits[1]);
+            
         }
+        curve.SetLimits(modifyLimits[0], modifyLimits[1]);
     }
     ImGui::PopID();
 
@@ -314,13 +333,11 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
         ImGui::GetColorU32(ImGuiCol_ButtonHovered),      // key point 1 outline
     };
 
-    float normalizationFactor = 1.0f / (limits[1] - limits[0]);
-    
     ImVec2 window = ImVec2(Math::min(narrowRegion.x, MIN_CURVE_WINDOW_WIDTH), Math::min(narrowRegion.y, MIN_CURVE_WINDOW_HEIGHT));
-    points[0] = narrowCursor + ImVec2(0.0f, (1.0f - values[0] * normalizationFactor) * window.y);
-    points[1] = narrowCursor + ImVec2(narrowRegion.x * keyPos0, (1.0f - values[1] * normalizationFactor) * window.y);
-    points[2] = narrowCursor + ImVec2(narrowRegion.x * keyPos1, (1.0f - values[2] * normalizationFactor) * window.y);
-    points[3] = narrowCursor + ImVec2(narrowRegion.x * 1.0f, (1.0f - values[3] * normalizationFactor) * window.y);
+    points[0] = narrowCursor + ImVec2(0.0f, (1.0f - NormalizeValue(values[0], limits[0], limits[1])) * window.y);
+    points[1] = narrowCursor + ImVec2(narrowRegion.x * keyPos0, (1.0f - NormalizeValue(values[1], limits[0], limits[1])) * window.y);
+    points[2] = narrowCursor + ImVec2(narrowRegion.x * keyPos1, (1.0f - NormalizeValue(values[2], limits[0], limits[1])) * window.y);
+    points[3] = narrowCursor + ImVec2(narrowRegion.x * 1.0f, (1.0f - NormalizeValue(values[3], limits[0], limits[1])) * window.y);
     draw_list->AddRectFilled(cursorPos, cursorPos + ImVec2(region.x, MIN_CURVE_WINDOW_HEIGHT), ImGui::GetColorU32(ImGuiCol_FrameBg), 8.0f);
     draw_list->AddRect(narrowCursor, narrowCursor + ImVec2(narrowRegion.x, MIN_CURVE_WINDOW_HEIGHT - INNER_WINDOW_PADDING*2), ImGui::GetColorU32(ImGuiCol_FrameBgActive), 2.0f);
     draw_list->AddBezierCubic(points[0], points[1], points[2], points[3], ImGui::GetColorU32(ImGuiCol_SeparatorActive), 2.0f, 64);
@@ -367,7 +384,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
                 ImVec2 pos = ImVec2(Math::min(points[i].x + 3, cursorPos.x + region.x - size.x - 3), points[i].y + 3);
                 draw_list->AddText(pos, IM_COL32(255, 255, 255, 255), Util::Format("Y: %f", y_val).AsCharPtr());
             }
-            modifyValues[i] = Math::clamp((1.0f - ((io.MousePos.y - cursorPos.y) / window.y)) * (1.0f / normalizationFactor), limits[0], limits[1]);
+            modifyValues[i] = DenormalizeValue(Math::clamp(1.0f - ((io.MousePos.y - cursorPos.y) / window.y), 0.0f, 1.0f), limits[0], limits[1]);
             changed = true;
         }
 
@@ -543,7 +560,7 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 }
                 if (ImGui::CollapsingHeader("Movement"))
                 {
-                    CURVE_PARAM(Initial velocity, StartVelocity)
+                    CURVE_PARAM_LIMITS(Initial velocity, StartVelocity, -5, 5)
                     FLOAT_PARAM(Velocity randomization factor, VelocityRandomize)
 
                     CURVE_PARAM(Rotation velocity, RotationVelocity)
