@@ -560,7 +560,7 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 }
                 if (ImGui::CollapsingHeader("Movement"))
                 {
-                    CURVE_PARAM_LIMITS(Initial velocity, StartVelocity, -5, 5)
+                    CURVE_PARAM(Initial velocity, StartVelocity)
                     FLOAT_PARAM(Velocity randomization factor, VelocityRandomize)
 
                     CURVE_PARAM(Rotation velocity, RotationVelocity)
