@@ -729,7 +729,6 @@ ModelAttributes::Save(const Ptr<IO::Stream>& stream)
                 writer->SetFloat("RotationRandomize", attrs.GetFloat(EmitterAttrs::RotationRandomize));
                 writer->SetFloat("SizeRandomize", attrs.GetFloat(EmitterAttrs::SizeRandomize));
                 writer->SetFloat("PrecalcTime", attrs.GetFloat(EmitterAttrs::PrecalcTime));
-                writer->SetBool("RandomizeRotation", attrs.GetBool(EmitterAttrs::RandomizeRotation));
                 writer->SetInt("StretchDetail", attrs.GetInt(EmitterAttrs::StretchDetail));
                 writer->SetBool("ViewAngleFade", attrs.GetBool(EmitterAttrs::ViewAngleFade));
                 writer->SetFloat("StartDelay", attrs.GetFloat(EmitterAttrs::StartDelay));
@@ -1290,7 +1289,6 @@ ModelAttributes::Load(const Ptr<IO::Stream>& stream)
                 attrs.SetFloat(EmitterAttrs::RotationRandomize, rotationRandomize);
                 attrs.SetFloat(EmitterAttrs::SizeRandomize, sizeRandomize);
                 attrs.SetFloat(EmitterAttrs::PrecalcTime, precalcTime);
-                attrs.SetBool(EmitterAttrs::RandomizeRotation, randomizeRotation);
                 attrs.SetInt(EmitterAttrs::StretchDetail, stretchDetail);
                 attrs.SetBool(EmitterAttrs::ViewAngleFade, viewAngleFade);
                 attrs.SetFloat(EmitterAttrs::StartDelay, startDelay);

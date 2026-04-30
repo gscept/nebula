@@ -276,10 +276,6 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     {
         this->emitterAttrs.SetFloat(EmitterAttrs::PrecalcTime, reader->ReadFloat());
     }
-    else if (FourCC('PRRD') == fourcc)
-    {
-        this->emitterAttrs.SetBool(EmitterAttrs::RandomizeRotation, (1 == reader->ReadInt()));
-    }
     else if (FourCC('PSDL') == fourcc)
     {
         this->emitterAttrs.SetInt(EmitterAttrs::StretchDetail, reader->ReadInt());

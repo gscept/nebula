@@ -37,7 +37,6 @@ static const char* FloatAttrNames[] =
 static const char* BoolAttrNames[] = 
 {
     "Looping",
-    "RandomizeRotation",
     "StretchToStart",
     "RenderOldestFirst",
     "ViewAngleFade",
@@ -189,7 +188,6 @@ private:
     struct BoolAttributes
     {
         bool looping : 1;
-        bool randomizeRotation : 1;
         bool stretchToStart : 1;
         bool renderOldestFirst : 1;
         bool viewAngleFade : 1;
@@ -226,9 +224,6 @@ EmitterAttrs::SetBool(BoolAttr key, bool value)
     case Looping:
         this->boolAttributes.looping = value;
         break;
-    case RandomizeRotation:
-        this->boolAttributes.randomizeRotation = value;
-        break;
     case StretchToStart:
         this->boolAttributes.stretchToStart = value;
         break;
@@ -255,8 +250,6 @@ EmitterAttrs::GetBool(BoolAttr key) const
     {
     case Looping:
         return this->boolAttributes.looping;
-    case RandomizeRotation:
-        return this->boolAttributes.randomizeRotation;
     case StretchToStart:
         return this->boolAttributes.stretchToStart;
     case RenderOldestFirst:

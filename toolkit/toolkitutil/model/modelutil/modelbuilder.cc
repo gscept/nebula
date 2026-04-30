@@ -873,11 +873,6 @@ ModelBuilder::WriteParticles(const Ptr<ModelWriter>& writer)
             writer->WriteFloat(emitterAttrs.GetFloat(Particles::EmitterAttrs::PrecalcTime));
             writer->EndTag();
 
-            // write Randomize Rotation
-            writer->BeginTag("Randomize Rotation", 'PRRD');
-            writer->WriteInt(emitterAttrs.GetBool(Particles::EmitterAttrs::RandomizeRotation));
-            writer->EndTag();
-
             // write Stretch Detail
             writer->BeginTag("Stretch Detail", 'PSDL');
             writer->WriteInt(emitterAttrs.GetInt(Particles::EmitterAttrs::StretchDetail));
