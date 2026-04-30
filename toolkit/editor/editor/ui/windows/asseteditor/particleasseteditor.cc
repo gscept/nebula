@@ -79,12 +79,12 @@ struct ParticleAssetItemData
 //------------------------------------------------------------------------------
 /**
 */
-struct CMDParticleSetTexture : public Edit::Command
+struct CMDParticleSetFloat : public Edit::Command
 {
-    ~CMDParticleSetTexture() {};
+    ~CMDParticleSetFloat() {};
     const char* Name() override
     {
-        return "Particle Set Texture";
+        return "Particle Set Float";
     };
 
     bool Execute() override
@@ -93,40 +93,153 @@ struct CMDParticleSetTexture : public Edit::Command
         assetEditor->Edit();
         item->grabFocus = true;
         item->editCounter++;
-        this->res = Resources::CreateResource(this->asset, "editor", nullptr, nullptr, true, false);
-        auto itemData = (const ParticleAssetItemData*)item->data;
-
-        /// Todo, update material
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetFloat(attr, newValue);
 
         return true;
     };
 
     bool Unexecute() override
     {
-        Resources::DiscardResource(this->res);
         assetEditor->Unedit();
         item->grabFocus = true;
         item->editCounter--;
-        this->res = Resources::CreateResource(this->oldAsset, "editor", nullptr, nullptr, true, false);
-        auto itemData = (const ParticleAssetItemData*)item->data;
-
-        /// Todo, update material
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetFloat(attr, oldValue);
 
         return true;
     };
     AssetEditorItem* item;
     AssetEditor* assetEditor;
-    uint hash;
-    uint index;
-    uint bindlessOffset;
-    Resources::ResourceName asset;
-
-    Resources::ResourceName oldAsset;
-
-private:
-    Resources::ResourceId res;
+    float oldValue, newValue;
+    IndexT index;
+    Particles::EmitterAttrs::FloatAttr attr;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
+struct CMDParticleSetInt : public Edit::Command
+{
+    ~CMDParticleSetInt() {};
+    const char* Name() override
+    {
+        return "Particle Set Int";
+    };
+
+    bool Execute() override
+    {
+        n_assert(this->item->assetType == AssetEditor::AssetType::Particle);
+        assetEditor->Edit();
+        item->grabFocus = true;
+        item->editCounter++;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetInt(attr, newValue);
+
+        return true;
+    };
+
+    bool Unexecute() override
+    {
+        assetEditor->Unedit();
+        item->grabFocus = true;
+        item->editCounter--;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetInt(attr, oldValue);
+
+        return true;
+    };
+    AssetEditorItem* item;
+    AssetEditor* assetEditor;
+    int oldValue, newValue;
+    IndexT index;
+    Particles::EmitterAttrs::IntAttr attr;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct CMDParticleSetBool : public Edit::Command
+{
+    ~CMDParticleSetBool() {};
+    const char* Name() override
+    {
+        return "Particle Set Bool";
+    };
+
+    bool Execute() override
+    {
+        n_assert(this->item->assetType == AssetEditor::AssetType::Particle);
+        assetEditor->Edit();
+        item->grabFocus = true;
+        item->editCounter++;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetBool(attr, newValue);
+
+        return true;
+    };
+
+    bool Unexecute() override
+    {
+        assetEditor->Unedit();
+        item->grabFocus = true;
+        item->editCounter--;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetBool(attr, oldValue);
+
+        return true;
+    };
+    AssetEditorItem* item;
+    AssetEditor* assetEditor;
+    bool oldValue, newValue;
+    IndexT index;
+    Particles::EmitterAttrs::BoolAttr attr;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct CMDParticleSetCurve : public Edit::Command
+{
+    ~CMDParticleSetCurve() {};
+    const char* Name() override
+    {
+        return "Particle Set Curve";
+    };
+
+    bool Execute() override
+    {
+        n_assert(this->item->assetType == AssetEditor::AssetType::Particle);
+        assetEditor->Edit();
+        item->grabFocus = true;
+        item->editCounter++;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetEnvelope(attr, newValue);
+        Particles::ParticleContext::RecalculateEnvelopeSamples(this->item->previewObject);
+        ParticleAssetItemData* data = static_cast<ParticleAssetItemData*>(item->data);
+        data->emitters[this->index].attrs->SetEnvelope(attr, newValue);
+        return true;
+    };
+
+    bool Unexecute() override
+    {
+        assetEditor->Unedit();
+        item->grabFocus = true;
+        item->editCounter--;
+        Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(this->item->asset.particle);
+        emitters.attrs[this->index].SetEnvelope(attr, oldValue);
+        Particles::ParticleContext::RecalculateEnvelopeSamples(this->item->previewObject);
+        ParticleAssetItemData* data = static_cast<ParticleAssetItemData*>(item->data);
+        data->emitters[this->index].attrs->SetEnvelope(attr, oldValue);
+
+        return true;
+    };
+    AssetEditorItem* item;
+    AssetEditor* assetEditor;
+    Particles::EnvelopeCurve oldValue, newValue;
+    IndexT index;
+    Particles::EmitterAttrs::EnvelopeAttr attr;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -254,6 +367,8 @@ DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& t
     ImGui::PopID();
 }
 
+bool HasRetainedCurve = false;
+Particles::EnvelopeCurve RetainedCurve;
 //------------------------------------------------------------------------------
 /**
 */
@@ -360,6 +475,11 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
 
         if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
         {
+            if (!HasRetainedCurve)
+            {
+                HasRetainedCurve = true;
+                RetainedCurve = curve;
+            }
             float y_val = modifyValues[i];
             if (i == 1)
             {
@@ -409,24 +529,34 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     static const int PARAM_PADDING = 12;
     static bool EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::NumEnvelopeAttrs] = { false };
-#define CURVE_PARAM(desc, attr) \
+#define CURVE_PARAM(desc, attrName) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();\
         ImGui::Text(#desc); \
-        Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr); \
+        Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName); \
         ImGui::SameLine();\
-        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr]); \
+        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName]); \
         ImGui::SetCursorScreenPos(cursorPos + ImVec2(0, ImGui::GetTextLineHeight() + 5));\
-        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])\
+        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName])\
         {\
-            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attr);\
+            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attrName);\
             {\
-                if (DrawCurve(draw_list, curve, 0.0f, 10000.0f, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
+                if (DrawCurve(draw_list, curve, 0.0f, 10000.0f, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName])) \
                 {\
-                    data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
-                    assetEditor->Edit();\
-                    Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+                    data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName, curve);\
+                }\
+                else  if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) && HasRetainedCurve)\
+                {\
+                    HasRetainedCurve = false;\
+                    auto cmd = new CMDParticleSetCurve;\
+                    cmd->item = item;\
+                    cmd->assetEditor = assetEditor;\
+                    cmd->index = selectedEmitter;\
+                    cmd->attr = Particles::EmitterAttrs::EnvelopeAttr::attrName;\
+                    cmd->oldValue = RetainedCurve;\
+                    cmd->newValue = curve;\
+                    Edit::CommandManager::Execute(cmd);\
                     Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
                 }\
             }\
@@ -436,25 +566,37 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     }
 
 
-#define CURVE_PARAM_LIMITS(desc, attr, min, max) \
+#define CURVE_PARAM_LIMITS(desc, attrName, min, max) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();\
         ImGui::Text(#desc); \
-        Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr); \
+        Particles::EnvelopeCurve curve = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName); \
         ImGui::SameLine();\
-        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr]); \
+        DrawCurvePreview(draw_list, curve, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName]); \
         ImGui::SetCursorScreenPos(cursorPos + ImVec2(0, ImGui::GetTextLineHeight() + 5));\
-        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])\
+        if (EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName])\
         {\
-            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attr);\
+            ImGui::PushID(reinterpret_cast<intptr_t>(&curve) + Particles::EmitterAttrs::EnvelopeAttr::attrName);\
             {\
-                if (DrawCurve(draw_list, curve, min, max, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attr])) \
+                if (DrawCurve(draw_list, curve, min, max, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName])) \
                 {\
-                    data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attr, curve); \
-                    assetEditor->Edit();\
-                    Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
-                    Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
+                    if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left))\
+                    {\
+                        auto cmd = new CMDParticleSetCurve;\
+                        cmd->item = item;\
+                        cmd->assetEditor = assetEditor;\
+                        cmd->index = selectedEmitter;\
+                        cmd->attr = Particles::EmitterAttrs::EnvelopeAttr::attrName;\
+                        cmd->oldValue = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName); \
+                        cmd->newValue = curve;\
+                        Edit::CommandManager::Execute(cmd);\
+                        Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
+                    }\
+                    else\
+                    {\
+                        data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName, curve);\
+                    }\
                 }\
             }\
             ImGui::PopID();\
@@ -462,58 +604,82 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         ImGui::Dummy(ImVec2(0,0));\
     }
 
-#define FLOAT_PARAM(desc, attr) \
+#define FLOAT_PARAM(desc, attrName) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImGui::Text(#desc); \
-        float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attr); \
-        if (ImGui::DragFloat("##" #attr, &f, 0.1f, 0.0f, 10000.0f)) \
+        float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attrName); \
+        float old = f;\
+        if (ImGui::DragFloat("##" #attrName, &f, 0.1f, 0.0f, 10000.0f)) \
         {\
-            data->emitters[selectedEmitter].attrs->SetFloat(Particles::EmitterAttrs::FloatAttr::attr, f); \
-            assetEditor->Edit();\
-            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            auto cmd = new CMDParticleSetFloat;\
+            cmd->item = item;\
+            cmd->assetEditor = assetEditor;\
+            cmd->index = selectedEmitter;\
+            cmd->attr = Particles::EmitterAttrs::FloatAttr::attrName;\
+            cmd->oldValue = old;\
+            cmd->newValue = f;\
+            Edit::CommandManager::Execute(cmd);\
             Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
 
-#define FLOAT_PARAM_LIMITS(desc, attr, min, max) \
+#define FLOAT_PARAM_LIMITS(desc, attrName, min, max) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImGui::Text(#desc); \
-        float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attr); \
-        if (ImGui::DragFloat("##" #attr, &f, 0.1f, min, max)) \
+        float f = data->emitters[selectedEmitter].attrs->GetFloat(Particles::EmitterAttrs::FloatAttr::attrName); \
+        float old = f;\
+        if (ImGui::DragFloat("##" #attrName, &f, 0.1f, min, max)) \
         {\
-            data->emitters[selectedEmitter].attrs->SetFloat(Particles::EmitterAttrs::FloatAttr::attr, f); \
-            assetEditor->Edit();\
-            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            auto cmd = new CMDParticleSetFloat;\
+            cmd->item = item;\
+            cmd->assetEditor = assetEditor;\
+            cmd->index = selectedEmitter;\
+            cmd->attr = Particles::EmitterAttrs::FloatAttr::attrName;\
+            cmd->oldValue = old;\
+            cmd->newValue = f;\
+            Edit::CommandManager::Execute(cmd);\
             Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
 
-#define INT_PARAM(desc, attr) \
+#define INT_PARAM(desc, attrName) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImGui::Text(#desc); \
-        int f = data->emitters[selectedEmitter].attrs->GetInt(Particles::EmitterAttrs::IntAttr::attr); \
-        if (ImGui::DragInt("##" #attr, &f, 1.0f, 0, 10000)) \
+        int f = data->emitters[selectedEmitter].attrs->GetInt(Particles::EmitterAttrs::IntAttr::attrName); \
+        int old = f;\
+        if (ImGui::DragInt("##" #attrName, &f, 1.0f, 0, 10000)) \
         {\
-            data->emitters[selectedEmitter].attrs->SetInt(Particles::EmitterAttrs::IntAttr::attr, f); \
-            assetEditor->Edit();\
-            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            auto cmd = new CMDParticleSetInt;\
+            cmd->item = item;\
+            cmd->assetEditor = assetEditor;\
+            cmd->index = selectedEmitter;\
+            cmd->attr = Particles::EmitterAttrs::IntAttr::attrName;\
+            cmd->oldValue = old;\
+            cmd->newValue = f;\
+            Edit::CommandManager::Execute(cmd);\
             Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
 
-#define BOOL_PARAM(desc, attr) \
+#define BOOL_PARAM(desc, attrName) \
     { \
         ImGui::Dummy(ImVec2(0, PARAM_PADDING));\
         ImGui::Text(#desc); \
-        bool f = data->emitters[selectedEmitter].attrs->GetBool(Particles::EmitterAttrs::BoolAttr::attr); \
-        if (ImGui::Checkbox("##" #attr, &f)) \
+        bool f = data->emitters[selectedEmitter].attrs->GetBool(Particles::EmitterAttrs::BoolAttr::attrName); \
+        bool old = f;\
+        if (ImGui::Checkbox("##" #attrName, &f)) \
         {\
-            data->emitters[selectedEmitter].attrs->SetBool(Particles::EmitterAttrs::BoolAttr::attr, f); \
-            assetEditor->Edit();\
-            Particles::ParticleContext::RecalculateEnvelopeSamples(item->previewObject);\
+            auto cmd = new CMDParticleSetBool;\
+            cmd->item = item;\
+            cmd->assetEditor = assetEditor;\
+            cmd->index = selectedEmitter;\
+            cmd->attr = Particles::EmitterAttrs::BoolAttr::attrName;\
+            cmd->oldValue = old;\
+            cmd->newValue = f;\
+            Edit::CommandManager::Execute(cmd);\
             Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
         }\
     }
