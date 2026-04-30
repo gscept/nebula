@@ -268,7 +268,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
         {
             float newValue = modifyValues[i];
             float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
-            modifyValues[i] = Math::clamp(modifyValues[i], modifyLimits[0], modifyLimits[1]);
+            modifyValues[i] = Math::clamp(normalizedValue, modifyLimits[0], modifyLimits[1]);
         }
     }
     ImGui::PopID();
@@ -284,7 +284,7 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
         {
             float newValue = modifyValues[i];
             float normalizedValue = limits[0] + newValue * (limits[1] - limits[0]);
-            modifyValues[i] = Math::clamp(modifyValues[i], modifyLimits[0], modifyLimits[1]);
+            modifyValues[i] = Math::clamp(normalizedValue, modifyLimits[0], modifyLimits[1]);
         }
     }
     ImGui::PopID();
