@@ -64,6 +64,8 @@ struct ImguiState
     Ptr<ImguiInputHandler> inputHandler;
     Ptr<ImguiDisplayEventHandler> displayEventHandler;
     bool dockOverViewport;
+    bool graphicsContextRegistered;
+    bool renderingEnabled;
 } state;
 
 IndexT VertexBufferOffset = 0;
@@ -78,6 +80,38 @@ SizeT TotalIndicesThisFrame = 0;
 
 static Core::CVar* ui_opacity;
 
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+ImguiNoOpPipelineSetup(const CoreGraphics::RenderPassId)
+{
+    // Intentionally empty. Used to clear stale framescript callbacks after reload failures.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+ImguiNoOpDraw(const CoreGraphics::CmdBufferId, const CoreGraphics::QueueType, const Math::rectangle<int>&, const IndexT, const IndexT)
+{
+    // Intentionally empty. Used to clear stale framescript callbacks after reload failures.
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+DisableImguiFramescriptCallbacks()
+{
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Render(ImguiNoOpPipelineSetup);
+    FrameScript_editorframe::RegisterSubgraph_ImGUI_Render(ImguiNoOpDraw);
+#endif
+    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Render(ImguiNoOpPipelineSetup);
+    FrameScript_default::RegisterSubgraph_ImGUI_Render(ImguiNoOpDraw);
+}
+
 ImFont* ImguiNormalFont;
 ImFont* ImguiSmallFont;
 ImFont* ImguiBoldFont;
@@ -90,6 +124,11 @@ ImFont* ImguiItFont;
 void
 ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, ImDrawData* data)
 {
+    if (!state.renderingEnabled)
+    {
+        return;
+    }
+
     // get Imgui context
     ImGuiIO& io = ImGui::GetIO();
     int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
@@ -429,14 +468,26 @@ ImguiContext::Create()
 {
     ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0", "Global UI opacity (0..1)");
 
-    __bundle.OnViewportResized = ImguiContext::OnViewportResized;
-    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
     state.dockOverViewport = false;
+    state.graphicsContextRegistered = false;
+    state.renderingEnabled = false;
 
     // allocate imgui shader
     state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.gplb");
+    if (state.uiShader == CoreGraphics::InvalidShaderId)
+    {
+        DisableImguiFramescriptCallbacks();
+        n_error("ImguiContext::Create: Failed to load imgui shader 'shd:imgui/shaders/imgui.gplb'\n");
+        return;
+    }
+    
     state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureMask("Static"));
+    if (state.prog == CoreGraphics::InvalidShaderProgramId)
+    {
+        DisableImguiFramescriptCallbacks();
+        n_error("ImguiContext::Create: Failed to get 'Static' program from imgui shader\n");
+        return;
+    }
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
@@ -463,6 +514,9 @@ ImguiContext::Create()
     {
         FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
             {
+                if (!state.renderingEnabled)
+                    return;
+
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
                 if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
                     CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
@@ -471,6 +525,9 @@ ImguiContext::Create()
 
         FrameScript_editorframe::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
+                if (!state.renderingEnabled)
+                    return;
+
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
@@ -522,6 +579,9 @@ ImguiContext::Create()
     {
         FrameScript_default::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
             {
+                if (!state.renderingEnabled)
+                    return;
+
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
                 if (state.pipeline != CoreGraphics::InvalidPipelineId)
                     CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
@@ -529,6 +589,9 @@ ImguiContext::Create()
             });
         FrameScript_default::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
+                if (!state.renderingEnabled)
+                    return;
+
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
@@ -898,6 +961,11 @@ ImguiContext::Create()
         }
         ImGui::LoadIniSettingsFromDisk("imgui.ini");
     }
+
+    __bundle.OnViewportResized = ImguiContext::OnViewportResized;
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
+    state.graphicsContextRegistered = true;
+    state.renderingEnabled = true;
 }
 
 //------------------------------------------------------------------------------
@@ -906,6 +974,9 @@ ImguiContext::Create()
 void
 ImguiContext::Discard()
 {
+    state.renderingEnabled = false;
+    DisableImguiFramescriptCallbacks();
+
     IndexT i;
     for (i = 0; i < state.vbos.Size(); i++)
     {
@@ -919,13 +990,29 @@ ImguiContext::Discard()
         state.indexPtrs[i] = nullptr;
     }
 
-    Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
-    state.inputHandler = nullptr;
+    if (state.inputHandler != nullptr)
+    {
+        Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
+        state.inputHandler = nullptr;
+    }
 
-    CoreGraphics::DisplayDevice::Instance()->RemoveEventHandler(state.displayEventHandler.upcast<CoreGraphics::DisplayEventHandler>());
-    state.displayEventHandler = nullptr;
+    if (state.displayEventHandler != nullptr)
+    {
+        CoreGraphics::DisplayDevice::Instance()->RemoveEventHandler(state.displayEventHandler.upcast<CoreGraphics::DisplayEventHandler>());
+        state.displayEventHandler = nullptr;
+    }
 
-    CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
+    if (state.graphicsContextRegistered)
+    {
+        Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
+        state.graphicsContextRegistered = false;
+    }
+
+    if ((CoreGraphics::TextureId)state.fontTexture.nebulaHandle != CoreGraphics::InvalidTextureId)
+    {
+        CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
+        state.fontTexture.nebulaHandle = CoreGraphics::InvalidTextureId;
+    }
 
 #ifdef IMGUI_HAS_VIEWPORT
     /// The main window is handled by nebula
