@@ -39,12 +39,20 @@ public:
     static AttributeId GetAttributeId(Util::StringAtom name);
     /// get attribute description by id
     static Attribute* GetAttribute(AttributeId descriptor);
+    /// try get attribute description by id
+    static Attribute* TryGetAttribute(AttributeId descriptor);
     /// get type size by attribute id
     static SizeT TypeSize(AttributeId descriptor);
+    /// try get type size by attribute id
+    static bool TryGetTypeSize(AttributeId descriptor, SizeT& outTypeSize);
     /// get flags by attribute id
     static uint32_t Flags(AttributeId descriptor);
+    /// try get flags by attribute id
+    static bool TryGetFlags(AttributeId descriptor, uint32_t& outFlags);
     /// get attribute default value pointer
     static void const* const DefaultValue(AttributeId descriptor);
+    /// try get attribute default value pointer
+    static bool TryGetDefaultValue(AttributeId descriptor, void const*& outDefaultValue);
     /// get an array of all attributes
     static Util::FixedArray<Attribute*> const& GetAllAttributes();
     /// unregister an attribute by id (safe no-op if missing)
@@ -255,10 +263,22 @@ AttributeRegistry::GetAttributeId(Util::StringAtom name)
 inline Attribute*
 AttributeRegistry::GetAttribute(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
     if (!AttributeRegistry::IsRegistered(descriptor))
-    {
         return nullptr;
-    }
+
+    auto* reg = Instance();
+    return reg->componentDescriptions[descriptor.id];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Attribute*
+AttributeRegistry::TryGetAttribute(AttributeId descriptor)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return nullptr;
 
     auto* reg = Instance();
     return reg->componentDescriptions[descriptor.id];
@@ -270,10 +290,9 @@ AttributeRegistry::GetAttribute(AttributeId descriptor)
 inline SizeT
 AttributeRegistry::TypeSize(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
     if (!AttributeRegistry::IsRegistered(descriptor))
-    {
         return 0;
-    }
 
     auto* reg = Instance();
     return reg->componentDescriptions[descriptor.id]->typeSize;
@@ -282,13 +301,29 @@ AttributeRegistry::TypeSize(AttributeId descriptor)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
-AttributeRegistry::Flags(AttributeId descriptor)
+inline bool
+AttributeRegistry::TryGetTypeSize(AttributeId descriptor, SizeT& outTypeSize)
 {
     if (!AttributeRegistry::IsRegistered(descriptor))
     {
-        return 0;
+        outTypeSize = 0;
+        return false;
     }
+
+    auto* reg = Instance();
+    outTypeSize = reg->componentDescriptions[descriptor.id]->typeSize;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint32_t
+AttributeRegistry::Flags(AttributeId descriptor)
+{
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return 0;
 
     auto* reg = Instance();
     return reg->componentDescriptions[descriptor.id]->externalFlags;
@@ -297,16 +332,49 @@ AttributeRegistry::Flags(AttributeId descriptor)
 //------------------------------------------------------------------------------
 /**
 */
-inline void const* const
-AttributeRegistry::DefaultValue(AttributeId descriptor)
+inline bool
+AttributeRegistry::TryGetFlags(AttributeId descriptor, uint32_t& outFlags)
 {
     if (!AttributeRegistry::IsRegistered(descriptor))
     {
-        return nullptr;
+        outFlags = 0;
+        return false;
     }
 
     auto* reg = Instance();
+    outFlags = reg->componentDescriptions[descriptor.id]->externalFlags;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void const* const
+AttributeRegistry::DefaultValue(AttributeId descriptor)
+{
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return nullptr;
+
+    auto* reg = Instance();
     return reg->componentDescriptions[descriptor.id]->defVal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::TryGetDefaultValue(AttributeId descriptor, void const*& outDefaultValue)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        outDefaultValue = nullptr;
+        return false;
+    }
+
+    auto* reg = Instance();
+    outDefaultValue = reg->componentDescriptions[descriptor.id]->defVal;
+    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -80,7 +80,21 @@ NB_MODULE(editor, m)
     // Explicitly trigger a hot-reload of the editor feature module.
     // The reload is deferred to the next frame boundary and rejected if
     // play-in-editor is currently active.
-    m.def("reload_editor_module", []() { Editor::RequestModuleReload(); });
+    m.def("reload_editor_module", []() { Editor::RequestModuleReload("editorfeaturemodule", "editorfeaturemodule"); });
+
+    // Generic module reload entry point. If build_target is omitted,
+    // module_name is used for both build and reload.
+    m.def(
+        "reload_module",
+        [](const char* moduleName, const char* buildTarget)
+        {
+            const Util::String module = moduleName != nullptr ? moduleName : "";
+            const Util::String target = buildTarget != nullptr ? buildTarget : "";
+            Editor::RequestModuleReload(module, target);
+        },
+        py::arg("module_name"),
+        py::arg("build_target") = ""
+    );
 }
 
 namespace Scripting

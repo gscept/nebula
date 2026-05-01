@@ -9,6 +9,7 @@
 #include "game/modulemanager.h"
 #include "entityloader.h"
 #include "io/assignregistry.h"
+#include "io/fswrapper.h"
 #include "io/ioserver.h"
 #include "io/jsonreader.h"
 #include "scripting/scriptserver.h"
@@ -31,6 +32,8 @@
 
 #include "toolkit-common/projectinfo.h"
 
+#include <cstdlib>
+
 namespace Editor
 {
 
@@ -38,6 +41,143 @@ namespace
 {
 
 const char* ReloadSnapshotUri = "user:nebula/editor/hotreload_snapshot.json";
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+GetEditorBuildDir()
+{
+#if defined(NEBULA_BINARY_FOLDER)
+    Util::String buildDir = NEBULA_BINARY_FOLDER;
+    buildDir.ConvertBackslashes();
+    buildDir.SubstituteString("/fips-deploy/", "/fips-build/");
+    return buildDir;
+#else
+    return "";
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GetWorkspaceAndProjectFromBinaryDir(Util::String& outWorkspaceDir, Util::String& outProjectName)
+{
+#if defined(NEBULA_BINARY_FOLDER)
+    Util::String binaryDir = NEBULA_BINARY_FOLDER;
+    binaryDir.ConvertBackslashes();
+    const Util::String marker = "/fips-deploy/";
+
+    const IndexT markerPos = binaryDir.FindStringIndex(marker);
+    if (markerPos == InvalidIndex)
+        return false;
+
+    outWorkspaceDir = binaryDir.ExtractRange(0, markerPos);
+
+    const IndexT remainderStart = markerPos + (IndexT)marker.Length();
+    const Util::String remainder = binaryDir.ExtractToEnd(remainderStart);
+    const IndexT slashPos = remainder.FindCharIndex('/');
+    if (slashPos == InvalidIndex)
+        return false;
+
+    outProjectName = remainder.ExtractRange(0, slashPos);
+    if (!outProjectName.IsValid())
+        return false;
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+BuildModuleTargetWithCMake(const Util::String& buildTarget, Util::String& outStatus)
+{
+    Util::String buildDir = GetEditorBuildDir();
+    if (!buildDir.IsValid() || !IO::FSWrapper::DirectoryExists(buildDir))
+    {
+        outStatus = "Reload failed: build directory not found";
+        return false;
+    }
+
+    Util::String cmd = Util::String::Sprintf(
+        "cmake --build \"%s\" --target \"%s\"",
+        buildDir.AsCharPtr(),
+        buildTarget.AsCharPtr()
+    );
+
+    int buildResult = std::system(cmd.AsCharPtr());
+    if (buildResult != 0)
+    {
+        outStatus = "Reload failed: module build failed";
+        return false;
+    }
+
+    outStatus = "Build succeeded, reload queued...";
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+BuildModuleTarget(const Util::String& buildTarget, Util::String& outStatus)
+{
+    Util::String workspaceDir;
+    Util::String projectName;
+    if (!GetWorkspaceAndProjectFromBinaryDir(workspaceDir, projectName))
+    {
+        return BuildModuleTargetWithCMake(buildTarget, outStatus);
+    }
+
+    Util::String projectDir = Util::String::AppendPath(workspaceDir, projectName);
+    if (!IO::FSWrapper::DirectoryExists(projectDir))
+    {
+        return BuildModuleTargetWithCMake(buildTarget, outStatus);
+    }
+
+    Util::String localFips = Util::String::AppendPath(projectDir, "fips");
+    Util::String workspaceFips = Util::String::AppendPath(Util::String::AppendPath(workspaceDir, "fips"), "fips");
+
+    Util::String fipsScript;
+    if (IO::FSWrapper::FileExists(localFips))
+    {
+        fipsScript = localFips;
+    }
+    else if (IO::FSWrapper::FileExists(workspaceFips))
+    {
+        fipsScript = workspaceFips;
+    }
+    else
+    {
+        return BuildModuleTargetWithCMake(buildTarget, outStatus);
+    }
+
+    Util::String cmd = Util::String::Sprintf(
+        "cd \"%s\" && \"%s\" modulebuild build \"%s\"",
+        projectDir.AsCharPtr(),
+        fipsScript.AsCharPtr(),
+        buildTarget.AsCharPtr()
+    );
+
+    int buildResult = std::system(cmd.AsCharPtr());
+    if (buildResult != 0)
+    {
+        Util::String fallbackStatus;
+        if (!BuildModuleTargetWithCMake(buildTarget, fallbackStatus))
+        {
+            outStatus = "Reload failed: fips modulebuild and cmake fallback both failed";
+            return false;
+        }
+    }
+
+    outStatus = "Build succeeded, reload queued...";
+    return true;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -271,8 +411,15 @@ StopGame()
 /**
 */
 void
-RequestModuleReload()
+RequestModuleReload(const Util::String& moduleName, const Util::String& buildTarget)
 {
+    if (!moduleName.IsValid())
+    {
+        state.lastReloadStatus = "Reload failed: module name is empty";
+        n_printf("Editor: %s\n", state.lastReloadStatus.AsCharPtr());
+        return;
+    }
+
     if (!Game::EditorState::HasInstance() || Game::EditorState::Instance()->isPlaying)
     {
         state.lastReloadStatus = "Reload blocked: play-in-editor is active";
@@ -288,6 +435,13 @@ RequestModuleReload()
         return;
     }
 
+    Util::String resolvedBuildTarget = buildTarget.IsValid() ? buildTarget : moduleName;
+    if (!BuildModuleTarget(resolvedBuildTarget, state.lastReloadStatus))
+    {
+        n_printf("Editor: %s\n", state.lastReloadStatus.AsCharPtr());
+        return;
+    }
+
     IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
     if (!SaveEntities(ReloadSnapshotUri))
     {
@@ -299,9 +453,9 @@ RequestModuleReload()
     Game::EditorState::Instance()->reloadSnapshotPath = ReloadSnapshotUri;
     Game::EditorState::Instance()->reloadSnapshotPending = true;
 
-    mm->QueueModuleReload("editorfeaturemodule");
-    state.lastReloadStatus = "Reload queued...";
-    n_printf("Editor: editor feature module reload queued\n");
+    mm->QueueModuleReload(moduleName);
+    state.lastReloadStatus = "Build succeeded, reload queued...";
+    n_printf("Editor: module '%s' reload queued\n", moduleName.AsCharPtr());
 }
 
 //------------------------------------------------------------------------------

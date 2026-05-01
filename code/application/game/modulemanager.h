@@ -59,6 +59,7 @@ private:
     bool LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* gameServer, bool strictMode);
     bool UnloadModule(LoadedModule& loaded, GameServer* gameServer);
     Util::String ResolveLibraryPath(const RuntimeModuleConfig& moduleConfig) const;
+    IndexT FindLoadedModuleIndex(const Util::String& moduleName) const;
     /// unload then reload a single module by name; internal use by ProcessPendingReloads
     bool ReloadModuleByName(const Util::String& moduleName, GameServer* gameServer);
 

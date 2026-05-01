@@ -10,7 +10,6 @@
 #include "io/fswrapper.h"
 #include "io/ioserver.h"
 #include "system/library.h"
-#include <cstdio>
 
 namespace Game
 {
@@ -85,17 +84,7 @@ ModuleManager::UnloadModules(GameServer* gameServer)
 bool
 ModuleManager::IsModuleLoaded(const Util::String& moduleName) const
 {
-    Util::String checkName = moduleName;
-    checkName.ToLower();
-
-    for (IndexT i = 0; i < this->loadedModules.Size(); i++)
-    {
-        Util::String loadedName = this->loadedModules[i].config.name;
-        loadedName.ToLower();
-        if (loadedName == checkName)
-            return true;
-    }
-    return false;
+    return this->FindLoadedModuleIndex(moduleName) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -115,14 +104,14 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
 {
     if (moduleConfig.name.IsValid() && this->IsModuleLoaded(moduleConfig.name))
     {
-        std::fprintf(stdout, "ModuleManager: module '%s' is already loaded, skipping duplicate request\n", moduleConfig.name.AsCharPtr());
+        n_printf("ModuleManager: module '%s' is already loaded, skipping duplicate request\n", moduleConfig.name.AsCharPtr());
         return true;
     }
 
     Util::String libraryPath = this->ResolveLibraryPath(moduleConfig);
     if (!libraryPath.IsValid())
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' has no valid path\n", moduleConfig.name.AsCharPtr());
+        n_warning("ModuleManager: module '%s' has no valid path\n", moduleConfig.name.AsCharPtr());
         return !(strictMode || moduleConfig.required);
     }
 
@@ -140,7 +129,7 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
 
     if (getDescriptor == nullptr || createFeature == nullptr)
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' is missing required exports\n", moduleConfig.name.AsCharPtr());
+        n_warning("ModuleManager: module '%s' is missing required exports\n", moduleConfig.name.AsCharPtr());
         library->Close();
         delete library;
         return !(strictMode || moduleConfig.required);
@@ -149,7 +138,7 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
     NebulaModuleDescriptor desc = {};
     if (getDescriptor(&desc) == 0)
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' descriptor callback failed\n", moduleConfig.name.AsCharPtr());
+        n_warning("ModuleManager: module '%s' descriptor callback failed\n", moduleConfig.name.AsCharPtr());
         library->Close();
         delete library;
         return !(strictMode || moduleConfig.required);
@@ -157,7 +146,7 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
 
     if (desc.abiVersion != NEBULA_MODULE_ABI_VERSION)
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' has ABI %u, expected %u\n", moduleConfig.name.AsCharPtr(), desc.abiVersion, NEBULA_MODULE_ABI_VERSION);
+        n_warning("ModuleManager: module '%s' has ABI %u, expected %u\n", moduleConfig.name.AsCharPtr(), desc.abiVersion, NEBULA_MODULE_ABI_VERSION);
         library->Close();
         delete library;
         return !(strictMode || moduleConfig.required);
@@ -166,7 +155,7 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
     FeatureUnit* featureRaw = reinterpret_cast<FeatureUnit*>(createFeature());
     if (featureRaw == nullptr)
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' did not return a feature instance\n", moduleConfig.name.AsCharPtr());
+        n_warning("ModuleManager: module '%s' did not return a feature instance\n", moduleConfig.name.AsCharPtr());
         library->Close();
         delete library;
         return !(strictMode || moduleConfig.required);
@@ -185,9 +174,9 @@ ModuleManager::LoadModule(const RuntimeModuleConfig& moduleConfig, GameServer* g
     const char* descVersion = desc.version != nullptr ? desc.version : "<unknown>";
     if (destroyFeature != nullptr)
     {
-        std::fprintf(stderr, "ModuleManager: module '%s' exports '%s', but runtime expects FeatureUnit instances to be managed via Nebula refcounting\n", descName, NEBULA_MODULE_DESTROY_FEATURE_EXPORT);
+        n_warning("ModuleManager: module '%s' exports '%s', but runtime expects FeatureUnit instances to be managed via Nebula refcounting\n", descName, NEBULA_MODULE_DESTROY_FEATURE_EXPORT);
     }
-    std::fprintf(stdout, "ModuleManager: loaded module '%s' v%s from '%s'\n", descName, descVersion, libraryPath.AsCharPtr());
+    n_printf("ModuleManager: loaded module '%s' v%s from '%s'\n", descName, descVersion, libraryPath.AsCharPtr());
     return true;
 }
 
@@ -205,7 +194,7 @@ ModuleManager::UnloadModule(LoadedModule& loaded, GameServer* gameServer)
         // Unloading the library in this state could leave dangling vtables.
         if (loaded.feature->GetRefCount() > 1)
         {
-            std::fprintf(stderr, "ModuleManager: module '%s' still has external references on unload (%d), keeping shared library loaded\n", loaded.config.name.AsCharPtr(), loaded.feature->GetRefCount());
+            n_warning("ModuleManager: module '%s' still has external references on unload (%d), keeping shared library loaded\n", loaded.config.name.AsCharPtr(), loaded.feature->GetRefCount());
             return false;
         }
 
@@ -264,7 +253,9 @@ ModuleManager::ResolveLibraryPath(const RuntimeModuleConfig& moduleConfig) const
     }
 
 #if defined(NEBULA_BINARY_FOLDER)
-    Util::String deployCandidate = Util::String::Sprintf("%s/%s", NEBULA_BINARY_FOLDER, path.AsCharPtr());
+    Util::String deployRoot = NEBULA_BINARY_FOLDER;
+    deployRoot.ConvertBackslashes();
+    Util::String deployCandidate = Util::String::AppendPath(deployRoot, path);
     if (IO::FSWrapper::FileExists(deployCandidate))
     {
         return deployCandidate;
@@ -277,16 +268,34 @@ ModuleManager::ResolveLibraryPath(const RuntimeModuleConfig& moduleConfig) const
 //------------------------------------------------------------------------------
 /**
 */
+IndexT
+ModuleManager::FindLoadedModuleIndex(const Util::String& moduleName) const
+{
+    Util::String checkName = moduleName;
+    checkName.ToLower();
+
+    for (IndexT i = 0; i < this->loadedModules.Size(); i++)
+    {
+        Util::String loadedName = this->loadedModules[i].config.name;
+        loadedName.ToLower();
+        if (loadedName == checkName)
+            return i;
+    }
+
+    return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ModuleManager::QueueModuleReload(const Util::String& moduleName)
 {
     // Deduplicate: only queue a reload once per frame
-    for (IndexT i = 0; i < this->pendingReloads.Size(); i++)
-    {
-        if (this->pendingReloads[i] == moduleName)
-            return;
-    }
-    std::fprintf(stdout, "ModuleManager: reload of '%s' queued for next frame boundary\n", moduleName.AsCharPtr());
+    if (this->pendingReloads.FindIndex(moduleName) != InvalidIndex)
+        return;
+
+    n_printf("ModuleManager: reload of '%s' queued for next frame boundary\n", moduleName.AsCharPtr());
     this->pendingReloads.Append(moduleName);
 }
 
@@ -316,36 +325,22 @@ ModuleManager::ProcessPendingReloads(GameServer* gameServer)
 bool
 ModuleManager::ReloadModuleByName(const Util::String& moduleName, GameServer* gameServer)
 {
-    // Find the loaded module entry
-    Util::String nameLower = moduleName;
-    nameLower.ToLower();
-
-    IndexT idx = InvalidIndex;
-    for (IndexT i = 0; i < this->loadedModules.Size(); i++)
-    {
-        Util::String n = this->loadedModules[i].config.name;
-        n.ToLower();
-        if (n == nameLower)
-        {
-            idx = i;
-            break;
-        }
-    }
+    IndexT idx = this->FindLoadedModuleIndex(moduleName);
 
     if (idx == InvalidIndex)
     {
-        std::fprintf(stderr, "ModuleManager: reload of '%s' failed: module is not loaded\n", moduleName.AsCharPtr());
+        n_warning("ModuleManager: reload of '%s' failed: module is not loaded\n", moduleName.AsCharPtr());
         return false;
     }
 
     // Save config so we can re-load with the same settings
     RuntimeModuleConfig config = this->loadedModules[idx].config;
 
-    std::fprintf(stdout, "ModuleManager: reloading '%s'...\n", moduleName.AsCharPtr());
+    n_printf("ModuleManager: reloading '%s'...\n", moduleName.AsCharPtr());
 
     if (!this->UnloadModule(this->loadedModules[idx], gameServer))
     {
-        std::fprintf(stderr, "ModuleManager: reload of '%s' blocked: module could not be safely unloaded\n", moduleName.AsCharPtr());
+        n_warning("ModuleManager: reload of '%s' blocked: module could not be safely unloaded\n", moduleName.AsCharPtr());
         return false;
     }
 
@@ -353,11 +348,11 @@ ModuleManager::ReloadModuleByName(const Util::String& moduleName, GameServer* ga
 
     if (!this->LoadModule(config, gameServer, false))
     {
-        std::fprintf(stderr, "ModuleManager: reload of '%s' failed during load\n", moduleName.AsCharPtr());
+        n_warning("ModuleManager: reload of '%s' failed during load\n", moduleName.AsCharPtr());
         return false;
     }
 
-    std::fprintf(stdout, "ModuleManager: reload of '%s' complete\n", moduleName.AsCharPtr());
+    n_printf("ModuleManager: reload of '%s' complete\n", moduleName.AsCharPtr());
     return true;
 }
 

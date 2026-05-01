@@ -173,5 +173,5 @@ target_include_directories(editorfeaturemodule PUBLIC ${CMAKE_CURRENT_SOURCE_DIR
 fips_files(
     editorfeaturemodule.cc
 )
-fips_deps(editor application render scripting)
+fips_deps(editor application render scripting dynui)
 nebula_end_shared_module()

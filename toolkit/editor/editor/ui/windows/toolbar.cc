@@ -94,7 +94,7 @@ Toolbar::Run(SaveMode save)
 
     if (ImGui::Button("Reload Editor"))
     {
-        Editor::RequestModuleReload();
+        Editor::RequestModuleReload("editorfeaturemodule", "editorfeaturemodule");
     }
     const Util::String& reloadStatus = Editor::GetLastReloadStatus();
     if (reloadStatus.IsValid())
