@@ -8,12 +8,6 @@
 #include "editorfeature/editorfeatureunit.h"
 #include "cr/cr.h"
 
-#if __WIN32__
-#define NEBULA_MODULE_EXPORT extern "C" __declspec(dllexport)
-#else
-#define NEBULA_MODULE_EXPORT extern "C" __attribute__((visibility("default")))
-#endif
-
 NEBULA_MODULE_EXPORT int
 NebulaModuleGetDescriptor(NebulaModuleDescriptor* outDescriptor)
 {

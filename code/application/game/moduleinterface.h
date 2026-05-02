@@ -7,7 +7,6 @@
     runtime module manager. Keep this interface C-compatible and minimal to
     avoid accidental ABI breakage.
 
-    @copyright
     (C) 2026 Individual contributors, see AUTHORS file
 */
 #include <stdint.h>
@@ -16,6 +15,12 @@
 #define NEBULA_MODULE_GET_DESCRIPTOR_EXPORT "NebulaModuleGetDescriptor"
 #define NEBULA_MODULE_CREATE_FEATURE_EXPORT "NebulaModuleCreateFeature"
 #define NEBULA_MODULE_DESTROY_FEATURE_EXPORT "NebulaModuleDestroyFeature"
+
+#if __WIN32__
+#define NEBULA_MODULE_EXPORT extern "C" __declspec(dllexport)
+#else
+#define NEBULA_MODULE_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
 
 #ifdef __cplusplus
 extern "C"
