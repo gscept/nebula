@@ -11,7 +11,8 @@ AttributeRegistry* AttributeRegistry::Singleton = 0;
 
 //------------------------------------------------------------------------------
 /**
-    This creates a singleton if needed, unlike the macro
+    The registry's constructor is called by the Instance() method, and
+    nobody else.
 */
 AttributeRegistry*
 AttributeRegistry::Instance()
@@ -34,7 +35,10 @@ AttributeRegistry::HasInstance()
 }
 
 //------------------------------------------------------------------------------
-/**
+/**    
+    This static method is used to destroy the registry object and should be
+    called right before the main function exits. It will make sure that
+    no accidential memory leaks are reported by the debug heap.
 */
 void
 AttributeRegistry::Destroy()
