@@ -373,13 +373,6 @@ ImguiConsole::Render()
 void
 ImguiConsole::RenderContent()
 {
-    Util::Array<LogEntry> logSnapshot;
-    logSnapshot.Reserve(this->consoleBuffer.Size());
-    for (IndexT i = 0; i < this->consoleBuffer.Size(); i++)
-    {
-        logSnapshot.Append(this->consoleBuffer[i]);
-    }
-
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     static ImGuiTextFilter filter;
     filter.Draw("Filter", 180);
@@ -390,10 +383,7 @@ ImguiConsole::RenderContent()
     if (ImGui::BeginPopupContextWindow())
     {
         if (ImGui::Selectable("Clear"))
-        {
             this->consoleBuffer.Reset();
-            logSnapshot.Clear();
-        }
         ImGui::EndPopup();
     }
 
@@ -402,16 +392,16 @@ ImguiConsole::RenderContent()
     // Unfortunately we can't use ImGui::Clipper here since each entry might have a different height.
     // TODO: We could roll our own "clipper".
     ImGui::PushTextWrapPos(ImGui::GetWindowContentRegionMax().x);
-    for (int i = 0; i < logSnapshot.Size(); i++)
+    for (int i = 0; i < this->consoleBuffer.Size(); i++)
     {
-        const char* item = logSnapshot[i].msg.AsCharPtr();
+        const char* item = this->consoleBuffer[i].msg.AsCharPtr();
 
         //Filter on both time, prefix and entry
-        if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(logSnapshot[i].type)))
+        if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(this->consoleBuffer[i].type)))
             continue;
 
         ImVec4 col;
-        switch (logSnapshot[i].type)
+        switch (this->consoleBuffer[i].type)
         {
         case N_MESSAGE:
             col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -438,9 +428,9 @@ ImguiConsole::RenderContent()
         ImGui::PushStyleColor(ImGuiCol_Text, col);
         ImGui::SameLine();
         //Print message prefix
-        if (logSnapshot[i].type != N_MESSAGE)
+        if (this->consoleBuffer[i].type != N_MESSAGE)
         {
-            ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(logSnapshot[i].type));
+            ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(this->consoleBuffer[i].type));
             ImGui::SameLine();
         }
         //Print log entry
@@ -451,11 +441,11 @@ ImguiConsole::RenderContent()
     ImGui::PopTextWrapPos();
 
     static SizeT lastConsoleBufferSize = 0;
-    if (this->scrollToBottom && logSnapshot.Size() != lastConsoleBufferSize)
+    if (this->scrollToBottom && this->consoleBuffer.Size() != lastConsoleBufferSize)
     {
         ImGui::SetScrollHereY();
     }
-    lastConsoleBufferSize = logSnapshot.Size();
+    lastConsoleBufferSize = this->consoleBuffer.Size();
 
     ImGui::PopStyleVar();
     ImGui::EndChild();
