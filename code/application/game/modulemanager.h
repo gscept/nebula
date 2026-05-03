@@ -65,6 +65,9 @@ private:
 
     Util::Array<LoadedModule> loadedModules;
     Util::Array<Util::String> pendingReloads;
+#if __WIN32__
+    uint windowsShadowCopySerial = 1;
+#endif
 };
 
 } // namespace Game
