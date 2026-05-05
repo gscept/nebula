@@ -16,7 +16,7 @@ namespace Attr
 /**
     Common attributes
 */
-DeclareGuid(Guid, 'auid', AccessMode::ReadOnly);
-DeclareString(Name, 'anme', AccessMode::ReadWrite);
+DeclareAttrGuid(Guid);
+DeclareAttrString(Name);
 
 } // namespace Attr

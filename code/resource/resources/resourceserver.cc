@@ -5,10 +5,22 @@
 #include "foundation/stdneb.h"
 #include "resourceserver.h"
 #include "profiling/profiling.h"
+#include "db/sqlite3/sqlite3factory.h"
+#include "io/ioserver.h"
+#include "attr/attribute.h"
 
 #if NEBULA_DEBUG
 #include "core/sysfunc.h"
 #endif
+
+namespace Attr
+{
+DefineAttrInt(URNHash, 'FURN', Attr::ReadWrite);
+DefineAttrString(Export, 'FEXP', Attr::ReadWrite);
+DefineAttrString(Work, 'FWOR', Attr::ReadWrite);
+}
+
+
 namespace Resources
 {
 
@@ -44,6 +56,42 @@ ResourceServer::Open()
     this->loaders.Reserve(256); // lower 8 bits of resource id can only get to 256
     this->open = true;
     UniquePoolCounter = 0;
+
+    // Read the resource table and populate URN -> URI lookup map
+    IO::URI resTableUri("export:resource_mapping.sqlite");
+
+    if (this->dbFactory == nullptr)
+    {
+        this->dbFactory = Db::Sqlite3Factory::Create();
+    }
+    this->database = Db::DbFactory::Instance()->CreateDatabase();
+
+    // Determine access mode
+    IO::IoServer* ioServer = IO::IoServer::Instance();
+    Db::Database::AccessMode accessMode = Db::Database::ReadWriteCreate;
+
+    this->database->SetURI(resTableUri);
+    this->database->SetAccessMode(accessMode);
+    this->database->SetIgnoreUnknownColumns(false);
+
+    // Use memory database if we're not in editor as it can modify the database
+#if WITH_NEBULA_EDITOR == 0
+    this->database->SetInMemoryDatabase(true);
+#endif
+
+    // Try to open database
+    if (!this->database->Open())
+    {
+        n_printf("Failed to open resource lookup database at %s\n", resTableUri.AsString().AsCharPtr());
+    }
+    else
+    {
+        if (!this->database->HasTable("Mappings"))
+        {
+            // Close database, it's invalid
+            this->database = nullptr;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

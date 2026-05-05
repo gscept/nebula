@@ -44,5 +44,6 @@ ID_24_8_NAMED_TYPE(ResourceUnknownId, resourceId, generation, id);
         constexpr type(const Resources::ResourceId& res) : Resources::ResourceUnknownId(res.resourceId, res.generation) {};\
         constexpr type(const Ids::Id24 id, const Ids::Id8 generation) : Resources::ResourceUnknownId(id, generation) {};\
         constexpr type(const Ids::Id32 id) : Resources::ResourceUnknownId(Ids::Index(id), Ids::Generation(id)) {};\
+        constexpr operator Resources::ResourceId() const { return Resources::ResourceId(this->id, 0xFF, 0xFFFFFF, this->generation); }\
     }; \
     static constexpr type Invalid##type = Resources::InvalidResourceUnknownId;

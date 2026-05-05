@@ -140,6 +140,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     }
     else
     {
+        this->UpdateResourceMapping("urn:msh:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Mesh].LocalPath());
         outputFiles.Append(destinationFiles[DestinationFile::Mesh]);
     }
     
@@ -172,6 +173,7 @@ ModelExporter::ExportFile(const IO::URI& file)
         }
         else
         {
+            this->UpdateResourceMapping("urn:phy:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Physics].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Physics]);
         }
 
@@ -200,6 +202,7 @@ ModelExporter::ExportFile(const IO::URI& file)
         }
         else
         {
+            this->UpdateResourceMapping("urn:ani:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Animation].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Animation]);
         }
 
@@ -218,6 +221,7 @@ ModelExporter::ExportFile(const IO::URI& file)
         }
         else
         {
+            this->UpdateResourceMapping("urn:ske:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Skeleton].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Skeleton]);
         }
 

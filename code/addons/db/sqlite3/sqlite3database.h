@@ -20,15 +20,15 @@
 namespace Attr
 {
     // some SQLite-internal names
-    DeclareString(name, 'name', ReadOnly);
-    DeclareString(type, 'type', ReadOnly);
-    DeclareInt(cid, 'cid_', ReadOnly);
-    DeclareInt(notnull, 'ntnl', ReadOnly);
-    DeclareBlob(dflt_value, 'dflv', ReadOnly);
-    DeclareBool(pk, 'pk__', ReadOnly);
-    DeclareInt(seq, 'seq_', ReadOnly);
-    DeclareBool(unique, 'uniq', ReadOnly);
-    DeclareInt(seqno, 'sqno', ReadOnly);
+    DeclareAttrString(name);
+    DeclareAttrString(type);
+    DeclareAttrInt(cid);
+    DeclareAttrInt(notnull);
+    DeclareAttrBlob(dflt_value);
+    DeclareAttrBool(pk);
+    DeclareAttrInt(seq);
+    DeclareAttrBool(unique);
+    DeclareAttrInt(seqno);
 }
 
 //------------------------------------------------------------------------------

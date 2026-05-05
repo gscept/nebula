@@ -9,10 +9,10 @@
 
 namespace Attr
 {
-    DefineString(AttrName, 'ATNA', Attr::ReadWrite);
-    DefineString(AttrType, 'ATTY', Attr::ReadWrite);
-    DefineBool(AttrReadWrite, 'ATRW', Attr::ReadWrite);
-    DefineBool(AttrDynamic, 'ATDY', Attr::ReadWrite);
+    DefineAttrString(AttrName, 'ATNA', Attr::ReadWrite);
+    DefineAttrString(AttrType, 'ATTY', Attr::ReadWrite);
+    DefineAttrBool(AttrReadWrite, 'ATRW', Attr::ReadWrite);
+    DefineAttrBool(AttrDynamic, 'ATDY', Attr::ReadWrite);
 }
 
 namespace Db

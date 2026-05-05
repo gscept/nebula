@@ -55,6 +55,7 @@ public:
     AssetBrowser* browser;
 
     volatile float progress = 0.0f;
+
     /// 
     void DoWork() override
     {
@@ -62,15 +63,15 @@ public:
         Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
         ToolkitUtil::Logger logger;
         ToolkitUtil::FileDB fileDB;
-        fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
+        fileDB.SetDatabaseURI(IO::URI("int:filedb.sqlite"));
         fileDB.Open(logger, false);
         this->browser->ScanFolderTree(fileDB, "export", "export:", false);
         this->progress = 0.25f;
         this->browser->ScanFolderTree(fileDB, "sysexport", "export:", true);
         this->progress = 0.5f;
-        this->browser->ScanFolderTree(fileDB, "work", "proj:work/", false);
+        this->browser->ScanFolderTree(fileDB, "work", "proj:work", false);
         this->progress = 0.75f;
-        this->browser->ScanFolderTree(fileDB, "syswork", "tool:syswork/", false);
+        this->browser->ScanFolderTree(fileDB, "syswork", "tool:syswork", false);
         this->progress = 1.0f;
 
         this->browser->isDoneRefreshingCaches.Set();

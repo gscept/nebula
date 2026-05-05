@@ -13,6 +13,8 @@
 #include "toolkit-common/logger.h"
 #include "net/socket/socket.h"
 #include "io/console.h"
+#include "db/database.h"
+#include "db/dbfactory.h"
 
 typedef void (*ExporterProgressCallback) (float progress, const Util::String& status);
 typedef void (*ExporterMinMaxCallback) (int min, int max);
@@ -88,6 +90,9 @@ public:
     /// sets progress precision
     void SetProgressPrecision(int precision);
 
+    /// Update resource mappings
+    void UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp);
+
 protected:
 
     /// reports an error, depending on what read state we are in, the error will be fatal or a warning
@@ -109,6 +114,9 @@ protected:
     ExporterProgressCallback progressCallback;
     ExporterMinMaxCallback  minMaxCallback;
     ToolkitUtil::Logger* logger;
+
+    Ptr<Db::Database> database;
+    Ptr<Db::DbFactory> dbFactory;
 
     bool hasErrors;
 

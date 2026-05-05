@@ -43,18 +43,21 @@ ParticleExporter::ExportFile(const IO::URI& file)
     // deduct file name from URL
     String fileName = localPath.ExtractFileName();
     fileName.StripFileExtension();
-    String catName = localPath.ExtractLastDirName();
-    String dst = String::Sprintf("par:%s/%s.par", catName.AsCharPtr(), fileName.AsCharPtr());
+    this->category = localPath.ExtractLastDirName();
+    String dst = String::Sprintf("par:%s/%s.par", this->category.AsCharPtr(), fileName.AsCharPtr());
 
     // create folder if it doesn't exist
-    if (!IoServer::Instance()->DirectoryExists("par:" + catName))
+    if (!IoServer::Instance()->DirectoryExists("par:" + this->category))
     {
-        IoServer::Instance()->CreateDirectory("par:" + catName);
+        IoServer::Instance()->CreateDirectory("par:" + this->category);
     }
 
     // simply convert xml to binary
-    this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("par:%s/%s.par", catName.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
+    this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("par:%s/%s.par", this->category.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     IoServer::Instance()->CopyFile(localPath, dst);
+
+    Util::String urn = Util::String::Sprintf("urn:par:%s/%s", this->category.AsCharPtr(), fileName.AsCharPtr());
+    this->UpdateResourceMapping(urn, file.AsString(), IO::URI(dst).LocalPath());
 }
 
 } // namespace ToolkitUtil

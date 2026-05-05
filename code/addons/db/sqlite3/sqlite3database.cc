@@ -15,15 +15,15 @@
 namespace Attr
 {
     // some SQLite-internal names
-    DefineString(name, 'name', ReadOnly);
-    DefineString(type, 'type', ReadOnly);
-    DefineInt(cid, 'cid_', ReadOnly);
-    DefineInt(notnull, 'ntnl', ReadOnly);
-    DefineBlob(dflt_value, 'dflv', ReadOnly);
-    DefineBool(pk, 'pk__', ReadOnly);
-    DefineInt(seq, 'seq_', ReadOnly);
-    DefineBool(unique, 'uniq', ReadOnly);
-    DefineInt(seqno, 'sqno', ReadOnly);
+    DefineAttrString(name, 'name', ReadOnly);
+    DefineAttrString(type, 'type', ReadOnly);
+    DefineAttrInt(cid, 'cid_', ReadOnly);
+    DefineAttrInt(notnull, 'ntnl', ReadOnly);
+    DefineAttrBlob(dflt_value, 'dflv', ReadOnly);
+    DefineAttrBool(pk, 'pk__', ReadOnly);
+    DefineAttrInt(seq, 'seq_', ReadOnly);
+    DefineAttrBool(unique, 'uniq', ReadOnly);
+    DefineAttrInt(seqno, 'sqno', ReadOnly);
 };
 
 namespace Db

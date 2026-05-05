@@ -10,6 +10,8 @@
 #include "nflatbuffer/flatbufferinterface.h"
 #include "toolkit-common/text.h"
 #include "io/jsonreader.h"
+#include "db/dataset.h"
+#include "db/sqlite3/sqlite3factory.h"
 
 using namespace Util;
 using namespace IO;
@@ -87,7 +89,9 @@ AssetExporter::ExportFile(const IO::URI& file)
 {
     IoServer* ioServer = IoServer::Instance();
     Util::String const ext = file.AsString().GetFileExtension();
-    Util::String const fileName = file.AsString().ExtractFileName();
+    Util::String fileName = file.AsString().ExtractFileName();
+    fileName.StripFileExtension();
+
 
     if ((this->mode & ExportModes::GLTF) && (ext == "gltf" || ext == "glb"))
     {
@@ -155,13 +159,21 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->textureExporter.SetLogger(this->logger);
 
         Util::String dstDir = Util::String::Sprintf("tex:%s", category.AsCharPtr());
-        
         Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), fileName.AsCharPtr());
-        dstFile.StripFileExtension();
+        bool res = false;
         if (ext == "cube")
-            this->textureExporter.ConvertCubemap(file.AsString(), dstFile, "temp:textureconverter");
+            res = this->textureExporter.ConvertCubemap(file.AsString(), dstFile, "temp:textureconverter");
         else
-            this->textureExporter.ConvertTexture(file.AsString(), dstFile, "temp:textureconverter");
+            res = this->textureExporter.ConvertTexture(file.AsString(), dstFile, "temp:textureconverter");
+
+        // If successful, add to database
+        if (res)
+        {
+            dstFile.ChangeFileExtension("dds");
+            fileName.StripFileExtension();
+            Util::String urn = Util::String::Sprintf("urn:tex:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
+            this->UpdateResourceMapping(urn, file.AsString(), IO::URI(dstFile).LocalPath());
+        }
     }
     else if ((this->mode & ExportModes::Surfaces) && ext == "sur")
     {
@@ -184,18 +196,22 @@ AssetExporter::ExportFile(const IO::URI& file)
     {
         Util::String dstDir = Util::String::Sprintf("dst:audio/%s", category.AsCharPtr());
         ioServer->CreateDirectory(dstDir);
-        Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), fileName.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s/%s.%s", dstDir.AsCharPtr(), fileName.AsCharPtr(), ext.AsCharPtr());
         this->logger->Print(
             "%s -> %s\n",
             Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(),
             Text(URI(dstFile).LocalPath()).Color(TextColor::Green).AsCharPtr()
         );
-        ioServer->CopyFile(file, dstFile);
+        if (ioServer->CopyFile(file, dstFile))
+        {
+            Util::String urn = Util::String::Sprintf("urn:aud:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
+            this->UpdateResourceMapping(urn, file.AsString(), dstFile);
+        }
     }
     else if ((this->mode & ExportModes::Physics) && ext == "actor")
     {
         Util::String dstDir = Util::String::Sprintf("dst:physics/%s", category.AsCharPtr());
-        Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), fileName.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s/%s.%s", dstDir.AsCharPtr(), fileName.AsCharPtr(), ext.AsCharPtr());
         if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file.AsString(), dstFile))
         {
             this->logger->Print(
@@ -203,7 +219,11 @@ AssetExporter::ExportFile(const IO::URI& file)
                 Text(Format("%s", file.AsString().AsCharPtr())).Color(TextColor::Blue).AsCharPtr(),
                 Text(URI(dstFile).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()
             );
-            Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO");
+            if (Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO"))
+            {
+                Util::String urn = Util::String::Sprintf("urn:phy:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
+                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
+            }
         }
         else
         {

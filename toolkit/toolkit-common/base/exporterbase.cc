@@ -10,6 +10,12 @@
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 
+#include "db/dataset.h"
+#include "db/sqlite3/sqlite3factory.h"
+
+#include "resources/resourceserver.h"
+#include "core/ptr.h"
+
 using namespace ToolkitUtil;
 using namespace Net;
 #if __WIN32__
@@ -57,6 +63,42 @@ ExporterBase::Open()
 {
 	n_assert(!this->isOpen);
 	this->isOpen = true;
+
+    // Read the resource table and populate URN -> URI lookup map
+    URI resTableUri("export:resource_mappings.sqlite");
+
+    // Determine access mode
+    IoServer* ioServer = IoServer::Instance();
+    Db::Database::AccessMode accessMode = Db::Database::ReadWriteCreate;
+
+    // Create database factory and database
+    if (!Db::Sqlite3Factory::HasInstance())
+    {
+        this->dbFactory = Db::Sqlite3Factory::Create();
+    }
+    this->database = Db::DbFactory::Instance()->CreateDatabase();
+    this->database->SetURI(resTableUri);
+    this->database->SetAccessMode(accessMode);
+    this->database->SetIgnoreUnknownColumns(false);
+    this->database->SetInMemoryDatabase(false);
+
+    bool opened = this->database->Open();
+    n_assert_msg(opened, "Resource mapping database failed to open. Ensure no other process is using the file");
+
+    // If database is new, set it up
+    if (!this->database->HasTable("Mappings"))
+    {
+        // ==================== Create Export mappings Table ====================
+        {
+            Ptr<Db::Table> exportTable = Db::DbFactory::Instance()->CreateTable();
+            exportTable->SetName("Mappings");
+            exportTable->AddColumn(Db::Column(Attr::URNHash, Db::Column::Primary));
+            exportTable->AddColumn(Db::Column(Attr::Export, Db::Column::Default));
+            exportTable->AddColumn(Db::Column(Attr::Work, Db::Column::Default));
+
+            this->database->AddTable(exportTable);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -318,6 +360,39 @@ ExporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::U
 		writer->End();
 		writer->Close();
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ExporterBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
+{
+    Ptr<Db::Table> exportMappings = this->database->GetTableByName("Mappings");
+    Ptr<Db::Dataset> exportDataset = exportMappings->CreateDataset();
+    Ptr<Db::FilterSet> filter = exportDataset->Filter();
+
+    exportDataset->AddColumn(Attr::URNHash);
+    exportDataset->AddColumn(Attr::Export);
+    exportDataset->AddColumn(Attr::Work);
+
+    int urnHash = urn.HashCode();
+    filter->AddEqualCheck(Attr::Attribute(Attr::URNHash, urnHash));
+    exportDataset->PerformQuery();
+    Ptr<Db::ValueTable> exportValues = exportDataset->Values();
+    IndexT rowIdx = 0;
+    if (exportValues->GetNumRows() == 0)
+    {
+        exportValues->AddRow();
+        rowIdx = exportValues->GetNumRows() - 1;
+    }
+
+    exportValues->AddRow();
+    exportValues->SetInt(Attr::URNHash, rowIdx, urnHash);
+    exportValues->SetString(Attr::Export, rowIdx, exp);
+    exportValues->SetString(Attr::Work, rowIdx, work);
+
+    exportDataset->CommitChanges();
 }
 
 

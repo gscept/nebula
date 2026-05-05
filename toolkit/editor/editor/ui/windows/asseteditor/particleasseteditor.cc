@@ -367,8 +367,8 @@ DrawCurvePreview(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, bool& t
     ImGui::PopID();
 }
 
-bool HasRetainedCurve = false;
-Particles::EnvelopeCurve RetainedCurve;
+bool IsEditingCurve = false;
+Particles::EnvelopeCurve EditingCurve;
 //------------------------------------------------------------------------------
 /**
 */
@@ -396,6 +396,11 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
     {
         modifyLimits[1] = Math::max(modifyLimits[0], modifyLimits[1]);
         changed = true;
+        if (!IsEditingCurve)
+        {
+            IsEditingCurve = true;
+            EditingCurve = curve;
+        }
         for (uint i = 0; i < 4; i++)
         {
             float newValue = modifyValues[i];
@@ -412,6 +417,11 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
     {
         modifyLimits[0] = Math::min(modifyLimits[0], modifyLimits[1]);
         changed = true;
+        if (!IsEditingCurve)
+        {
+            IsEditingCurve = true;
+            EditingCurve = curve;
+        }
         for (uint i = 0; i < 4; i++)
         {
             float newValue = modifyValues[i];
@@ -475,10 +485,10 @@ DrawCurve(ImDrawList* draw_list, Particles::EnvelopeCurve& curve, float min, flo
 
         if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
         {
-            if (!HasRetainedCurve)
+            if (!IsEditingCurve)
             {
-                HasRetainedCurve = true;
-                RetainedCurve = curve;
+                IsEditingCurve = true;
+                EditingCurve = curve;
             }
             float y_val = modifyValues[i];
             if (i == 1)
@@ -546,15 +556,15 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 {\
                     data->emitters[selectedEmitter].attrs->SetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName, curve);\
                 }\
-                else  if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) && HasRetainedCurve)\
+                else  if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) && IsEditingCurve)\
                 {\
-                    HasRetainedCurve = false;\
+                    IsEditingCurve = false;\
                     auto cmd = new CMDParticleSetCurve;\
                     cmd->item = item;\
                     cmd->assetEditor = assetEditor;\
                     cmd->index = selectedEmitter;\
                     cmd->attr = Particles::EmitterAttrs::EnvelopeAttr::attrName;\
-                    cmd->oldValue = RetainedCurve;\
+                    cmd->oldValue = EditingCurve;\
                     cmd->newValue = curve;\
                     Edit::CommandManager::Execute(cmd);\
                     Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\
@@ -581,14 +591,15 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             {\
                 if (DrawCurve(draw_list, curve, min, max, EditorsOpen[Particles::EmitterAttrs::EnvelopeAttr::attrName])) \
                 {\
-                    if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left))\
+                    if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) && IsEditingCurve)\
                     {\
+                        IsEditingCurve = false;\
                         auto cmd = new CMDParticleSetCurve;\
                         cmd->item = item;\
                         cmd->assetEditor = assetEditor;\
                         cmd->index = selectedEmitter;\
                         cmd->attr = Particles::EmitterAttrs::EnvelopeAttr::attrName;\
-                        cmd->oldValue = data->emitters[selectedEmitter].attrs->GetEnvelope(Particles::EmitterAttrs::EnvelopeAttr::attrName); \
+                        cmd->oldValue = EditingCurve; \
                         cmd->newValue = curve;\
                         Edit::CommandManager::Execute(cmd);\
                         Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);\

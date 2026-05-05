@@ -18,10 +18,10 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
-    DeclareString(AttrName, 'ATNA', Attr::ReadWrite);
-    DeclareString(AttrType, 'ATTY', Attr::ReadWrite);
-    DeclareBool(AttrReadWrite, 'ATRW', Attr::ReadWrite);
-    DeclareBool(AttrDynamic, 'ATDY', Attr::ReadWrite);
+    DeclareAttrString(AttrName);
+    DeclareAttrString(AttrType);
+    DeclareAttrBool(AttrReadWrite);
+    DeclareAttrBool(AttrDynamic);
 }
 //------------------------------------------------------------------------------
 namespace Db
