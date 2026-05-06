@@ -245,8 +245,8 @@ DownsamplingContext::Setup()
         constants.NumGroups = dispatchX * dispatchY;
         for (size_t i = 0; i < constants.Mips; i++)
         {
-            constants.Dimensions[i][0] = (viewport.width() - 1) << i;
-            constants.Dimensions[i][1] = (viewport.height()- 1)  << i;
+            constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
+            constants.Dimensions[i][1] = (viewport.height() - 1)  >> i;
         }
         CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
 
@@ -268,8 +268,8 @@ DownsamplingContext::Setup()
         constants.NumGroups = dispatchX * dispatchY;
         for (size_t i = 0; i < constants.Mips; i++)
         {
-            constants.Dimensions[i][0] = (viewport.width() - 1) << i;
-            constants.Dimensions[i][1] = (viewport.height() - 1) << i;
+            constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
+            constants.Dimensions[i][1] = (viewport.height() - 1) >> i;
         }
         CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
 
