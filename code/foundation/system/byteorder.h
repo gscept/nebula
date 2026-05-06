@@ -21,10 +21,8 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
-#if !__OSX__
 #include "math/vec4.h"
 #include "math/mat4.h"
-#endif
 
 //------------------------------------------------------------------------------
 namespace System

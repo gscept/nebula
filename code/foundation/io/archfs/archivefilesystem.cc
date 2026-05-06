@@ -8,7 +8,7 @@
 
 namespace IO
 {
-#if __WIN32__ || __linux__
+#if __WIN32__ || __linux__ || __APPLE__
 __ImplementClass(IO::ArchiveFileSystem, 'ARFS', IO::ZipFileSystem);
 __ImplementInterfaceSingleton(IO::ArchiveFileSystem);
 #else

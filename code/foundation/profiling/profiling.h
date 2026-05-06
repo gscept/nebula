@@ -71,8 +71,6 @@ Timing::Time ProfilingGetTime();
 /// register a new thread for the profiling
 void ProfilingRegisterThread(int priority = 0);
 
-/// get all top level scopes based on thread, only run when you know the thread is finished
-const Util::Array<ProfilingScope>& ProfilingGetScopes(Threading::ThreadId thread);
 /// get all profiling contexts
 const Util::Array<ProfilingContext> ProfilingGetContexts();
 /// clear all scopes

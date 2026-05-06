@@ -12,7 +12,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __OSX__ || __linux__)
+#if (__WIN32__ || __APPLE__ || __linux__)
 #include "io/base/gamecontentserverbase.h"
 namespace IO
 {

@@ -11,9 +11,7 @@
 */
 #if __WIN32__
 #include "core/win32/win32singleton.h"
-#elif __OSX__
-#include "core/osx/osxsingleton.h"
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "core/posix/posixsingleton.h"
 #else
 #error "IMPLEMENT ME!"

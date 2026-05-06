@@ -3,7 +3,7 @@
 //  (C) 2006 Radon Labs GmbH
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
 #include "threading/posix/posixthread.h"
 #include <limits.h>
 
@@ -15,6 +15,11 @@ __ImplementClass(Posix::PosixThread, 'THRD', Core::RefCounted);
 __thread const char* PosixThread::ThreadName = 0; 
 #endif
 
+#if NEBULA_DEBUG
+Threading::CriticalSection PosixThread::criticalSection;
+Util::List<PosixThread*> PosixThread::ThreadList;
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -22,8 +27,7 @@ PosixThread::PosixThread() :
     threadHandle(0),
     running(false),
     priority(Normal),
-    stackSize(4096),
-    coreId(System::Cpu::Core0)
+    stackSize(4096)
 {
     // empty
 }
@@ -167,7 +171,11 @@ PosixThread::GetMyThreadName()
 Threading::ThreadId
 PosixThread::GetMyThreadId()
 {
+#if __APPLE__
+    return reinterpret_cast<uint64_t>(pthread_self());
+#else
     return pthread_self();
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -187,13 +195,48 @@ Posix::PosixThread::YieldThread()
 
 //------------------------------------------------------------------------------
 /**
+    Returns an array with infos about all currently existing thread objects.
+*/
+#if NEBULA_DEBUG
+Util::Array<PosixThread::ThreadDebugInfo>
+PosixThread::GetRunningThreadDebugInfos()
+{
+    // NOTE: Portions of this loop aren't completely thread-safe
+    // (getting the thread-name for instance), but since those
+    // attributes don't change when the thread has been started
+    // this shouldn't be a problem.
+    Util::Array<ThreadDebugInfo> infos;
+    PosixThread::criticalSection.Enter();
+    Util::List<PosixThread*>::Iterator iter;
+    for (iter = ThreadList.Begin(); iter != ThreadList.End(); iter++)
+    {
+        PosixThread* cur = *iter;
+        if (cur->IsRunning())
+        {
+            ThreadDebugInfo info;
+            info.threadName = cur->GetName();
+            info.threadPriority = cur->GetPriority();
+            info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
+            info.threadStackSize = cur->GetStackSize();
+            infos.Append(info);
+        }
+    }
+    PosixThread::criticalSection.Leave();
+    return infos;
+}
+#endif
+
+//------------------------------------------------------------------------------
+/**
  */
 void
 PosixThread::SetThreadAffinity(uint mask)
 {
-    n_assert(this->threadHandle != 0);
-    CPU_SET(mask, &this->affinity);
-    pthread_set_affinity_np(this->threadHandle, sizeof(cpu_set_t), &this->affinity);
+    if (this->threadHandle != 0)
+    {
+        
+    }
+    // TODO: MacOS doesn't seem to support this
 }
     
 };
