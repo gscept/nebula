@@ -60,7 +60,7 @@ ResourceServer::Open()
     // Read the resource table and populate URN -> URI lookup map
     IO::URI resTableUri("export:resource_mapping.sqlite");
 
-    if (this->dbFactory == nullptr)
+    if (!Db::Sqlite3Factory::HasInstance())
     {
         this->dbFactory = Db::Sqlite3Factory::Create();
     }

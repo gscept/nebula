@@ -113,7 +113,7 @@ FileDB::Open(Logger& logger, bool memoryOnly)
     n_assert(this->databaseURI.IsValid());
 
     // Create database factory and database
-    if (this->dbFactory == nullptr)
+    if (!Db::Sqlite3Factory::HasInstance())
     {
         this->dbFactory = Db::Sqlite3Factory::Create();
     }
