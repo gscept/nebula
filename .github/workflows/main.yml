@@ -23,7 +23,7 @@ jobs:
         name: [windows-latest, ubuntu-24.04]
         include:
           - name: windows-latest
-            os: windows-latest
+            os: windows-2025-vs2026
             config: win64-vstudio-debug
             physx: vc17
             physxkey: vc17
