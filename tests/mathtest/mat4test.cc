@@ -226,12 +226,12 @@ Mat4Test::Run()
                                 vec4(0.0f,       0.0f,      0.0f, 1.0f))));
 
     // affinetransformation
-    const mat4 affine = affinetransformation(0.1f,
+    const mat4 affinemat = affinetransformation(0.1f,
                                              vec3(0.5f, 3.0f, -1.7f), 
                                              outRotation, 
                                              vec3(-20.0f, 17.0f, 9.0f));
 
-    VERIFY(matnearequal(affine, mat4(vec4(  0.1f,       0.0f,      0.0f, 0.0f),
+    VERIFY(matnearequal(affinemat, mat4(vec4(  0.1f,       0.0f,      0.0f, 0.0f),
                                      vec4(  0.0f,  0.054030f, 0.084147f, 0.0f),
                                      vec4(  0.0f, -0.084147f, 0.054030f, 0.0f),
                                      vec4(-20.0f, 16.948593f, 5.694101f, 1.0f))));
