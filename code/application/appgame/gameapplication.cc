@@ -166,7 +166,8 @@ GameApplication::Open()
         if (this->runtimeModuleConfigs.Size() > 0)
         {
             this->moduleManager = Game::ModuleManager::Create();
-            const bool loaded = this->moduleManager->LoadModules(this->runtimeModuleConfigs, this->gameServer, this->runtimeModuleStrictMode);
+            
+            const bool loaded = this->moduleManager->LoadModules(this->runtimeModuleConfigs.ValuesAsArray(), this->gameServer, this->runtimeModuleStrictMode);
             if (!loaded && this->runtimeModuleStrictMode)
             {
                 n_warning("GameApplication::Open(): runtime module loading failed in strict mode\n");
@@ -261,6 +262,28 @@ GameApplication::Run()
     while (!inputServer->IsQuitRequested())
     {
         this->StepFrame();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GameApplication::EnableRuntimeModule(const Util::String& moduleName, bool required)
+{
+    if (this->runtimeModuleConfigs.FindIndex(moduleName) == InvalidIndex)
+    {
+        Game::RuntimeModuleConfig config;
+        config.name = moduleName;
+        config.enabled = true;
+        config.required = required;
+        this->runtimeModuleConfigs.Add(moduleName, config);
+    }
+    else
+    {
+        Game::RuntimeModuleConfig &config = this->runtimeModuleConfigs[moduleName];
+        config.enabled = true;
+        config.required = required;
     }
 }
 
@@ -373,20 +396,6 @@ GameApplication::SetupRuntimeModulesFromCmdLineArgs()
     this->runtimeModuleStrictMode = false;
     const Util::CommandLineArgs& args = this->GetCmdLineArgs();
 
-    auto findModuleConfig = [this](const Util::String& moduleName) -> IndexT
-    {
-        Util::String check = moduleName;
-        check.ToLower();
-        for (IndexT i = 0; i < this->runtimeModuleConfigs.Size(); i++)
-        {
-            Util::String candidate = this->runtimeModuleConfigs[i].name;
-            candidate.ToLower();
-            if (candidate == check)
-                return i;
-        }
-        return InvalidIndex;
-    };
-
     // Initialize runtime modules from project settings. CLI flags can then
     // override these values on a per-module basis.
     for (IndexT i = 0; i < (IndexT)Options::ProjectSettings.runtime_modules.size(); i++)
@@ -403,7 +412,7 @@ GameApplication::SetupRuntimeModulesFromCmdLineArgs()
         config.path = moduleSettings->path.c_str();
         config.enabled = moduleSettings->enabled;
         config.required = moduleSettings->required;
-        this->runtimeModuleConfigs.Append(config);
+        this->runtimeModuleConfigs.Add(config.name, config);
     }
 
     this->runtimeModuleStrictMode = Options::ProjectSettings.runtime_modules_strict;
@@ -416,17 +425,17 @@ GameApplication::SetupRuntimeModulesFromCmdLineArgs()
             if (!modules[i].IsValid())
                 continue;
 
-            IndexT index = findModuleConfig(modules[i]);
+            IndexT index = this->runtimeModuleConfigs.FindIndex(modules[i]);
             if (index == InvalidIndex)
             {
                 Game::RuntimeModuleConfig config;
                 config.name = modules[i];
                 config.enabled = true;
-                this->runtimeModuleConfigs.Append(config);
+                this->runtimeModuleConfigs.Add(config.name, config);
             }
             else
             {
-                this->runtimeModuleConfigs[index].enabled = true;
+                this->runtimeModuleConfigs.ValueAtIndex(index).enabled = true;
             }
         }
     }
@@ -444,18 +453,18 @@ GameApplication::SetupRuntimeModulesFromCmdLineArgs()
                 continue;
             }
 
-            IndexT index = findModuleConfig(pair[0]);
+            IndexT index = this->runtimeModuleConfigs.FindIndex(pair[0]);
             if (index == InvalidIndex)
             {
                 Game::RuntimeModuleConfig config;
                 config.name = pair[0];
                 config.path = pair[1];
                 config.enabled = true;
-                this->runtimeModuleConfigs.Append(config);
+                this->runtimeModuleConfigs.Add(config.name, config);
             }
             else
             {
-                this->runtimeModuleConfigs[index].path = pair[1];
+                this->runtimeModuleConfigs.ValueAtIndex(index).path = pair[1];
             }
         }
     }
@@ -468,17 +477,17 @@ GameApplication::SetupRuntimeModulesFromCmdLineArgs()
             if (!disabledModules[i].IsValid())
                 continue;
 
-            IndexT index = findModuleConfig(disabledModules[i]);
+            IndexT index = this->runtimeModuleConfigs.FindIndex(disabledModules[i]);
             if (index == InvalidIndex)
             {
                 Game::RuntimeModuleConfig config;
                 config.name = disabledModules[i];
                 config.enabled = false;
-                this->runtimeModuleConfigs.Append(config);
+                this->runtimeModuleConfigs.Add(config.name, config);
             }
             else
             {
-                this->runtimeModuleConfigs[index].enabled = false;
+                this->runtimeModuleConfigs.ValueAtIndex(index).enabled = false;
             }
         }
     }

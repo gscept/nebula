@@ -119,28 +119,7 @@ LevelViewerGameStateApplication::SetupRuntimeModulesFromCmdLineArgs()
 {
     GameApplication::SetupRuntimeModulesFromCmdLineArgs();
 
-    Util::String moduleName = "navigationfeaturemodule";
-    bool found = false;
-    for (IndexT i = 0; i < this->runtimeModuleConfigs.Size(); i++)
-    {
-        Util::String candidate = this->runtimeModuleConfigs[i].name;
-        candidate.ToLower();
-        if (candidate == moduleName)
-        {
-            this->runtimeModuleConfigs[i].enabled = true;
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
-    {
-        Game::RuntimeModuleConfig config;
-        config.name = moduleName;
-        config.enabled = true;
-        config.required = false;
-        this->runtimeModuleConfigs.Append(config);
-    }
+    this->EnableRuntimeModule("navigationfeaturemodule", true);
 }
 
 //------------------------------------------------------------------------------

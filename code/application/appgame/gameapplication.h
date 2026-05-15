@@ -63,6 +63,8 @@ protected:
     virtual void SetupAppFromCmdLineArgs();
     /// parse runtime module startup options from command line
     virtual void SetupRuntimeModulesFromCmdLineArgs();
+    /// enable runtime module
+    void EnableRuntimeModule(const Util::String& moduleName, bool required = false);
     
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
@@ -71,7 +73,7 @@ protected:
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
     Ptr<Game::ModuleManager> moduleManager;
-    Util::Array<Game::RuntimeModuleConfig> runtimeModuleConfigs;
+    Util::Dictionary<Util::String, Game::RuntimeModuleConfig> runtimeModuleConfigs;
     bool runtimeModuleStrictMode;
 
 
