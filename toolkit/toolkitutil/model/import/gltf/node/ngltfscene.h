@@ -29,7 +29,7 @@ public:
     virtual ~NglTFScene();
 
     /// sets up the scene
-    void Setup(Gltf::Document* scene, const ToolkitUtil::ExportFlags& exportFlags, float scale);
+    void Setup(Gltf::Document* scene, const ToolkitUtil::ImportFlags& importFlags, float scale);
 
 private:
     /// Parse GLTF node hierarchy

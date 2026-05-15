@@ -46,21 +46,6 @@ public:
     /// remove state
     void DeleteState(const Util::String& node);
 
-    /// sets emitter attributes for a specific node
-    void SetEmitterAttrs(const Util::String& node, const Particles::EmitterAttrs& attrs);
-    /// gets emitter attributes for a specific node
-    const Particles::EmitterAttrs& GetEmitterAttrs(const Util::String& node);
-    /// returns true if emitter attributes exists for node
-    bool HasEmitterAttrs(const Util::String& node);
-    /// remove emitter attrs for node
-    void DeleteEmitterAttrs(const Util::String& node);
-    /// sets emitter mesh for a specific node
-    void SetEmitterMesh(const Util::String& node, const Util::String& mesh);
-    /// gets emitter mesh for a specific node
-    const Util::String& GetEmitterMesh(const Util::String& node);   
-    /// remove emitter mesh attribute for node
-    void DeleteEmitterMesh(const Util::String& node);
-
     /// adds a take pointer to the list of takes
     void AddTake(const Ptr<Take>& take);
     /// returns take for specific index
@@ -84,9 +69,9 @@ public:
     const Util::Array<JointMask>& GetJointMasks() const;
 
     /// sets the export flags
-    void SetExportFlags(const ToolkitUtil::ExportFlags& exportFlags);
+    void SetImportFlags(const ToolkitUtil::ImportFlags& importFlags);
     /// gets the export flags
-    const ToolkitUtil::ExportFlags& GetExportFlags() const;
+    const ToolkitUtil::ImportFlags& GetExportFlags() const;
 
     /// clears attributes
     void Clear();
@@ -98,15 +83,13 @@ public:
 
 private:
     Util::Dictionary<Util::String, ToolkitUtil::State> nodeStateMap;
-    Util::Dictionary<Util::String, Particles::EmitterAttrs> particleAttrMap;
-    Util::Dictionary<Util::String, Util::String> particleMeshMap;
     Util::String name;
     Util::String checksum;
     float scaleFactor;
     Util::Array<Ptr<Take>> takes;
     Util::Array<JointMask> jointMasks;
 
-    ToolkitUtil::ExportFlags exportFlags;
+    ToolkitUtil::ImportFlags importFlags;
 
     static const short Version = 1;
 }; 
@@ -153,18 +136,18 @@ ModelAttributes::GetScale() const
 /**
 */
 inline void 
-ModelAttributes::SetExportFlags( const ToolkitUtil::ExportFlags& exportFlags )
+ModelAttributes::SetImportFlags( const ToolkitUtil::ImportFlags& importFlags )
 {
-    this->exportFlags = exportFlags;
+    this->importFlags = importFlags;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const ToolkitUtil::ExportFlags& 
+inline const ToolkitUtil::ImportFlags& 
 ModelAttributes::GetExportFlags() const
 {
-    return this->exportFlags;
+    return this->importFlags;
 }
 
 //------------------------------------------------------------------------------

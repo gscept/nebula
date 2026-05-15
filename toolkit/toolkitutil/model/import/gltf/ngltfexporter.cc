@@ -24,12 +24,12 @@
 using namespace Util;
 namespace ToolkitUtil
 {
-__ImplementClass(ToolkitUtil::NglTFExporter, 'glte', Base::ExporterBase);
+__ImplementClass(ToolkitUtil::GltfFileImporter, 'glte', Base::ImporterBase);
 
 //------------------------------------------------------------------------------
 /**
 */
-NglTFExporter::NglTFExporter() 
+GltfFileImporter::GltfFileImporter() 
     : texConverter(nullptr)
 {
     // empty
@@ -38,7 +38,7 @@ NglTFExporter::NglTFExporter()
 //------------------------------------------------------------------------------
 /**
 */
-NglTFExporter::~NglTFExporter()
+GltfFileImporter::~GltfFileImporter()
 {
     // empty
 }
@@ -47,7 +47,7 @@ NglTFExporter::~NglTFExporter()
 /**
 */
 bool 
-NglTFExporter::ParseScene()
+GltfFileImporter::ParseScene()
 {
     this->gltfScene = Gltf::Document();
     bool res = this->gltfScene.Deserialize(this->path.LocalPath().AsCharPtr());
@@ -61,7 +61,7 @@ NglTFExporter::ParseScene()
     auto scene = new NglTFScene();
     scene->SetName(this->file);
     scene->SetCategory(this->category);
-    scene->Setup(&this->gltfScene, this->exportFlags, this->sceneScale);
+    scene->Setup(&this->gltfScene, this->importFlags, this->sceneScale);
     this->texConverter->SetLogger(this->logger);
     this->scene = scene;
 
@@ -69,7 +69,7 @@ NglTFExporter::ParseScene()
     {
         // Extract materials into .sur files
         // Always do this before exporting textures, since the texture names may be changed in the extractor.
-        NglTFMaterialExtractor extractor;
+        GltfFileMaterialExtractor extractor;
         extractor.SetLogger(this->logger);
         extractor.SetCategoryName(this->category);
         extractor.SetDocument(&this->gltfScene);

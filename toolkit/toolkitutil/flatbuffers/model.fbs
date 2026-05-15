@@ -1,0 +1,121 @@
+//------------------------------------------------------------------------------
+//
+//    Model import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+
+enum OptimizationFlags : uint
+{
+	None = 0x0,
+	RemoveRedundantVertices = 0x1,
+	CalculateNormals = 0x2,
+	FlipUVs = 0x4,
+	CalculateTangentFrame = 0x8,
+	CalculateRigidSkinning = 0x10,
+	MergeNodesWithSharedMaterial = 0x20
+}
+
+table ModelResource
+{
+	name : string;
+	bbox_min : Flat.Vec3 (native_inline);
+	bbox_max : Flat.Vec3 (native_inline);
+	shapes : [ShapeNode];
+	characters : [CharacterNode];
+	physics : [PhysicsNode];
+	skins : [SkinNode];
+	takes : [TakeInfo];
+	joint_masks : [JointMaskInfo];
+	scale_factor : float;
+	flags : OptimizationFlags;
+}
+
+table TransformNodeInfo
+{
+	name : string;
+	translation : Flat.Vec3 (native_inline);
+	rotation : Flat.Quat (native_inline);
+	scale : Flat.Vec3 (native_inline);
+}
+
+table ShapeNode
+{
+	transform : TransformNodeInfo;
+	mesh_resource : string;
+	mesh_index : int;
+	material : string;
+	prim_group : ushort;
+	lod_max : float;
+	lod_min : float;
+	use_lod : bool;
+	bbox_min : Flat.Vec3 (native_inline);
+	bbox_max : Flat.Vec3 (native_inline);
+}
+
+table CharacterNode
+{
+	name : string;
+	skeleton_resource : string;
+	skeleton_index : int;
+	animation_resource : string;
+	animation_index : int;
+}
+
+table PhysicsNode
+{
+	transform : TransformNodeInfo;
+	mesh_resource : string;
+	material : string;
+}
+
+table SkinFragmentNode
+{
+	transform : TransformNodeInfo;
+	shape : ShapeNode;
+	joints : [int];
+}
+
+table SkinNode
+{
+	fragments : [SkinFragmentNode];
+	shape : ShapeNode;
+}
+
+table ClipEventInfo
+{
+	type : int;
+	name : string;
+	category : string;
+	time : uint64;
+}
+
+table ClipInfo
+{
+	name: string;
+	start : int;
+	end : int;
+	pre_infinity : int;
+	post_infinity : int;
+	events : [ClipEventInfo];
+}
+
+table TakeInfo
+{
+	name : string;
+	clips : [ClipInfo];
+}
+
+table JointMaskInfo
+{
+	name : string;
+	weights : [float];
+}
+
+
+root_type ModelResource;
+file_identifier "MODE";
+file_extension "namdl";

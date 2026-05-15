@@ -78,7 +78,7 @@ public:
     void ClearPendingUnloads();
 
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
+    Resources::ResourceId CreateResource(const IO::URI& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
@@ -276,7 +276,7 @@ protected:
 
     struct _PlaceholderResource
     {
-        Resources::ResourceName placeholderName;
+        IO::URI placeholderName;
         Resources::ResourceId placeholderId;
     };
     Util::FixedArray<_PlaceholderResource> placeholders;
@@ -285,8 +285,8 @@ protected:
     Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
-    Util::StringAtom placeholderResourceName;
-    Util::StringAtom failResourceName;
+    IO::URI placeholderResourceName;
+    IO::URI failResourceName;
 
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;

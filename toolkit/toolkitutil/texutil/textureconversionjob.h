@@ -22,8 +22,6 @@ public:
     /// Constructor
     TextureConversionJob();
     
-    /// set texture attribute table path
-    void SetTexAttrTable(const TextureAttrTable* table);
     /// set pointer to a valid logger object
     void SetLogger(Logger* logger);
     /// set conversion tool path
@@ -53,10 +51,7 @@ protected:
     /// set destination file extension (call from subclass constructor)
     void SetDstFileExtension(const Util::String & ext);
 
-
-    const TextureAttrTable* textureAttrTable;
     Logger* logger;
-    TextureAttrs textureAttrs;
     Util::String toolPath;
     Util::String dstFileExt;
 
@@ -67,8 +62,6 @@ protected:
     bool force;
     bool quiet;
     bool neverCopy;
-
-
 };
 
 //------------------------------------------------------------------------------
@@ -78,15 +71,6 @@ inline void
 TextureConversionJob::SetLogger(Logger* l)
 {
     this->logger = l;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConversionJob::SetTexAttrTable(const TextureAttrTable* table)
-{
-    this->textureAttrTable = table;
 }
 
 //------------------------------------------------------------------------------

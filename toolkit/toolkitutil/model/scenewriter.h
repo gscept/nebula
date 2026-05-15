@@ -28,19 +28,16 @@ public:
         , const Util::Array<SceneNode*>& graphicsNodes
         , const Util::Array<SceneNode*>& physicsNodes
         , const Util::Array<SceneNode*>& characterNodes
-        , const Util::String& physicsMeshResource
-        , const ToolkitUtil::ExportFlags& flags
+        , const ToolkitUtil::ImportFlags& flags
     );
 private:
 
     /// Create model
     static void CreateModel(
         const Util::String& file
+        , const Math::bbox globalBoundingBox
         , const Scene* scene
         , const Util::String& category
-        , const Ptr<ModelConstants>& constants
-        , const Ptr<ModelAttributes>& attributes
-        , const Ptr<ModelPhysics>& physics
         , const Util::Array<SceneNode*>& graphicsNodes
         , const Util::Array<SceneNode*>& physicsNodes
         , const Util::Array<SceneNode*>& characterNodes

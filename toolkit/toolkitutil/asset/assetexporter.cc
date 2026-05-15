@@ -42,7 +42,7 @@ AssetExporter::~AssetExporter()
 void
 AssetExporter::Open()
 {
-    ExporterBase::Open();
+    ImporterBase::Open();
     this->surfaceExporter = ToolkitUtil::SurfaceExporter::Create();
     this->surfaceExporter->Open();
     this->particleExporter = ToolkitUtil::ParticleExporter::Create();
@@ -64,7 +64,7 @@ AssetExporter::Close()
     this->modelBuilder = nullptr;
     this->textureExporter.Discard();
     this->textureAttrTable.Discard();
-    ExporterBase::Close();
+    ImporterBase::Close();
 }
 
 //------------------------------------------------------------------------------
@@ -85,44 +85,18 @@ AssetExporter::UpdateSource()
 /**
 */
 void
-AssetExporter::ExportFile(const IO::URI& file)
+AssetExporter::ImportFile(const IO::URI& file)
 {
     IoServer* ioServer = IoServer::Instance();
     Util::String const ext = file.AsString().GetFileExtension();
     Util::String fileName = file.AsString().ExtractFileName();
     fileName.StripFileExtension();
 
-
-    if ((this->mode & ExportModes::GLTF) && (ext == "gltf" || ext == "glb"))
-    {
-        this->gltfExporter = ToolkitUtil::NglTFExporter::Create();
-        this->gltfExporter->SetTextureConverter(&this->textureExporter);
-        this->gltfExporter->Open();
-        this->gltfExporter->SetForce(this->force || (this->mode & ExportModes::ForceGLTF) != 0);
-        this->gltfExporter->SetCategory(this->category);
-        this->gltfExporter->SetLogger(this->logger);
-        this->gltfExporter->SetFile(fileName);
-        this->gltfExporter->ExportFile(file);
-        this->gltfExporter->Close();
-        this->gltfExporter = nullptr;
-    }
-    else if ((this->mode & ExportModes::FBX) && ext == "fbx")
-    {
-        this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
-        this->fbxExporter->Open();
-        this->fbxExporter->SetForce(this->force || (this->mode & ExportModes::ForceFBX) != 0);
-        this->fbxExporter->SetCategory(this->category);
-        this->fbxExporter->SetLogger(this->logger);
-        this->fbxExporter->SetFile(fileName);
-        this->fbxExporter->ExportFile(file);
-        this->fbxExporter->Close();
-        this->fbxExporter = nullptr;
-    }
-    else if ((this->mode & ExportModes::Models) && ext == "attributes")
+    if ((this->mode & ExportModes::Models) && ext == "attributes")
     {
         String modelName = fileName;
         modelName.StripFileExtension();
-        modelName = category + "/" + modelName;
+        modelName = this->folder + "/" + modelName;
         Ptr<ModelConstants> constants = ModelDatabase::Instance()->LookupConstants(modelName, true);
         Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(modelName, true);
         Ptr<ModelPhysics> physics = ModelDatabase::Instance()->LookupPhysics(modelName, true);
@@ -158,34 +132,34 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->textureExporter.SetForceFlag(this->force || (this->mode & ExportModes::ForceTextures) != 0);
         this->textureExporter.SetLogger(this->logger);
 
-        Util::String dstDir = Util::String::Sprintf("tex:%s", category.AsCharPtr());
+        Util::String dstDir = Util::String::Sprintf("tex:%s", this->folder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), fileName.AsCharPtr());
         bool res = false;
         if (ext == "cube")
-            res = this->textureExporter.ConvertCubemap(file.AsString(), dstFile, "temp:textureconverter");
+            res = this->textureExporter.ConvertCubemap(file.LocalPath(), dstFile, "temp:textureconverter");
         else
-            res = this->textureExporter.ConvertTexture(file.AsString(), dstFile, "temp:textureconverter");
+            res = this->textureExporter.ConvertTexture(file.LocalPath(), dstFile, "temp:textureconverter");
 
         // If successful, add to database
         if (res)
         {
             dstFile.ChangeFileExtension("dds");
             fileName.StripFileExtension();
-            Util::String urn = Util::String::Sprintf("urn:tex:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
-            this->UpdateResourceMapping(urn, file.AsString(), IO::URI(dstFile).LocalPath());
+            Util::String urn = Util::String::Sprintf("urn:tex:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
+            this->UpdateResourceMapping(urn, file.LocalPath(), IO::URI(dstFile).LocalPath());
         }
     }
     else if ((this->mode & ExportModes::Surfaces) && ext == "sur")
     {
         this->surfaceExporter->SetLogger(this->logger);
         this->surfaceExporter->SetForce(this->force || (this->mode & ExportModes::ForceSurfaces) != 0);
-        this->surfaceExporter->ExportFile(file);
+        this->surfaceExporter->ImportFile(file);
     }
     else if ((this->mode & ExportModes::Particles) && ext == "par")
     {
         this->particleExporter->SetLogger(this->logger);
         this->particleExporter->SetForce(this->force || (this->mode & ExportModes::ForceParticles) != 0);
-        this->particleExporter->ExportFile(file);
+        this->particleExporter->ImportFile(file);
     }
     else if ((this->mode & ExportModes::Audio) &&
              (
@@ -194,7 +168,7 @@ AssetExporter::ExportFile(const IO::URI& file)
                 ext == "ogg"
              ))
     {
-        Util::String dstDir = Util::String::Sprintf("dst:audio/%s", category.AsCharPtr());
+        Util::String dstDir = Util::String::Sprintf("dst:audio/%s", this->folder.AsCharPtr());
         ioServer->CreateDirectory(dstDir);
         Util::String dstFile = Util::String::Sprintf("%s/%s.%s", dstDir.AsCharPtr(), fileName.AsCharPtr(), ext.AsCharPtr());
         this->logger->Print(
@@ -204,13 +178,13 @@ AssetExporter::ExportFile(const IO::URI& file)
         );
         if (ioServer->CopyFile(file, dstFile))
         {
-            Util::String urn = Util::String::Sprintf("urn:aud:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
+            Util::String urn = Util::String::Sprintf("urn:aud:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
             this->UpdateResourceMapping(urn, file.AsString(), dstFile);
         }
     }
     else if ((this->mode & ExportModes::Physics) && ext == "actor")
     {
-        Util::String dstDir = Util::String::Sprintf("dst:physics/%s", category.AsCharPtr());
+        Util::String dstDir = Util::String::Sprintf("dst:physics/%s", this->folder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s/%s.%s", dstDir.AsCharPtr(), fileName.AsCharPtr(), ext.AsCharPtr());
         if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file.AsString(), dstFile))
         {
@@ -221,7 +195,7 @@ AssetExporter::ExportFile(const IO::URI& file)
             );
             if (Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO"))
             {
-                Util::String urn = Util::String::Sprintf("urn:phy:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
+                Util::String urn = Util::String::Sprintf("urn:phy:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
         }
@@ -254,7 +228,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     IndexT fileIndex;
     ToolLog log(category);
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
-    this->category = category;
+    this->folder = category;
 
     if (this->mode & ExportModes::GLTF)
     {
@@ -274,7 +248,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "GLTF", files[fileIndex]);
             }
         }
@@ -296,7 +270,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "FBX", files[fileIndex]);
             }
         }
@@ -316,7 +290,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "Model", files[fileIndex]);
             }
         }
@@ -344,7 +318,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "Texture", files[fileIndex]);
             }
         }
@@ -363,7 +337,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "Surface", files[fileIndex]);
             }
         }
@@ -382,7 +356,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "Surface", files[fileIndex]);
             }
         }
@@ -403,7 +377,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ExportFile(assetPath + files[fileIndex]);
+                this->ImportFile(assetPath + files[fileIndex]);
                 log.AddEntry(console, "Audio", files[fileIndex]);
             }
         }
@@ -420,13 +394,13 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         {
             for (auto const& file : files)
             {
-                this->ExportFile(assetPath + file);
+                this->ImportFile(assetPath + file);
                 log.AddEntry(console, "Physics", file);
             }
         }
     }
     this->messages.Append(log);
-    this->category = "";
+    this->folder = "";
 }
 
 //------------------------------------------------------------------------------
@@ -454,7 +428,7 @@ AssetExporter::ExportList(const Util::Array<Util::String>& files)
         const Util::String& str = *iter;
         if (IO::IoServer::Instance()->FileExists(str))
         {
-            this->ExportFile(str);
+            this->ImportFile(str);
         }
         else if (IO::IoServer::Instance()->DirectoryExists(str))
         {

@@ -1,0 +1,33 @@
+//------------------------------------------------------------------------------
+//
+//    Skeleton import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+table SkeletonResource
+{
+	skeletons: [SkeletonInstance];
+}
+
+table SkeletonInstance
+{
+	joints : [JointInstance];
+}
+
+table JointInstance
+{
+	name: string;
+	bind : Flat.Transform (native_inline);
+	translation : Flat.Vec3 (native_inline);
+	scale : Flat.Vec3 (native_inline);
+	rotation : Flat.Quat (native_inline);
+	parent: int;
+	index: int;
+}
+
+root_type SkeletonResource;
+file_identifier "SKER";
+file_extension "naske";

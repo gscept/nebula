@@ -5,13 +5,13 @@
     
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/importerbase.h"
 #include "toolkit-common/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-class GameExporter : public Base::ExporterBase
+class GameExporter : public Base::ImporterBase
 {
     __DeclareClass(GameExporter);
 public:

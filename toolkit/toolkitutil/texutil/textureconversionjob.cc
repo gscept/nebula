@@ -18,7 +18,6 @@ using namespace Util;
     Constructor 
 */
 TextureConversionJob::TextureConversionJob() :
-    textureAttrTable(0),
     logger(0),
     force(false),
     quiet(false),
@@ -38,7 +37,6 @@ TextureConversionJob::Convert()
     n_assert(this->dstPath.IsValid());
     n_assert(this->tmpDir.IsValid());    
     n_assert(this->dstFileExt.IsValid());
-    n_assert(0 != this->textureAttrTable);
     n_assert(0 != this->logger);
 
     // set dst file extension
@@ -87,9 +85,6 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // make sure the temp directory exists
     IoServer::Instance()->CreateDirectory(this->tmpPath.ExtractDirName());
 
-    // get texture conversion attributes
-    this->textureAttrs = this->textureAttrTable->GetEntry(srcPath);
-    
     // if destination file is already in native format, do a plain copy
     if (!neverCopy && srcPath.GetFileExtension() == dstPath.GetFileExtension())
     {
@@ -119,16 +114,11 @@ TextureConversionJob::NeedsConversion(const String& srcPath, const String& dstPa
     {
         FileTime srcFileTime = ioServer->GetFileWriteTime(srcPath);
         FileTime dstFileTime = ioServer->GetFileWriteTime(dstPath);
-        FileTime attrTime = srcFileTime;
         String texEntry;
         texEntry.Format("%s/%s", srcPath.ExtractLastDirName().AsCharPtr(), srcPath.ExtractFileName().AsCharPtr());
         texEntry.StripFileExtension();
         
-        if (this->textureAttrTable->HasEntry(texEntry))
-        {
-            attrTime = this->textureAttrTable->GetEntry(texEntry).GetTime();
-        }
-        if (dstFileTime > srcFileTime && dstFileTime > attrTime)
+        if (dstFileTime > srcFileTime)
         {
             // dst file newer then src file, don't need to convert
             return false;

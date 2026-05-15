@@ -23,7 +23,7 @@ struct MeshPrimitiveJobContext
     const Gltf::Mesh* mesh;
 
     const Gltf::Primitive** primitives;
-    ExportFlags flags;
+    ImportFlags flags;
 
     uint meshIndex;
     MeshBuilder** outMeshes;
@@ -43,7 +43,7 @@ struct PrimitiveJobInput
 {
     Gltf::Mesh const* mesh;
     Gltf::Primitive const* primitive;
-    ExportFlags exportFlags;
+    ImportFlags importFlags;
 };
 
 struct PrimitiveJobOutput

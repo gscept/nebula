@@ -36,10 +36,31 @@ CompressonatorConversionJob::CompressonatorConversionJob()
 
 //------------------------------------------------------------------------------
 /**
+*/
+static CMP_FORMAT
+GetTexConvFormat(ToolkitUtil::TextureResourceT const* texture)
+{
+    switch (texture->target_format)
+    {
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return CMP_FORMAT_BC1;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC2: return CMP_FORMAT_BC2;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC3: return CMP_FORMAT_BC3;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC5: return CMP_FORMAT_BC5;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC6H: return CMP_FORMAT_BC6H;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC7: CMP_FORMAT_BC7;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8A8: CMP_FORMAT_RGBA_8888;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: CMP_FORMAT_RGB_888;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R16: return CMP_FORMAT_R_16;
+    }
+    return CMP_FORMAT_BC7;
+}
+
+//------------------------------------------------------------------------------
+/**
     Start the conversion process. Returns false, if the job finished immediately.   
 */
 bool
-CompressonatorConversionJob::Convert()
+CompressonatorConversionJob::Convert(ToolkitUtil::TextureResourceT* texture)
 {
     n_assert(0 != this->logger);
     if (TextureConversionJob::Convert())
@@ -110,35 +131,20 @@ CompressonatorConversionJob::Convert()
         KernelOptions   kernel_options;
         memset(&kernel_options, 0, sizeof(KernelOptions));
 
-        const TextureAttrs& attrs = this->textureAttrs;
         float quality = 0.5f;
-        switch (attrs.GetQuality())
+        switch (texture->compression_quality)
         {
-        case ToolkitUtil::TextureAttrs::High:
+        case ToolkitUtil::TextureCompressionQuality_High:
             quality = 0.7f;
             break;
-        case ToolkitUtil::TextureAttrs::Low:
+        case ToolkitUtil::TextureCompressionQuality_Low:
             quality = 0.1f;
             break;
         }
-        if((String::MatchPattern(this->srcPath, "*norm.*")) 
-            || (String::MatchPattern(this->srcPath, "*normal.*")) 
-            || (String::MatchPattern(this->srcPath, "*Normal.*")) 
-            || (String::MatchPattern(this->srcPath, "*_N.*"))
-            || (String::MatchPattern(this->srcPath, "*_n.*"))
-            || (String::MatchPattern(this->srcPath, "*bump.*"))
-           )
-        {
-            kernel_options.format = CMP_FORMAT_BC5;
-        }
-        else if (String::MatchPattern(this->srcPath, "*height.*"))
-        {
-            kernel_options.format = CMP_FORMAT_R_16;
-        }
-        else
-        {
-            kernel_options.format = CMP_FORMAT_BC7; // Set the format to process
-        }
+
+        kernel_options.format = GetTexConvFormat(texture);
+        kernel_options.useSRGBFrames = (texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB) ? true : false;
+
         kernel_options.fquality = quality;     // Set the quality of the result
         kernel_options.threads = 0;             // Auto setting
         kernel_options.encodeWith = CMP_CPU;

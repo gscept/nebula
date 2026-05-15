@@ -45,7 +45,7 @@ public:
     Modules::Viewport viewport;
 
     // Select material for previewing
-    void Open(const Resources::ResourceName& asset, const AssetType type);
+    void Open(const IO::URI& asset, const AssetType type);
 };
 __RegisterClass(AssetEditor)
 
@@ -76,7 +76,8 @@ struct AssetEditorItem
         Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;
     Resources::ResourceId res;
-    Resources::ResourceName name;
+    IO::URI source;
+    IO::URI path;
     Graphics::GraphicsEntityId previewObject;
 
 

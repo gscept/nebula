@@ -40,7 +40,7 @@ LevelExporter::~LevelExporter()
 void 
 LevelExporter::Open()
 {
-    ExporterBase::Open();
+    ImporterBase::Open();
 }
 
 
@@ -50,7 +50,7 @@ LevelExporter::Open()
 void 
 LevelExporter::Close()
 {
-    ExporterBase::Close();
+    ImporterBase::Close();
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ LevelExporter::ExportAll()
     Array<String> files = IoServer::Instance()->ListFiles(IO::URI(levelDir), "*.json");
     for (int fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
-        this->ExportFile(levelDir + "/" + files[fileIndex]);
+        this->ImportFile(levelDir + "/" + files[fileIndex]);
     }
 }
 
@@ -81,7 +81,7 @@ LevelExporter::ExportDir( const String& category )
 /**
 */
 void 
-LevelExporter::ExportFile( const URI& file )
+LevelExporter::ImportFile( const URI& file )
 {
     n_assert(this->isOpen);
    

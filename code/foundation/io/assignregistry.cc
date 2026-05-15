@@ -6,8 +6,20 @@
 
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
+#include "io/ioserver.h"
 #include "core/coreserver.h"
 #include "system/nebulasettings.h"
+#include "db/sqlite3/sqlite3factory.h"
+#include "db/dataset.h"
+
+namespace Attr
+{
+DefineAttrInt(URNHash, 'FURN', Attr::ReadWrite);
+DefineAttrInt(WorkHash, 'FWRK', Attr::ReadWrite);
+DefineAttrString(Export, 'FEXP', Attr::ReadWrite);
+DefineAttrString(Work, 'FWOR', Attr::ReadWrite);
+}
+
 
 namespace IO
 {
@@ -49,6 +61,45 @@ AssignRegistry::Setup()
     this->isValid = true;
     this->SetupSystemAssigns();
     this->SetupProjectAssigns();
+
+    // Read the resource table and populate URN -> URI lookup map
+    IO::URI resTableUri("export:resource_mappings.sqlite");
+
+    if (!Db::Sqlite3Factory::HasInstance())
+    {
+        this->dbFactory = Db::Sqlite3Factory::Create();
+    }
+    this->database = Db::DbFactory::Instance()->CreateDatabase();
+
+    // Determine access mode
+    IO::IoServer* ioServer = IO::IoServer::Instance();
+
+    this->database->SetURI(resTableUri);
+    this->database->SetAccessMode(Db::Database::ReadWriteCreate);
+    this->database->SetIgnoreUnknownColumns(false);
+
+    // Use memory database if we're not in editor as it can modify the database
+#if WITH_NEBULA_EDITOR == 0
+    this->database->SetInMemoryDatabase(true);
+#endif
+
+    // Try to open database
+    if (!this->database->Open())
+    {
+        n_printf("Failed to open resource lookup database at %s\n", resTableUri.AsString().AsCharPtr());
+    }
+    else
+    {
+        if (!this->database->HasTable("Mappings"))
+        {
+            // Close database, it's invalid
+            this->database = nullptr;
+        }
+        else
+        {
+            this->mappings = this->database->GetTableByName("Mappings");
+        }
+    }
     
     this->critSect.Leave();
 }
@@ -354,6 +405,61 @@ AssignRegistry::PrintAll() const
         n_printf("%-10s  =>   %-24s  =>  %s\n", (keys[i] + ":").AsCharPtr(), assign.AsCharPtr(), path.AsCharPtr());
     }
     this->critSect.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IO::URI
+AssignRegistry::ResolveWorkToExport(const IO::URI& uri) const
+{
+    Ptr<Db::Dataset> set = this->mappings->CreateDataset();
+    uint32_t hash = uri.LocalPath().HashCode();
+    set->Filter()->AddEqualCheck(Attr::Attribute(Attr::WorkHash, hash));
+    set->PerformQuery();
+    Ptr<Db::ValueTable> workValues = set->Values();
+    n_assert(workValues->GetNumRows() <= 1);
+    if (workValues->GetNumRows() == 1)
+    {
+        return IO::URI(workValues->GetString(Attr::Export, 0));
+    }
+    return IO::URI();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IO::URI
+AssignRegistry::ResolveURNToWork(const IO::URN& urn) const
+{
+    Ptr<Db::Dataset> set = this->mappings->CreateDataset();
+    set->Filter()->AddEqualCheck(Attr::Attribute(Attr::URNHash, (urn.AsString()).HashCode()));
+    set->PerformQuery();
+    Ptr<Db::ValueTable> workValues = set->Values();
+    n_assert(workValues->GetNumRows() <= 1);
+    if (workValues->GetNumRows() == 1)
+    {
+        return IO::URI(workValues->GetString(Attr::Work, 0));
+    }
+    return IO::URI();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IO::URI
+AssignRegistry::ResolveURNToExport(const IO::URN& urn) const
+{
+    Ptr<Db::Dataset> set = this->mappings->CreateDataset();
+    set->Filter()->AddEqualCheck(Attr::Attribute(Attr::URNHash, (urn.AsString()).HashCode()));
+    set->PerformQuery();
+    Ptr<Db::ValueTable> workValues = set->Values();
+    n_assert(workValues->GetNumRows() <= 1);
+    if (workValues->GetNumRows() == 1)
+    {
+        return IO::URI(workValues->GetString(Attr::Export, 0));
+    }
+    return IO::URI();
 }
 
 } // namespace IO

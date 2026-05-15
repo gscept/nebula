@@ -1,0 +1,55 @@
+//------------------------------------------------------------------------------
+//
+//    animation import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+table AnimResource
+{
+	animations : [AnimInstance];
+}
+
+table AnimInstance
+{
+	keys : [float];
+	key_times : [uint];
+	curves : [AnimCurve];
+	events: [AnimEvent];
+	clips : [AnimClip];
+}
+
+struct AnimCurve
+{
+	first_key_offset : uint;
+	first_time_offset : uint;
+	num_keys : uint;
+	type : uint;			// maps to CoreAnimation::CurveType::Code
+	pre_infinity : uint;	// maps to CoreAnimation::InfinityType
+	post_infinity : uint;	// maps to CoreAnimation::InfinityType
+}
+
+table AnimEvent
+{
+	name : string;
+	category : string;
+	time : uint;
+}
+
+table AnimClip
+{
+	name : string;
+	first_curve_offset : uint;
+	num_curves : uint;
+	first_event_offset : uint;
+	num_events : uint;
+	first_velocity_curve_offset : uint;
+	num_velocity_curves : uint;
+	duration : uint;
+}
+
+root_type AnimResource;
+file_identifier "ANIM";
+file_extension "naani";

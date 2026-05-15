@@ -43,7 +43,7 @@ void
 NglTFMesh::Setup(Util::Array<MeshBuilder>& meshes
         , const Gltf::Mesh* gltfMesh
         , const Gltf::Document* scene
-        , const ToolkitUtil::ExportFlags flags
+        , const ToolkitUtil::ImportFlags flags
         , const uint basePrimitive
         , const uint meshIndex
         , SceneNode** nodes

@@ -54,6 +54,19 @@ IoServer::IoServer() :
     }    
     this->schemeCriticalSection.Leave();
 
+    this->archiveCriticalSection.Enter();
+    if (!ArchiveFileSystem::HasInstance())
+    {
+        n_assert(!StandardArchivesMounted);
+        this->archiveFileSystem = ArchiveFileSystem::Create();
+        this->archiveFileSystem->Setup();
+    }
+    else
+    {
+        this->archiveFileSystem = ArchiveFileSystem::Instance();
+    }
+    this->archiveCriticalSection.Leave();
+
     // the first IoServer created sets up the global assign registry
     this->assignCriticalSection.Enter();
     if (!AssignRegistry::HasInstance())
@@ -68,18 +81,6 @@ IoServer::IoServer() :
     }
     this->assignCriticalSection.Leave();
 
-    this->archiveCriticalSection.Enter();
-    if (!ArchiveFileSystem::HasInstance())
-    {
-        n_assert(!StandardArchivesMounted);
-        this->archiveFileSystem = ArchiveFileSystem::Create();
-        this->archiveFileSystem->Setup();
-    }
-    else
-    {
-        this->archiveFileSystem = ArchiveFileSystem::Instance();
-    }
-    this->archiveCriticalSection.Leave();
 
     this->watcherCriticalSection.Enter();
     

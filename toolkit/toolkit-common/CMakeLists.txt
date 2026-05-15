@@ -30,8 +30,8 @@ nebula_begin_lib(toolkit-common)
         fips_dir(base)
             fips_files(
                 applauncherbase.h
-                exporterbase.cc
-                exporterbase.h
+                importerbase.cc
+                importerbase.h
                 exporttypes.h
             )
         fips_dir(converters)

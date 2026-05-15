@@ -139,7 +139,7 @@ TextureConverter::ConvertFiles(const Util::Array<Util::String>& files)
     different platform-specific jobs based on the selected target platform.
 */
 bool
-TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexPath, const String& tmpDir)
+TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexPath, const String& tmpDir, const ToolkitUtil::TextureResourceT* tex)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
@@ -164,10 +164,9 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexP
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    bool ret = job.Convert();
+    bool ret = job.Convert(tex);
 #else
 
     CompressonatorConversionJob job;
@@ -175,10 +174,9 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexP
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    bool ret = job.Convert();
+    bool ret = job.Convert(tex);
 #endif
 
     
@@ -190,7 +188,7 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexP
     
 */
 bool
-TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstTexPath, const String& tmpDir)
+TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstTexPath, const String& tmpDir, const ToolkitUtil::TextureResourceT* tex)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
@@ -216,10 +214,9 @@ TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstTexP
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    job.ConvertCube();
+    job.ConvertCube(tex);
 #else
 /*
     CompressonatorConversionJob job;
@@ -227,24 +224,14 @@ TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstTexP
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    job.Convert();
+    job.Convert(tex);
     */
 #endif
 
     if (this->platform != Platform::Win32 && this->platform != Platform::Linux) return false;
     else return true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TextureConverter::AddAttributeEntry(const Util::String& file, const TextureAttrs& attrs)
-{
-    this->textureAttrTable.SetEntry(file, attrs);
 }
 
 } // namespace ToolkitUtil

@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  fbxexporter.cc
+//  fbxfileimporter.cc
 //  (C) 2012-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "nfbxexporter.h"
+#include "fbxfileimporter.h"
 #include "io/ioserver.h"
 #include "util/array.h"
 #include "model/meshutil/meshbuildersaver.h"
@@ -18,13 +18,13 @@ using namespace IO;
 using namespace ToolkitUtil;
 namespace ToolkitUtil
 {
-__ImplementClass(ToolkitUtil::NFbxExporter, 'FBXE', Base::ExporterBase);
+__ImplementClass(ToolkitUtil::FbxFileImporter, 'FBXI', Base::ImporterBase);
 
 Threading::CriticalSection cs;
 //------------------------------------------------------------------------------
 /**
 */
-NFbxExporter::NFbxExporter() 
+FbxFileImporter::FbxFileImporter() 
 {
     // empty
 }
@@ -32,7 +32,7 @@ NFbxExporter::NFbxExporter()
 //------------------------------------------------------------------------------
 /**
 */
-NFbxExporter::~NFbxExporter()
+FbxFileImporter::~FbxFileImporter()
 {
     // empty
 }
@@ -41,7 +41,7 @@ NFbxExporter::~NFbxExporter()
 /**
 */
 bool 
-NFbxExporter::ParseScene()
+FbxFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 {
     ufbx_coordinate_axes wantedAxes;
     wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y; 
@@ -57,7 +57,7 @@ NFbxExporter::ParseScene()
         .pivot_handling = UFBX_PIVOT_HANDLING_RETAIN, 
         .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY,
         .target_axes = ufbx_axes_right_handed_y_up,
-        .target_unit_meters = (ufbx_real)0.01f / this->sceneScale
+        .target_unit_meters = (ufbx_real)0.01f / scale
     };
     ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
     if (scene == nullptr)
@@ -67,13 +67,10 @@ NFbxExporter::ParseScene()
         return false;
     }
 
-    // Lookup attributes used for take splitting
-    Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(this->category + "/" + this->file);
-
     auto fbxScene = new NFbxScene();
     fbxScene->SetName(this->file);
-    fbxScene->SetCategory(this->category);
-    fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale, this->logger);
+    fbxScene->SetCategory(this->folder);
+    fbxScene->Setup(scene, importFlags, scale, this->logger);
     this->scene = fbxScene;
 
     ufbx_free_scene(scene);

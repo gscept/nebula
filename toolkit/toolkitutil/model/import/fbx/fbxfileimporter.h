@@ -7,7 +7,7 @@
     
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
-#include "model/import/base/modelexporter.h"
+#include "model/import/base/modelimporter.h"
 #include "node/nfbxscene.h"
 #include "toolkit-common/base/exporttypes.h"
 #include "model/modelutil/modelphysics.h"
@@ -16,18 +16,18 @@
 namespace ToolkitUtil
 {
 
-class NFbxExporter : public ModelExporter
+class FbxFileImporter : public ModelImporter
 {
-    __DeclareClass(NFbxExporter);
+    __DeclareClass(FbxFileImporter);
 public:
 
     /// constructor
-    NFbxExporter();
+    FbxFileImporter();
     /// destructor
-    virtual ~NFbxExporter();
+    virtual ~FbxFileImporter();
 
     /// Parse the FBX scene data
-    bool ParseScene() override;
+    bool ParseScene(ToolkitUtil::ImportFlags importFlags, float scale) override;
 }; 
 
 

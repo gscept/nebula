@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "nfbxscene.h"
-#include "model/import/fbx/nfbxexporter.h"
+#include "model/import/fbx/fbxfileimporter.h"
 #include "model/skeletonutil/skeletonbuilder.h"
 #include "nfbxmeshnode.h"
 #include "nfbxjointnode.h"
@@ -92,8 +92,7 @@ NFbxScene::ParseNodeHierarchy(
 void
 NFbxScene::Setup(
     ufbx_scene* scene
-    , const ExportFlags& exportFlags
-    , const Ptr<ModelAttributes>& attributes
+    , const ImportFlags& importFlags
     , float scale
     , ToolkitUtil::Logger* logger
 )
@@ -101,7 +100,7 @@ NFbxScene::Setup(
     n_assert(scene != nullptr);
 
     // set export settings
-    this->flags = exportFlags;
+    this->flags = importFlags;
     this->logger = logger;
 
     // set scale

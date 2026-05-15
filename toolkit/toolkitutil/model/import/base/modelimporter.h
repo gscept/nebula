@@ -7,42 +7,37 @@
     (C) 2022 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/importerbase.h"
 #include "toolkit-common/base/exporttypes.h"
 #include "toolkitutil/texutil/textureconverter.h"
 #include "model/import/base/scene.h"
 namespace ToolkitUtil
 {
 
-class ModelExporter : public Base::ExporterBase
+class ModelImporter : public Base::ImporterBase
 {
     
 public:
 
     /// Constructor
-    ModelExporter();
+    ModelImporter();
     /// Destructor
-    ~ModelExporter();
+    ~ModelImporter();
 
     /// Run implementation scene parse
-    virtual bool ParseScene();
+    virtual bool ParseScene(ToolkitUtil::ImportFlags importFlags, float scale);
 
     /// Set logger
     void SetLogger(ToolkitUtil::Logger* logger);
     /// exports a single file
-    void ExportFile(const IO::URI& file);
+    void ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFlags, float scale);
     /// set texture converter
     void SetTextureConverter(TextureConverter* texConv);
-
-    /// set the mesh export flags
-    void SetExportFlags(const ToolkitUtil::ExportFlags& exportFlags);
 
 protected:
     /// checks whether or not a file needs to be updated 
     bool NeedsConversion(const Util::String& path);
 
-    ToolkitUtil::ExportFlags exportFlags;
-    float sceneScale;
     Util::String file;
     IO::URI path;
 
@@ -59,16 +54,7 @@ protected:
 /**
 */
 inline void
-ModelExporter::SetExportFlags(const ToolkitUtil::ExportFlags& exportFlags)
-{
-    this->exportFlags = exportFlags;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ModelExporter::SetTextureConverter(TextureConverter* texConv)
+ModelImporter::SetTextureConverter(TextureConverter* texConv)
 {
     this->texConverter = texConv;
 }
@@ -77,7 +63,7 @@ ModelExporter::SetTextureConverter(TextureConverter* texConv)
 /**
 */
 inline void
-ModelExporter::SetLogger(ToolkitUtil::Logger* logger)
+ModelImporter::SetLogger(ToolkitUtil::Logger* logger)
 {
     this->logger = logger;
 }

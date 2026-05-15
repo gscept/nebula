@@ -49,7 +49,7 @@ public:
     const Util::Array<SceneNode>& GetNodes() const;
 
 protected:
-    friend class ModelExporter;
+    friend class ModelImporter;
 
     /// Generate animation clips
     static void GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::String& name);
@@ -65,7 +65,7 @@ protected:
     Util::Array<SceneNode> nodes;
     Util::String name;
     Util::String category;
-    ToolkitUtil::ExportFlags flags;
+    ToolkitUtil::ImportFlags flags;
 };
 
 

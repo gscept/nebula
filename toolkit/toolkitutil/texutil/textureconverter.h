@@ -15,6 +15,9 @@
 #include "toolkit-common/applauncher.h"
 #include "toolkit-common/logger.h"
 
+
+#include "flat/texture.h"
+
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
@@ -54,9 +57,6 @@ public:
     /// get max parallel job count
     int GetMaxParallelJobs();
 
-    /// Add entry
-    void AddAttributeEntry(const Util::String& file, const TextureAttrs& attrs);
-
     /// setup the texture converter, read the texture attributes table
     bool Setup();
     /// Set the logger to use
@@ -68,20 +68,18 @@ public:
     /// convert all textures from given file list
     bool ConvertFiles(const Util::Array<Util::String>& files);
     /// convert a texture from a given path
-    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir);
+    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir, const ToolkitUtil::TextureResourceT* tex);
     /// convert a cubemap folder from a given path
-    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir);
+    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir, const ToolkitUtil::TextureResourceT* tex);
 
 private:
 
     Logger* logger;
     Platform::Code platform;
-    Util::String texAttrTablePath;
     Util::String toolPath;
     bool force;
     bool quiet;
     bool valid;
-    TextureAttrTable textureAttrTable;
     int maxParallelJobs;
 };
 

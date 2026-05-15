@@ -1,10 +1,9 @@
 //------------------------------------------------------------------------------
-//  @file modelexporter.cc
+//  @file modelimporter.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "modelexporter.h"
-#include "io/ioserver.h"
+#include "modelimporter.h"
 #include "io/filestream.h"
 #include "io/uri.h"
 #include "timing/timer.h"
@@ -31,7 +30,7 @@ namespace ToolkitUtil
 //------------------------------------------------------------------------------
 /**
 */
-ModelExporter::ModelExporter()
+ModelImporter::ModelImporter()
     : scene(nullptr)
 {
     // empty
@@ -40,7 +39,7 @@ ModelExporter::ModelExporter()
 //------------------------------------------------------------------------------
 /**
 */
-ModelExporter::~ModelExporter()
+ModelImporter::~ModelImporter()
 {
     n_assert(this->scene == nullptr);
 }
@@ -49,7 +48,7 @@ ModelExporter::~ModelExporter()
 /**
 */
 bool
-ModelExporter::ParseScene()
+ModelImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 {
     n_error("Implement in subclass");
     return false;
@@ -59,10 +58,8 @@ ModelExporter::ParseScene()
 /**
 */
 void
-ModelExporter::ExportFile(const IO::URI& file)
+ModelImporter::ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFlags, float scale)
 {
-    IO::IoServer* ioServer = IO::IoServer::Instance();
-
     // Reset all unique strings
     UniqueString::Reset();
 
@@ -75,16 +72,8 @@ ModelExporter::ExportFile(const IO::URI& file)
         this->logger->Print("Skipping %s\n", Text(localPath).Color(TextColor::Blue).AsCharPtr());
         return;
     }
-    this->file = localPath.ExtractFileName();
-    this->file.StripFileExtension();
-    this->category = localPath.ExtractLastDirName();
     this->logger->Print("%s\n", Text(localPath).Color(TextColor::Blue).AsCharPtr());
     this->logger->Indent();
-
-    // Get animations from scene
-    Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(this->category + "/" + this->file);
-    this->exportFlags = attributes->GetExportFlags();
-    this->sceneScale = attributes->GetScale();
 
     Timing::Timer timer;
     Timing::Timer totalTime;
@@ -93,11 +82,10 @@ ModelExporter::ExportFile(const IO::URI& file)
     timer.Start();
 
     // Run implementation specific scene parsing
-    if (!this->ParseScene())
+    if (!this->ParseScene(importFlags, scale))
         return;
 
     this->logger->Print("%s %s (%.2f ms)\n", "Parsing...", Text("done").Color(TextColor::Green).AsCharPtr(), timer.GetTime() * 1000.0f);
-    //n_printf("  [Parsed source] (%.2f ms)\n", timer.GetTime() * 1000.0f);
     timer.Stop();
 
     timer.Reset();
@@ -116,13 +104,14 @@ ModelExporter::ExportFile(const IO::URI& file)
     Util::Array<MeshBuilder*> mergedMeshes;
     this->scene->OptimizeGraphics(this->logger, mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
 
-    Util::String physicsMeshExportName = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
+    Util::String assetPath = IO::URI("src:assets").LocalPath();
+    Util::String relativePath = file.LocalPath().StripSubpath(assetPath);
     IO::URI destinationFiles[] =
     {
-        IO::URI(String::Sprintf("msh:%s/%s.nvx", this->category.AsCharPtr(), this->file.AsCharPtr())) // mesh
-        , IO::URI(physicsMeshExportName) // physics
-        , IO::URI(String::Sprintf("ani:%s/%s.nax", this->category.AsCharPtr(), this->file.AsCharPtr())) // animation
-        , IO::URI(String::Sprintf("ske:%s/%s.nsk", this->category.AsCharPtr(), this->file.AsCharPtr())) // skeleton
+        IO::URI(String::Sprintf("%s/%s.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // mesh
+        , IO::URI(String::Sprintf("%s/%s_ph.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // physics
+        , IO::URI(String::Sprintf("%s/%s.naani", this->folder.AsCharPtr(), this->file.AsCharPtr())) // animation
+        , IO::URI(String::Sprintf("%s/%s.naske", this->folder.AsCharPtr(), this->file.AsCharPtr())) // skeleton
     };
 
     enum DestinationFile
@@ -134,13 +123,13 @@ ModelExporter::ExportFile(const IO::URI& file)
     };
 
     // save mesh to file
-    if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Mesh], mergedMeshes, this->platform))
+    if (!MeshBuilderSaver::SaveImport(destinationFiles[DestinationFile::Mesh], mergedMeshes, this->platform))
     {
-        this->logger->Error("Failed to save NVX file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
+        this->logger->Error("Failed to save mesh file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
     }
     else
     {
-        this->UpdateResourceMapping("urn:msh:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Mesh].LocalPath());
+        this->UpdateResourceMapping("urn:msh:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Mesh].LocalPath());
         outputFiles.Append(destinationFiles[DestinationFile::Mesh]);
     }
     
@@ -167,13 +156,13 @@ ModelExporter::ExportFile(const IO::URI& file)
         timer.Start();
 
         // save mesh
-        if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Physics], { physicsMesh }, this->platform))
+        if (!MeshBuilderSaver::SaveImport(destinationFiles[DestinationFile::Physics], { physicsMesh }, this->platform))
         {
-            this->logger->Error("Failed to save physics NVX file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
+            this->logger->Error("Failed to save physics mesh file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
         }
         else
         {
-            this->UpdateResourceMapping("urn:phy:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Physics].LocalPath());
+            this->UpdateResourceMapping("urn:phy:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Physics].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Physics]);
         }
 
@@ -196,13 +185,13 @@ ModelExporter::ExportFile(const IO::URI& file)
         }
 
         // now save actual animation
-        if (!AnimBuilderSaver::Save(destinationFiles[DestinationFile::Animation], this->scene->animations, this->platform))
+        if (!AnimBuilderSaver::SaveImport(destinationFiles[DestinationFile::Animation], this->scene->animations, this->platform))
         {
             this->logger->Error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].LocalPath().AsCharPtr());
         }
         else
         {
-            this->UpdateResourceMapping("urn:ani:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Animation].LocalPath());
+            this->UpdateResourceMapping("urn:ani:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Animation].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Animation]);
         }
 
@@ -215,13 +204,13 @@ ModelExporter::ExportFile(const IO::URI& file)
         timer.Reset();
         timer.Start();
 
-        if (!SkeletonBuilderSaver::Save(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
+        if (!SkeletonBuilderSaver::SaveImport(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
         {
             this->logger->Error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].LocalPath().AsCharPtr());
         }
         else
         {
-            this->UpdateResourceMapping("urn:ske:" + this->category + "/" + this->file, file.AsString(), destinationFiles[DestinationFile::Skeleton].LocalPath());
+            this->UpdateResourceMapping("urn:ske:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Skeleton].LocalPath());
             outputFiles.Append(destinationFiles[DestinationFile::Skeleton]);
         }
 
@@ -231,14 +220,13 @@ ModelExporter::ExportFile(const IO::URI& file)
 
     // Finally, output model hierarchy to n3
     SceneWriter::GenerateModels(
-        Util::String::Sprintf("src:assets/%s/", this->category.AsCharPtr())
+        Util::String::Sprintf("%s/", this->folder.AsCharPtr())
         , this->scene
         , this->platform
         , mergedMeshNodes
         , physicsNodes
         , mergedCharacterNodes
-        , physicsMeshExportName
-        , this->exportFlags
+        , importFlags
     );
 
     WriteIntermediateFile(file, outputFiles);
@@ -255,41 +243,30 @@ ModelExporter::ExportFile(const IO::URI& file)
 /**
 */
 bool
-ModelExporter::NeedsConversion(const Util::String& path)
+ModelImporter::NeedsConversion(const Util::String& path)
 {
     Util::String category = path.ExtractLastDirName();
     Util::String file = path.ExtractFileName();
     file.StripFileExtension();
 
-    // check both if FBX is newer than .n3
-    Util::String model = "mdl:" + category + "/" + file + ".n3";
-    Util::String physModel = "phys:" + category + "/" + file + ".actor";
-    Util::String mesh = "msh:" + category + "/" + file + ".nvx";
-    Util::String physMesh = "msh:" + category + "/" + file + "_ph.nvx";
-    Util::String animation = "ani:" + category + "/" + file + ".nax";
-    Util::String constants = "src:assets/" + category + "/" + file + ".constants";
-    Util::String attributes = "src:assets/" + category + "/" + file + ".attributes";
-    Util::String physics = "src:assets/" + category + "/" + file + ".physics";
+    // Check if any of the output files are old
+    Util::String model = "src:assets/" + category + "/" + file + ".namdl";
+    Util::String physModel = "src:assets/" + category + "/" + file + ".actor";
+    Util::String mesh = "src:assets/" + category + "/" + file + ".namsh";
+    Util::String physMesh = "src:assets/" + category + "/" + file + "_ph.namsh";
+    Util::String animation = "src:assets/" + category + "/" + file + ".naani";    
 
     // check if fbx is newer than model
-    bool sourceNewer = ExporterBase::NeedsConversion(path, model);
-
-    // and if the .constants is older than the fbx
-    bool constantsNewer = ExporterBase::NeedsConversion(constants, model);
-
-    // and if the .attributes is older than the n3 (attributes controls both model, and animation resource)
-    bool attributesNewer = ExporterBase::NeedsConversion(attributes, model);
-    // ...and if the .physics is older than the np3
-    bool physicsNewer = ExporterBase::NeedsConversion(physics, physModel);
+    bool sourceNewer = ImporterBase::NeedsConversion(path, model);
 
     // ...if the mesh is newer
-    bool meshNewer = ExporterBase::NeedsConversion(path, mesh);
+    bool meshNewer = ImporterBase::NeedsConversion(path, mesh);
 
     // check if physics settings were changed. no way to tell if we have a new physics mesh in it, so we just export it anyway
-    bool physicsMeshNewer = ExporterBase::NeedsConversion(physics, mesh);
+    bool physicsMeshNewer = ImporterBase::NeedsConversion(path, physMesh);
 
     // return true if either is true
-    return sourceNewer || constantsNewer || attributesNewer || physicsNewer || meshNewer || physicsMeshNewer;
+    return sourceNewer || meshNewer || physicsMeshNewer;
 }
 
 } // namespace ToolkitUtil

@@ -106,7 +106,8 @@ lerp(const transform& a, const transform& b, float t)
 }
 
 //------------------------------------------------------------------------------
-/** transforms a position (applies scale, rotation and offset)
+/**    
+    Transforms a position (applies scale, rotation and offset)
 */
 inline point
 operator*(const transform& a, const point& b)
@@ -115,7 +116,8 @@ operator*(const transform& a, const point& b)
 }
 
 //------------------------------------------------------------------------------
-/** transforms a vector (ignores position)
+/** 
+    Transforms a vector (ignores position)
 */
 inline vector
 operator*(const transform& a, const vector& b)
@@ -125,7 +127,8 @@ operator*(const transform& a, const vector& b)
 
 
 //------------------------------------------------------------------------------
-/** transforms a vector (ignores position)
+/** 
+    Constructs from mat4
 */
 inline transform
 transform::FromMat4(const Math::mat4& mat)

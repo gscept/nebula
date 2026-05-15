@@ -850,7 +850,7 @@ ParticleSetup(AssetEditorItem* item)
     }
 
     Particles::ParticleContext::RegisterEntity(item->previewObject);
-    Particles::ParticleContext::Setup(item->previewObject, item->name, 1 << 3);
+    Particles::ParticleContext::Setup(item->previewObject, item->path.LocalPath(), 1 << 3);
     Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);
 }
 
@@ -860,14 +860,14 @@ ParticleSetup(AssetEditorItem* item)
 void 
 ParticleSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
-    Util::String output = Editor::PathConverter::StripAssetName(item->name.AsString());
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
-    stream->SetURI(item->name.Value());
+    stream->SetURI(item->source);
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
     ParticleSerialize(stream, static_cast<ParticleAssetItemData*>(item->data)->emitters);
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;
 
+    // TODO: Issue export
     /*
     Util::String newMaterialPath = item->name.Value();
     newMaterialPath.ChangeFileExtension("sur");

@@ -1,13 +1,13 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class ToolkitUtil::NglTFExporter
+    @class ToolkitUtil::GltfFileImporter
 
     Exports an GLTF file into the binary nebula format
 
     (C) 2020 Individual contributors, see AUTHORS file
 */
-#include "model/import/base/modelexporter.h"
+#include "model/import/base/modelimporter.h"
 #include "toolkit-common/base/exporttypes.h"
 #include "gltfdata.h"
 #include "node/ngltfscene.h"
@@ -15,18 +15,18 @@
 
 namespace ToolkitUtil
 {
-class NglTFExporter : public ModelExporter
+class GltfFileImporter : public ModelImporter
 {
-    __DeclareClass(NglTFExporter);
+    __DeclareClass(GltfFileImporter);
 public:
 
     /// constructor
-    NglTFExporter();
+    GltfFileImporter();
     /// destructor
-    virtual ~NglTFExporter();
+    virtual ~GltfFileImporter();
 
     /// Parse the FBX scene data
-    bool ParseScene() override;
+    bool ParseScene(ToolkitUtil::ImportFlags importFlags, float scale) override;
 
     /// set texture converter
     void SetTextureConverter(TextureConverter* texConv);
@@ -41,7 +41,7 @@ private:
 /**
 */
 inline void
-NglTFExporter::SetTextureConverter(TextureConverter* texConv)
+GltfFileImporter::SetTextureConverter(TextureConverter* texConv)
 {
     this->texConverter = texConv;
 }

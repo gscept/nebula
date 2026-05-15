@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class ToolkitUtil::ExporterBase
+    @class ToolkitUtil::ImporterBase
     
     Implements a base class for an exporter
     
@@ -21,9 +21,9 @@ typedef void (*ExporterMinMaxCallback) (int min, int max);
 //------------------------------------------------------------------------------
 namespace Base
 {
-class ExporterBase : public Core::RefCounted
+class ImporterBase : public Core::RefCounted
 {
-    __DeclareClass(ExporterBase);
+    __DeclareClass(ImporterBase);
 
 public:
     enum ExportFlag
@@ -34,9 +34,9 @@ public:
     };
 
     /// constructor
-    ExporterBase();
+    ImporterBase();
     /// destructor
-    virtual ~ExporterBase();
+    virtual ~ImporterBase();
 
     /// opens the exporter
     virtual void Open();
@@ -49,7 +49,7 @@ public:
     void WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output);
 
     /// exports a single file
-    virtual void ExportFile(const IO::URI& file);
+    virtual void ImportFile(const IO::URI& file);
     /// exports a single directory
     virtual void ExportDir(const Util::String& category);
     /// exports all files
@@ -61,7 +61,7 @@ public:
     const bool HasErrors() const;
 
     /// sets the category
-    void SetCategory(const Util::String& category);
+    void SetFolder(const Util::String& folder);
     /// sets the file name
     void SetFile(const Util::String& file);
     /// sets the platform
@@ -104,7 +104,7 @@ protected:
     /// Recursively validate all intermediate files in directory and subdirs
     void RecurseValidateIntermediates(Util::String const& dir);
 
-    Util::String category;
+    Util::String folder;
     Util::String file;
 
     int precision;
@@ -129,7 +129,7 @@ protected:
 /**
 */
 inline bool 
-ExporterBase::IsOpen() const
+ImporterBase::IsOpen() const
 {
     return this->isOpen;
 }
@@ -138,7 +138,7 @@ ExporterBase::IsOpen() const
 /**
 */
 inline void 
-ExporterBase::SetHasErrors( bool flag )
+ImporterBase::SetHasErrors( bool flag )
 {
     this->hasErrors = flag;
 }
@@ -147,7 +147,7 @@ ExporterBase::SetHasErrors( bool flag )
 /**
 */
 inline const bool 
-ExporterBase::HasErrors() const
+ImporterBase::HasErrors() const
 {
     return this->hasErrors;
 }
@@ -156,7 +156,7 @@ ExporterBase::HasErrors() const
 /**
 */
 inline void 
-ExporterBase::SetProgressPrecision( int precision )
+ImporterBase::SetProgressPrecision( int precision )
 {
     this->precision = precision;
 }
@@ -165,16 +165,16 @@ ExporterBase::SetProgressPrecision( int precision )
 /**
 */
 inline void 
-ExporterBase::SetCategory( const Util::String& category )
+ImporterBase::SetFolder( const Util::String& folder )
 {
-    this->category = category;
+    this->folder = folder;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void 
-ExporterBase::SetFile( const Util::String& file )
+ImporterBase::SetFile( const Util::String& file )
 {
     this->file = file;
     this->file.StripFileExtension();
@@ -185,7 +185,7 @@ ExporterBase::SetFile( const Util::String& file )
 /**
 */
 inline void 
-ExporterBase::SetPlatform( ToolkitUtil::Platform::Code platform )
+ImporterBase::SetPlatform( ToolkitUtil::Platform::Code platform )
 {
     this->platform = platform;
 }
@@ -194,7 +194,7 @@ ExporterBase::SetPlatform( ToolkitUtil::Platform::Code platform )
 /**
 */
 inline void 
-ExporterBase::SetExportFlag( ExportFlag exportFlag )
+ImporterBase::SetExportFlag( ExportFlag exportFlag )
 {
     this->exportFlag = exportFlag;
 }
@@ -203,7 +203,7 @@ ExporterBase::SetExportFlag( ExportFlag exportFlag )
 /**
 */
 inline void 
-ExporterBase::SetForce( bool force )
+ImporterBase::SetForce( bool force )
 {
     this->force = force;
 }
@@ -212,7 +212,7 @@ ExporterBase::SetForce( bool force )
 /**
 */
 inline void 
-ExporterBase::SetRemote( bool remote )
+ImporterBase::SetRemote( bool remote )
 {
     this->remote = remote;
 }
@@ -222,7 +222,7 @@ ExporterBase::SetRemote( bool remote )
 /**
 */
 inline void 
-ExporterBase::SetProgressCallback( ExporterProgressCallback callback )
+ImporterBase::SetProgressCallback( ExporterProgressCallback callback )
 {
     this->progressCallback = callback;
 }
@@ -232,7 +232,7 @@ ExporterBase::SetProgressCallback( ExporterProgressCallback callback )
 /**
 */
 inline void 
-ExporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
+ImporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
 {
     this->minMaxCallback = callback;
 }
@@ -241,7 +241,7 @@ ExporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
 /**
 */
 inline void 
-ExporterBase::SetLogger(ToolkitUtil::Logger* logger)
+ImporterBase::SetLogger(ToolkitUtil::Logger* logger)
 {
     this->logger = logger;
 }
@@ -250,11 +250,11 @@ ExporterBase::SetLogger(ToolkitUtil::Logger* logger)
 /**
 */
 inline void 
-ExporterBase::ReportError( const char* error, ... )
+ImporterBase::ReportError( const char* error, ... )
 {
     va_list argList;
     va_start(argList, error);
-    if (this->exportFlag == ExporterBase::File)
+    if (this->exportFlag == ImporterBase::File)
     {
         IO::Console::Instance()->Error(error, argList);
     }

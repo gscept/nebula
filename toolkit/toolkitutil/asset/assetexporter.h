@@ -10,20 +10,20 @@
     (C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/importerbase.h"
 
-#include "toolkitutil/model/import/fbx/nfbxexporter.h"
+#include "toolkitutil/model/import/fbx/fbxfileimporter.h"
 #include "texutil/textureconverter.h"
 #include "toolkitutil/model/modelutil/modelbuilder.h"
 #include "toolkitutil/model/modelutil/modeldatabase.h"
 #include "toolkitutil/surface/surfaceexporter.h"
 #include "toolkit-common/toolkitconsolehandler.h"
-#include "toolkitutil/model/import/gltf/ngltfexporter.h"
+#include "toolkitutil/model/import/gltf/gltffileimporter.h"
 #include "toolkitutil/particle/particleexporter.h"
 
 namespace ToolkitUtil
 {
-class AssetExporter : public Base::ExporterBase
+class AssetExporter : public Base::ImporterBase
 {
     __DeclareClass(AssetExporter);
 public:
@@ -68,7 +68,7 @@ public:
     void UpdateSource();
     
     /// exports a single file
-    void ExportFile(const IO::URI& file) override;
+    void ImportFile(const IO::URI& file) override;
     /// exports a single category
     void ExportDir(const Util::String& category) override;
     /// exports all files
@@ -86,8 +86,8 @@ public:
     const Util::Array<ToolkitUtil::ToolLog> & GetMessages() const;
 
 private:
-    Ptr<ToolkitUtil::NFbxExporter> fbxExporter;
-    Ptr<ToolkitUtil::NglTFExporter> gltfExporter;
+    Ptr<ToolkitUtil::FbxFileImporter> fbxExporter;
+    Ptr<ToolkitUtil::GltfFileImporter> gltfExporter;
     ToolkitUtil::TextureConverter textureExporter;
     Ptr<ToolkitUtil::SurfaceExporter> surfaceExporter;
     Ptr<ToolkitUtil::ParticleExporter> particleExporter;

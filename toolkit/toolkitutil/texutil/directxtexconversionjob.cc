@@ -32,30 +32,19 @@ DirectXTexConversionJob::DirectXTexConversionJob()
 /**
 */
 static const char*
-GetTexConvFormat(TextureAttrs const& attrs)
+GetTexConvFormat(ToolkitUtil::TextureResourceT const* texture)
 {
-    switch (attrs.GetPixelFormat())
+    switch (texture->target_format)
     {
-    case TextureAttrs::DXT1C:
-    case TextureAttrs::DXT1A:  return "DXT1";
-    case TextureAttrs::DXT3:   return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC2_UNORM_SRGB" : "BC2_UNORM";
-    case TextureAttrs::DXT5:   return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC3_UNORM_SRGB" : "BC3_UNORM";
-    case TextureAttrs::DXT5NM: return "BC5_UNORM";
-    case TextureAttrs::U1555:  return "B5G5R5A1_UNORM";
-    case TextureAttrs::U4444: return "B4G4R4A4_UNORM";
-    case TextureAttrs::U565: return "B5G6R5_UNORM";
-    case TextureAttrs::U8888: return "R8G8B8A8_UNORM_SRGB";
-    case TextureAttrs::U888: return "BC7_UNORM";
-    case TextureAttrs::BC4: return "BC4_UNORM";
-    case TextureAttrs::BC5: "BC5_UNORM";
-    case TextureAttrs::BC6H: return "BC6H_UF16";
-    case TextureAttrs::BC7: return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC7_UNORM_SRGB" : "BC7_UNORM";
-    case TextureAttrs::R8: return "R8_UNORM";
-    case TextureAttrs::R16F: return "R16_FLOAT";
-    case TextureAttrs::R16G16F: return "R16G16_FLOAT";
-    case TextureAttrs::R16: return "R16_UNORM";
-    case TextureAttrs::R16G16: return "R16G16_UNORM";
-    case TextureAttrs::DXGI: return attrs.GetDxgi().AsCharPtr();
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return "DXT1";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC2: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC2_UNORM_SRGB" : "BC2_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC3: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC3_UNORM_SRGB" : "BC3_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC5: return "BC5_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC6H: return "BC6H_UF16";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC7: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC7_UNORM_SRGB" : "BC7_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8A8: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "R8G8B8A8_UNORM_SRGB" : "R8G8B8A8_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "R8G8B8_UNORM_SRGB" : "R8G8B8_UNORM";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R16: return "R16_UNORM";
     }
     return "BC7_UNORM";
 }
@@ -65,7 +54,7 @@ GetTexConvFormat(TextureAttrs const& attrs)
     Start the conversion process. Returns false, if the job finished immediately.
 */
 bool
-DirectXTexConversionJob::Convert()
+DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
 {
     n_assert(this->toolPath.IsValid());
     n_assert(0 != this->logger);
@@ -75,52 +64,8 @@ DirectXTexConversionJob::Convert()
         URI dstPathUri(this->dstPath);
         URI tmpDirUri(this->tmpDir);
 
-        enum TextureDataType
-        {
-            None,
-            NormalMap,
-            MaterialMap,
-            HeightMap,
-            
-        };
-        TextureDataType type = TextureDataType::None;
-
-        // build command line args for TexConv
         String args = " -y -sepalpha -dx10 -nologo -timing ";
-        const TextureAttrs& attrs = this->textureAttrs;
-        if ((attrs.GetPixelFormat() == TextureAttrs::DXT5NM) ||
-            (attrs.GetPixelFormat() == TextureAttrs::BC5) ||
-            (String::MatchPattern(this->srcPath, "*norm.*")) ||
-            (String::MatchPattern(this->srcPath, "*normal.*")) ||
-            (String::MatchPattern(this->srcPath, "*Normal.*")) ||
-            (String::MatchPattern(this->srcPath, "*_N.*")) ||
-            (String::MatchPattern(this->srcPath, "*_n.*")) ||
-            (String::MatchPattern(this->srcPath, "*bump.*")))
-        {
-            this->logger->Print("%s ", "Normal Map (BC5 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
-            type = TextureDataType::NormalMap;
-        }
-        else if (String::MatchPattern(this->srcPath, "*material.*") ||
-            String::MatchPattern(this->srcPath, "*orm.*") ||
-            String::MatchPattern(this->srcPath, "*ORM.*") ||
-            String::MatchPattern(this->srcPath, "*MetallicRoughness.*") ||
-            String::MatchPattern(this->srcPath, "*Occlusion.*"))
-        {
-            this->logger->Print("%s ", "Material/Occlusion Data Map (BC7 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
-            type = TextureDataType::MaterialMap;
-        }
-        else if (String::MatchPattern(this->srcPath, "*height.*"))
-        {
-            this->logger->Print("%s ", "Height Map (R16 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
-            type = TextureDataType::HeightMap;
-        }
-        /*
-                args.Append(" -w ");
-                args.AppendInt(attrs.GetMaxWidth());
-                args.Append(" -h ");
-                args.AppendInt(attrs.GetMaxHeight());*/
-
-        if (attrs.GetQuality() == TextureAttrs::High)
+        if (texture->compression_quality == ToolkitUtil::TextureCompressionQuality::TextureCompressionQuality_High)
         {
             args.Append(" -bc x ");
         }
@@ -129,38 +74,22 @@ DirectXTexConversionJob::Convert()
             args.Append(" -bc q ");
         }
 
-        if (!attrs.GetGenMipMaps())
+        if (!texture->generate_mipmaps)
         {
             args.Append(" -m 1 ");
         }
-        switch (type)
+
+        if (texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB)
         {
-            case None:
-                if (attrs.GetColorSpace() == TextureAttrs::sRGB)
-                {
-                    args.Append(" -srgb ");
-                }
-                else
-                {
-                    args.Append(" -srgbo ");
-                }
-                args.Append(" -f ");
-                args.Append(GetTexConvFormat(attrs));
-                break;
-            case NormalMap:
-                if (attrs.GetFlipNormalY())
-                {
-                    args.Append(" -inverty ");
-                }
-                args.Append(" -f BC5_UNORM ");
-                break;
-            case HeightMap:
-                args.Append(" -f R16_UNORM ");
-                break;
-            case MaterialMap:
-                args.Append(" -f BC7_UNORM ");
-                break;
+            args.Append(" -srgb ");
         }
+        else
+        {
+            args.Append(" -srgbo ");
+        }
+
+        args.Append(" -f ");
+        args.Append(GetTexConvFormat(texture));
 
         args.Append(" \"");
         Util::String srcPath = IO::IoServer::NativePath(srcPathUri.LocalPath());
@@ -203,7 +132,7 @@ DirectXTexConversionJob::Convert()
 /**
 */
 bool
-DirectXTexConversionJob::ConvertCube()
+DirectXTexConversionJob::ConvertCube(const ToolkitUtil::TextureResourceT* texture)
 {
     n_assert(this->toolPath.IsValid());
     n_assert(0 != this->logger);
@@ -214,7 +143,6 @@ DirectXTexConversionJob::ConvertCube()
     this->neverCopy = true;
     if (TextureConversionJob::Convert())
     {
-
         URI srcPathUri(this->srcPath);
         URI dstPathUri(this->dstPath);
         URI tmpDirUri(this->tmpDir);
@@ -257,7 +185,7 @@ DirectXTexConversionJob::ConvertCube()
         }
 
         this->srcPath = tmpPath;
-        return this->Convert();
+        return this->Convert(texture);
     }
     return false;
 }

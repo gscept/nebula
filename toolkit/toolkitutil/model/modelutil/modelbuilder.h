@@ -53,9 +53,6 @@ private:
     /// writes physics
     Util::Blob WritePhysics();
 
-    /// writes particles
-    void WriteParticles(const Ptr<ModelWriter>& writer);
-
     Ptr<ModelConstants> constants;
     Ptr<ModelAttributes> attributes;
     Ptr<ModelPhysics> physics;

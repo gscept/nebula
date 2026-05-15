@@ -29,8 +29,7 @@ public:
     /// sets up the scene
     void Setup(
         ufbx_scene* scene
-        , const ToolkitUtil::ExportFlags& exportFlags
-        , const Ptr<ModelAttributes>& attributes
+        , const ToolkitUtil::ImportFlags& importFlags
         , float scale
         , ToolkitUtil::Logger* logger
     );

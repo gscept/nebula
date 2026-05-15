@@ -1,0 +1,26 @@
+//------------------------------------------------------------------------------
+//
+//    Skeleton import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+enum AudioContainer : byte
+{
+	MP3 = 0,
+	WAV = 1,
+	OGG = 2
+}
+
+table AudioResource
+{
+	container : AudioContainer;
+	data : [ubyte];
+}
+
+
+root_type AudioResource;
+file_identifier "AUDI";
+file_extension "naaud";

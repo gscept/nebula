@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  exporterbase.cc
+//  importerbase.cc
 //  (C) 2011-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "base/exporterbase.h"
+#include "base/importerbase.h"
 #include "net/socket/ipaddress.h"
 #include "io/ioserver.h"
 
@@ -13,7 +13,7 @@
 #include "db/dataset.h"
 #include "db/sqlite3/sqlite3factory.h"
 
-#include "resources/resourceserver.h"
+#include "io/assignregistry.h"
 #include "core/ptr.h"
 
 using namespace ToolkitUtil;
@@ -26,12 +26,12 @@ using namespace Util;
 
 namespace Base
 {
-__ImplementClass(Base::ExporterBase, 'EXBA', Core::RefCounted);
+__ImplementClass(Base::ImporterBase, 'EXBA', Core::RefCounted);
 
 //------------------------------------------------------------------------------
 /**
 */
-ExporterBase::ExporterBase() :
+ImporterBase::ImporterBase() :
 	platform(Platform::Win32),
 	progressCallback(0),
 	minMaxCallback(0),
@@ -50,7 +50,7 @@ ExporterBase::ExporterBase() :
 //------------------------------------------------------------------------------
 /**
 */
-ExporterBase::~ExporterBase()
+ImporterBase::~ImporterBase()
 {
 	// empty
 }
@@ -59,7 +59,7 @@ ExporterBase::~ExporterBase()
 /**
 */
 void
-ExporterBase::Open()
+ImporterBase::Open()
 {
 	n_assert(!this->isOpen);
 	this->isOpen = true;
@@ -93,6 +93,7 @@ ExporterBase::Open()
             Ptr<Db::Table> exportTable = Db::DbFactory::Instance()->CreateTable();
             exportTable->SetName("Mappings");
             exportTable->AddColumn(Db::Column(Attr::URNHash, Db::Column::Primary));
+            exportTable->AddColumn(Db::Column(Attr::WorkHash, Db::Column::Indexed));
             exportTable->AddColumn(Db::Column(Attr::Export, Db::Column::Default));
             exportTable->AddColumn(Db::Column(Attr::Work, Db::Column::Default));
 
@@ -105,7 +106,7 @@ ExporterBase::Open()
 /**
 */
 void
-ExporterBase::Close()
+ImporterBase::Close()
 {
 	n_assert(this->isOpen);
 	this->isOpen = false;
@@ -116,7 +117,7 @@ ExporterBase::Close()
 /**
 */
 void
-ExporterBase::ExportFile(const IO::URI& file)
+ImporterBase::ImportFile(const IO::URI& file)
 {
 	// implement specific behaviour in subclass!
 
@@ -128,7 +129,7 @@ ExporterBase::ExportFile(const IO::URI& file)
 /**
 */
 void
-ExporterBase::ExportDir(const Util::String& category)
+ImporterBase::ExportDir(const Util::String& category)
 {
 	// empty, implement in subclass!
 }
@@ -137,7 +138,7 @@ ExporterBase::ExportDir(const Util::String& category)
 /**
 */
 void
-ExporterBase::ExportAll()
+ImporterBase::ExportAll()
 {
 	// empty, implement in subclass!
 }
@@ -146,7 +147,7 @@ ExporterBase::ExportAll()
 /**
 */
 void
-ExporterBase::Progress(float progress, const Util::String& status)
+ImporterBase::Progress(float progress, const Util::String& status)
 {
 	if (this->remote)
 	{
@@ -177,7 +178,7 @@ ExporterBase::Progress(float progress, const Util::String& status)
 /**
 */
 void
-ExporterBase::SetProgressMinMax(int min, int max)
+ImporterBase::SetProgressMinMax(int min, int max)
 {
 	if (this->remote)
 	{
@@ -205,7 +206,7 @@ ExporterBase::SetProgressMinMax(int min, int max)
 /**
 */
 int
-ExporterBase::CountExports(const Util::String& dir, const Util::String& ext)
+ImporterBase::CountExports(const Util::String& dir, const Util::String& ext)
 {
 	int count = 0;
 	switch (this->exportFlag)
@@ -238,7 +239,7 @@ ExporterBase::CountExports(const Util::String& dir, const Util::String& ext)
 /**
 */
 bool
-ExporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
+ImporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
 {
 	if (this->force)
 	{
@@ -268,7 +269,7 @@ ExporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
 /**
 */
 void
-ExporterBase::ValidateIntermediateFile(String const& filePath)
+ImporterBase::ValidateIntermediateFile(String const& filePath)
 {
 	IoServer* ioServer = IoServer::Instance();
 
@@ -314,7 +315,7 @@ ExporterBase::ValidateIntermediateFile(String const& filePath)
 	Check if any files have been deleted or moved in our work directory as the exported files then needs to be removed.
 */
 void
-ExporterBase::RecurseValidateIntermediates(String const& dir)
+ImporterBase::RecurseValidateIntermediates(String const& dir)
 {
 	
 	IoServer* ioServer = IoServer::Instance();
@@ -336,7 +337,7 @@ ExporterBase::RecurseValidateIntermediates(String const& dir)
 /**
 */
 void
-ExporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output)
+ImporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output)
 {
 	IO::URI const assetPath = "src:";
 	Ptr<JsonWriter> writer = JsonWriter::Create();
@@ -366,13 +367,14 @@ ExporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::U
 /**
 */
 void 
-ExporterBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
+ImporterBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
 {
     Ptr<Db::Table> exportMappings = this->database->GetTableByName("Mappings");
-    Ptr<Db::Dataset> exportDataset = exportMappings->CreateDataset();
+    Ptr<Db::Dataset> exportDataset = exportMappings->CreateDataset();   
     Ptr<Db::FilterSet> filter = exportDataset->Filter();
 
     exportDataset->AddColumn(Attr::URNHash);
+    exportDataset->AddColumn(Attr::WorkHash);
     exportDataset->AddColumn(Attr::Export);
     exportDataset->AddColumn(Attr::Work);
 
@@ -389,6 +391,7 @@ ExporterBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::S
 
     exportValues->AddRow();
     exportValues->SetInt(Attr::URNHash, rowIdx, urnHash);
+    exportValues->SetInt(Attr::WorkHash, rowIdx, work.HashCode());
     exportValues->SetString(Attr::Export, rowIdx, exp);
     exportValues->SetString(Attr::Work, rowIdx, work);
 

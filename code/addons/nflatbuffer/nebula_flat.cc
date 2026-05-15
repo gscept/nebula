@@ -14,7 +14,7 @@ namespace flatbuffers
 Flat::Mat4 Pack(const Math::mat4& v)
 {
     Flat::Mat4 V;
-    v.store(V.mutable_mat4()->data());
+    v.storeu(V.mutable_mat4()->data());
     return V;
 }
 
@@ -24,7 +24,7 @@ Flat::Mat4 Pack(const Math::mat4& v)
 Math::mat4 UnPack(const Flat::Mat4& v)
 {
     Math::mat4 m;
-    m.load(v.mat4()->data());
+    m.loadu(v.mat4()->data());
     return m;
 }
 

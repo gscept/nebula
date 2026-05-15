@@ -7,7 +7,7 @@
     
     (C) 2012-2015 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/importerbase.h"
 #include "toolkit-common/platform.h"
 #include "io/jsonreader.h"
 #include "toolkit-common/toolkitconsolehandler.h"
@@ -21,7 +21,7 @@ class World;
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-class LevelExporter : public Base::ExporterBase
+class LevelExporter : public Base::ImporterBase
 {
     __DeclareClass(LevelExporter);
 public:
@@ -36,7 +36,7 @@ public:
     void Close();
 
     /// exports a single level
-    void ExportFile(const IO::URI& file) override;
+    void ImportFile(const IO::URI& file) override;
     /// exports a directory (does the same as ExportAll)
     void ExportDir(const Util::String& category) override;
     /// exports all levels

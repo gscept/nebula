@@ -17,17 +17,19 @@
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
+struct AnimResourceT;
 class AnimBuilderSaver
 {
 public:
+    /// Save flatbuffers file
+    static bool SaveImport(const IO::URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
     /// Save NAX3 file
-    static bool Save(const IO::URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
-
+    static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::AnimResourceT* resource, Platform::Code platform);
 private:
     /// Write header to stream
-    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
+    static void WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write anim header to stream
-    static void WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
+    static void WriteAnimations(const Ptr<IO::Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const System::ByteOrder& byteOrder);
 };
 
 } // namespace ToolkitUtil

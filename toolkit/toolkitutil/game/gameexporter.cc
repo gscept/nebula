@@ -36,7 +36,7 @@ GameExporter::~GameExporter()
 void 
 GameExporter::Open()
 {
-    ExporterBase::Open();
+    ImporterBase::Open();
 }
 
 //------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ GameExporter::Open()
 void 
 GameExporter::Close()
 {
-    ExporterBase::Close();
+    ImporterBase::Close();
 }
 
 //------------------------------------------------------------------------------

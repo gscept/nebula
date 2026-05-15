@@ -94,13 +94,13 @@ NglTFScene::~NglTFScene()
 */
 void
 NglTFScene::Setup(Gltf::Document* scene
-                  , const ToolkitUtil::ExportFlags& exportFlags
+                  , const ToolkitUtil::ImportFlags& importFlags
                   , float scale)
 {
     n_assert(scene);
 
     // set export settings
-    this->flags = exportFlags;
+    this->flags = importFlags;
 
     if (scene->scene == -1)
     {

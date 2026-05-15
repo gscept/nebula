@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class ToolkitUtil::NglTFMaterialExtractor
+    @class ToolkitUtil::GltfFileMaterialExtractor
 
     Extracts and exports a GLTF file material into a Nebula surface binary file
 
@@ -13,13 +13,13 @@
 
 namespace ToolkitUtil
 {
-class NglTFMaterialExtractor
+class GltfFileMaterialExtractor
 {
 public:
     /// constructor
-    NglTFMaterialExtractor();
+    GltfFileMaterialExtractor();
     /// destructor
-    ~NglTFMaterialExtractor();
+    ~GltfFileMaterialExtractor();
 
     void SetDocument(Gltf::Document const* document);
     void SetLogger(ToolkitUtil::Logger* logger);
@@ -47,7 +47,7 @@ private:
 /**
 */
 inline void
-NglTFMaterialExtractor::SetDocument(Gltf::Document const* document)
+GltfFileMaterialExtractor::SetDocument(Gltf::Document const* document)
 {
     this->doc = document;
 }
@@ -56,7 +56,7 @@ NglTFMaterialExtractor::SetDocument(Gltf::Document const* document)
 /**
 */
 inline void 
-NglTFMaterialExtractor::SetLogger(ToolkitUtil::Logger* logger)
+GltfFileMaterialExtractor::SetLogger(ToolkitUtil::Logger* logger)
 {
     this->logger = logger;
 }
@@ -65,7 +65,7 @@ NglTFMaterialExtractor::SetLogger(ToolkitUtil::Logger* logger)
 /**
 */
 inline void
-NglTFMaterialExtractor::SetCategoryName(Util::String const& categoryName)
+GltfFileMaterialExtractor::SetCategoryName(Util::String const& categoryName)
 {
     this->catName = categoryName;
 }
@@ -74,7 +74,7 @@ NglTFMaterialExtractor::SetCategoryName(Util::String const& categoryName)
 /**
 */
 inline void
-NglTFMaterialExtractor::SetExportSubDirectory(Util::String const& subDir)
+GltfFileMaterialExtractor::SetExportSubDirectory(Util::String const& subDir)
 {
     this->subDir = subDir;
 }

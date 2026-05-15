@@ -25,7 +25,7 @@ void ModelSetup(AssetEditorItem* item)
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
-        item->name,
+        item->path.LocalPath(),
         "preview",
         [gid = item->previewObject]()
         {

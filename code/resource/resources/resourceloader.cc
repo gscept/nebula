@@ -450,13 +450,12 @@ skip_stream:
 /**
 */
 Resources::ResourceId
-Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream)
+Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream)
 {
     // this assert should maybe be removed in favor of putting things on a queue if called from another thread
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 
     // Store the file path as ID for the file
-    IO::URI path(res.Value());
     IndexT i = this->ids.FindIndex(path.GetHostAndLocalPath());
 
     // Setup return value as placeholder by default

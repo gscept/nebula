@@ -22,6 +22,9 @@
 #include "textureasseteditor.h"
 #include "particleasseteditor.h"
 
+#include "editor/tools/livebatcher.h"
+#include "io/assignregistry.h"
+
 #include "materials/gpulang/material_interfaces.h"
 
 namespace Presentation
@@ -172,7 +175,7 @@ AssetEditor::Run(SaveMode save)
                 }
 
                 bool open = true;
-                Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
+                Util::String assetName = Editor::PathConverter::StripAssetName(item.path.LocalPath());
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
@@ -307,33 +310,46 @@ Setup(AssetEditorItem* item)
 /**
 */
 void
-AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
+AssetEditor::Open(const IO::URI& asset, const AssetType type)
 {
     // If we try to load the same item, just focus that one
     for (AssetEditorItem& item : assetEditorState.items)
     {
-        if (item.name == asset)
+        if (item.path == asset)
         {
             item.grabFocus = true;
             return;
         }
     }
 
-    if (!Resources::ResourceServer::Instance()->HasStreamLoader(asset.AsString().GetFileExtension()))
+    IO::URI exportFile = IO::AssignRegistry::Instance()->ResolveWorkToExport(asset.LocalPath());
+
+    // If there is no export, quickly batch it
+    if (exportFile.IsEmpty())
+    {
+        Editor::LiveBatcher::BatchFile(asset);
+        Editor::LiveBatcher::Wait();
+
+        // The file has to be exported now, so go get it
+        exportFile = IO::AssignRegistry::Instance()->ResolveWorkToExport(asset.LocalPath());
+    }
+
+    if (!Resources::ResourceServer::Instance()->HasStreamLoader(exportFile.LocalPath().GetFileExtension()))
     {
         // we just ignore for now
         return;
     }
 
     // Otherwise, trigger an async load and setup a new item
-    Resources::CreateResource(asset, "editor",
-        [asset, type](Resources::ResourceId id)
+    Resources::CreateResource(exportFile.LocalPath(), "editor",
+        [exportFile, asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;
             item.assetType = type;
             item.res = id;
-            item.name = asset;
+            item.source = asset;
+            item.path = exportFile;
             item.grabFocus = true;
             item.editCounter = 0;
             Setup(&item);

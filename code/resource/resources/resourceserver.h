@@ -20,13 +20,6 @@
 #include "db/dbfactory.h"
 #include "db/database.h"
 
-namespace Attr
-{
-DeclareAttrInt(URNHash);
-DeclareAttrString(Export);
-DeclareAttrString(Work);
-}
-
 namespace Resources
 {
 class ResourceServer : public Core::RefCounted
@@ -118,9 +111,6 @@ private:
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
     Util::Array<Ptr<ResourceLoader>> loaders;
 
-    Ptr<Db::Database> database;
-    Ptr<Db::DbFactory> dbFactory;
-
     static int32_t UniquePoolCounter;
 };
 
@@ -163,7 +153,7 @@ Resources::ResourceServer::CreateResource(
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(res, nullptr, 0, tag, success, failed, immediate, stream);
+    Resources::ResourceId id = loader->CreateResource(IO::URI(res.AsString()), nullptr, 0, tag, success, failed, immediate, stream);
     return id;
 }
 
@@ -246,7 +236,7 @@ ResourceServer::CreateResource(
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
+    Resources::ResourceId id = loader->CreateResource(IO::URI(res.Value()), &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
     return id;
 }
 
@@ -288,7 +278,7 @@ inline Resources::ResourceId ResourceServer::CreateResource(
     const IO::URI& uri = this->resourcePathLookupMap[res.AsString()];
 
     // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(uri.LocalPath(), &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
+    Resources::ResourceId id = loader->CreateResource(uri, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
     return id;
 }
 

@@ -11,6 +11,8 @@
 #include "toolkit-common/applauncher.h"
 #include "io/uri.h"
 
+#include "flat/texture.h"
+
 namespace ToolkitUtil
 {
 class CompressonatorConversionJob : public TextureConversionJob
@@ -19,7 +21,7 @@ public:
     /// Constructor
     CompressonatorConversionJob();
     /// perform conversion
-    virtual bool Convert();
+    virtual bool Convert(ToolkitUtil::TextureResourceT* texture);
     
 };
 

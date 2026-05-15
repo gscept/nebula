@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 
-#include "toolkitutil/model/import/fbx/nfbxexporter.h"
-
 #include "assetbatcherapp.h"
 #include "io/assignregistry.h"
 #include "core/coreserver.h"
@@ -158,7 +156,7 @@ AssetBatcherApp::DoWork()
     String dir = "";
     String file = "";
     String source = "";
-    ExporterBase::ExportFlag exportFlag = ExporterBase::All;
+    ImporterBase::ExportFlag exportFlag = ImporterBase::All;
     Dictionary<String, String> sources;
 
     Jobs2::JobSystemInitInfo systemInit;
@@ -201,17 +199,17 @@ AssetBatcherApp::DoWork()
             this->logger.Error("Specified asset argument without source argument\n");
             return;
         }
-        exportFlag = ExporterBase::Dir;
+        exportFlag = ImporterBase::Dir;
         dir = this->args.GetString("-asset");
     }
     if (this->args.HasArg("-dir"))
     {
-        exportFlag = ExporterBase::Dir;
+        exportFlag = ImporterBase::Dir;
         dir = this->args.GetString("-dir");
     }
     if (this->args.HasArg("-file"))
     {
-        exportFlag = ExporterBase::File;
+        exportFlag = ImporterBase::File;
         file = this->args.GetString("-file");
     }
     if (this->args.HasArg("-force"))
@@ -283,7 +281,7 @@ AssetBatcherApp::DoWork()
     {
         switch (exportFlag)
         {
-            case ExporterBase::All:
+            case ImporterBase::All:
             {
                 for (auto const& src : sources)
                 {
@@ -295,7 +293,7 @@ AssetBatcherApp::DoWork()
                 }
                 break;
             }
-            case ExporterBase::Dir:
+            case ImporterBase::Dir:
             {
                 IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", sources[source]));
                 int files = IO::IoServer::Instance()->ListDirectories("src:assets/", "*").Size();
@@ -304,14 +302,14 @@ AssetBatcherApp::DoWork()
                 exporter->ExportDir(dir);
                 break;
             }
-            case ExporterBase::File:
+            case ImporterBase::File:
             {
                 IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", dir));
                 exporter->UpdateSource();
                 IO::URI basePath("proj:work/assets");
-                exporter->SetCategory(dir.StripSubpath(basePath.LocalPath()));
+                exporter->SetFolder(dir.StripSubpath(basePath.LocalPath()));
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ExportFile("src:" + file);
+                exporter->ImportFile("src:" + file);
                 break;
             }
         }
@@ -443,7 +441,7 @@ AssetBatcherApp::CreateFileList()
         }
 
         // update progressbar in batchexporter
-        Ptr<Base::ExporterBase> dummy = Base::ExporterBase::Create();
+        Ptr<Base::ImporterBase> dummy = Base::ImporterBase::Create();
         dummy->SetProgressMinMax(0, res.Size() * PRECISION);
     }
     return res;

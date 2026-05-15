@@ -334,14 +334,14 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         // We currently don't support meshes without normals and tangents.
         if (!attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Normal>())
         {
-            //if (AllBits(context->flags, ExportFlags::CalcNormals))
+            //if (AllBits(context->flags, ImportFlags::CalcNormals))
             {
                 meshBuilder->CalculateNormals();
             }
         }
         if (!attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>())
         {
-            //if (AllBits(context->flags, ExportFlags::CalcTangents))
+            //if (AllBits(context->flags, ImportFlags::CalcTangents))
             {
                 meshBuilder->CalculateTangents();
             }

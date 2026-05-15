@@ -41,10 +41,11 @@ public:
     /// get a single vertex index
     IndexT GetVertexIndex(IndexT cornerIndex) const;
 
+    IndexT vertexIndex[3];
+
 private:
     friend class MeshBuilder;
 
-    IndexT vertexIndex[3];
 };
 
 } // namespace ToolkitUtil

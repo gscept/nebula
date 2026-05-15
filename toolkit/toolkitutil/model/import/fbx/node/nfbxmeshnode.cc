@@ -40,7 +40,7 @@ NFbxMeshNode::ExtractMesh(
     SceneNode* node
     , Util::Array<MeshBuilder>& meshes
     , const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup
-    , const ToolkitUtil::ExportFlags flags
+    , const ToolkitUtil::ImportFlags flags
 )
 {
     node->mesh.meshIndex = meshes.Size();

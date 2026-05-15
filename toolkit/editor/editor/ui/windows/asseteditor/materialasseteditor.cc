@@ -404,20 +404,16 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
     memcpy(itemData->originalConstants, itemData->constants, materialTemplate->bufferSize);
     memcpy(itemData->originalImages, itemData->images, sizeof(ImageHolder) * materialTemplate->numTextures);
 
-    Util::String output = Editor::PathConverter::StripAssetName(item->name.AsString());
-
-    Util::String outFile = Util::Format("assets:%s.sur", output.AsCharPtr());
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
-    stream->SetURI(outFile);
+    stream->SetURI(item->source);
 
     MaterialSerialize(stream, itemData, item->asset.material, materialTemplate);
 
     // Also perform export
     ToolkitUtil::BinaryXmlConverter converter;
-    Util::String expFile = Util::Format("sur:%s.sur", output.AsCharPtr());
     ToolkitUtil::Logger logger;
-    converter.ConvertFile(outFile, expFile, logger);
+    converter.ConvertFile(item->source.LocalPath(), item->path.LocalPath(), logger);
 
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;

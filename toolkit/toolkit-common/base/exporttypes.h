@@ -17,7 +17,7 @@ enum MeshFlags
     HasTangents = 0x10
 };
 
-enum ExportFlags
+enum ImportFlags
 {
     None = 0,
     RemoveRedundant = 1 << 0,

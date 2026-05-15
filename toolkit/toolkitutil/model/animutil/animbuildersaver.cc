@@ -8,6 +8,10 @@
 #include "io/ioserver.h"
 #include "coreanimation/naxfileformatstructs.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/anim.h"
+
 namespace ToolkitUtil
 {
 using namespace Util;
@@ -20,7 +24,70 @@ using namespace Math;
 /**
 */
 bool
-AnimBuilderSaver::Save(const URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform)
+AnimBuilderSaver::SaveImport(const URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform)
+{
+    // make sure the target directory exists
+    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+
+    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
+    stream->SetAccessMode(Stream::WriteAccess);
+    if (stream->Open())
+    {
+        ToolkitUtil::AnimResourceT anims;
+        for (const auto& builder : animBuilders)
+        {
+            auto anim = std::make_unique<ToolkitUtil::AnimInstanceT>();
+            anim->keys = { builder.keys.Begin(), builder.keys.End() };
+            anim->key_times = {builder.keyTimes.Begin(), builder.keyTimes.End()};
+
+            for (const auto& curve : builder.curves)
+            {
+                ToolkitUtil::AnimCurve curveT(curve.firstKeyOffset, curve.firstTimeOffset, curve.numKeys, curve.curveType, curve.preInfinityType, curve.postInfinityType);
+                anim->curves.push_back(std::move(curveT));
+            }
+            for (const auto& event : builder.events)
+            {
+                auto eventT = std::make_unique<ToolkitUtil::AnimEventT>();
+                eventT->name = event.name.AsString();
+                eventT->category = event.category.AsString();
+                eventT->time = event.time;
+                anim->events.push_back(std::move(eventT));
+            }
+            for (const auto& clip : builder.clips)
+            {
+                auto clipT = std::make_unique<ToolkitUtil::AnimClipT>();
+                clipT->name = clip.GetName().AsString();
+                clipT->first_curve_offset = clip.firstCurveOffset;
+                clipT->num_curves = clip.numCurves;
+                clipT->first_event_offset = clip.firstEventOffset;
+                clipT->num_events = clip.numEvents;
+                clipT->first_velocity_curve_offset = clip.firstVelocityCurveOffset;
+                clipT->num_velocity_curves = clip.numVelocityCurves;
+                clipT->duration = clip.duration;
+                anim->clips.push_back(std::move(clipT));
+            }
+            anims.animations.push_back(std::move(anim));
+        }
+
+        Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::AnimResource>(anims);
+        stream->Write(data.GetPtr(), data.Size());
+
+        stream->Close();
+        stream = nullptr;
+        return true;
+    }
+    else
+    {
+        // failed to open write stream
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AnimBuilderSaver::SaveBinary(const URI& uri, const ToolkitUtil::AnimResourceT* resource, Platform::Code platform)
 {
     // make sure the target directory exists
     IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
@@ -30,8 +97,8 @@ AnimBuilderSaver::Save(const URI& uri, const Util::Array<AnimBuilder>& animBuild
     if (stream->Open())
     {
         ByteOrder byteOrder(ByteOrder::Host, Platform::GetPlatformByteOrder(platform));
-        AnimBuilderSaver::WriteHeader(stream, animBuilders, byteOrder);
-        AnimBuilderSaver::WriteAnimations(stream, animBuilders, byteOrder);
+        AnimBuilderSaver::WriteHeader(stream, resource, byteOrder);
+        AnimBuilderSaver::WriteAnimations(stream, resource, byteOrder);
 
         stream->Close();
         stream = nullptr;
@@ -48,12 +115,12 @@ AnimBuilderSaver::Save(const URI& uri, const Util::Array<AnimBuilder>& animBuild
 /**
 */
 void
-AnimBuilderSaver::WriteHeader(const Ptr<Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const ByteOrder& byteOrder)
+AnimBuilderSaver::WriteHeader(const Ptr<Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const ByteOrder& byteOrder)
 {
     // setup header
     Nax3Header nax3Header;
     nax3Header.magic         = byteOrder.Convert<uint>(NEBULA_NAX3_MAGICNUMBER);
-    nax3Header.numAnimations = byteOrder.Convert(animBuilders.Size());
+    nax3Header.numAnimations = byteOrder.Convert(resource->animations.size());
 
     // write header
     stream->Write(&nax3Header, sizeof(nax3Header));
@@ -63,19 +130,19 @@ AnimBuilderSaver::WriteHeader(const Ptr<Stream>& stream, const Util::Array<AnimB
 /**
 */
 void 
-AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder)
+AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const System::ByteOrder& byteOrder)
 {
-    for (auto& anim : animBuilders)
+    for (auto& anim : resource->animations)
     {
         Nax3Anim nax3;
-        nax3.numClips = anim.GetNumClips();
-        nax3.numEvents = anim.events.Size();
-        nax3.numCurves = anim.curves.Size();
-        nax3.numKeys = anim.keys.Size();
+        nax3.numClips = anim->clips.size();
+        nax3.numEvents = anim->events.size();
+        nax3.numCurves = anim->curves.size();
+        nax3.numKeys = anim->keys.size();
         nax3.numIntervals = 0;
-        for (const auto& curve : anim.curves)
+        for (const auto& curve : anim->curves)
         {
-            nax3.numIntervals += curve.numKeys == 0 ? 0 : curve.numKeys - 1;
+            nax3.numIntervals += curve.num_keys() == 0 ? 0 : curve.num_keys() - 1;
         }
 
         // write header
@@ -83,15 +150,15 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
 
         Util::Array<Nax3Interval> intervals;
 
-        for (const auto& curve : anim.curves)
+        for (const auto& curve : anim->curves)
         {
             // write curve attributes
             Nax3Curve nax3Curve;
             nax3Curve.firstIntervalOffset = intervals.Size();
-            nax3Curve.numIntervals = curve.numKeys == 0 ? 0 : curve.numKeys - 1;
-            nax3Curve.preInfinityType = curve.preInfinityType;
-            nax3Curve.postInfinityType = curve.postInfinityType;
-            nax3Curve.curveType = curve.curveType;
+            nax3Curve.numIntervals = curve.num_keys() == 0 ? 0 : curve.num_keys() - 1;
+            nax3Curve.preInfinityType = curve.pre_infinity();
+            nax3Curve.postInfinityType = curve.post_infinity();
+            nax3Curve.curveType = curve.type();
 
             byteOrder.ConvertInPlace(nax3Curve.firstIntervalOffset);
             byteOrder.ConvertInPlace(nax3Curve.numIntervals);
@@ -99,32 +166,32 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             // write to stream
             stream->Write(&nax3Curve, sizeof(nax3Curve));            
 
-            int stride = curve.curveType == CurveType::Rotation ? 4 : 3;
+            int stride = curve.type() == CurveType::Rotation ? 4 : 3;
 
             // Create intervals for the keys
             for (IndexT i = 0; i < nax3Curve.numIntervals; i++)
             {
-                Timing::Tick start = anim.keyTimes[curve.firstTimeOffset + i];
-                Timing::Tick end = anim.keyTimes[curve.firstTimeOffset + i + 1];
+                Timing::Tick start = anim->key_times[curve.first_time_offset() + i];
+                Timing::Tick end = anim->key_times[curve.first_time_offset() + i + 1];
                 Nax3Interval interval;
 
                 interval.start = byteOrder.Convert(start);
                 interval.end = byteOrder.Convert(end);
-                interval.key0 = byteOrder.Convert(curve.firstKeyOffset + i * stride);
-                interval.key1 = byteOrder.Convert(curve.firstKeyOffset + (i + 1) * stride);
+                interval.key0 = byteOrder.Convert(curve.first_key_offset() + i * stride);
+                interval.key1 = byteOrder.Convert(curve.first_key_offset() + (i + 1) * stride);
                 interval.duration = 1 / float(interval.end - interval.start);
 
                 intervals.Append(interval);
             }
         }
 
-        for (const auto& animEvent : anim.events)
+        for (const auto& animEvent : anim->events)
         {
             Nax3AnimEvent nax3AnimEvent;
 
             // check name restrictions
-            const String& eventName = animEvent.name.AsString();
-            const String& categoryName = animEvent.category.AsString();
+            const String& eventName = animEvent->name;
+            const String& categoryName = animEvent->category;
             if (eventName.Length() >= sizeof(nax3AnimEvent.name))
             {
                 n_error("AnimBuilderSaver: Anim event name too long! (file=%s, event=%s)\n",
@@ -140,7 +207,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             }
 
             // write event attributes
-            nax3AnimEvent.keyIndex = byteOrder.Convert(animEvent.time);
+            nax3AnimEvent.keyIndex = byteOrder.Convert(animEvent->time);
             eventName.CopyToBuffer(&(nax3AnimEvent.name[0]), sizeof(nax3AnimEvent.name));
             categoryName.CopyToBuffer(&(nax3AnimEvent.category[0]), sizeof(nax3AnimEvent.category));
 
@@ -149,15 +216,15 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
         }
 
         uint curveOffset = 0, eventOffset = 0, velocityCurveOffset = 0;
-        SizeT numClips = anim.GetNumClips();
+        SizeT numClips = anim->clips.size();
         IndexT clipIndex;
         for (clipIndex = 0; clipIndex < numClips; clipIndex++)
         {
-            AnimBuilderClip& clip = anim.GetClipAtIndex(clipIndex);
+            const auto& clip = anim->clips[clipIndex];
             Nax3Clip nax3Clip;
 
             // check clip name restrictions
-            const String& clipName = clip.GetName().AsString();
+            const String& clipName = clip->name;
             if (clipName.Length() >= sizeof(nax3Clip.name))
             {
                 n_error("AnimBuilderSaver: Clip name '%s' is too long (%s)!\n", clipName.AsCharPtr(), stream->GetURI().LocalPath().AsCharPtr());
@@ -168,14 +235,14 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             nax3Clip.firstCurve = byteOrder.Convert(curveOffset);
             nax3Clip.firstEvent = byteOrder.Convert(eventOffset);
             nax3Clip.firstVelocityCurve = byteOrder.Convert(velocityCurveOffset);
-            nax3Clip.numCurves = byteOrder.Convert(clip.numCurves);
-            nax3Clip.numEvents = byteOrder.Convert(clip.numEvents);
-            nax3Clip.numVelocityCurves = byteOrder.Convert(clip.numVelocityCurves);
-            nax3Clip.duration = byteOrder.Convert(clip.duration);
+            nax3Clip.numCurves = byteOrder.Convert(clip->num_curves);
+            nax3Clip.numEvents = byteOrder.Convert(clip->num_events);
+            nax3Clip.numVelocityCurves = byteOrder.Convert(clip->num_velocity_curves);
+            nax3Clip.duration = byteOrder.Convert(clip->duration);
 
-            curveOffset += clip.numCurves;
-            eventOffset += clip.numEvents;
-            velocityCurveOffset += clip.numVelocityCurves;
+            curveOffset += clip->num_curves;
+            eventOffset += clip->num_events;
+            velocityCurveOffset += clip->num_velocity_curves;
 
             // write clip header to stream
             stream->Write(&nax3Clip, sizeof(nax3Clip));
@@ -186,7 +253,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             stream->Write(&interval, sizeof(Nax3Interval));
         }
 
-        for (const float key : anim.keys)
+        for (const float key : anim->keys)
         {
             float value = byteOrder.Convert(key);
             stream->Write(&value, sizeof(float));

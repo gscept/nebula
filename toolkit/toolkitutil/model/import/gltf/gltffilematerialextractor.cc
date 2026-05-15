@@ -3,7 +3,7 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "ngltfmaterialexporter.h"
+#include "gltffilematerialextractor.h"
 #include "io/ioserver.h"
 #include "io/binarywriter.h"
 #include "io/filestream.h"
@@ -15,7 +15,7 @@ namespace ToolkitUtil
 //------------------------------------------------------------------------------
 /**
 */
-NglTFMaterialExtractor::NglTFMaterialExtractor()
+GltfFileMaterialExtractor::GltfFileMaterialExtractor()
 {
     // empty
 }
@@ -23,7 +23,7 @@ NglTFMaterialExtractor::NglTFMaterialExtractor()
 //------------------------------------------------------------------------------
 /**
 */
-NglTFMaterialExtractor::~NglTFMaterialExtractor()
+GltfFileMaterialExtractor::~GltfFileMaterialExtractor()
 {
     // empty
 }
@@ -32,7 +32,7 @@ NglTFMaterialExtractor::~NglTFMaterialExtractor()
 /**
 */
 Util::Array<IO::URI>
-NglTFMaterialExtractor::ExportAll()
+GltfFileMaterialExtractor::ExportAll()
 {
     Util::Array<IO::URI> outputFiles;
     String surfaceExportPath = "sur:" + this->catName + "/" + this->subDir;
@@ -131,7 +131,7 @@ NglTFMaterialExtractor::ExportAll()
 /**
 */
 void
-NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material const& material)
+GltfFileMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material const& material)
 {
     if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
     {

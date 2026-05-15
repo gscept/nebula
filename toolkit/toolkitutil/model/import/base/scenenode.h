@@ -72,7 +72,7 @@ private:
     friend class SceneWriter;
     friend class Scene;
     
-    friend class ModelExporter;
+    friend class ModelImporter;
     friend void MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
     NodeType type;
@@ -93,7 +93,7 @@ private:
         bool                            isRoot = false;
         bool                            isSkin = false;
 
-        ToolkitUtil::ExportFlags        exportFlags;
+        ToolkitUtil::ImportFlags        importFlags;
 
         Util::Array<SceneNode*>         children;
         SceneNode*                      parent = nullptr;

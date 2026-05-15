@@ -8,10 +8,10 @@
     (C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/importerbase.h"
 namespace ToolkitUtil
 {
-class ParticleExporter : public Base::ExporterBase
+class ParticleExporter : public Base::ImporterBase
 {
     __DeclareClass(ParticleExporter);
 public:
@@ -21,6 +21,6 @@ public:
     virtual ~ParticleExporter();
 
     /// exports a single file
-    void ExportFile(const IO::URI& file);
+    void ImportFile(const IO::URI& file);
 };
 } // namespace ToolkitUtil
