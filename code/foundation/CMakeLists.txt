@@ -12,7 +12,11 @@ if (EXISTS "${NROOT}/syswork/export.zip")
     set_target_properties(system_resources-res PROPERTIES FOLDER Resources)
 endif()
 
-nebula_begin_module(foundation)
+if(FIPS_WINDOWS)
+    nebula_begin_module(foundation)
+else()
+    nebula_begin_shared_module(foundation)
+endif()
     
     target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h ${CMAKE_CURRENT_SOURCE_DIR}/math/mat4.h ${CMAKE_CURRENT_SOURCE_DIR}/io/binaryreader.h)
     if(FIPS_LINUX)
@@ -658,6 +662,8 @@ nebula_begin_module(foundation)
             system/posix/posixsysteminfo.cc
             system/posix/posixenvironment.cc
             system/posix/posixenvironment.h
+            system/posix/posixlibrary.cc
+            system/posix/posixlibrary.h
             system/posix/posixsettings.cc
             system/posix/posixsettings.h
         )
@@ -701,6 +707,10 @@ nebula_begin_module(foundation)
         fips_dir(threading/gcc GROUP "threading/gcc")
         fips_files(gccinterlocked.cc)
     endif()
-nebula_end_module()
+if(FIPS_WINDOWS)
+    nebula_end_module()
+else()
+    nebula_end_shared_module()
+endif()
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})

@@ -62,12 +62,14 @@ public:
 private:
     RenderMode renderMode = TexturedLit;
 
-    Graphics::ViewId view;
-    Graphics::GraphicsEntityId directionalLight;
+    Graphics::ViewId view = Graphics::InvalidViewId;
+    Graphics::GraphicsEntityId directionalLight = Graphics::InvalidGraphicsEntityId;
 
-    CoreGraphics::TextureId targetTexture;
+    CoreGraphics::TextureId targetTexture = CoreGraphics::InvalidTextureId;
     Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
+
+    bool ownsView = false;
 
     bool focused = false;
 

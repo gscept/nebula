@@ -8,6 +8,8 @@ fips_files(databasetest.cc
     idtest.cc
     idtest.h
     main.cc
+    moduletest.cc
+    moduletest.h
     scriptingtest.cc
     scriptingtest.h
     blueprints_test.json

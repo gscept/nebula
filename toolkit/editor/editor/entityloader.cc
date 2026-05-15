@@ -45,6 +45,14 @@ SaveEntities(const char* filePath)
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
     writer->SetStream(IO::IoServer::Instance()->CreateStream(file));
 
+    struct ScopedEntityOverrideCleanup
+    {
+        ~ScopedEntityOverrideCleanup()
+        {
+            Game::ComponentSerialization::OverrideType(Game::ComponentSerialization::ENTITY, nullptr, nullptr);
+        }
+    } cleanup;
+
     // TODO: Maybe move this to a SceneSerializer class that can be used outside of the editor as well.
 
     // TODO: only set once, both serialize and deserialize

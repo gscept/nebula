@@ -7,6 +7,7 @@
 #include "game/featureunit.h"
 #include "game/gameserver.h"
 #include "gameserver.h"
+#include "memdb/attributeregistry.h"
 
 namespace Game
 {
@@ -44,7 +45,15 @@ FeatureUnit::OnAttach()
 void
 FeatureUnit::OnRemove()
 {
-    // empty
+    for (IndexT i = this->registeredComponents.Size() - 1; i >= 0; i--)
+    {
+        const ComponentId cid = this->registeredComponents[i];
+        MemDb::AttributeRegistry::Unregister(cid);
+        Game::ComponentInspection::Unregister(cid);
+        Game::ComponentSerialization::Unregister(cid);
+    }
+
+    this->registeredComponents.Clear();
 }
 
 //------------------------------------------------------------------------------

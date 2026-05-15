@@ -20,6 +20,6 @@ fips_dir(managers)
         inputmanager.cc
     )
 
-fips_deps(foundation application graphicsfeature render resource dynui turbobadger tbui editor)
+fips_deps(foundation application graphicsfeature physicsfeature render audiofeature resource dynui turbobadger tbui editor)
 target_precompile_headers(testtbui PRIVATE [["stdneb.h"]] [["foundation/stdneb.h"]] [["render/stdneb.h"]])
 nebula_end_app()

@@ -42,6 +42,8 @@ struct State
     Game::World* editorWorld;
     /// maps from editor entity index to editable
     Util::Array<Editable> editables;
+    /// result of the last module reload attempt; empty before any attempt
+    Util::String lastReloadStatus;
 };
 
 /// Create the editor
@@ -52,6 +54,19 @@ void Start();
 
 /// Destroy the editor
 void Destroy();
+
+/// Returns true if editor state/world is initialized
+bool IsCreated();
+
+/// Request an explicit module reload.
+/// The reload is deferred to the next frame boundary.
+/// Rejected if play-in-editor is currently active.
+/// Performs a module build first and only queues reload on successful build.
+/// If buildTarget is empty, moduleName is used as build target.
+void RequestModuleReload(const Util::String& moduleName, const Util::String& buildTarget = "");
+
+/// Return the result string of the last RequestModuleReload() attempt.
+const Util::String& GetLastReloadStatus();
 
 /// Start playing the game.
 void PlayGame();

@@ -34,6 +34,8 @@ public:
     Rtti(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
     /// legacy constructor without FourCC for Mangalore compatibility
     Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
+    /// destructor
+    ~Rtti();
     /// equality operator
     bool operator==(const Rtti& rhs) const;
     /// inequality operator

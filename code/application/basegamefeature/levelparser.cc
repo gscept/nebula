@@ -46,6 +46,14 @@ Util::Array<Game::Entity>
 LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
 {
     auto& g2e = this->guidToEntity;
+    struct ScopedEntityOverrideCleanup
+    {
+        ~ScopedEntityOverrideCleanup()
+        {
+            Game::ComponentSerialization::OverrideType(Game::ComponentSerialization::ENTITY, nullptr, nullptr);
+        }
+    } cleanup;
+
     Game::ComponentSerialization::OverrideType( // TODO: this should be a temporary object that is destroyed at end of scope, removing the override
         Game::ComponentSerialization::ENTITY,
         [&g2e](Ptr<IO::JsonReader> const& reader, const char* name, void* data)
@@ -81,47 +89,53 @@ LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
             this->invalidAttrs.Clear();
 
             // load entities, setup guid->entity map
-            reader->SetToFirstChild();
+            bool hasEntities = reader->SetToFirstChild();
             this->guidToEntity.BeginBulkAdd();
-            do
+            if (hasEntities)
             {
-                if (reader->HasAttr("sub_scene"))
+                do
                 {
-                    // 1. Load subscene consisting of multiple entities.
-                    // 2. Group them in editor
-                    //    Maybe this can be made with a sort of hierarchical "Transform"
-                    //    component (changes to this entitys transform is propagated to
-                    //    it's children, and the children needs to have a "parent"
-                    //    component, consisting of local pos, rot, scale and a parent ID)
-                    // 3. Tie them to the scene resource, so that if the resource is
-                    //    updated, the entities are as well
-                }
-                else // regular entity, just load normally
-                {
-                    Game::Entity entity = this->LoadEntity(reader);
-                    entities.Append(entity);
-                }
+                    if (reader->HasAttr("sub_scene"))
+                    {
+                        // 1. Load subscene consisting of multiple entities.
+                        // 2. Group them in editor
+                        //    Maybe this can be made with a sort of hierarchical "Transform"
+                        //    component (changes to this entitys transform is propagated to
+                        //    it's children, and the children needs to have a "parent"
+                        //    component, consisting of local pos, rot, scale and a parent ID)
+                        // 3. Tie them to the scene resource, so that if the resource is
+                        //    updated, the entities are as well
+                    }
+                    else // regular entity, just load normally
+                    {
+                        Game::Entity entity = this->LoadEntity(reader);
+                        entities.Append(entity);
+                    }
 
-            } while (reader->SetToNextChild());
+                } while (reader->SetToNextChild());
+            }
             this->guidToEntity.EndBulkAdd();
 
             // Load components. We do this separately since the entities and their guid
             // needs to be established to be able to patch from GUID to entity in component fields
-            reader->SetToFirstChild();
-            IndexT entityIndex = 0;
-            do
+            if (hasEntities)
             {
-                if (reader->HasAttr("sub_scene"))
+                reader->SetToFirstChild();
+                IndexT entityIndex = 0;
+                do
                 {
-                    // Make sure to load all sub_scene entities data
-                }
-                else // regular entity, just load normally
-                {
-                    Game::Entity entity = entities[entityIndex++];
-                    this->LoadComponents(reader, entity);
-                }
+                    if (reader->HasAttr("sub_scene"))
+                    {
+                        // Make sure to load all sub_scene entities data
+                    }
+                    else // regular entity, just load normally
+                    {
+                        Game::Entity entity = entities[entityIndex++];
+                        this->LoadComponents(reader, entity);
+                    }
 
-            } while (reader->SetToNextChild());
+                } while (reader->SetToNextChild());
+            }
 
             if (!this->invalidAttrs.IsEmpty())
             {

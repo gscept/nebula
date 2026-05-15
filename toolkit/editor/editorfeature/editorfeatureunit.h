@@ -9,6 +9,7 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "game/featureunit.h"
+#include "game/processor.h"
 
 namespace EditorFeature
 {
@@ -35,6 +36,9 @@ public:
     virtual void OnFrame();
 
 private:
+    void RemoveEditorProcessors();
+
+    Util::Array<Game::Processor*> processors;
 };
 
 } // namespace Editor

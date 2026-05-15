@@ -246,8 +246,11 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
 void
 FrameSubpassBatch::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-    const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
-    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, view->GetCamera(), bufferIndex);
+    const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();
+    const Graphics::GraphicsEntityId camera = view != Graphics::InvalidViewId ? Graphics::ViewGetCamera(view) : Graphics::InvalidGraphicsEntityId;
+    if (camera == Graphics::InvalidGraphicsEntityId)
+        return;
+    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, camera, bufferIndex);
 }
 
 } // namespace Frame2

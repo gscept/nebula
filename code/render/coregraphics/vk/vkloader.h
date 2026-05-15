@@ -32,8 +32,13 @@ extern PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName;
 } // namespace Vulkan
 
 #define _IMP_VK(name) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
+#if __WIN32__
 #define _DEC_VK(name) extern PFN_##name name;
 #define _DEF_VK(name) PFN_##name name = nullptr;
+#else
+#define _DEC_VK(name) extern PFN_##name name __attribute__((visibility("hidden")));
+#define _DEF_VK(name) PFN_##name name __attribute__((visibility("hidden"))) = nullptr;
+#endif
 
 #define _IMP_VK_DYN(name, instance) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
 

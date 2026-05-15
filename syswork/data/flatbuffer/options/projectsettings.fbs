@@ -12,9 +12,19 @@ table GISettings
     update_frequency: float = 0.0;
 }
 
+table RuntimeModuleSettings
+{
+    name: string;
+    path: string;
+    enabled: bool = true;
+    required: bool = false;
+}
+
 table ProjectSettings
 {
     gi_settings: GISettings;
+    runtime_modules: [RuntimeModuleSettings];
+    runtime_modules_strict: bool = false;
 }
 
 root_type ProjectSettings;

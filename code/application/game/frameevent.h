@@ -84,6 +84,8 @@ public:
     /// case, use linear probing to insert the processor
     /// into a new batch
     bool TryInsert(Processor* processor);
+    /// Remove a processor from the batch. Does not free the processor.
+    bool RemoveProcessor(Processor* processor);
 
     /// prefilter all processors. Should not be done per frame - instead use CacheTable if you need to do incremental caching
     void Prefilter(World* world, bool force = false);
@@ -95,6 +97,8 @@ public:
     bool async = false;
 
     Util::Array<Processor const*> GetProcessors() const;
+    /// return true if no processors remain in the batch
+    bool IsEmpty() const;
 
 private:
     void ExecuteAsync(World* world);

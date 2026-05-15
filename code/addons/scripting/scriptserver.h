@@ -83,6 +83,11 @@ void
 ScriptServer::RegisterModuleInit(const ScriptModuleInit& init)
 {
     initFuncs.Append(init);
+
+    if (ScriptServer::HasInstance() && ScriptServer::Instance()->IsOpen())
+    {
+        init();
+    }
 }
 
 } // namespace Scripting

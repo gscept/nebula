@@ -23,6 +23,7 @@
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
 #include "basegamefeature/basegamefeatureunit.h"
+#include "game/modulemanager.h"
 
 //------------------------------------------------------------------------------
 namespace App
@@ -49,6 +50,9 @@ public:
     ///
     static bool IsEditorEnabled();
 
+    /// return the module manager (may be nullptr if no runtime modules are configured)
+    Ptr<Game::ModuleManager> GetModuleManager() const;
+
 
 protected:
     /// setup game features
@@ -57,6 +61,10 @@ protected:
     virtual void CleanupGameFeatures(); 
     /// setup app from cmd lines
     virtual void SetupAppFromCmdLineArgs();
+    /// parse runtime module startup options from command line
+    virtual void SetupRuntimeModulesFromCmdLineArgs();
+    /// enable runtime module
+    void EnableRuntimeModule(const Util::String& moduleName, bool required = false);
     
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
@@ -64,6 +72,9 @@ protected:
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
+    Ptr<Game::ModuleManager> moduleManager;
+    Util::Dictionary<Util::String, Game::RuntimeModuleConfig> runtimeModuleConfigs;
+    bool runtimeModuleStrictMode;
 
 
     static bool editorEnabled;

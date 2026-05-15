@@ -273,7 +273,26 @@ private:
 inline Graphics::ContextEntityId
 ModelContext::Alloc()
 {
-    return modelContextAllocator.Alloc();
+    Graphics::ContextEntityId id = modelContextAllocator.Alloc();
+
+    modelContextAllocator.Get<Model_Id>(id.id) = Resources::InvalidResourceId;
+    modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
+    modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
+    modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id) = {
+        .allocation = { .offset = Memory::RangeAllocation::OOM, .size = 0, .node = (uint)Memory::RangeAllocation::OOM },
+        .begin = 0,
+        .end = 0
+    };
+    modelContextAllocator.Get<Model_NodeInstanceStates>(id.id) = {
+        .allocation = { .offset = Memory::RangeAllocation::OOM, .size = 0, .node = (uint)Memory::RangeAllocation::OOM },
+        .begin = 0,
+        .end = 0
+    };
+    modelContextAllocator.Get<Model_Transform>(id.id) = Math::mat4::identity;
+    modelContextAllocator.Get<Model_StageMask>(id.id) = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK;
+    modelContextAllocator.Get<Model_Dirty>(id.id) = false;
+
+    return id;
 }
 
 //------------------------------------------------------------------------------
@@ -287,12 +306,30 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 
     if (rid != Resources::InvalidResourceId) // decrement model resource
         Resources::DiscardResource(rid);
-    rid = Resources::InvalidResourceId;
+    modelContextAllocator.Get<Model_Id>(id.id) = Resources::InvalidResourceId;
 
     modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
     modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
-    TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
-    RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
+
+    auto& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id);
+    if (transformRange.allocation.offset != Memory::RangeAllocation::OOM)
+        TransformInstanceAllocator.Dealloc(transformRange.allocation);
+
+    auto& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(id.id);
+    if (stateRange.allocation.offset != Memory::RangeAllocation::OOM)
+        RenderInstanceAllocator.Dealloc(stateRange.allocation);
+
+    transformRange = {
+        .allocation = { .offset = Memory::RangeAllocation::OOM, .size = 0, .node = (uint)Memory::RangeAllocation::OOM },
+        .begin = 0,
+        .end = 0
+    };
+    stateRange = {
+        .allocation = { .offset = Memory::RangeAllocation::OOM, .size = 0, .node = (uint)Memory::RangeAllocation::OOM },
+        .begin = 0,
+        .end = 0
+    };
+    modelContextAllocator.Get<Model_Dirty>(id.id) = false;
 
     modelContextAllocator.Dealloc(id.id);
 }
