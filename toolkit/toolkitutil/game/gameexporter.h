@@ -5,13 +5,13 @@
     
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/importerbase.h"
+#include "toolkit-common/base/assetprocessorbase.h"
 #include "toolkit-common/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-class GameExporter : public Base::ImporterBase
+class GameExporter : public Base::AssetProcessorBase
 {
     __DeclareClass(GameExporter);
 public:
@@ -26,7 +26,7 @@ public:
     void Close();
 
     /// exports both game and levels
-    void ExportAll();
+    void ProcessAll();
     /// set pointer to a valid logger object
     void SetLogger(Logger* logger);
     /// get tool logs

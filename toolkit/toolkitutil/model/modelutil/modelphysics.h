@@ -37,7 +37,7 @@ public:
     Physics::MeshTopology GetMeshMode();
 
     /// sets export mode
-    void SetExportMode(PhysicsExportMode flags);
+    void SetImportMode(PhysicsExportMode flags);
     /// gets export mode
     PhysicsExportMode GetExportMode();
 

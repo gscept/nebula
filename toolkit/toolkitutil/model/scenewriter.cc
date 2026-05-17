@@ -42,9 +42,8 @@ SceneWriter::GenerateModels(
     IO::IoServer::Instance()->CreateDirectory(basePath);
 
     // extract file path from export path
-    String path = basePath + scene->GetName() + ".xml";
     String file = scene->GetName();
-    String category = path.ExtractLastDirName();
+    String category = basePath.ExtractLastDirName();
 
     // merge file and category into a single name
     String fileCat = category + "/" + scene->GetName();
@@ -272,7 +271,7 @@ SceneWriter::GenerateModels(
     }
 
     String modelFile;
-    modelFile.Format("src:assets/%s/%s.namdl", category.AsCharPtr(), file.AsCharPtr());
+    modelFile.Format("%s/%s.namdl", basePath.AsCharPtr(), file.AsCharPtr());
 
     Ptr<Stream> stream = IoServer::Instance()->CreateStream(modelFile);
     stream->SetAccessMode(Stream::WriteAccess);

@@ -13,7 +13,7 @@ using namespace Util;
 using namespace IO;
 namespace ToolkitUtil
 {
-__ImplementClass(ToolkitUtil::ParticleExporter, 'PAEX', Base::ImporterBase);
+__ImplementClass(ToolkitUtil::ParticleExporter, 'PAEX', Base::AssetProcessorBase);
 
 //------------------------------------------------------------------------------
 /**
@@ -35,7 +35,7 @@ ParticleExporter::~ParticleExporter()
 /**
 */
 void
-ParticleExporter::ImportFile(const IO::URI& file)
+ParticleExporter::ProcessFile(const IO::URI& file)
 {
     // get local path
     String localPath = file.LocalPath();

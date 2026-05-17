@@ -95,44 +95,6 @@ TextureConverter::Discard()
 
 //------------------------------------------------------------------------------
 /**
-    Convert all textures in a given file list.
-*/
-bool
-TextureConverter::ConvertFiles(const Util::Array<Util::String>& files)
-{
-    bool success = true;
-
-    // create temp directory from guid. so that other jobs won't interfere
-    Guid guid;
-    guid.Generate();
-    String tmpDir;
-    tmpDir.Format("%s/%s", "temp:textureconverter", guid.AsString().AsCharPtr());
-
-    // convert each texture in file list
-    IndexT index;
-    for(index = 0; index < files.Size(); index++)
-    {
-        String dirName = files[index].ExtractLastDirName();
-        if (files[index].CheckFileExtension("tga") ||
-            files[index].CheckFileExtension("bmp") ||
-            files[index].CheckFileExtension("dds") ||
-            files[index].CheckFileExtension("png") ||
-            files[index].CheckFileExtension("exr") ||
-            files[index].CheckFileExtension("jpg"))
-        {
-            success = this->ConvertTexture(files[index], "tex:", tmpDir);
-        }
-    }
-    // remove created temp directory of this job
-    if (IoServer::Instance()->DirectoryExists(tmpDir))
-    {
-        IoServer::Instance()->DeleteDirectory(tmpDir);
-    }
-    return success;
-}
-
-//------------------------------------------------------------------------------
-/**
     Convert a source texture defined by an absolute path into a destination
     texture defined by category name and texture name. The destination texture
     name may not have a file extension! This method will just branch to

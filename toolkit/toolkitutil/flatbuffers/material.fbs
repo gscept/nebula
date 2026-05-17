@@ -7,27 +7,60 @@ include "foundation/math.fbs";
 
 namespace ToolkitUtil;
 
-table SkeletonResource
+union MaterialValue
 {
-	skeletons: [SkeletonInstance];
+	MaterialFloatValue,
+	MaterialIntValue,
+	MaterialVec2Value,
+	MaterialVec3Value,
+	MaterialVec4Value,
+	MaterialColorValue,
+	MaterialStringValue
 }
 
-table SkeletonInstance
+table MaterialFloatValue
 {
-	joints : [JointInstance];
+	value : float;
 }
 
-table JointInstance
+table MaterialIntValue
 {
-	name: string;
-	bind : Flat.Transform (native_inline);
-	translation : Flat.Vec3 (native_inline);
-	scale : Flat.Vec3 (native_inline);
-	rotation : Flat.Quat (native_inline);
-	parent: int;
-	index: int;
+	value : int;
 }
 
-root_type SkeletonResource;
-file_identifier "SKER";
-file_extension "naske";
+table MaterialVec2Value
+{
+	value : Flat.Vec2 (native_inline);
+}
+
+table MaterialVec3Value
+{
+	value : Flat.Vec3 (native_inline);
+}
+
+table MaterialVec4Value
+{
+	value : Flat.Vec4 (native_inline);
+}
+
+table MaterialColorValue
+{
+	value : Flat.Vec4 (native_inline);
+}
+
+table MaterialStringValue
+{
+	value : string;
+}
+
+table MaterialResource
+{
+	name : string;
+	template_name: string;
+	value_names : [string];
+	values : [MaterialValue];
+}
+
+root_type MaterialResource;
+file_identifier "MATR";
+file_extension "namat";

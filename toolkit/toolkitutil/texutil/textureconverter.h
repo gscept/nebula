@@ -65,8 +65,6 @@ public:
     void Discard();
     /// return true if the object has been setup
     bool IsValid() const;
-    /// convert all textures from given file list
-    bool ConvertFiles(const Util::Array<Util::String>& files);
     /// convert a texture from a given path
     bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir, const ToolkitUtil::TextureResourceT* tex);
     /// convert a cubemap folder from a given path
@@ -86,15 +84,6 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-TextureConverter::SetTextureAttrTable(TextureAttrTable&& extTexAttrTable)
-{
-    this->textureAttrTable = extTexAttrTable;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline bool
 TextureConverter::IsValid() const
 {
@@ -108,15 +97,6 @@ inline void
 TextureConverter::SetPlatform(Platform::Code p)
 {
     this->platform = p;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetTexAttrTablePath(const Util::String& path)
-{
-    this->texAttrTablePath = path;
 }
 
 //------------------------------------------------------------------------------

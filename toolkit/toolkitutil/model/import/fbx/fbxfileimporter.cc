@@ -18,7 +18,7 @@ using namespace IO;
 using namespace ToolkitUtil;
 namespace ToolkitUtil
 {
-__ImplementClass(ToolkitUtil::FbxFileImporter, 'FBXI', Base::ImporterBase);
+__ImplementClass(ToolkitUtil::FbxFileImporter, 'FBXI', ToolkitUtil::ModelImporter);
 
 Threading::CriticalSection cs;
 //------------------------------------------------------------------------------

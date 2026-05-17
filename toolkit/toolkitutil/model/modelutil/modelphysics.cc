@@ -59,7 +59,7 @@ ModelPhysics::GetMeshMode()
 /**
 */
 void 
-ModelPhysics::SetExportMode(PhysicsExportMode flags)
+ModelPhysics::SetImportMode(PhysicsExportMode flags)
 {
     this->physicsMode = flags;
 }

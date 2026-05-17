@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class ToolkitUtil::ImporterBase
+    @class ToolkitUtil::AssetProcessorBase
     
-    Implements a base class for an exporter
+    Implements a base class for an asset processor
     
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
@@ -16,14 +16,14 @@
 #include "db/database.h"
 #include "db/dbfactory.h"
 
-typedef void (*ExporterProgressCallback) (float progress, const Util::String& status);
-typedef void (*ExporterMinMaxCallback) (int min, int max);
+typedef void (*AssetProcessorProgressCallback) (float progress, const Util::String& status);
+typedef void (*AssetProcessorMinMaxCallback) (int min, int max);
 //------------------------------------------------------------------------------
 namespace Base
 {
-class ImporterBase : public Core::RefCounted
+class AssetProcessorBase : public Core::RefCounted
 {
-    __DeclareClass(ImporterBase);
+    __DeclareClass(AssetProcessorBase);
 
 public:
     enum ExportFlag
@@ -34,9 +34,9 @@ public:
     };
 
     /// constructor
-    ImporterBase();
+    AssetProcessorBase();
     /// destructor
-    virtual ~ImporterBase();
+    virtual ~AssetProcessorBase();
 
     /// opens the exporter
     virtual void Open();
@@ -49,11 +49,11 @@ public:
     void WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output);
 
     /// exports a single file
-    virtual void ImportFile(const IO::URI& file);
+    virtual void ProcessFile(const IO::URI& file);
     /// exports a single directory
-    virtual void ExportDir(const Util::String& category);
+    virtual void ProcessDir(const Util::String& category);
     /// exports all files
-    virtual void ExportAll();
+    virtual void ProcessAll();
 
     /// sets error flag
     void SetHasErrors(bool flag);
@@ -73,9 +73,9 @@ public:
     /// sets if the parser should be used as a remote tool
     void SetRemote(bool remote);
     /// sets the exporter callback (only used if remote is false)
-    void SetProgressCallback(ExporterProgressCallback callback);
+    void SetProgressCallback(AssetProcessorProgressCallback callback);
     /// sets the min-max callback (only used if remote is false)
-    void SetMinMaxCallback(ExporterMinMaxCallback callback);
+    void SetMinMaxCallback(AssetProcessorMinMaxCallback callback);
     /// Set the logger
     void SetLogger(ToolkitUtil::Logger* logger);
 
@@ -111,8 +111,8 @@ protected:
     Ptr<Net::Socket> socket;
     ToolkitUtil::Platform::Code platform;
     ExportFlag exportFlag;
-    ExporterProgressCallback progressCallback;
-    ExporterMinMaxCallback  minMaxCallback;
+    AssetProcessorProgressCallback progressCallback;
+    AssetProcessorMinMaxCallback  minMaxCallback;
     ToolkitUtil::Logger* logger;
 
     Ptr<Db::Database> database;
@@ -129,7 +129,7 @@ protected:
 /**
 */
 inline bool 
-ImporterBase::IsOpen() const
+AssetProcessorBase::IsOpen() const
 {
     return this->isOpen;
 }
@@ -138,7 +138,7 @@ ImporterBase::IsOpen() const
 /**
 */
 inline void 
-ImporterBase::SetHasErrors( bool flag )
+AssetProcessorBase::SetHasErrors( bool flag )
 {
     this->hasErrors = flag;
 }
@@ -147,7 +147,7 @@ ImporterBase::SetHasErrors( bool flag )
 /**
 */
 inline const bool 
-ImporterBase::HasErrors() const
+AssetProcessorBase::HasErrors() const
 {
     return this->hasErrors;
 }
@@ -156,7 +156,7 @@ ImporterBase::HasErrors() const
 /**
 */
 inline void 
-ImporterBase::SetProgressPrecision( int precision )
+AssetProcessorBase::SetProgressPrecision( int precision )
 {
     this->precision = precision;
 }
@@ -165,7 +165,7 @@ ImporterBase::SetProgressPrecision( int precision )
 /**
 */
 inline void 
-ImporterBase::SetFolder( const Util::String& folder )
+AssetProcessorBase::SetFolder( const Util::String& folder )
 {
     this->folder = folder;
 }
@@ -174,7 +174,7 @@ ImporterBase::SetFolder( const Util::String& folder )
 /**
 */
 inline void 
-ImporterBase::SetFile( const Util::String& file )
+AssetProcessorBase::SetFile( const Util::String& file )
 {
     this->file = file;
     this->file.StripFileExtension();
@@ -185,7 +185,7 @@ ImporterBase::SetFile( const Util::String& file )
 /**
 */
 inline void 
-ImporterBase::SetPlatform( ToolkitUtil::Platform::Code platform )
+AssetProcessorBase::SetPlatform( ToolkitUtil::Platform::Code platform )
 {
     this->platform = platform;
 }
@@ -194,7 +194,7 @@ ImporterBase::SetPlatform( ToolkitUtil::Platform::Code platform )
 /**
 */
 inline void 
-ImporterBase::SetExportFlag( ExportFlag exportFlag )
+AssetProcessorBase::SetExportFlag( ExportFlag exportFlag )
 {
     this->exportFlag = exportFlag;
 }
@@ -203,7 +203,7 @@ ImporterBase::SetExportFlag( ExportFlag exportFlag )
 /**
 */
 inline void 
-ImporterBase::SetForce( bool force )
+AssetProcessorBase::SetForce( bool force )
 {
     this->force = force;
 }
@@ -212,7 +212,7 @@ ImporterBase::SetForce( bool force )
 /**
 */
 inline void 
-ImporterBase::SetRemote( bool remote )
+AssetProcessorBase::SetRemote( bool remote )
 {
     this->remote = remote;
 }
@@ -222,7 +222,7 @@ ImporterBase::SetRemote( bool remote )
 /**
 */
 inline void 
-ImporterBase::SetProgressCallback( ExporterProgressCallback callback )
+AssetProcessorBase::SetProgressCallback( AssetProcessorProgressCallback callback )
 {
     this->progressCallback = callback;
 }
@@ -232,7 +232,7 @@ ImporterBase::SetProgressCallback( ExporterProgressCallback callback )
 /**
 */
 inline void 
-ImporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
+AssetProcessorBase::SetMinMaxCallback( AssetProcessorMinMaxCallback callback )
 {
     this->minMaxCallback = callback;
 }
@@ -241,7 +241,7 @@ ImporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
 /**
 */
 inline void 
-ImporterBase::SetLogger(ToolkitUtil::Logger* logger)
+AssetProcessorBase::SetLogger(ToolkitUtil::Logger* logger)
 {
     this->logger = logger;
 }
@@ -250,11 +250,11 @@ ImporterBase::SetLogger(ToolkitUtil::Logger* logger)
 /**
 */
 inline void 
-ImporterBase::ReportError( const char* error, ... )
+AssetProcessorBase::ReportError( const char* error, ... )
 {
     va_list argList;
     va_start(argList, error);
-    if (this->exportFlag == ImporterBase::File)
+    if (this->exportFlag == AssetProcessorBase::File)
     {
         IO::Console::Instance()->Error(error, argList);
     }

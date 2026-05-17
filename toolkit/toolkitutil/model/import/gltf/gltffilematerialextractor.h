@@ -13,6 +13,7 @@
 
 namespace ToolkitUtil
 {
+struct MaterialResourceT;
 class GltfFileMaterialExtractor
 {
 public:
@@ -28,9 +29,9 @@ public:
     void SetExportSubDirectory(Util::String const& subDir);
 
     /// export all .sur files. returns the exported files paths
-    Util::Array<IO::URI> ExportAll();
+    Util::Array<IO::URI> ExtractAll();
 
-    void ExtractMaterial(SurfaceBuilder& builder, Gltf::Material const& material);
+    void ExtractMaterial(ToolkitUtil::MaterialResourceT* materialResource, Gltf::Material const& material);
 private:
     Gltf::Document const* doc;
     Util::String catName;

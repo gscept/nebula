@@ -13,7 +13,7 @@ using namespace Util;
 using namespace IO;
 namespace ToolkitUtil
 {
-__ImplementClass(ToolkitUtil::SurfaceExporter, 'SUEX', Base::ImporterBase);
+__ImplementClass(ToolkitUtil::SurfaceExporter, 'SUEX', Base::AssetProcessorBase);
 
 //------------------------------------------------------------------------------
 /**
@@ -35,7 +35,7 @@ SurfaceExporter::~SurfaceExporter()
 /**
 */
 void
-SurfaceExporter::ImportFile(const IO::URI& file)
+SurfaceExporter::ProcessFile(const IO::URI& file)
 {
     // get local path
     String localPath = file.LocalPath();

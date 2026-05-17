@@ -275,7 +275,7 @@ TextureAttrTable::Save( const Util::String& path )
 
     String nameString = name.AsString();
     nameString.StripFileExtension();
-    nameString = nameString.StripSubpath(IO::URI("tex:").LocalPath());
+    nameString = nameString.StripSubstring(IO::URI("tex:").LocalPath());
 
     // get attributes
     const TextureAttrs& attrs = this->texAttrs[mapIndex];

@@ -58,7 +58,7 @@ ModelImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 /**
 */
 void
-ModelImporter::ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFlags, float scale)
+ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importFlags, float scale)
 {
     // Reset all unique strings
     UniqueString::Reset();
@@ -82,6 +82,8 @@ ModelImporter::ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFl
     timer.Start();
 
     // Run implementation specific scene parsing
+    this->file = file.LocalPath().ExtractFileName();
+    this->file.StripFileExtension();
     if (!this->ParseScene(importFlags, scale))
         return;
 
@@ -105,7 +107,8 @@ ModelImporter::ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFl
     this->scene->OptimizeGraphics(this->logger, mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
 
     Util::String assetPath = IO::URI("src:assets").LocalPath();
-    Util::String relativePath = file.LocalPath().StripSubpath(assetPath);
+    Util::String relativePath = file.LocalPath().StripSubstring(assetPath);
+    relativePath.StripFileExtension();
     IO::URI destinationFiles[] =
     {
         IO::URI(String::Sprintf("%s/%s.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // mesh
@@ -220,7 +223,7 @@ ModelImporter::ImportFile(const IO::URI& file, ToolkitUtil::ImportFlags importFl
 
     // Finally, output model hierarchy to n3
     SceneWriter::GenerateModels(
-        Util::String::Sprintf("%s/", this->folder.AsCharPtr())
+        this->folder
         , this->scene
         , this->platform
         , mergedMeshNodes
@@ -257,13 +260,13 @@ ModelImporter::NeedsConversion(const Util::String& path)
     Util::String animation = "src:assets/" + category + "/" + file + ".naani";    
 
     // check if fbx is newer than model
-    bool sourceNewer = ImporterBase::NeedsConversion(path, model);
+    bool sourceNewer = AssetProcessorBase::NeedsConversion(path, model);
 
     // ...if the mesh is newer
-    bool meshNewer = ImporterBase::NeedsConversion(path, mesh);
+    bool meshNewer = AssetProcessorBase::NeedsConversion(path, mesh);
 
     // check if physics settings were changed. no way to tell if we have a new physics mesh in it, so we just export it anyway
-    bool physicsMeshNewer = ImporterBase::NeedsConversion(path, physMesh);
+    bool physicsMeshNewer = AssetProcessorBase::NeedsConversion(path, physMesh);
 
     // return true if either is true
     return sourceNewer || meshNewer || physicsMeshNewer;

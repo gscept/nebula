@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  importerbase.cc
+//  assetprocessorbase.cc
 //  (C) 2011-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "base/importerbase.h"
+#include "base/assetprocessorbase.h"
 #include "net/socket/ipaddress.h"
 #include "io/ioserver.h"
 
@@ -18,20 +18,17 @@
 
 using namespace ToolkitUtil;
 using namespace Net;
-#if __WIN32__
-//using namespace Win360;
-#endif
 using namespace IO;
 using namespace Util;
 
 namespace Base
 {
-__ImplementClass(Base::ImporterBase, 'EXBA', Core::RefCounted);
+__ImplementClass(Base::AssetProcessorBase, 'EXBA', Core::RefCounted);
 
 //------------------------------------------------------------------------------
 /**
 */
-ImporterBase::ImporterBase() :
+AssetProcessorBase::AssetProcessorBase() :
 	platform(Platform::Win32),
 	progressCallback(0),
 	minMaxCallback(0),
@@ -50,7 +47,7 @@ ImporterBase::ImporterBase() :
 //------------------------------------------------------------------------------
 /**
 */
-ImporterBase::~ImporterBase()
+AssetProcessorBase::~AssetProcessorBase()
 {
 	// empty
 }
@@ -59,7 +56,7 @@ ImporterBase::~ImporterBase()
 /**
 */
 void
-ImporterBase::Open()
+AssetProcessorBase::Open()
 {
 	n_assert(!this->isOpen);
 	this->isOpen = true;
@@ -106,7 +103,7 @@ ImporterBase::Open()
 /**
 */
 void
-ImporterBase::Close()
+AssetProcessorBase::Close()
 {
 	n_assert(this->isOpen);
 	this->isOpen = false;
@@ -117,7 +114,7 @@ ImporterBase::Close()
 /**
 */
 void
-ImporterBase::ImportFile(const IO::URI& file)
+AssetProcessorBase::ProcessFile(const IO::URI& file)
 {
 	// implement specific behaviour in subclass!
 
@@ -129,7 +126,7 @@ ImporterBase::ImportFile(const IO::URI& file)
 /**
 */
 void
-ImporterBase::ExportDir(const Util::String& category)
+AssetProcessorBase::ProcessDir(const Util::String& category)
 {
 	// empty, implement in subclass!
 }
@@ -138,7 +135,7 @@ ImporterBase::ExportDir(const Util::String& category)
 /**
 */
 void
-ImporterBase::ExportAll()
+AssetProcessorBase::ProcessAll()
 {
 	// empty, implement in subclass!
 }
@@ -147,7 +144,7 @@ ImporterBase::ExportAll()
 /**
 */
 void
-ImporterBase::Progress(float progress, const Util::String& status)
+AssetProcessorBase::Progress(float progress, const Util::String& status)
 {
 	if (this->remote)
 	{
@@ -178,7 +175,7 @@ ImporterBase::Progress(float progress, const Util::String& status)
 /**
 */
 void
-ImporterBase::SetProgressMinMax(int min, int max)
+AssetProcessorBase::SetProgressMinMax(int min, int max)
 {
 	if (this->remote)
 	{
@@ -206,7 +203,7 @@ ImporterBase::SetProgressMinMax(int min, int max)
 /**
 */
 int
-ImporterBase::CountExports(const Util::String& dir, const Util::String& ext)
+AssetProcessorBase::CountExports(const Util::String& dir, const Util::String& ext)
 {
 	int count = 0;
 	switch (this->exportFlag)
@@ -239,7 +236,7 @@ ImporterBase::CountExports(const Util::String& dir, const Util::String& ext)
 /**
 */
 bool
-ImporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
+AssetProcessorBase::NeedsConversion(const Util::String& src, const Util::String& dst)
 {
 	if (this->force)
 	{
@@ -269,7 +266,7 @@ ImporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
 /**
 */
 void
-ImporterBase::ValidateIntermediateFile(String const& filePath)
+AssetProcessorBase::ValidateIntermediateFile(String const& filePath)
 {
 	IoServer* ioServer = IoServer::Instance();
 
@@ -315,7 +312,7 @@ ImporterBase::ValidateIntermediateFile(String const& filePath)
 	Check if any files have been deleted or moved in our work directory as the exported files then needs to be removed.
 */
 void
-ImporterBase::RecurseValidateIntermediates(String const& dir)
+AssetProcessorBase::RecurseValidateIntermediates(String const& dir)
 {
 	
 	IoServer* ioServer = IoServer::Instance();
@@ -337,7 +334,7 @@ ImporterBase::RecurseValidateIntermediates(String const& dir)
 /**
 */
 void
-ImporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output)
+AssetProcessorBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output)
 {
 	IO::URI const assetPath = "src:";
 	Ptr<JsonWriter> writer = JsonWriter::Create();
@@ -367,7 +364,7 @@ ImporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::U
 /**
 */
 void 
-ImporterBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
+AssetProcessorBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
 {
     Ptr<Db::Table> exportMappings = this->database->GetTableByName("Mappings");
     Ptr<Db::Dataset> exportDataset = exportMappings->CreateDataset();   

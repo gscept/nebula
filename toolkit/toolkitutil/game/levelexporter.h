@@ -7,7 +7,7 @@
     
     (C) 2012-2015 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/importerbase.h"
+#include "toolkit-common/base/assetprocessorbase.h"
 #include "toolkit-common/platform.h"
 #include "io/jsonreader.h"
 #include "toolkit-common/toolkitconsolehandler.h"
@@ -21,7 +21,7 @@ class World;
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-class LevelExporter : public Base::ImporterBase
+class LevelExporter : public Base::AssetProcessorBase
 {
     __DeclareClass(LevelExporter);
 public:
@@ -36,11 +36,11 @@ public:
     void Close();
 
     /// exports a single level
-    void ImportFile(const IO::URI& file) override;
-    /// exports a directory (does the same as ExportAll)
-    void ExportDir(const Util::String& category) override;
+    void ProcessFile(const IO::URI& file) override;
+    /// exports a directory (does the same as ProcessAll)
+    void ProcessDir(const Util::String& category) override;
     /// exports all levels
-    void ExportAll() override;
+    void ProcessAll() override;
 
     /// set pointer to a valid logger object
     void SetLogger(ToolkitUtil::Logger* logger);

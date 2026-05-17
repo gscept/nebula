@@ -28,8 +28,8 @@ fips_begin_lib(toolkitutil)
 
         fips_dir(asset)
             fips_files(
-                assetexporter.cc
-                assetexporter.h
+                assetbatchprocessor.cc
+                assetbatchprocessor.h
 				assetimporter.cc
 				assetimporter.h
 				assetpackager.cc

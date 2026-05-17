@@ -40,7 +40,7 @@ LevelExporter::~LevelExporter()
 void 
 LevelExporter::Open()
 {
-    ImporterBase::Open();
+    AssetProcessorBase::Open();
 }
 
 
@@ -50,20 +50,20 @@ LevelExporter::Open()
 void 
 LevelExporter::Close()
 {
-    ImporterBase::Close();
+    AssetProcessorBase::Close();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-LevelExporter::ExportAll()
+LevelExporter::ProcessAll()
 {
     String levelDir = "proj:work/levels";
     Array<String> files = IoServer::Instance()->ListFiles(IO::URI(levelDir), "*.json");
     for (int fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
-        this->ImportFile(levelDir + "/" + files[fileIndex]);
+        this->ProcessFile(levelDir + "/" + files[fileIndex]);
     }
 }
 
@@ -71,17 +71,17 @@ LevelExporter::ExportAll()
 /**
 */
 void 
-LevelExporter::ExportDir( const String& category )
+LevelExporter::ProcessDir( const String& category )
 {
     /// fall-through, we want to overload base class but we don't care about category
-    this->ExportAll();
+    this->ProcessAll();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-LevelExporter::ImportFile( const URI& file )
+LevelExporter::ProcessFile( const URI& file )
 {
     n_assert(this->isOpen);
    

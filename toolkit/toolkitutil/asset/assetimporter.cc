@@ -21,15 +21,16 @@ namespace ToolkitUtil
 bool
 ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger)
 {
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     Util::String fileName = file.AsString().ExtractFileName();
+    Util::String fileNameNoExt = fileName;
+    fileNameNoExt.StripFileExtension();
     Ptr<ToolkitUtil::FbxFileImporter> fbxImporter = ToolkitUtil::FbxFileImporter::Create();
     fbxImporter->Open();
     fbxImporter->SetForce(true);
-    fbxImporter->SetFolder(destinationFolder.LocalPath());
+    fbxImporter->SetFolder(Util::String::Sprintf("%s/%s", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr()));
     fbxImporter->SetFile(fileName);
     fbxImporter->SetLogger(logger);
-    fbxImporter->ImportFile(file, importFlags, scale);
+    fbxImporter->ProcessFile(file, importFlags, scale);
     fbxImporter->Close();
     return true;
 }
@@ -41,13 +42,15 @@ bool
 ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger)
 {
     Util::String fileName = file.AsString().ExtractFileName();
+    Util::String fileNameNoExt = fileName;
+    fileNameNoExt.StripFileExtension();
     Ptr<ToolkitUtil::GltfFileImporter> gltfImporter = ToolkitUtil::GltfFileImporter::Create();
     gltfImporter->Open();
     gltfImporter->SetForce(true);
-    gltfImporter->SetFolder(destinationFolder.LocalPath());
+    gltfImporter->SetFolder(Util::String::Sprintf("%s/%s", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr()));
     gltfImporter->SetFile(fileName);
     gltfImporter->SetLogger(logger);
-    gltfImporter->ImportFile(file, importFlags, scale);
+    gltfImporter->ProcessFile(file, importFlags, scale);
     gltfImporter->Close();
     return true;
 }
