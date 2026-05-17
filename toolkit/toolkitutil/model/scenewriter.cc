@@ -28,6 +28,7 @@ using namespace Util;
 void
 SceneWriter::GenerateModels(
     const Util::String& basePath
+    , const IO::URI& modelFileDestination
     , const Scene* scene
     , const Platform::Code platform
     , const Util::Array<SceneNode*>& graphicsNodes
@@ -44,9 +45,6 @@ SceneWriter::GenerateModels(
     // extract file path from export path
     String file = scene->GetName();
     String category = basePath.ExtractLastDirName();
-
-    // merge file and category into a single name
-    String fileCat = category + "/" + scene->GetName();
 
     // Loop through bounding boxes and get our scene bounding box
     Math::bbox globalBox;
@@ -270,10 +268,7 @@ SceneWriter::GenerateModels(
         */
     }
 
-    String modelFile;
-    modelFile.Format("%s/%s.namdl", basePath.AsCharPtr(), file.AsCharPtr());
-
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(modelFile);
+    Ptr<Stream> stream = IoServer::Instance()->CreateStream(modelFileDestination);
     stream->SetAccessMode(Stream::WriteAccess);
     if (stream->Open())
     {

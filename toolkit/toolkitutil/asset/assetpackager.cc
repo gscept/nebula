@@ -19,6 +19,8 @@
 #include "model/animutil/animbuildersaver.h"
 #include "texutil/textureconverter.h"
 
+#include "toolkit-common/text.h"
+
 namespace ToolkitUtil
 {
 
@@ -80,7 +82,9 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
             writer->EndTag();
         };
 
-        IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
         Ptr<IO::Stream> modelStream = IO::IoServer::Instance()->CreateStream(output);
         modelStream->SetAccessMode(IO::Stream::WriteAccess);
         if (modelStream->Open())
@@ -93,7 +97,7 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
             writer->Open();
 
             // begin model
-            writer->BeginModel("Model", 'MODL', model.name);
+            writer->BeginModel("Model", 'MODL', fileNameNoExt);
 
             writer->BeginModelNode("TransformNode", 'TRFN', "root");
 
@@ -112,7 +116,7 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
                     {
                         // write number of masks
                         writer->BeginTag("Number of masks", 'NJMS');
-                        writer->WriteInt(jointMasks.size());
+                        writer->WriteInt((uint)jointMasks.size());
                         writer->EndTag();
 
                         // write joint mask
@@ -120,7 +124,7 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
                         {
                             writer->BeginTag("Joint mask", 'JOMS');
                             writer->WriteString(jointMask->name);
-                            writer->WriteInt(jointMask->weights.size());
+                            writer->WriteInt((uint)jointMask->weights.size());
                             for (const auto weight : jointMask->weights)
                             {
                                 writer->WriteFloat(weight);
@@ -138,7 +142,7 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
 
                     writer->BeginModelNode("CharacterSkinNode", 'CHSN', name);
                     writer->BeginTag("Number of skin fragments", 'NSKF');
-                    writer->WriteInt(skinSet->fragments.size());
+                    writer->WriteInt((uint)skinSet->fragments.size());
                     writer->EndTag();
 
                     for (const auto& skinFragment : skinSet->fragments)
@@ -148,7 +152,7 @@ PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil:
                         writer->WriteInt(skinFragment->shape->prim_group);
 
                         // write the used joints for the fragment
-                        writer->WriteInt(skinFragment->joints.size());
+                        writer->WriteInt((uint)skinFragment->joints.size());
 
                         IndexT j;
                         for (j = 0; j < skinFragment->joints.size(); j++)
@@ -219,7 +223,10 @@ PackageAnimation(const IO::URI& file, const IO::URI& destinationFolder, ToolkitU
         ToolkitUtil::AnimResourceT anim;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::AnimResource>(anim, (const uint8_t*)data);
 
-        IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        IO::URI output = Util::String::Sprintf("%s/%s.nax", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+        logger->Print("%s\n", Util::Format("Packaged animation: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         return ToolkitUtil::AnimBuilderSaver::SaveBinary(output, &anim, Platform::Win32);
     }
     return false;
@@ -241,7 +248,10 @@ PackageSkeleton(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUt
         ToolkitUtil::SkeletonResourceT skeleton;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::SkeletonResource>(skeleton, (const uint8_t*)data);
 
-        IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        IO::URI output = Util::String::Sprintf("%s/%s.nsk", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+        logger->Print("%s\n", Util::Format("Packaged skeleton: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         return ToolkitUtil::SkeletonBuilderSaver::SaveBinary(output, &skeleton, Platform::Win32);
     }
     return false;
@@ -263,7 +273,10 @@ PackageMesh(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::
         ToolkitUtil::MeshResourceT mesh;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MeshResource>(mesh, (const uint8_t*)data);
 
-        IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        IO::URI output = Util::String::Sprintf("%s/%s.nvx", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+        logger->Print("%s\n", Util::Format("Packaged mesh: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         return ToolkitUtil::MeshBuilderSaver::SaveBinary(output, &mesh, Platform::Win32);
     }
     return false;
@@ -293,7 +306,7 @@ PackageTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUti
         writer->SetStream(IO::IoServer::Instance()->CreateStream(tmpFile));
         if (writer->Open())
         {
-            writer->WriteRawData(tex.data.data(), tex.data.size());
+            writer->WriteRawData(tex.data.data(), (uint)tex.data.size());
             writer->Close();
         }
         else
@@ -307,6 +320,7 @@ PackageTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUti
             platformExtension = "dds";
         }
         IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr(), platformExtension.AsCharPtr());
+        logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         if (tex.container == ToolkitUtil::TextureContainer_CUBE)
         {
             return textureExporter.ConvertCubemap(tmpFile, output.LocalPath(), "tmp:", &tex);

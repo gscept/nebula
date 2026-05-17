@@ -79,8 +79,8 @@ public:
     
     /// exports a single file
     void ProcessFile(const IO::URI& file) override;
-    /// exports a single category
-    void ProcessDir(const Util::String& category) override;
+    /// exports a single directory
+    void ProcessDir(const Util::String& dir) override;
     /// exports all files
     void ProcessAll() override;
 

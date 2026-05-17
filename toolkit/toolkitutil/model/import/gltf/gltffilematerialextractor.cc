@@ -41,10 +41,9 @@ Util::Array<IO::URI>
 GltfFileMaterialExtractor::ExtractAll()
 {
     Util::Array<IO::URI> outputFiles;
-    String surfaceExtractPath = "src:assets/" + this->catName + "/" + this->subDir;
+    String surfaceExtractPath = this->catName + "/" + this->subDir;
     surfaceExtractPath.StripFileExtension();
-    this->texCatDir = "tex:" + this->catName;
-    this->textureDir = texCatDir + "/" + this->subDir + "/";
+    this->textureDir = "tex:" + this->catName.StripSubstring(IO::URI("src:assets").LocalPath());
 
     if (this->doc->materials.Size() > 0)
     {
@@ -154,7 +153,7 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
         else
         {
             // texture is not embedded, we need to figure out the correct path to it
-            Util::String texFile = this->texCatDir + "/" + this->doc->images[baseColorTexture].uri;
+            Util::String texFile = this->textureDir + "/" + this->doc->images[baseColorTexture].uri;
             texFile.StripFileExtension();
             value.value = texFile;
         }
@@ -174,7 +173,7 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
         else
         {
             // texture is not embedded, we need to find the correct path to it
-            Util::String texFile = this->texCatDir + "/" + this->doc->images[metallicRoughnessTexture].uri;
+            Util::String texFile = this->textureDir + "/" + this->doc->images[metallicRoughnessTexture].uri;
             texFile.StripFileExtension();
             value.value = texFile;
         }
@@ -193,7 +192,7 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
                 value.value = this->textureDir + Util::String::FromInt(normalTexture);
             else
             {
-                Util::String texFile = this->texCatDir + "/" + this->doc->images[normalTexture].uri;
+                Util::String texFile = this->textureDir + "/" + this->doc->images[normalTexture].uri;
                 texFile.StripFileExtension();
                 value.value = texFile;
             }
@@ -220,7 +219,7 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
             else
             {
                 // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->texCatDir + "/" + this->doc->images[emissiveTexture].uri;
+                Util::String texFile = this->textureDir + "/" + this->doc->images[emissiveTexture].uri;
                 texFile.StripFileExtension();
                 value.value = texFile;
             }
@@ -240,7 +239,7 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
             else
             {
                 // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->texCatDir + "/" + this->doc->images[occlusionTexture].uri;
+                Util::String texFile = this->textureDir + "/" + this->doc->images[occlusionTexture].uri;
                 texFile.StripFileExtension();
                 value.value = texFile;
             }
@@ -279,4 +278,3 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
 }
 
 } // namespace ToolkitUtil
-//------------------------------------------------------------------------------

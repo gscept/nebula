@@ -23,6 +23,7 @@ public:
     /// uses FbxScene to write models
     static void GenerateModels(
         const Util::String& basePath
+        , const IO::URI& modelFileDestination
         , const Scene* scene
         , const Platform::Code platform
         , const Util::Array<SceneNode*>& graphicsNodes

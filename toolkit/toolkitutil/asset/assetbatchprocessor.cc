@@ -55,7 +55,6 @@ AssetBatchProcessor::UpdateSource()
 void
 AssetBatchProcessor::ProcessFile(const IO::URI& file)
 {
-    IoServer* ioServer = IoServer::Instance();
     Util::String const ext = file.AsString().GetFileExtension();
     Util::String fileName = file.AsString().ExtractFileName();
     fileName.StripFileExtension();
@@ -80,66 +79,76 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         ToolkitUtil::ImportAudio(file, this->folder);
     }
 
+    Util::String packageFolder = this->folder.StripSubstring("src:assets/");
     if ((this->packageMode & PackageModes::Models) && ext == "namdl")
     {
-        Util::String dstFile = Util::String::Sprintf("mdl:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageModel(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("mdl:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageModel(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Meshes) && ext == "namsh")
     {
-        Util::String dstFile = Util::String::Sprintf("msh:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageMesh(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("msh:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageMesh(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Textures) && ext == "natex")
     {
-        Util::String dstFile = Util::String::Sprintf("tex:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageTexture(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("tex:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageTexture(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Materials) && ext == "namat")
     {
-        Util::String dstFile = Util::String::Sprintf("mat:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageMaterial(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("mat:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageMaterial(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "napar")
     {
-        Util::String dstFile = Util::String::Sprintf("par:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageParticle(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("par:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageParticle(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "naani")
     {
-        Util::String dstFile = Util::String::Sprintf("ani:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageAnimation(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("ani:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageAnimation(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "naske")
     {
-        Util::String dstFile = Util::String::Sprintf("ske:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageSkeleton(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("ske:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageSkeleton(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Audio) && ext == "naaud")
     {
-        Util::String dstFile = Util::String::Sprintf("audio:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageAudio(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("audio:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackageAudio(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Physics) && ext == "actor")
     {
-        Util::String dstFile = Util::String::Sprintf("physics:%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackagePhysics(file, this->folder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFolder = Util::String::Sprintf("phys:%s", packageFolder.AsCharPtr());
+        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        ToolkitUtil::PackagePhysics(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -149,33 +158,89 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 /**
 */
 void
-AssetBatchProcessor::ProcessDir(const Util::String& category)
+AssetBatchProcessor::ProcessDir(const Util::String& dir)
 {
-    String assetPath = String::Sprintf("src:assets/%s/", category.AsCharPtr());
-    n_printf("\n----------------- Batching asset directory %s -----------------\n", Text(URI(assetPath).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
+    n_printf("\n----------------- Batching asset directory %s -----------------\n", Text(URI(dir).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
     IoServer* ioServer = IoServer::Instance();
 
     IndexT fileIndex;
-    ToolLog log(category);
+    ToolLog log(dir);
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
-    this->folder = assetPath;
+    this->folder = dir;
 
+    Array<String> files = ioServer->ListFiles(dir, "*");
+
+    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, meshFiles, modelFiles, textureFiles, materialFiles, particleFiles, animationFiles, skeletonFiles, audioFiles, physicsFiles;
+    for (const auto& file : files)
+    {
+        if (file.EndsWithString(".fbx"))
+        {
+            fbxFiles.Append(file);
+        }
+        else if (file.EndsWithString(".gltf") || file.EndsWithString(".glb"))
+        {
+            gltfFiles.Append(file);
+        }
+        else if (file.EndsWithString(".png") || file.EndsWithString(".jpg") || file.EndsWithString(".jpeg") || file.EndsWithString(".tga") || file.EndsWithString(".dds") || file.EndsWithString(".exr") || file.EndsWithString(".bmp"))
+        {
+            imageFiles.Append(file);
+        }
+        else if (file.EndsWithString(".wav") || file.EndsWithString(".mp3") || file.EndsWithString(".ogg"))
+        {
+            soundFiles.Append(file);
+        }
+        else if (file.EndsWithString(".namsh"))
+        {
+            meshFiles.Append(file);
+        }
+        else if (file.EndsWithString(".nammdl"))
+        {
+            modelFiles.Append(file);
+        }
+        else if (file.EndsWithString(".natex"))
+        {
+            textureFiles.Append(file);
+        }
+        else if (file.EndsWithString(".namat"))
+        {
+            materialFiles.Append(file);
+        }
+        else if (file.EndsWithString(".napar"))
+        {
+            particleFiles.Append(file);
+        }
+        else if (file.EndsWithString(".naani"))
+        {
+            animationFiles.Append(file);
+        }
+        else if (file.EndsWithString(".naske"))
+        {
+            skeletonFiles.Append(file);
+        }
+        else if (file.EndsWithString(".naaud"))
+        {
+            audioFiles.Append(file);
+        }
+        else if (file.EndsWithString(".actor"))
+        {
+            physicsFiles.Append(file);
+        }
+    }
     if (this->importMode & ImportModes::FBX)
     {
         // import FBX files
         this->logger->Print("\nFBXs -----------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.fbx");
-        if (files.IsEmpty())
+        if (fbxFiles.IsEmpty())
         {
             this->logger->Print("Nothing to import\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < fbxFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "FBX Import", files[fileIndex]);
+                this->ProcessFile(dir + fbxFiles[fileIndex]);
+                log.AddEntry(console, "FBX Import", fbxFiles[fileIndex]);
             }
         }
     }
@@ -184,18 +249,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     {
         // import GLTF files
         this->logger->Print("\nGLTFs -----------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.gltf");
-        if (files.IsEmpty())
+        if (gltfFiles.IsEmpty())
         {
             this->logger->Print("Nothing to import\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < gltfFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "GLTF Import", files[fileIndex]);
+                this->ProcessFile(dir + gltfFiles[fileIndex]);
+                log.AddEntry(console, "GLTF Import", gltfFiles[fileIndex]);
             }
         }
     }
@@ -204,18 +268,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     {
         // import image files
         this->logger->Print("\nImages -----------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.png;*.jpg;*.jpeg;*.tga;*.dds;*.exr;*.bmp");
-        if (files.IsEmpty())
+        if (imageFiles.IsEmpty())
         {
             this->logger->Print("Nothing to import\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < imageFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Image Import", files[fileIndex]);
+                this->ProcessFile(dir + imageFiles[fileIndex]);
+                log.AddEntry(console, "Image Import", imageFiles[fileIndex]);
             }
         }
     }
@@ -224,18 +287,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     {
         // import sound files
         this->logger->Print("\nSound -----------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.wav;*.mp3;*.ogg;");
-        if (files.IsEmpty())
+        if (soundFiles.IsEmpty())
         {
             this->logger->Print("Nothing to import\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < soundFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Sound Import", files[fileIndex]);
+                this->ProcessFile(dir + soundFiles[fileIndex]);
+                log.AddEntry(console, "Sound Import", soundFiles[fileIndex]);
             }
         }
     }
@@ -244,18 +306,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     {
         // export meshes
         this->logger->Print("\nMeshes --------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.namsh");
-        if (files.IsEmpty())
+        if (meshFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < meshFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Model", files[fileIndex]);
+                this->ProcessFile(dir + meshFiles[fileIndex]);
+                log.AddEntry(console, "Model", meshFiles[fileIndex]);
             }
         }
     }
@@ -264,18 +325,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     {
         // export models
         this->logger->Print("\nModels --------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.namdl");
-        if (files.IsEmpty())
+        if (modelFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < modelFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Model", files[fileIndex]);
+                this->ProcessFile(dir + modelFiles[fileIndex]);
+                log.AddEntry(console, "Model", modelFiles[fileIndex]);
             }
         }
     }
@@ -283,20 +343,18 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Textures)
     {
         // export textures
-        Array<String> files = ioServer->ListFiles(assetPath, "*.natex");
-
         this->logger->Print("\nTextures ------------\n");
-        if (files.IsEmpty())
+        if (textureFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < textureFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Texture", files[fileIndex]);
+                this->ProcessFile(dir + textureFiles[fileIndex]);
+                log.AddEntry(console, "Texture", textureFiles[fileIndex]);
             }
         }
     }
@@ -304,18 +362,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Materials)
     {
         this->logger->Print("\nMaterials ------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.namat");
-        if (files.IsEmpty())
+        if (materialFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < materialFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Material", files[fileIndex]);
+                this->ProcessFile(dir + materialFiles[fileIndex]);
+                log.AddEntry(console, "Material", materialFiles[fileIndex]);
             }
         }
     }
@@ -323,18 +380,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Particles)
     {
         this->logger->Print("\nParticles ------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.napar");
-        if (files.IsEmpty())
+        if (particleFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < particleFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Particle", files[fileIndex]);
+                this->ProcessFile(dir + particleFiles[fileIndex]);
+                log.AddEntry(console, "Particle", particleFiles[fileIndex]);
             }
         }
     }
@@ -342,18 +398,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Animations)
     {
         this->logger->Print("\nAnimations ------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.naani");
-        if (files.IsEmpty())
+        if (animationFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < animationFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Particle", files[fileIndex]);
+                this->ProcessFile(dir + animationFiles[fileIndex]);
+                log.AddEntry(console, "Animation", animationFiles[fileIndex]);
             }
         }
     }
@@ -361,18 +416,17 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Skeletons)
     {
         this->logger->Print("\nSkeletons ------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.naskl");
-        if (files.IsEmpty())
+        if (skeletonFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < skeletonFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Particle", files[fileIndex]);
+                this->ProcessFile(dir + skeletonFiles[fileIndex]);
+                log.AddEntry(console, "Skeleton", skeletonFiles[fileIndex]);
             }
         }
     }
@@ -380,39 +434,44 @@ AssetBatchProcessor::ProcessDir(const Util::String& category)
     if (this->packageMode & PackageModes::Audio)
     {
         this->logger->Print("\nAudio ---------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.naaud");
-        if (files.IsEmpty())
+        if (audioFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            for (fileIndex = 0; fileIndex < audioFiles.Size(); fileIndex++)
             {
                 console->Clear();
-                this->ProcessFile(assetPath + files[fileIndex]);
-                log.AddEntry(console, "Audio", files[fileIndex]);
+                this->ProcessFile(dir + audioFiles[fileIndex]);
+                log.AddEntry(console, "Audio", audioFiles[fileIndex]);
             }
         }
     }
     if (this->packageMode & PackageModes::Physics)
     {
         this->logger->Print("\nPhysics -------------\n");
-        Array<String> files = ioServer->ListFiles(assetPath, "*.actor", true);
-        if (files.IsEmpty())
+        if (physicsFiles.IsEmpty())
         {
             this->logger->Print("Nothing to package\n");
         }
         else
         {
-            for (auto const& file : files)
+            for (auto const& file : physicsFiles)
             {
-                this->ProcessFile(assetPath + file);
+                this->ProcessFile(dir + file);
                 log.AddEntry(console, "Physics", file);
             }
         }
     }
     this->messages.Append(log);
+
+    Array<String> folders = IoServer::Instance()->ListDirectories(this->folder, "*");
+    IndexT folderIndex;
+    for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
+    {
+        this->ProcessDir(Util::Format("%s/%s/", this->folder.AsCharPtr(), folders[folderIndex].AsCharPtr()));
+    }
     this->folder = "";
 }
 
@@ -426,7 +485,7 @@ AssetBatchProcessor::ProcessAll()
     Array<String> folders = IoServer::Instance()->ListDirectories("src:assets/", "*");
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
-        this->ProcessDir(folders[folderIndex]);
+        this->ProcessDir(Util::Format("src:assets/%s", folders[folderIndex].AsCharPtr()));
     }
 }
 

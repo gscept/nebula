@@ -203,12 +203,12 @@ MeshBuilderSaver::WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUtil::
     nvx3Header.magic = byteOrder.Convert<uint>(NEBULA_NVX_MAGICNUMBER);
     nvx3Header.meshDataOffset = sizeof(Nvx3Header);
     nvx3Header.numMeshes = byteOrder.Convert<uint>((uint)resource->meshes.size());
-    nvx3Header.meshletDataOffset = sizeof(Nvx3Header) + meshDataSize;
+    nvx3Header.meshletDataOffset = (uint)(sizeof(Nvx3Header) + meshDataSize);
     nvx3Header.numMeshlets = 0; // TODO: Add meshlet support
-    nvx3Header.vertexDataOffset = sizeof(Nvx3Header) + meshDataSize + meshletDataSize; 
-    nvx3Header.vertexDataSize = vertexDataSize;
-    nvx3Header.indexDataOffset = sizeof(Nvx3Header) + meshDataSize + meshletDataSize + vertexDataSize;
-    nvx3Header.indexDataSize = indexDataSize;
+    nvx3Header.vertexDataOffset = (uint)(sizeof(Nvx3Header) + meshDataSize + meshletDataSize);
+    nvx3Header.vertexDataSize = (uint)vertexDataSize;
+    nvx3Header.indexDataOffset = (uint)(sizeof(Nvx3Header) + meshDataSize + meshletDataSize + vertexDataSize);
+    nvx3Header.indexDataSize = (uint)indexDataSize;
 
     // write header
     stream->Write(&nvx3Header, sizeof(Nvx3Header));
@@ -235,11 +235,11 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::
         Nvx3VertexRange nvx3VertexRange;
         nvx3VertexRange.indexType = mesh->vertices.size() > 0xFFFF ? CoreGraphics::IndexType::Index32 : CoreGraphics::IndexType::Index16;
         nvx3VertexRange.layout = MeshBuilderVertex::GetVertexLayoutType(mesh->component_mask);
-        nvx3VertexRange.indexByteOffset = indexByteOffset;
-        nvx3VertexRange.baseVertexByteOffset = vertexByteOffset;
-        nvx3VertexRange.attributesVertexByteOffset = vertexByteOffset + baseVertexDataSize;
-        nvx3VertexRange.firstGroupOffset = groupByteOffset;
-        nvx3VertexRange.numGroups = mesh->groups.size();
+        nvx3VertexRange.indexByteOffset = (uint)indexByteOffset;
+        nvx3VertexRange.baseVertexByteOffset = (uint)vertexByteOffset;
+        nvx3VertexRange.attributesVertexByteOffset = (uint)(vertexByteOffset + baseVertexDataSize);
+        nvx3VertexRange.firstGroupOffset = (uint)groupByteOffset;
+        nvx3VertexRange.numGroups = (uint)mesh->groups.size();
         stream->Write(&nvx3VertexRange, sizeof(Nvx3VertexRange));
 
         for (IndexT curGroupIndex = 0; curGroupIndex < mesh->groups.size(); curGroupIndex++)
@@ -315,7 +315,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const ToolkitUtil::Me
         {
             case CoreGraphics::VertexLayoutType::Normal:
             {
-                bufferSize = sizeof(CoreGraphics::NormalVertex) * mesh->vertices.size();
+                bufferSize = (uint)(sizeof(CoreGraphics::NormalVertex) * mesh->vertices.size());
                 attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::NormalVertex* attrBuffer = (CoreGraphics::NormalVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.size(); vertexIndex++)
@@ -328,14 +328,14 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const ToolkitUtil::Me
             }
             case CoreGraphics::VertexLayoutType::Colors:
             {
-                bufferSize = sizeof(CoreGraphics::ColorVertex) * mesh->vertices.size();
+                bufferSize = (uint)(sizeof(CoreGraphics::ColorVertex) * mesh->vertices.size());
                 attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::ColorVertex* attrBuffer = (CoreGraphics::ColorVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.size(); vertexIndex++)
                 {
                     const auto& vtx = mesh->vertices[vertexIndex];
                     CoreGraphics::ColorVertex& outVtx = attrBuffer[vertexIndex];
-                    normalLambda(outVtx, vtx->normal_attributes);
+                    normalLambda(outVtx, vtx->color_attributes->normals);
 
                     outVtx.color.x = vtx->color_attributes->color.x * 255.0f;
                     outVtx.color.y = vtx->color_attributes->color.y * 255.0f;
@@ -346,14 +346,14 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const ToolkitUtil::Me
             }
             case CoreGraphics::VertexLayoutType::SecondUV:
             {
-                bufferSize = sizeof(CoreGraphics::SecondUVVertex) * mesh->vertices.size();
+                bufferSize = (uint)(sizeof(CoreGraphics::SecondUVVertex) * mesh->vertices.size());
                 attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::SecondUVVertex* attrBuffer = (CoreGraphics::SecondUVVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.size(); vertexIndex++)
                 {
                     const auto& vtx = mesh->vertices[vertexIndex];
                     CoreGraphics::SecondUVVertex& outVtx = attrBuffer[vertexIndex];
-                    normalLambda(outVtx, vtx->normal_attributes);
+                    normalLambda(outVtx, vtx->secondary_uv_attributes->normals);
 
                     outVtx.uv2[0] = vtx->secondary_uv_attributes->uv.x * 65535.0f;
                     outVtx.uv2[1] = vtx->secondary_uv_attributes->uv.y * 65535.0f;
@@ -362,14 +362,14 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const ToolkitUtil::Me
             }
             case CoreGraphics::VertexLayoutType::Skin:
             {
-                bufferSize = sizeof(CoreGraphics::SkinVertex) * mesh->vertices.size();
+                bufferSize = (uint)(sizeof(CoreGraphics::SkinVertex) * mesh->vertices.size());
                 attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::SkinVertex* attrBuffer = (CoreGraphics::SkinVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.size(); vertexIndex++)
                 {
                     const auto& vtx = mesh->vertices[vertexIndex];
                     CoreGraphics::SkinVertex& outVtx = attrBuffer[vertexIndex];
-                    normalLambda(outVtx, vtx->normal_attributes);
+                    normalLambda(outVtx, vtx->skin_attributes->normals);
 
                     outVtx.skinWeights[0] = vtx->skin_attributes->weights.x;
                     outVtx.skinWeights[1] = vtx->skin_attributes->weights.y;

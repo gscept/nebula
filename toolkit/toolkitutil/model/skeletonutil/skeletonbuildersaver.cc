@@ -99,7 +99,7 @@ SkeletonBuilderSaver::WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUt
     // setup header
     Nsk3Header nsk3Header;
     nsk3Header.magic = byteOrder.Convert<uint>(NEBULA_NSK3_MAGICNUMBER);
-    nsk3Header.numSkeletons = byteOrder.Convert<uint>(resource->skeletons.size());
+    nsk3Header.numSkeletons = byteOrder.Convert<uint>((uint)resource->skeletons.size());
 
     // write header
     stream->Write(&nsk3Header, sizeof(nsk3Header));
@@ -114,7 +114,7 @@ SkeletonBuilderSaver::WriteSkeletons(const Ptr<IO::Stream>& stream, const Toolki
     for (auto& builder : resource->skeletons)
     {
         Nsk3Skeleton nsk3Skeleton;
-        nsk3Skeleton.numJoints = byteOrder.Convert<uint>(builder->joints.size());
+        nsk3Skeleton.numJoints = byteOrder.Convert<uint>((uint)builder->joints.size());
 
         // Write skeleton
         stream->Write(&nsk3Skeleton, sizeof(nsk3Skeleton));
@@ -129,7 +129,7 @@ SkeletonBuilderSaver::WriteJoints(const Ptr<IO::Stream>& stream, const ToolkitUt
 {
     for (auto& builder : resource->skeletons)
     {
-        SizeT numJoints = builder->joints.size();
+        SizeT numJoints = (uint)builder->joints.size();
         IndexT jointIndex;
         for (jointIndex = 0; jointIndex < numJoints; jointIndex++)
         {

@@ -277,7 +277,7 @@ AssetBatcherApp::DoWork()
     exporter->SetLogger(&this->logger);
     if (force)
     {
-        exporter->SetImportMode((uint)AssetBatchProcessor::ImportModes::All | AssetBatchProcessor::ImportModes::ForceAll);
+        exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All | AssetBatchProcessor::PackageModes::ForceAll);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);

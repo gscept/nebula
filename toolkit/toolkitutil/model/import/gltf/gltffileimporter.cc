@@ -65,9 +65,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 
     auto scene = new NglTFScene();
     scene->SetName(this->file);
-    Util::String assetFolder = Util::String::Sprintf("src:assets/%s/%s", this->folder.AsCharPtr(), this->file.AsCharPtr());
-    assetFolder.StripFileExtension();
-    scene->SetCategory(assetFolder);
+    scene->SetCategory(this->folder);
     scene->Setup(&this->gltfScene, importFlags, scale);
     this->scene = scene;
 
@@ -105,7 +103,8 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
         else
         {
             Util::String fileName = image.uri;
-            Util::String fullFileName = Util::String::Sprintf("src:assets/%s/%s", this->folder.AsCharPtr(), fileName.AsCharPtr());
+            Util::String oneFolderUp = this->folder.ExtractToLastSlash();
+            Util::String fullFileName = Util::String::Sprintf("%s%s", oneFolderUp.AsCharPtr(), fileName.AsCharPtr());
 
             // Source is not embedded, so load source data
             Ptr<IO::Stream> fileSource = IO::IoServer::Instance()->CreateStream(fullFileName);
@@ -145,7 +144,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.invert_green = false;
             
             int32_t imageIndex = gltfScene.textures[material.normalTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], assetFolder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
         }
         if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
         {
@@ -154,7 +153,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_sRGB;
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], assetFolder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
         }
         if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
         {
@@ -163,7 +162,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_Linear;
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], assetFolder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
         }
     }
 

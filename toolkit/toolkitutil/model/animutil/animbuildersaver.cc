@@ -135,10 +135,10 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const ToolkitUt
     for (auto& anim : resource->animations)
     {
         Nax3Anim nax3;
-        nax3.numClips = anim->clips.size();
-        nax3.numEvents = anim->events.size();
-        nax3.numCurves = anim->curves.size();
-        nax3.numKeys = anim->keys.size();
+        nax3.numClips = (uint)anim->clips.size();
+        nax3.numEvents = (uint)anim->events.size();
+        nax3.numCurves = (uint)anim->curves.size();
+        nax3.numKeys = (uint)anim->keys.size();
         nax3.numIntervals = 0;
         for (const auto& curve : anim->curves)
         {
@@ -216,7 +216,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const ToolkitUt
         }
 
         uint curveOffset = 0, eventOffset = 0, velocityCurveOffset = 0;
-        SizeT numClips = anim->clips.size();
+        SizeT numClips = (uint)anim->clips.size();
         IndexT clipIndex;
         for (clipIndex = 0; clipIndex < numClips; clipIndex++)
         {

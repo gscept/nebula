@@ -115,6 +115,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         , IO::URI(String::Sprintf("%s/%s_ph.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // physics
         , IO::URI(String::Sprintf("%s/%s.naani", this->folder.AsCharPtr(), this->file.AsCharPtr())) // animation
         , IO::URI(String::Sprintf("%s/%s.naske", this->folder.AsCharPtr(), this->file.AsCharPtr())) // skeleton
+        , IO::URI(String::Sprintf("%s/%s.namdl", this->folder.AsCharPtr(), this->file.AsCharPtr())) // model
     };
 
     enum DestinationFile
@@ -123,6 +124,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         , Physics
         , Animation
         , Skeleton
+        , Model
     };
 
     // save mesh to file
@@ -173,7 +175,6 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
 
         // print info
         this->logger->Print("%s %s\n", Format("Generated physics: %s", Text(destinationFiles[DestinationFile::Physics].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
-
     }
 
     if (this->scene->animations.Size() > 0)
@@ -222,8 +223,11 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     }
 
     // Finally, output model hierarchy to n3
+    timer.Reset();
+    timer.Start();
     SceneWriter::GenerateModels(
         this->folder
+        , destinationFiles[DestinationFile::Model]
         , this->scene
         , this->platform
         , mergedMeshNodes
@@ -231,8 +235,8 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         , mergedCharacterNodes
         , importFlags
     );
-
-    WriteIntermediateFile(file, outputFiles);
+    timer.Stop();
+    this->logger->Print("%s %s\n", Format("Generated model: %s", Text(destinationFiles[DestinationFile::Model].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
 
     totalTime.Stop();
     this->logger->Unindent();
