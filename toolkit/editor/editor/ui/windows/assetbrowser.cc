@@ -575,7 +575,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             {        
                 ImGuiStyle& style = ImGui::GetStyle();
                 int numFiles = visibleFiles.Size();
-                float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+                float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetContentRegionAvail().x;
                 static int itemSize = 50;
                 ImGui::SliderInt("Zoom", &itemSize, 25, 200);
                 int n = 0;

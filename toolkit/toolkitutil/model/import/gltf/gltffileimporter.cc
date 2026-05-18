@@ -59,7 +59,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
     
     if (!res)
     {
-        this->logger->Warning("Failed to import '%s'\n\n", this->file.AsCharPtr());
+        this->logger->Warning("Failed to import %s\n", this->file.AsCharPtr());
         return false;
     }
 
@@ -76,18 +76,26 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
         GltfFileMaterialExtractor extractor;
         extractor.SetLogger(this->logger);
         extractor.SetDocument(&this->gltfScene);
-        extractor.SetCategoryName(this->folder);
-        extractor.SetExportSubDirectory(this->file);
+        extractor.SetOutputFolder(this->folder);
         Util::Array<IO::URI> outputs = extractor.ExtractAll();
         this->outputFiles.AppendArray(outputs);
     }
 
-    auto textureSave = [this](ToolkitUtil::TextureResourceT& tex, const Gltf::Image& image, const Util::String& outputDir, int32_t imageIndex)
+    auto textureSave = [this](ToolkitUtil::TextureResourceT& tex, const Gltf::Image& image, const Gltf::Document& scene, const Util::String& outputDir, int32_t imageIndex)
     {
         tex.container = (image.type == Gltf::Image::Type::Jpg) ? ToolkitUtil::TextureContainer_JPG : ToolkitUtil::TextureContainer_PNG;
         if (image.embedded)
         {
-            tex.data = std::vector<uint8_t>((uint8_t*)image.data.GetPtr(), (uint8_t*)image.data.GetPtr() + image.data.Size());
+            if (image.data.IsValid())
+            {
+                tex.data = std::vector<uint8_t>((uint8_t*)image.data.GetPtr(), (uint8_t*)image.data.GetPtr() + image.data.Size());
+            }
+            else
+            {
+                const Gltf::BufferView& view = scene.bufferViews[image.bufferView];
+                const Util::Blob& data = scene.buffers[view.buffer].data;
+                tex.data = std::vector<uint8_t>((uint8_t*)data.GetPtr() + view.byteOffset, (uint8_t*)data.GetPtr() + view.byteOffset + view.byteLength);
+            }
             Util::String outputFile = Util::String::Sprintf("%s/%d.natex", outputDir.AsCharPtr(), imageIndex);
             Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(outputFile);
             stream->SetAccessMode(IO::Stream::WriteAccess);
@@ -144,7 +152,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.invert_green = false;
             
             int32_t imageIndex = gltfScene.textures[material.normalTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->folder, imageIndex);
         }
         if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
         {
@@ -153,7 +161,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_sRGB;
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->folder, imageIndex);
         }
         if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
         {
@@ -162,7 +170,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_Linear;
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
-            textureSave(tex, gltfScene.images[imageIndex], this->folder, imageIndex);
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->folder, imageIndex);
         }
     }
 

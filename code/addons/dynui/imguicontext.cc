@@ -32,6 +32,8 @@ using namespace Input;
 
 namespace Dynui
 {
+Util::Array<Util::String> ImguiDragAndDropFiles;
+Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator(0xFFF);
 
 struct ImguiState
 {
@@ -42,9 +44,6 @@ struct ImguiState
 #if WITH_NEBULA_EDITOR
     CoreGraphics::PipelineId editorPipeline;
 #endif
-
-    ImguiTextureId fontTexture;
-    //CoreGraphics::TextureId fontTexture;
 
     Util::FixedArray<CoreGraphics::BufferId> vbos;
     Util::FixedArray<CoreGraphics::BufferId> ibos;
@@ -95,6 +94,39 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
     int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
     data->ScaleClipRects(io.DisplayFramebufferScale);
+
+    if (data->Textures != nullptr)
+    {
+        for (ImTextureData* textureData : *data->Textures)
+        {
+            if (textureData->Status == ImTextureStatus_WantCreate)
+            {
+                CoreGraphics::TextureCreateInfo texInfo;
+                texInfo.name = Util::Format("ImGUI Texture %d", textureData->UniqueID);
+                texInfo.width = textureData->Width;
+                texInfo.height = textureData->Height;
+                texInfo.depth = 1;
+                texInfo.mips = 1;
+                texInfo.format = textureData->Format == ImTextureFormat_RGBA32 ? CoreGraphics::PixelFormat::R8G8B8A8 : CoreGraphics::PixelFormat::R8;
+                texInfo.data = textureData->Pixels;
+                texInfo.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                texInfo.usage = CoreGraphics::TextureUsage::Sample;
+                CoreGraphics::TextureId tex = CoreGraphics::CreateTexture(texInfo);
+                textureData->TexID = tex.id;
+            }
+            else if (textureData->Status == ImTextureStatus_WantDestroy)
+            {
+                CoreGraphics::TextureId tex = { textureData->TexID };
+                CoreGraphics::DestroyTexture(tex);
+                textureData->TexID = 0;
+                textureData->Status = ImTextureStatus_Destroyed;
+            }
+            else if (textureData->Status == ImTextureStatus_WantUpdates)
+            {
+                // Hmm, handle these?
+            }
+        }
+    }
 
     // get renderer
     //const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
@@ -231,8 +263,6 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 scissorRect.right = Math::min(data->DisplaySize.x, scissorRect.right);
                 scissorRect.bottom = Math::min(data->DisplaySize.y, scissorRect.bottom);
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
-                ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
-
 
                 TextureInfo texInfo;
                 texInfo.type = 0;
@@ -241,7 +271,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.splat = tex.splat;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
-                CoreGraphics::TextureId texture = tex.nebulaHandle;
+                CoreGraphics::TextureId texture = command->TexRef._TexID;
                 CoreGraphics::TextureIdLock _0(texture);
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
                 CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(texture);
@@ -618,7 +648,7 @@ ImguiContext::Create()
     style.PopupRounding = 1.0f;
     style.ScrollbarRounding = 12.0f;
     style.TabRounding = 6.0f;
-    style.TabMinWidthForCloseButton = FLT_MAX;
+    style.TabCloseButtonMinWidthSelected = FLT_MAX;
     style.WindowTitleAlign = { 0.0f, 0.52f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
@@ -675,9 +705,7 @@ ImguiContext::Create()
     colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 0.50f, 0.40f, 1.00f);
     colors[ImGuiCol_Tab] = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
     colors[ImGuiCol_TabHovered] = ImVec4(0.16f, 0.16f, 0.16f, 0.80f);
-    colors[ImGuiCol_TabActive] = ImVec4(0.71f, 0.27f, 0.00f, 1.00f);
-    colors[ImGuiCol_TabUnfocused] = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
-    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
+    colors[ImGuiCol_TabSelected] = ImVec4(0.71f, 0.27f, 0.00f, 1.00f);
     colors[ImGuiCol_DockingPreview] = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
     colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
     colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
@@ -691,36 +719,38 @@ ImguiContext::Create()
     colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.022f);
     colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-    colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_NavCursor] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
     colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.0f);
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-    io.KeyMap[ImGuiKey_Tab] = Key::Tab;
-    io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
-    io.KeyMap[ImGuiKey_RightArrow] = Key::Right;
-    io.KeyMap[ImGuiKey_UpArrow] = Key::Up;
-    io.KeyMap[ImGuiKey_DownArrow] = Key::Down;
-    io.KeyMap[ImGuiKey_Home] = Key::Home;
-    io.KeyMap[ImGuiKey_End] = Key::End;
-    io.KeyMap[ImGuiKey_Delete] = Key::Delete;
-    io.KeyMap[ImGuiKey_Backspace] = Key::Back;
-    io.KeyMap[ImGuiKey_Enter] = Key::Return;
-    io.KeyMap[ImGuiKey_Escape] = Key::Escape;
-    io.KeyMap[ImGuiKey_Space] = Key::Space;
-    io.KeyMap[ImGuiKey_A] = Key::A;
-    io.KeyMap[ImGuiKey_C] = Key::C;
-    io.KeyMap[ImGuiKey_V] = Key::V;
-    io.KeyMap[ImGuiKey_X] = Key::X;
-    io.KeyMap[ImGuiKey_Y] = Key::Y;
-    io.KeyMap[ImGuiKey_Z] = Key::Z;
+    //io.KeyMap[ImGuiKey_Tab] = Key::Tab;
+    //io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
+    //io.KeyMap[ImGuiKey_RightArrow] = Key::Right;
+    //io.KeyMap[ImGuiKey_UpArrow] = Key::Up;
+    //io.KeyMap[ImGuiKey_DownArrow] = Key::Down;
+    //io.KeyMap[ImGuiKey_Home] = Key::Home;
+    //io.KeyMap[ImGuiKey_End] = Key::End;
+    //io.KeyMap[ImGuiKey_Delete] = Key::Delete;
+    //io.KeyMap[ImGuiKey_Backspace] = Key::Back;
+    //io.KeyMap[ImGuiKey_Enter] = Key::Return;
+    //io.KeyMap[ImGuiKey_Escape] = Key::Escape;
+    //io.KeyMap[ImGuiKey_Space] = Key::Space;
+    //io.KeyMap[ImGuiKey_A] = Key::A;
+    //io.KeyMap[ImGuiKey_C] = Key::C;
+    //io.KeyMap[ImGuiKey_V] = Key::V;
+    //io.KeyMap[ImGuiKey_X] = Key::X;
+    //io.KeyMap[ImGuiKey_Y] = Key::Y;
+    //io.KeyMap[ImGuiKey_Z] = Key::Z;
 
     // enable keyboard navigation
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
+
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
 #ifdef IMGUI_HAS_VIEWPORT
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -838,31 +868,6 @@ ImguiContext::Create()
     ImguiItFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", scaleFactor * 9, &config);
 #endif
 
-    unsigned char* buffer;
-    int width, height, bytesPerPixel;
-    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &bytesPerPixel);
-
-    // load image using SOIL
-    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * bytesPerPixel, &width, &height, &bytesPerPixel, SOIL_LOAD_AUTO);
-
-    CoreGraphics::TextureCreateInfo texInfo;
-    texInfo.name = "imgui_font_tex"_atm;
-    texInfo.usage = TextureUsage::Sample;
-    texInfo.tag = "system"_atm;
-    texInfo.data = buffer;
-    texInfo.dataSize = width * height * bytesPerPixel;
-    texInfo.type = TextureType::Texture2D;
-    texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    texInfo.width = width;
-    texInfo.height = height;
-
-    state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo);
-    state.fontTexture.mip = 0;
-    state.fontTexture.layer = 0;
-    state.fontTexture.useAlpha = true;
-    io.Fonts->TexID = &state.fontTexture;
-    io.Fonts->ClearTexData();
-
     if (!App::GameApplication::IsEditorEnabled())
     {
         // load settings from disk. If we don't do this here we need to
@@ -899,8 +904,6 @@ ImguiContext::Discard()
 
     CoreGraphics::DisplayDevice::Instance()->RemoveEventHandler(state.displayEventHandler.upcast<CoreGraphics::DisplayEventHandler>());
     state.displayEventHandler = nullptr;
-
-    CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
 
 #ifdef IMGUI_HAS_VIEWPORT
     /// The main window is handled by nebula
@@ -1063,10 +1066,11 @@ bool
 ImguiContext::HandleInput(const Input::InputEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
+
     switch (event.GetType())
     {
     case InputEvent::KeyDown:
-        io.KeysDown[event.GetKey()] = true;
+        io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], true);
         if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = true;
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = true;
         return io.WantCaptureKeyboard;
@@ -1115,7 +1119,7 @@ ImguiContext::ResetKeyDownState()
     for (uint32_t i = 0; i < ImGuiKey_COUNT; ++i)
     {
         if (KeysToRelease[i])
-            io.KeysDown[i] = false;
+            io.AddKeyEvent((ImGuiKey)i, false);
         KeysToRelease[i] = false;
     }
 }
@@ -1160,9 +1164,25 @@ void
 ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
 {
     ImGui::EndFrame();
-                    
+    ImguiDragAndDropFiles.Clear();
     ImGui::UpdatePlatformWindows();
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ids::Id32
+AllocateImguiTextureId(const ImguiTextureId& id)
+{
+    return Ids::Id32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeallocateImguiTextureId(Ids::Id32 id)
+{}
 
 //------------------------------------------------------------------------------
 /**

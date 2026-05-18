@@ -12,6 +12,7 @@ imports:
         group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
+        branch: "imgui_v1.92.8-docking"
     fips-nanobind:
         git: https://github.com/gscept/fips-nanobind.git
     fips-stb:

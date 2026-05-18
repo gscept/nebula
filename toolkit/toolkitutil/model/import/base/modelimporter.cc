@@ -85,7 +85,10 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     this->file = file.LocalPath().ExtractFileName();
     this->file.StripFileExtension();
     if (!this->ParseScene(importFlags, scale))
+    {
+        this->logger->Unindent();
         return;
+    }
 
     this->logger->Print("%s %s (%.2f ms)\n", "Parsing...", Text("done").Color(TextColor::Green).AsCharPtr(), timer.GetTime() * 1000.0f);
     timer.Stop();

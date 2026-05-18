@@ -241,10 +241,6 @@ Viewport::Render()
 
     using namespace CoreGraphics;
 
-    this->textureInfo.nebulaHandle = textureId;
-    this->textureInfo.mip = 0;
-    this->textureInfo.layer = 0;
-
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -272,7 +268,9 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::Image((void*)&this->textureInfo, imageSize, ImVec2(0, 0), uv);
+    ImTextureRef ref;
+    ref._TexID = textureId.id;
+    ImGui::Image(ref, imageSize, ImVec2(0, 0), uv);
 
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };

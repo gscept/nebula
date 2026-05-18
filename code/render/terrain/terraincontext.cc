@@ -2573,16 +2573,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
                         ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
-                        static Dynui::ImguiTextureId textureInfo;
-                        textureInfo.nebulaHandle = terrainInstance.physicalAlbedoCacheBC;
-                        textureInfo.mip = 0;
-                        textureInfo.layer = 0;
-
-                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        imageSize.x = ImGui::GetContentRegionAvail().x - ImGui::GetCursorPos().x;
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
-                        ImGui::Image((void*)&textureInfo, imageSize);
+                        ImTextureRef ref;
+                        ref._TexID = terrainInstance.physicalAlbedoCacheBC.id;
+                        ImGui::Image(ref, imageSize);
                     }
 
                     {
@@ -2594,16 +2591,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
                         ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
-                        static Dynui::ImguiTextureId textureInfo;
-                        textureInfo.nebulaHandle = terrainInstance.physicalNormalCacheBC;
-                        textureInfo.mip = 0;
-                        textureInfo.layer = 0;
-
-                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        imageSize.x = ImGui::GetContentRegionAvail().x - ImGui::GetCursorPos().x;
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
-                        ImGui::Image((void*)&textureInfo, imageSize);
+                        ImTextureRef ref;
+                        ref._TexID = terrainInstance.physicalNormalCacheBC.id;
+                        ImGui::Image(ref, imageSize);
                     }
 
                     {
@@ -2614,16 +2608,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
                         ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
-                        static Dynui::ImguiTextureId textureInfo;
-                        textureInfo.nebulaHandle = terrainInstance.physicalMaterialCacheBC;
-                        textureInfo.mip = 0;
-                        textureInfo.layer = 0;
-
-                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        imageSize.x = ImGui::GetContentRegionAvail().x - ImGui::GetCursorPos().x;
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
-                        ImGui::Image((void*)&textureInfo, imageSize);
+                        ImTextureRef ref;
+                        ref._TexID = terrainInstance.physicalMaterialCacheBC.id;
+                        ImGui::Image(ref, imageSize);
                     }
 
                     {
@@ -2638,16 +2629,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
                         ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
-                        static Dynui::ImguiTextureId textureInfo;
-                        textureInfo.nebulaHandle = terrainInstance.shadowMap;
-                        textureInfo.mip = mip;
-                        textureInfo.layer = 0;
-
-                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        imageSize.x = ImGui::GetContentRegionAvail().x - ImGui::GetCursorPos().x;
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
-                        ImGui::Image((void*)&textureInfo, imageSize);
+                        ImTextureRef ref;
+                        ref._TexID = terrainInstance.shadowMap.id;
+                        ImGui::Image(ref, imageSize);
                     }
                 }
                 ImGui::EndTable();

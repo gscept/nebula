@@ -123,7 +123,9 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder)
     }
 
     // Save nebula texture 
-    IO::URI output = Util::String::Sprintf("%s/%s.natex", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+    Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+    fileNameNoExt.StripFileExtension();
+    IO::URI output = Util::String::Sprintf("%s/%s.natex", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
     stream = IO::IoServer::Instance()->CreateStream(output);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())

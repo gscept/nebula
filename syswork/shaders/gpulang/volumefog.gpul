@@ -261,7 +261,7 @@ csRender() void
     var light = f32x3(0, 0, 0);
     const numSteps = 0u;
     //const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
-    const stepSize = (viewVec + rayDirection * dot(hash12(seed), hash12(seed + 0.59374))) * oneDivFogSteps;
+    const stepSize = (viewVec + normalize(rayDirection * dot(hash12(seed), hash12(seed + 0.59374)))) * oneDivFogSteps;
     var stepLen = stepSize;
 
     // calculate global fog, which should be a factor of the distance and the global turbidity

@@ -41,6 +41,10 @@ fips_dir(graph)
     fips_files(imguigraph.h imguigraph.cc)
 fips_dir(scripting)
     fips_files(deargui.cpp)
+
+fips_dir(imguifiledialog)
+	fips_files(imguifiledialog.h imguifiledialog.cpp imguifiledialogconfig.h)
+target_compile_definitions(dynui PRIVATE USE_STD_FILESYSTEM)
 nebula_end_module()
 
 target_compile_options(dynui PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)

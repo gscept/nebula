@@ -96,9 +96,7 @@ DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
         //srcPath.ReplaceChars("/", '\\');
         args.Append(srcPath);
         args.Append("\" -o \"");
-        Util::String tmpPath = IO::IoServer::NativePath(tmpDirUri.LocalPath());
-        //tmpPath.ReplaceChars("/", '\\');
-        args.Append(tmpPath);
+        args.Append(this->dstPath);
         args.Append("\"");
 
         // launch texconv to perform the conversion        
@@ -114,15 +112,6 @@ DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
             this->logger->Warning("Failed to launch converter tool '%s'!\n", this->toolPath.AsCharPtr());
             return false;
         }
-
-        // copy converted texture from temp to export dir
-        if (!this->CopyResult())
-        {
-            return false;
-        }
-
-        ToolkitUtil::Text print = Util::String::Sprintf("%s -> %s... ", Text(URI(this->srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(Format("%s", URI(this->dstPath).LocalPath().AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
-        this->logger->Print(Util::String::Sprintf("%s%s", print.AsCharPtr(), "done\n"_text.Color(TextColor::Green).AsCharPtr()).AsCharPtr());
     }
 
     return true;

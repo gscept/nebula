@@ -43,6 +43,7 @@ public:
         KeyDown,
         KeyUp,
         Character,
+        Drop,
         MouseMove,
         MouseButtonDown,
         MouseButtonUp,
@@ -65,6 +66,8 @@ public:
     DisplayEvent(Code c, Input::Char chr);
     /// constructor with mouse button and mouse pos
     DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos);
+    /// constructor with file drop
+    DisplayEvent(Code c, const Util::Array<Util::String>& files);
 
     /// get event code
     Code GetEventCode() const;
@@ -80,6 +83,8 @@ public:
     Input::Char GetChar() const;
     /// get mouse button code
     Input::MouseButton::Code GetMouseButton() const;
+    /// Get files
+    const Util::Array<Util::String>& GetFiles() const;
 
 private:
     Code code;
@@ -89,6 +94,7 @@ private:
     Input::Key::Code keyCode;
     Input::Char charCode;
     Input::MouseButton::Code mouseButtonCode;
+    Util::Array<Util::String> files;
 };
 
 //------------------------------------------------------------------------------
@@ -207,6 +213,23 @@ DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2&
 //------------------------------------------------------------------------------
 /**
 */
+inline
+DisplayEvent::DisplayEvent(Code c, const Util::Array<Util::String>& files) :
+    code(c),
+    windowId(Ids::InvalidId32),
+    absMousePos(0.0f, 0.0f),
+    normMousePos(0.0f, 0.0f),
+    keyCode(Input::Key::InvalidKey),
+    charCode(0),
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    files(files)
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline DisplayEvent::Code
 DisplayEvent::GetEventCode() const
 {
@@ -265,6 +288,15 @@ inline Input::MouseButton::Code
 DisplayEvent::GetMouseButton() const
 {
     return this->mouseButtonCode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const
+Util::Array<Util::String>& DisplayEvent::GetFiles() const
+{
+    return this->files;
 }
 
 } // namespace CoreGraphics

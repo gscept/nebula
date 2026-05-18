@@ -391,7 +391,7 @@ ImguiConsole::RenderContent()
 
     // Unfortunately we can't use ImGui::Clipper here since each entry might have a different height.
     // TODO: We could roll our own "clipper".
-    ImGui::PushTextWrapPos(ImGui::GetWindowContentRegionMax().x);
+    ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
     for (int i = 0; i < consoleBuffer.Size(); i++)
     {
         const char* item = consoleBuffer[i].msg.AsCharPtr();
@@ -521,15 +521,15 @@ ImguiConsole::RenderContent()
             open_autocomplete = false;
             if (ImGui::BeginPopup("autocomplete", ImGuiWindowFlags_NoNavInputs))
             {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) ++selectedSuggestion;
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) --selectedSuggestion;
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+                if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) ++selectedSuggestion;
+                if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) --selectedSuggestion;
+                if (ImGui::IsKeyPressed(ImGuiKey_Enter))
                 {
                     selectedCompletion = completions[selectedSuggestion].complete;
                     completions.Clear();
                     ImGui::CloseCurrentPopup();
                 }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                if (ImGui::IsKeyPressed(ImGuiKey_Escape))
                 {
                     completions.Clear();
                     ImGui::CloseCurrentPopup();

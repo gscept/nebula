@@ -13,6 +13,7 @@
 */
 //------------------------------------------------------------------------------
 #include "io/uri.h"
+#include "toolkit-common/base/exporttypes.h"
 
 namespace ToolkitUtil
 {

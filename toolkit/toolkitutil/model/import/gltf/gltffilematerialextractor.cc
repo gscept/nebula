@@ -41,13 +41,11 @@ Util::Array<IO::URI>
 GltfFileMaterialExtractor::ExtractAll()
 {
     Util::Array<IO::URI> outputFiles;
-    String surfaceExtractPath = this->catName + "/" + this->subDir;
-    surfaceExtractPath.StripFileExtension();
-    this->textureDir = "tex:" + this->catName.StripSubstring(IO::URI("src:assets").LocalPath());
+    this->textureDir = "tex:" + this->outputFolder.StripSubstring(IO::URI("src:assets").LocalPath());
 
     if (this->doc->materials.Size() > 0)
     {
-        IO::IoServer::Instance()->CreateDirectory(surfaceExtractPath);
+        IO::IoServer::Instance()->CreateDirectory(this->outputFolder);
 
         // Generate surfaces
         for (IndexT i = 0; i < this->doc->materials.Size(); i++)
@@ -121,7 +119,7 @@ GltfFileMaterialExtractor::ExtractAll()
                 material.name.AppendInt(i);
             }
             Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::MaterialResource>(materialResource);
-            IO::URI output = surfaceExtractPath + "/" + material.name + ".namat";
+            IO::URI output = this->outputFolder + "/" + material.name + ".namat";
             Ptr<IO::Stream> outStream = IO::IoServer::Instance()->CreateStream(output);
             outStream->SetAccessMode(IO::Stream::WriteAccess);
             if (outStream->Open())

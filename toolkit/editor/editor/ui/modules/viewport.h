@@ -66,7 +66,6 @@ private:
     Graphics::GraphicsEntityId directionalLight;
 
     CoreGraphics::TextureId targetTexture;
-    Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
 
     bool focused = false;

@@ -61,7 +61,7 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
     ImGui::Checkbox("Fit to window", &fitToWindow);
     if (fitToWindow)
     {
-        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+        imageSize.x = ImGui::GetContentRegionAvail().x - ImGui::GetCursorPos().x;
         float ratio = (float)dims.height / (float)dims.width;
         imageSize.y = imageSize.x * ratio;
     }

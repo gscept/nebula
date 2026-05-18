@@ -62,7 +62,7 @@ TextureConverter::Setup()
     this->valid = true;
 
     // create a temporary directory
-    IoServer::Instance()->CreateDirectory("temp:textureconverter");
+    IoServer::Instance()->CreateDirectory("temp:texturepackager");
 
     return true;
 }
@@ -87,9 +87,9 @@ TextureConverter::Discard()
     this->logger = 0;
 
     // deletes the temporary directory
-    if (IoServer::Instance()->DirectoryExists("temp:textureconverter"))
+    if (IoServer::Instance()->DirectoryExists("temp:texturepackager"))
     {
-        IoServer::Instance()->DeleteDirectory("temp:textureconverter");
+        IoServer::Instance()->DeleteDirectory("temp:texturepackager");
     }
 }
 

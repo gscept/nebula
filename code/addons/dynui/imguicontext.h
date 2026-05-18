@@ -29,6 +29,8 @@ struct ImVec2;
 namespace Dynui
 {
 
+
+extern Util::Array<Util::String> ImguiDragAndDropFiles;
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle;
@@ -43,6 +45,14 @@ struct ImguiTextureId
     uint alpha : 1 = 1;
     uint splat : 1 = 0;
 };
+
+extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;
+
+/// Allocate imgui texture
+Ids::Id32 AllocateImguiTextureId(const ImguiTextureId& id);
+/// Deallocate imgui texture
+void DeallocateImguiTextureId(Ids::Id32 id);
+
 
 extern ImFont* ImguiNormalFont;
 extern ImFont* ImguiSmallFont;

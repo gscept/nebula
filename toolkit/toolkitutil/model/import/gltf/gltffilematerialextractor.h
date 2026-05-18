@@ -25,8 +25,7 @@ public:
     void SetDocument(Gltf::Document const* document);
     void SetLogger(ToolkitUtil::Logger* logger);
 
-    void SetCategoryName(Util::String const& categoryName);
-    void SetExportSubDirectory(Util::String const& subDir);
+    void SetOutputFolder(Util::String const& categoryName);
 
     /// export all .sur files. returns the exported files paths
     Util::Array<IO::URI> ExtractAll();
@@ -34,8 +33,7 @@ public:
     void ExtractMaterial(ToolkitUtil::MaterialResourceT* materialResource, Gltf::Material const& material);
 private:
     Gltf::Document const* doc;
-    Util::String catName;
-    Util::String subDir;
+    Util::String outputFolder;
 
     // used when exporting
     Util::String texCatDir;
@@ -66,18 +64,9 @@ GltfFileMaterialExtractor::SetLogger(ToolkitUtil::Logger* logger)
 /**
 */
 inline void
-GltfFileMaterialExtractor::SetCategoryName(Util::String const& categoryName)
+GltfFileMaterialExtractor::SetOutputFolder(Util::String const& outputFolder)
 {
-    this->catName = categoryName;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-GltfFileMaterialExtractor::SetExportSubDirectory(Util::String const& subDir)
-{
-    this->subDir = subDir;
+    this->outputFolder = outputFolder;
 }
 
 } // namespace ToolkitUtil

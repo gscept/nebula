@@ -160,8 +160,17 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 void
 AssetBatchProcessor::ProcessDir(const Util::String& dir)
 {
-    n_printf("\n----------------- Batching asset directory %s -----------------\n", Text(URI(dir).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
     IoServer* ioServer = IoServer::Instance();
+
+    // Scan depth first
+    Array<String> folders = ioServer->ListDirectories(dir, "*");
+    IndexT folderIndex;
+    for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
+    {
+        this->ProcessDir(Util::Format("%s%s/", dir.AsCharPtr(), folders[folderIndex].AsCharPtr()));
+    }
+
+    n_printf("\n----------------- Batching asset directory %s -----------------\n", Text(URI(dir).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
 
     IndexT fileIndex;
     ToolLog log(dir);
@@ -465,13 +474,6 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         }
     }
     this->messages.Append(log);
-
-    Array<String> folders = IoServer::Instance()->ListDirectories(this->folder, "*");
-    IndexT folderIndex;
-    for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
-    {
-        this->ProcessDir(Util::Format("%s/%s/", this->folder.AsCharPtr(), folders[folderIndex].AsCharPtr()));
-    }
     this->folder = "";
 }
 
@@ -485,7 +487,7 @@ AssetBatchProcessor::ProcessAll()
     Array<String> folders = IoServer::Instance()->ListDirectories("src:assets/", "*");
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
-        this->ProcessDir(Util::Format("src:assets/%s", folders[folderIndex].AsCharPtr()));
+        this->ProcessDir(Util::Format("src:assets/%s/", folders[folderIndex].AsCharPtr()));
     }
 }
 

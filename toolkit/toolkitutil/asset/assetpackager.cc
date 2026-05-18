@@ -314,20 +314,27 @@ PackageTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUti
             return false;
         }
         ToolkitUtil::TextureConverter textureExporter;
+        textureExporter.Setup();
+        textureExporter.SetLogger(logger);
         Util::String platformExtension;
         if (platform == ToolkitUtil::Platform::Win32 || platform == ToolkitUtil::Platform::Linux)
         {
             platformExtension = "dds";
         }
-        IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr(), platformExtension.AsCharPtr());
-        logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        IO::URI output = Util::String::Sprintf("%s%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr(), platformExtension.AsCharPtr());
+        logger->Print("%s\n", 
+                      Util::Format("Packaged texture: %s -> %s", 
+                                   Text(file.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr(), 
+                                   Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         if (tex.container == ToolkitUtil::TextureContainer_CUBE)
         {
-            return textureExporter.ConvertCubemap(tmpFile, output.LocalPath(), "tmp:", &tex);
+            return textureExporter.ConvertCubemap(tmpFile, output.LocalPath(), "temp:texturepackager", &tex);
         }
         else
         {
-            return textureExporter.ConvertTexture(tmpFile, output.LocalPath(), "tmp:", &tex);
+            return textureExporter.ConvertTexture(tmpFile, output.LocalPath(), "temp:texturepackager", &tex);
         }
     }
 

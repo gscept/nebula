@@ -113,6 +113,20 @@ CharFunc(const CoreGraphics::WindowId& id, unsigned int key)
 /**
 */
 void
+DropFunc(const CoreGraphics::WindowId& id, int path_count, const char* paths[])
+{
+    Util::Array<Util::String> files(path_count, 0);
+    for (int i = 0; i < path_count; i++)
+    {
+        files.Append(Util::String(paths[i]));
+    }
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::Drop, files));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods)
 {
     DisplayEvent::Code act = action == GLFW_PRESS ? DisplayEvent::MouseButtonDown : DisplayEvent::MouseButtonUp;
@@ -248,7 +262,8 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
     });
     glfwSetDropCallback(window, [](GLFWwindow* window, int path_count, const char* paths[])
     {
-
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        DropFunc(*id, path_count, paths);
     });
     glfwSetCursorEnterCallback(window, [](GLFWwindow* window, int entered)
     {

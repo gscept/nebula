@@ -54,6 +54,8 @@ namespace GLFW
 void KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods);
 /// Character callback
 void CharFunc(const CoreGraphics::WindowId& id, unsigned int key);
+/// File drop callback
+void DropFunc(const CoreGraphics::WindowId& id, int path_count, const char* paths[]);
 /// Mouse Button callback
 void MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods);
 /// Mouse callback

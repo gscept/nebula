@@ -63,6 +63,7 @@ protected:
     friend void CoreGraphics::DestroyWindow(const CoreGraphics::WindowId id);
     friend void KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods);
     friend void CharFunc(const CoreGraphics::WindowId& id, unsigned int key);
+    friend void DropFunc(const CoreGraphics::WindowId& id, int path_count, const char* paths[]);    
     friend void MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods);
     friend void MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos);
     friend void ScrollFunc(const CoreGraphics::WindowId& id, double xs, double ys);
