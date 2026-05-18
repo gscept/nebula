@@ -1172,9 +1172,20 @@ ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
 /**
 */
 Ids::Id32
-AllocateImguiTextureId(const ImguiTextureId& id)
+AllocateImguiTextureId(const ImguiTextureId& data)
 {
-    return Ids::Id32();
+    Ids::Id32 id = ImguiTextureIdAllocator.Alloc();
+    ImguiTextureIdAllocator.Set(id, data);
+    return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetImguiTextureIdData(Ids::Id32 id, const ImguiTextureId& data)
+{
+    ImguiTextureIdAllocator.Set(id, data);
 }
 
 //------------------------------------------------------------------------------
@@ -1182,7 +1193,9 @@ AllocateImguiTextureId(const ImguiTextureId& id)
 */
 void
 DeallocateImguiTextureId(Ids::Id32 id)
-{}
+{
+    ImguiTextureIdAllocator.Dealloc(id);
+}
 
 //------------------------------------------------------------------------------
 /**

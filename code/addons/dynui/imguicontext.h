@@ -49,7 +49,9 @@ struct ImguiTextureId
 extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;
 
 /// Allocate imgui texture
-Ids::Id32 AllocateImguiTextureId(const ImguiTextureId& id);
+Ids::Id32 AllocateImguiTextureId(const ImguiTextureId& data);
+/// Set imgui texture data
+void SetImguiTextureIdData(Ids::Id32 id, const ImguiTextureId& data);
 /// Deallocate imgui texture
 void DeallocateImguiTextureId(Ids::Id32 id);
 
