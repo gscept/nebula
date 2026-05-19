@@ -15,6 +15,7 @@ fips_files(
     imguicontext.h
 	imguidisplayeventhandler.cc
 	imguidisplayeventhandler.h
+    nebula_icons.h
 )
 
 fips_dir(imgui/shaders)

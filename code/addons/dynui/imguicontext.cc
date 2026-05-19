@@ -223,6 +223,7 @@ static Core::CVar* ui_opacity;
 ImFont* ImguiFont;
 ImFont* ImguiBoldFont;
 ImFont* ImguiItFont;
+ImFont* ImguiIconFont;
 
 //------------------------------------------------------------------------------
 /**
@@ -261,8 +262,9 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             }
             else if (textureData->Status == ImTextureStatus_WantDestroy)
             {
-                const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->TexID);
+                ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->TexID);
                 CoreGraphics::DestroyTexture(tex.nebulaHandle);
+                tex.nebulaHandle = CoreGraphics::InvalidTextureId;
                 ImguiTextureIdAllocator.Dealloc(textureData->TexID);
                 textureData->TexID = 0;
                 textureData->Status = ImTextureStatus_Destroyed;
@@ -1081,13 +1083,16 @@ ImguiContext::Create()
 
     // load default font
     ImFontConfig config;
-    config.OversampleH = 3;
-    config.OversampleV = 1;
+    config.OversampleH = 0;
+    config.OversampleV = 0;
 
 #if __WIN32__
     ImguiFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 11, &config);
     ImguiBoldFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrib.ttf", scaleFactor * 11, &config);
     ImguiItFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrii.ttf", scaleFactor * 11, &config);
+
+    // Generated using https://github.com/aiekick/ImGuiFontStudio/releases/tag/b0.5 from specific icons in https://github.com/h5p/font-awesome/blob/master/fontawesome-webfont.ttf
+    ImguiIconFont = io.Fonts->AddFontFromFileTTF(IO::URI("tool:syswork/data/fonts/nebula_icons.ttf").LocalPath().AsCharPtr(), scaleFactor * 11, &config);
 #else
     ImguilFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 11, &config);
     ImguiBoldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 11, &config);

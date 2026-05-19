@@ -59,6 +59,7 @@ void DeallocateImguiTextureId(Ids::Id32 id);
 extern ImFont* ImguiFont;
 extern ImFont* ImguiBoldFont;
 extern ImFont* ImguiItFont;
+extern ImFont* ImguiIconFont;
 
 class ImguiContext : public Graphics::GraphicsContext
 {

@@ -81,6 +81,7 @@ Importer::Run(SaveMode save)
                 config.path = buf;
                 ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
             }
+            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
             if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
             {
                 if (ImGuiFileDialog::Instance()->IsOk())
@@ -89,6 +90,7 @@ Importer::Run(SaveMode save)
                 }
                 ImGuiFileDialog::Instance()->Close();
             }
+            ImGui::PopFont();
 
             ImGui::Spacing();
             ImGui::SameLine();
