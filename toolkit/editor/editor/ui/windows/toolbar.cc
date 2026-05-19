@@ -54,6 +54,7 @@ Toolbar::Run(SaveMode save)
     float h = ImGui::CalcTextSize("Empty").y;
     float avail = ImGui::GetContentRegionAvail().y;
 
+    float oldPosY = ImGui::GetCursorPosY();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (avail - h) * 0.5f);
 
     ImGui::PushItemWidth(300);
@@ -81,12 +82,10 @@ Toolbar::Run(SaveMode save)
     }
     
     IMGUI_VERTICAL_SEPARATOR;
-    ImGui::SameLine();
     ImGui::PushFont(Dynui::ImguiFont, 32.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 0.0f, 0.0f });
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::SameLine();
     if (ImGui::Button(ICON_ttf_PLAY_CIRCLE)) { PlayGame(); }
     ImGui::SameLine();
     if (ImGui::Button(ICON_ttf_PAUSE_CIRCLE)) { PauseGame(); }
