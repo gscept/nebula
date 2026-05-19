@@ -33,10 +33,10 @@ extern ImGuiKey NebulaToImguiKeyCodes[];
 extern Util::Array<Util::String> ImguiDragAndDropFiles;
 struct ImguiTextureId
 {
-    CoreGraphics::TextureId nebulaHandle;
+    CoreGraphics::TextureId nebulaHandle = 0;
     uint layer : 8 = 0;
     uint mip : 4 = 0;
-    uint useAlpha : 1 = 0;
+    uint useAlpha : 1 = 1;
     uint useRange : 1 = 0;
     float rangeMin, rangeMax;
     uint red : 1 = 1;
@@ -79,8 +79,6 @@ public:
     
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);
-    /// reset key events
-    static void ResetKeyDownState();
 
     /// called if the window size has changed
     static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);

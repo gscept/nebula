@@ -207,7 +207,7 @@ Profiler::Run(SaveMode save)
 {
     ImGui::Checkbox("Pause (F3)", &this->pauseProfiling);
     ImGui::Checkbox("Capture worst frame", &this->captureWorstFrame);
-    if (ImGui::IsKeyPressed((ImGuiKey)Input::Key::F3))
+    if (ImGui::IsKeyPressed(ImGuiKey_F3))
         this->pauseProfiling = !this->pauseProfiling;
 
     if (this->captureWorstFrame)

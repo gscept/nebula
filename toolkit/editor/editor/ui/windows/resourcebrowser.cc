@@ -114,6 +114,20 @@ ResourceBrowser::Run(SaveMode save)
             static float minRange = 0, maxRange = 1;
             static bool overlay = false;
             static float relativeWidth = 1.0f, relativeHeight = 1.0f;
+            
+            Dynui::ImguiTextureId textureInfo;
+            textureInfo.nebulaHandle = CoreGraphics::TrackedTextures[current];
+            textureInfo.layer = layer;
+            textureInfo.mip = mip;
+            textureInfo.useAlpha = alpha;
+            textureInfo.useRange = range;
+            textureInfo.rangeMin = minRange;
+            textureInfo.rangeMax = maxRange;
+            textureInfo.red = red;
+            textureInfo.green = green;
+            textureInfo.blue = blue;
+            textureInfo.alpha = a;
+            Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
             if (ImGui::BeginChild("Preview", ImVec2{ 0, 0 }))
             {
@@ -128,8 +142,7 @@ ResourceBrowser::Run(SaveMode save)
                         ImGui::DragFloat("Viewport Height Factor", &relativeHeight, 0.1f, 0.0f, 1.0f, "%.2f");
                     }
                 }
-                ImTextureRef ref;
-                ref._TexID = imguiTexId;
+                ImTextureRef ref {imguiTexId};
                 ImGui::Image(ref, ImVec2{ (float)remainder.x, (float)remainder.x * ratio });
                 if (overlay)
                 {
@@ -167,19 +180,7 @@ ResourceBrowser::Run(SaveMode save)
             }
             ImGui::EndChild();
 
-            Dynui::ImguiTextureId textureInfo;
-            textureInfo.nebulaHandle = CoreGraphics::TrackedTextures[current];
-            textureInfo.layer = layer;
-            textureInfo.mip = mip;
-            textureInfo.useAlpha = alpha;
-            textureInfo.useRange = range;
-            textureInfo.rangeMin = minRange;
-            textureInfo.rangeMax = maxRange;
-            textureInfo.red = red;
-            textureInfo.green = green;
-            textureInfo.blue = blue;
-            textureInfo.alpha = a;
-            Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
 
         }
         else

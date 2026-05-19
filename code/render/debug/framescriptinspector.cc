@@ -68,8 +68,7 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
         imageSize.y = imageSize.x * ratio;
     }
 
-    ImTextureRef ref;
-    ref._TexID = imguiTexId;
+    ImTextureRef ref {imguiTexId};
     ImGui::Image(ref, imageSize);
     ImGui::End();
 

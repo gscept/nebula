@@ -37,11 +37,12 @@ void template_ImVector(py::module_ &immodule, const char* name)
         })
         ;
 }
-#if 0
 
 NB_MAKE_OPAQUE(ImGuiContext)
 NB_MODULE(deargui, deargui)
 {
+#if 0
+
     //py::class_<ImGuiContext>(deargui, "Context");
     template_ImVector<char>(deargui, "Vector_char");
     template_ImVector<float>(deargui, "Vector_float");
@@ -2696,6 +2697,8 @@ NB_MODULE(deargui, deargui)
     , py::arg("scale_max") = FLT_MAX
     , py::arg("graph_size") = ImVec2(0,0)
     );
+#endif
+
 }
 
 namespace Scripting
@@ -2708,4 +2711,3 @@ void RegisterDearguiModule()
 }
 };
 
-#endif

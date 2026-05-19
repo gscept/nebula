@@ -57,8 +57,7 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     itemData->image->texture.nebulaHandle = tex;
     Dynui::SetImguiTextureIdData(itemData->image->textureId, itemData->image->texture);
-    ImTextureRef ref;
-    ref._TexID = itemData->image->textureId;
+    ImTextureRef ref {itemData->image->textureId};
     ImGui::Image(ref, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 });
 
     ImGui::Text("Width: %d", dims.width);

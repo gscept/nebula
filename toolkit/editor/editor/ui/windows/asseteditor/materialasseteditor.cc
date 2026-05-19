@@ -183,8 +183,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
             if (!name.IsEmpty())
             {
-                ImTextureRef ref;
-                ref._TexID = textureInfo->textureId;
+                ImTextureRef ref {textureInfo->textureId};
                 ImGui::Text(kvp.Key());
                 bool pressed = false;
                 pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), ref, ImVec2{ 32, 32 });

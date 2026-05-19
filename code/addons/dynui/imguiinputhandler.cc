@@ -51,15 +51,6 @@ ImguiInputHandler::EndCapture()
 //------------------------------------------------------------------------------
 /**
 */
-void
-ImguiInputHandler::OnBeginFrame()
-{
-    ImguiContext::ResetKeyDownState();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 ImguiInputHandler::OnEvent(const Input::InputEvent& inputEvent)
 {

@@ -566,8 +566,7 @@ TerrainEditor::Run(SaveMode save)
 
                 ImVec2 imageSize = { 128.0f, 128.0f };
 
-                ImTextureRef ref;
-                ref._TexID = imguiTexId;
+                ImTextureRef ref {imguiTexId};
                 ImGui::Image(ref, imageSize);
             }
 
@@ -632,8 +631,7 @@ TerrainEditor::Run(SaveMode save)
                 Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
                 ImVec2 imageSize = { 64.0f, 64.0f };
-                ImTextureRef ref;
-                ref._TexID = imguiTexId;
+                ImTextureRef ref {imguiTexId};
                 ImGui::Image(ref, imageSize);
                 ImGui::SameLine();
                 ImGui::BeginGroup();
@@ -737,8 +735,7 @@ TerrainEditor::Run(SaveMode save)
                     CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
                     ImGui::Text("Mask");
-                    ImTextureRef ref;
-                    ref._TexID = terrainEditorState.biomeTextures[selectedBiome].imguiMaskId;
+                    ImTextureRef ref {terrainEditorState.biomeTextures[selectedBiome].imguiMaskId};
                     ImGui::Image(ref, ImVec2(128, 128));
                     ImGui::SameLine();
                     if (drawModeButton("Paint", terrainEditorState.brushUniforms.mode, Terrainbrush::Biome))
@@ -778,8 +775,7 @@ TerrainEditor::Run(SaveMode save)
                                 n_error("Can't happen");
                                 break;
                             }
-                            ImTextureRef ref;
-                            ref._TexID = tex;
+                            ImTextureRef ref {tex};
                             pressed |= ImGui::ImageButton(textures[j], ref, ImVec2(64, 64));
                             ImGui::SameLine(); 
                             ImGui::BeginGroup();

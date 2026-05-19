@@ -218,8 +218,7 @@ SizeT TotalIndicesThisFrame = 0;
 
 static Core::CVar* ui_opacity;
 
-ImFont* ImguiNormalFont;
-ImFont* ImguiSmallFont;
+ImFont* ImguiFont;
 ImFont* ImguiBoldFont;
 ImFont* ImguiItFont;
 
@@ -256,6 +255,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
                 Ids::Id32 id = AllocateImguiTextureId({.nebulaHandle = tex.id});
                 textureData->TexID = id;
+                textureData->Status = ImTextureStatus_OK;
             }
             else if (textureData->Status == ImTextureStatus_WantDestroy)
             {
@@ -268,6 +268,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             else if (textureData->Status == ImTextureStatus_WantUpdates)
             {
                 // Hmm, handle these?
+                int foo = 5;
             }
         }
     }
@@ -408,7 +409,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 scissorRect.bottom = Math::min(data->DisplaySize.y, scissorRect.bottom);
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
 
-                const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(command->TexRef._TexID);
+                const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(command->TexRef.GetTexID());
                 TextureInfo texInfo;
                 texInfo.type = 0;
                 texInfo.useRange = tex.useRange;
@@ -418,6 +419,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 // set texture in shader, we shouldn't have to put it into ImGui
                 CoreGraphics::TextureIdLock _0(tex.nebulaHandle);
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tex.nebulaHandle);
+                Util::StringAtom name = CoreGraphics::TextureGetName(tex.nebulaHandle);
                 CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(tex.nebulaHandle);
                 texInfo.splat |= CoreGraphics::PixelFormat::ToChannels(format) == 1 ? 1 : 0;
                 auto usage = CoreGraphics::TextureGetUsage(tex.nebulaHandle);
@@ -833,6 +835,7 @@ ImguiContext::Create()
     colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(1.00f, 0.38f, 0.00f, 0.90f);
     colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
     colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 0.31f, 0.00f, 1.00f);
+    colors[ImGuiCol_CheckboxSelectedBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.413f);
     colors[ImGuiCol_SliderGrab] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.30f, 0.33f, 0.33f, 1.00f);
     colors[ImGuiCol_Button] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
@@ -850,6 +853,9 @@ ImguiContext::Create()
     colors[ImGuiCol_Tab] = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
     colors[ImGuiCol_TabHovered] = ImVec4(0.16f, 0.16f, 0.16f, 0.80f);
     colors[ImGuiCol_TabSelected] = ImVec4(0.71f, 0.27f, 0.00f, 1.00f);
+    colors[ImGuiCol_TabSelectedOverline] = ImVec4(1.0f, 0.61f, 0.34f, 1.00f);
+    colors[ImGuiCol_TabDimmed] = ImVec4(0.077f, 0.077f, 0.077f, 0.86f);
+    colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.424f, 0.29f, 0.136f, 1.00f);
     colors[ImGuiCol_DockingPreview] = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
     colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
     colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
@@ -975,6 +981,8 @@ ImguiContext::Create()
         ImguiDrawFunction(data->buf, data->viewport, vp->DrawData);
     };
 
+    
+
     const auto& monitors = CoreGraphics::DisplayDevice::Instance()->GetMonitors();
     SizeT xOffset = 0, yOffset = 0;
     for (const auto& monitor : monitors)
@@ -1000,15 +1008,18 @@ ImguiContext::Create()
     ImFontConfig config;
     config.OversampleH = 3;
     config.OversampleV = 1;
+
 #if __WIN32__
-    ImguiFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 32, &config);
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrib.ttf", scaleFactor * 32, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrii.ttf", scaleFactor * 32, &config);
+    ImguiFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 11, &config);
+    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrib.ttf", scaleFactor * 11, &config);
+    ImguiItFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrii.ttf", scaleFactor * 11, &config);
 #else
-    ImguilFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 32, &config);
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 32, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", 32, &config);
+    ImguilFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 11, &config);
+    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 11, &config);
+    ImguiItFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", 11, &config);
 #endif
+
+    
 
     if (!App::GameApplication::IsEditorEnabled())
     {
@@ -1058,9 +1069,6 @@ ImguiContext::Discard()
 }
 
 
-
-static bool KeysToRelease[ImGuiKey_NamedKey_COUNT] = { false };
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -1077,7 +1085,7 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = true;
         return io.WantCaptureKeyboard;
     case InputEvent::KeyUp:
-        KeysToRelease[event.GetKey()] = true;
+        io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], false);
         if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = false;
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = false;
         return io.WantCaptureKeyboard;                                  // not a bug, this allows keys to be let go even if we are over the UI
@@ -1109,21 +1117,6 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiContext::ResetKeyDownState()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    for (uint32_t i = 0; i < ImGuiKey_NamedKey_COUNT; ++i)
-    {
-        if (KeysToRelease[i])
-            io.AddKeyEvent((ImGuiKey)i, false);
-        KeysToRelease[i] = false;
-    }
 }
 
 //------------------------------------------------------------------------------

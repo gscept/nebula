@@ -73,6 +73,7 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     this->camera.Setup(1280, 900, 1 << 3);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
+    this->imguiTextureId = Dynui::AllocateImguiTextureId({});
 }
 
 //------------------------------------------------------------------------------
@@ -86,6 +87,7 @@ Viewport::Init(const Graphics::ViewId view)
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
     this->targetTexture = CoreGraphics::InvalidTextureId;
+    this->imguiTextureId = Dynui::AllocateImguiTextureId({});
 }
 
 //------------------------------------------------------------------------------
@@ -268,8 +270,9 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImTextureRef ref;
-    ref._TexID = textureId.id;
+
+    Dynui::SetImguiTextureIdData(this->imguiTextureId, {textureId});
+    ImTextureRef ref {this->imguiTextureId};
     ImGui::Image(ref, imageSize, ImVec2(0, 0), uv);
 
     ImVec2 elementPos = ImGui::GetItemRectMin();

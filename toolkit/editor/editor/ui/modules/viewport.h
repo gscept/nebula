@@ -67,7 +67,7 @@ private:
 
     CoreGraphics::TextureId targetTexture;
     Resources::ResourceId resourceId;
-
+    Ids::Id32 imguiTextureId;
     bool focused = false;
 
     Util::String frameBuffer;
