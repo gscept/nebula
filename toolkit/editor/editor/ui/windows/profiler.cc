@@ -356,7 +356,7 @@ Profiler::Run(SaveMode save)
 
             if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
+                ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
 
                 ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                 ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -417,7 +417,7 @@ Profiler::Run(SaveMode save)
                 }
                 if (ImGui::CollapsingHeader(ctx.threadName.Value(), ctx.topLevelScopes.Size() > 0 ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_OpenOnArrow))
                 {
-                    ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
+                    ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
 
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -475,7 +475,7 @@ Profiler::Run(SaveMode save)
         }
         if (ImGui::BeginTabItem("Memory"))
         {
-            ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
+            ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
 
             Util::Dictionary<const char*, uint64_t> counters = Profiling::ProfilingGetCounters();
             for (IndexT i = 0; i < counters.Size(); i++)

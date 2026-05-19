@@ -204,6 +204,8 @@ struct ImguiState
     Ptr<ImguiInputHandler> inputHandler;
     Ptr<ImguiDisplayEventHandler> displayEventHandler;
     bool dockOverViewport;
+
+    Util::Array<ImTextureData*> pendingTextureUpdates;
 } state;
 
 IndexT VertexBufferOffset = 0;
@@ -250,7 +252,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.format = textureData->Format == ImTextureFormat_RGBA32 ? CoreGraphics::PixelFormat::R8G8B8A8 : CoreGraphics::PixelFormat::R8;
                 texInfo.data = textureData->Pixels;
                 texInfo.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
-                texInfo.usage = CoreGraphics::TextureUsage::Sample;
+                texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
                 CoreGraphics::TextureId tex = CoreGraphics::CreateTexture(texInfo);
 
                 Ids::Id32 id = AllocateImguiTextureId({.nebulaHandle = tex.id});
@@ -259,7 +261,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             }
             else if (textureData->Status == ImTextureStatus_WantDestroy)
             {
-                ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->TexID);
+                const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->TexID);
                 CoreGraphics::DestroyTexture(tex.nebulaHandle);
                 ImguiTextureIdAllocator.Dealloc(textureData->TexID);
                 textureData->TexID = 0;
@@ -267,8 +269,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             }
             else if (textureData->Status == ImTextureStatus_WantUpdates)
             {
-                // Hmm, handle these?
-                int foo = 5;
+                state.pendingTextureUpdates.Append(textureData);
             }
         }
     }
@@ -371,7 +372,6 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         };
         uint bits = 0xF;
     };
-
 
     IndexT i;
     for (i = 0; i < data->CmdListsCount; i++)
@@ -634,6 +634,48 @@ ImguiContext::Create()
                 state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, CoreGraphics::InvalidPassId, 0, pass, inputAssembly });
             });
 
+        FrameScript_editorframe::RegisterSubgraph_ImGuiUpdateTextures_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT)
+            {
+                for (ImTextureData* textureData : state.pendingTextureUpdates)
+                {
+                    CoreGraphics::BufferCreateInfo updateBuf;
+                    
+                    updateBuf.byteSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.data = textureData->Pixels;
+                    updateBuf.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+                    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(updateBuf);
+
+                    const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->GetTexID());
+
+                    Util::Array<CoreGraphics::BufferCopy, 4> sourceCopies;
+                    Util::Array<CoreGraphics::TextureCopy, 4> destinationCopies;
+
+                    CoreGraphics::BufferCopy& bufCpy = sourceCopies.Emplace();
+                    bufCpy.rowLength = textureData->GetPitch() / textureData->BytesPerPixel;
+                    bufCpy.offset = (textureData->UpdateRect.x + textureData->UpdateRect.y * textureData->Width) * textureData->BytesPerPixel;
+                    CoreGraphics::TextureCopy& texCpy = destinationCopies.Emplace();
+                    texCpy.mip = 0;
+                    texCpy.bits = CoreGraphics::ImageBits::ColorBits;
+                    texCpy.layer = 0;
+                    texCpy.region = Math::rectangle<int>(textureData->UpdateRect.x, textureData->UpdateRect.y, textureData->UpdateRect.x + textureData->UpdateRect.w, textureData->UpdateRect.y + textureData->UpdateRect.h);
+
+                    CoreGraphics::BarrierPush(
+                        cmdBuf,
+                        CoreGraphics::PipelineStage::PixelShaderRead,
+                        CoreGraphics::PipelineStage::TransferWrite,
+                        CoreGraphics::BarrierDomain::Global,
+                        {
+                            CoreGraphics::TextureBarrierInfo {.tex = tex.nebulaHandle, .subres = CoreGraphics::TextureSubresourceInfo::Color()}
+                        }
+                    );
+                    CoreGraphics::CmdCopy(cmdBuf, buf, sourceCopies, tex.nebulaHandle, destinationCopies);
+                    CoreGraphics::BarrierPop(cmdBuf);
+                    CoreGraphics::DestroyBuffer(buf);
+                    textureData->Status = ImTextureStatus_OK;
+                }
+                state.pendingTextureUpdates.Clear();
+            });
         FrameScript_editorframe::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
@@ -680,6 +722,39 @@ ImguiContext::Create()
     else
 #endif
     {
+        FrameScript_default::RegisterSubgraph_ImGuiUpdateTextures_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT)
+            {
+                for (ImTextureData* textureData : state.pendingTextureUpdates)
+                {
+                    CoreGraphics::BufferCreateInfo updateBuf;
+                    updateBuf.byteSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.data = textureData->Pixels;
+                    updateBuf.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+                    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(updateBuf);
+
+                    const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->GetTexID());
+
+                    Util::Array<CoreGraphics::BufferCopy, 4> sourceCopies;
+                    Util::Array<CoreGraphics::TextureCopy, 4> destinationCopies;
+                    for (const ImTextureRect& rect : textureData->Updates)
+                    {
+                        CoreGraphics::BufferCopy& bufCpy = sourceCopies.Emplace();
+                        bufCpy.imageHeight = 0;
+                        bufCpy.rowLength = 0;
+                        bufCpy.offset = 0;
+                        CoreGraphics::TextureCopy& texCpy = destinationCopies.Emplace();
+                        texCpy.mip = 0;
+                        texCpy.bits = CoreGraphics::ImageBits::ColorBits;
+                        texCpy.layer = 0;
+                        texCpy.region = Math::rectangle<int>(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
+                    }
+                    CoreGraphics::CmdCopy(cmdBuf, buf, sourceCopies, tex.nebulaHandle, destinationCopies);
+                    CoreGraphics::DestroyBuffer(buf);
+                    textureData->Status = ImTextureStatus_OK;
+                }
+                state.pendingTextureUpdates.Clear();
+            });
         FrameScript_default::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
             {
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };

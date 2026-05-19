@@ -353,6 +353,12 @@
                     },
 
                     {
+                        "subgraph": {
+                            "name": "ImGui Update Textures"
+                        }
+                    },
+
+                    {
                         "render": {
                             "name": "Terrain Prepass",
                             "targets": [

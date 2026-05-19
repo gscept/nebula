@@ -68,7 +68,8 @@ Importer::Run(SaveMode save)
 
             ImGui::Text("Destination:");
             ImGui::SameLine();
-            char buf[256];
+            Destination.ConvertBackslashes();
+            static char buf[256];
             memcpy(buf, Destination.data(), Destination.Length());
             buf[Destination.Length()] = '\0';
             ImGui::InputText("##destination", buf, sizeof(buf));

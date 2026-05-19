@@ -45,30 +45,35 @@
         "last_submit": true,
         "_comment": "Render Editor UI",
         "ops": [
-          {
-            "render": {
-              "name": "Editor",
-              "targets": [
-                {
-                  "name": "EditorBuffer",
-                  "flags": "Clear|Store"
+            {
+                "subgraph": {
+                    "name": "ImGui Update Textures"
                 }
-              ],
-              "ops": [
-                {
-                  "subgraph": {
-                    "name": "ImGUI"
-                  }
+            },
+            {
+                "render": {
+                    "name": "Editor",
+                    "targets": [
+                        {
+                            "name": "EditorBuffer",
+                            "flags": "Clear|Store"
+                        }
+                    ],
+                    "ops": [
+                        {
+                            "subgraph": {
+                                "name": "ImGUI"
+                            }
+                        }
+                    ]
                 }
-              ]
+            },
+            {
+                "transition": {
+                    "name": "EditorBuffer",
+                    "stage": "ComputeShaderRead"
+                }
             }
-          },
-          {
-            "transition": {
-              "name": "EditorBuffer",
-              "stage": "ComputeShaderRead"
-            }
-          }
         ]
       }
     ]
