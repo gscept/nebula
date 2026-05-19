@@ -21,7 +21,7 @@ struct TextureEditorItemData
 void 
 TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
-    ImGui::PushFont(Dynui::ImguiBoldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
     ImGui::Text(item->source.LocalPath().AsCharPtr());
     ImGui::PopFont();
     auto itemData = (TextureEditorItemData*)item->data;
@@ -31,7 +31,7 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     CoreGraphics::TextureIdLock _0(tex);
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tex);
     CoreGraphics::TextureType type = CoreGraphics::TextureGetType(tex);
-    ImGui::PushFont(Dynui::ImguiBoldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
     switch (type)
     {
         case CoreGraphics::Texture1D:
@@ -54,8 +54,12 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     ImVec2 remainder = ImGui::GetContentRegionAvail();
     float ratio = dims.height / float(dims.width);
+
     itemData->image->texture.nebulaHandle = tex;
-    ImGui::Image(&itemData->image->texture, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1,1,1,1 }, ImVec4{ 0,0,0,1 });
+    Dynui::SetImguiTextureIdData(itemData->image->textureId, itemData->image->texture);
+    ImTextureRef ref;
+    ref._TexID = itemData->image->textureId;
+    ImGui::Image(ref, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 });
 
     ImGui::Text("Width: %d", dims.width);
     ImGui::SameLine();
@@ -80,6 +84,7 @@ TextureSetup(AssetEditorItem* item)
     itemData->image->texture.layer = 0;
     itemData->image->texture.mip = 0;
     itemData->image->texture.nebulaHandle.resourceId = item->res.resourceId;
+    Dynui::SetImguiTextureIdData(itemData->image->textureId, itemData->image->texture);
     item->data = itemData;
 }
 

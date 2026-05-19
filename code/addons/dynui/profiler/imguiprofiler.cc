@@ -208,7 +208,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                 {
                     if (ImGui::CollapsingHeader(ctx.threadName.Value(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        ImGui::PushFont(Dynui::ImguiSmallFont);
+                        ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
 
                         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                         canvasSize.x *= timeWindow;
@@ -238,7 +238,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                 }
                 if (ImGui::CollapsingHeader("GPU"))
                 {
-                    ImGui::PushFont(Dynui::ImguiSmallFont);
+                    ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
 
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -282,7 +282,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
             }
             if (ImGui::CollapsingHeader("Memory"))
             {
-                ImGui::PushFont(Dynui::ImguiSmallFont);
+                ImGui::PushFont(Dynui::ImguiFont, ImGui::GetStyle().FontSizeBase * 0.5f);
 
                 Util::Dictionary<const char*, uint64_t> counters = Profiling::ProfilingGetCounters();
                 for (IndexT i = 0; i < counters.Size(); i++)

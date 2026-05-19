@@ -121,7 +121,7 @@ FileResult OpenFileDialog(const Util::String& title, Util::String& outpath, cons
                     Util::String name = dirList[i];
                     ImGui::SmallButton("D");
                     ImGui::SameLine();
-                    ImGui::Selectable(name.AsCharPtr(), selected == i, ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_::ImGuiSelectableFlags_DontClosePopups);
+                    ImGui::Selectable(name.AsCharPtr(), selected == i, ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_::ImGuiSelectableFlags_NoAutoClosePopups);
                     if (ImGui::IsItemClicked())
                     {
                         selected = i;
@@ -144,7 +144,7 @@ FileResult OpenFileDialog(const Util::String& title, Util::String& outpath, cons
                     Util::String name = fileList[i];
                     ImGui::SmallButton("F");
                     ImGui::SameLine();
-                    ImGui::Selectable(name.AsCharPtr(), selected == i + dirList.Size(), ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_::ImGuiSelectableFlags_DontClosePopups);
+                    ImGui::Selectable(name.AsCharPtr(), selected == i + dirList.Size(), ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_::ImGuiSelectableFlags_NoAutoClosePopups);
                     if (ImGui::IsItemClicked())
                     {
                         selected = i + dirList.Size();

@@ -153,7 +153,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     auto itemData = (const MaterialEditorItemData*)item->data;
-    ImGui::PushFont(Dynui::ImguiBoldFont);
+    ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
     ImGui::Text(materialTemplate->name);
     ImGui::PopFont();
 
@@ -183,14 +183,17 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
             if (!name.IsEmpty())
             {
+                ImTextureRef ref;
+                ref._TexID = textureInfo->textureId;
                 ImGui::Text(kvp.Key());
                 bool pressed = false;
-                pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), &textureInfo->texture, ImVec2{ 32, 32 });
+                pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), ref, ImVec2{ 32, 32 });
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
                     if (ImGui::BeginTooltip())
                     {
-                        ImGui::Image(&textureInfo->texture, ImVec2{ 256, 256 });
+
+                        ImGui::Image(ref, ImVec2{ 256, 256 });
                         ImGui::EndTooltip();
                     }
                 }
@@ -371,6 +374,7 @@ MaterialSetup(AssetEditorItem* item)
 
     for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
     {
+        itemData->images[i].textureId = Dynui::AllocateImguiTextureId({});
         auto kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
         Resources::ResourceId res = Materials::MaterialGetTexture(item->asset.material, kvp.Value()->textureIndex);
         if (res.resourceId == Resources::InvalidResourceId.resourceId)
@@ -381,6 +385,7 @@ MaterialSetup(AssetEditorItem* item)
             itemData->images[i].texture.layer = 0;
             itemData->images[i].texture.mip = 0;
             itemData->images[i].texture.nebulaHandle = res.resource;
+            Dynui::SetImguiTextureIdData(itemData->images[i].textureId, itemData->images[i].texture);
             memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
         });
 
@@ -388,6 +393,7 @@ MaterialSetup(AssetEditorItem* item)
         itemData->images[i].texture.layer = 0;
         itemData->images[i].texture.mip = 0;
         itemData->images[i].texture.nebulaHandle = res.resource;
+        Dynui::SetImguiTextureIdData(itemData->images[i].textureId, itemData->images[i].texture);
         memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
     }
 }
@@ -433,6 +439,7 @@ MaterialDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
 
     for (IndexT i = 0; i < materialTemplate->numTextures; i++)
     {
+        Dynui::DeallocateImguiTextureId(itemData->images[i].textureId);
         const MaterialTemplatesGPULang::MaterialTemplateTexture* texBind = materialTemplate->textures.ValueAtIndex(i);
         ImageHolder* currentImage = &itemData->images[i];
         ImageHolder* originalImage = &itemData->originalImages[i];

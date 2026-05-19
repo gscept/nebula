@@ -49,10 +49,12 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
 
     ImVec2 imageSize = {(float)dims.width, (float)dims.height};
 
-    static Dynui::ImguiTextureId textureInfo;
+    static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+    Dynui::ImguiTextureId textureInfo;
     textureInfo.nebulaHandle = id;
     textureInfo.mip = state.selectedMip;
     textureInfo.layer = state.selectedLayer;
+    Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
     ImGui::NewLine();
     ImGui::Separator();
@@ -66,7 +68,9 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
         imageSize.y = imageSize.x * ratio;
     }
 
-    ImGui::Image((void*)& textureInfo, imageSize);
+    ImTextureRef ref;
+    ref._TexID = imguiTexId;
+    ImGui::Image(ref, imageSize);
     ImGui::End();
 
 }

@@ -6,7 +6,7 @@
 #include "camera.h"
 #include "visibility/visibilitycontext.h"
 #include "graphics/graphicsserver.h"
-
+#include "dynui/imguicontext.h"
 #include "graphics/cameracontext.h"
 #include "io/ioserver.h"
 #include "input/inputserver.h"
@@ -84,20 +84,20 @@ Camera::Update()
 
     Game::TimeSource* timeSource = Game::Time::GetTimeSource(TIMESOURCE_EDITOR);
 
-    this->mayaCameraUtil.SetOrbitButton(io.MouseDown[Input::MouseButton::LeftButton]);
-    this->mayaCameraUtil.SetPanButton(io.MouseDown[Input::MouseButton::MiddleButton]);
-    this->mayaCameraUtil.SetZoomButton(io.MouseDown[Input::MouseButton::RightButton]);
+    this->mayaCameraUtil.SetOrbitButton(io.MouseDown[ImGuiMouseButton_Left]);
+    this->mayaCameraUtil.SetPanButton(io.MouseDown[ImGuiMouseButton_Middle]);
+    this->mayaCameraUtil.SetZoomButton(io.MouseDown[ImGuiMouseButton_Right]);
     this->mayaCameraUtil.SetZoomInButton(io.MouseWheel > 0);
     this->mayaCameraUtil.SetZoomOutButton(io.MouseWheel < 0);
     this->mayaCameraUtil.SetMouseMovement({ -io.MouseDelta.x, -io.MouseDelta.y });
     this->mayaCameraUtil.Update(timeSource->frameTime);
 
-	this->freeCamUtil.SetForwardsKey(io.KeysDown[Input::Key::W]);
-	this->freeCamUtil.SetBackwardsKey(io.KeysDown[Input::Key::S]);
-	this->freeCamUtil.SetRightStrafeKey(io.KeysDown[Input::Key::D]);
-	this->freeCamUtil.SetLeftStrafeKey(io.KeysDown[Input::Key::A]);
-	this->freeCamUtil.SetUpKey(io.KeysDown[Input::Key::Q]);
-	this->freeCamUtil.SetDownKey(io.KeysDown[Input::Key::E]);
+	this->freeCamUtil.SetForwardsKey(ImGui::IsKeyPressed(ImGuiKey_W));
+	this->freeCamUtil.SetBackwardsKey(ImGui::IsKeyPressed(ImGuiKey_S));
+	this->freeCamUtil.SetRightStrafeKey(ImGui::IsKeyPressed(ImGuiKey_D));
+	this->freeCamUtil.SetLeftStrafeKey(ImGui::IsKeyPressed(ImGuiKey_A));
+	this->freeCamUtil.SetUpKey(ImGui::IsKeyPressed(ImGuiKey_Q));
+	this->freeCamUtil.SetDownKey(ImGui::IsKeyPressed(ImGuiKey_E));
 
 	this->freeCamUtil.SetMouseMovement({ -io.MouseDelta.x, -io.MouseDelta.y });
 	this->freeCamUtil.SetAccelerateButton(io.KeyShift);

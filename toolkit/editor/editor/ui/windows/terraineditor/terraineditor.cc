@@ -43,29 +43,36 @@ using namespace Editor;
 
 struct BiomeTextures
 {
+    Ids::Id32 imguiMaskId;
     Dynui::ImguiTextureId mask;
     CoreGraphics::TextureId maskTex;
     Util::FixedArray<Resources::ResourceName> albedoPaths;
     Util::FixedArray<Resources::ResourceId> albedoResources;
     Util::FixedArray<Dynui::ImguiTextureId> albedo;
+    Util::FixedArray<Ids::Id32> imguiAlbedoId;
     Util::FixedArray<Resources::ResourceName> normalsPaths;
     Util::FixedArray<Resources::ResourceId> normalsResources;
     Util::FixedArray<Dynui::ImguiTextureId> normals;
+    Util::FixedArray<Ids::Id32> imguiNormalId;
     Util::FixedArray<Resources::ResourceName> materialPaths;
     Util::FixedArray<Resources::ResourceId> materialResources;
     Util::FixedArray<Dynui::ImguiTextureId> material;
+    Util::FixedArray<Ids::Id32> imguiMaterialId;
 
     BiomeTextures()
     {
         this->albedoPaths.Resize(4);
         this->albedoResources.Resize(4);
         this->albedo.Resize(4);
+        this->imguiAlbedoId.Resize(4);
         this->normals.Resize(4);
         this->normalsResources.Resize(4);
         this->normalsPaths.Resize(4);
+        this->imguiNormalId.Resize(4);
         this->material.Resize(4);
         this->materialResources.Resize(4);
         this->materialPaths.Resize(4);
+        this->imguiMaterialId.Resize(4);
     }
 };
 
@@ -547,17 +554,21 @@ TerrainEditor::Run(SaveMode save)
         {
             if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
             {
-                static Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainEditorState.activeHeightMap;
+                static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+                Dynui::ImguiTextureId textureInfo;
+                textureInfo.nebulaHandle = terrainEditorState.activeHeightMap.id;
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
                 textureInfo.rangeMin = terrainComponent.minHeight;
                 textureInfo.rangeMax = terrainComponent.maxHeight;
                 textureInfo.splat = 1;
+                Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
                 ImVec2 imageSize = { 128.0f, 128.0f };
 
-                ImGui::Image((void*)&textureInfo, imageSize);
+                ImTextureRef ref;
+                ref._TexID = imguiTexId;
+                ImGui::Image(ref, imageSize);
             }
 
             if (ImGui::Button("New Heightmap"))
@@ -615,14 +626,15 @@ TerrainEditor::Run(SaveMode save)
 
             if (ImGui::CollapsingHeader("Brush"))
             {
-                static Dynui::ImguiTextureId textureInfo;
+                static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+                Dynui::ImguiTextureId textureInfo;
                 textureInfo.nebulaHandle = terrainEditorState.brushTexture;
-                textureInfo.mip = 0;
-                textureInfo.layer = 0;
-                textureInfo.splat = 1;
-                
+                Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
                 ImVec2 imageSize = { 64.0f, 64.0f };
-                ImGui::Image((void*)&textureInfo, imageSize);
+                ImTextureRef ref;
+                ref._TexID = imguiTexId;
+                ImGui::Image(ref, imageSize);
                 ImGui::SameLine();
                 ImGui::BeginGroup();
                 {
@@ -725,7 +737,9 @@ TerrainEditor::Run(SaveMode save)
                     CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
                     ImGui::Text("Mask");
-                    ImGui::Image(&terrainEditorState.biomeTextures[selectedBiome].mask, ImVec2(128, 128));
+                    ImTextureRef ref;
+                    ref._TexID = terrainEditorState.biomeTextures[selectedBiome].imguiMaskId;
+                    ImGui::Image(ref, ImVec2(128, 128));
                     ImGui::SameLine();
                     if (drawModeButton("Paint", terrainEditorState.brushUniforms.mode, Terrainbrush::Biome))
                     {
@@ -739,32 +753,34 @@ TerrainEditor::Run(SaveMode save)
                     for (int i = 0; i < 4; i++)
                     {
                         ImGui::BeginGroup();
-                        ImGui::PushFont(Dynui::ImguiBoldFont);
+                        ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
                         ImGui::Text(labels[i]);
                         ImGui::PopFont();
                         for (int j = 0; j < 3; j++)
                         {
-                            Dynui::ImguiTextureId* tex = nullptr;
+                            Ids::Id32 tex = 0;
                             const char* path = nullptr;
                             switch (j)
                             {
                             case 0:
-                                tex = &terrainEditorState.biomeTextures[selectedBiome].albedo[i];
+                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i];
                                 path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].Value();
                                 break;
                             case 1:
-                                tex = &terrainEditorState.biomeTextures[selectedBiome].normals[i];
+                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i];
                                 path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].Value();
                                 break;
                             case 2:
-                                tex = &terrainEditorState.biomeTextures[selectedBiome].material[i];
+                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i];
                                 path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].Value();
                                 break;
                             default:
                                 n_error("Can't happen");
                                 break;
                             }
-                            pressed |= ImGui::ImageButton(textures[j], tex, ImVec2(64, 64));
+                            ImTextureRef ref;
+                            ref._TexID = tex;
+                            pressed |= ImGui::ImageButton(textures[j], ref, ImVec2(64, 64));
                             ImGui::SameLine(); 
                             ImGui::BeginGroup();
                                 ImGui::Text(textures[j]);
@@ -785,16 +801,19 @@ TerrainEditor::Run(SaveMode save)
                                             terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i] = filePath;
                                             terrainEditorState.biomeTextures[selectedBiome].albedoResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
                                             terrainEditorState.biomeTextures[selectedBiome].albedo[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].albedoResources[i];
+                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i], terrainEditorState.biomeTextures[selectedBiome].albedo[i]);
                                             break;
                                         case 1:
                                             terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i] = filePath;
                                             terrainEditorState.biomeTextures[selectedBiome].normalsResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
                                             terrainEditorState.biomeTextures[selectedBiome].normals[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].normalsResources[i];
+                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i], terrainEditorState.biomeTextures[selectedBiome].normals[i]);
                                             break;
                                         case 2:
                                             terrainEditorState.biomeTextures[selectedBiome].materialPaths[i] = filePath;
                                             terrainEditorState.biomeTextures[selectedBiome].materialResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
                                             terrainEditorState.biomeTextures[selectedBiome].material[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].materialResources[i];
+                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i], terrainEditorState.biomeTextures[selectedBiome].material[i]);
                                             break;
                                         default:
                                             n_error("Can't happen");

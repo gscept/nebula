@@ -312,10 +312,9 @@ RenderMaterialsUI()
     static MaterialDefinitionT original;
     static MaterialDefinitionT current;
     if (!hasSelection || ImGui::Combo("Selected", &selected,
-        [](void* data, int n, const char** ret)
+        [](void* data, int n) -> const char*
         {
-            *ret = GetMaterial(n).name.Value();
-            return true;
+            return GetMaterial(n).name.Value();
         },
         nullptr, GetNrMaterials()))
     {

@@ -140,7 +140,7 @@ Outline::Run(SaveMode save)
                         selected,
                         //ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick |
                         ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns |
-                        ImGuiSelectableFlags_::ImGuiSelectableFlags_DontClosePopups,
+                        ImGuiSelectableFlags_::ImGuiSelectableFlags_NoAutoClosePopups,
                         {ImGui::GetColumnWidth(), 20}
                     ))
                     {

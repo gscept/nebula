@@ -37,6 +37,7 @@ void template_ImVector(py::module_ &immodule, const char* name)
         })
         ;
 }
+#if 0
 
 NB_MAKE_OPAQUE(ImGuiContext)
 NB_MODULE(deargui, deargui)
@@ -2706,3 +2707,5 @@ void RegisterDearguiModule()
         });
 }
 };
+
+#endif

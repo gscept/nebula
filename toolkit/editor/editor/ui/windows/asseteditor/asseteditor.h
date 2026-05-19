@@ -52,7 +52,9 @@ __RegisterClass(AssetEditor)
 struct ImageHolder
 {
     Resources::ResourceId res;
+    Ids::Id32 textureId;
     Dynui::ImguiTextureId texture;
+
 };
 
 struct AssetEditorItem

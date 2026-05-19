@@ -29,7 +29,7 @@ struct ImVec2;
 namespace Dynui
 {
 
-
+extern ImGuiKey NebulaToImguiKeyCodes[];
 extern Util::Array<Util::String> ImguiDragAndDropFiles;
 struct ImguiTextureId
 {
@@ -56,8 +56,7 @@ void SetImguiTextureIdData(Ids::Id32 id, const ImguiTextureId& data);
 void DeallocateImguiTextureId(Ids::Id32 id);
 
 
-extern ImFont* ImguiNormalFont;
-extern ImFont* ImguiSmallFont;
+extern ImFont* ImguiFont;
 extern ImFont* ImguiBoldFont;
 extern ImFont* ImguiItFont;
 

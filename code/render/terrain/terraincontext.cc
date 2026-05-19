@@ -2577,8 +2577,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
+                        static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+                        Dynui::ImguiTextureId textureInfo;
+                        textureInfo.nebulaHandle = terrainInstance.physicalAlbedoCacheBC.id;
+                        Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
                         ImTextureRef ref;
-                        ref._TexID = terrainInstance.physicalAlbedoCacheBC.id;
+                        ref._TexID = imguiTexId;
                         ImGui::Image(ref, imageSize);
                     }
 
@@ -2612,8 +2617,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
+                        static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+                        Dynui::ImguiTextureId textureInfo;
+                        textureInfo.nebulaHandle = terrainInstance.physicalMaterialCacheBC.id;
+                        Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
                         ImTextureRef ref;
-                        ref._TexID = terrainInstance.physicalMaterialCacheBC.id;
+                        ref._TexID = imguiTexId;
                         ImGui::Image(ref, imageSize);
                     }
 
@@ -2633,8 +2643,13 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                         float ratio = (float)dims.height / (float)dims.width;
                         imageSize.y = imageSize.x * ratio;
 
+                        static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+                        Dynui::ImguiTextureId textureInfo;
+                        textureInfo.nebulaHandle = terrainInstance.shadowMap.id;
+                        Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
                         ImTextureRef ref;
-                        ref._TexID = terrainInstance.shadowMap.id;
+                        ref._TexID = imguiTexId;
                         ImGui::Image(ref, imageSize);
                     }
                 }
