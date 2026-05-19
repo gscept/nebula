@@ -47,7 +47,7 @@ ResourceBrowser::Run(SaveMode save)
             ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
             ImGui::Text("Textures");
             ImGui::PopFont();
-            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp))
+            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit))
             {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Dimensions");

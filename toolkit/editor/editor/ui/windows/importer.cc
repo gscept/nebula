@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //  importer.cc
 //  (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -17,6 +17,8 @@
 #include "toolkitutil/asset/assetimporter.h"
 #include "dynui/imguifiledialog/imguifiledialog.h"
 #include "tinyfiledialogs.h"
+
+#include "dynui/nebula_icons.h"
 using namespace Editor;
 
 namespace Presentation
@@ -81,7 +83,10 @@ Importer::Run(SaveMode save)
                 config.path = buf;
                 ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
             }
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
             ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
+            const ImGuiStyle& style = ImGui::GetStyle();
+            ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], reinterpret_cast<const char*>(ICON_ttf_FOLDER_OPEN));
             if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
             {
                 if (ImGuiFileDialog::Instance()->IsOk())
@@ -92,6 +97,7 @@ Importer::Run(SaveMode save)
             }
             ImGui::PopFont();
 
+            ImGui::PopStyleVar();
             ImGui::Spacing();
             ImGui::SameLine();
             if (ImGui::Button("Import"))

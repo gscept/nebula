@@ -105,10 +105,10 @@
 /////////////////////////////////
 
 // locales string
-// #define createDirButtonString "+"
-// #define resetButtonString "R"
+#define createDirButtonString reinterpret_cast<const char*>(u8"\uf067")
+#define resetButtonString reinterpret_cast<const char*>(u8"\uf01e")
 // #define devicesButtonString "Devices"
-// #define editPathButtonString "E"
+#define editPathButtonString reinterpret_cast<const char*>(u8"\uf044")
 // #define searchString "Search"
 // #define dirEntryString "[DIR] "
 // #define linkEntryString "[LINK] "
@@ -146,8 +146,8 @@
 
 // theses icons will appear in table headers
 // #define USE_CUSTOM_SORTING_ICON
-// #define tableHeaderAscendingIcon "A|"
-// #define tableHeaderDescendingIcon "D|"
+#define tableHeaderAscendingIcon reinterpret_cast<const char*>(u8"\uf062")
+#define tableHeaderDescendingIcon reinterpret_cast<const char*>(u8"\uf063")
 // #define tableHeaderFileNameString " File name"
 // #define tableHeaderFileTypeString " Type"
 // #define tableHeaderFileSizeString " Size"

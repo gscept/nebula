@@ -1208,12 +1208,6 @@ void IGFD::SearchManager::Clear() {
 
 void IGFD::SearchManager::DrawSearchBar(FileDialogInternal& vFileDialogInternal) {
     // search field
-    if (IMGUI_BUTTON(resetButtonString "##BtnImGuiFileDialogSearchField")) {
-        Clear();
-        vFileDialogInternal.fileManager.ApplyFilteringOnFileList(vFileDialogInternal);
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(buttonResetSearchString);
-    ImGui::SameLine();
     ImGui::Text(searchString);
     ImGui::SameLine();
     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);

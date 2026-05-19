@@ -683,9 +683,9 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
-                N_MARKER_BEGIN(ImGuiRender, ImGUI)
-                ImGui::Render();
-                N_MARKER_END()
+                // This is handled by UiManager in the editor
+                //ImGui::Render();
+                //ImGui::UpdatePlatformWindows();
                 if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
                     void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
@@ -771,6 +771,7 @@ ImguiContext::Create()
 #endif
                 N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
+                ImGui::UpdatePlatformWindows();
                 N_MARKER_END()
                 if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
@@ -864,26 +865,26 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
 
-    style.FrameRounding = 6.0f;
-    style.GrabRounding = 6.0f;
+    style.FrameRounding = 12.0f;
+    style.GrabRounding = 12.0f;
     style.ChildRounding = 6.0f;
-    style.WindowRounding = 6.0f;
-    style.PopupRounding = 1.0f;
+    style.WindowRounding = 12.0f;
+    style.PopupRounding = 12.0f;
     style.ScrollbarRounding = 12.0f;
-    style.TabRounding = 6.0f;
+    style.TabRounding = 8.0f;
     style.TabCloseButtonMinWidthSelected = FLT_MAX;
     style.WindowTitleAlign = { 0.0f, 0.52f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     style.WindowPadding = { 10.0f, 10.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 4, 4 };//{ 16, 3 };
+    style.FramePadding = { 12, 4 };//{ 16, 3 };
     style.ItemInnerSpacing = { 2, 2 };
-    style.ItemSpacing = { 2, 2 };
+    style.ItemSpacing = { 4, 4 };
     style.IndentSpacing = 10.0f;
-    style.GrabMinSize = 8.0f;
+    style.GrabMinSize = 20.0f;
 
-    style.FrameBorderSize = 1.0f;
+    style.FrameBorderSize = 0.0f;
     style.WindowBorderSize = 1.0f;
     style.PopupBorderSize = 1.0f;
     style.ChildBorderSize = 0.0f;
@@ -1083,25 +1084,19 @@ ImguiContext::Create()
 
     // load default font
     ImFontConfig config;
+    config.PixelSnapH = true;
     config.OversampleH = 0;
     config.OversampleV = 0;
 
-#if __WIN32__
-    ImguiFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 11, &config);
+
+    IO::URI mainFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Regular.ttf");
+    ImguiFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
     // Generated using https://github.com/aiekick/ImGuiFontStudio/releases/tag/b0.5 from specific icons in https://github.com/h5p/font-awesome/blob/master/fontawesome-webfont.ttf
     config.MergeMode = true;
-    ImguiIconFont = io.Fonts->AddFontFromFileTTF(IO::URI("tool:syswork/data/fonts/nebula_icons.ttf").LocalPath().AsCharPtr(), scaleFactor * 11, &config);
+    ImguiIconFont = io.Fonts->AddFontFromFileTTF(IO::URI("tool:syswork/data/fonts/fontawesome-webfont.ttf").LocalPath().AsCharPtr(), scaleFactor * 11, &config);
     config.MergeMode = false;
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrib.ttf", scaleFactor * 11, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrii.ttf", scaleFactor * 11, &config);
-
-#else
-    ImguilFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 11, &config);
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 11, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", 11, &config);
-#endif
-
-    
+    ImguiBoldFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    ImguiItFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
 
     if (!App::GameApplication::IsEditorEnabled())
     {
@@ -1242,7 +1237,6 @@ ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
 {
     ImGui::EndFrame();
     ImguiDragAndDropFiles.Clear();
-    ImGui::UpdatePlatformWindows();
 }
 
 //------------------------------------------------------------------------------

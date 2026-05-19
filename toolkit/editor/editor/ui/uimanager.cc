@@ -174,6 +174,10 @@ UIManager::OnActivate()
         FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
 
+        N_MARKER_BEGIN(ImGuiRender, ImGUI)
+        ImGui::Render();
+        ImGui::UpdatePlatformWindows();
+        N_MARKER_END();
         const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
         for (const auto& window : windows)
         {

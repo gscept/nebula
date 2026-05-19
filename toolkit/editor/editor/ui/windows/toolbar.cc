@@ -15,6 +15,7 @@
 #include "basegamefeature/level.h"
 
 #include "editor/tools/selectiontool.h"
+#include "dynui/nebula_icons.h"
 
 using namespace Editor;
 
@@ -49,9 +50,12 @@ Toolbar::~Toolbar()
 void
 Toolbar::Run(SaveMode save)
 {
-    const ImVec2 buttonSize = {32,32};
-    
     static const char* selected = "Empty";
+    float h = ImGui::CalcTextSize("Empty").y;
+    float avail = ImGui::GetContentRegionAvail().y;
+
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (avail - h) * 0.5f);
+
     ImGui::PushItemWidth(300);
     if (ImGui::BeginCombo("##Template", selected))
     {
@@ -77,18 +81,21 @@ Toolbar::Run(SaveMode save)
     }
     
     IMGUI_VERTICAL_SEPARATOR;
-    
-    //if (ImGui::ImageButton("playimage", &UIManager::Icons::play, buttonSize, {0,0}, {1,1})) { PlayGame(); }
-    //ImGui::SameLine();
-    //if (ImGui::ImageButton("pauseimage", &UIManager::Icons::pause, buttonSize, {0,0}, {1,1})) { PauseGame(); }
-    //ImGui::SameLine();
-    //if (ImGui::ImageButton("stopimage", &UIManager::Icons::stop, buttonSize, {0,0}, {1,1})) { StopGame(); }
-
-    if (ImGui::Button("Play")) { PlayGame(); }
     ImGui::SameLine();
-    if (ImGui::Button("Pause")) { PauseGame(); }
+    ImGui::PushFont(Dynui::ImguiFont, 32.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 0.0f, 0.0f });
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::SameLine();
-    if (ImGui::Button("Stop")) { StopGame(); }
+    if (ImGui::Button(ICON_ttf_PLAY_CIRCLE)) { PlayGame(); }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_ttf_PAUSE_CIRCLE)) { PauseGame(); }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_ttf_STOP_CIRCLE)) { StopGame(); }
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar();
+    ImGui::PopFont();
 }
 
 } // namespace Presentation

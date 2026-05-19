@@ -356,8 +356,6 @@ Profiler::Run(SaveMode save)
 
             if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
-
                 ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                 ImVec2 pos = ImGui::GetCursorScreenPos();
                 const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkersGraphics = this->frameProfilingMarkersGraphics;
@@ -405,8 +403,7 @@ Profiler::Run(SaveMode save)
 
                 // set back cursor so we can draw our box
                 ImGui::SetCursorScreenPos(pos);
-                ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
-                ImGui::PopFont();
+                ImGui::Dummy(ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
             }
 
             for (const Profiling::ProfilingContext& ctx : this->ProfilingContexts)
@@ -417,8 +414,6 @@ Profiler::Run(SaveMode save)
                 }
                 if (ImGui::CollapsingHeader(ctx.threadName.Value(), ctx.topLevelScopes.Size() > 0 ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_OpenOnArrow))
                 {
-                    ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
-
                     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                     ImVec2 pos = ImGui::GetCursorScreenPos();
                     int levels = 0;
@@ -440,8 +435,7 @@ Profiler::Run(SaveMode save)
 
                     // set back cursor so we can draw our box
                     ImGui::SetCursorScreenPos(pos);
-                    ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
-                    ImGui::PopFont();
+                    ImGui::Dummy(ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
                 }
             }
 
@@ -475,8 +469,6 @@ Profiler::Run(SaveMode save)
         }
         if (ImGui::BeginTabItem("Memory"))
         {
-            ImGui::PushFont(Dynui::ImguiFont, ImGui::GetFontSize() * 0.5f);
-
             Util::Dictionary<const char*, uint64_t> counters = Profiling::ProfilingGetCounters();
             for (IndexT i = 0; i < counters.Size(); i++)
             {
@@ -543,8 +535,6 @@ Profiler::Run(SaveMode save)
                     ImGui::LabelText(heapNames[i], "%lu B allocated", heapUse);
             }
 #endif
-
-            ImGui::PopFont();
 
             ImGui::EndTabItem();
         }
