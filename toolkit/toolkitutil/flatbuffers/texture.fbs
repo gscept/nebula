@@ -9,27 +9,28 @@ namespace ToolkitUtil;
 
 enum TextureContainer : byte
 {
-	JPG = 0,
-	TGA = 1,
-	BMP = 2,
-	DDS = 3,
-	PNG = 4,
-	EXR = 5,
-	TIF = 6,
-	CUBE = 7
+	Unknown = 0,
+	JPG = 1,
+	TGA = 2,
+	BMP = 3,
+	DDS = 4,
+	PNG = 5,
+	EXR = 6,
+	TIF = 7,
+	CUBE = 8
 }
 
 enum TexturePixelFormat : byte
 {
 	R8G8B8A8 = 0,
 	R8G8B8 = 1,
-	R16 = 4,
-	BC1 = 5,
-	BC2 = 6,
-	BC3 = 7,
-	BC5 = 8,
-	BC6H = 9,
-	BC7 = 10
+	R16 = 2,
+	BC1 = 3,
+	BC2 = 4,
+	BC3 = 5,
+	BC5 = 6,
+	BC6H = 7,
+	BC7 = 8
 }
 
 enum TextureColorSpace : byte
@@ -46,8 +47,8 @@ enum TextureCompressionQuality : byte
 
 table TextureResource
 {
-	container : TextureContainer;
-	target_format : TexturePixelFormat;
+	container : TextureContainer = Unknown;
+	target_format : TexturePixelFormat = R8G8B8A8;
 	color_space : TextureColorSpace = sRGB;
 	compression_quality : TextureCompressionQuality = High;
 	generate_mipmaps : bool = true;

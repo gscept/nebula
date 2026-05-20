@@ -984,7 +984,7 @@ ImguiContext::Create()
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-    //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -1090,13 +1090,15 @@ ImguiContext::Create()
 
 
     IO::URI mainFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Regular.ttf");
+    IO::URI boldFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Bold.ttf");
+    IO::URI italicFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Italic.ttf");
     ImguiFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
     // Generated using https://github.com/aiekick/ImGuiFontStudio/releases/tag/b0.5 from specific icons in https://github.com/h5p/font-awesome/blob/master/fontawesome-webfont.ttf
     config.MergeMode = true;
     ImguiIconFont = io.Fonts->AddFontFromFileTTF(IO::URI("tool:syswork/data/fonts/fontawesome-webfont.ttf").LocalPath().AsCharPtr(), scaleFactor * 14, &config);
     config.MergeMode = false;
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    ImguiBoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    ImguiItFont = io.Fonts->AddFontFromFileTTF(italicFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
 
     if (!App::GameApplication::IsEditorEnabled())
     {

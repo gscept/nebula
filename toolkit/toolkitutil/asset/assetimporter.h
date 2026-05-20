@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------------
 #include "io/uri.h"
 #include "toolkit-common/base/exporttypes.h"
+#include "flat/texture.h"
 
 namespace ToolkitUtil
 {
@@ -23,8 +24,10 @@ class Logger;
 bool ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
 // Import a GLTF or GLB
 bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
+/// Setup a texture resource based on file name
+ToolkitUtil::TextureResourceT SetupTextureImportSettingsFromPath(const IO::URI& file);
 /// Import a texture
-bool ImportTexture(const IO::URI& file, const IO::URI& destinationFolder);
+bool ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture);
 /// Import an audio file
 bool ImportAudio(const IO::URI& file, const IO::URI& destinationFolder);
 

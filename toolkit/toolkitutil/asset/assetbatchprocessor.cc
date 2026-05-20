@@ -71,7 +71,8 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
     if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg"))
     {
-        ToolkitUtil::ImportTexture(file, this->folder);
+        ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
+        ToolkitUtil::ImportTexture(file, this->folder, texture);
     }
 
     if ((this->importMode & ImportModes::Sound) && (ext == "wav" || ext == "ogg" || ext == "mp3"))

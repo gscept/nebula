@@ -58,8 +58,8 @@ ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::I
 //------------------------------------------------------------------------------
 /**
 */
-bool
-ImportTexture(const IO::URI& file, const IO::URI& destinationFolder)
+ToolkitUtil::TextureResourceT 
+SetupTextureImportSettingsFromPath(const IO::URI& file)
 {
     ToolkitUtil::TextureResourceT texture;
     Util::String ext = file.LocalPath().GetFileExtension();
@@ -88,6 +88,7 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder)
         (Util::String::MatchPattern(fileName, "*bump.*")))
     {
         texture.target_format = ToolkitUtil::TexturePixelFormat_BC5;
+        texture.color_space = ToolkitUtil::TextureColorSpace_Linear;
     }
     else if (Util::String::MatchPattern(fileName, "*material.*") ||
              Util::String::MatchPattern(fileName, "*orm.*") ||
@@ -96,16 +97,27 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder)
              Util::String::MatchPattern(fileName, "*Occlusion.*"))
     {
         texture.target_format = ToolkitUtil::TexturePixelFormat_BC7;
+        texture.color_space = ToolkitUtil::TextureColorSpace_Linear;
     }
     else if (Util::String::MatchPattern(fileName, "*height.*"))
     {
         texture.target_format = ToolkitUtil::TexturePixelFormat_R16;
+        texture.color_space = ToolkitUtil::TextureColorSpace_Linear;
     }
     else
     {
         texture.target_format = ToolkitUtil::TexturePixelFormat_R8G8B8A8;
+        texture.color_space = ToolkitUtil::TextureColorSpace_sRGB;
     }
+    return texture;
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture)
+{
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())

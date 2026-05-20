@@ -42,7 +42,8 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         }
         case DisplayEvent::SetFocus:
         {
-            io.AddFocusEvent(true);
+            
+            //io.AddFocusEvent(true);
             break;
         }
         case DisplayEvent::WindowResized:
@@ -87,6 +88,10 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         {
             Math::int2 pos = CoreGraphics::WindowGetPosition(displayEvent.GetWindowId());
             io.AddMousePosEvent(displayEvent.GetAbsMousePos().x + pos.x, displayEvent.GetAbsMousePos().y + pos.y);
+
+            ImGuiID* id = static_cast<ImGuiID*>(CoreGraphics::WindowGetUserData(displayEvent.GetWindowId()));
+            if (id != nullptr)
+                io.AddMouseViewportEvent(*id);
             return io.WantCaptureMouse;
         }
         case DisplayEvent::Drop:
