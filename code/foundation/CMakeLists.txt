@@ -546,6 +546,7 @@ endif()
         fips_dir(core GROUP "core/win32")
             fips_files(
                 win32/precompiled.h
+                win32/win32singleton.cc
                 win32/win32singleton.h
                 win32/win32sysfunc.cc
                 win32/win32sysfunc.h
