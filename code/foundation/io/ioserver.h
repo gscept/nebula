@@ -137,6 +137,15 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
+inline Ptr<IO::Stream>
+CreateStream(const IO::URI& uri)
+{
+    return IoServer::Instance()->CreateStream(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
 {
