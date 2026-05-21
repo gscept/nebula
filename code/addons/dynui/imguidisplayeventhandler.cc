@@ -92,6 +92,12 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             ImGuiID* id = static_cast<ImGuiID*>(CoreGraphics::WindowGetUserData(displayEvent.GetWindowId()));
             if (id != nullptr)
                 io.AddMouseViewportEvent(*id);
+            else
+            {
+                ImGuiViewport* main_vp = ImGui::GetMainViewport();
+                io.AddMouseViewportEvent(main_vp->ID);
+
+            }
             return io.WantCaptureMouse;
         }
         case DisplayEvent::Drop:
