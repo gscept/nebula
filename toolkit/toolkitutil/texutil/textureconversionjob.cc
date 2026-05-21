@@ -63,8 +63,9 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // first make sure the target directory exists
     IoServer::Instance()->CreateDirectory(this->dstPath.ExtractDirName());
 
+    Util::String dstFile = Util::Format("%s/%s.%s", dstPath.AsCharPtr(), srcPath.ExtractFileName().AsCharPtr(), this->dstFileExt.AsCharPtr());
     // check if we can skip conversion based on the file time stamps and force flag
-    if (!this->NeedsConversion(srcPath, dstPath))
+    if (!this->NeedsConversion(srcPath, dstFile))
     {
         this->logger->Print("Skipping %s\n", Text(URI(srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr());
         return true;
@@ -72,9 +73,9 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
 
 
     // remove read-only attr from dst file 
-    if (ioServer->FileExists(dstPath))
+    if (ioServer->FileExists(dstFile))
     {
-        ioServer->SetReadOnly(dstPath, false);
+        ioServer->SetReadOnly(dstFile, false);
     }
 
     // setup the path of the temporary destination file
@@ -86,9 +87,9 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     IoServer::Instance()->CreateDirectory(this->tmpPath.ExtractDirName());
 
     // if destination file is already in native format, do a plain copy
-    if (!neverCopy && srcPath.GetFileExtension() == dstPath.GetFileExtension())
+    if (!neverCopy && srcPath.GetFileExtension() == dstFile.GetFileExtension())
     {
-        ioServer->CopyFile(srcPath, dstPath);
+        ioServer->CopyFile(srcPath, dstFile);
         return true;
     }
     return false;

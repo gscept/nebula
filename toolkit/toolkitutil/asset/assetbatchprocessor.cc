@@ -85,7 +85,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("mdl:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageModel(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageModelFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -93,7 +93,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("msh:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageMesh(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageMeshFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -101,7 +101,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("tex:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageTexture(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageTextureFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -109,7 +109,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("mat:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageMaterial(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageMaterialFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -117,7 +117,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("par:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageParticle(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageParticleFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -125,7 +125,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("ani:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageAnimation(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageAnimationFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -133,7 +133,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("ske:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageSkeleton(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageSkeletonFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -141,7 +141,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("audio:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageAudio(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
@@ -149,7 +149,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     {
         Util::String dstFolder = Util::String::Sprintf("phys:%s", packageFolder.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackagePhysics(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        ToolkitUtil::PackagePhysicsFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
         this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }

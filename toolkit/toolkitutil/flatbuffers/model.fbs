@@ -32,6 +32,7 @@ table ModelResource
 	joint_masks : [JointMaskInfo];
 	scale_factor : float;
 	flags : OptimizationFlags;
+	thumbnail: [ubyte];
 }
 
 table TransformNodeInfo

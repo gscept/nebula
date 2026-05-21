@@ -14,25 +14,55 @@
 
 namespace ToolkitUtil
 {
+
+struct ModelResourceT;
+struct AnimResourceT;
+struct SkeletonResourceT;
+struct MeshResourceT;
+struct TextureResourceT;
+struct AudioResourceT;
+struct MaterialResourceT;
+struct ParticleResourceT;
+struct PhysicsResourceT;
 class Logger;
 
+
+/// Package model from memory
+bool PackageModel(const ToolkitUtil::ModelResourceT* model, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package animation from memory
+bool PackageAnimation(const ToolkitUtil::AnimResourceT* anim, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package skeleton from memory
+bool PackageSkeleton(const ToolkitUtil::SkeletonResourceT* skel, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package mesh from memory
+bool PackageMesh(const ToolkitUtil::MeshResourceT* mesh, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package texture from memory
+bool PackageTexture(const ToolkitUtil::TextureResourceT* tex, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package audio from memory
+bool PackageAudio(const ToolkitUtil::AudioResourceT* audio, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package material from memory
+bool PackageMaterial(const ToolkitUtil::MaterialResourceT* mat, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package particle from memory
+bool PackageParticle(const ToolkitUtil::ParticleResourceT* par, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package physics from memory
+bool PackagePhysics(const ToolkitUtil::PhysicsResourceT* phy, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+
 /// Package a model .namdl
-bool PackageModel(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageModelFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package an animation resource .naani
-bool PackageAnimation(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageAnimationFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a skeleton resource .naske
-bool PackageSkeleton(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
-// Package a mesh .namsh
-bool PackageMesh(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageSkeletonFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+/// Package a mesh .namsh
+bool PackageMeshFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a texture .natex
-bool PackageTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package an audio file .naaud
-bool PackageAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a material .namat
-bool PackageMaterial(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a particle .napat
-bool PackageParticle(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a physics .actor
-bool PackagePhysics(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackagePhysicsFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 
 }

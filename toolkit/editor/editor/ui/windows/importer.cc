@@ -13,8 +13,11 @@
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/scene.h"
 #include "graphics/cameracontext.h"
+#include "toolkit-common/logger.h"
+#include "io/ioserver.h"
 
 #include "toolkitutil/asset/assetimporter.h"
+#include "toolkitutil/asset/assetpackager.h"
 #include "dynui/imguifiledialog/imguifiledialog.h"
 #include "tinyfiledialogs.h"
 
@@ -50,7 +53,7 @@ Importer::Run(SaveMode save)
     static Util::Array<Util::String> Files;
     static Util::String Destination = IO::URI("src:assets").LocalPath();
 
-    static Util::Array<Util::Pair<Util::String, ToolkitUtil::TextureResourceT>> TextureResources;
+    static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
     if (!Dynui::ImguiDragAndDropFiles.IsEmpty())
     {
         for (const auto& file : Dynui::ImguiDragAndDropFiles)
@@ -66,19 +69,26 @@ Importer::Run(SaveMode save)
             }
             else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
             {
-                TextureResources.Append({ file, ToolkitUtil::SetupTextureImportSettingsFromPath(file) });
+                TextureResources.Append(
+                    {
+                        file,
+                        ToolkitUtil::SetupTextureImportSettingsFromPath(file),
+                        CoreGraphics::InvalidTextureId,
+                        Dynui::AllocateImguiTextureId({}),
+                        Resources::InvalidResourceId
+                    }
+                );
             }
         }
     }
 
-
-
     IndexT textureResourceIndex = 0;
-    for (auto& [file, textureResource] : TextureResources)
+    for (auto& [file, textureResource, texture, imguiId, resId] : TextureResources)
     {
         ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
         ImGui::Text("%s", file.AsCharPtr());
         ImGui::PopFont();
+        
         Destination.ConvertBackslashes();
         if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
         {
@@ -102,117 +112,189 @@ Importer::Run(SaveMode save)
         fileNameNoExt.StripFileExtension();
         Util::String label = Util::Format("/%s.natex##destination", fileNameNoExt.AsCharPtr());
         ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-        ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
-        const ImGuiStyle& style = ImGui::GetStyle();
-        ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN);
-        if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
-        {
-            if (ImGuiFileDialog::Instance()->IsOk())
-            {
-                Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
-            }
-            ImGuiFileDialog::Instance()->Close();
-        }
-        ImGui::PopFont();
 
-        ImGui::PopStyleVar();
-        ImGui::Spacing();
+        if (ImGui::BeginTable("TextureImportTable", 2))
+        {
+            ImGui::TableSetupScrollFreeze(1, 1);
+            ImGui::TableNextColumn();
+            ImTextureRef ref;
+            ref._TexID = imguiId;
+            ImGui::Image(ref, ImVec2(300, 300));
+            ImGui::TableNextColumn();
 
-        ImGui::Checkbox("Generate Mipmaps", &textureResource.generate_mipmaps);
-        ImGui::Checkbox("Invert Green (Y) Channel", &textureResource.invert_green);
-        ImGui::SetItemTooltip("Some formats (like BC5) expect the green channel to be inverted. Enable this if your normal maps look wrong after importing.");
-        static const char* pixelFormatOptions[] =
-        {
-            "R8G8B8A8",
-            "R8G8B8",
-            "R16",
-            "BC1",
-            "BC2",
-            "BC3",
-            "BC5",
-            "BC6H",
-            "BC7",
-        };
-        static const char* formatHints[] =
-        {
-            "Import as a typical 8 bit per channel RGBA texture. This is the most widely supported format, but also the largest on disk and in memory.",
-            "Import as a typical 8 bit per channel RGB texture. This is widely supported and smaller than RGBA, but doesn't support transparency.",
-            "Import as a single channel 16 bit texture. This is useful for height maps or other data that doesn't require color information.",
-            "Import using BC1 compression. This is a common compressed format that is widely supported, but doesn't support alpha or has limited alpha support.",
-            "Import using BC2 compression. This is a common compressed format that supports alpha, but has limited alpha quality.",
-            "Import using BC3 compression. This is a common compressed format that supports alpha with better quality than BC2, but is larger on disk.",
-            "Import using BC5 compression. This is a common compressed format for normal maps, but doesn't support color information.",
-            "Import using BC6H compression. This is a common compressed format for HDR textures, but doesn't support alpha or color information.",
-            "Import using BC7 compression. This is a modern compressed format that supports high quality alpha and color, but isn't supported on older hardware.",
-        };
-        if (ImGui::BeginCombo("Format", pixelFormatOptions[textureResource.target_format]))
-        {
-            for (int i = 0; i < ToolkitUtil::TexturePixelFormat_MAX + 1; i++)
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
+            const ImGuiStyle& style = ImGui::GetStyle();
+            ImGuiFileDialog::Instance()->SetFileStyle(
+                IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
+            );
+            if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
             {
-                bool isSelected = (textureResource.target_format == i);
-                if (ImGui::Selectable(pixelFormatOptions[i], isSelected))
+                if (ImGuiFileDialog::Instance()->IsOk())
                 {
-                    textureResource.target_format = static_cast<ToolkitUtil::TexturePixelFormat>(i);
+                    Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
                 }
-                ImGui::SetItemTooltip(formatHints[i]);
-                if (isSelected)
+                ImGuiFileDialog::Instance()->Close();
+            }
+            ImGui::PopFont();
+
+            ImGui::PopStyleVar();
+            ImGui::Spacing();
+
+            bool changed = false;
+
+            changed |= ImGui::Checkbox("Generate Mipmaps", &textureResource.generate_mipmaps);
+            changed |= ImGui::Checkbox("Invert Green (Y) Channel", &textureResource.invert_green);
+            ImGui::SetItemTooltip("Some formats (like BC5) expect the green channel to be inverted. Enable this if your normal "
+                                  "maps look wrong after importing.");
+            static const char* pixelFormatOptions[] = {
+                "R8G8B8A8",
+                "R8G8B8",
+                "R16",
+                "BC1",
+                "BC2",
+                "BC3",
+                "BC5",
+                "BC6H",
+                "BC7",
+            };
+            static const char* formatHints[] = {
+                "Import as a typical 8 bit per channel RGBA texture. This is the most widely supported format, but also the "
+                "largest on disk and in memory.",
+                "Import as a typical 8 bit per channel RGB texture. This is widely supported and smaller than RGBA, but doesn't "
+                "support transparency.",
+                "Import as a single channel 16 bit texture. This is useful for height maps or other data that doesn't require "
+                "color information.",
+                "Import using BC1 compression. This is a common compressed format that is widely supported, but doesn't support "
+                "alpha or has limited alpha support.",
+                "Import using BC2 compression. This is a common compressed format that supports alpha, but has limited alpha "
+                "quality.",
+                "Import using BC3 compression. This is a common compressed format that supports alpha with better quality than "
+                "BC2, but is larger on disk.",
+                "Import using BC5 compression. This is a common compressed format for normal maps, but doesn't support color "
+                "information.",
+                "Import using BC6H compression. This is a common compressed format for HDR textures, but doesn't support alpha "
+                "or color information.",
+                "Import using BC7 compression. This is a modern compressed format that supports high quality alpha and color, "
+                "but isn't supported on older hardware.",
+            };
+            if (ImGui::BeginCombo("Format", pixelFormatOptions[textureResource.target_format]))
+            {
+                for (int i = 0; i < ToolkitUtil::TexturePixelFormat_MAX + 1; i++)
                 {
-                    ImGui::SetItemDefaultFocus();
+                    bool isSelected = (textureResource.target_format == i);
+                    if (ImGui::Selectable(pixelFormatOptions[i], isSelected))
+                    {
+                        textureResource.target_format = static_cast<ToolkitUtil::TexturePixelFormat>(i);
+                        changed = true;
+                    }
+                    ImGui::SetItemTooltip(formatHints[i]);
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            static const char* colorSpaceOptions[] = {
+                "Linear",
+                "sRGB",
+            };
+            if (ImGui::BeginCombo("Color space", colorSpaceOptions[textureResource.color_space]))
+            {
+                for (int i = 0; i < ToolkitUtil::TextureColorSpace_MAX + 1; i++)
+                {
+                    bool isSelected = (textureResource.color_space == i);
+                    if (ImGui::Selectable(colorSpaceOptions[i], isSelected))
+                    {
+                        textureResource.color_space = static_cast<ToolkitUtil::TextureColorSpace>(i);
+                        changed = true;
+                    }
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            static const char* compressionQualityOptions[] = {
+                "Low",
+                "High",
+            };
+            if (ImGui::BeginCombo("Compression quality", compressionQualityOptions[textureResource.compression_quality]))
+            {
+                for (int i = 0; i < ToolkitUtil::TextureCompressionQuality_MAX + 1; i++)
+                {
+                    bool isSelected = (textureResource.compression_quality == i);
+                    if (ImGui::Selectable(compressionQualityOptions[i], isSelected))
+                    {
+                        textureResource.compression_quality = static_cast<ToolkitUtil::TextureCompressionQuality>(i);
+                        changed = true;
+                    }
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (changed || resId == Resources::InvalidResourceId)
+            {
+                int hashCode = file.ExtractFileName().HashCode();
+                Util::String outputFileName = Util::Format("temp:importer/%d.dds", hashCode);
+                if (resId != Resources::InvalidResourceId)
+                {
+                    Resources::DiscardResource(resId);
+                    resId = Resources::InvalidResourceId;
+                }
+                Ptr<IO::Stream> sourceStream = IO::CreateStream(file);
+                if (sourceStream->Open())
+                {
+                    std::vector<uint8_t> data;
+                    data.resize(sourceStream->GetSize());
+                    memcpy(data.data(), sourceStream->MemoryMap(), sourceStream->GetSize());
+                    textureResource.data = data;
+
+                    ToolkitUtil::Logger logger;
+                    if (ToolkitUtil::PackageTexture(
+                            &textureResource,
+                            file.ExtractFileName(),
+                            "temp:importer/",
+                            ToolkitUtil::Platform::Code::Win32,
+                            &logger
+                        ))
+                    {
+                        resId = Resources::CreateResource(
+                            outputFileName,
+                            "editor",
+                            [&resId, &texture, imguiId](Resources::ResourceId id)
+                            {
+                                resId = id;
+                                texture = id.resourceId;
+                                Dynui::ImguiTextureId tex;
+                                tex.nebulaHandle = texture;
+                                Dynui::SetImguiTextureIdData(imguiId, tex);
+                            }
+                        );
+                        texture = resId.resourceId;
+                    }
+
+                    sourceStream->Close();
                 }
             }
-            ImGui::EndCombo();
-        }
-        static const char* colorSpaceOptions[] =
-        {
-            "Linear",
-            "sRGB",
-        };
-        if (ImGui::BeginCombo("Color space", colorSpaceOptions[textureResource.color_space]))
-        {
-            for (int i = 0; i < ToolkitUtil::TextureColorSpace_MAX + 1; i++)
-            {
-                bool isSelected = (textureResource.color_space == i);
-                if (ImGui::Selectable(colorSpaceOptions[i], isSelected))
-                {
-                    textureResource.color_space = static_cast<ToolkitUtil::TextureColorSpace>(i);
-                }
-                if (isSelected)
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
 
-        static const char* compressionQualityOptions[] =
-        {
-            "Low",
-            "High",
-        };
-        if (ImGui::BeginCombo("Compression quality", compressionQualityOptions[textureResource.compression_quality]))
-        {
-            for (int i = 0; i < ToolkitUtil::TextureCompressionQuality_MAX + 1; i++)
+            static Util::String saveButton =
+                Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+            if (ImGui::Button(saveButton.AsCharPtr()))
             {
-                bool isSelected = (textureResource.compression_quality == i);
-                if (ImGui::Selectable(compressionQualityOptions[i], isSelected))
-                {
-                    textureResource.compression_quality = static_cast<ToolkitUtil::TextureCompressionQuality>(i);
-                }
-                if (isSelected)
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
+                ToolkitUtil::ImportTexture(file, Destination, textureResource);
+                TextureResources.EraseIndex(textureResourceIndex);
             }
-            ImGui::EndCombo();
-        }
 
-        static Util::String saveButton = Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
-        if (ImGui::Button(saveButton.AsCharPtr()))
-        {
-            ToolkitUtil::ImportTexture(file, Destination, textureResource);
-            TextureResources.EraseIndex(textureResourceIndex);
-        }
+            ImGui::EndTable();
+        } // End of table
         textureResourceIndex++;
     }
 }

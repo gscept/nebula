@@ -126,9 +126,6 @@ inline void
 TextureConversionJob::SetDstPath(const Util::String& path)
 {
     this->dstPath = path;
-    this->dstPath.StripFileExtension();
-    this->dstPath.Append(".");
-    this->dstPath.Append(this->dstFileExt);
 }
 
 //------------------------------------------------------------------------------
