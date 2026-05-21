@@ -74,6 +74,10 @@ DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
             args.Append(" -bc q ");
         }
 
+        if (texture->invert_green)
+        {
+            args.Append(" -inverty ");
+        }
         if (!texture->generate_mipmaps)
         {
             args.Append(" -m 1 ");
@@ -88,6 +92,7 @@ DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
             args.Append(" -srgbo ");
         }
 
+        args.Append("-ft dds");
         args.Append(" -f ");
         args.Append(GetTexConvFormat(texture));
 
