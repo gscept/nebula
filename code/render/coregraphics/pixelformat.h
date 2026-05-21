@@ -40,6 +40,7 @@ public:
         DXT5sRGB,
         BC4,
         BC5,
+        BC6H,
         BC7,
         BC7sRGB,
         R8,

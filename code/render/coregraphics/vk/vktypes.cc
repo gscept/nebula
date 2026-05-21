@@ -36,6 +36,7 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::DXT5sRGB:         return VK_FORMAT_BC3_SRGB_BLOCK;
     case PixelFormat::BC4:              return VK_FORMAT_BC4_UNORM_BLOCK;
     case PixelFormat::BC5:              return VK_FORMAT_BC5_UNORM_BLOCK;
+    case PixelFormat::BC6H:             return VK_FORMAT_BC6H_SFLOAT_BLOCK;
     case PixelFormat::BC7:              return VK_FORMAT_BC7_UNORM_BLOCK;
     case PixelFormat::BC7sRGB:          return VK_FORMAT_BC7_SRGB_BLOCK;
     case PixelFormat::R8:               return VK_FORMAT_R8_UNORM;
@@ -86,6 +87,7 @@ VkTypes::IsCompressedFormat(VkFormat p)
     case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:     return true;
     case VK_FORMAT_BC2_SRGB_BLOCK:          return true;
     case VK_FORMAT_BC3_SRGB_BLOCK:          return true;
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:       return true;
     case VK_FORMAT_BC7_SRGB_BLOCK:          return true;
     default:                                return false;
     }
@@ -116,6 +118,7 @@ VkTypes::AsVkBlockSize(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::DXT5sRGB:         return { 4, 4 };
     case PixelFormat::BC4:              return { 4, 4 };
     case PixelFormat::BC5:              return { 4, 4 };
+    case PixelFormat::BC6H:             return { 2, 2 }; // TODO: verify
     case PixelFormat::BC7:              return { 4, 4 };
     case PixelFormat::BC7sRGB:          return { 4, 4 };
     case PixelFormat::R8:               return { 1, 1 };
@@ -164,6 +167,7 @@ VkTypes::AsVkBlockSize(VkFormat fmt)
     case VK_FORMAT_BC3_SRGB_BLOCK:          return {4, 4};
     case VK_FORMAT_BC4_UNORM_BLOCK:         return {4, 4};
     case VK_FORMAT_BC5_UNORM_BLOCK:         return {4, 4};
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:       return {4, 4};
     case VK_FORMAT_BC7_UNORM_BLOCK:         return {4, 4};
     case VK_FORMAT_BC7_SRGB_BLOCK:          return {4, 4};
     case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:    return {4, 4};
@@ -217,6 +221,7 @@ VkTypes::AsVkMappableImageFormat(VkFormat fmt)
     case VK_FORMAT_BC3_SRGB_BLOCK:          return VK_FORMAT_R8G8B8A8_UNORM;
     case VK_FORMAT_BC4_UNORM_BLOCK:         return VK_FORMAT_R8_UNORM;
     case VK_FORMAT_BC5_UNORM_BLOCK:         return VK_FORMAT_R8G8B8A8_UNORM;
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:       return VK_FORMAT_R8G8B8A8_UNORM;
     case VK_FORMAT_BC7_UNORM_BLOCK:         return VK_FORMAT_R8G8B8A8_UNORM;
     case VK_FORMAT_BC7_SRGB_BLOCK:          return VK_FORMAT_R8G8B8A8_UNORM;
     case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:    return VK_FORMAT_R8G8B8A8_UNORM;
@@ -395,6 +400,7 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
     case VK_FORMAT_BC3_SRGB_BLOCK:                  return PixelFormat::DXT5sRGB;
     case VK_FORMAT_BC4_UNORM_BLOCK:                 return PixelFormat::BC4;
     case VK_FORMAT_BC5_UNORM_BLOCK:                 return PixelFormat::BC5;
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:               return PixelFormat::BC6H;
     case VK_FORMAT_BC7_UNORM_BLOCK:                 return PixelFormat::BC7;
     case VK_FORMAT_BC7_SRGB_BLOCK:                  return PixelFormat::BC7sRGB;
     case VK_FORMAT_R16_SFLOAT:                      return PixelFormat::R16F;

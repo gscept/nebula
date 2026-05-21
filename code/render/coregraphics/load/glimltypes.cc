@@ -30,6 +30,10 @@ Gliml::ToPixelFormat(gliml::context const& ctx)
         case gliml::DXGI_FORMAT_BC3_UNORM_SRGB:         return PixelFormat::DXT5sRGB;
         case gliml::DXGI_FORMAT_BC4_UNORM:              return PixelFormat::BC4;
         case gliml::DXGI_FORMAT_BC5_UNORM:              return PixelFormat::BC5;
+
+        case gliml::DXGI_FORMAT_BC6H_TYPELESS:
+        case gliml::DXGI_FORMAT_BC6H_UF16:
+        case gliml::DXGI_FORMAT_BC6H_SF16:              return PixelFormat::BC6H;
         case gliml::DXGI_FORMAT_BC7_UNORM:              return PixelFormat::BC7;
         case gliml::DXGI_FORMAT_BC7_UNORM_SRGB:         return PixelFormat::BC7sRGB;
 
