@@ -186,25 +186,20 @@ ResourceLoader::ClearPendingUnloads()
     for (IndexT i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
-        if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
-        {
-            n_assert(this->usage[unload.resourceId.loaderInstanceId] >= 0);
-            this->usage[unload.resourceId.loaderInstanceId]--;
-            if (this->usage[unload.resourceId.loaderInstanceId] == 0)
-            {
-                // unload if loaded
-                this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
-                this->Unload(unload.resourceId);
 
-                Memory::Free(Memory::ScratchHeap, this->metaData[unload.resourceId.loaderInstanceId].data);
+        // unload if loaded
+        this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
+        this->Unload(unload.resourceId);
 
-                // give up the resource id
-                this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
-            }
+        this->streamDatas[unload.resourceId.loaderInstanceId] = {};
+        this->metaData[unload.resourceId.loaderInstanceId] = {};
+        Memory::Free(Memory::ScratchHeap, this->metaData[unload.resourceId.loaderInstanceId].data);
 
-            // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
-            this->pendingUnloads.EraseIndex(i);
-        }
+        // give up the resource id
+        this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
+
+        // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
+        this->pendingUnloads.EraseIndex(i);
     }
 }
 
@@ -642,9 +637,25 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 {
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
     if (id != this->placeholderResourceId && id != this->failResourceId)
-    {
-        // add pending unload, it will be unloaded once loaded
-        this->pendingUnloads.Append({ id });
+    {        
+        if (this->states[id.loaderInstanceId] == Resource::Loaded)
+        {
+            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            this->usage[id.loaderInstanceId]--;
+            if (this->usage[id.loaderInstanceId] == 0)
+            {
+                // add pending unload, it will be unloaded once loaded
+                this->pendingUnloads.Append({ id });
+
+                if (this->streamDatas[id.loaderInstanceId].stream)
+                {
+                    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+                    this->streamDatas[id.loaderInstanceId].stream->Close();
+                }
+                
+                this->ids.Erase(this->names[id.loaderInstanceId]);
+            }
+        }
     }
 #if N_DEBUG
     else
@@ -666,8 +677,14 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
     {
         if (this->tags[i] == tag)
         {
-            // add pending unload, it will be unloaded once loaded
-            this->pendingUnloads.Append({ this->resources[this->ids[this->names[i]]] });
+            Resources::ResourceId id = this->resources[this->ids[this->names[i]]];
+            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            this->usage[id.loaderInstanceId]--;
+            if (this->usage[id.loaderInstanceId] == 0)
+            {
+                // add pending unload, it will be unloaded once loaded
+                this->pendingUnloads.Append({ id });
+            }
             this->tags[i] = "";
         }
     }

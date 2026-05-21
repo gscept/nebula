@@ -417,7 +417,6 @@ inline void
 TextureLoader::Unload(const Resources::ResourceId id)
 {
     // Free streamer alloc
-    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
     Memory::Free(Memory::ScratchHeap, this->streamDatas[id.loaderInstanceId].data);
     TextureId tex = id.resource;
     CoreGraphics::DestroyTexture(tex);
