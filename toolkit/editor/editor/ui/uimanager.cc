@@ -23,7 +23,6 @@
 #include "windows/profiler.h"
 #include "windows/terraineditor/terraineditor.h"
 #include "windows/createobjectwindow.h"
-#include "windows/importer.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
@@ -116,7 +115,6 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
     windowServer->RegisterWindow("Presentation::CreateObjectWindow", "Create Object", "Editor");
-    windowServer->RegisterWindow("Presentation::Importer", "Import Asset", "Editor");
 
     UI::Icons::play          = NLoadIcon("tex:editor/icon_play.dds");
     UI::Icons::pause         = NLoadIcon("tex:editor/icon_pause.dds");

@@ -13,6 +13,7 @@
 #include "io/uri.h"
 #include "util/delegate.h"
 #include "input/key.h"
+#include "toolkit-common/logger.h"
 
 //------------------------------------------------------------------------------
 namespace Presentation
@@ -69,6 +70,7 @@ private:
         Util::String category;
     };
 
+    ToolkitUtil::Logger logger;
     Util::Dictionary<Util::String, CommandInfo> commands;
 };
 
