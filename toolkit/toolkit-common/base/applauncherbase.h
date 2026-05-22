@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
+
 class AppLauncherBase
 {
 public:

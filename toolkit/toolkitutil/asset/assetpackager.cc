@@ -20,6 +20,7 @@
 #include "texutil/textureconverter.h"
 
 #include "toolkit-common/text.h"
+#include "toolkit-common/logger.h"
 
 namespace ToolkitUtil
 {
@@ -197,6 +198,7 @@ PackageModel(
         modelStream->Close();
         return true;
     }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -277,9 +279,6 @@ PackageTexture(
     {
         return false;
     }
-    ToolkitUtil::TextureConverter textureExporter;
-    textureExporter.Setup();
-    textureExporter.SetLogger(logger);
     Util::String platformExtension;
     if (platform == ToolkitUtil::Platform::Win32 || platform == ToolkitUtil::Platform::Linux)
     {
@@ -289,16 +288,20 @@ PackageTexture(
     logger->Print("%s\n", 
                     Util::Format("Packaged texture: %s", 
                                 Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-    if (tex->container == ToolkitUtil::TextureContainer_CUBE)
-    {
-        return textureExporter.ConvertCubemap(tmpFile, destinationFolder.LocalPath(), "temp:texturepackager", tex);
-    }
-    else
-    {
-        return textureExporter.ConvertTexture(tmpFile, destinationFolder.LocalPath(), "temp:texturepackager", tex);
-    }
+
+    TextureConversionInfo info;
+    info.cube = tex->container == ToolkitUtil::TextureContainer_CUBE;
+    info.logger = logger;
+    info.destPath = destinationFolder.LocalPath();
+    info.sourcePath = tmpFile;
+    info.tmpDir = "temp:texturepackager";
+    info.texture = tex;
+    return ConvertTexture(info);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 PackageAudio(
     const ToolkitUtil::AudioResourceT* audio,

@@ -433,7 +433,6 @@ nebula_begin_module(foundation)
             library.h
             systeminfo.h
             nebulasettings.h
-            base/processbase.h
             base/librarybase.h
         )
         fips_dir(app)
@@ -539,166 +538,191 @@ nebula_begin_module(foundation)
     fips_dir(.)
     if (FIPS_WINDOWS)
         fips_files(foundation.natvis foundation.natstepfilter)
-        fips_dir(core GROUP "core/win32")
+        fips_dir(core/win32)
             fips_files(
-                win32/precompiled.h
-                win32/win32singleton.h
-                win32/win32sysfunc.cc
-                win32/win32sysfunc.h
+                precompiled.h
+                win32singleton.h
+                win32sysfunc.cc
+                win32sysfunc.h
             )
-        fips_dir(memory GROUP "memory/win32")
+		fips_dir(memory/win32)
             fips_files(
-                win32/winmemory.h
-                win32/win32heap.cc
-                win32/win32heap.h
-                win32/win32memory.cc
-                win32/win32memory.h
-                win32/win32memoryconfig.cc
-                win32/win32memoryconfig.h
-                win32/win32memorypool.cc
-                win32/win32memorypool.h
+                winmemory.h
+                win32heap.cc
+                win32heap.h
+                win32memory.cc
+                win32memory.h
+                win32memoryconfig.cc
+                win32memoryconfig.h
+                win32memorypool.cc
+                win32memorypool.h
             )
-        fips_dir(debug GROUP "debug/win32")
+		fips_dir(debug/win32)
             fips_files(
-                win32/win32minidump.cc
-                win32/win32minidump.h
-                win32/win32stacktrace.cc
-                win32/win32stacktrace.h
+                win32minidump.cc
+                win32minidump.h
+                win32stacktrace.cc
+                win32stacktrace.h
             )
-        fips_dir(util GROUP "util/win32")
+        fips_dir(util/win32)
             fips_files(
-                win32/win32guid.cc
-                win32/win32guid.h
-                win32/win32stringconverter.cc
-                win32/win32stringconverter.h
+                win32guid.cc
+                win32guid.h
+                win32stringconverter.cc
+                win32stringconverter.h
             )
-        fips_dir(io GROUP "io/win32")
+		fips_dir(io/win32)
             fips_files(
-                win32/win32consolehandler.cc
-                win32/win32consolehandler.h
-                win32/win32filewatcher.cc
-                win32/win32filewatcher.h
-                win32/win32filetime.cc
-                win32/win32filetime.h
-                win32/win32fswrapper.cc
-                win32/win32fswrapper.h
+                win32consolehandler.cc
+                win32consolehandler.h
+                win32filewatcher.cc
+                win32filewatcher.h
+                win32filetime.cc
+                win32filetime.h
+                win32fswrapper.cc
+                win32fswrapper.h
             )
-        fips_dir(timing GROUP "timing/win32")
+		fips_dir(timing/win32)
             fips_files(
-                win32/win32calendartime.cc
-                win32/win32calendartime.h
-                win32/win32timer.cc
-                win32/win32timer.h
+                win32calendartime.cc
+                win32calendartime.h
+                win32timer.cc
+                win32timer.h
             )
-        fips_dir(net GROUP "net/win32")
+        fips_dir(net/win32)
             fips_files(
-                win32/win32ipaddress.cc
-                win32/win32ipaddress.h
-                win32/win32socket.cc
-                win32/win32socket.h
+                win32ipaddress.cc
+                win32ipaddress.h
+                win32socket.cc
+                win32socket.h
             )
-        fips_dir(system GROUP "system/win32")
+        fips_dir(system/win32)
             fips_files(
-                win32/win32cpu.h
-                win32/win32environment.cc
-                win32/win32environment.h
-                win32/win32process.cc
-                win32/win32process.h
-                win32/win32library.cc
-                win32/win32library.h
-                win32/win32registry.cc
-                win32/win32registry.h
-                win32/win32systeminfo.cc
-                win32/win32systeminfo.h
+                win32cpu.h
+                win32environment.cc
+                win32environment.h
+                win32process.cc
+                win32process.h
+                win32library.cc
+                win32library.h
+                win32registry.cc
+                win32registry.h
+                win32systeminfo.cc
+                win32systeminfo.h
             )
-        fips_dir(fibers GROUP "fibers/win32")
+		fips_dir(fibers/win32)
             fips_files(
-                win32/win32fiber.cc
+                win32fiber.cc
             )
         fips_dir(.)
     endif()
     if (FIPS_POSIX)
-        fips_files(
-            core/posix/precompiled.h
-            core/posix/posixsingleton.h
-            core/posix/posixsysfunc.cc
-            core/posix/posixsysfunc.h
-            fibers/posix/posixfiber.cc
-            memory/posix/posixmemory.h
-            memory/posix/posixheap.cc
-            memory/posix/posixheap.h
-            memory/posix/posixmemory.cc
-            memory/posix/posixmemory.h
-            memory/posix/posixmemoryconfig.cc
-            memory/posix/posixmemoryconfig.h
-            memory/base/genericmemorypool.cc
-            memory/base/genericmemorypool.h
-            util/posix/posixguid.cc
-            util/posix/posixguid.h
-            io/posix/posixconsolehandler.cc
-            io/posix/posixconsolehandler.h
-            io/posix/posixfiletime.cc
-            io/posix/posixfiletime.h
-            io/posix/linuxfilewatcher.cc
-            io/posix/linuxfilewatcher.h
-            io/posix/posixfswrapper.cc
-            io/posix/posixfswrapper.h
-            timing/posix/posixtimer.cc
-            timing/posix/posixtimer.h
-            timing/posix/posixcalendartime.cc
-            timing/posix/posixcalendartime.h
-            threading/posix/posixreadwritelock.cc
-            threading/posix/posixreadwritelock.h
-            net/posix/posixipaddress.cc
-            net/posix/posixipaddress.h
-            net/posix/posixsocket.cc
-            net/posix/posixsocket.h
-            system/posix/posixcpu.h
-            system/posix/posixsysteminfo.h
-            system/posix/posixsysteminfo.cc
-            system/posix/posixenvironment.cc
-            system/posix/posixenvironment.h
-            system/posix/posixsettings.cc
-            system/posix/posixsettings.h
-        )
+		fips_dir(core/posix)
+			fips_files(
+				precompiled.h
+				posixsingleton.h
+				posixsysfunc.cc
+				posixsysfunc.h
+			)
+		fips_dir(memory/posix)
+			fips_files(
+				posixmemory.h
+				posixheap.cc
+				posixheap.h
+				posixmemory.cc
+				posixmemory.h
+				posixmemoryconfig.cc
+				posixmemoryconfig.h
+			)
+		fips_dir(util/posix)
+			fips_files(
+				posixguid.cc
+				posixguid.h
+			)
+		fips_dir(io/posix)
+			fips_files(
+				posixconsolehandler.cc
+				posixconsolehandler.h
+				posixfiletime.cc
+				posixfiletime.h
+				linuxfilewatcher.cc
+				linuxfilewatcher.h
+				posixfswrapper.cc
+				posixfswrapper.h
+			)
+		fips_dir(timing/posix)
+			fips_files(
+				posixtimer.cc
+				posixtimer.h
+				posixcalendartime.cc
+				posixcalendartime.h
+			)
+		fips_dir(threading/posix)
+			fips_files(
+				posixreadwritelock.cc
+				posixreadwritelock.h
+			)
+		fips_dir(net/posix)
+			fips_files(
+				posixipaddress.cc
+				posixipaddress.h
+				posixsocket.cc
+				posixsocket.h
+			)
+		fips_dir(system/posix)
+			fips_files(
+				posixcpu.h
+				posixsysteminfo.h
+				posixsysteminfo.cc
+				posixenvironment.cc
+				posixenvironment.h
+				posixsettings.cc
+				posixsettings.h
+			)
+		fips_dir(fibers/posix)
+			fips_files(posixfiber.cc)
+		fips_dir(memory/base)
+			fips_files(
+				memory/base/genericmemorypool.cc
+				memory/base/genericmemorypool.h
+			)
     endif()
     fips_dir(.)
 
     if(FIPS_WINDOWS)
-        fips_dir(threading/win32 GROUP "threading/win32")
-        fips_files(
-            win32barrier.h
-            win32criticalsection.cc
-            win32criticalsection.h
-            win32event.h
-            win32interlocked.cc
-            win32readwritelock.cc
-            win32readwritelock.h
-            win32thread.cc
-            win32thread.h
-            win32threadbarrier.h
-            win32threadid.h
-        )
+        fips_dir(threading/win32)
+			fips_files(
+				win32barrier.h
+				win32criticalsection.cc
+				win32criticalsection.h
+				win32event.h
+				win32interlocked.cc
+				win32readwritelock.cc
+				win32readwritelock.h
+				win32thread.cc
+				win32thread.h
+				win32threadbarrier.h
+				win32threadid.h
+			)
     elseif(FIPS_LINUX)
-        fips_dir(threading/linux GROUP "threading/linux")
-        fips_files(
-            linuxevent.h
-            linuxthread.cc
-            linuxthread.h
-        )
-        fips_dir(threading/gcc GROUP "threading/gcc")
-        fips_files(gccinterlocked.cc)
-    else()
-        fips_dir(threading/posix GROUP "threading/posix")
+        fips_dir(threading/linux)
+			fips_files(
+			    linuxevent.h
+			    linuxthread.cc
+			    linuxthread.h
+			)
+        fips_dir(threading/gcc)
+			fips_files(gccinterlocked.cc)
+    elseif(FIPS_POSIX)
+        fips_dir(threading/posix)
         fips_files(
             posixbarrier.h
             posixcriticalsection.h
             posixevent.h
-
             posixthread.cc
             posixthread.h
         )
-        fips_dir(threading/gcc GROUP "threading/gcc")
+        fips_dir(threading/gcc)
         fips_files(gccinterlocked.cc)
     endif()
 nebula_end_module()

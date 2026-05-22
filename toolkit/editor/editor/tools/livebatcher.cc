@@ -3,7 +3,7 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "livebatcher.h"
-#include "toolkit-common/applauncher.h"
+#include "system/process.h"
 #include "io/memorystream.h"
 
 const char* batcherPath = NEBULA_BINARY_FOLDER "/assetbatcher.exe";
@@ -49,7 +49,7 @@ __ImplementClass(Editor::LiveBatcherThread, 'LiBt', Threading::Thread);
 
 struct
 {
-    ToolkitUtil::AppLauncher assetBatcher;
+    System::ProcessStartInfo startInfo;
     Ptr<IO::MemoryStream> outputStream;
     Ptr<LiveBatcherThread> batchThread;
 
@@ -64,12 +64,12 @@ struct
 void 
 LiveBatcher::Setup()
 {
+    System::ProcessStartInfo startInfo;
+    startInfo.workingDir = workPath;
+    startInfo.outputStream = livebatcherState.outputStream.upcast<IO::Stream>();
+    startInfo.consoleWindow = false;
+    startInfo.exePath = Util::String::Sprintf(batcherPath, System::PlatformTypeAsString(System::Platform));
     livebatcherState.outputStream = IO::MemoryStream::Create();
-
-    livebatcherState.assetBatcher.SetStdoutCaptureStream(livebatcherState.outputStream.upcast<IO::Stream>());
-    livebatcherState.assetBatcher.SetNoConsoleWindow(true);
-    livebatcherState.assetBatcher.SetExecutable(Util::String::Sprintf(batcherPath, System::PlatformTypeAsString(System::Platform)));
-    livebatcherState.assetBatcher.SetWorkingDirectory(workPath);
 
     livebatcherState.batchThread = LiveBatcherThread::Create();
     livebatcherState.batchThread->Start();
@@ -98,9 +98,14 @@ LiveBatcher::BatchAssets()
         {
             Util::String args;
             args.Append("-rawlog ");
-            livebatcherState.assetBatcher.SetArguments(args);
-            bool res = livebatcherState.assetBatcher.LaunchWait();
-            return res;
+            livebatcherState.startInfo.args = args;
+            System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
+            if (process != System::InvalidProcessId)
+            {
+                System::WaitForProcess(process);
+                return true;
+            }
+            return false;
         }
     });
 }
@@ -117,9 +122,14 @@ LiveBatcher::BatchAsset(const IO::URI& assetPath)
             Util::String args;
             args.Append("-rawlog ");
             args.Append("-asset " + assetPath.LocalPath());
-            livebatcherState.assetBatcher.SetArguments(args);
-            bool res = livebatcherState.assetBatcher.LaunchWait();
-            return res;
+            livebatcherState.startInfo.args = args;
+            System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
+            if (process != System::InvalidProcessId)
+            {
+                System::WaitForProcess(process);
+                return true;
+            }
+            return false;
         }
     });
 }
@@ -137,9 +147,14 @@ LiveBatcher::BatchFile(const IO::URI& filePath)
             args.Append("-rawlog ");
             args.Append(" -dir " + filePath.LocalPath().ExtractDirName());
             args.Append(" -file " + filePath.LocalPath().ExtractFileName());
-            livebatcherState.assetBatcher.SetArguments(args);
-            bool res = livebatcherState.assetBatcher.LaunchWait();
-            return res;
+            livebatcherState.startInfo.args = args;
+            System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
+            if (process != System::InvalidProcessId)
+            {
+                System::WaitForProcess(process);
+                return true;
+            }
+            return false;
         }
     });
 }
@@ -179,9 +194,14 @@ LiveBatcher::BatchModes(Editor::BatchModes modes)
                 }
                 index++;
             }
-            livebatcherState.assetBatcher.SetArguments(args);
-            bool res = livebatcherState.assetBatcher.LaunchWait();
-            return res;
+            livebatcherState.startInfo.args = args;
+            System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
+            if (process != System::InvalidProcessId)
+            {
+                System::WaitForProcess(process);
+                return true;
+            }
+            return false;
         }
     });
 }

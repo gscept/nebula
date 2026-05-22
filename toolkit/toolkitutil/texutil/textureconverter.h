@@ -11,139 +11,26 @@
 #include "toolkit-common/platform.h"
 #include "io/uri.h"
 #include "util/string.h"
-#include "toolkitutil/texutil/textureattrtable.h"
-#include "toolkit-common/applauncher.h"
-#include "toolkit-common/logger.h"
-
-
-#include "flat/texture.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-class TextureConverter
+
+
+struct TextureResourceT;
+class Logger;
+struct TextureConversionInfo
 {
-public:
-    /// constructor
-    TextureConverter();
-    /// destructor
-    ~TextureConverter();
-
-    /// set target platform
-    void SetPlatform(Platform::Code platform);
-    /// set texture attribute table path
-    void SetTexAttrTablePath(const Util::String& path);
-    /// set source directory
-    void SetSrcDir(const Util::String& srcDir);
-    /// get source directory
-    const Util::String& GetSrcDir() const;
-    /// set destination directory
-    void SetDstDir(const Util::String& dstDir);
-    /// get destination directory
-    const Util::String& GetDstDir() const;
-    /// get destination directory
-    Util::String& GetDstDir();
-    /// set path to external converter tool (platform specific)
-    void SetToolPath(const Util::String& toolPath);
-    /// set force flag
-    void SetForceFlag(bool b);
-    /// set quiet flag
-    void SetQuietFlag(bool b);
-    /// set optional external texture attribute table (so it doesn't need to be loaded during setup)
-    void SetTextureAttrTable(TextureAttrTable&& extTexAttrTable);
-
-    /// set max parallel job count
-    void SetMaxParallelJobs(int count);
-    /// get max parallel job count
-    int GetMaxParallelJobs();
-
-    /// setup the texture converter, read the texture attributes table
-    bool Setup();
-    /// Set the logger to use
-    void SetLogger(Logger* logger);
-    /// discard the texture converter
-    void Discard();
-    /// return true if the object has been setup
-    bool IsValid() const;
-    /// convert a texture from a given path
-    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir, const ToolkitUtil::TextureResourceT* tex);
-    /// convert a cubemap folder from a given path
-    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir, const ToolkitUtil::TextureResourceT* tex);
-
-private:
-
-    Logger* logger;
-    Platform::Code platform;
+    const TextureResourceT* texture;
+    ToolkitUtil::Platform::Code platform;
     Util::String toolPath;
-    bool force;
-    bool quiet;
-    bool valid;
-    int maxParallelJobs;
+    Util::String tmpDir;
+    Util::String sourcePath;
+    Util::String destPath;
+    bool cube;
+    Logger* logger;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-TextureConverter::IsValid() const
-{
-    return this->valid;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetPlatform(Platform::Code p)
-{
-    this->platform = p;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetToolPath(const Util::String& p)
-{
-    this->toolPath = p;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetForceFlag(bool b)
-{
-    this->force = b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetQuietFlag(bool b)
-{
-    this->quiet = b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetMaxParallelJobs(int count)
-{
-    n_assert(count > 0);
-    this->maxParallelJobs = count;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline int
-TextureConverter::GetMaxParallelJobs()
-{
-    return this->maxParallelJobs;
-}
+bool ConvertTexture(const TextureConversionInfo& info);
 
 } // namespace ToolkitUtil
 //------------------------------------------------------------------------------

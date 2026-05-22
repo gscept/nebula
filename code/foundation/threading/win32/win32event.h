@@ -19,6 +19,8 @@ class Win32Event
 public:
     /// constructor
     Win32Event(bool manualReset=false);
+    /// Construct from event elsewhere
+    Win32Event(void* event);
     /// move constructor
     Win32Event(Win32Event&& rhs);
     /// destructor
@@ -51,6 +53,16 @@ Win32Event::Win32Event(bool manualReset)
     this->event = CreateEvent(NULL, manualReset, FALSE, NULL);
     this->manual = manualReset;
     n_assert(0 != this->event);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+Win32Event::Win32Event(void* event)
+{
+    this->manual = false;
+    this->event = event;
 }
 
 //------------------------------------------------------------------------------

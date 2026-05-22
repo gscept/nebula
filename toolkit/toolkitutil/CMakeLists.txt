@@ -85,19 +85,6 @@ fips_begin_lib(toolkitutil)
         #       posteffectparser.h
         #   )
     ENDIF()
-    IF(FIPS_WINDOWS)
-        SET(SRCSX_PL        
-        directxtexconversionjob.cc
-        directxtexconversionjob.h
-        compressonatorconversionjob.cc
-        compressonatorconversionjob.h
-        )
-    ELSE()
-    SET(SRCSX_PL        
-        compressonatorconversionjob.cc
-        compressonatorconversionjob.h
-        )
-    ENDIF()
     IF(NOT N_MINIMAL_TOOLKIT)
         fips_dir(texutil)
             fips_files(
@@ -105,15 +92,14 @@ fips_begin_lib(toolkitutil)
                 # cubefilterer.h
                 # imageconverter.cc
                 # imageconverter.h
-                textureattrs.cc
-                textureattrs.h
-                textureattrtable.cc
-                textureattrtable.h
-                textureconversionjob.cc
-                textureconversionjob.h
+                # textureattrs.cc
+                # textureattrs.h
+                # textureattrtable.cc
+                # textureattrtable.h
+                # textureconversionjob.cc
+                # textureconversionjob.h
                 textureconverter.cc
                 textureconverter.h
-                ${SRCSX_PL}
             )
     ENDIF()     
         fips_dir(model/import/base)

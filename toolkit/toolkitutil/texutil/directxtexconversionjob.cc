@@ -9,6 +9,7 @@
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "system/systeminfo.h"
+#include "system/process.h"
 
 #include "toolkit-common/text.h"
 
@@ -104,15 +105,14 @@ DirectXTexConversionJob::Convert(const ToolkitUtil::TextureResourceT* texture)
         args.Append(this->dstPath);
         args.Append("\"");
 
-        // launch texconv to perform the conversion        
-        this->appLauncher.SetNoConsoleWindow(true);
-        this->appLauncher.SetExecutable(this->toolPath);
-        this->appLauncher.SetWorkingDirectory(this->srcPath.ExtractDirName());
-        this->appLauncher.SetArguments(args);
-#if __WIN32__
-        //this->appLauncher.SetNoConsoleWindow(this->quiet);
-#endif        
-        if (!this->appLauncher.LaunchWait())
+        System::ProcessStartInfo startInfo;
+        startInfo.args = args;
+        startInfo.workingDir = this->srcPath.ExtractDirName();
+        startInfo.exePath = this->toolPath;
+        startInfo.consoleWindow = false;
+
+        System::ProcessId process = System::StartProcess(startInfo);
+        if (process == System::InvalidProcessId)
         {
             this->logger->Warning("Failed to launch converter tool '%s'!\n", this->toolPath.AsCharPtr());
             return false;

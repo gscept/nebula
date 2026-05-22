@@ -1,28 +1,35 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class System::AppLauncher
-    
+    @class System::Process
+
     Launch an external application.
     
-    @copyright
-    (C) 2008 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2026 Individual contributors, see AUTHORS file
 */
-#if __WIN32__
-#include "win32/win32process.h"
+#include "ids/id.h"
 namespace System
 {
-typedef Win32::Win32Process Process;
-}
-#elif __linux__
-#include "posix/posixprocess.h"
-namespace System
+ID_24_8_TYPE(ProcessId);
+
+struct ProcessStartInfo
 {
-typedef Posix::PosixProcess Process;
-}
-#else
-#error "System::Process not implemented on this platform!"
-#endif
-//------------------------------------------------------------------------------
-    
+    IO::URI exePath;
+    IO::URI workingDir;
+    Util::String args;
+    bool consoleWindow;
+    Ptr<IO::Stream> outputStream, errorStream;
+};
+
+/// Find a process using URI
+bool FindProcess(const IO::URI& uri);
+/// Create a process
+ProcessId StartProcess(const ProcessStartInfo& createInfo);
+/// Update streams
+void UpdateProcessStreams(ProcessId processId);
+/// Returns true if process is running (poll)
+bool IsProcessRunning(ProcessId processId);
+/// Wait for process, then frees it
+void WaitForProcess(ProcessId processId);
+
+} // namespace System

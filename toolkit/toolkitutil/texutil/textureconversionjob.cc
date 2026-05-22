@@ -8,6 +8,8 @@
 #include "io/ioserver.h"
 #include "toolkit-common/text.h"
 
+#include "flat/texture.h"
+
 namespace ToolkitUtil
 {
 using namespace IO;
@@ -155,5 +157,7 @@ TextureConversionJob::CopyResult()
     ioServer->DeleteDirectory(this->tmpDir);
     return retval;
 }
+
+
 
 } // namespace ToolkitUtil

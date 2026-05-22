@@ -13,9 +13,15 @@
 #include "toolkitutil/texutil/textureattrtable.h"
 #include "toolkit-common/logger.h"
 
+#include "system/process.h"
+
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
+
+
+
+
 class TextureConversionJob
 {
 public:

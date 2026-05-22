@@ -18,6 +18,7 @@ class Event : public Win32::Win32Event
 {
 public:
     Event(bool manualReset=false) : Win32Event(manualReset) {};
+    Event(void* event) : Win32Event(event) {};
 };
 }
 #elif __linux__ 
