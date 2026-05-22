@@ -12,6 +12,7 @@
 #include "math/vec4.h"
 #include "math/mat4.h"
 #include "math/quat.h"
+#include "math/bbox.h"
 #include "math/transform.h"
 #include "flat/foundation/math.h"
 
@@ -21,6 +22,7 @@ struct Vec2;
 struct Vec3;
 struct Vec4;
 struct Mat4;
+struct BoundingBox;
 struct Quat;
 }
 
@@ -46,6 +48,10 @@ Math::vec2 UnPack(const Flat::Vec2& v);
 Flat::Mat4 Pack(const Math::mat4& v);
 ///
 Math::mat4 UnPack(const Flat::Mat4& v);
+///
+Flat::BoundingBox Pack(const Math::bbox& v);
+///
+Math::bbox UnPack(const Flat::BoundingBox& v);
 ///
 Flat::Transform Pack(const Math::transform& v);
 ///

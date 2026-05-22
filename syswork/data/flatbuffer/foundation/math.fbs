@@ -8,36 +8,42 @@ namespace Flat;
 
 struct Vec4 (native_type:"Math::vec4")
 {
-  x:float = 0;
-  y:float = 0;
-  z:float = 0;
-  w:float = 0;
+	x:float = 0;
+	y:float = 0;
+	z:float = 0;
+	w:float = 0;
 }
 
 struct Quat (native_type:"Math::quat")
 {
-  x:float = 0;
-  y:float = 0;
-  z:float = 0;
-  w:float = 0;
+	x:float = 0;
+	y:float = 0;
+	z:float = 0;
+	w:float = 0;
 }
 
 struct Vec3 (native_type:"Math::vec3") 
 {
-  x:float = 0;
-  y:float = 0;
-  z:float = 0;
+	x:float = 0;
+	y:float = 0;
+	z:float = 0;
 }
 
 struct Vec2 (native_type:"Math::vec2") 
 {
-  x:float = 0;
-  y:float = 0;
+	x:float = 0;
+	y:float = 0;
 }
 
 struct Mat4 (native_type:"Math::mat4") 
 {
-  mat4:[float:16];
+	mat4:[float:16];
+}
+
+struct BoundingBox (native_type:"Math::bbox")
+{
+	center : [float:3];
+	extents : [float:3];
 }
 
 struct Transform (native_type:"Math::transform") 

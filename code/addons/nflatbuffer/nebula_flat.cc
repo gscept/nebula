@@ -31,6 +31,30 @@ Math::mat4 UnPack(const Flat::Mat4& v)
 //------------------------------------------------------------------------------
 /**
 */
+Flat::BoundingBox
+Pack(const Math::bbox& v)
+{
+    Flat::BoundingBox ret;
+    v.center().storeu3(ret.mutable_center()->data());
+    v.extents().storeu(ret.mutable_extents()->data());
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::bbox
+UnPack(const Flat::BoundingBox& v)
+{
+    Math::vec3 center, extents;
+    center.loadu(v.center()->data());
+    extents.loadu(v.extents()->data());
+    return Math::bbox(center, extents);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Flat::Vec2 Pack(const Math::vec2& v)
 {
     Flat::Vec2 V(v.x, v.y);
