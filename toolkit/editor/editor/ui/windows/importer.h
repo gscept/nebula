@@ -10,6 +10,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "editor/ui/window.h"
+#include "toolkit-common/logger.h"
 
 namespace Presentation
 {
@@ -22,6 +23,9 @@ public:
     ~Importer();
 
     void Run(SaveMode save) override;
+
+private:
+    ToolkitUtil::Logger logger;
 };
 __RegisterClass(Importer)
 

@@ -53,7 +53,33 @@ Importer::Run(SaveMode save)
     static Util::Array<Util::String> Files;
     static Util::String Destination = IO::URI("src:assets").LocalPath();
 
+    /*
+
+        None = 0,
+    RemoveRedundant = 1 << 0,
+    CalcNormals = 1 << 1,
+    FlipUVs = 1 << 2,
+    ImportColors = 1 << 3,
+    ImportSecondaryUVs = 1 << 4,
+    CalcTangents = 1 << 5,
+    CalcRigidSkin = 1 << 6,
+    All = (1 << 7) - 1,
+    */
+    struct ModelImportSettings
+    {
+        bool removeRedundantVertices = 1;
+        bool calculateNormals = 0;
+        bool flipUVs = 0;
+        bool importColors = 1;
+        bool importSecondaryUVs = 1;
+        bool calculateTangents = 0;
+        bool calculateRigidSkin = 0;
+        int scale = 1; // 0 means cm, 1 means m, 2 means km
+    };
+
     static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
+    static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> FbxFiles;
+    static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> GltfFiles;
     if (!Dynui::ImguiDragAndDropFiles.IsEmpty())
     {
         for (const auto& file : Dynui::ImguiDragAndDropFiles)
@@ -63,9 +89,11 @@ Importer::Run(SaveMode save)
 
             if (ext == "fbx")
             {
+                FbxFiles.Append({ file, {} });
             }
             else if (ext == "gltf" || ext == "glb")
             {
+                GltfFiles.Append({ file, {} });
             }
             else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
             {
@@ -113,6 +141,24 @@ Importer::Run(SaveMode save)
         Util::String label = Util::Format("/%s.natex##destination", fileNameNoExt.AsCharPtr());
         ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
 
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+        ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiFileDialog::Instance()->SetFileStyle(
+            IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
+        );
+        if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
+        {
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
+            }
+            ImGuiFileDialog::Instance()->Close();
+        }
+        ImGui::PopFont();
+
+        ImGui::PopStyleVar();
+
         if (ImGui::BeginTable("TextureImportTable", 2))
         {
             ImGui::TableSetupScrollFreeze(1, 1);
@@ -121,24 +167,6 @@ Importer::Run(SaveMode save)
             ref._TexID = imguiId;
             ImGui::Image(ref, ImVec2(300, 300));
             ImGui::TableNextColumn();
-
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
-            const ImGuiStyle& style = ImGui::GetStyle();
-            ImGuiFileDialog::Instance()->SetFileStyle(
-                IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
-            );
-            if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
-            {
-                if (ImGuiFileDialog::Instance()->IsOk())
-                {
-                    Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
-                }
-                ImGuiFileDialog::Instance()->Close();
-            }
-            ImGui::PopFont();
-
-            ImGui::PopStyleVar();
             ImGui::Spacing();
 
             bool changed = false;
@@ -257,13 +285,12 @@ Importer::Run(SaveMode save)
                     memcpy(data.data(), sourceStream->MemoryMap(), sourceStream->GetSize());
                     textureResource.data = data;
 
-                    ToolkitUtil::Logger logger;
                     if (ToolkitUtil::PackageTexture(
                             &textureResource,
                             file.ExtractFileName(),
                             "temp:importer/",
                             ToolkitUtil::Platform::Code::Win32,
-                            &logger
+                            &this->logger
                         ))
                     {
                         resId = Resources::CreateResource(
@@ -296,6 +323,174 @@ Importer::Run(SaveMode save)
             ImGui::EndTable();
         } // End of table
         textureResourceIndex++;
+    }
+
+    IndexT fbxFileIndex = 0;
+    for (auto& [file, settings] : FbxFiles)
+    {
+        ImGui::Text("%s", file.AsCharPtr());
+
+        Destination.ConvertBackslashes();
+        if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+        {
+            IGFD::FileDialogConfig config;
+            config.flags = ImGuiFileDialogFlags_Modal;
+
+            static char absolutePathBuf[256];
+            memcpy(absolutePathBuf, Destination.data(), Destination.Length());
+            absolutePathBuf[Destination.Length()] = '\0';
+            config.path = absolutePathBuf;
+            ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
+        }
+        ImGui::SameLine();
+        Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
+        static char buf[256];
+        memcpy(buf, shortenedPath.data(), shortenedPath.Length());
+        buf[shortenedPath.Length()] = '\0';
+        float width = ImGui::CalcTextSize(buf).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        ImGui::SetNextItemWidth(width);
+        Util::String fileNameNoExt = file.ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        Util::String label = Util::Format("/%s.namsh/namdl##destination", fileNameNoExt.AsCharPtr());
+        ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+        ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiFileDialog::Instance()->SetFileStyle(
+            IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
+        );
+        if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
+        {
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
+            }
+            ImGuiFileDialog::Instance()->Close();
+        }
+        ImGui::PopFont();
+
+        ImGui::PopStyleVar();
+
+        ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
+        ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
+        ImGui::Checkbox("Flip UVs", &settings.flipUVs);
+        ImGui::Checkbox("Import vertex colors", &settings.importColors);
+        ImGui::Checkbox("Import secondary UVs", &settings.importSecondaryUVs);
+        ImGui::Checkbox("Calculate tangents", &settings.calculateTangents);
+        ImGui::Checkbox("Calculate rigid skinning", &settings.calculateRigidSkin);
+        ImGui::Combo("Scale", &settings.scale, "cm\000m\000km\000");
+
+        static Util::String saveButton =
+            Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+
+        if (ImGui::Button(saveButton.AsCharPtr()))
+        {
+            uint flags;
+            flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
+            flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;
+            flags |= settings.importColors ? ToolkitUtil::ImportFlags::ImportColors : ToolkitUtil::ImportFlags::None;
+            flags |= settings.importSecondaryUVs ? ToolkitUtil::ImportFlags::ImportSecondaryUVs : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateTangents ? ToolkitUtil::ImportFlags::CalcTangents : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateRigidSkin ? ToolkitUtil::ImportFlags::CalcRigidSkin : ToolkitUtil::ImportFlags::None;
+            float scale = 1.0f;
+            switch (settings.scale)
+            {
+                case 0: scale = 0.01f; break; // cm to m
+                case 1: scale = 1.0f; break; // m to m
+                case 2: scale = 1000.0f; break; // km to m
+            }
+            ToolkitUtil::Logger logger;
+            ToolkitUtil::ImportFBX(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, &this->logger);
+            FbxFiles.EraseIndex(fbxFileIndex);
+        }
+
+        fbxFileIndex++;
+    }
+
+    IndexT gltfFileIndex = 0;
+    for (auto& [file, settings] : GltfFiles)
+    {
+        ImGui::Text("%s", file.AsCharPtr());
+
+        Destination.ConvertBackslashes();
+        if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+        {
+            IGFD::FileDialogConfig config;
+            config.flags = ImGuiFileDialogFlags_Modal;
+
+            static char absolutePathBuf[256];
+            memcpy(absolutePathBuf, Destination.data(), Destination.Length());
+            absolutePathBuf[Destination.Length()] = '\0';
+            config.path = absolutePathBuf;
+            ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
+        }
+        ImGui::SameLine();
+        Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
+        static char buf[256];
+        memcpy(buf, shortenedPath.data(), shortenedPath.Length());
+        buf[shortenedPath.Length()] = '\0';
+        float width = ImGui::CalcTextSize(buf).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        ImGui::SetNextItemWidth(width);
+        Util::String fileNameNoExt = file.ExtractFileName();
+        fileNameNoExt.StripFileExtension();
+        Util::String label = Util::Format("/%s.namsh/namdl/natex/namat##destination", fileNameNoExt.AsCharPtr());
+        ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+        ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiFileDialog::Instance()->SetFileStyle(
+            IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
+        );
+        if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
+        {
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
+            }
+            ImGuiFileDialog::Instance()->Close();
+        }
+        ImGui::PopFont();
+
+        ImGui::PopStyleVar();
+
+        ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
+        ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
+        ImGui::Checkbox("Flip UVs", &settings.flipUVs);
+        ImGui::Checkbox("Import vertex colors", &settings.importColors);
+        ImGui::Checkbox("Import secondary UVs", &settings.importSecondaryUVs);
+        ImGui::Checkbox("Calculate tangents", &settings.calculateTangents);
+        ImGui::Checkbox("Calculate rigid skinning", &settings.calculateRigidSkin);
+        ImGui::Combo("Scale", &settings.scale, "cm\000m\000km\000");
+
+        static Util::String saveButton =
+            Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+
+        if (ImGui::Button(saveButton.AsCharPtr()))
+        {
+            uint flags;
+            flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
+            flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;
+            flags |= settings.importColors ? ToolkitUtil::ImportFlags::ImportColors : ToolkitUtil::ImportFlags::None;
+            flags |= settings.importSecondaryUVs ? ToolkitUtil::ImportFlags::ImportSecondaryUVs : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateTangents ? ToolkitUtil::ImportFlags::CalcTangents : ToolkitUtil::ImportFlags::None;
+            flags |= settings.calculateRigidSkin ? ToolkitUtil::ImportFlags::CalcRigidSkin : ToolkitUtil::ImportFlags::None;
+            float scale = 1.0f;
+            switch (settings.scale)
+            {
+                case 0: scale = 0.01f; break; // cm to m
+                case 1: scale = 1.0f; break; // m to m
+                case 2: scale = 1000.0f; break; // km to m
+            }
+            ToolkitUtil::Logger logger;
+            ToolkitUtil::ImportGLTF(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, &this->logger);
+            GltfFiles.EraseIndex(gltfFileIndex);
+        }
+
+        gltfFileIndex++;
     }
 }
 

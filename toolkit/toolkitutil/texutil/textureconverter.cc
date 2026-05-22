@@ -78,6 +78,7 @@ bool
 ConvertTexture(const TextureConversionInfo& info)
 {
 #if (__WIN32__)    
+    IO::IoServer::Instance()->CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
     URI dstPathUri(info.destPath);
     URI tmpDirUri(info.tmpDir);
@@ -130,17 +131,18 @@ ConvertTexture(const TextureConversionInfo& info)
     System::ProcessStartInfo startInfo;
     startInfo.args = args;
     startInfo.workingDir = info.sourcePath.ExtractDirName();
-    startInfo.exePath = info.toolPath;
+    startInfo.exePath = Util::Format("toolkit:bin/%s/texconv", System::PlatformTypeAsString(System::Platform));
     startInfo.consoleWindow = false;
 
     System::ProcessId process = System::StartProcess(startInfo);
     if (process == System::InvalidProcessId)
     {
-        info.logger->Warning("Failed to launch converter tool '%s'!\n", info.toolPath.AsCharPtr());
+        info.logger->Warning("Failed to launch converter tool '%s'!\n", startInfo.exePath.LocalPath().AsCharPtr());
         return false;
     }
     System::WaitForProcess(process);
 #else
+    IO::IoServer::Instance()->CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
     URI dstPathUri(info.destPath);
     URI tmpDirUri(info.tmpDir);

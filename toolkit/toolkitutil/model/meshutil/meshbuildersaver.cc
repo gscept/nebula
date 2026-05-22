@@ -45,6 +45,7 @@ MeshBuilderSaver::SaveImport(const IO::URI& uri, const Util::Array<MeshBuilder*>
             mesh->component_mask = builder->GetComponents();
             mesh->topology = builder->GetPrimitiveTopology();
             mesh->vertices.reserve(builder->vertices.size());
+            mesh->bounding_box = builder->ComputeBoundingBox();
 
             CoreGraphics::VertexLayoutType layout = MeshBuilderVertex::GetVertexLayoutType(builder->GetComponents());
             for (auto& vertex : builder->vertices)
@@ -122,7 +123,11 @@ MeshBuilderSaver::SaveImport(const IO::URI& uri, const Util::Array<MeshBuilder*>
             mesh->groups.reserve(builder->groups.size());
             for (auto& group : builder->groups)
             {
-                auto groupT = ToolkitUtil::MeshTriangleGroup(group.GetFirstTriangleIndex(), group.GetNumTriangles());
+                Math::bbox bbox = builder->ComputeGroupBoundingBox(group);
+                auto groupT = std::make_unique<ToolkitUtil::MeshTriangleGroupT>();
+                groupT->bounding_box = bbox;
+                groupT->first_triangle = group.GetFirstTriangleIndex();
+                groupT->num_triangles = group.GetNumTriangles();
                 mesh->groups.push_back(std::move(groupT));
             }
             meshResource.meshes.push_back(std::move(mesh));
@@ -231,6 +236,7 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::
 
         size_t baseVertexDataSize = mesh->vertices.size() * sizeof(BaseVertex);
         size_t attributesVertexDataSize = mesh->vertices.size() * MeshBuilderVertex::GetSize(mesh->component_mask);
+        Math::bbox box = mesh->bounding_box;
 
         Nvx3VertexRange nvx3VertexRange;
         nvx3VertexRange.indexType = mesh->vertices.size() > 0xFFFF ? CoreGraphics::IndexType::Index32 : CoreGraphics::IndexType::Index16;
@@ -240,18 +246,21 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::
         nvx3VertexRange.attributesVertexByteOffset = (uint)(vertexByteOffset + baseVertexDataSize);
         nvx3VertexRange.firstGroupOffset = (uint)groupByteOffset;
         nvx3VertexRange.numGroups = (uint)mesh->groups.size();
+        // nvx3VertexRange.boundingBox = box; // TODO: Add support for bounding boxes
         stream->Write(&nvx3VertexRange, sizeof(Nvx3VertexRange));
 
         for (IndexT curGroupIndex = 0; curGroupIndex < mesh->groups.size(); curGroupIndex++)
         {
             const auto& group = mesh->groups[curGroupIndex];
-            int firstTriangle = group.first_triangle();
-            int numTriangles = group.num_triangles();
+            int firstTriangle = group->first_triangle;
+            int numTriangles = group->num_triangles;
+            Math::bbox box = group->bounding_box;
             
             Nvx3Group nvx3Group;
             nvx3Group.firstIndex = byteOrder.Convert<uint>(firstTriangle * 3);
             nvx3Group.numIndices = byteOrder.Convert<uint>(numTriangles * 3);
             nvx3Group.primType = PrimitiveTopology::TriangleList;
+            // nvx3Group.boundingBox = box; // TODO: Add support for bounding boxes
             
             // TODO: Add support for meshlets
             nvx3Group.firstMeshlet = 0;

@@ -161,6 +161,30 @@ MeshBuilder::ComputeBoundingBox() const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bbox 
+MeshBuilder::ComputeGroupBoundingBox(const MeshBuilderGroup& group) const
+{
+    bbox box;
+    box.begin_extend();
+    SizeT numVertices = group.GetNumTriangles();
+    IndexT triangleIndex;
+    for (triangleIndex = group.GetFirstTriangleIndex(); triangleIndex < this->GetNumTriangles(); triangleIndex++)
+    {
+        const MeshBuilderTriangle& tri = this->TriangleAt(triangleIndex);
+        const MeshBuilderVertex& vtx0 = this->VertexAt(tri.GetVertexIndex(0));
+        const MeshBuilderVertex& vtx1 = this->VertexAt(tri.GetVertexIndex(1));
+        const MeshBuilderVertex& vtx2 = this->VertexAt(tri.GetVertexIndex(2));
+        box.extend(xyz(vtx0.base.position));
+        box.extend(xyz(vtx1.base.position));
+        box.extend(xyz(vtx2.base.position));
+    }
+    box.end_extend();
+    return box;
+}
+
+//------------------------------------------------------------------------------
+/**
     Sort the triangle array by group id, so that clusters of triangles
     with identical group ids are formed.
 */

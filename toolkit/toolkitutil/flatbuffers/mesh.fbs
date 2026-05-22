@@ -44,8 +44,9 @@ table MeshSkinAttributes
 	indices : [uint];
 }
 
-struct MeshTriangleGroup
+table MeshTriangleGroup
 {
+	bounding_box : Flat.BoundingBox (native_inline);
 	first_triangle : uint;
 	num_triangles : uint;
 }
@@ -67,6 +68,7 @@ table MeshInstance
 	triangles : [MeshTriangle];
 	vertices : [MeshVertex];
 	groups : [MeshTriangleGroup];
+	bounding_box : Flat.BoundingBox (native_inline);
 	topology : int;			// CoreGraphics::PrimitiveTopology enum
 	component_mask : int;	// bitfield of MeshVertexComponent
 }

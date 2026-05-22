@@ -23,7 +23,6 @@ struct TextureConversionInfo
 {
     const TextureResourceT* texture;
     ToolkitUtil::Platform::Code platform;
-    Util::String toolPath;
     Util::String tmpDir;
     Util::String sourcePath;
     Util::String destPath;

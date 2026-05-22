@@ -10,6 +10,7 @@
 #include "io/uri.h"
 #include "toolkit-common/applauncher.h"
 #include "io/memorystream.h"
+#include "system/process.h"
 
 namespace ToolkitUtil
 {
@@ -94,11 +95,12 @@ AudioExporter::ExportXact()
     args.Append(resolvedDstPath);
     args.Append("\"");
 
-    AppLauncher appLauncher;
-    appLauncher.SetExecutable(this->toolPath);
-    appLauncher.SetWorkingDirectory(resolvedDstPath);
-    appLauncher.SetArguments(args);
-    if (!appLauncher.LaunchWait())
+    System::ProcessStartInfo startInfo;
+    startInfo.exePath = this->toolPath;
+    startInfo.workingDir = resolvedDstPath;
+    startInfo.args = args;
+    System::ProcessId process = System::StartProcess(startInfo);
+    if (process == System::InvalidProcessId)
     {
         n_printf("WARNING: failed to launch audio tool '%s'!\n", this->toolPath.AsCharPtr());
         return false;

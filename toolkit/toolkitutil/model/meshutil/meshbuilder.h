@@ -66,6 +66,8 @@ public:
     void CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::FixedArray<IndexT>& indexMap);
     /// compute overall bounding box
     Math::bbox ComputeBoundingBox() const;
+    /// Compute bounding box for primitive group
+    Math::bbox ComputeGroupBoundingBox(const MeshBuilderGroup& group) const;
 
     /// sort triangles by group id
     void SortTriangles();
