@@ -44,6 +44,7 @@ struct Nvx3VertexRange
     uint attributesVertexByteOffset;
     uint firstGroupOffset;
     uint numGroups;
+    // Math::bbox boundingBox; TODO: ADD THIS
     CoreGraphics::IndexType::Code indexType;
     CoreGraphics::VertexLayoutType layout;
 };
@@ -53,6 +54,7 @@ struct Nvx3Group
     uint primType;
     uint firstIndex;
     uint numIndices;
+    // Math::bbox boundingBox; TODO: ADD THIS
 
     uint firstMeshlet;              // Offset to first meshlet (optional)
     uint numMeshlets;               // Number of meshlets for this primitive group
