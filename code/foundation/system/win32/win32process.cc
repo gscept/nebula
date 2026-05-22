@@ -298,13 +298,41 @@ IsProcessRunning(ProcessId processId)
 //------------------------------------------------------------------------------
 /**
 */
-void
+uint
 WaitForProcess(ProcessId processId)
 {
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(processId.id);
 
     // wait until process exits
     WaitForSingleObject(processInfo.hProcess, INFINITE);
+
+    DWORD exitCode = 0;
+    GetExitCodeProcess(processInfo.hProcess, &exitCode);
+
+    HANDLE& stdoutRead = processIdAllocator.Get<Process_StdoutRead>(processId.id);
+    HANDLE& stdoutWrite = processIdAllocator.Get<Process_StdoutWrite>(processId.id);
+    HANDLE& stderrRead = processIdAllocator.Get<Process_StderrRead>(processId.id);
+    HANDLE& stderrWrite = processIdAllocator.Get<Process_StderrWrite>(processId.id);
+    Ptr<IO::Stream>& stdoutCaptureStream = processIdAllocator.Get<Process_StdoutStream>(processId.id);
+    Ptr<IO::Stream>& stderrCaptureStream = processIdAllocator.Get<Process_StderrStream>(processId.id);
+
+    // cleanup
+    if (stdoutCaptureStream.isvalid())
+    {
+        stdoutCaptureStream->Close();
+        CloseHandle(stdoutRead);
+        CloseHandle(stdoutWrite);
+    }
+    if (stderrCaptureStream.isvalid())
+    {
+        stderrCaptureStream->Close();
+        CloseHandle(stderrRead);
+        CloseHandle(stderrWrite);
+    }
+    CloseHandle(processInfo.hProcess);
+    processIdAllocator.Dealloc(processId.id);
+
+    return exitCode;
 }
 
 } // namespace System

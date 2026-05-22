@@ -29,7 +29,7 @@ ProcessId StartProcess(const ProcessStartInfo& createInfo);
 void UpdateProcessStreams(ProcessId processId);
 /// Returns true if process is running (poll)
 bool IsProcessRunning(ProcessId processId);
-/// Wait for process, then frees it
-void WaitForProcess(ProcessId processId);
+/// Wait for process, then frees it and returns the error code
+uint WaitForProcess(ProcessId processId);
 
 } // namespace System
