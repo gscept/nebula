@@ -95,6 +95,7 @@ SysFunc::Setup()
     {
         GetHostSysFuncApi().setup();
         SetupCalled = true;
+        Memory::SetupHeaps();
         return;
     }
 
