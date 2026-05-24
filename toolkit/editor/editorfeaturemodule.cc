@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "core/factory.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "editorfeature/editorfeatureunit.h"
 
 NEBULA_MODULE_EXPORT int

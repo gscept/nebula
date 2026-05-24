@@ -436,6 +436,7 @@ endif()
             process.h
             library.h
             systeminfo.h
+            moduleinterface.h
             nebulasettings.h
             base/processbase.h
             base/librarybase.h

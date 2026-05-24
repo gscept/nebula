@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 //
 #include "cvar.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "util/hashtable.h"
 #include "util/string.h"
 

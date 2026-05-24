@@ -7,7 +7,7 @@
 #include "core/win32/win32sysfunc.h"
 #include "core/refcounted.h"
 #include "debug/minidump.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "util/blob.h"
 #include "net/socket/socket.h"
 #include "debug/minidump.h"

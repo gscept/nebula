@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "core/factory.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "navigationfeature/navigationfeatureunit.h"
 
 

@@ -3,7 +3,7 @@
 //  (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 
 NEBULA_MODULE_EXPORT int
 NebulaModuleGetDescriptor(NebulaModuleDescriptor* outDescriptor)

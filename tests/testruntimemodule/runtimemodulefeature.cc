@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "core/factory.h"
 #include "game/featureunit.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include <cstdio>
 
 namespace TestRuntimeModule

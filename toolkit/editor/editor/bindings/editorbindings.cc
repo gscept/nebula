@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "editor/commandmanager.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "editor/editor.h"
 #include "scripting/python/conversion.h"
 #include "scripting/scriptserver.h"

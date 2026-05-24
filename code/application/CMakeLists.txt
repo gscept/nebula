@@ -45,7 +45,6 @@ endif()
             gameserver.cc
             manager.h
             manager.cc
-            moduleinterface.h
             modulemanager.h
             modulemanager.cc
             componentserialization.h

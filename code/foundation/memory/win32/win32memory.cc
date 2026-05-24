@@ -6,7 +6,7 @@
 
 #include "core/types.h"
 #include "core/sysfunc.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 #include "memory/heap.h"
 #include "memory/poolarrayallocator.h"
 

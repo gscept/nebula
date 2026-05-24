@@ -7,7 +7,7 @@
 #include "util/hashtable.h"
 #include "util/string.h"
 #include "threading/criticalsection.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 
 namespace Core
 {

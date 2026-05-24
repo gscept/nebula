@@ -11,7 +11,7 @@
 #include "core/refcounted.h"
 #include "util/array.h"
 #include "util/string.h"
-#include "game/moduleinterface.h"
+#include "system/moduleinterface.h"
 
 namespace Base
 {
