@@ -91,7 +91,7 @@ UseHostSysFuncExit()
 void
 SysFunc::Setup()
 {
-    if (UseHostSysFuncSetup())
+    if (UseHostSysFuncSetup() && !SetupCalled)
     {
         GetHostSysFuncApi().setup();
         SetupCalled = true;

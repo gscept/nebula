@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "editor/commandmanager.h"
+#include "game/moduleinterface.h"
 #include "editor/editor.h"
 #include "scripting/python/conversion.h"
 #include "scripting/scriptserver.h"
@@ -11,7 +12,7 @@
 
 namespace py = nanobind;
 
-extern "C" PyObject* PyInit_editor();
+NEBULA_MODULE_EXPORT PyObject* PyInit_editor();
 
 namespace
 {

@@ -30,9 +30,6 @@ Alloc(HeapType heapType, size_t size, size_t align)
 {
     n_assert(heapType < NumHeapTypes);
     n_assert(align <= 16);
-    // need to make sure everything has been setup
-    Core::SysFunc::Setup();
-
     void* allocPtr = 0;
     {
         n_assert(0 != Heaps[heapType]);

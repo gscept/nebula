@@ -6,9 +6,6 @@
 #include "graphics/graphicsdisplayeventhandler.h"
 #include "graphics/graphicsserver.h"
 
-#if __VULKAN__
-#include "coregraphics/vk/vkpipelinedatabase.h"
-#endif
 
 namespace Graphics
 {
@@ -24,9 +21,6 @@ bool
 GraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     Ptr<Graphics::GraphicsServer> graphicsServer = Graphics::GraphicsServer::Instance();
-#if __VULKAN__
-    Vulkan::VkPipelineDatabase* pipelineDatabase = Vulkan::VkPipelineDatabase::Instance();
-#endif
     switch (displayEvent.GetEventCode())
     {
         case DisplayEvent::CloseRequested:
