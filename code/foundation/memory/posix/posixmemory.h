@@ -43,8 +43,16 @@ __forceinline void*
 Alloc(HeapType heapType, size_t size, size_t align = 16)
 {
     n_assert(heapType < NumHeapTypes);
+    n_assert(align != 0);
     void* allocPtr = 0;
     {
+        align = std::max(align, sizeof(void*));
+
+        #if NEBULA_DEBUG
+        // Posix requirements state that alignment must be a
+        // multiple of sizeof(void*).
+        n_assert((align & (align - 1)) == 0);
+        #endif
         int err = posix_memalign(&allocPtr, align, size);
         n_assert(err == 0);
         #if NEBULA_DEBUG
