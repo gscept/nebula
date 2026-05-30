@@ -50,6 +50,9 @@ public:
     /// Gets the estimated current packet roundtrip time (client->server->client).
     Timing::Time GetCurrentPing() const;
 
+    /// draw imgui network debug information
+    void DrawNetworkDebugInfo();
+
     ConnectionStatus GetConnectionStatus() const;
 
     void SyncAll();

@@ -36,6 +36,9 @@ public:
     void OnEndFrame() override;
     
     virtual void OnRenderDebug();
+
+    /// draw imgui network debug information for the active multiplayer feature
+    static void DrawNetworkDebugInfo();
     
     /// returns true if this instance is the server.
     bool IsServer() const;

@@ -16,6 +16,7 @@
 #include "flat/addons/multiplayer/standardprotocol.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
+#include "imgui.h"
 #include "steam/isteamnetworkingutils.h"
 #include "multiplayer/multiplayerfeatureunit.h"
 #include "serverprocessors.h"
@@ -177,6 +178,27 @@ BaseMultiplayerServer::Broadcast(void* buf, int size)
     
     int64* outMessageNumberOrResult = nullptr;
     this->netInterface->SendMessages(numClients, netMsgs, outMessageNumberOrResult);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerServer::DrawNetworkDebugInfo()
+{
+    ImGui::Text("Server");
+    ImGui::Text("Clients: %i", this->clientConnections.Size());
+    auto it = this->clientConnections.Begin();
+    while (it != this->clientConnections.End())
+    {
+        ClientConnection* connection = *(it.val);
+        if (ImGui::TreeNode((void*)connection, "Client %u", connection->GetConnectionId()))
+        {
+            connection->DrawNetworkDebugInfo();
+            ImGui::TreePop();
+        }
+        it++;
+    }
 }
 
 //--------------------------------------------------------------------------

@@ -25,6 +25,7 @@ __ImplementSingleton(MultiplayerFeatureUnit);
 
 SteamNetworkingMicroseconds logTimeZero;
 
+Core::CVar* net_debug                       = Core::CVarCreate(Core::CVarType::CVar_Int, "net_debug", "0", "Enable net debugger window");
 Core::CVar* net_fake_packet_lag_send        = Core::CVarCreate(Core::CVarType::CVar_Int, "net_fake_packet_lag_send",        "0", "Delay all outbound packets by N ms");
 Core::CVar* net_fake_packet_lag_recv        = Core::CVarCreate(Core::CVarType::CVar_Int, "net_fake_packet_lag_recv",        "0", "Delay all inbound packets by N ms");
 Core::CVar* net_fake_packet_loss_send       = Core::CVarCreate(Core::CVarType::CVar_Int, "net_fake_packet_loss_send",       "0", "[0--100] Randomly discard N percent of packets sent");
@@ -280,6 +281,40 @@ void
 MultiplayerFeatureUnit::OnRenderDebug()
 {
     Game::FeatureUnit::OnRenderDebug();
+
+    bool debug = Core::CVarReadInt(net_debug);
+    if (debug)
+    {
+        ImGui::Begin("Network Debugger", &debug);
+        MultiplayerFeatureUnit::DrawNetworkDebugInfo();
+        ImGui::End();
+
+        if (!debug)
+        {
+            Core::CVarWriteInt(net_debug, 0);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MultiplayerFeatureUnit::DrawNetworkDebugInfo()
+{
+    MultiplayerFeatureUnit* instance = MultiplayerFeatureUnit::Instance();
+    if (instance->server != nullptr && instance->server->IsOpen())
+    {
+        instance->server->DrawNetworkDebugInfo();
+    }
+    if (instance->client != nullptr && instance->client->IsOpen())
+    {
+        instance->client->DrawNetworkDebugInfo();
+    }
+    if (instance->server == nullptr && instance->client == nullptr)
+    {
+        ImGui::Text("No multiplayer server or client active.");
+    }
 }
 
 } // namespace Scripting

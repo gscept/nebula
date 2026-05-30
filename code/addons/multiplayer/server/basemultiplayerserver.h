@@ -29,6 +29,8 @@ public:
     virtual void Close();
     /// return true if server is open
     bool IsOpen() const;
+    /// draw imgui network debug information
+    void DrawNetworkDebugInfo();
     /// broadcast message to all clients
     void Broadcast(void* buf, int size);
 
