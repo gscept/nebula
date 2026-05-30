@@ -25,8 +25,8 @@ jobs:
           - name: windows-latest
             os: windows-2025-vs2026
             config: win64-vstudio-debug
-            physx: vc17
-            physxkey: vc17
+            physx: vc18
+            physxkey: vc18
             gpulang: win64
           - name: ubuntu-24.04
             os: ubuntu-24.04
