@@ -146,6 +146,24 @@ CreateStream(const IO::URI& uri)
 //------------------------------------------------------------------------------
 /**
 */
+inline bool
+CreateDirectory(const IO::URI& uri)
+{
+    return IoServer::Instance()->CreateDirectory(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+FileExists(const IO::URI& uri)
+{
+    return IoServer::Instance()->FileExists(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
 {
