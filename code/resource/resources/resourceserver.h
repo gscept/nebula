@@ -461,6 +461,7 @@ ResourceServer::GetStreamLoader() const
 
 //------------------------------------------------------------------------------
 /**
+    TODO: Make templated with success and failed and use a custom allocator to capture the closure
 */
 inline Resources::ResourceId
 CreateResource(
@@ -477,6 +478,7 @@ CreateResource(
 
 //------------------------------------------------------------------------------
 /**
+    TODO: Make templated with success and failed and use a custom allocator to capture the closure
 */
 template <class METADATA>
 inline Resources::ResourceId
@@ -495,6 +497,7 @@ CreateResource(
 
 //------------------------------------------------------------------------------
 /**
+    TODO: Make templated with success and failed and use a custom allocator to capture the closure
 */
 inline void
 CreateResourceListener(
