@@ -12,6 +12,8 @@
 namespace ToolkitUtil
 {
 
+class SceneResourceT;
+class PhysicsResourceT;
 class N3Writer;
 class ModelAttributes;
 class ModelPhysics;
@@ -20,36 +22,23 @@ class SceneWriter
 {
 public:
 
-    /// uses FbxScene to write models
-    static void GenerateModels(
+    /// Output graphics model asset
+    static std::unique_ptr<SceneResourceT>&& GenerateGraphicsModel(
         const Util::String& basePath
-        , const IO::URI& modelFileDestination
         , const Scene* scene
         , const Platform::Code platform
         , const Util::Array<SceneNode*>& graphicsNodes
-        , const Util::Array<SceneNode*>& physicsNodes
-        , const Util::Array<SceneNode*>& characterNodes
         , const ToolkitUtil::ImportFlags& flags
     );
-private:
 
-    /// Create model
-    static void CreateModel(
-        const Util::String& file
-        , const Math::bbox globalBoundingBox
+    /// Output physics model asset
+    static std::unique_ptr<PhysicsResourceT>&& GeneratePhysicsModel(
+        const Util::String& basePath
         , const Scene* scene
-        , const Util::String& category
-        , const Util::Array<SceneNode*>& graphicsNodes
+        , const Platform::Code platform
         , const Util::Array<SceneNode*>& physicsNodes
-        , const Util::Array<SceneNode*>& characterNodes
+        , const ToolkitUtil::ImportFlags& flags
     );
-
-    /// convenience function for writing constants-files
-    static void UpdateConstants(const Util::String& file, const Ptr<ToolkitUtil::ModelConstants>& constants);
-    /// convenience function for writing attributes-files
-    static void UpdateAttributes(const Util::String& file, const Ptr<ToolkitUtil::ModelAttributes>& attributes);
-    /// convenience function for writing physics-files
-    static void UpdatePhysics(const Util::String& file, const Ptr<ToolkitUtil::ModelPhysics>& physics);
 };
 
 } // namespace ToolkitUtil

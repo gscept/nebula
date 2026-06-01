@@ -22,7 +22,7 @@ class AnimBuilderSaver
 {
 public:
     /// Save flatbuffers file
-    static bool SaveImport(const IO::URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
+    static std::unique_ptr<ToolkitUtil::AnimResourceT>&& PackImport(const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
     /// Save NAX3 file
     static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::AnimResourceT* resource, Platform::Code platform);
 private:

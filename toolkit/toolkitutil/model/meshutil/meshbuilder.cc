@@ -47,7 +47,7 @@ MeshBuilder::SetComponents(const MeshBuilderVertex::ComponentMask mask)
 /**
 */
 const MeshBuilderVertex::ComponentMask 
-MeshBuilder::GetComponents()
+MeshBuilder::GetComponents() const
 {
     return this->componentMask;
 }
@@ -65,7 +65,7 @@ MeshBuilder::SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& p
 /**
 */
 const CoreGraphics::PrimitiveTopology::Code&
-MeshBuilder::GetPrimitiveTopology()
+MeshBuilder::GetPrimitiveTopology() const
 {
     return this->topology;
 }

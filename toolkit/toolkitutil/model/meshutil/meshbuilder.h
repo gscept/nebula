@@ -34,7 +34,7 @@ public:
     /// Set component mask
     void SetComponents(const MeshBuilderVertex::ComponentMask mask);
     /// Get components
-    const MeshBuilderVertex::ComponentMask GetComponents();
+    const MeshBuilderVertex::ComponentMask GetComponents() const;
 
     /// add a vertex
     void AddVertex(const MeshBuilderVertex& v);
@@ -53,12 +53,12 @@ public:
     /// set primitive topology
     void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& p);
     /// get primitive topology
-    const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology();
+    const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology() const;
 
     /// Set groups
     void SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups);
     /// Get groups
-    const Util::Array<MeshBuilderGroup>& GetPrimitiveGroups();
+    const Util::Array<MeshBuilderGroup>& GetPrimitiveGroups() const;
     /// Clear primitive groups
     void ClearPrimitiveGroups();
 

@@ -20,7 +20,7 @@ class MeshBuilderSaver
 {
 public:
     /// Save flatbuffers mesh file
-    static bool SaveImport(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, Platform::Code platform);
+    static std::unique_ptr<ToolkitUtil::MeshResourceT>&& PackImport(const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform);
     /// Save binary mesh file
     static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::MeshResourceT* resource, Platform::Code platform);
 private:

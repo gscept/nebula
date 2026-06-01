@@ -18,7 +18,7 @@ class SkeletonBuilderSaver
 {
 public:
     /// save flatbuffesr skeleton file
-    static bool SaveImport(const IO::URI& uri, const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
+    static std::unique_ptr<SkeletonResourceT>&& PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
     /// Save binary mesh file
     static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::SkeletonResourceT* resource, Platform::Code platform);
 private:

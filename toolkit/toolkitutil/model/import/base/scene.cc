@@ -41,7 +41,7 @@ Scene::~Scene()
 //------------------------------------------------------------------------------
 /**
     Merge nodes based on two criteria. First criteria is vertex components. 
-    Each vertex component emits a new mesh builder to be exported in the NVX.
+    Each vertex component emits a new mesh builder to be exported in the namsh.
     Then, within each vertex component, emit a single node and primitive group per material.
 
     This will effectively merge together nodes of the same vertex component and material into a single draw.
@@ -49,7 +49,11 @@ Scene::~Scene()
     Caller takes ownership of the output meshes and has to delete them
 */
 void
-Scene::OptimizeGraphics(ToolkitUtil::Logger* logger, Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilder*>& outMeshes)
+Scene::OptimizeGraphics(
+    ToolkitUtil::Logger* logger
+    , Util::Array<SceneNode*>& outMeshNodes
+    , Util::Array<MeshBuilder*>& outMeshes
+)
 {
     // Bucket meshes based on components
     Util::Dictionary<MeshBuilderVertex::ComponentMask, Util::Array<SceneNode*>> nodesByComponents;
@@ -66,10 +70,6 @@ Scene::OptimizeGraphics(ToolkitUtil::Logger* logger, Util::Array<SceneNode*>& ou
                 }
                 nodesByComponents.Emplace(this->meshes[node.mesh.meshIndex].GetComponents()).Append(&node);
             }
-        }
-        else if (node.type == SceneNode::NodeType::Joint && (node.base.parent == nullptr || node.skeleton.isSkeletonRoot))
-        {
-            outCharacterNodes.Append(&node);
         }
     }
 
@@ -250,14 +250,13 @@ Scene::OptimizeGraphics(ToolkitUtil::Logger* logger, Util::Array<SceneNode*>& ou
 /**
 */
 void 
-Scene::OptimizePhysics(Util::Array<SceneNode*>& outNodes, MeshBuilder*& outMesh)
+Scene::OptimizePhysics(Util::Array<SceneNode*>& outNodes, Util::Array<MeshBuilder*>& outMeshes)
 {
-    MeshBuilder* mesh = new MeshBuilder;
     for (SceneNode& node : this->nodes)
     {
         if (node.mesh.material == "physics")
         {
-            mesh->Merge(this->meshes[node.mesh.meshIndex]);
+            outMeshes.Append(&this->meshes[node.mesh.meshIndex]);
         }
     }
 }

@@ -21,52 +21,28 @@ namespace ToolkitUtil
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-SkeletonBuilderSaver::SaveImport(const IO::URI& uri, const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform)
+std::unique_ptr<SkeletonResourceT>&&
+SkeletonBuilderSaver::PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform)
 {
-    // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
-
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
-    stream->SetAccessMode(Stream::WriteAccess);
-    if (stream->Open())
+    auto skeletons = std::make_unique<ToolkitUtil::SkeletonResourceT>();
+    for (auto& builder : skeletonBuilders)
     {
-        ToolkitUtil::SkeletonResourceT skeletons;
-        for (auto& builder : skeletonBuilders)
+        auto skeleton = std::make_unique<ToolkitUtil::SkeletonInstanceT>();
+        for (auto& joint : builder.joints)
         {
-            auto skeleton = std::make_unique<ToolkitUtil::SkeletonInstanceT>();
-            for (auto& joint : builder.joints)
-            {
-                auto jointT = std::make_unique<ToolkitUtil::JointInstanceT>();
-                jointT->bind = Math::transform::FromMat4(joint.bind);
-                jointT->translation = joint.translation;
-                jointT->scale = joint.scale;
-                jointT->rotation = joint.rotation;
-                jointT->name = joint.name;
-                jointT->index = joint.index;
-                jointT->parent = joint.parent;
-                skeleton->joints.push_back(std::move(jointT));
-            }
-            skeletons.skeletons.push_back(std::move(skeleton));
+            auto jointT = std::make_unique<ToolkitUtil::JointInstanceT>();
+            jointT->bind = Math::transform::FromMat4(joint.bind);
+            jointT->translation = joint.translation;
+            jointT->scale = joint.scale;
+            jointT->rotation = joint.rotation;
+            jointT->name = joint.name;
+            jointT->index = joint.index;
+            jointT->parent = joint.parent;
+            skeleton->joints.push_back(std::move(jointT));
         }
-
-        Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::SkeletonResource>(skeletons);
-        stream->Write(data.GetPtr(), data.Size());
-
-        //ByteOrder byteOrder(ByteOrder::Host, Platform::GetPlatformByteOrder(platform));
-        //SkeletonBuilderSaver::WriteHeader(stream, skeletonBuilders, byteOrder);
-        //SkeletonBuilderSaver::WriteSkeletons(stream, skeletonBuilders, byteOrder);
-        //SkeletonBuilderSaver::WriteJoints(stream, skeletonBuilders, byteOrder);
-
-        stream->Close();
-        stream = nullptr;
-        return true;
+        skeletons->skeletons.push_back(std::move(skeleton));
     }
-    else
-    {
-        // failed to open write stream
-        return false;
-    }
+    return std::move(skeletons);
 }
 
 //------------------------------------------------------------------------------

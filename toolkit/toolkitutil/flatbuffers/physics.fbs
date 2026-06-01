@@ -1,0 +1,59 @@
+//------------------------------------------------------------------------------
+//
+//    Model import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+enum ColliderType : byte
+{
+	Box = 0,
+	Sphere = 1,
+	Capsule = 2,
+	Mesh = 3,
+	HeightField = 4
+}
+
+table PhysicsResource
+{
+	name : string;
+	bbox_min : Flat.Vec3 (native_inline);
+	bbox_max : Flat.Vec3 (native_inline);
+	nodes : [PhysicsNode];
+	skins : [PhysicsSkinFragmentNode];
+	scale_factor : float;
+	thumbnail: [ubyte];
+}
+
+table PhysicsTransformNodeInfo
+{
+	name : string;
+	translation : Flat.Vec3 (native_inline);
+	rotation : Flat.Quat (native_inline);
+	scale : Flat.Vec3 (native_inline);
+}
+
+table PhysicsNode
+{
+	transform : PhysicsTransformNodeInfo;
+	mesh_resource : string;
+	mesh_index : int;
+	is_render_mesh : bool; // If true, this mesh is originally used for rendering, so strides have to be calculated differently
+	material : string;
+	prim_group : ushort;
+	bbox_min : Flat.Vec3 (native_inline);
+	bbox_max : Flat.Vec3 (native_inline);
+	collider : ColliderType;
+}
+
+table PhysicsSkinFragmentNode
+{
+	shape : PhysicsNode;
+	joints : [int];
+}
+
+root_type PhysicsResource;
+file_identifier "PHYS";
+file_extension "naphy";

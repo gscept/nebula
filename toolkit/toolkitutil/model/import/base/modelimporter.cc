@@ -6,7 +6,12 @@
 #include "modelimporter.h"
 #include "io/filestream.h"
 #include "io/uri.h"
+#include "io/ioserver.h"
 #include "timing/timer.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
 
 #include "model/animutil/animbuildersaver.h"
 #include "model/skeletonutil/skeletonbuildersaver.h"
@@ -63,8 +68,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     // Reset all unique strings
     UniqueString::Reset();
 
-    outputFiles.Clear();
-
+    this->outputFiles.Clear();
     this->path = file;
     String localPath = file.GetHostAndLocalPath();
     if (!this->NeedsConversion(localPath))
@@ -105,86 +109,47 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
 
     // Merge meshes based on vertex component and material
     Util::Array<SceneNode*> mergedMeshNodes;
-    Util::Array<SceneNode*> mergedCharacterNodes;
     Util::Array<MeshBuilder*> mergedMeshes;
-    this->scene->OptimizeGraphics(this->logger, mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
+    this->scene->OptimizeGraphics(this->logger, mergedMeshNodes, mergedMeshes);
+
+    // get physics mesh
+    Util::Array<SceneNode*> physicsNodes;
+    Util::Array<MeshBuilder*> physicsMeshes;
+    MeshBuilderGroup group;
+    scene->OptimizePhysics(physicsNodes, physicsMeshes);
 
     Util::String assetPath = IO::URI("src:assets").LocalPath();
     Util::String relativePath = file.LocalPath().StripSubstring(assetPath);
     relativePath.StripFileExtension();
     IO::URI destinationFiles[] =
     {
-        IO::URI(String::Sprintf("%s/%s.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // mesh
-        , IO::URI(String::Sprintf("%s/%s_ph.namsh", this->folder.AsCharPtr(), this->file.AsCharPtr())) // physics
-        , IO::URI(String::Sprintf("%s/%s.naani", this->folder.AsCharPtr(), this->file.AsCharPtr())) // animation
-        , IO::URI(String::Sprintf("%s/%s.naske", this->folder.AsCharPtr(), this->file.AsCharPtr())) // skeleton
-        , IO::URI(String::Sprintf("%s/%s.namdl", this->folder.AsCharPtr(), this->file.AsCharPtr())) // model
+        IO::URI(String::Sprintf("msh:%s/%s.nvx", this->folder.AsCharPtr(), this->file.AsCharPtr())) // mesh
+        , IO::URI(String::Sprintf("ani:%s/%s.nax", this->folder.AsCharPtr(), this->file.AsCharPtr())) // animation
+        , IO::URI(String::Sprintf("ske:%s/%s.nsk", this->folder.AsCharPtr(), this->file.AsCharPtr())) // skeleton
+        , IO::URI(String::Sprintf("mdl:%s/%s.n3", this->folder.AsCharPtr(), this->file.AsCharPtr())) // model
+        , IO::URI(String::Sprintf("physics:%s/%s.actor", this->folder.AsCharPtr(), this->file.AsCharPtr())) // physics
     };
 
     enum DestinationFile
     {
         Mesh
-        , Physics
         , Animation
         , Skeleton
         , Model
+        , Physics
     };
 
-    // save mesh to file
-    if (!MeshBuilderSaver::SaveImport(destinationFiles[DestinationFile::Mesh], mergedMeshes, this->platform))
+    ToolkitUtil::ModelAssetT modelAsset;
+
+    if (mergedMeshes.Size() > 0)
     {
-        this->logger->Error("Failed to save mesh file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
-    }
-    else
-    {
+        // save mesh to file
+        modelAsset.mesh = MeshBuilderSaver::PackImport(mergedMeshes, physicsMeshes, this->platform);
         this->UpdateResourceMapping("urn:msh:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Mesh].LocalPath());
-        outputFiles.Append(destinationFiles[DestinationFile::Mesh]);
-    }
-    
-
-    // Delete merged meshes after export
-    for (auto mesh : mergedMeshes)
-        delete mesh;
-
-    timer.Stop();
-
-    // print info
-    this->logger->Print("%s %s\n", Format("Generated mesh: %s", Text(destinationFiles[DestinationFile::Mesh].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
-
-    // get physics mesh
-    Util::Array<SceneNode*> physicsNodes;
-    MeshBuilder* physicsMesh = nullptr;
-    MeshBuilderGroup group;
-    scene->OptimizePhysics(physicsNodes, physicsMesh);
-
-    // only save physics mesh if it exists
-    if (physicsMesh && physicsMesh->GetNumTriangles() > 0)
-    {
-        timer.Reset();
-        timer.Start();
-
-        // save mesh
-        if (!MeshBuilderSaver::SaveImport(destinationFiles[DestinationFile::Physics], { physicsMesh }, this->platform))
-        {
-            this->logger->Error("Failed to save physics mesh file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
-        }
-        else
-        {
-            this->UpdateResourceMapping("urn:phy:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Physics].LocalPath());
-            outputFiles.Append(destinationFiles[DestinationFile::Physics]);
-        }
-
-        timer.Stop();
-
-        // print info
-        this->logger->Print("%s %s\n", Format("Generated physics: %s", Text(destinationFiles[DestinationFile::Physics].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
     }
 
     if (this->scene->animations.Size() > 0)
     {
-        timer.Reset();
-        timer.Start();
-
         // Cleanup animations
         for (auto& anim : this->scene->animations)
         {
@@ -192,60 +157,87 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         }
 
         // now save actual animation
-        if (!AnimBuilderSaver::SaveImport(destinationFiles[DestinationFile::Animation], this->scene->animations, this->platform))
-        {
-            this->logger->Error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].LocalPath().AsCharPtr());
-        }
-        else
-        {
-            this->UpdateResourceMapping("urn:ani:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Animation].LocalPath());
-            outputFiles.Append(destinationFiles[DestinationFile::Animation]);
-        }
-
-        timer.Stop();
-        this->logger->Print("%s %s\n", Format("Generated animation: %s", Text(destinationFiles[DestinationFile::Animation].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+        modelAsset.animation = AnimBuilderSaver::PackImport(this->scene->animations, this->platform);
+        this->UpdateResourceMapping("urn:ani:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Animation].LocalPath());
     }
 
     if (this->scene->skeletons.Size() > 0)
     {
-        timer.Reset();
-        timer.Start();
-
-        if (!SkeletonBuilderSaver::SaveImport(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
-        {
-            this->logger->Error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].LocalPath().AsCharPtr());
-        }
-        else
-        {
-            this->UpdateResourceMapping("urn:ske:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Skeleton].LocalPath());
-            outputFiles.Append(destinationFiles[DestinationFile::Skeleton]);
-        }
-
-        timer.Stop(); 
-        this->logger->Print("%s %s\n", Format("Generated skeleton: %s", Text(destinationFiles[DestinationFile::Skeleton].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+        modelAsset.skeleton = SkeletonBuilderSaver::PackImport(this->scene->skeletons, this->platform);
+        this->UpdateResourceMapping("urn:ske:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Skeleton].LocalPath());
     }
 
     // Finally, output model hierarchy to n3
     timer.Reset();
     timer.Start();
-    SceneWriter::GenerateModels(
+
+    // Save model file, potentially destructive as model might have material assigned
+    if (IO::FileExists(destinationFiles[DestinationFile::Model]))
+    {
+        if (importFlags & ImportFlags::ReplaceExistingMesh)
+        {
+            modelAsset.scene = SceneWriter::GenerateGraphicsModel(
+                this->folder
+                , this->scene
+                , this->platform
+                , mergedMeshNodes
+                , importFlags
+            );
+            this->UpdateResourceMapping("urn:mdl:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Model].LocalPath());
+        }
+    }
+    else
+    {
+        modelAsset.scene = SceneWriter::GenerateGraphicsModel(
+            this->folder
+            , this->scene
+            , this->platform
+            , mergedMeshNodes
+            , importFlags
+        );
+        this->UpdateResourceMapping("urn:mdl:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Model].LocalPath());
+    }
+
+    modelAsset.physics = SceneWriter::GeneratePhysicsModel(
         this->folder
-        , destinationFiles[DestinationFile::Model]
         , this->scene
         , this->platform
-        , mergedMeshNodes
         , physicsNodes
-        , mergedCharacterNodes
         , importFlags
     );
+    this->UpdateResourceMapping("urn:physics:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Physics].LocalPath());
     timer.Stop();
-    this->logger->Print("%s %s\n", Format("Generated model: %s", Text(destinationFiles[DestinationFile::Model].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
 
-    totalTime.Stop();
-    this->logger->Unindent();
-    this->logger->Print("%s %s\n\n", "Done"_text.Color(TextColor::Green).Style(FontMode::Bold).AsCharPtr(), Format("(%.2f ms)", totalTime.GetTime() * 1000).AsCharPtr());
+    auto outputAssetPath = IO::URI(String::Sprintf("%s/%s.nasset", this->folder.AsCharPtr(), this->file.AsCharPtr()));
+    IO::CreateDirectory(outputAssetPath.LocalPath().ExtractDirName());
+    Ptr<IO::Stream> stream = IO::CreateStream(outputAssetPath);
+    stream->SetAccessMode(IO::Stream::WriteAccess);
+    if (stream->Open())
+    {
+        this->logger->Print("%s %s\n", Format("Generated asset: %s", Text(outputAssetPath.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+
+        Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::ModelAsset>(modelAsset);
+        stream->Write(data.GetPtr(), data.Size());
+        stream->Close();
+
+        totalTime.Stop();
+        this->logger->Unindent();
+        this->logger->Print("%s %s\n\n", "Done"_text.Color(TextColor::Green).Style(FontMode::Bold).AsCharPtr(), Format("(%.2f ms)", totalTime.GetTime() * 1000).AsCharPtr());
+
+        this->outputFiles.Append(outputAssetPath);
+    }
+    else
+    {
+        this->logger->Print("%s %s\n", Format("Failed to create: %s", Text(outputAssetPath.LocalPath()).Color(TextColor::Red).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    }
+
 
     delete this->scene;
+
+    // Delete merged meshes after export
+    for (auto mesh : mergedMeshes)
+        delete mesh;
+
     this->scene = nullptr;
 }
 

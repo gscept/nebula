@@ -1,12 +1,15 @@
 //------------------------------------------------------------------------------
 //
-//    Model import type
+//    Model import type, root of mesh, scene, anim, skeleton and physics
 //
 //    (C) 2026 Individual contributors, see AUTHORS file
 include "foundation/math.fbs";
-
+include "scene.fbs";
+include "mesh.fbs";
+include "skeleton.fbs";
+include "anim.fbs";
+include "physics.fbs";
 namespace ToolkitUtil;
-
 
 enum OptimizationFlags : uint
 {
@@ -19,104 +22,16 @@ enum OptimizationFlags : uint
 	MergeNodesWithSharedMaterial = 0x20
 }
 
-table ModelResource
+table ModelAsset
 {
-	name : string;
-	bbox_min : Flat.Vec3 (native_inline);
-	bbox_max : Flat.Vec3 (native_inline);
-	shapes : [ShapeNode];
-	characters : [CharacterNode];
-	physics : [PhysicsNode];
-	skins : [SkinNode];
-	takes : [TakeInfo];
-	joint_masks : [JointMaskInfo];
-	scale_factor : float;
+	scene : SceneResource;
+	mesh : MeshResource;
+	skeleton : SkeletonResource;
+	animation : AnimResource;
+	physics : PhysicsResource;
 	flags : OptimizationFlags;
-	thumbnail: [ubyte];
 }
 
-table TransformNodeInfo
-{
-	name : string;
-	translation : Flat.Vec3 (native_inline);
-	rotation : Flat.Quat (native_inline);
-	scale : Flat.Vec3 (native_inline);
-}
-
-table ShapeNode
-{
-	transform : TransformNodeInfo;
-	mesh_resource : string;
-	mesh_index : int;
-	material : string;
-	prim_group : ushort;
-	lod_max : float;
-	lod_min : float;
-	use_lod : bool;
-	bbox_min : Flat.Vec3 (native_inline);
-	bbox_max : Flat.Vec3 (native_inline);
-}
-
-table CharacterNode
-{
-	name : string;
-	skeleton_resource : string;
-	skeleton_index : int;
-	animation_resource : string;
-	animation_index : int;
-}
-
-table PhysicsNode
-{
-	transform : TransformNodeInfo;
-	mesh_resource : string;
-	material : string;
-}
-
-table SkinFragmentNode
-{
-	transform : TransformNodeInfo;
-	shape : ShapeNode;
-	joints : [int];
-}
-
-table SkinNode
-{
-	fragments : [SkinFragmentNode];
-	shape : ShapeNode;
-}
-
-table ClipEventInfo
-{
-	type : int;
-	name : string;
-	category : string;
-	time : uint64;
-}
-
-table ClipInfo
-{
-	name: string;
-	start : int;
-	end : int;
-	pre_infinity : int;
-	post_infinity : int;
-	events : [ClipEventInfo];
-}
-
-table TakeInfo
-{
-	name : string;
-	clips : [ClipInfo];
-}
-
-table JointMaskInfo
-{
-	name : string;
-	weights : [float];
-}
-
-
-root_type ModelResource;
-file_identifier "MODE";
-file_extension "namdl";
+root_type ModelAsset;
+file_identifier "MOAS";
+file_extension "nasset";

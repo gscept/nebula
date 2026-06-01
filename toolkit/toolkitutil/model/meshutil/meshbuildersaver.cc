@@ -28,123 +28,113 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-MeshBuilderSaver::SaveImport(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, Platform::Code platform)
+std::unique_ptr<ToolkitUtil::MeshResourceT>&&
+MeshBuilderSaver::PackImport(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform)
 {
-    // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+    auto meshResource = std::make_unique<ToolkitUtil::MeshResourceT>();
 
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
-    stream->SetAccessMode(Stream::WriteAccess);
-    if (stream->Open())
+    auto meshSaver = [](const MeshBuilder* builder) -> std::unique_ptr<ToolkitUtil::MeshInstanceT>
     {
-        ToolkitUtil::MeshResourceT meshResource;
-        for (auto& builder : meshes)
+        auto mesh = std::make_unique<ToolkitUtil::MeshInstanceT>();
+        mesh->component_mask = builder->GetComponents();
+        mesh->topology = builder->GetPrimitiveTopology();
+        mesh->vertices.reserve(builder->vertices.size());
+        mesh->bounding_box = builder->ComputeBoundingBox();
+
+        CoreGraphics::VertexLayoutType layout = MeshBuilderVertex::GetVertexLayoutType(builder->GetComponents());
+        for (auto& vertex : builder->vertices)
         {
-            auto mesh = std::make_unique<ToolkitUtil::MeshInstanceT>();
-            mesh->component_mask = builder->GetComponents();
-            mesh->topology = builder->GetPrimitiveTopology();
-            mesh->vertices.reserve(builder->vertices.size());
-            mesh->bounding_box = builder->ComputeBoundingBox();
+            auto vertexT = std::make_unique<ToolkitUtil::MeshVertexT>();
+            vertexT->position = vertex.base.position;
+            vertexT->uv = vertex.base.uv;
 
-            CoreGraphics::VertexLayoutType layout = MeshBuilderVertex::GetVertexLayoutType(builder->GetComponents());
-            for (auto& vertex : builder->vertices)
+            switch (layout)
             {
-                auto vertexT = std::make_unique<ToolkitUtil::MeshVertexT>();
-                vertexT->position = vertex.base.position;
-                vertexT->uv = vertex.base.uv;
-
-                switch (layout)
+                case CoreGraphics::VertexLayoutType::Normal:
                 {
-                    case CoreGraphics::VertexLayoutType::Normal:
-                    {
-                        auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
-                        normalAttributes->normal = vertex.attributes.normal.normal;
-                        normalAttributes->tangent = vertex.attributes.normal.tangent;
-                        normalAttributes->sign = vertex.attributes.normal.sign;
-                        vertexT->normal_attributes = std::move(normalAttributes);
-                        break;
-                    }
-                    case CoreGraphics::VertexLayoutType::Colors:
-                    {
-                        auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
-                        normalAttributes->normal = vertex.attributes.normal.normal;
-                        normalAttributes->tangent = vertex.attributes.normal.tangent;
-                        normalAttributes->sign = vertex.attributes.normal.sign;
-
-                        auto colorAttributes = std::make_unique<ToolkitUtil::MeshColorAttributesT>();
-                        colorAttributes->normals = std::move(normalAttributes);
-                        colorAttributes->color = vertex.attributes.color.color;
-                        vertexT->color_attributes = std::move(colorAttributes);
-                        break;
-                    }
-                    case CoreGraphics::VertexLayoutType::SecondUV:
-                    {
-                        auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
-                        normalAttributes->normal = vertex.attributes.normal.normal;
-                        normalAttributes->tangent = vertex.attributes.normal.tangent;
-                        normalAttributes->sign = vertex.attributes.normal.sign;
-
-                        auto secondaryUvAttributes = std::make_unique<ToolkitUtil::MeshSecondaryUVAttributesT>();
-                        secondaryUvAttributes->normals = std::move(normalAttributes);
-                        secondaryUvAttributes->uv = vertex.attributes.secondUv.uv2;
-                        vertexT->secondary_uv_attributes = std::move(secondaryUvAttributes);
-                        break;
-                    }
-                    case CoreGraphics::VertexLayoutType::Skin:
-                    {
-                        auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
-                        normalAttributes->normal = vertex.attributes.normal.normal;
-                        normalAttributes->tangent = vertex.attributes.normal.tangent;
-                        normalAttributes->sign = vertex.attributes.normal.sign;
-
-                        auto skinAttributes = std::make_unique<ToolkitUtil::MeshSkinAttributesT>();
-                        skinAttributes->normals = std::move(normalAttributes);
-                        skinAttributes->weights = vertex.attributes.skin.weights;
-                        skinAttributes->indices = { vertex.attributes.skin.indices.x, vertex.attributes.skin.indices.y, vertex.attributes.skin.indices.z, vertex.attributes.skin.indices.w };
-                        vertexT->skin_attributes = std::move(skinAttributes);
-                        break;
-                    }
+                    auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
+                    normalAttributes->normal = vertex.attributes.normal.normal;
+                    normalAttributes->tangent = vertex.attributes.normal.tangent;
+                    normalAttributes->sign = vertex.attributes.normal.sign;
+                    vertexT->normal_attributes = std::move(normalAttributes);
+                    break;
                 }
-                mesh->vertices.push_back(std::move(vertexT));
-            }
-            mesh->triangles.reserve(builder->triangles.size());
-            for (auto& triangle : builder->triangles)
-            {
-                uint32_t indices[3] = 
+                case CoreGraphics::VertexLayoutType::Colors:
                 {
-                    static_cast<uint32_t>(triangle.GetVertexIndex(0)),
-                    static_cast<uint32_t>(triangle.GetVertexIndex(1)),
-                    static_cast<uint32_t>(triangle.GetVertexIndex(2))
-                };
-                auto triangleT = ToolkitUtil::MeshTriangle(indices);
-                mesh->triangles.push_back(std::move(triangleT));
+                    auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
+                    normalAttributes->normal = vertex.attributes.normal.normal;
+                    normalAttributes->tangent = vertex.attributes.normal.tangent;
+                    normalAttributes->sign = vertex.attributes.normal.sign;
+
+                    auto colorAttributes = std::make_unique<ToolkitUtil::MeshColorAttributesT>();
+                    colorAttributes->normals = std::move(normalAttributes);
+                    colorAttributes->color = vertex.attributes.color.color;
+                    vertexT->color_attributes = std::move(colorAttributes);
+                    break;
+                }
+                case CoreGraphics::VertexLayoutType::SecondUV:
+                {
+                    auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
+                    normalAttributes->normal = vertex.attributes.normal.normal;
+                    normalAttributes->tangent = vertex.attributes.normal.tangent;
+                    normalAttributes->sign = vertex.attributes.normal.sign;
+
+                    auto secondaryUvAttributes = std::make_unique<ToolkitUtil::MeshSecondaryUVAttributesT>();
+                    secondaryUvAttributes->normals = std::move(normalAttributes);
+                    secondaryUvAttributes->uv = vertex.attributes.secondUv.uv2;
+                    vertexT->secondary_uv_attributes = std::move(secondaryUvAttributes);
+                    break;
+                }
+                case CoreGraphics::VertexLayoutType::Skin:
+                {
+                    auto normalAttributes = std::make_unique<ToolkitUtil::MeshNormalAttributesT>();
+                    normalAttributes->normal = vertex.attributes.normal.normal;
+                    normalAttributes->tangent = vertex.attributes.normal.tangent;
+                    normalAttributes->sign = vertex.attributes.normal.sign;
+
+                    auto skinAttributes = std::make_unique<ToolkitUtil::MeshSkinAttributesT>();
+                    skinAttributes->normals = std::move(normalAttributes);
+                    skinAttributes->weights = vertex.attributes.skin.weights;
+                    skinAttributes->indices = { vertex.attributes.skin.indices.x, vertex.attributes.skin.indices.y, vertex.attributes.skin.indices.z, vertex.attributes.skin.indices.w };
+                    vertexT->skin_attributes = std::move(skinAttributes);
+                    break;
+                }
             }
-            mesh->groups.reserve(builder->groups.size());
-            for (auto& group : builder->groups)
-            {
-                Math::bbox bbox = builder->ComputeGroupBoundingBox(group);
-                auto groupT = std::make_unique<ToolkitUtil::MeshTriangleGroupT>();
-                groupT->bounding_box = bbox;
-                groupT->first_triangle = group.GetFirstTriangleIndex();
-                groupT->num_triangles = group.GetNumTriangles();
-                mesh->groups.push_back(std::move(groupT));
-            }
-            meshResource.meshes.push_back(std::move(mesh));
+            mesh->vertices.push_back(std::move(vertexT));
         }
-
-        Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::MeshResource>(meshResource);
-        stream->Write(data.GetPtr(), data.Size());
-
-        stream->Close();
-        stream = nullptr;
-        return true;
-    }
-    else
+        mesh->triangles.reserve(builder->triangles.size());
+        for (auto& triangle : builder->triangles)
+        {
+            uint32_t indices[3] =
+            {
+                static_cast<uint32_t>(triangle.GetVertexIndex(0)),
+                static_cast<uint32_t>(triangle.GetVertexIndex(1)),
+                static_cast<uint32_t>(triangle.GetVertexIndex(2))
+            };
+            auto triangleT = ToolkitUtil::MeshTriangle(indices);
+            mesh->triangles.push_back(std::move(triangleT));
+        }
+        mesh->groups.reserve(builder->groups.size());
+        for (auto& group : builder->groups)
+        {
+            Math::bbox bbox = builder->ComputeGroupBoundingBox(group);
+            auto groupT = std::make_unique<ToolkitUtil::MeshTriangleGroupT>();
+            groupT->bounding_box = bbox;
+            groupT->first_triangle = group.GetFirstTriangleIndex();
+            groupT->num_triangles = group.GetNumTriangles();
+            mesh->groups.push_back(std::move(groupT));
+        }
+        return mesh;
+    };
+    for (auto& builder : meshes)
     {
-        // failed to open write stream
-        return false;
+        meshResource->meshes.push_back(std::move(meshSaver(builder)));
     }
+    for (auto& builder : physicsMeshes)
+    {
+        meshResource->physics_meshes.push_back(std::move(meshSaver(builder)));
+    }
+    return std::move(meshResource);
 }
 
 //------------------------------------------------------------------------------

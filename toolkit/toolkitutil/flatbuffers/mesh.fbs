@@ -10,7 +10,7 @@ namespace ToolkitUtil;
 table MeshResource
 {
 	meshes: [MeshInstance];
-	thumbnail: [ubyte];
+	physics_meshes : [MeshInstance];
 }
 
 struct MeshTriangle
@@ -72,8 +72,3 @@ table MeshInstance
 	topology : int;			// CoreGraphics::PrimitiveTopology enum
 	component_mask : int;	// bitfield of MeshVertexComponent
 }
-
-
-root_type MeshResource;
-file_identifier "MESH";
-file_extension "namsh";

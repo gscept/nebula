@@ -23,64 +23,45 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-bool
-AnimBuilderSaver::SaveImport(const URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform)
+std::unique_ptr<ToolkitUtil::AnimResourceT>&&
+AnimBuilderSaver::PackImport(const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform)
 {
-    // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
-
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
-    stream->SetAccessMode(Stream::WriteAccess);
-    if (stream->Open())
+    auto anims = std::make_unique<ToolkitUtil::AnimResourceT>();
+    for (const auto& builder : animBuilders)
     {
-        ToolkitUtil::AnimResourceT anims;
-        for (const auto& builder : animBuilders)
+        auto anim = std::make_unique<ToolkitUtil::AnimInstanceT>();
+        anim->keys = { builder.keys.Begin(), builder.keys.End() };
+        anim->key_times = {builder.keyTimes.Begin(), builder.keyTimes.End()};
+
+        for (const auto& curve : builder.curves)
         {
-            auto anim = std::make_unique<ToolkitUtil::AnimInstanceT>();
-            anim->keys = { builder.keys.Begin(), builder.keys.End() };
-            anim->key_times = {builder.keyTimes.Begin(), builder.keyTimes.End()};
-
-            for (const auto& curve : builder.curves)
-            {
-                ToolkitUtil::AnimCurve curveT(curve.firstKeyOffset, curve.firstTimeOffset, curve.numKeys, curve.curveType, curve.preInfinityType, curve.postInfinityType);
-                anim->curves.push_back(std::move(curveT));
-            }
-            for (const auto& event : builder.events)
-            {
-                auto eventT = std::make_unique<ToolkitUtil::AnimEventT>();
-                eventT->name = event.name.AsString();
-                eventT->category = event.category.AsString();
-                eventT->time = event.time;
-                anim->events.push_back(std::move(eventT));
-            }
-            for (const auto& clip : builder.clips)
-            {
-                auto clipT = std::make_unique<ToolkitUtil::AnimClipT>();
-                clipT->name = clip.GetName().AsString();
-                clipT->first_curve_offset = clip.firstCurveOffset;
-                clipT->num_curves = clip.numCurves;
-                clipT->first_event_offset = clip.firstEventOffset;
-                clipT->num_events = clip.numEvents;
-                clipT->first_velocity_curve_offset = clip.firstVelocityCurveOffset;
-                clipT->num_velocity_curves = clip.numVelocityCurves;
-                clipT->duration = clip.duration;
-                anim->clips.push_back(std::move(clipT));
-            }
-            anims.animations.push_back(std::move(anim));
+            ToolkitUtil::AnimCurve curveT(curve.firstKeyOffset, curve.firstTimeOffset, curve.numKeys, curve.curveType, curve.preInfinityType, curve.postInfinityType);
+            anim->curves.push_back(std::move(curveT));
         }
-
-        Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::AnimResource>(anims);
-        stream->Write(data.GetPtr(), data.Size());
-
-        stream->Close();
-        stream = nullptr;
-        return true;
+        for (const auto& event : builder.events)
+        {
+            auto eventT = std::make_unique<ToolkitUtil::AnimEventT>();
+            eventT->name = event.name.AsString();
+            eventT->category = event.category.AsString();
+            eventT->time = event.time;
+            anim->events.push_back(std::move(eventT));
+        }
+        for (const auto& clip : builder.clips)
+        {
+            auto clipT = std::make_unique<ToolkitUtil::AnimClipT>();
+            clipT->name = clip.GetName().AsString();
+            clipT->first_curve_offset = clip.firstCurveOffset;
+            clipT->num_curves = clip.numCurves;
+            clipT->first_event_offset = clip.firstEventOffset;
+            clipT->num_events = clip.numEvents;
+            clipT->first_velocity_curve_offset = clip.firstVelocityCurveOffset;
+            clipT->num_velocity_curves = clip.numVelocityCurves;
+            clipT->duration = clip.duration;
+            anim->clips.push_back(std::move(clipT));
+        }
+        anims->animations.push_back(std::move(anim));
     }
-    else
-    {
-        // failed to open write stream
-        return false;
-    }
+    return std::move(anims);
 }
 
 //------------------------------------------------------------------------------

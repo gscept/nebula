@@ -220,6 +220,6 @@ ENDIF()
 
 
 	fips_dir(flatbuffers)
-		nebula_flatc(LOCAL anim.fbs audio.fbs material.fbs mesh.fbs model.fbs particle.fbs skeleton.fbs texture.fbs)
+		nebula_flatc(LOCAL anim.fbs audio.fbs material.fbs mesh.fbs model.fbs particle.fbs physics.fbs scene.fbs skeleton.fbs texture.fbs)
 
 fips_end_lib()
