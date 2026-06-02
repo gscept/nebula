@@ -9,21 +9,22 @@
 //------------------------------------------------------------------------------
 #include "toolkit-common/platform.h"
 #include "model/import/base/scene.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/scene.h"
+#include "flat/physics.h"
+
 namespace ToolkitUtil
 {
 
-class SceneResourceT;
-class PhysicsResourceT;
 class N3Writer;
-class ModelAttributes;
-class ModelPhysics;
-class ModelConstants;
 class SceneWriter
 {
 public:
 
     /// Output graphics model asset
-    static std::unique_ptr<SceneResourceT>&& GenerateGraphicsModel(
+    static std::unique_ptr<SceneResourceT> GenerateGraphicsModel(
         const Util::String& basePath
         , const Scene* scene
         , const Platform::Code platform
@@ -32,7 +33,7 @@ public:
     );
 
     /// Output physics model asset
-    static std::unique_ptr<PhysicsResourceT>&& GeneratePhysicsModel(
+    static std::unique_ptr<PhysicsResourceT> GeneratePhysicsModel(
         const Util::String& basePath
         , const Scene* scene
         , const Platform::Code platform

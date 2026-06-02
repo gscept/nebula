@@ -9,10 +9,6 @@
 #include "coregraphics/nvx3fileformatstructs.h"
 #include "io/ioserver.h"
 
-#include "nflatbuffer/flatbufferinterface.h"
-#include "nflatbuffer/nebula_flat.h"
-#include "flat/mesh.h"
-
 namespace ToolkitUtil
 {
 using namespace Util;
@@ -28,8 +24,8 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-std::unique_ptr<ToolkitUtil::MeshResourceT>&&
-MeshBuilderSaver::PackImport(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform)
+std::unique_ptr<ToolkitUtil::MeshResourceT>
+MeshBuilderSaver::PackImport(const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform)
 {
     auto meshResource = std::make_unique<ToolkitUtil::MeshResourceT>();
 
@@ -134,7 +130,7 @@ MeshBuilderSaver::PackImport(const IO::URI& uri, const Util::Array<MeshBuilder*>
     {
         meshResource->physics_meshes.push_back(std::move(meshSaver(builder)));
     }
-    return std::move(meshResource);
+    return meshResource;
 }
 
 //------------------------------------------------------------------------------

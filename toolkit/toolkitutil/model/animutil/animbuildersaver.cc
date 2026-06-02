@@ -8,9 +8,7 @@
 #include "io/ioserver.h"
 #include "coreanimation/naxfileformatstructs.h"
 
-#include "nflatbuffer/flatbufferinterface.h"
-#include "nflatbuffer/nebula_flat.h"
-#include "flat/anim.h"
+
 
 namespace ToolkitUtil
 {
@@ -23,7 +21,7 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-std::unique_ptr<ToolkitUtil::AnimResourceT>&&
+std::unique_ptr<ToolkitUtil::AnimResourceT>
 AnimBuilderSaver::PackImport(const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform)
 {
     auto anims = std::make_unique<ToolkitUtil::AnimResourceT>();
@@ -61,7 +59,7 @@ AnimBuilderSaver::PackImport(const Util::Array<AnimBuilder>& animBuilders, Platf
         }
         anims->animations.push_back(std::move(anim));
     }
-    return std::move(anims);
+    return anims;
 }
 
 //------------------------------------------------------------------------------

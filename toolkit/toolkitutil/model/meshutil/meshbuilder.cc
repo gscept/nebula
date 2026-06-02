@@ -83,7 +83,7 @@ MeshBuilder::SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups)
 /**
 */
 const Util::Array<MeshBuilderGroup>&
-MeshBuilder::GetPrimitiveGroups()
+MeshBuilder::GetPrimitiveGroups() const
 {
     return this->groups;
 }

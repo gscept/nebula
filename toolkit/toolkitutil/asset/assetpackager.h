@@ -15,7 +15,7 @@
 namespace ToolkitUtil
 {
 
-struct ModelResourceT;
+struct SceneResourceT;
 struct AnimResourceT;
 struct SkeletonResourceT;
 struct MeshResourceT;
@@ -28,7 +28,7 @@ class Logger;
 
 
 /// Package model from memory
-bool PackageModel(const ToolkitUtil::ModelResourceT* model, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
+bool PackageModel(const ToolkitUtil::SceneResourceT* model, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package animation from memory
 bool PackageAnimation(const ToolkitUtil::AnimResourceT* anim, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package skeleton from memory
@@ -46,14 +46,6 @@ bool PackageParticle(const ToolkitUtil::ParticleResourceT* par, const Util::Stri
 /// Package physics from memory
 bool PackagePhysics(const ToolkitUtil::PhysicsResourceT* phy, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 
-/// Package a model .namdl
-bool PackageModelFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
-/// Package an animation resource .naani
-bool PackageAnimationFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
-/// Package a skeleton resource .naske
-bool PackageSkeletonFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
-/// Package a mesh .namsh
-bool PackageMeshFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a texture .natex
 bool PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package an audio file .naaud
@@ -62,7 +54,5 @@ bool PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, Too
 bool PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package a particle .napat
 bool PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
-/// Package a physics .actor
-bool PackagePhysicsFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 
 }

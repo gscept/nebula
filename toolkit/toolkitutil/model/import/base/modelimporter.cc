@@ -121,31 +121,25 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     Util::String assetPath = IO::URI("src:assets").LocalPath();
     Util::String relativePath = file.LocalPath().StripSubstring(assetPath);
     relativePath.StripFileExtension();
-    IO::URI destinationFiles[] =
-    {
-        IO::URI(String::Sprintf("msh:%s/%s.nvx", this->folder.AsCharPtr(), this->file.AsCharPtr())) // mesh
-        , IO::URI(String::Sprintf("ani:%s/%s.nax", this->folder.AsCharPtr(), this->file.AsCharPtr())) // animation
-        , IO::URI(String::Sprintf("ske:%s/%s.nsk", this->folder.AsCharPtr(), this->file.AsCharPtr())) // skeleton
-        , IO::URI(String::Sprintf("mdl:%s/%s.n3", this->folder.AsCharPtr(), this->file.AsCharPtr())) // model
-        , IO::URI(String::Sprintf("physics:%s/%s.actor", this->folder.AsCharPtr(), this->file.AsCharPtr())) // physics
-    };
 
-    enum DestinationFile
-    {
-        Mesh
-        , Animation
-        , Skeleton
-        , Model
-        , Physics
-    };
-
+    auto outputAssetPath = IO::URI(String::Sprintf("%s/%s.nasset", this->folder.AsCharPtr(), this->file.AsCharPtr()));
     ToolkitUtil::ModelAssetT modelAsset;
+
+    // If the file exists, load back the old file
+    Ptr<IO::Stream> stream = IO::CreateStream(outputAssetPath);
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        const void* data = stream->MemoryMap();
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ModelAsset>(modelAsset, (const uint8_t*)data);
+
+        stream->Close();
+    }
 
     if (mergedMeshes.Size() > 0)
     {
         // save mesh to file
         modelAsset.mesh = MeshBuilderSaver::PackImport(mergedMeshes, physicsMeshes, this->platform);
-        this->UpdateResourceMapping("urn:msh:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Mesh].LocalPath());
     }
 
     if (this->scene->animations.Size() > 0)
@@ -158,13 +152,11 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
 
         // now save actual animation
         modelAsset.animation = AnimBuilderSaver::PackImport(this->scene->animations, this->platform);
-        this->UpdateResourceMapping("urn:ani:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Animation].LocalPath());
     }
 
     if (this->scene->skeletons.Size() > 0)
     {
         modelAsset.skeleton = SkeletonBuilderSaver::PackImport(this->scene->skeletons, this->platform);
-        this->UpdateResourceMapping("urn:ske:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Skeleton].LocalPath());
     }
 
     // Finally, output model hierarchy to n3
@@ -172,7 +164,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     timer.Start();
 
     // Save model file, potentially destructive as model might have material assigned
-    if (IO::FileExists(destinationFiles[DestinationFile::Model]))
+    if (IO::FileExists(outputAssetPath))
     {
         if (importFlags & ImportFlags::ReplaceExistingMesh)
         {
@@ -183,7 +175,6 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
                 , mergedMeshNodes
                 , importFlags
             );
-            this->UpdateResourceMapping("urn:mdl:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Model].LocalPath());
         }
     }
     else
@@ -195,7 +186,6 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
             , mergedMeshNodes
             , importFlags
         );
-        this->UpdateResourceMapping("urn:mdl:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Model].LocalPath());
     }
 
     modelAsset.physics = SceneWriter::GeneratePhysicsModel(
@@ -205,12 +195,10 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         , physicsNodes
         , importFlags
     );
-    this->UpdateResourceMapping("urn:physics:" + relativePath + "/" + this->file, file.LocalPath(), destinationFiles[DestinationFile::Physics].LocalPath());
     timer.Stop();
 
-    auto outputAssetPath = IO::URI(String::Sprintf("%s/%s.nasset", this->folder.AsCharPtr(), this->file.AsCharPtr()));
     IO::CreateDirectory(outputAssetPath.LocalPath().ExtractDirName());
-    Ptr<IO::Stream> stream = IO::CreateStream(outputAssetPath);
+    stream = IO::CreateStream(outputAssetPath);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
     {

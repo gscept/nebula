@@ -229,14 +229,10 @@ AssetBatcherApp::DoWork()
         packageMode = (AssetBatchProcessor::PackageModes)0;
         Util::String exportMode = this->args.GetString("-package_mode");
         Util::Array<Util::String> modeFlags = exportMode.Tokenize(",");
-        if (modeFlags.Find("meshes")) packageMode |= AssetBatchProcessor::PackageModes::Meshes;
-        if (modeFlags.Find("models")) packageMode |= AssetBatchProcessor::PackageModes::Models;
+        if (modeFlags.Find("assets")) packageMode |= AssetBatchProcessor::PackageModes::Assets;
         if (modeFlags.Find("surfaces")) packageMode |= AssetBatchProcessor::PackageModes::Materials;
         if (modeFlags.Find("particles")) packageMode |= AssetBatchProcessor::PackageModes::Particles;
-        if (modeFlags.Find("animations")) packageMode |= AssetBatchProcessor::PackageModes::Animations;
-        if (modeFlags.Find("skeletons")) packageMode |= AssetBatchProcessor::PackageModes::Skeletons;
         if (modeFlags.Find("textures")) packageMode |= AssetBatchProcessor::PackageModes::Textures;
-        if (modeFlags.Find("physics")) packageMode |= AssetBatchProcessor::PackageModes::Physics;
         if (modeFlags.Find("audio")) packageMode |= AssetBatchProcessor::PackageModes::Audio;
     }
 

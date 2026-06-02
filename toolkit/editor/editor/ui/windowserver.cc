@@ -74,6 +74,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
         bool importSecondaryUVs = 1;
         bool calculateTangents = 0;
         bool calculateRigidSkin = 0;
+        bool replaceExistingMesh = 0;
         int scale = 1; // 0 means cm, 1 means m, 2 means km
     };
 
@@ -374,6 +375,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
 
             ImGui::PopStyleVar();
 
+            ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
             ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
             ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
             ImGui::Checkbox("Flip UVs", &settings.flipUVs);
@@ -389,6 +391,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
             if (ImGui::Button(saveButton.AsCharPtr()))
             {
                 uint flags = 0x0;
+                flags |= settings.replaceExistingMesh ? ToolkitUtil::ImportFlags::ReplaceExistingMesh : ToolkitUtil::ImportFlags::None;
                 flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
                 flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
                 flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;
@@ -461,6 +464,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
 
             ImGui::PopStyleVar();
 
+            ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
             ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
             ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
             ImGui::Checkbox("Flip UVs", &settings.flipUVs);
@@ -476,6 +480,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
             if (ImGui::Button(saveButton.AsCharPtr()))
             {
                 uint flags = 0x0;
+                flags |= settings.replaceExistingMesh ? ToolkitUtil::ImportFlags::ReplaceExistingMesh : ToolkitUtil::ImportFlags::None;
                 flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
                 flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
                 flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;

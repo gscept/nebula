@@ -887,42 +887,42 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     ext.ToLower();
     
     // Model files
-    if (ext == "n3")
+    if (ext == "namdl")
     {
         return ToolkitUtil::FileType::Model;
     }
 
-    if (ext == "nvx2" || ext == "nvx")
+    if (ext == "namsh")
     {
         return ToolkitUtil::FileType::Mesh;
     }
     
     // Texture files
-    if (ext == "dds" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "tga" || ext == "bmp")
+    if (ext == "natex")
     {
         return ToolkitUtil::FileType::Texture;
     }
     
     // Surface/Material files
-    if (ext == "sur" || ext == "material")
+    if (ext == "namat")
     {
         return ToolkitUtil::FileType::Surface;
     }
     
     // Audio files
-    if (ext == "ogg" || ext == "wav" || ext == "mp3" || ext == "flac")
+    if (ext == "naaud")
     {
         return ToolkitUtil::FileType::Audio;
     }
     
     // Skeleton files
-    if (ext == "nsk")
+    if (ext == "naske")
     {
         return ToolkitUtil::FileType::Skeleton;
     }
     
     // Animation files
-    if (ext == "nax")
+    if (ext == "naani")
     {
         return ToolkitUtil::FileType::Animation;
     }
@@ -952,7 +952,7 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     }
 
     // Particle files
-    if (ext == "par")
+    if (ext == "napar")
     {
         return ToolkitUtil::FileType::Particle;
     }

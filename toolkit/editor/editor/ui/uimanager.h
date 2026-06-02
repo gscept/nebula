@@ -30,21 +30,4 @@ private:
     static const char* editorUIPath;
 };
 
-namespace UI
-{
-namespace Icons
-{
-
-typedef uint64_t texturehandle_t;
-
-extern texturehandle_t play;
-extern texturehandle_t pause;
-extern texturehandle_t stop;
-extern texturehandle_t game;
-extern texturehandle_t environment;
-extern texturehandle_t light;
-
-}
-}
-
 } // namespace Editor

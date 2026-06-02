@@ -8,11 +8,15 @@
 
 #include "nflatbuffer/flatbufferinterface.h"
 #include "nflatbuffer/nebula_flat.h"
+#include "flat/audio.h"
 #include "flat/mesh.h"
 #include "flat/model.h"
+#include "flat/material.h"
 #include "flat/skeleton.h"
+#include "flat/particle.h"
 #include "flat/anim.h"
 #include "flat/texture.h"
+#include "flat/physics/actor.h"
 
 #include "model/meshutil/meshbuildersaver.h"
 #include "model/skeletonutil/skeletonbuildersaver.h"
@@ -30,7 +34,7 @@ namespace ToolkitUtil
 */
 bool
 PackageModel(
-    const ToolkitUtil::ModelResourceT* model,
+    const ToolkitUtil::SceneResourceT* model,
     const Util::String& fileName,
     const IO::URI& destinationFolder,
     ToolkitUtil::Platform::Code platform,
@@ -94,6 +98,60 @@ PackageModel(
         // begin model
         writer->BeginModel("Model", 'MODL', model->name);
 
+        // write number of masks
+        writer->BeginTag("Number of masks", 'NJMS');
+        writer->WriteInt((uint)model->joint_masks.size());
+        writer->EndTag();
+
+        // write joint mask
+        for (const auto& jointMask : model->joint_masks)
+        {
+            writer->BeginTag("Joint mask", 'JOMS');
+            writer->WriteString(jointMask->name);
+            writer->WriteInt((uint)jointMask->weights.size());
+            for (const auto weight : jointMask->weights)
+            {
+                writer->WriteFloat(weight);
+            }
+            writer->EndTag();
+        }
+
+        writer->BeginTag("Number of takes", 'NTKS');
+        writer->WriteInt((uint)model->takes.size());
+        writer->EndTag();
+
+        // write take info
+        for (const auto& take : model->takes)
+        {
+            writer->BeginTag("Number of clips", 'NTCL');
+            writer->WriteInt((uint)take->clips.size());
+            writer->EndTag();
+
+            for (const auto& clip : take->clips)
+            {
+                writer->BeginTag("Clip info", 'CLIP');
+                writer->WriteString(clip->name);
+                writer->WriteFloat(clip->start);
+                writer->WriteFloat(clip->end);
+                writer->WriteInt(clip->pre_infinity);
+                writer->WriteInt(clip->post_infinity);
+
+                // write events
+                writer->BeginTag("Number of clip events", 'NCEV');
+                writer->WriteInt((uint)clip->events.size());
+                writer->EndTag();
+
+                for (const auto& event : clip->events)
+                {
+                    writer->BeginTag("Clip event", 'CEVT');
+                    writer->WriteString(event->name);
+                    writer->WriteFloat(event->time);
+                    writer->EndTag();
+                }
+                writer->EndTag();
+            }
+        }
+
         writer->BeginModelNode("TransformNode", 'TRFN', "root");
 
             writer->BeginTag("Scene Bounding Box", 'LBOX');
@@ -103,44 +161,15 @@ PackageModel(
 
             writer->EndTag();
 
-            // Write characters
-            if (model->characters.size() > 0)
+            if (model->skins.size() > 0)
             {
-                const auto& jointMasks = model->joint_masks;
-                if (jointMasks.size() > 0)
-                {
-                    // write number of masks
-                    writer->BeginTag("Number of masks", 'NJMS');
-                    writer->WriteInt((uint)jointMasks.size());
-                    writer->EndTag();
-
-                    // write joint mask
-                    for (const auto& jointMask : jointMasks)
-                    {
-                        writer->BeginTag("Joint mask", 'JOMS');
-                        writer->WriteString(jointMask->name);
-                        writer->WriteInt((uint)jointMask->weights.size());
-                        for (const auto weight : jointMask->weights)
-                        {
-                            writer->WriteFloat(weight);
-                        }
-                        writer->EndTag();
-                    }
-                }
-            }
-
-            // Write skins
-            for (const auto& skinSet : model->skins)
-            {
-                // get name of skin
-                const Util::String& name = skinSet->shape->transform->name;
-
-                writer->BeginModelNode("CharacterSkinNode", 'CHSN', name);
+                writer->BeginModelNode("CharacterSkinNode", 'CHSN', "character");
                 writer->BeginTag("Number of skin fragments", 'NSKF');
-                writer->WriteInt((uint)skinSet->fragments.size());
+                writer->WriteInt((uint)model->skins.size());
                 writer->EndTag();
 
-                for (const auto& skinFragment : skinSet->fragments)
+                // Write skins
+                for (const auto& skinFragment : model->skins)
                 {
                     // write the used skin fragments
                     writer->BeginTag("Used skin fragments", 'SFRG');
@@ -196,6 +225,9 @@ PackageModel(
         writer->Close();
 
         modelStream->Close();
+
+        logger->Print("%s\n", Util::Format("Packaged model: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+
         return true;
     }
     return false;
@@ -363,107 +395,13 @@ PackagePhysics(
 /**
 */
 bool 
-PackageModelFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
-{
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
-    {
-        IO::Stream::Size size = stream->GetSize();
-        const void* data = stream->MemoryMap();
-
-        ToolkitUtil::ModelResourceT model;
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ModelResource>(model, (const uint8_t*)data);
-
-        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
-        fileNameNoExt.StripFileExtension();
-        return PackageModel(&model, fileNameNoExt, destinationFolder, platform, logger);
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-PackageAnimationFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
-{
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
-    {
-        IO::Stream::Size size = stream->GetSize();
-        const void* data = stream->MemoryMap();
-
-        ToolkitUtil::AnimResourceT anim;
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::AnimResource>(anim, (const uint8_t*)data);
-
-        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
-        fileNameNoExt.StripFileExtension();
-        return PackageAnimation(&anim, fileNameNoExt, destinationFolder, platform, logger);
-
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-PackageSkeletonFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
-{
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
-    {
-        IO::Stream::Size size = stream->GetSize();
-        const void* data = stream->MemoryMap();
-
-        ToolkitUtil::SkeletonResourceT skeleton;
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::SkeletonResource>(skeleton, (const uint8_t*)data);
-
-        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
-        fileNameNoExt.StripFileExtension();
-
-        return PackageSkeleton(&skeleton, fileNameNoExt, destinationFolder, platform, logger);
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-PackageMeshFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
-{
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
-    {
-        IO::Stream::Size size = stream->GetSize();
-        const void* data = stream->MemoryMap();
-
-        ToolkitUtil::MeshResourceT mesh;
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MeshResource>(mesh, (const uint8_t*)data);
-
-        Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
-        fileNameNoExt.StripFileExtension();
-
-        return PackageMesh(&mesh, fileNameNoExt, destinationFolder, platform, logger);
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
 PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
+        IO::CreateDirectory(destinationFolder);
         IO::Stream::Size size = stream->GetSize();
         const void* data = stream->MemoryMap();
 
@@ -485,6 +423,18 @@ PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, Toolki
 bool 
 PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        IO::CreateDirectory(destinationFolder);
+        IO::Stream::Size size = stream->GetSize();
+        const void* data = stream->MemoryMap();
+
+        ToolkitUtil::AudioResourceT aud;
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::AudioResource>(aud, (const uint8_t*)data);
+        return true;
+    }
     return false;
 }
 
@@ -494,6 +444,18 @@ PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitU
 bool 
 PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        IO::CreateDirectory(destinationFolder);
+        IO::Stream::Size size = stream->GetSize();
+        const void* data = stream->MemoryMap();
+
+        ToolkitUtil::MaterialResourceT mat;
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MaterialResource>(mat, (const uint8_t*)data);
+        return true;
+    }
     return false;
 }
 
@@ -503,15 +465,18 @@ PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 bool 
 PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    return false;
-}
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        IO::CreateDirectory(destinationFolder);
+        IO::Stream::Size size = stream->GetSize();
+        const void* data = stream->MemoryMap();
 
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-PackagePhysicsFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
-{
+        ToolkitUtil::ParticleResourceT par;
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ParticleResource>(par, (const uint8_t*)data);
+        return true;
+    }
     return false;
 }
 

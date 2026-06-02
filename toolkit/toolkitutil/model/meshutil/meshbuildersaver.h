@@ -12,15 +12,18 @@
 #include "io/stream.h"
 #include "system/byteorder.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/mesh.h"
+
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
-struct MeshResourceT;
 class MeshBuilderSaver
 {
 public:
     /// Save flatbuffers mesh file
-    static std::unique_ptr<ToolkitUtil::MeshResourceT>&& PackImport(const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform);
+    static std::unique_ptr<ToolkitUtil::MeshResourceT> PackImport(const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform);
     /// Save binary mesh file
     static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::MeshResourceT* resource, Platform::Code platform);
 private:

@@ -10,15 +10,19 @@
 #include "toolkit-common/platform.h"
 #include "io/stream.h"
 #include "system/byteorder.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/skeleton.h"
+
 namespace ToolkitUtil
 {
 
-struct SkeletonResourceT;
 class SkeletonBuilderSaver
 {
 public:
     /// save flatbuffesr skeleton file
-    static std::unique_ptr<SkeletonResourceT>&& PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
+    static std::unique_ptr<SkeletonResourceT> PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
     /// Save binary mesh file
     static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::SkeletonResourceT* resource, Platform::Code platform);
 private:

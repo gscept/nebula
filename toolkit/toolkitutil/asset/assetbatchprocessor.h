@@ -31,25 +31,19 @@ public:
     enum class PackageModes
     {
         None = 0x0,
-        Models = 1 << 0,                                              // checking this will cause models to get exported
-        Meshes = 1 << 1,
-        Textures = 1 << 2,                                            // checking this will cause textures to get exported
-        Materials = 1 << 3,                                            // checking this will cause surfaces to get exported
-        Particles = 1 << 4,
-        Animations = 1 << 5,
-        Skeletons = 1 << 6,
-        Physics = 1 << 7,                                             // checking this will cause physics to get exported
-        Audio = 1 << 8,
-        All = Models | Meshes | Textures | Materials | Particles | Physics | Audio,    // shortcut for exporting everything
+        Assets = 1 << 0,                                              // checking this will cause .nasset files to be ewxported
+        Textures = 1 << 1,                                            // checking this will cause textures to get exported
+        Materials = 1 << 2,                                            // checking this will cause surfaces to get exported
+        Particles = 1 << 3,
+        Audio = 1 << 4,
+        All = Assets | Textures | Materials | Particles | Audio,    // shortcut for exporting everything
 
-        ForceModels = 1 << 9,           // will force the model builder to create models despite time stamps
-        ForceMeshes = 1 << 10,
-        ForceTextures = 1 << 11,         // will force the texture converter to convert textures despite time stamps
-        ForceMaterials = 1 << 12,         // will force the surface exporter to convert surfaces despite time stamps
-        ForceParticles = 1 << 13,         // will force the surface exporter to convert surfaces despite time stamps
-        ForcePhysics = 1 << 14,         // will force the physics exporter to export physics assets despite time stamps
-        ForceAudio = 1 << 15,
-        ForceAll = ForceModels | ForceMeshes | ForceTextures | ForceMaterials | ForceParticles | ForcePhysics | ForceAudio
+        ForceAssets = 1 << 5,           // will force exporting .nasset
+        ForceTextures = 1 << 6,         // will force the texture converter to convert textures despite time stamps
+        ForceMaterials = 1 << 7,         // will force the surface exporter to convert surfaces despite time stamps
+        ForceParticles = 1 << 8,         // will force the surface exporter to convert surfaces despite time stamps
+        ForceAudio = 1 << 9,
+        ForceAll = ForceAssets | ForceTextures | ForceMaterials | ForceParticles | ForceAudio
     };
 
     enum class ImportModes

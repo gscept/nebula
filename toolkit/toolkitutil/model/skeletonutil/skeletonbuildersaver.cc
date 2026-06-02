@@ -8,10 +8,6 @@
 #include "math/transform.h"
 #include "characters/nskfileformatstructs.h"
 
-#include "nflatbuffer/flatbufferinterface.h"
-#include "nflatbuffer/nebula_flat.h"
-#include "flat/skeleton.h"
-
 using namespace IO;
 using namespace System;
 using namespace Characters;
@@ -21,7 +17,7 @@ namespace ToolkitUtil
 //------------------------------------------------------------------------------
 /**
 */
-std::unique_ptr<SkeletonResourceT>&&
+std::unique_ptr<SkeletonResourceT>
 SkeletonBuilderSaver::PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform)
 {
     auto skeletons = std::make_unique<ToolkitUtil::SkeletonResourceT>();
@@ -42,7 +38,7 @@ SkeletonBuilderSaver::PackImport(const Util::Array<SkeletonBuilder>& skeletonBui
         }
         skeletons->skeletons.push_back(std::move(skeleton));
     }
-    return std::move(skeletons);
+    return skeletons;
 }
 
 //------------------------------------------------------------------------------

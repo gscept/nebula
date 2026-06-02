@@ -12,11 +12,6 @@
 #include "util/crc.h"
 #include "io/xmlwriter.h"
 
-#include "nflatbuffer/flatbufferinterface.h"
-#include "nflatbuffer/nebula_flat.h"
-#include "flat/scene.h"
-#include "flat/physics.h"
-
 namespace ToolkitUtil
 {
 
@@ -26,7 +21,7 @@ using namespace Util;
 //------------------------------------------------------------------------------
 /**
 */
-std::unique_ptr<SceneResourceT>&&
+std::unique_ptr<SceneResourceT>
 SceneWriter::GenerateGraphicsModel(
     const Util::String& basePath
     , const Scene* scene
@@ -133,13 +128,13 @@ SceneWriter::GenerateGraphicsModel(
         }
     }
 
-    return std::move(model);
+    return model;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-std::unique_ptr<PhysicsResourceT>&&
+std::unique_ptr<PhysicsResourceT>
 SceneWriter::GeneratePhysicsModel(
     const Util::String& basePath, 
     const Scene* scene, 
@@ -240,7 +235,7 @@ SceneWriter::GeneratePhysicsModel(
 
         }
     }
-    return std::move(model);
+    return model;
 }
 
 } // namespace ToolkitUtil

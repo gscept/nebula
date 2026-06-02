@@ -47,28 +47,6 @@ __ImplementClass(Editor::UIManager, 'UiMa', Game::Manager);
 static Ptr<Presentation::WindowServer> windowServer;
 const char* UIManager::editorUIPath = "user:nebula/editor/editorui.ini";
 
-namespace UI
-{
-
-namespace Icons
-{
-texturehandle_t play;
-texturehandle_t pause;
-texturehandle_t stop;
-texturehandle_t game;
-texturehandle_t environment;
-texturehandle_t light;
-}
-
-}
-//------------------------------------------------------------------------------
-/**
-*/
-UI::Icons::texturehandle_t NLoadIcon(const char* resource)
-{
-    return Resources::CreateResource(resource, "EditorIcons"_atm, nullptr, nullptr, true).HashCode64();
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -116,13 +94,6 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
     windowServer->RegisterWindow("Presentation::CreateObjectWindow", "Create Object", "Editor");
 
-    UI::Icons::play          = NLoadIcon("tex:editor/icon_play.dds");
-    UI::Icons::pause         = NLoadIcon("tex:editor/icon_pause.dds");
-    UI::Icons::stop          = NLoadIcon("tex:editor/icon_stop.dds");
-    UI::Icons::environment   = NLoadIcon("tex:editor/icon_environment.dds");
-    UI::Icons::game          = NLoadIcon("tex:editor/icon_game.dds");
-    UI::Icons::light         = NLoadIcon("tex:editor/icon_light.dds");
-    
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
