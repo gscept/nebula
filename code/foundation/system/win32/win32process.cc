@@ -315,6 +315,9 @@ WaitForProcess(ProcessId processId)
     HANDLE& stderrWrite = processIdAllocator.Get<Process_StderrWrite>(processId.id);
     Ptr<IO::Stream>& stdoutCaptureStream = processIdAllocator.Get<Process_StdoutStream>(processId.id);
     Ptr<IO::Stream>& stderrCaptureStream = processIdAllocator.Get<Process_StderrStream>(processId.id);
+    Util::String& asyncBuffer = processIdAllocator.Get<Process_AsyncBuffer>(processId.id);
+    asyncBuffer.Clear();
+
 
     // cleanup
     if (stdoutCaptureStream.isvalid())
