@@ -313,7 +313,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                 }
 
                 static Util::String saveButton =
-                    Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+                    Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, fileNameNoExt.ExtractFileName().AsCharPtr());
                 if (ImGui::Button(saveButton.AsCharPtr()))
                 {
                     ToolkitUtil::ImportTexture(file, Destination, textureResource);
@@ -475,7 +475,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
             ImGui::Combo("Scale", &settings.scale, "centimeters\000meters\000kilometers\000");
 
             Util::String saveButton =
-                Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+                Util::String::Sprintf("%s Import %s.nasset", ICON_ttf_SAVE, fileNameNoExt.AsCharPtr());
 
             if (ImGui::Button(saveButton.AsCharPtr()))
             {
