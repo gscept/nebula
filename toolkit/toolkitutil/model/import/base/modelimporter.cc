@@ -159,14 +159,23 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         modelAsset.skeleton = SkeletonBuilderSaver::PackImport(this->scene->skeletons, this->platform);
     }
 
-    // Finally, output model hierarchy to n3
-    timer.Reset();
-    timer.Start();
-
     // Save model file, potentially destructive as model might have material assigned
-    if (IO::FileExists(outputAssetPath))
+    if (mergedMeshNodes.Size() > 0)
     {
-        if (importFlags & ImportFlags::ReplaceExistingMesh)
+        if (IO::FileExists(outputAssetPath))
+        {
+            if (importFlags & ImportFlags::ReplaceExistingMesh)
+            {
+                modelAsset.scene = SceneWriter::GenerateGraphicsModel(
+                    this->folder
+                    , this->scene
+                    , this->platform
+                    , mergedMeshNodes
+                    , importFlags
+                );
+            }
+        }
+        else
         {
             modelAsset.scene = SceneWriter::GenerateGraphicsModel(
                 this->folder
@@ -177,24 +186,18 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
             );
         }
     }
-    else
+    
+    if (physicsNodes.Size() > 0)
     {
-        modelAsset.scene = SceneWriter::GenerateGraphicsModel(
+        modelAsset.physics = SceneWriter::GeneratePhysicsModel(
             this->folder
             , this->scene
             , this->platform
-            , mergedMeshNodes
+            , physicsNodes
             , importFlags
         );
     }
-
-    modelAsset.physics = SceneWriter::GeneratePhysicsModel(
-        this->folder
-        , this->scene
-        , this->platform
-        , physicsNodes
-        , importFlags
-    );
+    
     timer.Stop();
 
     IO::CreateDirectory(outputAssetPath.LocalPath().ExtractDirName());
