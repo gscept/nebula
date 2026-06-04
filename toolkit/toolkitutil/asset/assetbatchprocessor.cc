@@ -97,6 +97,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
             Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
             fileNameNoExt.StripFileExtension();
+            if (modelAsset.scene != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("mdl:%s", packageFolder.AsCharPtr());
                 Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -105,6 +106,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String urn = Util::String::Sprintf("urn:%s", srcFile.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
+            if (modelAsset.mesh != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("msh:%s", packageFolder.AsCharPtr());
                 Util::String dstFile = Util::String::Sprintf("%s%s.nvx", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -113,6 +115,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String urn = Util::String::Sprintf("urn:%s", srcFile.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
+            if (modelAsset.animation != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ani:%s", packageFolder.AsCharPtr());
                 Util::String dstFile = Util::String::Sprintf("%s%s.nax", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -121,6 +124,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String urn = Util::String::Sprintf("urn:%s", srcFile.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
+            if (modelAsset.skeleton != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ske:%s", packageFolder.AsCharPtr());
                 Util::String dstFile = Util::String::Sprintf("%s%s.nsk", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -129,6 +133,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String urn = Util::String::Sprintf("urn:%s", srcFile.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
+            if (modelAsset.physics != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("phys:%s", packageFolder.AsCharPtr());
                 Util::String dstFile = Util::String::Sprintf("%s%s.actor", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -198,7 +203,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
 
     Array<String> files = ioServer->ListFiles(dir, "*");
 
-    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, meshFiles, modelFiles, textureFiles, materialFiles, particleFiles, animationFiles, skeletonFiles, audioFiles, physicsFiles;
+    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles;
     for (const auto& file : files)
     {
         if (file.EndsWithString(".fbx"))
@@ -217,11 +222,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             soundFiles.Append(file);
         }
-        else if (file.EndsWithString(".namsh"))
-        {
-            meshFiles.Append(file);
-        }
-        else if (file.EndsWithString(".namdl"))
+        else if (file.EndsWithString(".nasset"))
         {
             modelFiles.Append(file);
         }
@@ -237,21 +238,9 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             particleFiles.Append(file);
         }
-        else if (file.EndsWithString(".naani"))
-        {
-            animationFiles.Append(file);
-        }
-        else if (file.EndsWithString(".naske"))
-        {
-            skeletonFiles.Append(file);
-        }
         else if (file.EndsWithString(".naaud"))
         {
             audioFiles.Append(file);
-        }
-        else if (file.EndsWithString(".actor"))
-        {
-            physicsFiles.Append(file);
         }
     }
     if (this->importMode & ImportModes::FBX)
