@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include "assetpackager.h"
 #include "io/ioserver.h"
+#include "io/xmlwriter.h"
+#include "toolkit-common/converters/binaryxmlconverter.h"
 #include "toolkitutil/model/binarymodelwriter.h"
 
 #include "nflatbuffer/flatbufferinterface.h"
@@ -358,7 +360,37 @@ PackageMaterial(
     ToolkitUtil::Logger* logger
 )
 {
-    return false;
+    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+    stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+
+    Ptr<IO::XmlWriter> writer = IO::XmlWriter::Create();
+    writer->SetStream(stream);
+    writer->Open();
+
+    writer->BeginNode("Nebula");
+    {
+        writer->BeginNode("Surface");
+        writer->SetString("template", mat->template_name);
+        writer->BeginNode("Params");
+        for (IndexT i = 0; i < mat->value_names.size(); i++)
+        {
+            writer->BeginNode(mat->value_names[i]);
+            writer->SetString("value", mat->values[i]);
+            writer->EndNode();
+        }
+        writer->EndNode();
+        writer->EndNode();
+    }
+    writer->EndNode();
+    writer->Close();
+
+    stream->SetAccessMode(IO::Stream::AccessMode::ReadAccess);
+
+    ToolkitUtil::BinaryXmlConverter converter;
+    Util::String fileNameNoExt = fileName;
+    fileNameNoExt.StripFileExtension();
+    IO::URI output = Util::String::Sprintf("%s/%s.sur", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+    return converter.ConvertStream(stream, output.LocalPath(), *logger);
 }
 
 //------------------------------------------------------------------------------
@@ -454,7 +486,7 @@ PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 
         ToolkitUtil::MaterialResourceT mat;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MaterialResource>(mat, (const uint8_t*)data);
-        return true;
+        return PackageMaterial(&mat, file.LocalPath().ExtractFileName(), destinationFolder, platform, logger);
     }
     return false;
 }

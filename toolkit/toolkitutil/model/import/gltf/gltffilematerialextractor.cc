@@ -103,13 +103,8 @@ GltfFileMaterialExtractor::ExtractAll()
             }
             else
             {
-                materialResource.template_name = names->alphaMask;
-                ToolkitUtil::MaterialValueUnion alphaCutoffValue;
-                ToolkitUtil::MaterialFloatValueT value; 
-                value.value = material.alphaCutoff;
-                alphaCutoffValue.Set(value);
                 materialResource.value_names.push_back("alphaCutoff");
-                materialResource.values.push_back(alphaCutoffValue);
+                materialResource.values.push_back(Util::String::FromFloat(material.alphaCutoff));
             }
 
             this->ExtractMaterial(&materialResource, material);
@@ -144,135 +139,105 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
     if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
     {
         int baseColorTexture = this->doc->textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
-        ToolkitUtil::MaterialValueUnion baseColorTextureValue;
-        ToolkitUtil::MaterialStringValueT value;
+        Util::String value;
         if (this->doc->images[baseColorTexture].embedded)
-            value.value = this->textureDir + Util::String::FromInt(baseColorTexture);
+            value = this->textureDir + Util::String::FromInt(baseColorTexture);
         else
         {
             // texture is not embedded, we need to figure out the correct path to it
             Util::String texFile = this->textureDir + "/" + this->doc->images[baseColorTexture].uri;
             texFile.StripFileExtension();
-            value.value = texFile;
+            value = texFile;
         }
-        baseColorTextureValue.Set(value);
 
         materialResource->value_names.push_back("baseColorTexture");
-        materialResource->values.push_back(baseColorTextureValue);
+        materialResource->values.push_back(value);
     }
 
     if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
     {
         int metallicRoughnessTexture = this->doc->textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
-        ToolkitUtil::MaterialValueUnion metallicRoughnessTextureValue;
-        ToolkitUtil::MaterialStringValueT value;
+        Util::String value;
         if (this->doc->images[metallicRoughnessTexture].embedded)
-            value.value = this->textureDir + Util::String::FromInt(metallicRoughnessTexture);
+            value = this->textureDir + Util::String::FromInt(metallicRoughnessTexture);
         else
         {
             // texture is not embedded, we need to find the correct path to it
             Util::String texFile = this->textureDir + "/" + this->doc->images[metallicRoughnessTexture].uri;
             texFile.StripFileExtension();
-            value.value = texFile;
+            value = texFile;
         }
-        metallicRoughnessTextureValue.Set(value);
         materialResource->value_names.push_back("metallicRoughnessTexture");
-        materialResource->values.push_back(metallicRoughnessTextureValue);
+        materialResource->values.push_back(value);
     }
     
     if (material.normalTexture.index != -1)
     {
         int normalTexture = this->doc->textures[material.normalTexture.index].source;
-        ToolkitUtil::MaterialValueUnion normalTextureValue;
-        ToolkitUtil::MaterialStringValueT value;
+        Util::String value;
         n_assert(normalTexture > -1)
             if (this->doc->images[normalTexture].embedded)
-                value.value = this->textureDir + Util::String::FromInt(normalTexture);
+                value = this->textureDir + Util::String::FromInt(normalTexture);
             else
             {
                 Util::String texFile = this->textureDir + "/" + this->doc->images[normalTexture].uri;
                 texFile.StripFileExtension();
-                value.value = texFile;
+                value = texFile;
             }
-        normalTextureValue.Set(value);
         materialResource->value_names.push_back("normalTexture");
-        materialResource->values.push_back(normalTextureValue);
+        materialResource->values.push_back(value);
 
-        ToolkitUtil::MaterialValueUnion normalScaleValue;
-        auto normalScale = ToolkitUtil::MaterialFloatValueT();
-        normalScale.value = material.normalTexture.scale;
-        normalScaleValue.Set(normalScale);
         materialResource->value_names.push_back("normalScale");
-        materialResource->values.push_back(normalScaleValue);
+        materialResource->values.push_back(Util::String::FromFloat(material.normalTexture.scale));
     }
 
     if (material.emissiveTexture.index != -1)
     {
         int emissiveTexture = this->doc->textures[material.emissiveTexture.index].source;
-        ToolkitUtil::MaterialValueUnion emissiveTextureValue;
-        ToolkitUtil::MaterialStringValueT value;
+        Util::String value;
         n_assert(emissiveTexture > -1)
             if (this->doc->images[emissiveTexture].embedded)
-                value.value = this->textureDir + Util::String::FromInt(emissiveTexture);
+                value = this->textureDir + Util::String::FromInt(emissiveTexture);
             else
             {
                 // texture is not embedded, we need to find the correct path to it
                 Util::String texFile = this->textureDir + "/" + this->doc->images[emissiveTexture].uri;
                 texFile.StripFileExtension();
-                value.value = texFile;
+                value = texFile;
             }
-        emissiveTextureValue.Set(value);
         materialResource->value_names.push_back("emissiveTexture");
-        materialResource->values.push_back(emissiveTextureValue);
+        materialResource->values.push_back(value);
     }
 
     if (material.occlusionTexture.index != -1)
     {
         int occlusionTexture = this->doc->textures[material.occlusionTexture.index].source;
-        ToolkitUtil::MaterialValueUnion occlusionTextureValue;
-        ToolkitUtil::MaterialStringValueT value;
+        Util::String value;
         n_assert(occlusionTexture > -1)
             if (this->doc->images[occlusionTexture].embedded)
-                value.value = this->textureDir + Util::String::FromInt(occlusionTexture);
+                value = this->textureDir + Util::String::FromInt(occlusionTexture);
             else
             {
                 // texture is not embedded, we need to find the correct path to it
                 Util::String texFile = this->textureDir + "/" + this->doc->images[occlusionTexture].uri;
                 texFile.StripFileExtension();
-                value.value = texFile;
+                value = texFile;
             }
-        occlusionTextureValue.Set(value);
         materialResource->value_names.push_back("occlusionTexture");
-        materialResource->values.push_back(occlusionTextureValue);
+        materialResource->values.push_back(value);
     }
 
-    ToolkitUtil::MaterialValueUnion baseColorFactorValue;
-    ToolkitUtil::MaterialVec4ValueT baseColorFactor;
-    baseColorFactor.value = material.pbrMetallicRoughness.baseColorFactor;
-    baseColorFactorValue.Set(baseColorFactor);
-    materialResource->value_names.push_back("baseColorFactor");
-    materialResource->values.push_back(baseColorFactorValue);
+    materialResource->value_names.push_back("baseColorFactor"); 
+    materialResource->values.push_back(Util::String::FromVec4(material.pbrMetallicRoughness.baseColorFactor));
 
-    ToolkitUtil::MaterialValueUnion metallicFactorValue;
-    ToolkitUtil::MaterialFloatValueT metallicFactor;
-    metallicFactor.value = material.pbrMetallicRoughness.metallicFactor;
-    metallicFactorValue.Set(metallicFactor);
     materialResource->value_names.push_back("metallicFactor");
-    materialResource->values.push_back(metallicFactorValue);
+    materialResource->values.push_back(Util::String::FromFloat(material.pbrMetallicRoughness.metallicFactor));
 
-    ToolkitUtil::MaterialValueUnion roughnessFactorValue;
-    ToolkitUtil::MaterialFloatValueT roughnessFactor;
-    roughnessFactor.value = material.pbrMetallicRoughness.roughnessFactor;
-    roughnessFactorValue.Set(roughnessFactor);
     materialResource->value_names.push_back("roughnessFactor");
-    materialResource->values.push_back(roughnessFactorValue);
+    materialResource->values.push_back(Util::String::FromFloat(material.pbrMetallicRoughness.roughnessFactor));
 
-    ToolkitUtil::MaterialValueUnion emissiveFactorValue;
-    ToolkitUtil::MaterialVec4ValueT emissiveFactor;
-    emissiveFactor.value = Math::vec4(material.emissiveFactor, 1.0f);
-    emissiveFactorValue.Set(emissiveFactor);
     materialResource->value_names.push_back("emissiveFactor");
-    materialResource->values.push_back(emissiveFactorValue);
+    materialResource->values.push_back(Util::String::FromVec3(material.emissiveFactor));
 }
 
 } // namespace ToolkitUtil

@@ -227,6 +227,8 @@ macro(nebula_flatc root)
         add_custom_command(OUTPUT ${output}
                 COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${absolutePath}"
                 COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${absolutePath}
+				# Activate below line to emit flatbuffers as python into the root/data/flatbuffers folder
+				#COMMAND ${FLATC} -p  --gen-mutable --include-prefix flat --keep-prefix --gen-onefile -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" -o "${WORK_DIR}/data/flatbuffer/${foldername}/" ${absolutePath}
                 MAIN_DEPENDENCY "${absolutePath}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}

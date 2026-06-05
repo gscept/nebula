@@ -2,6 +2,8 @@ import xml.etree.ElementTree as ET
 import argparse
 import os
 import sys
+import material_generated
+import flatbuffers
 
 def indent_xml(elem, level=0):
     """Adds indentation to an XML element and its children for pretty-printing."""
@@ -38,36 +40,45 @@ def convert_xml(input_file, output_file):
         if surface_tag is None:
             raise ValueError("Expected <Surface> tag within <Nebula>, but none was found.")
 
-        if surface_tag.find("Param") is not None:
+        builder = flatbuffers.Builder(1024)
+        template = builder.CreateString(surface_tag.get("template", ""))
 
-            # Create a new <Params> element
-            params_tag = ET.Element("Params")
+        names = []
+        values = []
+        params = surface_tag.findall("Params")
+        for param in params:
+            for child in param:
+                param_name = child.tag
+                param_value = child.get("value", "")
 
-            # Iterate through <Param> elements within <Surface>
-            for param in surface_tag.findall("Param"):
-                name = param.get("name")
-                value = param.get("value")
+                name_offset = builder.CreateString(param_name)
+                value_offset = builder.CreateString(param_value)
+                names.append(name_offset)
+                values.append(value_offset)
 
-                if name and value:
-                    # Create a new tag for each name and set the "value" attribute
-                    new_tag = ET.Element(name)
-                    new_tag.set("value", value)  # Set the value as an attribute
-                    params_tag.append(new_tag)
+        material_generated.MaterialResourceStartValueNamesVector(builder, len(names))
+        for name in reversed(names):
+            builder.PrependUOffsetTRelative(name)
+        names_vector = builder.EndVector(len(names))
 
-            # Remove all existing <Param> elements from <Surface>
-            for param in surface_tag.findall("Param"):
-                surface_tag.remove(param)
+        material_generated.MaterialResourceStartValuesVector(builder, len(values))
+        for value in reversed(values):
+            builder.PrependUOffsetTRelative(value)
+        values_vector = builder.EndVector(len(values))
 
-            # Add the new <Params> tag to <Surface>
-            surface_tag.append(params_tag)
+        material_generated.MaterialResourceStart(builder)
+        material_generated.MaterialResourceAddTemplateName(builder, template)        
+        material_generated.MaterialResourceAddValueNames(builder, names_vector)
 
-        # Pretty-print the XML by adding indentation
-        #indent_xml(root)
+        material_generated.MaterialResourceAddValues(builder, values_vector)
+        material_resource = material_generated.MaterialResourceEnd(builder)
+        builder.Finish(material_resource)
 
-        # Write the formatted XML to the output file
-        tree.write(output_file, encoding="utf-8", xml_declaration=True)
+        buf = builder.Output()
+        with open(output_file, "wb") as f:
+            f.write(buf)
 
-        print(f"Converted XML written to {output_file}")
+        print(f"Converted XML written to {output_file} flatbuffers")
     except Exception as e:
         print(f"Error processing file {input_file}: {e}", file=sys.stderr)
 
@@ -77,7 +88,7 @@ def process_directory(input_dir):
         for file in files:
             if file.endswith(".sur"):
                 input_file = os.path.join(root, file)
-                output_file = input_file  # Overwrite the original file
+                output_file = os.path.splitext(input_file)[0] + ".namat"  # Overwrite the original file
                 print(f"Processing {input_file}...")
                 convert_xml(input_file, output_file)
 
@@ -103,7 +114,7 @@ def main():
     if args.file:
         # Process a single file
         input_file = os.path.normpath(args.file)
-        output_file = input_file  # Overwrite the original file
+        output_file = os.path.splitext(input_file)[0] + ".namat"  # Overwrite the original file
         convert_xml(input_file, output_file)
 
     elif args.dir:
