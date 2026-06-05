@@ -17,6 +17,7 @@
 #include "resourceloader.h"
 #include "resourceloaderthread.h"
 #include "io/urn.h"
+#include "io/assignregistry.h"
 #include "db/dbfactory.h"
 #include "db/database.h"
 
@@ -107,7 +108,6 @@ private:
     bool open;
     Util::Dictionary<Util::StringAtom, IndexT> extensionMap;
     Util::Dictionary<Util::StringAtom, IndexT> loaderMap;
-    Util::Dictionary<Util::StringAtom, IO::URI> resourcePathLookupMap;
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
     Util::Array<Ptr<ResourceLoader>> loaders;
 
@@ -186,11 +186,11 @@ ResourceServer::CreateResource(
 )
 {
     // get resource loader by extension
-    IndexT i = this->loaderMap.FindIndex(res.GetNamespace());
+    IndexT i = this->extensionMap.FindIndex(res.GetNamespace());
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->loaders[this->loaderMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
-    const IO::URI& uri = this->resourcePathLookupMap[res.AsString()];
+    const IO::URI& uri = IO::AssignRegistry::Instance()->ResolveURNToExport(res);
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(uri.LocalPath(), nullptr, 0, tag, success, failed, immediate, stream);
@@ -271,11 +271,11 @@ inline Resources::ResourceId ResourceServer::CreateResource(
 )
 {
     // get resource loader by extension
-    IndexT i = this->loaderMap.FindIndex(res.GetNamespace());
+    IndexT i = this->extensionMap.FindIndex(res.GetNamespace());
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->loaders[this->loaderMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
-    const IO::URI& uri = this->resourcePathLookupMap[res.AsString()];
+    const IO::URI& uri = IO::AssignRegistry::Instance()->ResolveURNToExport(res);
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(uri, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
@@ -484,6 +484,42 @@ template <class METADATA>
 inline Resources::ResourceId
 CreateResource(
     const ResourceName& res
+    , const METADATA& metaData
+    , const Util::StringAtom& tag
+    , std::function<void(const Resources::ResourceId)> success = nullptr
+    , std::function<void(const Resources::ResourceId)> failed = nullptr
+    , bool immediate = false
+    , bool stream = true
+)
+{
+    return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+    TODO: Make templated with success and failed and use a custom allocator to capture the closure
+*/
+inline Resources::ResourceId
+CreateResource(
+    const IO::URN& res
+    , const Util::StringAtom& tag
+    , std::function<void(const Resources::ResourceId)> success = nullptr
+    , std::function<void(const Resources::ResourceId)> failed = nullptr
+    , bool immediate = false
+    , bool stream = true
+)
+{
+    return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+    TODO: Make templated with success and failed and use a custom allocator to capture the closure
+*/
+template <class METADATA>
+inline Resources::ResourceId
+CreateResource(
+    const IO::URN& res
     , const METADATA& metaData
     , const Util::StringAtom& tag
     , std::function<void(const Resources::ResourceId)> success = nullptr

@@ -64,11 +64,10 @@ struct
 void 
 LiveBatcher::Setup()
 {
-    System::ProcessStartInfo startInfo;
-    startInfo.workingDir = workPath;
-    startInfo.outputStream = livebatcherState.outputStream.upcast<IO::Stream>();
-    startInfo.consoleWindow = false;
-    startInfo.exePath = Util::String::Sprintf(batcherPath, System::PlatformTypeAsString(System::Platform));
+    livebatcherState.startInfo.workingDir = workPath;
+    livebatcherState.startInfo.outputStream = livebatcherState.outputStream.upcast<IO::Stream>();
+    livebatcherState.startInfo.consoleWindow = false;
+    livebatcherState.startInfo.exePath = Util::String::Sprintf(batcherPath, System::PlatformTypeAsString(System::Platform));
     livebatcherState.outputStream = IO::MemoryStream::Create();
 
     livebatcherState.batchThread = LiveBatcherThread::Create();

@@ -24,9 +24,9 @@ public:
     /// default constructor
     URN();
     /// init constructor
-    URN(const Util::String& s);
+    explicit URN(const Util::String& s);
     /// init constructor
-    URN(const char* s);
+    explicit URN(const char* s);
     /// copy constructor
     URN(const URN& rhs);
     /// assignmnent operator

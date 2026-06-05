@@ -414,13 +414,13 @@ IO::URI
 AssignRegistry::ResolveWorkToExport(const IO::URI& uri) const
 {
     Ptr<Db::Dataset> set = this->mappings->CreateDataset();
-    uint32_t hash = uri.LocalPath().HashCode();
+    uint32_t hash = uri.AsString().HashCode();
     set->Filter()->AddEqualCheck(Attr::Attribute(Attr::WorkHash, hash));
     set->PerformQuery();
     Ptr<Db::ValueTable> workValues = set->Values();
-    n_assert(workValues->GetNumRows() <= 1);
-    if (workValues->GetNumRows() == 1)
+    if (workValues->GetNumRows() > 1)
     {
+        n_assert(workValues->GetNumRows() <= 1);
         return IO::URI(workValues->GetString(Attr::Export, 0));
     }
     return IO::URI();
@@ -436,9 +436,9 @@ AssignRegistry::ResolveURNToWork(const IO::URN& urn) const
     set->Filter()->AddEqualCheck(Attr::Attribute(Attr::URNHash, (urn.AsString()).HashCode()));
     set->PerformQuery();
     Ptr<Db::ValueTable> workValues = set->Values();
-    n_assert(workValues->GetNumRows() <= 1);
-    if (workValues->GetNumRows() == 1)
+    if (workValues->GetNumRows() > 1)
     {
+        n_assert(workValues->GetNumRows() <= 1);
         return IO::URI(workValues->GetString(Attr::Work, 0));
     }
     return IO::URI();
@@ -454,9 +454,9 @@ AssignRegistry::ResolveURNToExport(const IO::URN& urn) const
     set->Filter()->AddEqualCheck(Attr::Attribute(Attr::URNHash, (urn.AsString()).HashCode()));
     set->PerformQuery();
     Ptr<Db::ValueTable> workValues = set->Values();
-    n_assert(workValues->GetNumRows() <= 1);
-    if (workValues->GetNumRows() == 1)
+    if (workValues->GetNumRows() > 1)
     {
+        n_assert(workValues->GetNumRows() <= 1);
         return IO::URI(workValues->GetString(Attr::Export, 0));
     }
     return IO::URI();

@@ -15,6 +15,7 @@
 #include "timing/calendartime.h"
 #include "editor/tools/pathconverter.h"
 #include "io/filewatcher.h"
+#include "io/assignregistry.h"
 #include "asseteditor/particleasseteditor.h"
 
 using namespace Editor;
@@ -457,7 +458,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            Util::String filePath = file.GetHostAndLocalPath();
+            Util::String filePath = file.AsString().StripSubstring(IO::URI("src:assets").AsString());
+            filePath.StripFileExtension();
             ImGui::SetDragDropPayload("resource", filePath.AsCharPtr(), sizeof(char) * filePath.Length() + 1);
             ImGui::EndDragDropSource();
         }

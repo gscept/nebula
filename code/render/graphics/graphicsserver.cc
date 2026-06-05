@@ -137,6 +137,12 @@ GraphicsServer::Open()
         Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("par", Particles::ParticleLoader::RTTI);
 
+        // New loaders
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mdl", Models::ModelLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("msh", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", CoreGraphics::TextureLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", Materials::MaterialLoader::RTTI);
+
         RenderUtil::DrawFullScreenQuad::Setup();
 
         // load base textures before setting up major subsystems
