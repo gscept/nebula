@@ -40,7 +40,7 @@ public:
     /// exports a directory (does the same as ProcessAll)
     void ProcessDir(const Util::String& category) override;
     /// exports all levels
-    void ProcessAll() override;
+    void ProcessAll(const Util::String& source) override;
 
     /// set pointer to a valid logger object
     void SetLogger(ToolkitUtil::Logger* logger);

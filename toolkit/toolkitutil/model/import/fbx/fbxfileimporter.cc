@@ -69,7 +69,7 @@ FbxFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 
     auto fbxScene = new NFbxScene();
     fbxScene->SetName(this->file);
-    fbxScene->SetCategory(this->folder);
+    fbxScene->SetCategory(this->sourceDir);
     fbxScene->Setup(scene, importFlags, scale, this->logger);
     this->scene = fbxScene;
 

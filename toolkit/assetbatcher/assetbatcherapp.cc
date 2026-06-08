@@ -157,7 +157,9 @@ AssetBatcherApp::DoWork()
     String file = "";
     String source = "";
     AssetProcessorBase::ExportFlag exportFlag = AssetProcessorBase::All;
-    Dictionary<String, String> sources;
+
+    IO::URI assetSourceRoot = this->projectInfo.GetPathAttr("AssetSourceRoot");
+    IO::URI assetWorkRoot = this->projectInfo.GetPathAttr("AssetWorkRoot");
 
     Jobs2::JobSystemInitInfo systemInit;
     systemInit.name = "JobSystem";
@@ -175,23 +177,17 @@ AssetBatcherApp::DoWork()
     bool force = false;
     if (this->args.HasArg("-work"))
     {
-        String workOverride = this->args.GetString("-work");
-        workOverride = IO::IoServer::NativePath(workOverride);
-        sources.Add("work", workOverride);
-    }
-    else
-    {
-        sources = this->projectInfo.GetListAttr("AssetSources");
+        assetWorkRoot = this->args.GetString("-work");
     }
     if (this->args.HasArg("-source"))
     {
-        source = this->args.GetString("-source");
-        if (!sources.Contains(source))
-        {
-            this->logger.Error("Unknown source: %s\n", source.AsCharPtr());
-            return;
-        }
+        assetSourceRoot = this->args.GetString("-source");
     }
+
+    // Setup bindings
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", assetSourceRoot.LocalPath()));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", assetWorkRoot.LocalPath()));
+
     if (this->args.HasArg("-asset"))
     {
         if (source.IsEmpty())
@@ -293,33 +289,64 @@ AssetBatcherApp::DoWork()
         {
             case AssetProcessorBase::All:
             {
-                for (auto const& src : sources)
+                if (importMode != AssetBatchProcessor::ImportModes::None)
                 {
-                    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", src.Value()));
-                    int files = IO::IoServer::Instance()->ListDirectories("src:assets/", "*").Size();
+                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files* PRECISION);
+                    exporter->ProcessAll("src:");
+                    break;
+                }
+                if (packageMode != AssetBatchProcessor::PackageModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files * PRECISION);
-                    exporter->ProcessAll();
+                    exporter->ProcessAll("work:");
+                    break;
                 }
                 break;
             }
             case AssetProcessorBase::Dir:
             {
-                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", sources[source]));
-                int files = IO::IoServer::Instance()->ListDirectories("src:assets/", "*").Size();
-                exporter->UpdateSource();
-                exporter->SetProgressMinMax(0, files * PRECISION);
-                exporter->ProcessDir(dir);
+                if (importMode != AssetBatchProcessor::ImportModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files* PRECISION);
+                    exporter->ProcessDir("src:" + dir);
+                    break;
+                }
+                if (packageMode != AssetBatchProcessor::PackageModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files * PRECISION);
+                    exporter->ProcessDir("work:" + dir);
+                    break;
+                }
                 break;
             }
             case AssetProcessorBase::File:
             {
-                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", dir));
-                exporter->UpdateSource();
-                IO::URI basePath("proj:work/assets");
-                exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
-                exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ProcessFile("src:" + file);
+                if (importMode != AssetBatchProcessor::ImportModes::None)
+                {
+                    exporter->UpdateSource();
+                    IO::URI basePath("src:");
+                    exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
+                    exporter->SetProgressMinMax(0, 1 * PRECISION);
+                    exporter->ProcessFile("src:" + file);
+                    break;
+                }
+                if (packageMode != AssetBatchProcessor::PackageModes::None)
+                {
+                    exporter->UpdateSource();
+                    IO::URI basePath("work:");
+                    exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
+                    exporter->SetProgressMinMax(0, 1 * PRECISION);
+                    exporter->ProcessFile("work:" + file);
+                    break;
+                }
                 break;
             }
         }

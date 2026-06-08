@@ -135,7 +135,7 @@ AssetProcessorBase::ProcessDir(const Util::String& category)
 /**
 */
 void
-AssetProcessorBase::ProcessAll()
+AssetProcessorBase::ProcessAll(const Util::String& source)
 {
 	// empty, implement in subclass!
 }

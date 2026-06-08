@@ -53,7 +53,7 @@ public:
     /// exports a single directory
     virtual void ProcessDir(const Util::String& category);
     /// exports all files
-    virtual void ProcessAll();
+    virtual void ProcessAll(const Util::String& source);
 
     /// sets error flag
     void SetHasErrors(bool flag);
@@ -104,7 +104,7 @@ protected:
     /// Recursively validate all intermediate files in directory and subdirs
     void RecurseValidateIntermediates(Util::String const& dir);
 
-    Util::String folder;
+    Util::String sourceDir;
     Util::String file;
 
     int precision;
@@ -167,7 +167,7 @@ AssetProcessorBase::SetProgressPrecision( int precision )
 inline void 
 AssetProcessorBase::SetFolder( const Util::String& folder )
 {
-    this->folder = folder;
+    this->sourceDir = folder;
 }
 
 //------------------------------------------------------------------------------

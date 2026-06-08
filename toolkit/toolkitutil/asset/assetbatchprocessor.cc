@@ -62,28 +62,43 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     Util::String fileName = file.AsString().ExtractFileName();
     fileName.StripFileExtension();
 
+    //------------------------------------------------------------------------------
+    /**
+        BATCH IMPORTING
+    */
+    //------------------------------------------------------------------------------
+    Util::String relativeFolderPathForSource = file.LocalPath().StripSubstring(IO::URI("src:").LocalPath());
+    relativeFolderPathForSource = relativeFolderPathForSource.ExtractDirName();
+
     if ((this->importMode & ImportModes::FBX) && ext == "fbx")
     {
-        ToolkitUtil::ImportFBX(file, this->folder, ToolkitUtil::ImportFlags(), 1.0f, this->logger);
+        ToolkitUtil::ImportFBX(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger);
     }
 
     if ((this->importMode & ImportModes::GLTF) && (ext == "gltf" || ext == "glb"))
     {
-        ToolkitUtil::ImportGLTF(file, this->folder, ToolkitUtil::ImportFlags(), 1.0f, this->logger);
+        ToolkitUtil::ImportGLTF(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger);
     }
 
     if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg"))
     {
         ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
-        ToolkitUtil::ImportTexture(file, this->folder, texture);
+        ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture);
     }
 
     if ((this->importMode & ImportModes::Sound) && (ext == "wav" || ext == "ogg" || ext == "mp3"))
     {
-        ToolkitUtil::ImportAudio(file, this->folder);
+        ToolkitUtil::ImportAudio(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()));
     }
 
-    Util::String packageFolder = this->folder.StripSubstring("src:assets/");
+    //------------------------------------------------------------------------------
+    /**
+        BATCH PACKAGING
+    */
+    //------------------------------------------------------------------------------
+    Util::String relativeFolderPathForWork = file.LocalPath().StripSubstring(IO::URI("work:").LocalPath());
+    relativeFolderPathForWork = relativeFolderPathForWork.ExtractDirName();
+    
     if (this->packageMode & PackageModes::Assets && ext == "nasset")
     {
         Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
@@ -99,7 +114,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             fileNameNoExt.StripFileExtension();
             if (modelAsset.scene != nullptr)
             {
-                Util::String dstFolder = Util::String::Sprintf("mdl:%s", packageFolder.AsCharPtr());
+                Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -112,7 +127,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             }
             if (modelAsset.mesh != nullptr)
             {
-                Util::String dstFolder = Util::String::Sprintf("msh:%s", packageFolder.AsCharPtr());
+                Util::String dstFolder = Util::String::Sprintf("msh:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nvx", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -125,7 +140,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             }
             if (modelAsset.animation != nullptr)
             {
-                Util::String dstFolder = Util::String::Sprintf("ani:%s", packageFolder.AsCharPtr());
+                Util::String dstFolder = Util::String::Sprintf("ani:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nax", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -138,7 +153,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             }
             if (modelAsset.skeleton != nullptr)
             {
-                Util::String dstFolder = Util::String::Sprintf("ske:%s", packageFolder.AsCharPtr());
+                Util::String dstFolder = Util::String::Sprintf("ske:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nsk", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -151,7 +166,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             }
             if (modelAsset.physics != nullptr)
             {
-                Util::String dstFolder = Util::String::Sprintf("phys:%s", packageFolder.AsCharPtr());
+                Util::String dstFolder = Util::String::Sprintf("phys:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.actor", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
@@ -166,7 +181,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     }
     if ((this->packageMode & PackageModes::Textures) && ext == "natex")
     {
-        Util::String dstFolder = Util::String::Sprintf("tex:%s", packageFolder.AsCharPtr());
+        Util::String dstFolder = Util::String::Sprintf("tex:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageTextureFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
@@ -174,7 +189,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     }
     else if ((this->packageMode & PackageModes::Materials) && ext == "namat")
     {
-        Util::String dstFolder = Util::String::Sprintf("mat:%s", packageFolder.AsCharPtr());
+        Util::String dstFolder = Util::String::Sprintf("mat:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageMaterialFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
@@ -182,7 +197,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "napar")
     {
-        Util::String dstFolder = Util::String::Sprintf("par:%s", packageFolder.AsCharPtr());
+        Util::String dstFolder = Util::String::Sprintf("par:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageParticleFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
@@ -190,7 +205,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     }
     else if ((this->packageMode & PackageModes::Audio) && ext == "naaud")
     {
-        Util::String dstFolder = Util::String::Sprintf("audio:%s", packageFolder.AsCharPtr());
+        Util::String dstFolder = Util::String::Sprintf("audio:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
         Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
@@ -211,7 +226,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
     IndexT folderIndex;
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
-        this->ProcessDir(Util::Format("%s%s/", dir.AsCharPtr(), folders[folderIndex].AsCharPtr()));
+        this->ProcessDir(Util::Format("%s/%s", dir.AsCharPtr(), folders[folderIndex].AsCharPtr()));
     }
 
     n_printf("\n----------------- Batching asset directory %s -----------------\n", Text(URI(dir).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
@@ -219,7 +234,6 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
     IndexT fileIndex;
     ToolLog log(dir);
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
-    this->folder = dir;
 
     Array<String> files = ioServer->ListFiles(dir, "*");
 
@@ -275,7 +289,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < fbxFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + fbxFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + fbxFiles[fileIndex]);
             }
         }
     }
@@ -292,7 +306,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < gltfFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + gltfFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + gltfFiles[fileIndex]);
             }
         }
     }
@@ -309,7 +323,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < imageFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + imageFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + imageFiles[fileIndex]);
             }
         }
     }
@@ -326,7 +340,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < soundFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + soundFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + soundFiles[fileIndex]);
             }
         }
     }
@@ -343,7 +357,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < modelFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + modelFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + modelFiles[fileIndex]);
             }
         }
     }
@@ -360,7 +374,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < textureFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + textureFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + textureFiles[fileIndex]);
             }
         }
     }
@@ -376,7 +390,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < materialFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + materialFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + materialFiles[fileIndex]);
             }
         }
     }
@@ -392,7 +406,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < particleFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + particleFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + particleFiles[fileIndex]);
             }
         }
     }
@@ -408,26 +422,26 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         {
             for (fileIndex = 0; fileIndex < audioFiles.Size(); fileIndex++)
             {
-                this->ProcessFile(dir + audioFiles[fileIndex]);
+                this->ProcessFile(dir + "/" + audioFiles[fileIndex]);
             }
         }
     }
 
     this->messages.Append(log);
-    this->folder = "";
+    this->sourceDir = "";
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-AssetBatchProcessor::ProcessAll()
+AssetBatchProcessor::ProcessAll(const Util::String& source)
 {
     IndexT folderIndex;
-    Array<String> folders = IoServer::Instance()->ListDirectories("src:assets/", "*");
+    Array<String> folders = IoServer::Instance()->ListDirectories(source, "*");
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
-        this->ProcessDir(Util::Format("src:assets/%s/", folders[folderIndex].AsCharPtr()));
+        this->ProcessDir(source + folders[folderIndex]);
     }
 }
 

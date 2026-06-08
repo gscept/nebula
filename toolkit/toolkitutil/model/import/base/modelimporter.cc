@@ -122,7 +122,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     Util::String relativePath = file.LocalPath().StripSubstring(assetPath);
     relativePath.StripFileExtension();
 
-    auto outputAssetPath = IO::URI(String::Sprintf("%s/%s.nasset", this->folder.AsCharPtr(), this->file.AsCharPtr()));
+    auto outputAssetPath = IO::URI(String::Sprintf("%s/%s.nasset", this->sourceDir.AsCharPtr(), this->file.AsCharPtr()));
     ToolkitUtil::ModelAssetT modelAsset;
 
     // If the file exists, load back the old file
@@ -167,7 +167,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
             if (importFlags & ImportFlags::ReplaceExistingMesh)
             {
                 modelAsset.scene = SceneWriter::GenerateGraphicsModel(
-                    this->folder
+                    this->sourceDir
                     , this->scene
                     , this->platform
                     , mergedMeshNodes
@@ -178,7 +178,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         else
         {
             modelAsset.scene = SceneWriter::GenerateGraphicsModel(
-                this->folder
+                this->sourceDir
                 , this->scene
                 , this->platform
                 , mergedMeshNodes
@@ -190,7 +190,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
     if (physicsNodes.Size() > 0)
     {
         modelAsset.physics = SceneWriter::GeneratePhysicsModel(
-            this->folder
+            this->sourceDir
             , this->scene
             , this->platform
             , physicsNodes

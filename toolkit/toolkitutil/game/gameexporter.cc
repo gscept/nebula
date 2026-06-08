@@ -52,10 +52,8 @@ GameExporter::Close()
 /**
 */
 void 
-GameExporter::ProcessAll()
+GameExporter::ProcessAll(const Util::String& source)
 {
-    String projectFolder = "proj:";
-    
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
     console->Clear();
 
@@ -63,7 +61,7 @@ GameExporter::ProcessAll()
     this->Progress(5, "levels");
     levelExporter->SetLogger(this->logger);
     levelExporter->Open();
-    levelExporter->ProcessAll();
+    levelExporter->ProcessAll(source);
     levelExporter->Close();
 }
 

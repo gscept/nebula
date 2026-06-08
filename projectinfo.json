@@ -1,52 +1,30 @@
 {
-      "MetaData":
-      [
-         {
-         "Name":           "ProjectName",
-         "Value":          "Nebula"
-         },     
-      ],
-      "IntermediateDir":   "proj:intermediate",
-      "DestDir":           "toolkit:syswork/export",
-      "AssetSources" :
-      [
-         {
-         "Name":           "System",
-         "Value":          "toolkit:syswork"
-         },
-      ],
-      "TextureDestDir":    "DestDir:textures",
-      "TextureAttrTable":  "IntermediateDir:TextureAttrs",
-
-      "AudioDestDir":      "DestDir:audio",
-      "AudioSources":
-      [
-         {
-         "Name":           "System",
-         "Value":          "toolkit:syswork/audio"
-         },
-      ],
-      "ShaderLanguage":    "SPIRV",
-      "ShaderDest":        "DestDir:shaders",
-      "ShaderSources" :
-      [
-         {
-            "Name":        "System",
-            "Value":       "toolkit:syswork/shaders/vk"
-         }
-      ],
-      "FrameShaderSources": 
-      [
-         {
-            "Name":        "System",
-            "Value":       "toolkit:syswork/frame/win32"
-         }
-      ],
-      "MaterialSources":
-      [
-         {
-            "Name":        "System",
-            "Value":       "toolkit:syswork/materials"
-         }
-      ],   
+    "MetaData":
+    [
+        {
+        "Name":           "ProjectName",
+        "Value":          "Nebula"
+        }     
+    ],
+    "IntermediateDir":   "proj:intermediate",
+    "DestDir":           "toolkit:syswork/export",
+    "AssetSourceRoot":   "toolkit:syswork/source",
+    "AssetWorkRoot":     "toolkit:syswork/assets",
+    "TextureDestDir":    "DestDir:textures",
+    "ShaderLanguage":    "SPIRV",
+    "ShaderDest":        "DestDir:shaders",
+    "ShaderSources" :
+    [
+        {
+          "Name":        "System",
+          "Value":       "toolkit:syswork/shaders/vk"
+        }
+    ],
+    "FrameShaderSources": 
+    [
+        {
+          "Name":        "System",
+          "Value":       "toolkit:syswork/frame/win32"
+        }
+    ]
 }

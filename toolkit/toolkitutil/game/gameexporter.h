@@ -26,7 +26,7 @@ public:
     void Close();
 
     /// exports both game and levels
-    void ProcessAll();
+    void ProcessAll(const Util::String& source);
     /// set pointer to a valid logger object
     void SetLogger(Logger* logger);
     /// get tool logs

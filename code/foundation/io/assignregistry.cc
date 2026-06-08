@@ -210,6 +210,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("audio", "export:audio"));    
     this->SetAssign(Assign("mat",   "export:materials"));
     this->SetAssign(Assign("sur",   "export:surfaces"));
+    this->SetAssign(Assign("mat",   "export:materials"));
     this->SetAssign(Assign("par",   "export:particles"));
     this->SetAssign(Assign("scr",   "data:scripts"));
     this->SetAssign(Assign("gui",   "data:gui"));

@@ -74,9 +74,9 @@ public:
     /// exports a single file
     void ProcessFile(const IO::URI& file) override;
     /// exports a single directory
-    void ProcessDir(const Util::String& dir) override;
+    void ProcessDir(const Util::String& dir);
     /// exports all files
-    void ProcessAll() override;
+    void ProcessAll(const Util::String& source);
 
     /// exports list of files, used for parallel jobs
     void ProcessList(const Util::Array<Util::String>& files);
