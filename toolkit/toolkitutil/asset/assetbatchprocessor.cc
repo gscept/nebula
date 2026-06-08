@@ -80,7 +80,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         ToolkitUtil::ImportGLTF(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger);
     }
 
-    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg"))
+    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds"))
     {
         ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
         ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture);
@@ -240,39 +240,46 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
     Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles;
     for (const auto& file : files)
     {
-        if (file.EndsWithString(".fbx"))
+        if (file.GetFileExtension() == "fbx")
         {
             fbxFiles.Append(file);
         }
-        else if (file.EndsWithString(".gltf") || file.EndsWithString(".glb"))
+        else if (file.GetFileExtension() == "gltf" || file.GetFileExtension() == "glb")
         {
             gltfFiles.Append(file);
         }
-        else if (file.EndsWithString(".png") || file.EndsWithString(".jpg") || file.EndsWithString(".jpeg") || file.EndsWithString(".tga") || file.EndsWithString(".dds") || file.EndsWithString(".exr") || file.EndsWithString(".bmp"))
+        else if (
+            file.GetFileExtension() == "png" || 
+            file.GetFileExtension() == "jpg" || 
+            file.GetFileExtension() == "jpeg" || 
+            file.GetFileExtension() == "tga" || 
+            file.GetFileExtension() == "dds" || 
+            file.GetFileExtension() == "exr" || 
+            file.GetFileExtension() == "bmp")
         {
             imageFiles.Append(file);
         }
-        else if (file.EndsWithString(".wav") || file.EndsWithString(".mp3") || file.EndsWithString(".ogg"))
+        else if (file.GetFileExtension() == "wav" || file.GetFileExtension() == "mp3" || file.GetFileExtension() == "ogg")
         {
             soundFiles.Append(file);
         }
-        else if (file.EndsWithString(".nasset"))
+        else if (file.GetFileExtension() == "nasset")
         {
             modelFiles.Append(file);
         }
-        else if (file.EndsWithString(".natex"))
+        else if (file.GetFileExtension() == "natex")
         {
             textureFiles.Append(file);
         }
-        else if (file.EndsWithString(".namat"))
+        else if (file.GetFileExtension() == "namat")
         {
             materialFiles.Append(file);
         }
-        else if (file.EndsWithString(".napar"))
+        else if (file.GetFileExtension() == "napar")
         {
             particleFiles.Append(file);
         }
-        else if (file.EndsWithString(".naaud"))
+        else if (file.GetFileExtension() == "naaud")
         {
             audioFiles.Append(file);
         }

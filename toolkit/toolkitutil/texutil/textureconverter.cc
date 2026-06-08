@@ -127,7 +127,6 @@ ConvertTexture(const TextureConversionInfo& info)
     args.Append(info.destPath);
     args.Append("\"");
 
-
     System::ProcessStartInfo startInfo;
     startInfo.args = args;
     startInfo.workingDir = info.sourcePath.ExtractDirName();

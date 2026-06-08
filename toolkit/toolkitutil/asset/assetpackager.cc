@@ -298,39 +298,71 @@ PackageTexture(
     ToolkitUtil::Logger* logger
 )
 {
-    IO::IoServer::Instance()->CreateDirectory("temp:texturepackager");
-    const Util::String tmpFile = Util::String::Sprintf("temp:texturepackager/%d", fileName.HashCode());
+    static const bool IsExportedFormat[] = {
+        false, // Unknown
+        false, // JPG
+        false, // TGA
+        false, // BMP
+        true,  // DDS
+        false, // PNG
+        false, // EXR
+        false, // TIF
+        false   // CUBE (assumed to be in DDS format)
+    };
 
-    // Create intermediate file for texture conversion
-    Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-    writer->SetStream(IO::IoServer::Instance()->CreateStream(tmpFile));
-    if (writer->Open())
+    // If already in an 'exported' format, just copy over
+    if (IsExportedFormat[tex->container])
     {
-        writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
-        writer->Close();
+        IO::CreateDirectory(destinationFolder);
+        IO::URI destFile = Util::Format("%s/%s.dds", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
+        Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
+        writer->SetStream(IO::IoServer::Instance()->CreateStream(destFile));
+        if (writer->Open())
+        {
+            writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
+            writer->Close();
+        }
+        else
+        {
+            return false;
+        }
     }
     else
     {
-        return false;
-    }
-    Util::String platformExtension;
-    if (platform == ToolkitUtil::Platform::Win32 || platform == ToolkitUtil::Platform::Linux)
-    {
-        platformExtension = "dds";
-    }
-    IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr(), platformExtension.AsCharPtr());
-    logger->Print("%s\n", 
-                    Util::Format("Packaged texture: %s", 
-                                Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        IO::CreateDirectory("temp:texturepackager");
+        const Util::String tmpFile = Util::Format("temp:texturepackager/%s", fileName.AsCharPtr());
 
-    TextureConversionInfo info;
-    info.cube = tex->container == ToolkitUtil::TextureContainer_CUBE;
-    info.logger = logger;
-    info.destPath = destinationFolder.LocalPath();
-    info.sourcePath = tmpFile;
-    info.tmpDir = "temp:texturepackager";
-    info.texture = tex;
-    return ConvertTexture(info);
+        // Create intermediate file for texture conversion
+        Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
+        writer->SetStream(IO::IoServer::Instance()->CreateStream(tmpFile));
+        if (writer->Open())
+        {
+            writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
+            writer->Close();
+        }
+        else
+        {
+            return false;
+        }
+        Util::String platformExtension;
+        if (platform == ToolkitUtil::Platform::Win32 || platform == ToolkitUtil::Platform::Linux)
+        {
+            platformExtension = "dds";
+        }
+        IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr(), platformExtension.AsCharPtr());
+        logger->Print("%s\n",
+                        Util::Format("Packaged texture: %s",
+                                     Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+
+        TextureConversionInfo info;
+        info.cube = tex->container == ToolkitUtil::TextureContainer_CUBE;
+        info.logger = logger;
+        info.destPath = destinationFolder.LocalPath();
+        info.sourcePath = tmpFile;
+        info.tmpDir = "temp:texturepackager";
+        info.texture = tex;
+        return ConvertTexture(info);
+    }
 }
 
 //------------------------------------------------------------------------------

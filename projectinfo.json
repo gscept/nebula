@@ -10,7 +10,6 @@
     "DestDir":           "toolkit:syswork/export",
     "AssetSourceRoot":   "toolkit:syswork/source",
     "AssetWorkRoot":     "toolkit:syswork/assets",
-    "TextureDestDir":    "DestDir:textures",
     "ShaderLanguage":    "SPIRV",
     "ShaderDest":        "DestDir:shaders",
     "ShaderSources" :
