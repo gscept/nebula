@@ -9,6 +9,7 @@
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "scripting/scriptserver.h"
+#include "threading/criticalsection.h"
 #include "util/string.h"
 
 //------------------------------------------------------------------------------
@@ -34,6 +35,8 @@ public:
     /// evaluate script in file
     bool EvalFile(const IO::URI& file);
 private:
+    Threading::CriticalSection pythonLock;
+    bool pythonInitialized = false;
 
 };
 

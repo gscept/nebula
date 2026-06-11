@@ -19,7 +19,6 @@
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/singleton.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
 #include "memory/arenaallocator.h"
@@ -33,7 +32,6 @@ class VkPass;
 
 class VkPipelineDatabase
 {
-    __DeclareSingleton(VkPipelineDatabase);
 public:
 
     enum StateLevel

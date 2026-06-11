@@ -7,6 +7,7 @@
 #include "core/win32/win32sysfunc.h"
 #include "core/refcounted.h"
 #include "debug/minidump.h"
+#include "system/moduleinterface.h"
 #include "util/blob.h"
 #include "net/socket/socket.h"
 #include "debug/minidump.h"
@@ -30,6 +31,56 @@ Util::GlobalStringAtomTable* globalStringAtomTable = 0;
     Util::LocalStringAtomTable* localStringAtomTable = 0;
 #endif
 
+NEBULA_MODULE_EXPORT void NebulaHost_SysFuncSetup();
+NEBULA_MODULE_EXPORT void NebulaHost_SysFuncExit(int exitCode);
+
+struct HostSysFuncApi
+{
+    void (*setup)() = nullptr;
+    void (*exit)(int) = nullptr;
+    bool resolved = false;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+static HostSysFuncApi&
+GetHostSysFuncApi()
+{
+    static HostSysFuncApi api;
+    if (!api.resolved)
+    {
+        api.resolved = true;
+        HMODULE exe = ::GetModuleHandleA(nullptr);
+        if (exe != nullptr)
+        {
+            api.setup = reinterpret_cast<void (*)()>(::GetProcAddress(exe, "NebulaHost_SysFuncSetup"));
+            api.exit = reinterpret_cast<void (*)(int)>(::GetProcAddress(exe, "NebulaHost_SysFuncExit"));
+        }
+    }
+    return api;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+UseHostSysFuncSetup()
+{
+    HostSysFuncApi& api = GetHostSysFuncApi();
+    return api.setup != nullptr && api.setup != &NebulaHost_SysFuncSetup;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+UseHostSysFuncExit()
+{
+    HostSysFuncApi& api = GetHostSysFuncApi();
+    return api.exit != nullptr && api.exit != &NebulaHost_SysFuncExit;
+}
+
 //------------------------------------------------------------------------------
 /**
     This method must be called at application start before any threads
@@ -40,6 +91,14 @@ Util::GlobalStringAtomTable* globalStringAtomTable = 0;
 void
 SysFunc::Setup()
 {
+    if (UseHostSysFuncSetup() && !SetupCalled)
+    {
+        GetHostSysFuncApi().setup();
+        SetupCalled = true;
+        Memory::SetupHeaps();
+        return;
+    }
+
     if (!SetupCalled)
     {
         SetupCalled = true;
@@ -90,6 +149,12 @@ SysFunc::Setup()
 void
 SysFunc::Exit(int exitCode)
 {
+    if (UseHostSysFuncExit())
+    {
+        GetHostSysFuncApi().exit(exitCode);
+        return;
+    }
+
     // first produce a RefCount leak report
     #if NEBULA_DEBUG
     Core::RefCounted::DumpRefCountingLeaks();
@@ -248,6 +313,24 @@ SysFunc::RegisterExitHandler(const Core::ExitHandler* exitHandler)
     const Core::ExitHandler* firstHandler = ExitHandlers;
     ExitHandlers = exitHandler;
     return firstHandler;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_MODULE_EXPORT void
+NebulaHost_SysFuncSetup()
+{
+    SysFunc::Setup();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_MODULE_EXPORT void
+NebulaHost_SysFuncExit(int exitCode)
+{
+    SysFunc::Exit(exitCode);
 }
 
 } // namespace Win32

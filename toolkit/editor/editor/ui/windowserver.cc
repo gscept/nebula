@@ -461,4 +461,15 @@ WindowServer::AddCategory(const Util::String & category)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowServer::ClearAllWindows()
+{
+    this->windows.Clear();
+    this->windowByName.Clear();
+    this->categories.Clear();
+}
+
 } // namespace Presentation

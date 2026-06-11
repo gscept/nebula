@@ -14,5 +14,5 @@ fips_dir(.)
         flatbufferinterface.h
     )
 nebula_flatc(SYSTEM foundation/math.fbs)
-fips_deps(flatbuffers foundation)
+fips_deps(flatbuffers)
 nebula_end_lib()

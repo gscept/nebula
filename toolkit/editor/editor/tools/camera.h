@@ -67,7 +67,7 @@ public:
     float orthoHeight = 20;
 
 private:
-	Graphics::GraphicsEntityId cameraEntityId;
+    Graphics::GraphicsEntityId cameraEntityId = Graphics::InvalidGraphicsEntityId;
 
 	Math::transform44 transform;
     

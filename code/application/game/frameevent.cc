@@ -104,7 +104,19 @@ FrameEvent::AddProcessor(Processor* processor)
 void
 FrameEvent::RemoveProcessor(Processor* processor)
 {
-    n_error("Not implemented!");
+    for (IndexT i = 0; i < this->batches.Size(); i++)
+    {
+        FrameEvent::Batch* batch = this->batches[i];
+        if (!batch->RemoveProcessor(processor))
+            continue;
+
+        if (batch->IsEmpty())
+        {
+            delete batch;
+            this->batches.EraseIndex(i);
+        }
+        return;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -215,6 +227,20 @@ FrameEvent::Batch::TryInsert(Processor* processor)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+FrameEvent::Batch::RemoveProcessor(Processor* processor)
+{
+    IndexT index = this->processors.FindIndex(processor);
+    if (index == InvalidIndex)
+        return false;
+
+    this->processors.EraseIndex(index);
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FrameEvent::Batch::Prefilter(World* world, bool force)
 {
@@ -268,6 +294,15 @@ FrameEvent::Batch::GetProcessors() const
     }
 
     return procs;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+FrameEvent::Batch::IsEmpty() const
+{
+    return this->processors.IsEmpty();
 }
 
 //------------------------------------------------------------------------------

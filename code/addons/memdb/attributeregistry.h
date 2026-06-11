@@ -16,6 +16,9 @@ namespace MemDb
 class AttributeRegistry
 {
 public:
+    /// return true if registry singleton has been created
+    static bool HasInstance();
+
     /// register a type (templated)
     template<typename TYPE>
     static AttributeId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
@@ -26,6 +29,8 @@ public:
     /// Check if a type is registered
     template <typename TYPE>
     static bool IsRegistered();
+    /// Check if an attribute id is currently registered
+    static bool IsRegistered(AttributeId descriptor);
 
     /// register a POD, mem-copyable type
     static AttributeId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
@@ -34,14 +39,24 @@ public:
     static AttributeId GetAttributeId(Util::StringAtom name);
     /// get attribute description by id
     static Attribute* GetAttribute(AttributeId descriptor);
+    /// try get attribute description by id
+    static Attribute* TryGetAttribute(AttributeId descriptor);
     /// get type size by attribute id
     static SizeT TypeSize(AttributeId descriptor);
+    /// try get type size by attribute id
+    static bool TryGetTypeSize(AttributeId descriptor, SizeT& outTypeSize);
     /// get flags by attribute id
     static uint32_t Flags(AttributeId descriptor);
+    /// try get flags by attribute id
+    static bool TryGetFlags(AttributeId descriptor, uint32_t& outFlags);
     /// get attribute default value pointer
     static void const* const DefaultValue(AttributeId descriptor);
+    /// try get attribute default value pointer
+    static bool TryGetDefaultValue(AttributeId descriptor, void const*& outDefaultValue);
     /// get an array of all attributes
     static Util::FixedArray<Attribute*> const& GetAllAttributes();
+    /// unregister an attribute by id (safe no-op if missing)
+    static void Unregister(AttributeId descriptor);
 
 private:
     static AttributeRegistry* Instance();
@@ -86,6 +101,26 @@ AttributeRegistry::IsRegistered()
         return reg->componentDescriptions[id.id] != nullptr;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::IsRegistered(AttributeId descriptor)
+{
+    if (!AttributeRegistry::HasInstance())
+    {
+        return false;
+    }
+
+    auto* reg = Instance();
+    if (descriptor.id < 0 || descriptor.id >= reg->componentDescriptions.Size())
+    {
+        return false;
+    }
+
+    return reg->componentDescriptions[descriptor.id] != nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -228,16 +263,25 @@ AttributeRegistry::GetAttributeId(Util::StringAtom name)
 inline Attribute*
 AttributeRegistry::GetAttribute(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return nullptr;
+
     auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
-    {
-        n_assert2(
-            reg->componentDescriptions[descriptor.id] != nullptr, "Trying to get description of attribute that is not registered!"
-        );
-        return reg->componentDescriptions[descriptor.id];
-    }
-    
-    return nullptr;
+    return reg->componentDescriptions[descriptor.id];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Attribute*
+AttributeRegistry::TryGetAttribute(AttributeId descriptor)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return nullptr;
+
+    auto* reg = Instance();
+    return reg->componentDescriptions[descriptor.id];
 }
 
 //------------------------------------------------------------------------------
@@ -246,9 +290,29 @@ AttributeRegistry::GetAttribute(AttributeId descriptor)
 inline SizeT
 AttributeRegistry::TypeSize(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return 0;
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->typeSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::TryGetTypeSize(AttributeId descriptor, SizeT& outTypeSize)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        outTypeSize = 0;
+        return false;
+    }
+
+    auto* reg = Instance();
+    outTypeSize = reg->componentDescriptions[descriptor.id]->typeSize;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -257,9 +321,29 @@ AttributeRegistry::TypeSize(AttributeId descriptor)
 inline uint32_t
 AttributeRegistry::Flags(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return 0;
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->externalFlags;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::TryGetFlags(AttributeId descriptor, uint32_t& outFlags)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        outFlags = 0;
+        return false;
+    }
+
+    auto* reg = Instance();
+    outFlags = reg->componentDescriptions[descriptor.id]->externalFlags;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -268,9 +352,29 @@ AttributeRegistry::Flags(AttributeId descriptor)
 inline void const* const
 AttributeRegistry::DefaultValue(AttributeId descriptor)
 {
+    n_assert(AttributeRegistry::IsRegistered(descriptor));
+    if (!AttributeRegistry::IsRegistered(descriptor))
+        return nullptr;
+
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->defVal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+AttributeRegistry::TryGetDefaultValue(AttributeId descriptor, void const*& outDefaultValue)
+{
+    if (!AttributeRegistry::IsRegistered(descriptor))
+    {
+        outDefaultValue = nullptr;
+        return false;
+    }
+
+    auto* reg = Instance();
+    outDefaultValue = reg->componentDescriptions[descriptor.id]->defVal;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -281,6 +385,38 @@ AttributeRegistry::GetAllAttributes()
 {
     auto* reg = Instance();
     return reg->componentDescriptions;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+AttributeRegistry::Unregister(AttributeId descriptor)
+{
+    if (!AttributeRegistry::HasInstance())
+    {
+        return;
+    }
+
+    auto* reg = Instance();
+    if (descriptor.id < 0 || descriptor.id >= reg->componentDescriptions.Size())
+    {
+        return;
+    }
+
+    Attribute* desc = reg->componentDescriptions[descriptor.id];
+    if (desc == nullptr)
+    {
+        return;
+    }
+
+    if (reg->registry.Contains(desc->name))
+    {
+        reg->registry.Erase(desc->name);
+    }
+
+    delete desc;
+    reg->componentDescriptions[descriptor.id] = nullptr;
 }
 
 } // namespace MemDb

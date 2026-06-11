@@ -8,7 +8,11 @@ FIND_PROGRAM(GPULANGC
     NO_DEFAULT_PATH
 )
 
-nebula_begin_module(render)
+if(FIPS_WINDOWS)
+    nebula_begin_module(render)
+else()
+    nebula_begin_shared_module(render)
+endif()
     add_nebula_shaders()
     set(target_has_shaders 1)
     target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
@@ -186,6 +190,7 @@ ENDIF()
                 shaperenderer.cc
                 shaperenderer.h
                 sparsebuffer.h
+                streamtexturesaver.cc
                 streamtexturesaver.h
                 swapchain.h
                 textelement.cc
@@ -664,6 +669,10 @@ ENDIF()
             )
 
 
-nebula_end_module()
+if(FIPS_WINDOWS)
+    nebula_end_module()
+else()
+    nebula_end_shared_module()
+endif()
 
 

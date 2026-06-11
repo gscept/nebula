@@ -31,6 +31,15 @@ Factory::Instance()
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+Factory::HasInstance()
+{
+    return Singleton != nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
     This static method is used to destroy the factory object and should be
     called right before the main function exits. It will make sure that
     no accidential memory leaks are reported by the debug heap.
@@ -137,6 +146,51 @@ Factory::Register(const Rtti* rtti, const String& className)
 
     // register with lookup tables
     this->nameTable.Add(className, rtti);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Factory::Unregister(const Rtti* rtti, const String& className, const FourCC& classFourCC)
+{
+    n_assert(0 != rtti);
+
+    if (className.IsValid() && this->nameTable.Contains(className))
+    {
+        const Rtti* registered = this->nameTable[className];
+        if (registered == rtti)
+        {
+            this->nameTable.Erase(className);
+        }
+    }
+
+    if (classFourCC.IsValid() && this->fourccTable.Contains(classFourCC))
+    {
+        const Rtti* registered = this->fourccTable[classFourCC];
+        if (registered == rtti)
+        {
+            this->fourccTable.Erase(classFourCC);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Factory::Unregister(const Rtti* rtti, const String& className)
+{
+    n_assert(0 != rtti);
+
+    if (className.IsValid() && this->nameTable.Contains(className))
+    {
+        const Rtti* registered = this->nameTable[className];
+        if (registered == rtti)
+        {
+            this->nameTable.Erase(className);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

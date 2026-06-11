@@ -51,6 +51,9 @@ public:
     /// Get window by name
     Ptr<BaseWindow> GetWindow(const Util::String& name);
 
+    /// Clear all registered windows
+    void ClearAllWindows();
+
 private:
     void AddCategory(const Util::String& category);
 

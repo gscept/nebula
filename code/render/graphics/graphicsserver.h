@@ -88,6 +88,10 @@ public:
 
     /// Add callback to run just before frame is finished
     void AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex));
+    /// Remove a specific end-frame callback
+    void RemoveEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex));
+    /// Clear all end-frame callbacks
+    void ClearEndFrameCalls();
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
 

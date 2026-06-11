@@ -47,6 +47,13 @@ CameraContext::Create()
 void
 CameraContext::UpdateCameras(const Graphics::FrameContext& ctx)
 {
+    // Keep LOD camera list free from stale entries when entities are torn down during reload.
+    for (IndexT i = CameraContext::LodCameras.Size() - 1; i >= 0; i--)
+    {
+        if (!CameraContext::IsEntityRegistered(CameraContext::LodCameras[i]))
+            CameraContext::LodCameras.EraseIndex(i);
+    }
+
     const Util::Array<Math::mat4>& proj = cameraAllocator.GetArray<Camera_Projection>();
     const Util::Array<Math::mat4>& views = cameraAllocator.GetArray<Camera_View>();
     const Util::Array<Math::mat4>& viewproj = cameraAllocator.GetArray<Camera_ViewProjection>();
@@ -100,6 +107,10 @@ CameraContext::SetView(const Graphics::GraphicsEntityId id, const Math::mat4& ma
 const Math::mat4&
 CameraContext::GetView(const Graphics::GraphicsEntityId id)
 {
+    static const Math::mat4 identity = Math::mat4::identity;
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return identity;
+
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_View>(cid.id);
 }
@@ -110,6 +121,9 @@ CameraContext::GetView(const Graphics::GraphicsEntityId id)
 const Math::mat4
 CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return Math::mat4::identity;
+
     const ContextEntityId cid = GetContextId(id);
     return inverse(cameraAllocator.Get<Camera_View>(cid.id));
 }
@@ -120,6 +134,10 @@ CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
 const Math::mat4&
 CameraContext::GetProjection(const Graphics::GraphicsEntityId id)
 {
+    static const Math::mat4 identity = Math::mat4::identity;
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return identity;
+
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_Projection>(cid.id);
 }
@@ -130,6 +148,10 @@ CameraContext::GetProjection(const Graphics::GraphicsEntityId id)
 const Math::mat4&
 CameraContext::GetViewProjection(const Graphics::GraphicsEntityId id)
 {
+    static const Math::mat4 identity = Math::mat4::identity;
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return identity;
+
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_ViewProjection>(cid.id);
 }
@@ -140,6 +162,10 @@ CameraContext::GetViewProjection(const Graphics::GraphicsEntityId id)
 const CameraSettings&
 CameraContext::GetSettings(const Graphics::GraphicsEntityId id)
 {
+    static CameraSettings fallback;
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return fallback;
+
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_Settings>(cid.id);
 }
@@ -150,6 +176,9 @@ CameraContext::GetSettings(const Graphics::GraphicsEntityId id)
 Graphics::StageMask
 CameraContext::GetStageMask(const Graphics::GraphicsEntityId id)
 {
+    if (id == Graphics::InvalidGraphicsEntityId || !CameraContext::IsEntityRegistered(id))
+        return Graphics::PRIMARY_STAGE_MASK;
+
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_StageMask>(cid.id);
 }
@@ -169,6 +198,12 @@ CameraContext::GetLODCameras()
 void
 CameraContext::AddLODCamera(const Graphics::GraphicsEntityId id)
 {
+    if (!CameraContext::IsEntityRegistered(id))
+        return;
+
+    if (CameraContext::LodCameras.FindIndex(id) != InvalidIndex)
+        return;
+
     CameraContext::LodCameras.Append(id);
 }
 
@@ -179,8 +214,8 @@ void
 CameraContext::RemoveLODCamera(const Graphics::GraphicsEntityId id)
 {
     IndexT i = CameraContext::LodCameras.FindIndex(id);
-    n_assert(i != InvalidIndex);
-    CameraContext::LodCameras.EraseIndex(i);
+    if (i != InvalidIndex)
+        CameraContext::LodCameras.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

@@ -21,25 +21,76 @@
 #include "core/types.h"
 
 //------------------------------------------------------------------------------
+namespace Core
+{
+
+void* SingletonGet(const char* key, bool threadLocal);
+void SingletonSet(const char* key, bool threadLocal, void* ptr);
+
+// this is a wrapper to deal with windows dll export/import of singletons
+template<class TYPE>
+class SingletonProxy
+{
+public:
+    constexpr SingletonProxy(const char* inKey = nullptr, bool inThreadLocal = false)
+        : key(inKey)
+        , threadLocal(inThreadLocal)
+    {
+    }
+
+    TYPE* Get() const
+    {
+        return reinterpret_cast<TYPE*>(Core::SingletonGet(this->key, this->threadLocal));
+    }
+
+    void Set(TYPE* ptr)
+    {
+        Core::SingletonSet(this->key, this->threadLocal, ptr);
+    }
+
+    SingletonProxy& operator=(TYPE* ptr)
+    {
+        this->Set(ptr);
+        return *this;
+    }
+
+    operator TYPE*() const
+    {
+        return this->Get();
+    }
+
+    TYPE* operator->() const
+    {
+        return this->Get();
+    }
+
+private:
+    const char* key;
+    bool threadLocal;
+};
+
+} // namespace Core
+
+//------------------------------------------------------------------------------
 #define __DeclareSingleton(type) \
 public: \
-    thread_local static type * Singleton; \
-    static type * Instance() { n_assert(nullptr != Singleton); return Singleton; }; \
+    static Core::SingletonProxy<type> Singleton; \
+    static type * Instance() { type* ptr = Singleton; n_assert(nullptr != ptr); return ptr; }; \
     static bool HasInstance() { return nullptr != Singleton; }; \
 private:
 
 #define __DeclareInterfaceSingleton(type) \
 public: \
-    static type * Singleton; \
-    static type * Instance() { n_assert(nullptr != Singleton); return Singleton; }; \
+    static Core::SingletonProxy<type> Singleton; \
+    static type * Instance() { type* ptr = Singleton; n_assert(nullptr != ptr); return ptr; }; \
     static bool HasInstance() { return nullptr != Singleton; }; \
 private:
 
 #define __ImplementSingleton(type) \
-    thread_local type * type::Singleton = nullptr;
+    Core::SingletonProxy<type> type::Singleton(__FILE__ ":" #type, true);
 
 #define __ImplementInterfaceSingleton(type) \
-    type * type::Singleton = nullptr;
+    Core::SingletonProxy<type> type::Singleton(__FILE__ ":" #type, false);
 
 #define __ConstructSingleton \
     n_assert(nullptr == Singleton); Singleton = this;

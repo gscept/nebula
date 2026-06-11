@@ -79,6 +79,51 @@ Time::CreateTimeSource(TimeSourceCreateInfo const& info)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+Time::HasTimeSource(uint32_t TIMESOURCE_HASH)
+{
+    return state->timeSourceTable.Contains(TIMESOURCE_HASH);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Time::DestroyTimeSource(uint32_t TIMESOURCE_HASH)
+{
+    if (!state->timeSourceTable.Contains(TIMESOURCE_HASH))
+        return;
+
+    const uint32_t removeIndex = state->timeSourceTable[TIMESOURCE_HASH];
+    const uint32_t lastIndex = state->numTimeSources - 1;
+
+    // Remove hash entry first.
+    state->timeSourceTable.Erase(TIMESOURCE_HASH);
+
+    // Keep array dense by moving the last entry into the removed slot.
+    if (removeIndex != lastIndex)
+    {
+        state->timeSources[removeIndex] = state->timeSources[lastIndex];
+
+        // Find hash currently mapped to lastIndex and update it to removeIndex.
+        auto content = state->timeSourceTable.Content();
+        for (IndexT i = 0; i < content.Size(); i++)
+        {
+            if (content[i].Value() == lastIndex)
+            {
+                state->timeSourceTable[content[i].Key()] = removeIndex;
+                break;
+            }
+        }
+    }
+
+    n_assert(state->numTimeSources > 0);
+    state->numTimeSources--;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 TimeSource* const
 Time::GetTimeSource(uint32_t TIMESOURCE_HASH)
 {

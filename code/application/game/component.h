@@ -119,6 +119,15 @@ template <typename COMPONENT>
 inline ComponentId
 GetComponentId()
 {
+    // During runtime module reload, template-local static IDs can be re-created
+    // and diverge from existing world table columns. Prefer name-based lookup
+    // so we keep the stable registry ID already used by live world data.
+    ComponentId byName = MemDb::AttributeRegistry::GetAttributeId(COMPONENT::Traits::name);
+    if (byName != ComponentId::Invalid())
+    {
+        return byName;
+    }
+
 #if !PUBLIC_BUILD
     if (!MemDb::AttributeRegistry::IsRegistered<COMPONENT>())
     {

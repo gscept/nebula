@@ -35,6 +35,7 @@ public:
     static void Destroy();
 
     static void Register(ComponentId component, DrawFunc);
+    static void Unregister(ComponentId component);
 
     static void DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit);
 

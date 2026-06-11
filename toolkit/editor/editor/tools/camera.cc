@@ -38,6 +38,22 @@ Camera::Camera()
 */
 Camera::~Camera()
 {
+    if (this->cameraEntityId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Visibility::ObserverContext::IsEntityRegistered(this->cameraEntityId))
+    {
+        Visibility::ObserverContext::DeregisterEntityImmediate(this->cameraEntityId);
+    }
+
+    if (Graphics::CameraContext::IsEntityRegistered(this->cameraEntityId))
+    {
+        Graphics::CameraContext::RemoveLODCamera(this->cameraEntityId);
+        Graphics::CameraContext::DeregisterEntityImmediate(this->cameraEntityId);
+    }
+
+    Graphics::DestroyEntity(this->cameraEntityId);
+    this->cameraEntityId = Graphics::InvalidGraphicsEntityId;
 }
 
 //------------------------------------------------------------------------------

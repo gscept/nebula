@@ -11,7 +11,6 @@
 namespace Vulkan
 {
 
-__ImplementSingleton(VkPipelineDatabase);
 //------------------------------------------------------------------------------
 /**
 */
@@ -19,7 +18,6 @@ VkPipelineDatabase::VkPipelineDatabase() :
     dev(VK_NULL_HANDLE),
     cache(VK_NULL_HANDLE)
 {
-    __ConstructSingleton;
     this->Reset();
 }
 
@@ -28,7 +26,7 @@ VkPipelineDatabase::VkPipelineDatabase() :
 */
 VkPipelineDatabase::~VkPipelineDatabase()
 {
-    __DestructSingleton;
+    //
 }
 
 //------------------------------------------------------------------------------

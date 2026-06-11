@@ -392,16 +392,16 @@ ImguiConsole::RenderContent()
     // Unfortunately we can't use ImGui::Clipper here since each entry might have a different height.
     // TODO: We could roll our own "clipper".
     ImGui::PushTextWrapPos(ImGui::GetWindowContentRegionMax().x);
-    for (int i = 0; i < consoleBuffer.Size(); i++)
+    for (int i = 0; i < this->consoleBuffer.Size(); i++)
     {
-        const char* item = consoleBuffer[i].msg.AsCharPtr();
+        const char* item = this->consoleBuffer[i].msg.AsCharPtr();
 
         //Filter on both time, prefix and entry
-        if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type)))
+        if (!filter.PassFilter(item) && !filter.PassFilter(this->LogEntryTypeAsCharPtr(this->consoleBuffer[i].type)))
             continue;
 
         ImVec4 col;
-        switch (consoleBuffer[i].type)
+        switch (this->consoleBuffer[i].type)
         {
         case N_MESSAGE:
             col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -428,9 +428,9 @@ ImguiConsole::RenderContent()
         ImGui::PushStyleColor(ImGuiCol_Text, col);
         ImGui::SameLine();
         //Print message prefix
-        if (consoleBuffer[i].type != N_MESSAGE)
+        if (this->consoleBuffer[i].type != N_MESSAGE)
         {
-            ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(consoleBuffer[i].type));
+            ImGui::TextUnformatted(this->LogEntryTypeAsCharPtr(this->consoleBuffer[i].type));
             ImGui::SameLine();
         }
         //Print log entry
@@ -441,11 +441,11 @@ ImguiConsole::RenderContent()
     ImGui::PopTextWrapPos();
 
     static SizeT lastConsoleBufferSize = 0;
-    if (this->scrollToBottom && consoleBuffer.Size() != lastConsoleBufferSize)
+    if (this->scrollToBottom && this->consoleBuffer.Size() != lastConsoleBufferSize)
     {
         ImGui::SetScrollHereY();
     }
-    lastConsoleBufferSize = consoleBuffer.Size();
+    lastConsoleBufferSize = this->consoleBuffer.Size();
 
     ImGui::PopStyleVar();
     ImGui::EndChild();
@@ -634,7 +634,7 @@ ImguiConsole::Execute(const Util::String& command)
 void
 ImguiConsole::AppendToLog(const LogEntry& msg)
 {
-    this->consoleBuffer.Add(msg);   
+    this->consoleBuffer.Add(msg);
 }
 
 //------------------------------------------------------------------------------

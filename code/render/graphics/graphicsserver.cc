@@ -443,6 +443,8 @@ GraphicsServer::CreateView(const Util::StringAtom& name)
 
     this->views.Append(view);
     this->viewsByName.Add(name, view);
+    this->preViewCallbacks.Append(nullptr);
+    this->postViewCallbacks.Append(nullptr);
 
     // invoke all interested contexts
     IndexT i;
@@ -463,6 +465,22 @@ GraphicsServer::DiscardView(const ViewId view)
     IndexT idx = this->views.FindIndex(view);
     n_assert(idx != InvalidIndex);
     this->views.EraseIndex(idx);
+    if (idx < this->preViewCallbacks.Size())
+        this->preViewCallbacks.EraseIndex(idx);
+    if (idx < this->postViewCallbacks.Size())
+        this->postViewCallbacks.EraseIndex(idx);
+
+    // Remove reverse mapping by value.
+    for (IndexT i = 0; i < this->viewsByName.Size(); i++)
+    {
+        if (this->viewsByName.ValueAtIndex(i) == view)
+        {
+            this->viewsByName.EraseAtIndex(i);
+            break;
+        }
+    }
+
+    Graphics::DestroyView(view);
     // invoke all interested contexts
     for (IndexT i = 0; i < this->contexts.Size(); i++)
     {
@@ -506,6 +524,33 @@ GraphicsServer::AddEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferInde
 {
     this->endFrameCallbacks.Append(func);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RemoveEndFrameCall(void(*func)(IndexT frameIndex, IndexT bufferIndex))
+{
+    for (IndexT i = this->endFrameCallbacks.Size() - 1; i >= 0; i--)
+    {
+        auto* target = this->endFrameCallbacks[i].template target<void(*)(IndexT, IndexT)>();
+        if (target != nullptr && *target == func)
+        {
+            this->endFrameCallbacks.EraseIndex(i);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::ClearEndFrameCalls()
+{
+    this->endFrameCallbacks.Clear();
+}
+
+
 
 //------------------------------------------------------------------------------
 /**
@@ -627,9 +672,12 @@ GraphicsServer::Render()
         ViewApply(view);
 
         N_MARKER_BEGIN(ViewPreFrameCallback, Graphics)
-        auto& preViewCallback = this->preViewCallbacks[i];
-        if (preViewCallback != nullptr)
-            preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        if (i < this->preViewCallbacks.Size())
+        {
+            auto& preViewCallback = this->preViewCallbacks[i];
+            if (preViewCallback != nullptr)
+                preViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        }
         N_MARKER_END()
 
         if (ViewRender(view, this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex))
@@ -654,9 +702,12 @@ GraphicsServer::Render()
         this->currentView = InvalidViewId;
 
         N_MARKER_BEGIN(ViewPostFrameCallback, Graphics)
-        auto& postViewCallback = this->postViewCallbacks[i];
-        if (postViewCallback != nullptr)
-            postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        if (i < this->postViewCallbacks.Size())
+        {
+            auto& postViewCallback = this->postViewCallbacks[i];
+            if (postViewCallback != nullptr)
+                postViewCallback(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        }
         N_MARKER_END()
     }
 }

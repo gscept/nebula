@@ -45,6 +45,13 @@ using namespace Vulkan;
 PipelineId
 CreateGraphicsPipeline(const PipelineCreateInfo& info)
 {
+    // Validate shader program is valid before accessing runtime info
+    if (info.shader == CoreGraphics::InvalidShaderProgramId)
+    {
+        n_warning("CreateGraphicsPipeline: Invalid shader program ID\n");
+        return CoreGraphics::InvalidPipelineId;
+    }
+
     VkGraphicsPipelineCreateInfo shaderInfo;
     VkShaderProgramRuntimeInfo& programInfo = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
     const VkPipelineRenderingCreateInfo* renderPassInfo = nullptr;

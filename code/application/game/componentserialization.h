@@ -46,6 +46,7 @@ public:
 
     template<typename TYPE>
     static void Register(ComponentId component);
+    static void Unregister(ComponentId component);
 
     /// ptr points to the location where the value should be stored. Make sure you have room for it!
     static void Deserialize(Ptr<IO::JsonReader> const& reader, ComponentId component, void* ptr);

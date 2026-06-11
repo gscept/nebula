@@ -14,6 +14,9 @@
 namespace Presentation
 {
 
+/// Ensure navigation runtime UI hook is loaded and ready.
+bool EnsureNavigationUiHookLoaded();
+
 class Navigation: public BaseWindow
 {
     __DeclareClass(Navigation)
@@ -25,6 +28,7 @@ public:
 
 private:
     Graphics::GraphicsEntityId defaultCamera;
+    bool missingHookWarningShown = false;
 };
 __RegisterClass(Navigation)
 

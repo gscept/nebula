@@ -19,7 +19,6 @@
 #include "dynui/console/imguiconsolehandler.h"
 #include "levelviewerfactorymanager.h"
 #include "gamestates/viewergamestate.h"
-#include "navigationfeatureunit.h"
 #include "inputfeature/inputfeatureunit.h"
 
 //------------------------------------------------------------------------------
@@ -51,6 +50,8 @@ private:
 
     /// setup application state handlers
     virtual void SetupStateHandlers();
+    /// parse startup args and ensure LevelViewer runtime defaults are set
+    virtual void SetupRuntimeModulesFromCmdLineArgs() override;
     /// setup game features
     virtual void SetupGameFeatures();
     /// cleanup game features
@@ -66,7 +67,6 @@ private:
     Ptr<EffectsFeature::EffectsFeatureUnit> effectFeature;
     Ptr<UI::UiFeatureUnit> uiFeature;
     Ptr<PostEffect::PostEffectFeatureUnit> postEffectFeature;
-    Ptr<Navigation::NavigationFeatureUnit> navigationFeature;
     Ptr<InputFeature::InputFeatureUnit> inputFeature;
 
     Ptr<Tools::LevelViewerGameState> viewerState;

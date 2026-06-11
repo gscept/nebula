@@ -97,6 +97,27 @@ Rtti::Rtti(const char* className, Creator creatorFunc, ArrayCreator arrayCreator
 //------------------------------------------------------------------------------
 /**
 */
+Rtti::~Rtti()
+{
+    // RTTI instances in dynamically loaded modules are static globals.
+    // On module unload, unregister them so reload can register fresh RTTI
+    // objects without colliding with stale pointers.
+    if (Factory::HasInstance() && this->name.IsValid())
+    {
+        if (this->fourCC.IsValid())
+        {
+            Factory::Instance()->Unregister(this, this->name, this->fourCC);
+        }
+        else
+        {
+            Factory::Instance()->Unregister(this, this->name);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void*
 Rtti::Create() const
 {

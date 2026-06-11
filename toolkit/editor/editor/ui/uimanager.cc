@@ -166,6 +166,10 @@ UIManager::OnActivate()
         }
     }, "Import nlvl (game only)", "Ctrl+Shift+I", "File");
 
+    // Recreate frame-script pipelines when UI is activated after hot-reload.
+    FrameScript_default::SetupPipelines();
+    FrameScript_editorframe::SetupPipelines();
+
     //
     Graphics::GraphicsServer::Instance()->AddEndFrameCall([](IndexT frameIndex, IndexT bufferIndex)
     {
@@ -242,6 +246,21 @@ UIManager::OnActivate()
 void
 UIManager::OnDeactivate()
 {
+    if (Graphics::GraphicsServer::HasInstance())
+    {
+        // Remove editor-owned end-frame callback before module unload so no
+        // std::function targets keep code pointers into an unloaded shared object.
+        // Do NOT clear view callbacks — those belong to GraphicsFeatureUnit (shadow pass).
+        Graphics::GraphicsServer::Instance()->ClearEndFrameCalls();
+    }
+
+    // Clear all windows before releasing the server reference so they don't
+    // accumulate across hot-reloads (WindowServer is a persistent singleton).
+    if (windowServer != nullptr)
+    {
+        windowServer->ClearAllWindows();
+    }
+
     Game::Manager::OnDeactivate();
     windowServer = nullptr;
 }

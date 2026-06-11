@@ -475,11 +475,7 @@ FileDB::GetFolderPath(uint64_t folderId)
 
     for(const auto& component : pathComponents)
     {
-        if (!outPath.IsEmpty())
-        {
-            outPath.Append("/");
-        }
-        outPath.Append(component);
+        outPath.AppendPath(component);        
     }
     
     return  outPath;
@@ -500,14 +496,8 @@ FileDB::GetFilePath(uint64_t fileId)
     }
     
     Util::String folderPath = this->GetFolderPath(fileInfo.folderId);
-    if (folderPath.IsEmpty())
-    {
-        return fileInfo.name;
-    }
-    else
-    {
-        return folderPath + "/" + fileInfo.name;
-    }
+    folderPath.AppendPath(fileInfo.name);
+    return folderPath;
 }
 
 //------------------------------------------------------------------------------
@@ -673,7 +663,16 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
-        info.filePath = folderPath.IsEmpty() ? info.name : folderPath + "/" + info.name;
+        if (folderPath.IsEmpty())
+        {
+            info.filePath = info.name;
+        }
+        else
+        {
+            Util::String fullPath = folderPath;
+            fullPath.AppendPath(info.name);
+            info.filePath = fullPath;
+        }
         
         outFiles.Append(info);
     }

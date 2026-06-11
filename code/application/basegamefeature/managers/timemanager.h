@@ -76,6 +76,12 @@ namespace Time
     /// create a timesource. The global time manager handles the timesources.
     TimeSource* const CreateTimeSource(TimeSourceCreateInfo const& info);
 
+    /// return true if a timesource with this hash exists
+    bool HasTimeSource(uint32_t TIMESOURCE_HASH);
+
+    /// destroy an existing timesource by hash (safe no-op if missing)
+    void DestroyTimeSource(uint32_t TIMESOURCE_HASH);
+
     /// get a time source by hash
     TimeSource* const GetTimeSource(uint32_t TIMESOURCE_HASH);
 

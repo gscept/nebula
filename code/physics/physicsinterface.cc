@@ -387,6 +387,19 @@ FlushSimulation(IndexT scene)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+IsSceneActive(IndexT scene)
+{
+    if (state.foundation == nullptr)
+    {
+        return false;
+    }
+    return state.activeSceneIds.FindIndex(scene) != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ActorId
 CreateActorInstance(Physics::ActorResourceId id, Math::transform const & trans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {

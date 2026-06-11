@@ -58,6 +58,7 @@ NavigationFeatureUnit::OnActivate()
 void
 NavigationFeatureUnit::OnDeactivate()
 {   
+    Navigation::navMeshCache = nullptr;
     FeatureUnit::OnDeactivate();    
 }
 
@@ -75,6 +76,9 @@ NavigationFeatureUnit::OnBeginFrame()
 void 
 NavigationFeatureUnit::OnRenderDebug()
 {
+    if (Navigation::navMeshCache == nullptr)
+        return;
+
     Util::Array<Navigation::NavMeshId> meshes = Navigation::navMeshCache->GetLoadedMeshes();
     for (Navigation::NavMeshId id : meshes)
     {
@@ -90,6 +94,11 @@ NavigationFeatureUnit::OnRenderDebug()
 */
 void RenderUI(Graphics::GraphicsEntityId camera)
 {
+    (void)camera;
+
+    if (!NavigationFeatureUnit::HasInstance() || Navigation::navMeshCache == nullptr)
+        return;
+
     ImGui::Separator();
     static bool showNavmesh = false;
     if (ImGui::Checkbox("Render Navmeshes", &showNavmesh))

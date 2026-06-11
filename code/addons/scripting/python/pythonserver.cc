@@ -47,6 +47,8 @@ PythonServer::~PythonServer()
 bool
 PythonServer::Open()
 {
+    Threading::CriticalScope lock(&this->pythonLock);
+
     //FIXME fugly as f...
     static Util::String linebuffer;
     static Util::String errorbuffer;
@@ -59,7 +61,11 @@ PythonServer::Open()
         {
             init();
         }
-        Py_Initialize();
+        if (!this->pythonInitialized)
+        {
+            Py_Initialize();
+            this->pythonInitialized = true;
+        }
         
         nanobind::detail::init(nullptr);
         tyti::pylog::redirect_stdout([](const char* msg) 
@@ -99,13 +105,19 @@ PythonServer::Open()
 void
 PythonServer::Close()
 {
+    Threading::CriticalScope lock(&this->pythonLock);
+
     n_assert(this->IsOpen());    
     
     // this will unregister all commands
     ScriptServer::Close();
 
-    // close python
-    Py_Finalize();
+    // NOTE: Do NOT call Py_Finalize() here.
+    // Python cannot be safely re-initialized after finalization in the same process.
+    // During runtime module reloads, Close() can be called multiple times, and
+    // Py_Finalize() would corrupt interpreter state for subsequent Py_Initialize() calls.
+    // Only finalize at true process shutdown.
+    // Py_Finalize();
 }
 
 
@@ -118,7 +130,7 @@ PythonServer::AddModulePath(const IO::URI & folder)
 {
     n_assert(this->IsOpen());
     Util::String exec;
-    exec.Format("sys.path.insert(0,\"%s\")\n", folder.LocalPath().AsCharPtr());
+    exec.Format("import sys\nsys.path.insert(0,\"%s\")\n", folder.LocalPath().AsCharPtr());
     this->Eval(exec);
 }
 
@@ -129,13 +141,29 @@ PythonServer::AddModulePath(const IO::URI & folder)
 bool
 PythonServer::Eval(const String& str)
 {
+    Threading::CriticalScope lock(&this->pythonLock);
+
     n_assert(this->IsOpen());    
     if (!str.IsValid())
     {
         return false;
     }
 
-    return 0 != PyRun_SimpleString(str.AsCharPtr());
+    if (!Py_IsInitialized())
+    {
+        n_warning("PythonServer::Eval(): Python runtime is not initialized");
+        return false;
+    }
+
+    PyGILState_STATE gilState = PyGILState_Ensure();
+    int runResult = PyRun_SimpleStringFlags(str.AsCharPtr(), nullptr);
+    if (runResult != 0 && PyErr_Occurred())
+    {
+        PyErr_Print();
+    }
+    PyGILState_Release(gilState);
+
+    return runResult == 0;
 }
 
 

@@ -4,8 +4,13 @@
 //------------------------------------------------------------------------------
 //
 #include "cvar.h"
+#include "system/moduleinterface.h"
 #include "util/hashtable.h"
 #include "util/string.h"
+
+#if __WIN32__
+#include <windows.h>
+#endif
 
 namespace Core
 {
@@ -31,7 +36,162 @@ struct CVar
 constexpr uint16_t MAX_CVARS = 1024;
 uint16_t cVarOffset = 0;
 CVar cVars[MAX_CVARS];
-Util::HashTable<Util::String, uint16_t> cVarTable;
+
+static Util::HashTable<Util::String, uint16_t>&
+GetLocalCVarTable()
+{
+    static Util::HashTable<Util::String, uint16_t> table;
+    return table;
+}
+
+static CVar* CVarCreateLocal(CVarCreateInfo const& info);
+static CVar* CVarGetLocal(const char* name);
+static void CVarParseWriteLocal(CVar* cVar, const char* value);
+static void CVarWriteFloatLocal(CVar* cVar, float value);
+static void CVarWriteIntLocal(CVar* cVar, int value);
+static void CVarWriteStringLocal(CVar* cVar, const char* value);
+static int CVarReadIntLocal(CVar* cVar);
+static float CVarReadFloatLocal(CVar* cVar);
+static const char* CVarReadStringLocal(CVar* cVar);
+static bool CVarModifiedLocal(CVar* cVar);
+static void CVarSetModifiedLocal(CVar* cVar, bool value);
+static CVarType CVarGetTypeLocal(CVar* cVar);
+static const char* CVarGetNameLocal(CVar* cVar);
+static const char* CVarGetDescriptionLocal(CVar* cVar);
+static int CVarNumLocal();
+static CVar* CVarsBeginLocal();
+static CVar* CVarsEndLocal();
+static CVar* CVarNextLocal(CVar* cVar);
+
+#if __WIN32__
+NEBULA_MODULE_EXPORT CVar* NebulaHost_CVarCreate(int type, const char* name, const char* defaultValue, const char* description);
+NEBULA_MODULE_EXPORT CVar* NebulaHost_CVarGet(const char* name);
+NEBULA_MODULE_EXPORT void NebulaHost_CVarParseWrite(CVar* cVar, const char* value);
+NEBULA_MODULE_EXPORT void NebulaHost_CVarWriteFloat(CVar* cVar, float value);
+NEBULA_MODULE_EXPORT void NebulaHost_CVarWriteInt(CVar* cVar, int value);
+NEBULA_MODULE_EXPORT void NebulaHost_CVarWriteString(CVar* cVar, const char* value);
+NEBULA_MODULE_EXPORT int NebulaHost_CVarReadInt(CVar* cVar);
+NEBULA_MODULE_EXPORT float NebulaHost_CVarReadFloat(CVar* cVar);
+NEBULA_MODULE_EXPORT const char* NebulaHost_CVarReadString(CVar* cVar);
+NEBULA_MODULE_EXPORT bool NebulaHost_CVarModified(CVar* cVar);
+NEBULA_MODULE_EXPORT void NebulaHost_CVarSetModified(CVar* cVar, bool value);
+NEBULA_MODULE_EXPORT CVarType NebulaHost_CVarGetType(CVar* cVar);
+NEBULA_MODULE_EXPORT const char* NebulaHost_CVarGetName(CVar* cVar);
+NEBULA_MODULE_EXPORT const char* NebulaHost_CVarGetDescription(CVar* cVar);
+NEBULA_MODULE_EXPORT int NebulaHost_CVarNum();
+NEBULA_MODULE_EXPORT CVar* NebulaHost_CVarsBegin();
+NEBULA_MODULE_EXPORT CVar* NebulaHost_CVarsEnd();
+NEBULA_MODULE_EXPORT CVar* NebulaHost_CVarNext(CVar* cVar);
+
+struct HostCVarApi
+{
+    CVar* (*create)(int, const char*, const char*, const char*) = nullptr;
+    CVar* (*get)(const char*) = nullptr;
+    void (*parseWrite)(CVar*, const char*) = nullptr;
+    void (*writeFloat)(CVar*, float) = nullptr;
+    void (*writeInt)(CVar*, int) = nullptr;
+    void (*writeString)(CVar*, const char*) = nullptr;
+    int (*readInt)(CVar*) = nullptr;
+    float (*readFloat)(CVar*) = nullptr;
+    const char* (*readString)(CVar*) = nullptr;
+    bool (*modified)(CVar*) = nullptr;
+    void (*setModified)(CVar*, bool) = nullptr;
+    CVarType (*getType)(CVar*) = nullptr;
+    const char* (*getName)(CVar*) = nullptr;
+    const char* (*getDescription)(CVar*) = nullptr;
+    int (*num)() = nullptr;
+    CVar* (*begin)() = nullptr;
+    CVar* (*end)() = nullptr;
+    CVar* (*next)(CVar*) = nullptr;
+    bool resolved = false;
+    bool valid = false;
+};
+
+static HostCVarApi&
+GetHostCVarApi()
+{
+    static HostCVarApi api;
+    if (!api.resolved)
+    {
+        api.resolved = true;
+        HMODULE exe = ::GetModuleHandleA(nullptr);
+        if (exe != nullptr)
+        {
+            api.create = reinterpret_cast<CVar* (*)(int, const char*, const char*, const char*)>(::GetProcAddress(exe, "NebulaHost_CVarCreate"));
+            api.get = reinterpret_cast<CVar* (*)(const char*)>(::GetProcAddress(exe, "NebulaHost_CVarGet"));
+            api.parseWrite = reinterpret_cast<void (*)(CVar*, const char*)>(::GetProcAddress(exe, "NebulaHost_CVarParseWrite"));
+            api.writeFloat = reinterpret_cast<void (*)(CVar*, float)>(::GetProcAddress(exe, "NebulaHost_CVarWriteFloat"));
+            api.writeInt = reinterpret_cast<void (*)(CVar*, int)>(::GetProcAddress(exe, "NebulaHost_CVarWriteInt"));
+            api.writeString = reinterpret_cast<void (*)(CVar*, const char*)>(::GetProcAddress(exe, "NebulaHost_CVarWriteString"));
+            api.readInt = reinterpret_cast<int (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarReadInt"));
+            api.readFloat = reinterpret_cast<float (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarReadFloat"));
+            api.readString = reinterpret_cast<const char* (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarReadString"));
+            api.modified = reinterpret_cast<bool (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarModified"));
+            api.setModified = reinterpret_cast<void (*)(CVar*, bool)>(::GetProcAddress(exe, "NebulaHost_CVarSetModified"));
+            api.getType = reinterpret_cast<CVarType (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarGetType"));
+            api.getName = reinterpret_cast<const char* (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarGetName"));
+            api.getDescription = reinterpret_cast<const char* (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarGetDescription"));
+            api.num = reinterpret_cast<int (*)()>(::GetProcAddress(exe, "NebulaHost_CVarNum"));
+            api.begin = reinterpret_cast<CVar* (*)()>(::GetProcAddress(exe, "NebulaHost_CVarsBegin"));
+            api.end = reinterpret_cast<CVar* (*)()>(::GetProcAddress(exe, "NebulaHost_CVarsEnd"));
+            api.next = reinterpret_cast<CVar* (*)(CVar*)>(::GetProcAddress(exe, "NebulaHost_CVarNext"));
+
+            api.valid =
+                api.create != nullptr &&
+                api.get != nullptr &&
+                api.parseWrite != nullptr &&
+                api.writeFloat != nullptr &&
+                api.writeInt != nullptr &&
+                api.writeString != nullptr &&
+                api.readInt != nullptr &&
+                api.readFloat != nullptr &&
+                api.readString != nullptr &&
+                api.modified != nullptr &&
+                api.setModified != nullptr &&
+                api.getType != nullptr &&
+                api.getName != nullptr &&
+                api.getDescription != nullptr &&
+                api.num != nullptr &&
+                api.begin != nullptr &&
+                api.end != nullptr &&
+                api.next != nullptr;
+        }
+    }
+    return api;
+}
+
+static bool
+UseHostCVarApi()
+{
+    HostCVarApi& api = GetHostCVarApi();
+    return api.valid && api.create != &NebulaHost_CVarCreate;
+}
+
+#define CVAR_FORWARD_TO_HOST_RET(member, ...) \
+    do { \
+        if (UseHostCVarApi()) \
+        { \
+            HostCVarApi& cvarHostApi = GetHostCVarApi(); \
+            return cvarHostApi.member(__VA_ARGS__); \
+        } \
+    } while (false)
+
+#define CVAR_FORWARD_TO_HOST_VOID(member, ...) \
+    do { \
+        if (UseHostCVarApi()) \
+        { \
+            HostCVarApi& cvarHostApi = GetHostCVarApi(); \
+            cvarHostApi.member(__VA_ARGS__); \
+            return; \
+        } \
+    } while (false)
+
+#else
+
+#define CVAR_FORWARD_TO_HOST_RET(member, ...) do { } while (false)
+#define CVAR_FORWARD_TO_HOST_VOID(member, ...) do { } while (false)
+
+#endif
 
 //------------------------------------------------------------------------------
 /**
@@ -39,14 +199,24 @@ Util::HashTable<Util::String, uint16_t> cVarTable;
 CVar*
 CVarCreate(CVarCreateInfo const& info)
 {
-    CVar* ptr = CVarGet(info.name);
+    CVAR_FORWARD_TO_HOST_RET(create, (int)info.type, info.name, info.defaultValue, info.description);
+    return CVarCreateLocal(info);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVar*
+CVarCreateLocal(CVarCreateInfo const& info)
+{
+    CVar* ptr = CVarGetLocal(info.name);
     const bool needsInit = (ptr == nullptr);
     if (ptr == nullptr)
     {
         IndexT varIndex = cVarOffset++;
         n_assert(varIndex < MAX_CVARS);
         ptr = &cVars[varIndex];
-        cVarTable.Add(info.name, varIndex);
+        GetLocalCVarTable().Add(info.name, varIndex);
     }
     n_assert2(!Util::String(info.name).ContainsCharFromSet(" "), "CVar name cannot contain spaces.");
         
@@ -59,7 +229,7 @@ CVarCreate(CVarCreateInfo const& info)
     }
     if (needsInit)
     {
-        CVarParseWrite(ptr, info.defaultValue);
+        CVarParseWriteLocal(ptr, info.defaultValue);
     }
     return ptr;
 }
@@ -84,7 +254,18 @@ CVarCreate(CVarType type, const char* name, const char* defaultValue, const char
 CVar*
 CVarGet(const char* name)
 {
+    CVAR_FORWARD_TO_HOST_RET(get, name);
+    return CVarGetLocal(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVar*
+CVarGetLocal(const char* name)
+{
     Util::String const str = name;
+    Util::HashTable<Util::String, uint16_t>& cVarTable = GetLocalCVarTable();
     IndexT const index = cVarTable.FindIndex(str);
     if (index != InvalidIndex)
     {
@@ -100,16 +281,26 @@ CVarGet(const char* name)
 void
 CVarParseWrite(CVar* cVar, const char* value)
 {
+    CVAR_FORWARD_TO_HOST_VOID(parseWrite, cVar, value);
+    CVarParseWriteLocal(cVar, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CVarParseWriteLocal(CVar* cVar, const char* value)
+{
     switch (cVar->value.type)
     {
     case CVar_Int:
-        CVarWriteInt(cVar, atoi(value));
+        CVarWriteIntLocal(cVar, atoi(value));
         break;
     case CVar_Float:
-        CVarWriteFloat(cVar, atof(value));
+        CVarWriteFloatLocal(cVar, atof(value));
         break;
     case CVar_String:
-        CVarWriteString(cVar, value);
+        CVarWriteStringLocal(cVar, value);
         break;
     default:
         break;
@@ -121,6 +312,16 @@ CVarParseWrite(CVar* cVar, const char* value)
 */
 void
 CVarWriteFloat(CVar* cVar, float value)
+{
+    CVAR_FORWARD_TO_HOST_VOID(writeFloat, cVar, value);
+    CVarWriteFloatLocal(cVar, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CVarWriteFloatLocal(CVar* cVar, float value)
 {
     if (cVar->value.type == CVar_Float)
     {
@@ -139,6 +340,16 @@ CVarWriteFloat(CVar* cVar, float value)
 void
 CVarWriteInt(CVar* cVar, int value)
 {
+    CVAR_FORWARD_TO_HOST_VOID(writeInt, cVar, value);
+    CVarWriteIntLocal(cVar, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CVarWriteIntLocal(CVar* cVar, int value)
+{
     if (cVar->value.type == CVar_Int)
     {
         cVar->value.i = value;
@@ -155,6 +366,16 @@ CVarWriteInt(CVar* cVar, int value)
 */
 void
 CVarWriteString(CVar* cVar, const char* value)
+{
+    CVAR_FORWARD_TO_HOST_VOID(writeString, cVar, value);
+    CVarWriteStringLocal(cVar, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CVarWriteStringLocal(CVar* cVar, const char* value)
 {
     if (cVar->value.type == CVar_String)
     {
@@ -176,6 +397,16 @@ CVarWriteString(CVar* cVar, const char* value)
 int const
 CVarReadInt(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(readInt, cVar);
+    return CVarReadIntLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static int
+CVarReadIntLocal(CVar* cVar)
+{
     if (cVar->value.type == CVar_Int)
     {
         return cVar->value.i;
@@ -190,6 +421,16 @@ CVarReadInt(CVar* cVar)
 */
 float const
 CVarReadFloat(CVar* cVar)
+{
+    CVAR_FORWARD_TO_HOST_RET(readFloat, cVar);
+    return CVarReadFloatLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static float
+CVarReadFloatLocal(CVar* cVar)
 {
     if (cVar->value.type == CVar_Float)
     {
@@ -206,6 +447,16 @@ CVarReadFloat(CVar* cVar)
 const char*
 CVarReadString(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(readString, cVar);
+    return CVarReadStringLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static const char*
+CVarReadStringLocal(CVar* cVar)
+{
     if (cVar->value.type == CVar_String)
     {
         return cVar->value.cstr;
@@ -221,6 +472,16 @@ CVarReadString(CVar* cVar)
 bool
 CVarModified(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(modified, cVar);
+    return CVarModifiedLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+CVarModifiedLocal(CVar* cVar)
+{
     return cVar->modified;
 }
 
@@ -229,6 +490,16 @@ CVarModified(CVar* cVar)
 */
 void
 CVarSetModified(CVar* cVar, bool value)
+{
+    CVAR_FORWARD_TO_HOST_VOID(setModified, cVar, value);
+    CVarSetModifiedLocal(cVar, value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CVarSetModifiedLocal(CVar* cVar, bool value)
 {
     cVar->modified = value;
 }
@@ -239,6 +510,16 @@ CVarSetModified(CVar* cVar, bool value)
 CVarType
 CVarGetType(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(getType, cVar);
+    return CVarGetTypeLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVarType
+CVarGetTypeLocal(CVar* cVar)
+{
     return cVar->value.type;
 }
 
@@ -247,6 +528,16 @@ CVarGetType(CVar* cVar)
 */
 const char*
 CVarGetName(CVar* cVar)
+{
+    CVAR_FORWARD_TO_HOST_RET(getName, cVar);
+    return CVarGetNameLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static const char*
+CVarGetNameLocal(CVar* cVar)
 {
     return cVar->name.AsCharPtr();
 }
@@ -257,6 +548,16 @@ CVarGetName(CVar* cVar)
 const char*
 CVarGetDescription(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(getDescription, cVar);
+    return CVarGetDescriptionLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static const char*
+CVarGetDescriptionLocal(CVar* cVar)
+{
     return cVar->description.AsCharPtr();
 }
 
@@ -265,6 +566,16 @@ CVarGetDescription(CVar* cVar)
 */
 int
 CVarNum()
+{
+    CVAR_FORWARD_TO_HOST_RET(num);
+    return CVarNumLocal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static int
+CVarNumLocal()
 {
     return cVarOffset;
 }
@@ -275,6 +586,16 @@ CVarNum()
 CVar*
 CVarsBegin()
 {
+    CVAR_FORWARD_TO_HOST_RET(begin);
+    return CVarsBeginLocal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVar*
+CVarsBeginLocal()
+{
     return cVars;
 }
 
@@ -283,6 +604,16 @@ CVarsBegin()
 */
 CVar*
 CVarsEnd()
+{
+    CVAR_FORWARD_TO_HOST_RET(end);
+    return CVarsEndLocal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVar*
+CVarsEndLocal()
 {
     return cVars + cVarOffset;
 }
@@ -293,8 +624,133 @@ CVarsEnd()
 CVar*
 CVarNext(CVar* cVar)
 {
+    CVAR_FORWARD_TO_HOST_RET(next, cVar);
+    return CVarNextLocal(cVar);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static CVar*
+CVarNextLocal(CVar* cVar)
+{
     return cVar + 1;
 }
+
+#if __WIN32__
+NEBULA_MODULE_EXPORT CVar*
+NebulaHost_CVarCreate(int type, const char* name, const char* defaultValue, const char* description)
+{
+    CVarCreateInfo info;
+    info.type = (CVarType)type;
+    info.name = name;
+    info.defaultValue = defaultValue;
+    info.description = description;
+    return CVarCreateLocal(info);
+}
+
+NEBULA_MODULE_EXPORT CVar*
+NebulaHost_CVarGet(const char* name)
+{
+    return CVarGetLocal(name);
+}
+
+NEBULA_MODULE_EXPORT void
+NebulaHost_CVarParseWrite(CVar* cVar, const char* value)
+{
+    CVarParseWriteLocal(cVar, value);
+}
+
+NEBULA_MODULE_EXPORT void
+NebulaHost_CVarWriteFloat(CVar* cVar, float value)
+{
+    CVarWriteFloatLocal(cVar, value);
+}
+
+NEBULA_MODULE_EXPORT void
+NebulaHost_CVarWriteInt(CVar* cVar, int value)
+{
+    CVarWriteIntLocal(cVar, value);
+}
+
+NEBULA_MODULE_EXPORT void
+NebulaHost_CVarWriteString(CVar* cVar, const char* value)
+{
+    CVarWriteStringLocal(cVar, value);
+}
+
+NEBULA_MODULE_EXPORT int
+NebulaHost_CVarReadInt(CVar* cVar)
+{
+    return CVarReadIntLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT float
+NebulaHost_CVarReadFloat(CVar* cVar)
+{
+    return CVarReadFloatLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT const char*
+NebulaHost_CVarReadString(CVar* cVar)
+{
+    return CVarReadStringLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT bool
+NebulaHost_CVarModified(CVar* cVar)
+{
+    return CVarModifiedLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT void
+NebulaHost_CVarSetModified(CVar* cVar, bool value)
+{
+    CVarSetModifiedLocal(cVar, value);
+}
+
+NEBULA_MODULE_EXPORT CVarType
+NebulaHost_CVarGetType(CVar* cVar)
+{
+    return CVarGetTypeLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT const char*
+NebulaHost_CVarGetName(CVar* cVar)
+{
+    return CVarGetNameLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT const char*
+NebulaHost_CVarGetDescription(CVar* cVar)
+{
+    return CVarGetDescriptionLocal(cVar);
+}
+
+NEBULA_MODULE_EXPORT int
+NebulaHost_CVarNum()
+{
+    return CVarNumLocal();
+}
+
+NEBULA_MODULE_EXPORT CVar*
+NebulaHost_CVarsBegin()
+{
+    return CVarsBeginLocal();
+}
+
+NEBULA_MODULE_EXPORT CVar*
+NebulaHost_CVarsEnd()
+{
+    return CVarsEndLocal();
+}
+
+NEBULA_MODULE_EXPORT CVar*
+NebulaHost_CVarNext(CVar* cVar)
+{
+    return CVarNextLocal(cVar);
+}
+#endif
 
 
 } // namespace Core

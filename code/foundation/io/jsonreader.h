@@ -219,7 +219,7 @@ inline void
 JsonReader::Get(Util::BitField<N>& ret, const char* attr)
 {
     Util::Array<int> arr;
-    this->Get<Util::Array<int>>(arr);
+    this->Get<Util::Array<int>>(arr, attr);
 
     unsigned int count = arr.Size();
     n_assert(count <= N);

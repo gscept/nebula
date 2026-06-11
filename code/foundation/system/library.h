@@ -14,6 +14,12 @@ namespace System
 {
 typedef Win32::Win32Library Library;
 }
+#elif (__linux__ || __OSX__ || __APPLE__)
+#include "posix/posixlibrary.h"
+namespace System
+{
+typedef Posix::PosixLibrary Library;
+}
 #else
 #error "System::Library not implemented on this platform!"
 #endif

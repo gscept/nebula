@@ -226,6 +226,9 @@ void EndSimulating(IndexT scene);
 /// this will block until simulation has ended for cleanups e.g.
 void FlushSimulation(IndexT scene);
 
+/// return true if the scene id currently belongs to an active physics scene
+bool IsSceneActive(IndexT scene);
+
 ///
 IndexT CreateScene();
 ///

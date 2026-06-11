@@ -27,6 +27,15 @@ AttributeRegistry::Instance()
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+AttributeRegistry::HasInstance()
+{
+    return Singleton != nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**    
     This static method is used to destroy the registry object and should be
     called right before the main function exits. It will make sure that
     no accidential memory leaks are reported by the debug heap.

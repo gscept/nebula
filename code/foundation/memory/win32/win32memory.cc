@@ -6,9 +6,9 @@
 
 #include "core/types.h"
 #include "core/sysfunc.h"
+#include "system/moduleinterface.h"
 #include "memory/heap.h"
 #include "memory/poolarrayallocator.h"
-
 
 namespace Memory
 {
@@ -30,10 +30,7 @@ Alloc(HeapType heapType, size_t size, size_t align)
 {
     n_assert(heapType < NumHeapTypes);
     n_assert(align <= 16);
-    // need to make sure everything has been setup
-    Core::SysFunc::Setup();
-
-    void* allocPtr = 0;    
+    void* allocPtr = 0;
     {
         n_assert(0 != Heaps[heapType]);
         allocPtr =  __HeapAlloc16(Heaps[heapType], 0, size);
@@ -422,6 +419,16 @@ FreeVirtual(void* ptr, size_t size)
 {
     auto ret = VirtualFree(ptr, 0, MEM_RELEASE);
     n_assert(ret != 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_MODULE_EXPORT void*
+NebulaHost_GetMemoryHeapHandle(int heapType)
+{
+    n_assert(heapType >= 0 && heapType < NumHeapTypes);
+    return reinterpret_cast<void*>(Heaps[heapType]);
 }
 
 } // namespace Memory

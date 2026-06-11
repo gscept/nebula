@@ -355,7 +355,12 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
     }
 #endif
 
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    if (this->activeSceneIds.FindIndex(sceneId) == InvalidIndex)
+    {
+        N_MARKER_END();
+        return;
+    }
+
     Physics::Scene& scene = this->activeScenes[sceneId];
     n_assert(scene.isSimulating == false);
     scene.time -= delta;
@@ -375,7 +380,11 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 void
 PhysxState::EndSimulating(IndexT sceneId)
 {
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    if (this->activeSceneIds.FindIndex(sceneId) == InvalidIndex)
+    {
+        return;
+    }
+
     Physics::Scene& scene = this->activeScenes[sceneId];
 
     if (!scene.isSimulating)
@@ -413,7 +422,10 @@ PhysxState::EndSimulating(IndexT sceneId)
 void
 PhysxState::FlushSimulation(IndexT sceneId)
 {
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    if (this->activeSceneIds.FindIndex(sceneId) == InvalidIndex)
+    {
+        return;
+    }
     Physics::Scene& scene = this->activeScenes[sceneId];
     if (scene.isSimulating)
     {

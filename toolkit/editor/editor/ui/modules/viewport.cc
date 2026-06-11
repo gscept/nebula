@@ -34,7 +34,18 @@ Viewport::Viewport()
 */
 Viewport::~Viewport()
 {
+    if (this->directionalLight != Graphics::InvalidGraphicsEntityId)
+    {
+        if (Lighting::LightContext::IsEntityRegistered(this->directionalLight))
+            Lighting::LightContext::DeregisterEntityImmediate(this->directionalLight);
+        Graphics::DestroyEntity(this->directionalLight);
+    }
 
+    if (this->targetTexture != CoreGraphics::InvalidTextureId)
+        CoreGraphics::DestroyTexture(this->targetTexture);
+
+    if (this->ownsView && this->view != Graphics::InvalidViewId)
+        Graphics::GraphicsServer::Instance()->DiscardView(this->view);
 }
 
 //------------------------------------------------------------------------------
@@ -43,6 +54,7 @@ Viewport::~Viewport()
 void
 Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
 {
+    this->ownsView = true;
     static int unique = 0;
     Util::String name = viewName;
     name.AppendInt(unique++);

@@ -32,6 +32,8 @@ class Factory
 public:
     /// get pointer to singleton instance (cannot use singleton.h!)
     static Factory* Instance();
+    /// return true if singleton exists
+    static bool HasInstance();
     /// static instance destruction method
     static void Destroy();
 
@@ -39,6 +41,10 @@ public:
     void Register(const Rtti* rtti, const Util::String& className, const Util::FourCC& classFourCC);
     /// register a RTTI object with the factory (without fourcc code)
     void Register(const Rtti* rtti, const Util::String& className);
+    /// unregister a RTTI object by name/fourcc (safe no-op if not found)
+    void Unregister(const Rtti* rtti, const Util::String& className, const Util::FourCC& classFourCC);
+    /// unregister a RTTI object by name (safe no-op if not found)
+    void Unregister(const Rtti* rtti, const Util::String& className);
     /// check if a class exists by class name
     bool ClassExists(const Util::String& className) const;
     /// check if a class exists by FourCC code

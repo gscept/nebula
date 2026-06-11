@@ -79,6 +79,21 @@ ComponentInspection::Register(ComponentId component, DrawFunc func)
 /**
 */
 void
+ComponentInspection::Unregister(ComponentId component)
+{
+    if (Singleton == nullptr)
+        return;
+
+    if (component.id >= Singleton->inspectors.Size())
+        return;
+
+    Singleton->inspectors[component.id] = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ComponentInspection::DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ComponentInspection* reg = Instance();

@@ -365,7 +365,7 @@ Mat4Test::Run()
 
     // trs() is documented shorthand for affine(scale, rotation, position)
     const mat4 mTrs = trs(trsPos, trsRot, trsScale);
-    const mat4 mAffine = affine(trsScale, trsRot, trsPos);
+    const mat4 mAffine = Math::affine(trsScale, trsRot, trsPos);
     VERIFY(matnearequal(mTrs, mAffine));
 
     // isidentity should only be true for identity matrix

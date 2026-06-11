@@ -19,6 +19,30 @@ HANDLE volatile Heaps[NumHeapTypes] = { NULL };
 void
 SetupHeaps()
 {
+    // If running in a module DLL the host EXE has already created the heaps.
+    // Detect this by querying the host for heap 0: if non-null we are a module,
+    // so copy all handles directly instead of calling HeapCreate.
+    using GetHeapHandleFn = void* (*)(int);
+    HMODULE exe = ::GetModuleHandleA(nullptr);
+    if (exe != nullptr)
+    {
+        GetHeapHandleFn hostGetHeap = reinterpret_cast<GetHeapHandleFn>(
+            ::GetProcAddress(exe, "NebulaHost_GetMemoryHeapHandle"));
+        if (hostGetHeap != nullptr)
+        {
+            HANDLE h = reinterpret_cast<HANDLE>(hostGetHeap(0));
+            if (h != nullptr)
+            {
+                for (unsigned int i = 0; i < NumHeapTypes; i++)
+                {
+                    n_assert(0 == Heaps[i]);
+                    Heaps[i] = reinterpret_cast<HANDLE>(hostGetHeap(i));
+                }
+                return;
+            }
+        }
+    }
+
     // setup global heaps
     const SIZE_T megaByte = 1024 * 1024;
     const SIZE_T kiloByte = 1024;
