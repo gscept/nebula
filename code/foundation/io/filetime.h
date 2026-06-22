@@ -18,13 +18,7 @@ namespace IO
 {
 typedef Win32::Win32FileTime FileTime;
 }
-#elif __OSX__
-#include "io/osx/osxfiletime.h"
-namespace IO
-{
-typedef OSX::OSXFileTime FileTime;
-}
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "io/posix/posixfiletime.h"
 namespace IO
 {

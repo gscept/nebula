@@ -8,7 +8,7 @@
 
 namespace IO
 {
-#if __WIN32__ || __linux__
+#if __WIN32__ || __linux__ || __APPLE__
 __ImplementClass(IO::Archive, 'ARCV', IO::ZipArchive);
 #else
 #error "IO::Archive not implemented on this platform!"

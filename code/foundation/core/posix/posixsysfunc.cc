@@ -43,15 +43,11 @@ SysFunc::Setup()
     if (!SetupCalled)
     {
          SetupCalled = true;
-        #if !__MAYA__
         //Threading::Thread::SetMyThreadName("MainThread");
-        #endif
         Memory::SetupHeaps();
         Memory::Heap::Setup();
         Blob::Setup();
-        #if !__MAYA__
         Net::Socket::InitNetwork();
-        #endif   
 
         globalStringAtomTable = new Util::GlobalStringAtomTable;
         #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES

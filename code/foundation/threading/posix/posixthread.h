@@ -64,6 +64,18 @@ public:
      /// get the thread ID of this thread
     static Threading::ThreadId GetMyThreadId();
 
+#if NEBULA_DEBUG
+    struct ThreadDebugInfo
+    {
+        Util::String threadName;
+        PosixThread::Priority threadPriority;
+        System::Cpu::CoreId threadCoreId;
+        SizeT threadStackSize;
+    };
+    /// query thread stats (debug mode only)
+    static Util::Array<ThreadDebugInfo> GetRunningThreadDebugInfos();
+#endif
+
 protected:
     /// override this method if your thread loop needs a wakeup call before stopping
     virtual void EmitWakeupSignal();
@@ -77,13 +89,18 @@ private:
     static void* ThreadProc(void* self);
 
     pthread_t threadHandle;
-    cpu_set_t affinity;
     PosixEvent stopRequestEvent;
     bool running;
     Priority priority;
     unsigned int stackSize;
-    Util::String name;
+    Util::String name;	
     static ThreadLocal const char* ThreadName;
+
+#if NEBULA_DEBUG
+    static Threading::CriticalSection criticalSection;
+    static Util::List<PosixThread*> ThreadList;
+    Util::List<PosixThread*>::Iterator threadListIterator;
+#endif
 };
 
 //------------------------------------------------------------------------------
