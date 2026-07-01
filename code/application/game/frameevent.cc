@@ -108,7 +108,7 @@ FrameEvent::RemoveProcessor(Processor* processor)
     {
         if (this->batches[i]->TryRemove(processor))
         {
-            break;
+            return;
         }
     }
 
