@@ -104,7 +104,15 @@ FrameEvent::AddProcessor(Processor* processor)
 void
 FrameEvent::RemoveProcessor(Processor* processor)
 {
-    n_error("Not implemented!");
+    for (int i = 0; i < this->batches.Size(); i++)
+    {
+        if (this->batches[i]->TryRemove(processor))
+        {
+            break;
+        }
+    }
+
+    n_printf("Failed to remove Processor '%s' from FrameEvent '%s'\n", processor->name.AsCharPtr(), this->name.Value());
 }
 
 //------------------------------------------------------------------------------
@@ -210,6 +218,24 @@ FrameEvent::Batch::TryInsert(Processor* processor)
 
     this->processors.Append(processor);
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+FrameEvent::Batch::TryRemove(Processor* processor)
+{
+    for (int i = 0; i < this->processors.Size(); i++)
+    {
+        if (this->processors[i] == processor)
+        {
+            this->processors.EraseIndex(i);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------

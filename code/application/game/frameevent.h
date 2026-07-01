@@ -85,6 +85,10 @@ public:
     /// into a new batch
     bool TryInsert(Processor* processor);
 
+    /// Tries to remove a processor from the batch, if it
+    /// exists in the batch. returns true if removed.
+    bool TryRemove(Processor* processor);
+
     /// prefilter all processors. Should not be done per frame - instead use CacheTable if you need to do incremental caching
     void Prefilter(World* world, bool force = false);
     /// add a table to the cache of any processors that accepts it, that is attached to this frame batch
