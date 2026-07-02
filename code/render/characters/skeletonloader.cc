@@ -16,6 +16,14 @@ __ImplementClass(Characters::SkeletonLoader, 'SSKP', Resources::ResourceLoader)
 //------------------------------------------------------------------------------
 /**
 */
+SkeletonLoader::SkeletonLoader()
+{
+    this->loaderExtension = "nsk";
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Resources::ResourceLoader::ResourceInitOutput
 SkeletonLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {

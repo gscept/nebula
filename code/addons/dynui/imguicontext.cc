@@ -65,8 +65,8 @@ ImGuiKey NebulaToImguiKeyCodes[] =
     ImGuiKey_Insert,         // Code::Insert
     ImGuiKey_Delete,         // Code::Delete
     ImGuiKey_None,           // Code::Help (No direct mapping)
-    ImGuiKey_None,           // Code::LeftWindows (No direct mapping)
-    ImGuiKey_None,           // Code::RightWindows (No direct mapping)
+    ImGuiKey_LeftSuper,          // Code::LeftWindows (No direct mapping)
+    ImGuiKey_RightSuper,          // Code::RightWindows (No direct mapping)
     ImGuiKey_None,           // Code::Apps (No direct mapping)
     ImGuiKey_None,           // Code::Sleep (No direct mapping)
     ImGuiKey_Keypad0,        // Code::NumPad0

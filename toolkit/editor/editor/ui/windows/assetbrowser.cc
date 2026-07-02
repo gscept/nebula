@@ -110,6 +110,7 @@ static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
     nullptr,  
     nullptr,  
     nullptr,  
+    ParticleNew,
     nullptr,  
     nullptr,  
     nullptr,  
@@ -117,12 +118,6 @@ static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
     nullptr,  
     nullptr,  
     nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,
-    ParticleNew,  
     nullptr
 };
 
@@ -427,18 +422,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     {
         switch (type)
         {
-            case ToolkitUtil::FileType::FBX:
-            case ToolkitUtil::FileType::GLTF:
-            case ToolkitUtil::FileType::Model:
+            case ToolkitUtil::FileType::Asset:
                 return AssetEditor::AssetType::Model;
-            case ToolkitUtil::FileType::Mesh:
-                return AssetEditor::AssetType::Mesh;
-            case ToolkitUtil::FileType::Texture:
-                return AssetEditor::AssetType::Texture;
-            case ToolkitUtil::FileType::Skeleton:
-                return AssetEditor::AssetType::Skeleton;
-            case ToolkitUtil::FileType::Animation:
-                return AssetEditor::AssetType::Animation;
             case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
             case ToolkitUtil::FileType::Particle:
@@ -633,7 +618,10 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         {
             IO::URI uri = fileToOpen.filePath;
             Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
-            assetEditor->Open(uri, FileEntryTypeToAssetType(fileToOpen.type));
+
+            Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
+            
+            assetEditor->Open(uri, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
         }    
     }
 }
@@ -889,16 +877,11 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     ext.ToLower();
     
     // Model files
-    if (ext == "namdl")
+    if (ext == "nasset")
     {
-        return ToolkitUtil::FileType::Model;
+        return ToolkitUtil::FileType::Asset;
     }
 
-    if (ext == "namsh")
-    {
-        return ToolkitUtil::FileType::Mesh;
-    }
-    
     // Texture files
     if (ext == "natex")
     {
@@ -910,23 +893,17 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     {
         return ToolkitUtil::FileType::Surface;
     }
-    
+
+    // Particle files
+    if (ext == "napar")
+    {
+        return ToolkitUtil::FileType::Particle;
+    }
+
     // Audio files
     if (ext == "naaud")
     {
         return ToolkitUtil::FileType::Audio;
-    }
-    
-    // Skeleton files
-    if (ext == "naske")
-    {
-        return ToolkitUtil::FileType::Skeleton;
-    }
-    
-    // Animation files
-    if (ext == "naani")
-    {
-        return ToolkitUtil::FileType::Animation;
     }
     
     // Frame files
@@ -953,11 +930,6 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
         return ToolkitUtil::FileType::NavMesh;
     }
 
-    // Particle files
-    if (ext == "napar")
-    {
-        return ToolkitUtil::FileType::Particle;
-    }
     
     // Default to Other for unknown extensions
     return ToolkitUtil::FileType::Other;

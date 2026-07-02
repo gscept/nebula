@@ -632,6 +632,23 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
 //------------------------------------------------------------------------------
 /**
 */
+Resources::ResourceId
+ResourceLoader::CreateResource(
+    const IO::URN& res,
+    const void* loadInfo,
+    SizeT loadInfoSize,
+    const Util::StringAtom& tag,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed,
+    bool immediate,
+    bool stream)
+{
+    return CreateResource(res.MakeURI(this->loaderExtension), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 {

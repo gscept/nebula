@@ -21,6 +21,14 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
+AnimationLoader::AnimationLoader()
+{
+    this->loaderExtension = "nax";
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Resources::ResourceLoader::ResourceInitOutput
 AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {

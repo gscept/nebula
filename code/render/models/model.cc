@@ -19,6 +19,8 @@ CreateModel(const ModelCreateInfo& info)
     Ids::Id32 id = modelAllocator.Alloc();
     modelAllocator.Set<Model_BoundingBox>(id, info.boundingBox);
     modelAllocator.Set<Model_Nodes>(id, info.nodes);
+    modelAllocator.Set<Model_JointMasks>(id, info.jointMasks);
+    modelAllocator.Set<Model_Takes>(id, info.takes);
 
     ModelId ret = id;
     return ret;

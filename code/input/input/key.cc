@@ -80,20 +80,8 @@ Key::ToString(Code code)
     case F10:           return "F10";
     case F11:           return "F11";
     case F12:           return "F12";
-    case F13:           return "F13";
-    case F14:           return "F14";
-    case F15:           return "F15";
-    case F16:           return "F16";
-    case F17:           return "F17";
-    case F18:           return "F18";
-    case F19:           return "F19";
-    case F20:           return "F20";
-    case F21:           return "F21";
-    case F22:           return "F22";
-    case F23:           return "F23";
-    case F24:           return "F24";
     case NumLock:       return "NumLock";
-    case Scroll:        return "Scroll";
+    case ScrollLock:    return "ScrollLock";
     case Semicolon:     return "Semicolon";
     case Slash:         return "Slash";
     case Tilde:         return "Tilde";
@@ -242,20 +230,8 @@ Key::ToDirectInput(Code key)
     case F10:           return 0x44;
     case F11:           return 0x57;
     case F12:           return 0x58;
-    case F13:           return 0x64;
-    case F14:           return 0x65;
-    case F15:           return 0x66;
-        //case F16:           return "F16";
-        //case F17:           return "F17";
-        //case F18:           return "F18";
-        //case F19:           return "F19";
-        //case F20:           return "F20";
-        //case F21:           return "F21";
-        //case F22:           return "F22";
-        //case F23:           return "F23";
-        //case F24:           return "F24";
     case NumLock:       return 0x45;
-    case Scroll:        return 0x46;
+    case ScrollLock:    return 0x46;
     case Semicolon:     return 0x27;
     case Slash:         return 0x35;
         //case Tilde:         return "Tilde";
@@ -447,21 +423,9 @@ Key::ToRocket(Code key)
     case F10:           return 116;
     case F11:           return 117;
     case F12:           return 118;
-    case F13:           return 119;
-    case F14:           return 120;
-    case F15:           return 121;
-    case F16:           return 122;
-    case F17:           return 123;
-    case F18:           return 124;
-    case F19:           return 125;
-    case F20:           return 126;
-    case F21:           return 127;
-    case F22:           return 128;
-    case F23:           return 129;
-    case F24:           return 130;
 
     case NumLock:       return 131;
-    case Scroll:        return 132;
+    case ScrollLock:    return 132;
 
     case LeftShift:     return 138;
     case RightShift:    return 139;
@@ -599,20 +563,8 @@ Key::Code Key::FromRocket(uint key)
     case 116: return F10;
     case 117: return F11;
     case 118: return F12;
-    case 119: return F13;
-    case 120: return F14;
-    case 121: return F15;
-    case 122: return F16;
-    case 123: return F17;
-    case 124: return F18;
-    case 125: return F19;
-    case 126: return F20;
-    case 127: return F21;
-    case 128: return F22;
-    case 129: return F23;
-    case 130: return F24;
     case 131: return NumLock;
-    case 132: return Scroll;
+    case 132: return ScrollLock;
     case 138: return LeftShift;
     case 139: return RightShift;
     case 140: return LeftControl;
@@ -767,7 +719,7 @@ Key::KeyCodesByGroup(Key::Group group)
         }
         break;
     case Key::FunctionKeys:
-        for (index = Key::F1; index <= Key::F24; index++)
+        for (index = Key::F1; index <= Key::F12; index++)
         {
             keys.Append((Key::Code)index);
         }
@@ -877,20 +829,8 @@ Key::SetupDict()
     dict.Add("F10", F10);
     dict.Add("F11", F11);
     dict.Add("F12", F12);
-    dict.Add("F13", F13);
-    dict.Add("F14", F14);
-    dict.Add("F15", F15);
-    dict.Add("F16", F16);
-    dict.Add("F17", F17);
-    dict.Add("F18", F18);
-    dict.Add("F19", F19);
-    dict.Add("F20", F20);
-    dict.Add("F21", F21);
-    dict.Add("F22", F22);
-    dict.Add("F23", F23);
-    dict.Add("F24", F24);
     dict.Add("NumLock", NumLock);
-    dict.Add("Scroll", Scroll);
+    dict.Add("ScrollLock", ScrollLock);
     dict.Add("Semicolon", Semicolon);
     dict.Add("Slash", Slash);
     dict.Add("Tilde", Tilde);

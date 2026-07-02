@@ -24,6 +24,9 @@ class AnimationLoader : public Resources::ResourceLoader
 {
     __DeclareClass(AnimationLoader);
 
+    /// Constructor
+    AnimationLoader();
+
 private:
     friend class AnimSampleBuffer;
 

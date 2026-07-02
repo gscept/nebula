@@ -24,6 +24,7 @@ MeshLoader::MeshLoader()
 {
     this->placeholderResourceName = "sysmsh:placeholder.nvx";
     this->failResourceName = "sysmsh:error.nvx";
+    this->loaderExtension = "nvx";
     this->async = true;
 
     this->streamerThreadName = "Mesh Streamer Thread";

@@ -224,6 +224,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("systex",    "tex:system"));
     this->SetAssign(Assign("sysani",    "ani:system"));
     this->SetAssign(Assign("sysmdl",    "mdl:system"));
+    this->SetAssign(Assign("sysmat",    "mat:system"));
     this->SetAssign(Assign("syssur",    "sur:system"));
     this->SetAssign(Assign("sysphys",   "phys:system"));
 

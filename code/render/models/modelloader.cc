@@ -42,6 +42,7 @@ ModelLoader::Setup()
 {
     this->placeholderResourceName = "sysmdl:placeholder.n3";
     this->failResourceName = "sysmdl:error.n3";
+    this->loaderExtension = "n3";
 
     IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode);
     IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode);
@@ -69,6 +70,8 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
 
     // setup stack for loading nodes
     Util::Stack<Models::ModelNode*> nodeStack;
+    Util::FixedArray<Models::JointMask> jointMasks;
+    Util::FixedArray<Models::Take> takes;
 
     reader->SetStream(stream);
     if (reader->Open())
@@ -107,6 +110,51 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
                 // start of Model
                 UNUSED(FourCC) classFourCC = reader->ReadUInt();
                 UNUSED(String) name = reader->ReadString();
+            }
+            else if (fourCC == FourCC('JOMS'))
+            {
+                uint numJointMasks = reader->ReadUInt();
+                jointMasks.Resize(numJointMasks);
+                for (uint i = 0; i < numJointMasks; i++)
+                {
+                    jointMasks[i].name = reader->ReadString();
+                    uint numJointWeights = reader->ReadUInt();
+
+                    jointMasks[i].weights.Resize(numJointWeights);
+                    for (uint j = 0; j < numJointWeights; j++)
+                    {
+                        jointMasks[i].weights[j] = reader->ReadFloat();
+                    }
+                }
+            }
+            else if (fourCC == FourCC('TAKE'))
+            {
+                uint numTakes = reader->ReadUInt();
+                takes.Resize(numTakes);
+                for (uint i = 0; i < numTakes; i++)
+                {
+                    uint numClips = reader->ReadUInt();
+
+                    takes[i].clips.Resize(numClips);
+                    for (uint j = 0; j < numClips; j++)
+                    {
+                        takes[i].clips[j].name = reader->ReadString();
+                        takes[i].clips[j].start = reader->ReadFloat();
+                        takes[i].clips[j].end = reader->ReadFloat();
+                        takes[i].clips[j].preInfinity = (CoreAnimation::InfinityType::Code)reader->ReadInt();
+                        takes[i].clips[j].postInfinity = (CoreAnimation::InfinityType::Code)reader->ReadInt();
+
+                        uint numEvents = reader->ReadUInt();
+                        takes[i].clips[j].events.Resize(numEvents);
+
+                        for (uint k = 0; k < numEvents; k++)
+                        {
+                            String name = reader->ReadString();
+                            float time = reader->ReadFloat();
+                            takes[i].clips[j].events[k] = Models::Take::Clip::Event{ .name = name, .time = time };
+                        }
+                    }
+                }
             }
             else if (fourCC == FourCC('<MDL'))
             {
@@ -168,6 +216,8 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     ModelCreateInfo createInfo;
     createInfo.boundingBox = boundingBox;
     createInfo.nodes = nodes;
+    createInfo.jointMasks = jointMasks;
+    createInfo.takes = takes;
     ModelId id = CreateModel(createInfo);
     ret.id = id;
     return ret;

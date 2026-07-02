@@ -192,17 +192,8 @@ ZipArchive::AddEntry(const String& path)
 String
 ZipArchive::ConvertToPathInArchive(const Util::String& absPath) const
 {
-    // test if the absolute path starts with our root path
-    IndexT rootPathIndex = absPath.FindStringIndex(this->rootPath, 0);
-    if (0 == rootPathIndex)
-    {
-        // strip the root path from the absolute path
-        String localPath = absPath;
-        localPath.SubstituteString(this->rootPath, "");
-        return localPath;
-    }
     // path doesn't point into this archive
-    return "";
+    return absPath.StripSubstring(this->rootPath);
 }
 
 //------------------------------------------------------------------------------

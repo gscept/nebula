@@ -10,9 +10,11 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idallocator.h"
+#include "util/stringatom.h"
 #include "resources/resourceid.h"
 #include "core/rttimacros.h"
 #include "memory/rangeallocator.h"
+#include "coreanimation/infinitytype.h"
 #include <functional>
 namespace Models
 {
@@ -62,10 +64,38 @@ struct NodeInstanceRange
     SizeT begin, end;
 };
 
+struct JointMask
+{
+    Util::StringAtom name;
+    Util::FixedArray<float> weights;
+};
+
+struct Take
+{
+    struct Clip
+    {
+        Util::StringAtom name;
+        float start, end;
+        CoreAnimation::InfinityType::Code preInfinity, postInfinity;
+
+        struct Event
+        {
+            Util::StringAtom name;
+            float time;
+        };
+
+        Util::FixedArray<Event> events;
+    };
+
+    Util::FixedArray<Clip> clips;
+};
+
 struct ModelCreateInfo
 {
     Math::bbox boundingBox;
     Util::Array<Models::ModelNode*> nodes;
+    Util::FixedArray<JointMask> jointMasks;
+    Util::FixedArray<Take> takes;
 };
 
 /// create model (resource)
@@ -81,12 +111,16 @@ const Math::bbox& ModelGetBoundingBox(const ModelId id);
 enum
 {
     Model_BoundingBox,
-    Model_Nodes
+    Model_Nodes,
+    Model_JointMasks,
+    Model_Takes,
 };
 
 typedef Ids::IdAllocator<
     Math::bbox,
-    Util::Array<Models::ModelNode*>
+    Util::Array<Models::ModelNode*>,
+    Util::FixedArray<JointMask>,
+    Util::FixedArray<Take>
 > ModelAllocator;
 extern ModelAllocator modelAllocator;
 } // namespace Models

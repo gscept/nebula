@@ -27,10 +27,7 @@ public:
     {
         None,
         Material,
-        Mesh,
-        Skeleton,
         Model,
-        Animation,
         Texture,
         Particle,
 
@@ -45,7 +42,7 @@ public:
     Modules::Viewport viewport;
 
     // Select material for previewing
-    void Open(const IO::URI& asset, const AssetType type);
+    void Open(const IO::URI& asset, const Util::String root, const AssetType type);
 };
 __RegisterClass(AssetEditor)
 

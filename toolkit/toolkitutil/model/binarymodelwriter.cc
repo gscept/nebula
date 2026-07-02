@@ -164,6 +164,7 @@ BinaryModelWriter::BeginTag(const String& tagName, FourCC tagFourCC)
     n_assert(tagFourCC.IsValid());
     this->writer->WriteUInt(tagFourCC.AsUInt());
 }
+
 //------------------------------------------------------------------------------
 /**
 */

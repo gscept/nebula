@@ -37,7 +37,7 @@ SceneWriter::GenerateGraphicsModel(
 
     // extract file path from export path
     String file = scene->GetName();
-    String category = basePath.ExtractLastDirName();
+    String category = basePath.ExtractFileName();
 
     // Loop through bounding boxes and get our scene bounding box
     Math::bbox globalBox;
@@ -50,17 +50,11 @@ SceneWriter::GenerateGraphicsModel(
     }
     globalBox.end_extend();
 
-    // format animation resource
-    String animRes;
-    animRes.Format("ani:%s/%s.nax", category.AsCharPtr(), file.AsCharPtr());
-
-    // format skeleton resource
-    String skeletonRes;
-    skeletonRes.Format("ske:%s/%s.nsk", category.AsCharPtr(), file.AsCharPtr());
+    String resourcePath = Util::Format("%s/%s", category.AsCharPtr(), file.AsCharPtr());
 
     // create mesh name
     String meshResource;
-    meshResource.Format("msh:%s/%s.nvx", category.AsCharPtr(), scene->GetName().AsCharPtr());
+    meshResource.Format("urn:msh:%s", resourcePath.AsCharPtr());
 
     auto model = std::make_unique<ToolkitUtil::SceneResourceT>();
     model->name = scene->GetName();
@@ -94,7 +88,7 @@ SceneWriter::GenerateGraphicsModel(
                 shape->prim_group = mesh->skin.skinFragments[j];
                 shape->mesh_resource = meshResource;
                 shape->mesh_index = mesh->mesh.meshIndex;
-                shape->material = mesh->mesh.material;
+                shape->material = Util::Format("urn:mat:%s", mesh->mesh.material.AsCharPtr());
                 shape->transform = std::move(transform);
 
                 auto skinFragment = std::make_unique<ToolkitUtil::SkinFragmentNodeT>();
@@ -121,7 +115,7 @@ SceneWriter::GenerateGraphicsModel(
             shape->prim_group = mesh->mesh.groupId;
             shape->mesh_resource = meshResource;
             shape->mesh_index = mesh->mesh.meshIndex;
-            shape->material = mesh->mesh.material;
+            shape->material = Util::Format("urn:mat:%s", mesh->mesh.material.AsCharPtr());
             shape->transform = std::move(transform);
             model->shapes.push_back(std::move(shape));
 

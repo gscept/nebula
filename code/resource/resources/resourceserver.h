@@ -190,10 +190,8 @@ ResourceServer::CreateResource(
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
-    const IO::URI& uri = IO::AssignRegistry::Instance()->ResolveURNToExport(res);
-
     // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(uri.LocalPath(), nullptr, 0, tag, success, failed, immediate, stream);
+    Resources::ResourceId id = loader->CreateResource(res, nullptr, 0, tag, success, failed, immediate, stream);
     return id;
 }
 
@@ -275,10 +273,8 @@ inline Resources::ResourceId ResourceServer::CreateResource(
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
-    const IO::URI& uri = IO::AssignRegistry::Instance()->ResolveURNToExport(res);
-
     // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(uri, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
+    Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
     return id;
 }
 

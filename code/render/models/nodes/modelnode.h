@@ -18,6 +18,7 @@
 #include "core/refcounted.h"
 #include "util/stringatom.h"
 #include "io/binaryreader.h"
+#include "io/urn.h"
 #include "math/bbox.h"
 #include "ids/id.h"
 #include "memory/arenaallocator.h"

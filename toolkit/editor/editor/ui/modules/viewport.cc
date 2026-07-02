@@ -270,8 +270,11 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
+    Dynui::ImguiTextureId textureData;
+    textureData.nebulaHandle = textureId;
+    textureData.useAlpha = 0;
 
-    Dynui::SetImguiTextureIdData(this->imguiTextureId, {textureId});
+    Dynui::SetImguiTextureIdData(this->imguiTextureId, textureData);
     ImTextureRef ref {this->imguiTextureId};
     ImGui::Image(ref, imageSize, ImVec2(0, 0), uv);
 

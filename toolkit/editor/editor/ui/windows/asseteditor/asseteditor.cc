@@ -86,10 +86,7 @@ static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialSetup,
-    MeshSetup,
-    nullptr,
     ModelSetup,
-    nullptr,
     TextureSetup,
     ParticleSetup
 };
@@ -100,19 +97,13 @@ static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTy
     MaterialSave,
     nullptr,
     nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
     ParticleSave
 };
 static const EditorFunc RenderFunctions[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialEditor,
-    MeshEditor,
-    nullptr,
     ModelEditor,
-    nullptr,
     TextureEditor,
     ParticleEditor
 };
@@ -121,10 +112,7 @@ static const EditorFunc DiscardFunctions[(uint)AssetEditor::AssetType::NumAssetT
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialDiscard,
-    MeshDiscard,
-    nullptr,
     ModelDiscard,
-    nullptr,
     nullptr,
     ParticleDiscard
 };
@@ -133,10 +121,7 @@ static const ShowFunc ShowFunctions[(uint)AssetEditor::AssetType::NumAssetTypes]
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialShow,
-    MeshShow,
-    nullptr,
     ModelShow,
-    nullptr,
     nullptr,
     ParticleShow
 };
@@ -145,10 +130,7 @@ static const char* Labels[(uint)AssetEditor::AssetType::NumAssetTypes] =
 {
     "None %s",
     "[Material] %s",
-    "[Mesh] %s",
-    "[Skeleton] %s",
     "[Model] %s",
-    "[Animation] %s",
     "[Texture] %s",
     "[Particle] %s"
 };
@@ -310,7 +292,7 @@ Setup(AssetEditorItem* item)
 /**
 */
 void
-AssetEditor::Open(const IO::URI& asset, const AssetType type)
+AssetEditor::Open(const IO::URI& asset, const Util::String root, const AssetType type)
 {
     // If we try to load the same item, just focus that one
     for (AssetEditorItem& item : assetEditorState.items)
@@ -322,16 +304,34 @@ AssetEditor::Open(const IO::URI& asset, const AssetType type)
         }
     }
 
-    IO::URI exportFile = IO::AssignRegistry::Instance()->ResolveWorkToExport(asset.LocalPath());
+    const char* extensions[] = 
+    {
+        "",
+        "sur",  //Material,
+        "n3",   //Model,
+        "dds",  //Texture,
+        "par",  //Particle,
+    };
+
+    const char* exportAssigns[] =
+    {
+        "",
+        "mat", //Material,
+        "mdl", //Model,
+        "tex", //Texture,
+        "par", //Particle,
+    };
+
+    
+    Util::String relativePath = asset.LocalPath().StripSubstring(IO::URI(root + "/assets").LocalPath());
+    relativePath.StripFileExtension();
+    IO::URI exportFile = Util::Format("%s:%s.%s", exportAssigns[(uint)type], relativePath.AsCharPtr(), extensions[(uint)type]);
 
     // If there is no export, quickly batch it
     if (exportFile.IsEmpty())
     {
         Editor::LiveBatcher::BatchFile(asset);
         Editor::LiveBatcher::Wait();
-
-        // The file has to be exported now, so go get it
-        exportFile = IO::AssignRegistry::Instance()->ResolveWorkToExport(asset.LocalPath());
     }
 
     if (!Resources::ResourceServer::Instance()->HasStreamLoader(exportFile.LocalPath().GetFileExtension()))

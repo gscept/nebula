@@ -836,6 +836,9 @@ String::StripSubstring(const String& substring) const
     }
     while (copy[it] == '/')
         it++;
+
+    if (it < substring.strLen)
+        return copy;
     return copy.ExtractToEnd(it);
 }
 

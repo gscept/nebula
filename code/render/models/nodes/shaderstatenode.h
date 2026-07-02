@@ -61,7 +61,7 @@ protected:
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;
-    Resources::ResourceName materialName;
+    IO::URN materialName;
 
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };

@@ -27,22 +27,17 @@ namespace ToolkitUtil
 enum class FileType : int
 {
     Unknown = 0,
-    FBX = 1,
-    GLTF = 2,
-    Model = 3,
-    Mesh = 4,
-    Texture = 5,
-    Surface = 6,
-    Audio = 7,
-    Text = 8,
-    Skeleton = 9,
-    Animation = 10,
-    Frame = 11,
-    Shader = 12,
-    Physics = 13,
-    NavMesh = 14,
-    Particle = 15,
-    Other = 16
+    Asset = 1,
+    Texture = 2,
+    Particle = 3,
+    Surface = 4,
+    Audio = 5,
+    Text = 6,
+    Frame = 7,
+    Shader = 8,
+    Physics = 9,
+    NavMesh = 10,
+    Other = 11
 };
 class FileDB
 {

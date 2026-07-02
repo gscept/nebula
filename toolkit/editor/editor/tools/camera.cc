@@ -100,7 +100,7 @@ Camera::Update()
 	this->freeCamUtil.SetDownKey(ImGui::IsKeyPressed(ImGuiKey_E));
 
 	this->freeCamUtil.SetMouseMovement({ -io.MouseDelta.x, -io.MouseDelta.y });
-	this->freeCamUtil.SetAccelerateButton(io.KeyShift);
+	this->freeCamUtil.SetAccelerateButton(ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift));
 
 	this->freeCamUtil.SetRotateButton(io.MouseDown[Input::MouseButton::RightButton]);
 	this->freeCamUtil.Update(timeSource->frameTime);

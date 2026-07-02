@@ -101,37 +101,32 @@ PackageModel(
         writer->BeginModel("Model", 'MODL', model->name);
 
         // write number of masks
-        writer->BeginTag("Number of masks", 'NJMS');
+        writer->BeginTag("JointMasks", 'JOMS');
         writer->WriteInt((uint)model->joint_masks.size());
-        writer->EndTag();
 
         // write joint mask
         for (const auto& jointMask : model->joint_masks)
         {
-            writer->BeginTag("Joint mask", 'JOMS');
             writer->WriteString(jointMask->name);
             writer->WriteInt((uint)jointMask->weights.size());
             for (const auto weight : jointMask->weights)
             {
                 writer->WriteFloat(weight);
             }
-            writer->EndTag();
         }
 
-        writer->BeginTag("Number of takes", 'NTKS');
-        writer->WriteInt((uint)model->takes.size());
         writer->EndTag();
+
+        writer->BeginTag("Takes", 'TAKE');
+        writer->WriteInt((uint)model->takes.size());
 
         // write take info
         for (const auto& take : model->takes)
         {
-            writer->BeginTag("Number of clips", 'NTCL');
             writer->WriteInt((uint)take->clips.size());
-            writer->EndTag();
 
             for (const auto& clip : take->clips)
             {
-                writer->BeginTag("Clip info", 'CLIP');
                 writer->WriteString(clip->name);
                 writer->WriteFloat(clip->start);
                 writer->WriteFloat(clip->end);
@@ -139,20 +134,16 @@ PackageModel(
                 writer->WriteInt(clip->post_infinity);
 
                 // write events
-                writer->BeginTag("Number of clip events", 'NCEV');
                 writer->WriteInt((uint)clip->events.size());
-                writer->EndTag();
 
                 for (const auto& event : clip->events)
                 {
-                    writer->BeginTag("Clip event", 'CEVT');
                     writer->WriteString(event->name);
                     writer->WriteFloat(event->time);
-                    writer->EndTag();
                 }
-                writer->EndTag();
             }
         }
+        writer->EndTag();
 
         writer->BeginModelNode("TransformNode", 'TRFN', "root");
 
@@ -321,6 +312,7 @@ PackageTexture(
         {
             writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
             writer->Close();
+            return true;
         }
         else
         {

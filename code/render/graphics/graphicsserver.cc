@@ -66,10 +66,6 @@ GraphicsServer::Open()
 {
     n_assert(!this->isOpen);
 
-#ifdef HAS_EMBEDDED_EXPORT
-    IO::IoServer::Instance()->MountEmbeddedArchive("embed:///export");
-#endif
-
     if (FrameSync::FrameSyncTimer::HasInstance())
     {
         this->timer = FrameSync::FrameSyncTimer::Instance();

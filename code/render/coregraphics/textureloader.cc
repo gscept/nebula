@@ -162,6 +162,7 @@ TextureLoader::TextureLoader()
     this->async = true;
     this->placeholderResourceName = "systex:white.dds";
     this->failResourceName = "systex:error.dds";
+    this->loaderExtension = "dds";
 
     this->streamerThreadName = "Texture Streamer Thread";
 

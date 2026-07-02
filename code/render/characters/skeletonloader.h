@@ -17,6 +17,9 @@ namespace Characters
 class SkeletonLoader : public Resources::ResourceLoader
 {
     __DeclareClass(SkeletonLoader);
+
+    /// Constructor
+    SkeletonLoader();
 private:
 
     /// load character definition from stream

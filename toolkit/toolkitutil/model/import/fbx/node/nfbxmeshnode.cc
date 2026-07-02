@@ -69,6 +69,10 @@ NFbxMeshNode::ExtractMesh(
     {
         node->mesh.material = "physics";
     }
+    else
+    {
+        node->mesh.material = "system/placeholder";
+    }
 
     if (fbxMesh->uv_sets.count > 1)
         meshMask |= HasMultipleUVs;

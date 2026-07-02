@@ -45,7 +45,7 @@ protected:
     /// called once when all pending resource have been loaded
     virtual void OnFinishedLoading(ModelStreamingData* streamingData) override;
 
-    Resources::ResourceName meshResource;
+    IO::URN meshResource;
     Resources::ResourceId res;
     CoreGraphics::MeshId mesh;
 

@@ -13,7 +13,9 @@
 */
 #include "core/types.h"
 #include "util/string.h"
+#include "util/stringatom.h"
 #include "util/dictionary.h"
+#include "io/uri.h"
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -27,6 +29,10 @@ public:
     explicit URN(const Util::String& s);
     /// init constructor
     explicit URN(const char* s);
+    /// Construct from components
+    explicit URN(const char* nid, const Util::String& nss);
+    /// Construct from components
+    explicit URN(const char* nid, const char* nss);
     /// copy constructor
     URN(const URN& rhs);
     /// assignmnent operator
@@ -41,11 +47,11 @@ public:
     /// return as concatenated string
     Util::String AsString() const;
 
-    /// return true if the URI is empty
+    /// return true if the URN is empty
     bool IsEmpty() const;
-    /// return true if the URI is not empty
+    /// return true if the URN is not empty
     bool IsValid() const;
-    /// clear the URI
+    /// clear the URN
     void Clear();
     /// set Namespace component
     void SetNamespace(const Util::String& s);
@@ -63,6 +69,9 @@ public:
     void SetFragment(const Util::String& s);
     /// get fragment component (can be empty)
     const Util::String& GetFragment() const;
+
+    /// Convert to URI using file extension
+    const IO::URI MakeURI(const Util::StringAtom& extension) const;
 private:
     /// split string into components
     bool Split(const Util::String& s);
@@ -106,6 +115,28 @@ URN::URN(const char* s) :
 {
     bool validUrn = this->Split(s);
     n_assert2(validUrn, s);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+URN::URN(const char* nid, const Util::String& nss)
+{
+    this->nid = nid;
+    this->nss = nss;
+    n_assert(this->IsValid());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+URN::URN(const char* nid, const char* nss)
+{
+    this->nid = nid;
+    this->nss = nss;
+    n_assert(this->IsValid());
 }
 
 //------------------------------------------------------------------------------
@@ -299,6 +330,15 @@ const Util::String&
 IO::URN::GetFragment() const
 {
     return this->fragment;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IO::URI 
+URN::MakeURI(const Util::StringAtom& extension) const
+{
+    return IO::URI(Util::Format("%s:%s.%s", this->nid.AsCharPtr(), this->nss.AsCharPtr(), extension.Value()));
 }
 
 } // namespace IO

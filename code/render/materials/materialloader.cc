@@ -233,8 +233,9 @@ LoadFloat(const Ptr<IO::BXmlReader>& reader, const char* name, float& value, con
 void
 MaterialLoader::Setup()
 {
-    this->placeholderResourceName = "syssur:placeholder.sur";
-    this->failResourceName = "syssur:error.sur";
+    this->placeholderResourceName = "sysmat:placeholder.sur";
+    this->failResourceName = "sysmat:error.sur";
+    this->loaderExtension = "sur";
 
     // Run generated setup code
     MaterialTemplatesGPULang::SetupMaterialTemplates();
