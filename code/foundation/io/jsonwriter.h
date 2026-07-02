@@ -106,7 +106,8 @@ template<> void JsonWriter::Add(const Util::StringAtom& value, const Util::Strin
 template<> void JsonWriter::Add(const Util::FourCC& value, const Util::String& name);
 template<> void JsonWriter::Add(const bool& value, const Util::String& name);
 template<> void JsonWriter::Add(const char& value, const Util::String& name);
-template<> void JsonWriter::Add(const uchar& value, const Util::String& name);
+template<> void JsonWriter::Add(const int8_t& value, const Util::String& name);
+template<> void JsonWriter::Add(const uint8_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const int& value, const Util::String& name);
 template<> void JsonWriter::Add(const unsigned int& value, const Util::String& name);
 template<> void JsonWriter::Add(const int16_t& value, const Util::String& name);

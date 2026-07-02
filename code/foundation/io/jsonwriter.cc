@@ -254,9 +254,29 @@ JsonWriter::Add(const char& value, const Util::String& name)
 */
 template <>
 void
-JsonWriter::Add(const uchar& value, const Util::String& name)
+JsonWriter::Add(const int8_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(value);
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+JsonWriter::Add(const uint8_t& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
+    n_assert(value < INT16_MAX);
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
