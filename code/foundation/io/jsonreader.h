@@ -20,6 +20,7 @@
 #include "util/bitfield.h"
 #include "util/variant.h"
 #include "pjson/pjson.h"
+#include <array>
 
 namespace pjson
 {
@@ -103,6 +104,8 @@ public:
     Math::transform44 GetTransform44(const char* attr = 0) const;
     /// generic getter for extension types
     template<typename T> void Get(T& target, const char* attr = 0);
+    /// getter for std::array
+    template<typename T, size_t N> void Get(std::array<T, N>& target, const char* attr = 0);
     /// getter for bitfield of N size
     template<unsigned int N> void Get(Util::BitField<N>& target, const char* attr = 0);
     
@@ -156,6 +159,7 @@ template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr);
 template<> void JsonReader::Get<Math::vec3>(Math::vec3& ret, const char* attr);
 template<> void JsonReader::Get<Math::vec2>(Math::vec2& ret, const char* attr);
 template<> void JsonReader::Get<uint32_t>(uint32_t& ret, const char* attr);
+template<> void JsonReader::Get<uint64_t>(uint64_t& ret, const char* attr);
 template<> void JsonReader::Get<uint16_t>(uint16_t& ret, const char* attr);
 template<> void JsonReader::Get<uint8_t>(uint8_t& ret, const char* attr);
 template<> void JsonReader::Get<float>(float& ret, const char* attr);
@@ -209,6 +213,45 @@ JsonReader::GetOpt(T& target, const char* attr, const T& defaultVal)
         return false;
     }
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename T, size_t N>
+inline void
+JsonReader::Get(std::array<T, N>& ret, const char* attr)
+{
+    const pjson::value_variant* node = this->GetChild(attr);
+
+    n_assert(node->is_array());
+    n_assert(node->size() == N);
+
+    if constexpr (N > 0)
+    {
+        if (attr != nullptr)
+        {
+            this->SetToNode(attr);
+        }
+
+        bool validChild = this->SetToFirstChild();
+        n_assert(validChild);
+        for (size_t i = 0; i < N; i++)
+        {
+            this->Get<T>(ret[i]);
+            if (i + 1 < N)
+            {
+                validChild = this->SetToNextChild();
+                n_assert(validChild);
+            }
+        }
+        this->SetToParent();
+
+        if (attr != nullptr)
+        {
+            this->SetToParent();
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

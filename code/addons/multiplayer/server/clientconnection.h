@@ -25,9 +25,19 @@ enum class ClientGroup
     Lobby,
     Game,
     Monitoring,
+    
+    // Custom groups:
+    GroupA, 
+    GroupB, 
+    GroupC,
+    GroupD,
+    GroupE,
+    GroupF,
+    GroupG,
+    GroupH,
+    
     NumClientGroups
 };
-
 
 //--------------------------------------------------------------------------
 /**

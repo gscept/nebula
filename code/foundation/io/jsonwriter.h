@@ -16,6 +16,7 @@
 #include "util/variant.h"
 #include "util/blob.h"
 #include "util/bitfield.h"
+#include <array>
 
 namespace pjson
 {
@@ -49,6 +50,8 @@ public:
     
     /// add a value to the current array node
     template <typename T> void Add(const T & value, const Util::String & name = "");
+    /// add std::array values to the current node
+    template <typename T, size_t N> void Add(std::array<T, N> const& values, const Util::String& name = "");
 	/// add bitfield of N size
 	template<unsigned int N> void Add(Util::BitField<N> const& value, const Util::String& name = "");
     /// special handling for const strings
@@ -110,6 +113,7 @@ template<> void JsonWriter::Add(const int8_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const uint8_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const int& value, const Util::String& name);
 template<> void JsonWriter::Add(const unsigned int& value, const Util::String& name);
+template<> void JsonWriter::Add(const uint64_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const int16_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const uint16_t& value, const Util::String& name);
 template<> void JsonWriter::Add(const float& value, const Util::String& name);
@@ -123,6 +127,21 @@ template<> void JsonWriter::Add(const Util::Variant& value, const Util::String& 
 template<> void JsonWriter::Add(const Util::Guid& value, const Util::String& name);
 template<> void JsonWriter::Add(const Util::Array<int>& value, const Util::String& name);
 template<> void JsonWriter::Add(const Util::Array<Util::String>& value, const Util::String& name);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename T, size_t N>
+inline void
+JsonWriter::Add(std::array<T, N> const& values, const Util::String& name)
+{
+    this->BeginArray(name.AsCharPtr());
+    for (T const& value : values)
+    {
+        this->Add<T>(value);
+    }
+    this->End();
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -145,4 +164,3 @@ JsonWriter::Add(Util::BitField<N> const& value, const Util::String& name)
 
 } // namespace IO
 //------------------------------------------------------------------------------
-

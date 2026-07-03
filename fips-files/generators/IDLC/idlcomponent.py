@@ -300,7 +300,10 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->SetToNode(attr);")
         for var in struct.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
+            if IDLTypes.IsStdArrayType(var.type):
+                f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name))
+            else:
+                f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -313,7 +316,10 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->BeginObject(attr.AsCharPtr());")
         for var in struct.variables:
-            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
+            if IDLTypes.IsStdArrayType(var.type):
+                f.WriteLine('this->Add(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name))
+            else:
+                f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->End();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -367,7 +373,10 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->SetToNode(attr);")
         for var in comp.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
+            if IDLTypes.IsStdArrayType(var.type):
+                f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name))
+            else:
+                f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -380,7 +389,10 @@ def WriteStructJsonSerializers(f, document):
         f.IncreaseIndent()
         f.WriteLine("this->BeginObject(attr.AsCharPtr());")
         for var in comp.variables:
-            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
+            if IDLTypes.IsStdArrayType(var.type):
+                f.WriteLine('this->Add(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name))
+            else:
+                f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetJsonParserTypeString(var.type)))
         f.WriteLine("this->End();")
         f.DecreaseIndent()
         f.WriteLine("}")

@@ -3,6 +3,13 @@ import genutil as util
 #------------------------------------------------------------------------------
 ##
 #
+def IsStdArrayType(attrType):
+    T = attrType.replace(" ", "")
+    return T.startswith("std::array<") and T.endswith(">")
+
+#------------------------------------------------------------------------------
+##
+#
 def GetCppTypeString(attrType):
     T = attrType.lower()
     if (T == "byte"):
