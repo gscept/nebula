@@ -44,6 +44,10 @@ public:
     virtual void Run();
     /// step one frame
     virtual void StepFrame();
+    /// set quit requested flag
+    void SetQuitRequested(bool b);
+    /// return true if quit was requested
+    bool IsQuitRequested() const;
 
     static IndexT FrameIndex;
     ///
@@ -78,6 +82,8 @@ protected:
 
     // game server
     Ptr<Game::GameServer> gameServer;
+
+    bool quitRequested;
 
     // profiling
     _declare_timer(GameApplicationFrameTimeAll);

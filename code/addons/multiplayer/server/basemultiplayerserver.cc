@@ -450,7 +450,6 @@ BaseMultiplayerServer::PollIncomingMessages()
             int bytes = incomingMsg[i]->m_cbSize;
             double recvTime = incomingMsg[i]->m_usecTimeReceived;
 
-
             if (data != nullptr && bytes > 0)
             {
                 this->OnMessageReceived(this->clientConnections[incomingMsg[i]->m_conn], recvTime, (byte*)data, bytes);

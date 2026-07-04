@@ -42,6 +42,7 @@ GameApplication::GameApplication() :
 #if __NEBULA_HTTP__
     defaultTcpPort(2100),
 #endif
+    quitRequested(false),
     exitHandler(this)
 {
     __ConstructSingleton;
@@ -108,7 +109,7 @@ GameApplication::Open()
 
         Flat::FlatbufferInterface::Init();
 
-        Options::InitOptions();
+        //Options::InitOptions();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = System::NumCpuCores;
@@ -233,11 +234,34 @@ GameApplication::Close()
 void
 GameApplication::Run()
 {
-    Input::InputServer* inputServer = Input::InputServer::Instance();
-    while (!inputServer->IsQuitRequested())
+    while (!this->IsQuitRequested())
     {
         this->StepFrame();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GameApplication::SetQuitRequested(bool b)
+{
+    this->quitRequested = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GameApplication::IsQuitRequested() const
+{
+    if (this->quitRequested)
+        return true;
+
+    if (Input::InputServer::HasInstance())
+        return Input::InputServer::Instance()->IsQuitRequested();
+
+    return false;
 }
 
 //------------------------------------------------------------------------------

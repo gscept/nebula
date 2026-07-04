@@ -73,7 +73,7 @@ BaseGameFeatureUnit::OnActivate()
     this->AttachManager(this->blueprintManager);
     this->AttachManager(this->timeManager);
 
-    this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "1", "Enable world debugging");
+    this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "0", "Enable world debugging");
 }
 
 //------------------------------------------------------------------------------
