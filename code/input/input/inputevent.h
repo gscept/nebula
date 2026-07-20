@@ -109,7 +109,9 @@ InputEvent::InputEvent() :
     keyCode(Key::InvalidKey),
     character(0),
     deviceIndex(0),
-    mouseButton(MouseButton::InvalidMouseButton)
+    mouseButton(MouseButton::InvalidMouseButton),
+    absMousePos(0.0f, 0.0f),
+    normMousePos(0.0f, 0.0f)
 {
     // empty
 }
@@ -295,4 +297,3 @@ InputEvent::TypeToString(Type t)
 
 } // namespace Input
 //------------------------------------------------------------------------------
-
