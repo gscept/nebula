@@ -46,6 +46,9 @@ imports:
     gpulang:
         git: https://github.com/gscept/GPULang.git
         group: gpulang
+    sse2neon:
+        git: https://github.com/DLTcollab/sse2neon.git
+        cond: "FIPS_MACOS"
         
     fips-recast:
         git: https://github.com/gscept/fips-recast.git

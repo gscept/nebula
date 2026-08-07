@@ -20,17 +20,7 @@ public:
     Event(bool manualReset=false) : Win32Event(manualReset) {};
 };
 }
-#elif __linux__ 
-#include "threading/linux/linuxevent.h"
-namespace Threading
-{
-class Event : public Linux::LinuxEvent
-{
-public:
-    Event(bool manualReset=false) : LinuxEvent(manualReset) {};
-};
-}
-#elif ( __OSX__ || __APPLE__ )
+#elif __linux__ || __OSX__ || __APPLE__ 
 #include "threading/posix/posixevent.h"
 namespace Threading
 {

@@ -8,7 +8,7 @@
 
 namespace Net
 {
-#if (__WIN32__ || __linux__)
+#if __WIN32__ || __linux__ || __APPLE__
 __ImplementClass(Net::TcpClient, 'TCPC', Net::StdTcpClient);
 #else
 #error "Net::TcpClient not implemented on this platform!"

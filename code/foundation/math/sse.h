@@ -9,7 +9,14 @@
     (C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-
+#ifdef __WIN32__ || __linux__
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#include <smmintrin.h>
+#include <immintrin.h>
+#elif __APPLE__
+#include <sse2neon.h>
+#endif
 
 namespace Math
 {
