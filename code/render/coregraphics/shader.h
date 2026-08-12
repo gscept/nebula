@@ -83,6 +83,10 @@ const ShaderId CreateShader(const GPULangShaderCreateInfo& info);
 /// Destroy shader
 void DestroyShader(const ShaderId id);
 
+#if WITH_NEBULA_EDITOR
+bool ReloadShader(const ShaderId id, const GPULangShaderCreateInfo& info);
+#endif
+
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
 /// Get shader feature mask from string

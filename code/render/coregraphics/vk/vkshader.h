@@ -110,6 +110,7 @@ struct VkReflectionInfo
     Util::Array<Variable> variables;
 
     Util::Array<uint64_t> uniformBuffersMask;
+    uint64_t signature;
 };
 
 enum

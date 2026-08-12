@@ -62,24 +62,27 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
 Resources::Resource::State
 GPULangShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
 {
-    /*
     void* srcData = stream->Map();
     uint srcDataSize = stream->GetSize();
 
-    // load effect from memory
-    AnyFX::ShaderEffect* effect = AnyFX::EffectFactory::Instance()->CreateShaderEffectFromMemory(srcData, srcDataSize);
+    Resources::ResourceLoader::ResourceInitOutput ret;
 
-    // catch any potential error coming from AnyFX
-    if (!effect)
+    GPULang::Loader* loader = new GPULang::Loader;
+
+    if (!loader->Load((const char*)srcData, srcDataSize))
     {
-        n_error("GPULangShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
-            this->GetName(id.resourceId).Value());
+        ret.id = CoreGraphics::InvalidShaderId;
         return Resources::Resource::Failed;
     }
 
+    GPULangShaderCreateInfo shaderInfo;
+    shaderInfo.loader = loader;
+    shaderInfo.name = this->GetName(id);
     ShaderId shader = id.resource;
-    ReloadShader(shader, effect);
-    */
+    if (ReloadShader(shader.id, shaderInfo))
+    {
+        return Resources::Resource::Loaded;
+    }
     return Resources::Resource::Failed;
 }
 

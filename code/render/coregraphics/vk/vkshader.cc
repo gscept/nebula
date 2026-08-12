@@ -714,20 +714,14 @@ namespace CoreGraphics
 {
 using namespace Vulkan;
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-const ShaderId
-CreateShader(const GPULangShaderCreateInfo& info)
+void
+SetupShaderFromGPULangInfo(Ids::Id32 id, const GPULangShaderCreateInfo& info)
 {
-    Ids::Id32 id = shaderAlloc.Alloc();
     VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id);
     VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id);
     VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id);
 
-    ShaderId ret = id;
-
+    reflectionInfo.signature = info.loader->signature;
     setupInfo.id = ShaderIdentifier::FromName(info.name);
     setupInfo.name = info.name;
     setupInfo.dev = Vulkan::GetCurrentDevice();
@@ -786,7 +780,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
 
             // make an ID which is the shader id and program id
             ShaderProgramId shaderProgramId;
-            shaderProgramId.shader = ret.id;
+            shaderProgramId.shader = id;
             shaderProgramId.program = programId;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
@@ -809,6 +803,20 @@ CreateShader(const GPULangShaderCreateInfo& info)
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();
 #endif
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ShaderId
+CreateShader(const GPULangShaderCreateInfo& info)
+{
+    Ids::Id32 id = shaderAlloc.Alloc();
+    SetupShaderFromGPULangInfo(id, info);
+
+    ShaderId ret = id;
+ 
     return ret;
 }
 
@@ -840,6 +848,25 @@ DestroyShader(const ShaderId id)
     DeleteShader(id);
     shaderAlloc.Dealloc(id.id);
 }
+
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ReloadShader(const ShaderId id, const GPULangShaderCreateInfo& info)
+{
+    VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id.id);
+    if (info.loader->signature != reflectionInfo.signature)
+    {
+        return false;
+    }
+
+    DeleteShader(id);
+    SetupShaderFromGPULangInfo(id.id, info);
+    return true;
+}
+#endif
 
 //------------------------------------------------------------------------------
 /**
