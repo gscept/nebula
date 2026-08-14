@@ -123,6 +123,7 @@ URN::URN(const char* s) :
 inline 
 URN::URN(const char* nid, const Util::String& nss)
 {
+    this->isEmpty = strlen(nid) == 0 || nss.Length() == 0;
     this->nid = nid;
     this->nss = nss;
     n_assert(this->IsValid());
@@ -134,6 +135,7 @@ URN::URN(const char* nid, const Util::String& nss)
 inline 
 URN::URN(const char* nid, const char* nss)
 {
+    this->isEmpty = strlen(nid) == 0 || strlen(nss) == 0;
     this->nid = nid;
     this->nss = nss;
     n_assert(this->IsValid());
