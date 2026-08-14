@@ -12,12 +12,11 @@
 //------------------------------------------------------------------------------
 #include "core/types.h"
 #include "core/config.h"
+#include <new>
 namespace Threading
 {
 
 using int64 = int64_t;
-typedef volatile int AtomicCounter;
-typedef volatile int64 AtomicCounter64;
 
 namespace Interlocked
 {
@@ -60,8 +59,24 @@ int Decrement(int volatile* var);
 /// interlocked decrement, return result
 int64 Decrement(int64 volatile* var);
 
-struct AtomicInt
+struct alignas(std::hardware_destructive_interference_size) AtomicInt
 {
+    /// Constructor
+    AtomicInt()
+        : value(0)
+    {}
+
+    /// Constructor
+    AtomicInt(int initial)
+        : value(initial)
+    {}
+
+    /// Assignment (unsafe)
+    void operator=(int value)
+    {
+        this->value = value;
+    }
+
     /// Add 
     int Add(int add) 
     {
@@ -103,12 +118,27 @@ struct AtomicInt
         return Threading::Interlocked::Add((volatile int*)&this->value, -decr);
     }
 
-private:
     volatile int value;
 };
 
-struct AtomicInt64
+struct alignas(std::hardware_destructive_interference_size) AtomicInt64
 {
+    /// Constructor
+    AtomicInt64()
+        : value(0)
+    {}
+
+    /// Constructor
+    AtomicInt64(int64 initial)
+        : value(initial)
+    {}
+
+    /// Assignment (unsafe)
+    void operator=(int64 value)
+    {
+        this->value = value;
+    }
+
     /// Add 
     int64 Add(int64 add) 
     {
@@ -149,12 +179,23 @@ struct AtomicInt64
     {
         return Threading::Interlocked::Add((volatile int64*)&this->value, -decr);
     }
-private:
+
     volatile int64 value;
 };
 
-struct AtomicPointer
+struct alignas(std::hardware_destructive_interference_size) AtomicPointer
 {
+    /// Constructor
+    AtomicPointer(void* initial)
+        : ptr(initial)
+    {}
+
+    /// Assignment (unsafe)
+    void operator=(void* value)
+    {
+        this->ptr = value;
+
+    }
     /// Exchange
     void* Exchange(void* value)
     {
@@ -165,11 +206,207 @@ struct AtomicPointer
     {
         return Threading::Interlocked::CompareExchangePointer((void* volatile*)&this->ptr, exchange, comparand);
     }
-private:
     volatile void* ptr;
+};
+
+/// Atomic value only used to decrement, increment and read a 32 bit value
+struct alignas(std::hardware_destructive_interference_size) AtomicCounter
+{
+    volatile int counter;
+
+    AtomicCounter()
+        : counter(0)
+    {}
+
+    /// Constructor
+    AtomicCounter(int initial)
+        : counter(initial)
+    {}
+
+    /// Equals
+    bool operator==(int value) const
+    {
+        return this->counter == value;
+    }
+
+    /// Not-equals
+    bool operator!=(int value) const
+    {
+        return this->counter != value;
+    }
+
+    /// Greater
+    bool operator>(int value) const
+    {
+        return this->counter > value;
+    }
+
+    /// Greater or equal
+    bool operator>=(int value) const
+    {
+        return this->counter >= value;
+    }
+
+    /// Less
+    bool operator<(int value) const
+    {
+        return this->counter < value;
+    }
+
+    /// Less or equal
+    bool operator<=(int value) const
+    {
+        return this->counter <= value;
+    }
+
+    /// Increment and return the new value
+    int Increment()
+    {
+        return Threading::Interlocked::Increment(&this->counter);
+    }
+
+    /// Decrement and return the new value
+    int Decrement()
+    {
+        return Threading::Interlocked::Decrement(&this->counter);
+    }
+
+    /// Add and return the old value
+    int Add(int addend)
+    {
+        return Threading::Interlocked::Add(&this->counter, addend);
+    }
+
+    /// Subtract and return the old value
+    int Subtract(int subtractor)
+    {
+        return Threading::Interlocked::Add(&this->counter, -subtractor);
+    }
+
+    /// Exchange and return the old value
+    int Exchange(int value)
+    {
+        return Threading::Interlocked::Exchange(&this->counter, value);
+    }
+
+    /// Unsafe decrement, only use before or after contention is possible
+    void RaceDecrement()
+    {
+        this->counter--;
+    }
+
+    /// Unsafe increment, only use before or after contention is possible
+    void RaceIncrement()
+    {
+        this->counter++;
+    }
+
+    /// Unsafe exchange, only use before or after contention is possible
+    void RaceExchange(int value)
+    {
+        this->counter = value;
+    }
+};
+
+/// Atomic value only used to decrement, increment and read a 64 bit value
+struct alignas(std::hardware_destructive_interference_size) AtomicCounter64
+{
+    volatile int64 counter;
+
+    AtomicCounter64()
+        : counter(0)
+    {}
+
+    /// Constructor
+    AtomicCounter64(int64 initial)
+        : counter(initial)
+    {}
+
+    /// Equals
+    bool operator==(int64 value) const
+    {
+        return this->counter == value;
+    }
+
+    /// Not-equals
+    bool operator!=(int64 value) const
+    {
+        return this->counter != value;
+    }
+
+    /// Greater
+    bool operator>(int64 value) const
+    {
+        return this->counter > value;
+    }
+
+    /// Greater or equal
+    bool operator>=(int64 value) const
+    {
+        return this->counter >= value;
+    }
+
+    /// Less
+    bool operator<(int64 value) const
+    {
+        return this->counter < value;
+    }
+
+    /// Less or equal
+    bool operator<=(int64 value) const
+    {
+        return this->counter <= value;
+    }
+
+    /// Increment and return the new value
+    int Increment()
+    {
+        return Threading::Interlocked::Increment(&this->counter);
+    }
+
+    /// Decrement and return the new value
+    int Decrement()
+    {
+        return Threading::Interlocked::Decrement(&this->counter);
+    }
+
+    /// Add and return the old value
+    int64 Add(int64 addend)
+    {
+        return Threading::Interlocked::Add(&this->counter, addend);
+    }
+
+    /// Subtract and return the old value
+    int64 Subtract(int64 subtractor)
+    {
+        return Threading::Interlocked::Add(&this->counter, -subtractor);
+    }
+
+    /// Exchange and return the old value
+    int64 Exchange(int64 value)
+    {
+        return Threading::Interlocked::Exchange(&this->counter, value);
+    }
+
+    /// Unsafe decrement, only use before or after contention is possible
+    void RaceDecrement()
+    {
+        this->counter--;
+    }
+
+    /// Unsafe increment, only use before or after contention is possible
+    void RaceIncrement()
+    {
+        this->counter++;
+    }
+
+    /// Unsafe exchange, only use before or after contention is possible
+    void RaceExchange(int64 value)
+    {
+        this->counter = value;
+    }
 };
 
 
 } // namespace Interlocked
-
 } // namespace Threading

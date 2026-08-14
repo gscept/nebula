@@ -63,7 +63,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        Threading::AtomicCounter64 endAddress;
+        Threading::Interlocked::AtomicCounter64 endAddress;
         struct FlushedRanges
         {
             SizeT flushedStart;
@@ -125,7 +125,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     {
         CoreGraphics::BufferId queryBuffer[(uint)CoreGraphics::QueryType::NumQueryTypes];
         VkQueryPool queryPools[(uint)CoreGraphics::QueryType::NumQueryTypes];
-        Threading::AtomicCounter queryFreeCount[(uint)CoreGraphics::QueryType::NumQueryTypes];
+        Threading::Interlocked::AtomicCounter queryFreeCount[(uint)CoreGraphics::QueryType::NumQueryTypes];
         uint queryMaxCount[(uint)CoreGraphics::QueryType::NumQueryTypes];
     };
     Util::FixedArray<Queries> queries;
@@ -1897,7 +1897,7 @@ AllocateConstantBufferMemory(size_t size)
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
-    size_t ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
+    size_t ret = sub.endAddress.Add(alignedSize);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalConstantBufferMaxValue)
@@ -2196,7 +2196,7 @@ DelayedDeletePipeline(const CoreGraphics::PipelineId id)
 uint
 AllocateQueries(const CoreGraphics::QueryType type, uint numQueries)
 {
-    uint ret = Threading::Interlocked::Add(&state.queries[state.currentBufferedFrameIndex].queryFreeCount[type], numQueries);
+    uint ret = state.queries[state.currentBufferedFrameIndex].queryFreeCount[type].Add(numQueries);
     if (ret + numQueries > state.queries[state.currentBufferedFrameIndex].queryMaxCount[type])
     {
         n_error("Over allocation of queries");
@@ -2524,7 +2524,7 @@ NewFrame()
     // update constant buffer offsets
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
     nextCboRing.endAddress = 0;
-    nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress;
+    nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress.counter;
 
     N_BUDGET_COUNTER_RESET(N_CONSTANT_MEMORY);
     N_BUDGET_COUNTER_RESET(N_UPLOAD_MEMORY);

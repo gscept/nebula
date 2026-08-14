@@ -34,7 +34,7 @@
 #define __Lock(name, element) auto __allocator_lock_##name##__ = Util::AllocatorLock(&name, element);
 
 // use this macro when we need to retrieve an allocator and lock it with an explicit name
-#define __LockName(allocator, name, element) auto __allocator_lock_##name##__ = Util::AllocatorLock(allocator, element);
+#define __LockName(allocator, name, element) auto __allocator_lock_##name##__ = Util::AllocatorLock(&allocator, element);
 
 namespace Util
 {

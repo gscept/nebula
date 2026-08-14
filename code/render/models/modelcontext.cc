@@ -31,8 +31,8 @@ ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::NodeInstances;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
-Threading::AtomicCounter ModelContext::ConstantsUpdateCounter = 0;
-Threading::AtomicCounter ModelContext::TransformsUpdateCounter = 0;
+Threading::Interlocked::AtomicCounter ModelContext::ConstantsUpdateCounter = 0;
+Threading::Interlocked::AtomicCounter ModelContext::TransformsUpdateCounter = 0;
 
 Memory::RangeAllocator ModelContext::TransformInstanceAllocator, ModelContext::RenderInstanceAllocator;
 
@@ -717,6 +717,59 @@ ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, const Material
 //------------------------------------------------------------------------------
 /**
 */
+void
+ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, IndexT node, const Materials::MaterialId material)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    uint index = (uint)stateRange.allocation.offset + node;
+
+    DestroyMaterialInstance(NodeInstances.renderable.nodeStates[index].materialInstance);
+    NodeInstances.renderable.nodeStates[index].materialInstance = CreateMaterialInstance(material);
+    NodeInstances.renderable.nodeMaterials[index] = material;
+    NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+
+    auto sortCode = Materials::MaterialGetSortCode(material);
+    assert(sortCode < 0xFFF0000000000000);
+    uint64_t sortId = ((uint64_t)sortCode << 52);
+    NodeInstances.renderable.nodeSortId[index] = sortId;
+}
+
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::ChangeMaterialOnModels(const Models::ModelId mdlId, IndexT node, const Materials::MaterialId material)
+{
+    const Util::Array<Resources::ResourceId>& models = modelContextAllocator.GetArray<Model_Id>();
+    for (IndexT i = 0; i < models.Size(); i++)
+    {
+        const Resources::ResourceId model = models[i];
+        if (model.resourceId == mdlId.resourceId)
+        {
+            Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(i);
+            NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(i);
+            uint index = (uint)stateRange.allocation.offset + node;
+
+            DestroyMaterialInstance(NodeInstances.renderable.nodeStates[index].materialInstance);
+            NodeInstances.renderable.nodeStates[index].materialInstance = CreateMaterialInstance(material);
+            NodeInstances.renderable.nodeMaterials[index] = material;
+            NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
+
+            auto sortCode = Materials::MaterialGetSortCode(material);
+            assert(sortCode < 0xFFF0000000000000);
+            uint64_t sortId = ((uint64_t)sortCode << 52);
+            NodeInstances.renderable.nodeSortId[index] = sortId;
+        }
+    }
+}
+#endif
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Models::ModelId
 ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 {
@@ -1058,7 +1111,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         }
     }, nodeInstanceTransformRanges.Size(), 256, nullptr, &TransformsUpdateCounter, nullptr);
 
-    static Threading::AtomicCounter lodUpdateCounter = 0;
+    static Threading::Interlocked::AtomicCounter lodUpdateCounter = 0;
     n_assert(lodUpdateCounter == 0);
     lodUpdateCounter = 1;
 

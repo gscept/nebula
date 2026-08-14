@@ -139,7 +139,7 @@ public:
         AnimationLoaded = N_BIT(2),
     };
 
-    static Threading::AtomicCounter ConstantUpdateCounter;
+    static Threading::Interlocked::AtomicCounter ConstantUpdateCounter;
 private:
     friend struct CharacterJobContext;
 

@@ -21,13 +21,13 @@ namespace Fibers
 struct FiberContext
 {
     Fibers::Fiber* fiber;
-    volatile int* counter;
+    Threading::Interlocked::AtomicCounter* counter;
 };
 
 struct FiberWaitContext
 {
     Fibers::Fiber* fiber;
-    volatile int* counter;
+    Threading::Interlocked::AtomicCounter* counter;
     int value;
 };
 
@@ -49,7 +49,7 @@ public:
     bool HasWork();
 
     /// sleeps the current fiber and switches it for a new one
-    void SleepFiber(volatile int* counter, int value);
+    void SleepFiber(Threading::Interlocked::AtomicCounter* counter, int value);
     /// switches the current fiber
     void NewFiber();
     /// switch back to original fiber
@@ -80,7 +80,7 @@ public:
         JobFunction function;
         uint id;
         void* context;
-        Threading::AtomicCounter* counter;
+        Threading::Interlocked::AtomicCounter* counter;
     };
 
     /// constructor
@@ -93,7 +93,7 @@ public:
     /// discard job queue
     static void Discard();
     /// enqueue job 
-    template <class T> static void Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, Threading::AtomicCounter* counter);
+    template <class T> static void Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, Threading::Interlocked::AtomicCounter* counter);
     /// free a fiber
     static void Free(uint id);
     /// sleep fiber
@@ -123,7 +123,7 @@ private:
 */
 template <class T>
 inline void
-FiberQueue::Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, Threading::AtomicCounter* counter)
+FiberQueue::Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, Threading::Interlocked::AtomicCounter* counter)
 {
     Threading::Interlocked::Exchange(counter, contexts.Size());
 
@@ -142,7 +142,7 @@ FiberQueue::Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, 
 */
 template <class T>
 inline void
-Enqueue(FiberQueue::JobFunction function, const Util::FixedArray<T*>& contexts, Threading::AtomicCounter* counter)
+Enqueue(FiberQueue::JobFunction function, const Util::FixedArray<T*>& contexts, Threading::Interlocked::AtomicCounter* counter)
 {
     FiberQueue::Enqueue(function, contexts, counter);
 }
@@ -151,7 +151,7 @@ Enqueue(FiberQueue::JobFunction function, const Util::FixedArray<T*>& contexts, 
 /**
 */
 inline void 
-Wait(Threading::AtomicCounter* counter, int value)
+Wait(Threading::Interlocked::AtomicCounter* counter, int value)
 {
     if (*counter != value)
     {
@@ -163,7 +163,7 @@ Wait(Threading::AtomicCounter* counter, int value)
 /**
 */
 inline void
-Lock(Threading::AtomicCounter* counter, int value)
+Lock(Threading::Interlocked::AtomicCounter* counter, int value)
 {
     while (*counter != value) {};
 }

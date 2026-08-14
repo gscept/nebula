@@ -104,7 +104,7 @@ Spinlock::Lock()
 inline void
 Spinlock::Unlock()
 {
-    n_assert(this->lock != InvalidThreadId);
+    n_assert(this->lock == Thread::GetMyThreadId());
     Threading::Interlocked::Exchange((volatile ThreadIdStorage*) &this->lock, InvalidThreadId);
 }
 

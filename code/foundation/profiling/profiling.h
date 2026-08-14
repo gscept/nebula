@@ -84,7 +84,7 @@ extern Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByC
 extern Threading::CriticalSection categoryLock;
 
 /// atomic counter used to give each thread a unique id
-extern Threading::AtomicCounter ProfilingContextCounter;
+extern Threading::Interlocked::AtomicCounter ProfilingContextCounter;
 
 /// increment profiling counter
 void ProfilingIncreaseCounter(const char* id, uint64_t value);

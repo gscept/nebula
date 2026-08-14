@@ -83,13 +83,13 @@ struct JobContext
     JobFunc func;
     Lambda l;
     int remainingGroups;
-    Threading::AtomicCounter groupCompletionCounter;
+    Threading::Interlocked::AtomicCounter groupCompletionCounter;
     SizeT numInvocations;
     SizeT groupSize;
     void* data;
-    const Threading::AtomicCounter** waitCounters;
+    const Threading::Interlocked::AtomicCounter** waitCounters;
     SizeT numWaitCounters;
-    Threading::AtomicCounter* doneCounter;
+    Threading::Interlocked::AtomicCounter* doneCounter;
     Threading::Event* signalEvent;
 };
 
@@ -181,12 +181,12 @@ void JobNewFrame();
 
 extern JobNode* sequenceNode;
 extern JobNode* sequenceTail;
-extern const Threading::AtomicCounter* prevDoneCounter;
+extern const Threading::Interlocked::AtomicCounter* prevDoneCounter;
 extern Threading::ThreadId sequenceThread;
 
 /// Begin a sequence of jobs
-void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
+void JobBeginSequence(const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters = nullptr
+    , Threading::Interlocked::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr);
 
 /// Append job to sequence with an automatic dependency on the previous job
@@ -236,8 +236,8 @@ JobDispatch(
     LAMBDA&& func
     , const SizeT numInvocations
     , const SizeT groupSize
-    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters = nullptr
+    , Threading::Interlocked::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
 {
@@ -245,7 +245,7 @@ JobDispatch(
     {
         if (doneCounter != nullptr)
         {
-            Threading::Interlocked::Exchange(doneCounter, 0);
+            doneCounter->Exchange(0);
         }
         // If we have a signal event and no invocations, just signal the event and return
         if (signalEvent != nullptr)
@@ -260,7 +260,7 @@ JobDispatch(
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*);
     auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
@@ -268,8 +268,8 @@ JobDispatch(
     node->job.waitCounters = nullptr;
     if (waitCounters.Size() > 0)
     {
-        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode));
-        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+        node->job.waitCounters = (const Threading::Interlocked::AtomicCounter**)(mem + sizeof(JobNode));
+        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*));
     }
 
     node->job.l = std::move(func);
@@ -312,8 +312,8 @@ template <typename LAMBDA> void
 JobDispatch(
     LAMBDA&& func
     , const SizeT numInvocations
-    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters = nullptr
+    , Threading::Interlocked::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
 {
@@ -329,8 +329,8 @@ JobDispatch(
     , const SizeT numInvocations
     , const SizeT groupSize
     , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters = nullptr
+    , Threading::Interlocked::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
 {
@@ -342,7 +342,7 @@ JobDispatch(
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*);
     auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
@@ -350,8 +350,8 @@ JobDispatch(
     node->job.waitCounters = nullptr;
     if (waitCounters.Size() > 0)
     {
-        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX));
-        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+        node->job.waitCounters = (const Threading::Interlocked::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX));
+        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*));
     }
 
     // Move context
@@ -400,8 +400,8 @@ JobDispatch(
     const JobFunc& func
     , const SizeT numInvocations
     , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters = nullptr
+    , Threading::Interlocked::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
 {
@@ -423,17 +423,17 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::AtomicCounter);
+    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::Interlocked::AtomicCounter);
     if (prevDoneCounter != nullptr)
-        dynamicAllocSize += sizeof(Threading::AtomicCounter*);
+        dynamicAllocSize += sizeof(Threading::Interlocked::AtomicCounter*);
     auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
     if (prevDoneCounter != nullptr)
     {
         node->job.numWaitCounters = 1;
-        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::AtomicCounter));
-        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::AtomicCounter*));
+        node->job.waitCounters = (const Threading::Interlocked::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::Interlocked::AtomicCounter));
+        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::Interlocked::AtomicCounter*));
     }
     else
     {
@@ -453,7 +453,7 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     node->job.numInvocations = numInvocations;
     node->job.groupSize = groupSize;
     
-    node->job.doneCounter = (Threading::AtomicCounter*)(mem + sizeof(JobNode) + sizeof(CTX));
+    node->job.doneCounter = (Threading::Interlocked::AtomicCounter*)(mem + sizeof(JobNode) + sizeof(CTX));
     *node->job.doneCounter = 1;
     prevDoneCounter = node->job.doneCounter;
     node->job.signalEvent = nullptr;
@@ -513,17 +513,17 @@ JobAppendSequence(
     */
 
     // Calculate allocation size which is node + counters + data context
-    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(Threading::AtomicCounter);
+    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(Threading::Interlocked::AtomicCounter);
     if (prevDoneCounter != nullptr)
-        dynamicAllocSize += sizeof(Threading::AtomicCounter*);
+        dynamicAllocSize += sizeof(Threading::Interlocked::AtomicCounter*);
     auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
     if (prevDoneCounter != nullptr)
     {
         node->job.numWaitCounters = 1;
-        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(Threading::AtomicCounter));
-        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::AtomicCounter*));
+        node->job.waitCounters = (const Threading::Interlocked::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(Threading::Interlocked::AtomicCounter));
+        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::Interlocked::AtomicCounter*));
     }
     else
     {
@@ -539,7 +539,7 @@ JobAppendSequence(
     node->job.numInvocations = numInvocations;
     node->job.groupSize = groupSize;
     
-    node->job.doneCounter = (Threading::AtomicCounter*)(mem + sizeof(JobNode));
+    node->job.doneCounter = (Threading::Interlocked::AtomicCounter*)(mem + sizeof(JobNode));
     *node->job.doneCounter = 1;
     prevDoneCounter = node->job.doneCounter;
     node->job.signalEvent = nullptr;

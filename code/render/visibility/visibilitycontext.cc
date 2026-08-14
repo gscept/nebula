@@ -135,11 +135,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     stageMasks.Reset();
     stageMasks.Resize(observerResults[0].Size());
 
-    static Threading::AtomicCounter idCounter;
+    static Threading::Interlocked::AtomicCounter idCounter = 0;
     idCounter = 1;
     if (nodes.Size() > 0)
     {
-        Threading::AtomicCounter counter = 0;
+        Threading::Interlocked::AtomicCounter counter = 0;
 
         // Run job to collect model node ids
         Jobs2::JobDispatch(
@@ -167,7 +167,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 const Graphics::StageMask stage = Models::ModelContext::GetModelStageMask(idData[index]);
                 const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
-                uint offset = Threading::Interlocked::Add(&counter, numNodes);
+                uint offset = counter.Add(numNodes);
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
                 {
                     stageMaskData[offset] = stage;
@@ -185,7 +185,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // run all visibility systems
-    const Threading::AtomicCounter* prevSystemCounters = nullptr;
+    const Threading::Interlocked::AtomicCounter* prevSystemCounters = nullptr;
     if ((observerTransforms.Size() > 0) && (NodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
@@ -198,7 +198,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         }
     }
 
-    static Threading::AtomicCounter completionCounter;
+    static Threading::Interlocked::AtomicCounter completionCounter = 0;
     completionCounter = observerResults.Size();
     Threading::Event* finishedEvent = nullptr;
 
@@ -223,7 +223,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         indexedClipStatuses.Resize(nodes.Size());
         // Before we create our draws, we have to wait for the constants to be allocated first
         // For particles, that's done before visibility so we can omit it here
-        Util::FixedArray<const Threading::AtomicCounter*, true> waitCounters =
+        Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true> waitCounters =
         {
             &prevSystemCounters[i],
             &Models::ModelContext::ConstantsUpdateCounter,

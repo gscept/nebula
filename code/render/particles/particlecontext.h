@@ -85,7 +85,7 @@ public:
     static void RecalculateEnvelopeSamples(const Graphics::GraphicsEntityId id);
 #endif
 
-    static Threading::AtomicCounter ConstantUpdateCounter;
+    static Threading::Interlocked::AtomicCounter ConstantUpdateCounter;
     static Threading::Event totalCompletionEvent;
 private:
 

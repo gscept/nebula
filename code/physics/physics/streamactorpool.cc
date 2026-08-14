@@ -74,7 +74,7 @@ ActorId
 StreamActorPool::CreateActorInstance(ActorResourceId id, Math::transform const& worldTrans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {
     n_assert(id.resourceId != Physics::InvalidPhysicsResourceId.resourceId);
-    __LockName(&this->actorAllocator, lock, id.id);
+    __LockName(this->actorAllocator, lock, id.id);
     ActorInfo& info = this->actorAllocator.Get<Info>(id.id);
 
     Math::transform trans = worldTrans * info.transform;
@@ -124,7 +124,7 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        __LockName(&this->actorAllocator, lock, actor.res.id);
+        __LockName(this->actorAllocator, lock, actor.res.id);
         ActorInfo& info = this->actorAllocator.Get<Info>(actor.res.id);
         info.instanceCount--;
     }
@@ -138,7 +138,7 @@ AggregateId
 StreamActorPool::CreateAggregate(PhysicsResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {
     n_assert2(this->resourceAllocator.Get<0>(id.id) == PhysicsResource::PhysicsResourceUnion_Aggregate, "Trying to create aggregate actor instance from invalid resource");
-    __LockName(&this->aggregateAllocator, lock, id.id);
+    __LockName(this->aggregateAllocator, lock, id.id);
     AggregateResourceId aggId = this->resourceAllocator.Get<1>(id.id);
     AggregateInfo& info = this->aggregateAllocator.Get<Info>(aggId.id);
     info.instanceCount++;
@@ -617,7 +617,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
-    __LockName(&this->resourceAllocator, lock, id.resource);
+    __LockName(this->resourceAllocator, lock, id.resource);
     
     static const auto freeShapes = [&](Physics::ActorInfo& actor)
         {

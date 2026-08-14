@@ -47,17 +47,15 @@ enum
     ResourceTable_Device,
     ResourceTable_DescriptorSet,
     ResourceTable_DescriptorPoolIndex,
-    ResourceTable_Lock,
     ResourceTable_Layout,
     ResourceTable_WriteInfos,
     ResourceTable_Copies
 };
 
-typedef Ids::IdAllocator<
+typedef Ids::IdAllocatorSafe<0xFFFF,
     VkDevice,
     VkDescriptorSet,
     IndexT,
-    Threading::Spinlock,
     CoreGraphics::ResourceTableLayoutId,
     Util::HashTable<uint64_t, WriteInfo>,
     Util::Array<VkCopyDescriptorSet, 4>

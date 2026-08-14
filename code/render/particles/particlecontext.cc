@@ -33,8 +33,8 @@ const Timing::Time DefaultStepTime = 1.0f / 60.0f;
 Timing::Time StepTime = 1.0f / 60.0f;
 
 const SizeT ParticleContextNumEnvelopeSamples = 192;
-Threading::AtomicCounter allSystemsCompleteCounter = 0;
-Threading::AtomicCounter ParticleContext::ConstantUpdateCounter = 0;
+Threading::Interlocked::AtomicCounter allSystemsCompleteCounter = 0;
+Threading::Interlocked::AtomicCounter ParticleContext::ConstantUpdateCounter = 0;
 Threading::Event ParticleContext::totalCompletionEvent;
 
 struct
@@ -467,7 +467,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
         }
         else
         {
-            allSystemsCompleteCounter--;
+            allSystemsCompleteCounter.RaceDecrement();
         }
     }
 
@@ -477,7 +477,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
     {
         const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
-        ParticleContext::ConstantUpdateCounter++;
+        ParticleContext::ConstantUpdateCounter.RaceIncrement();
 
         // Run job to update constants, can be per-view because of the billboard flag
         Jobs2::JobDispatch(
@@ -959,7 +959,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
     if (srt.particles.Size() == 0)
     {
         // Reduce systems complete counter manually
-        allSystemsCompleteCounter--;
+        allSystemsCompleteCounter.RaceDecrement();
         return;
     }
 

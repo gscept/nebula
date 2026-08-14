@@ -48,7 +48,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32_t* ids, 
 /**
 */
 void
-VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters)
+VisibilitySystem::Run(const Threading::Interlocked::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& extraCounters)
 {
     // do nothing
 }
@@ -56,7 +56,7 @@ VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
 //------------------------------------------------------------------------------
 /**
 */
-const Threading::AtomicCounter
+const Threading::Interlocked::AtomicCounter
 VisibilitySystem::GetCompletionCounter(IndexT i) const
 {
     return this->obs.completionCounters[i];
@@ -65,7 +65,7 @@ VisibilitySystem::GetCompletionCounter(IndexT i) const
 //------------------------------------------------------------------------------
 /**
 */
-const Threading::AtomicCounter*
+const Threading::Interlocked::AtomicCounter*
 VisibilitySystem::GetCompletionCounters() const
 {
     return this->obs.completionCounters.ConstBegin();

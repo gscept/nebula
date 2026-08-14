@@ -497,7 +497,7 @@ TerrainContext::Create()
 
             CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
-            CmdDraw(cmdBuf, terrainInstance.numPatchesThisFrame, group);
+            CmdDraw(cmdBuf, terrainInstance.numPatchesThisFrame.counter, group);
         }
     });
 
@@ -753,7 +753,7 @@ TerrainContext::Create()
 
             CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
-            CmdDraw(cmdBuf, terrainInstance.numPatchesThisFrame, group);
+            CmdDraw(cmdBuf, terrainInstance.numPatchesThisFrame.counter, group);
         }
     }, nullptr);
 
@@ -1607,7 +1607,7 @@ TerrainContext::CreateBiome(const Graphics::GraphicsEntityId terrain, const Biom
             instanceInfo.biomeMaterials.MaterialAlbedos[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             instanceInfo.biomeTextures.Append(id);
             instanceInfo.biomeLowresGenerated[biomeIndex] = false;
-            instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::AlbedoLoaded;
+            instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::AlbedoLoaded);
         }, nullptr, false, false);
 
         instanceInfo.biomeResources[biomeIndex][i].normalRes = Resources::CreateResource(instanceInfo.biomeResources[biomeIndex][i].normal.Value(), "terrain", [i, biomeIndex, &instanceInfo](Resources::ResourceId id)
@@ -1617,7 +1617,7 @@ TerrainContext::CreateBiome(const Graphics::GraphicsEntityId terrain, const Biom
             instanceInfo.biomeMaterials.MaterialNormals[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             instanceInfo.biomeTextures.Append(id);
             instanceInfo.biomeLowresGenerated[biomeIndex] = false;
-            instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::NormalLoaded;
+            instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::NormalLoaded);
         }, nullptr, false, false);
 
         instanceInfo.biomeResources[biomeIndex][i].materialRes = Resources::CreateResource(instanceInfo.biomeResources[biomeIndex][i].material.Value(), "terrain", [i, biomeIndex, &instanceInfo](Resources::ResourceId id)
@@ -1627,7 +1627,7 @@ TerrainContext::CreateBiome(const Graphics::GraphicsEntityId terrain, const Biom
             instanceInfo.biomeMaterials.MaterialPBRs[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             instanceInfo.biomeTextures.Append(id);
             instanceInfo.biomeLowresGenerated[biomeIndex] = false;
-            instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::MaterialLoaded;
+            instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::MaterialLoaded);
         }, nullptr, false, false);
     }
 
@@ -1640,7 +1640,7 @@ TerrainContext::CreateBiome(const Graphics::GraphicsEntityId terrain, const Biom
         instanceInfo.biomeMasks[biomeIndex] = id;
         instanceInfo.biomeLowresGenerated[biomeIndex] = false;
         for (int i = 0; i < 4; i++)
-            instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::MaskLoaded;
+            instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::MaskLoaded);
     }, nullptr, false, false);
 
     if (settings.biomeParameters.useMaterialWeights)
@@ -1654,14 +1654,14 @@ TerrainContext::CreateBiome(const Graphics::GraphicsEntityId terrain, const Biom
             terrainState.biomeWeights[biomeIndex] = id;
             instanceInfo.biomeLowresGenerated[biomeIndex] = false;
             for (int i = 0; i < 4; i++)
-                instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::WeightsLoaded;
+                instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::WeightsLoaded);
         }, nullptr, false, false);
     }
     else
     {
         Threading::CriticalScope scope(&terrainState.syncPoint);
         for (int i = 0; i < 4; i++)
-            instanceInfo.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::WeightsLoaded;
+            instanceInfo.biomeLoaded[biomeIndex][i].Or(BiomeLoadBits::WeightsLoaded);
     }
 
     instanceInfo.biomes.Append(ret);
@@ -1808,7 +1808,7 @@ skipResolution:
                 if (state != SubTextureUpdateState::NoChange)
                 {
                     // If change, produce output
-                    int outputIndex = Threading::Interlocked::Add(&terrainInstance.subTextureNumOutputs, 1);
+                    int outputIndex = terrainInstance.subTextureNumOutputs.Add(1);
                     n_assert(outputIndex < SubTextureMaxUpdates);
 
                     SubTextureUpdateJobOutput& output = terrainInstance.subTextureJobOutputs[outputIndex];
@@ -1889,7 +1889,7 @@ skipResolution:
                     const Math::ClipStatus::Type clip = boundingBoxes[index].clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
                     if (clip != Math::ClipStatus::Outside)
                     {
-                        uint offset = Threading::Interlocked::Add(instanceCounter, 1);
+                        uint offset = instanceCounter->Add(1);
 
                         Terrain::TerrainPatchData patch;
                         patch.PosOffset[0] = boundingBoxes[index].pmin.x;
@@ -2205,7 +2205,7 @@ TerrainContext::UpdateLOD(const Graphics::ViewId view, const Graphics::FrameCont
             BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(terrainInstance.biomes[j]).biomeParameters;
             for (IndexT i = 0; i < 4; i++)
             {
-                bool allBitsLoaded = AllBits(terrainInstance.biomeLoaded[j][i], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
+                bool allBitsLoaded = AllBits(terrainInstance.biomeLoaded[j][i].value, BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
                 biomesLoaded &= allBitsLoaded;
             }
             if (!terrainInstance.biomeLowresGenerated[j] && biomesLoaded)
@@ -2236,7 +2236,7 @@ TerrainContext::UpdateLOD(const Graphics::ViewId view, const Graphics::FrameCont
         // Wait for subtextures job to finish this frame
         terrainInstance.subtexturesFinishedEvent->Wait();
 
-        for (IndexT i = 0; i < terrainInstance.subTextureNumOutputs; i++)
+        for (IndexT i = 0; i < terrainInstance.subTextureNumOutputs.counter; i++)
         {
             const Terrain::SubTextureUpdateJobOutput& output = terrainInstance.subTextureJobOutputs[i];
             Terrain::SubTexture& subTex = terrainInstance.subTextures[output.index];
@@ -2750,7 +2750,7 @@ TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId 
         instanceInfo.biomeResources[biomeId.id][layer].materialRes = Resources::InvalidResourceId;
     }
 
-    instanceInfo.biomeLoaded[biomeId.id][layer] &= ~(BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded);
+    instanceInfo.biomeLoaded[biomeId.id][layer].And(~(BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded));
     instanceInfo.biomeResources[biomeId.id][layer].albedoRes = Resources::CreateResource(instanceInfo.biomeResources[biomeId.id][layer].albedo.Value(), "terrain", [layer, i = biomeId.id, &instanceInfo](Resources::ResourceId id)
     {
         Threading::CriticalScope scope(&terrainState.syncPoint);
@@ -2758,7 +2758,7 @@ TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId 
         instanceInfo.biomeMaterials.MaterialAlbedos[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
         instanceInfo.biomeTextures.Append(id);
         instanceInfo.biomeLowresGenerated[i] = false;
-        instanceInfo.biomeLoaded[i][layer] |= BiomeLoadBits::AlbedoLoaded;
+        instanceInfo.biomeLoaded[i][layer].Or(BiomeLoadBits::AlbedoLoaded);
     }, nullptr, true, false);
 
     instanceInfo.biomeResources[biomeId.id][layer].normalRes = Resources::CreateResource(instanceInfo.biomeResources[biomeId.id][layer].normal.Value(), "terrain", [layer, i = biomeId.id, &instanceInfo](Resources::ResourceId id)
@@ -2768,7 +2768,7 @@ TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId 
         instanceInfo.biomeMaterials.MaterialNormals[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
         instanceInfo.biomeTextures.Append(id);
         instanceInfo.biomeLowresGenerated[i] = false;
-        instanceInfo.biomeLoaded[i][layer] |= BiomeLoadBits::NormalLoaded;
+        instanceInfo.biomeLoaded[i][layer].Or(BiomeLoadBits::NormalLoaded);
     }, nullptr, true, false);
 
     instanceInfo.biomeResources[biomeId.id][layer].materialRes = Resources::CreateResource(instanceInfo.biomeResources[biomeId.id][layer].material.Value(), "terrain", [layer, i = biomeId.id, &instanceInfo](Resources::ResourceId id)
@@ -2778,7 +2778,7 @@ TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId 
         instanceInfo.biomeMaterials.MaterialPBRs[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
         instanceInfo.biomeTextures.Append(id);
         instanceInfo.biomeLowresGenerated[i] = false;
-        instanceInfo.biomeLoaded[i][layer] |= BiomeLoadBits::MaterialLoaded;
+        instanceInfo.biomeLoaded[i][layer].Or(BiomeLoadBits::MaterialLoaded);
     }, nullptr, true, false);
 
     instanceInfo.biomeLowresGenerated[biomeId.id] = false;

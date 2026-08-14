@@ -169,12 +169,12 @@ next:
             job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
 
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
-        if (Threading::Interlocked::Decrement(&job->groupCompletionCounter) == 0)
+        if (job->groupCompletionCounter.Decrement() == 0)
         {
             // If we have a job counter, only signal the event when the counter reaches 0
             if (job->doneCounter != nullptr)
             {
-                long numDispatchesLeft = Threading::Interlocked::Decrement(job->doneCounter);
+                long numDispatchesLeft = job->doneCounter->Decrement();
 
                 if (job->signalEvent != nullptr && numDispatchesLeft == 0)
                     job->signalEvent->Signal();
@@ -284,7 +284,7 @@ JobSequencePlaceholder(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, Size
 
 Jobs2::JobNode* sequenceNode = nullptr;
 Jobs2::JobNode* sequenceTail = nullptr;
-const Threading::AtomicCounter* prevDoneCounter = nullptr;
+const Threading::Interlocked::AtomicCounter* prevDoneCounter = nullptr;
 Threading::ThreadId sequenceThread;
 
 //------------------------------------------------------------------------------
@@ -292,8 +292,8 @@ Threading::ThreadId sequenceThread;
 */
 void
 JobBeginSequence(
-    const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters
-    , Threading::AtomicCounter* doneCounter
+    const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& waitCounters
+    , Threading::Interlocked::AtomicCounter* doneCounter
     , Threading::Event* signalEvent)
 {
     n_assert(sequenceNode == nullptr);
@@ -301,7 +301,7 @@ JobBeginSequence(
     sequenceThread = Threading::Thread::GetMyThreadId();
 
     // Calculate allocation size which is node + counters
-    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*);
     auto mem = JobAlloc<char>(dynamicAllocSize);
     sequenceNode = (JobNode*)mem;
     sequenceNode->next = nullptr;
@@ -312,8 +312,8 @@ JobBeginSequence(
     sequenceNode->job.waitCounters = nullptr;
     if (waitCounters.Size() > 0)
     {
-        sequenceNode->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode));
-        memcpy(sequenceNode->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+        sequenceNode->job.waitCounters = (const Threading::Interlocked::AtomicCounter**)(mem + sizeof(JobNode));
+        memcpy(sequenceNode->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::Interlocked::AtomicCounter*));
     }
 
     // Setup sequence node with a dummy function

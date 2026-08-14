@@ -233,8 +233,8 @@ public:
     /// Get if model is loaded
     static bool IsLoaded(const Graphics::GraphicsEntityId id);
 
-    static Threading::AtomicCounter ConstantsUpdateCounter;
-    static Threading::AtomicCounter TransformsUpdateCounter;
+    static Threading::Interlocked::AtomicCounter ConstantsUpdateCounter;
+    static Threading::Interlocked::AtomicCounter TransformsUpdateCounter;
 
 private:
     friend class Visibility::VisibilityContext;

@@ -72,7 +72,7 @@ FiberThread::HasWork()
 /**
 */
 void
-FiberThread::SleepFiber(Threading::AtomicCounter* counter, int value)
+FiberThread::SleepFiber(Threading::Interlocked::AtomicCounter* counter, int value)
 {
     FiberQueue::Sleep(FiberWaitContext{ this->currentFiber.fiber, counter, value });
 
@@ -224,8 +224,8 @@ FiberFunction(void* param)
     job->function(job->context);
 
     // decrement the counter
-    Threading::Interlocked::Decrement(job->counter);
-    n_assert(*job->counter >= 0);
+    job->counter->Decrement();
+    n_assert(job->counter->counter >= 0);
 
     // free up context
     FiberQueue::Free(job->id);

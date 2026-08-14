@@ -678,7 +678,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         nodes.Clear();
         nodes.Resize(entities.Size());
 
-        static Threading::AtomicCounter idCounter;
+        static Threading::Interlocked::AtomicCounter idCounter = 0;
         idCounter = 1;
 
         // Run job to collect model node ids

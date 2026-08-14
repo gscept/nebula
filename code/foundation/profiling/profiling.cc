@@ -13,7 +13,7 @@ Util::Array<ProfilingContext> profilingContextsLastFrame;
 Util::Array<Threading::CriticalSection*> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 Threading::CriticalSection categoryLock;
-Threading::AtomicCounter ProfilingContextCounter = 0;
+Threading::Interlocked::AtomicCounter ProfilingContextCounter = 0;
 thread_local IndexT ProfilingContextIndex = InvalidIndex;
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ ProfilingRegisterThread(int priority)
 {
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
-    ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
+    ProfilingContextIndex = ProfilingContextCounter.Increment();
     profilingContexts.Append(ProfilingContext(priority));
     profilingContextsLastFrame.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();

@@ -53,7 +53,7 @@ public:
     virtual void* Map() override;
     /// unmap stream
     virtual void Unmap() override;
-    /// memory map stream to memory
+    /// memory map stream to memory (performs no internal allocation)
     virtual void* MemoryMap() override;
     /// unmap memory stream 
     virtual void MemoryUnmap() override;

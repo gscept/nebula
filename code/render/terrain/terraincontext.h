@@ -367,7 +367,7 @@ public:
         CoreGraphics::BufferId                                          pageUpdateListBuffer;
         CoreGraphics::BufferId                                          pageStatusBuffer;
 
-        Threading::AtomicCounter                                        numPatchesThisFrame;
+        Threading::Interlocked::AtomicCounter                                        numPatchesThisFrame;
         CoreGraphics::BufferSet                                         patchConstants;
         CoreGraphics::BufferId                                          runtimeConstants;
         CoreGraphics::BufferWithStaging                                 tileWriteBufferSet;
@@ -389,7 +389,7 @@ public:
 
         Util::FixedArray<SubTexture>                                    subTextures;
         Util::FixedArray<TerrainSubTexture>                             gpuSubTextures;
-        Threading::AtomicCounter                                        subTextureNumOutputs;
+        Threading::Interlocked::AtomicCounter                           subTextureNumOutputs;
         Terrain::SubTextureUpdateJobOutput                              subTextureJobOutputs[SubTextureMaxUpdates];
         OccupancyQuadTree                                               indirectionOccupancy;
         OccupancyQuadTree                                               physicalTextureTileOccupancy;
@@ -419,7 +419,7 @@ public:
         TerrainCreateInfo                                               createInfo;
 
         Threading::Event                                                *subtexturesFinishedEvent, *sectionCullFinishedEvent;
-        Threading::AtomicCounter                                        subtexturesDoneCounter = 0, sectionCullDoneCounter = 0;
+        Threading::Interlocked::AtomicCounter                           subtexturesDoneCounter = 0, sectionCullDoneCounter = 0;
         CoreGraphics::BarrierContext                                    barrierContext; 
         uint32_t                                                        pageUpdateListBarrierIndex, pageStatusBufferBarrierIndex, subtextureBufferBarrierIndex, indirectionBarrierIndex, indirectionCopyBarrierIndex, albedoCacheBarrierIndex, materialCacheBarrierIndex, normalCacheBarrierIndex;
         
@@ -428,7 +428,7 @@ public:
         Terrain::MaterialLayers::STRUCT                                 biomeMaterials;
         Util::Array<CoreGraphics::TextureId>                            biomeTextures;
         CoreGraphics::TextureId                                         biomeMasks[Terrain::MAX_BIOMES];
-        Threading::AtomicCounter                                        biomeLoaded[Terrain::MAX_BIOMES][4];
+        Threading::Interlocked::AtomicInt                               biomeLoaded[Terrain::MAX_BIOMES][4];
         uint                                                            biomeLowresGenerated[Terrain::MAX_BIOMES];
         BiomeMaterial                                                   biomeResources[Terrain::MAX_BIOMES][BiomeSettings::BiomeMaterialLayer::NumLayers];
         CoreGraphics::TextureId                                         biomeWeights[Terrain::MAX_BIOMES];

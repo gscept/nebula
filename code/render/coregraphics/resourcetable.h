@@ -417,4 +417,6 @@ ResourcePipelineId CreateResourcePipeline(const ResourcePipelineCreateInfo& info
 /// destroy resource pipeline
 void DestroyResourcePipeline(const ResourcePipelineId& id);
 
+_DECL_ACQUIRE_RELEASE(ResourceTableId);
+
 } // namespace CoreGraphics

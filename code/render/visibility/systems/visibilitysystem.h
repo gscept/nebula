@@ -92,12 +92,12 @@ public:
     /// prepare system with entities to insert into the structure
     virtual void PrepareEntities(const Math::bbox* transforms, const uint32_t* ranges, const Graphics::StageMask* stages, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
-    virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters);
+    virtual void Run(const Threading::Interlocked::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::Interlocked::AtomicCounter*, true>& extraCounters);
 
     /// Return completion counter for an observer
-    const Threading::AtomicCounter GetCompletionCounter(IndexT i) const;
+    const Threading::Interlocked::AtomicCounter GetCompletionCounter(IndexT i) const;
     /// Return completion counter for all observers
-    const Threading::AtomicCounter* GetCompletionCounters() const;
+    const Threading::Interlocked::AtomicCounter* GetCompletionCounters() const;
 
 protected:
 
@@ -111,7 +111,7 @@ protected:
         const Graphics::StageMask* stages;
         Util::Array<Math::ClipStatus::Type>* results;
         SizeT count;
-        Util::Array<Threading::AtomicCounter> completionCounters;
+        Util::Array<Threading::Interlocked::AtomicCounter> completionCounters;
     } obs;
 
     struct Entity

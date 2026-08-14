@@ -25,7 +25,7 @@ __ImplementContext(CharacterContext, CharacterContext::characterContextAllocator
 
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
 Threading::Event CharacterContext::totalCompletionEvent;
-Threading::AtomicCounter CharacterContext::ConstantUpdateCounter = 0;
+Threading::Interlocked::AtomicCounter CharacterContext::ConstantUpdateCounter = 0;
 
 //------------------------------------------------------------------------------
 /**
@@ -664,10 +664,10 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 
     if (!models.IsEmpty())
     {
-        static Threading::AtomicCounter animationCounter = 0;
+        static Threading::Interlocked::AtomicCounter animationCounter = 0;
 
         // Set total counter
-        n_assert(animationCounter == 0);
+        n_assert(animationCounter.counter == 0);
         animationCounter = 1;
 
         CharacterJobContext charCtx;
@@ -712,7 +712,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         // Run job
         Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &animationCounter, nullptr);
 
-        n_assert(ConstantUpdateCounter == 0);
+        n_assert(ConstantUpdateCounter.counter == 0);
         ConstantUpdateCounter = 1;
 
         // Run job to update constants
