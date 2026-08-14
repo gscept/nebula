@@ -698,15 +698,11 @@ ImguiContext::Create()
                     {
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-                        ImGuiSecondaryWindowData data;
-                        data.buf = cmdBuf;
-                        data.viewport = viewport;
-                        data.id = *static_cast<ImGuiID*>(userData);
                         for (int i = 1; i < platform_io.Viewports.Size; i++)
                         {
-                            ImGuiViewport* viewport = platform_io.Viewports[i];
-                            if (viewport->ID == data.id)
-                                platform_io.Renderer_RenderWindow(viewport, &data);
+                            ImGuiViewport* imguiViewport = platform_io.Viewports[i];
+                            if (imguiViewport->ID == *static_cast<ImGuiID*>(userData))
+                                ImguiDrawFunction(cmdBuf, viewport, imguiViewport->DrawData);
                         }
                         N_MARKER_END()
                     }
@@ -786,14 +782,11 @@ ImguiContext::Create()
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                         ImGuiSecondaryWindowData data;
-                        data.buf = cmdBuf;
-                        data.viewport = viewport;
-                        data.id = *static_cast<ImGuiID*>(userData);
                         for (int i = 1; i < platform_io.Viewports.Size; i++)
                         {
-                            ImGuiViewport* viewport = platform_io.Viewports[i];
-                            if (viewport->ID == data.id)
-                                platform_io.Renderer_RenderWindow(viewport, &data);
+                            ImGuiViewport* imguiViewport = platform_io.Viewports[i];
+                            if (imguiViewport->ID == *static_cast<ImGuiID*>(userData))
+                                ImguiDrawFunction(cmdBuf, viewport, imguiViewport->DrawData);
                         }
                         N_MARKER_END()
                     }
@@ -985,6 +978,7 @@ ImguiContext::Create()
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
     io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    io.BackendFlags |= ImGuiBackendFlags_HasParentViewport;
 
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -1144,6 +1138,7 @@ ImguiContext::Discard()
     platform_io.Viewports[0]->PlatformWindowCreated = false;
     platform_io.Viewports[0]->PlatformHandle = nullptr;
 #endif
+    ImGui::DestroyPlatformWindows();
     ImGui::DestroyContext();
 }
 
@@ -1305,6 +1300,28 @@ ImGuiCloseButton(bool& toggle, int id)
     draw_list->AddLine(center + ImVec2(+cross_extent, +cross_extent), center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
     draw_list->AddLine(center + ImVec2(+cross_extent, -cross_extent), center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
     ImGui::PopID();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ImGuiToggleButton(const char* label, bool toggle)
+{
+    if (toggle)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+    }
+
+    bool pressed = ImGui::Button(label);
+
+    if (toggle)
+        ImGui::PopStyleColor(3);
+
+    return pressed;
 }
 
 } // namespace Dynui

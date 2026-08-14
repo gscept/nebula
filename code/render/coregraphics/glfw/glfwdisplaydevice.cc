@@ -87,6 +87,8 @@ void
 GLFWDisplayDevice::ProcessWindowMessages()
 {
     glfwPollEvents();
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +235,6 @@ GLFWDisplayDevice::GetAdapterInfo(Adapter::Code adapter)
     AdapterInfo emptyAdapterInfo;
     return emptyAdapterInfo;
 }
-
 
 //------------------------------------------------------------------------------
 /**

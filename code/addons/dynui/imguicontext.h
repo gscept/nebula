@@ -95,5 +95,7 @@ private:
 
 /// Helper function to recreate the ImGUI close button used for windows and tabs
 void ImGuiCloseButton(bool& toggle, int id);
+/// Helper function for toggle buttons
+bool ImGuiToggleButton(const char* label, bool toggle);
 
 } // namespace Dynui
