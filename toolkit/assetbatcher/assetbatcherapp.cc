@@ -328,24 +328,13 @@ AssetBatcherApp::DoWork()
             }
             case AssetProcessorBase::File:
             {
-                if (importMode != AssetBatchProcessor::ImportModes::None)
-                {
-                    exporter->UpdateSource();
-                    IO::URI basePath("src:");
-                    exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
-                    exporter->SetProgressMinMax(0, 1 * PRECISION);
-                    exporter->ProcessFile("src:" + file);
-                    break;
-                }
-                if (packageMode != AssetBatchProcessor::PackageModes::None)
-                {
-                    exporter->UpdateSource();
-                    IO::URI basePath("work:");
-                    exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
-                    exporter->SetProgressMinMax(0, 1 * PRECISION);
-                    exporter->ProcessFile("work:" + file);
-                    break;
-                }
+                exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All);
+                exporter->UpdateSource();
+                IO::URI basePath("src:");
+                exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
+                exporter->SetProgressMinMax(0, 1 * PRECISION);
+                exporter->ProcessFile("src:" + file);
+
                 break;
             }
         }

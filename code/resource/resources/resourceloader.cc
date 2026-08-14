@@ -498,6 +498,7 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
             metaData.size = 0;
         }
         this->metaData[instanceId] = metaData;
+        this->streamDatas[instanceId] = {};
 
         ret.loaderInstanceId = instanceId;
         ret.loaderIndex = this->uniqueId;
@@ -664,7 +665,7 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
                 // add pending unload, it will be unloaded once loaded
                 this->pendingUnloads.Append({ id });
 
-                if (this->streamDatas[id.loaderInstanceId].stream)
+                if (this->streamDatas[id.loaderInstanceId].stream.isvalid())
                 {
                     this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
                     this->streamDatas[id.loaderInstanceId].stream->Close();

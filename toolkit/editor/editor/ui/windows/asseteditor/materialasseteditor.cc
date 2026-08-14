@@ -153,8 +153,22 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     auto itemData = (const MaterialEditorItemData*)item->data;
+
+    static int selectedTemplate = 0;
     ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
-    ImGui::Text(materialTemplate->name);
+    if (ImGui::BeginCombo("Template", materialTemplate->name))
+    {
+        for (const auto& it : MaterialTemplatesGPULang::Lookup)
+        {
+            const MaterialTemplatesGPULang::Entry* entry = it.Value();
+            if (ImGui::Selectable(entry->name) && materialTemplate->name != entry->name)
+            {
+                Materials::MaterialSetTemplate(item->asset.material, entry);
+                materialTemplate = entry;
+            }            
+        }
+        ImGui::EndCombo();
+    }
     ImGui::PopFont();
 
     ImGui::Separator();
@@ -191,7 +205,6 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 {
                     if (ImGui::BeginTooltip())
                     {
-
                         ImGui::Image(ref, ImVec2{ 256, 256 });
                         ImGui::EndTooltip();
                     }
@@ -347,6 +360,17 @@ MaterialSetup(AssetEditorItem* item)
     itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
     item->data = itemData;
 
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    if (assetFileStream->Open())
+    {
+        void* data = assetFileStream->MemoryMap();
+
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MaterialResource>(itemData->asset, (uint8_t*)data);
+
+        assetFileStream->MemoryUnmap();
+        assetFileStream->Close();
+    }
+
     if (MaterialSphere == CoreGraphics::InvalidMeshResourceId)
     {
         MaterialSphere = Resources::CreateResource("sysmsh:material_knob.nvx", "preview", nullptr, nullptr, true, false).resourceId;
@@ -408,6 +432,7 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
     auto itemData = (const MaterialEditorItemData*)item->data;
     memcpy(itemData->originalConstants, itemData->constants, materialTemplate->bufferSize);
     memcpy(itemData->originalImages, itemData->images, sizeof(ImageHolder) * materialTemplate->numTextures);
+
 
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);

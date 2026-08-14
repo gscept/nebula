@@ -204,7 +204,6 @@ UIManager::OnActivate()
         else
         {
             // Fallback
-
             ImGui::SaveIniSettingsToDisk(path.c_str());
         }
     }

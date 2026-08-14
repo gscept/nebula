@@ -439,13 +439,17 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         }
     };
 
-    static const auto AddDragSourceForFileUri = [](const IO::URI& file)
+    static const auto AddDragSourceForFileUri = [this](const IO::URI& file)
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            Util::String filePath = file.AsString().StripSubstring(IO::URI("src:assets").AsString());
+            ToolkitUtil::FileDB::FolderInfo folder;
+            this->fileDB.GetFolderInfo(this->activeFileTree, folder);
+            static Util::String filePath;
+            filePath = file.LocalPath().StripSubstring(IO::URI(folder.name + "/assets").LocalPath());
             filePath.StripFileExtension();
             ImGui::SetDragDropPayload("resource", filePath.AsCharPtr(), sizeof(char) * filePath.Length() + 1);
+            ImGui::Text(filePath.AsCharPtr());
             ImGui::EndDragDropSource();
         }
     };
@@ -690,7 +694,7 @@ AssetBrowser::DisplayFileTree()
         {
             displayName.Append(" (zip)");
         }
-        ImGui::Button(displayName.AsCharPtr());
+        Dynui::ImGuiToggleButton(displayName.AsCharPtr(), this->activeFileTree == root.id);
         if (ImGui::IsItemClicked())
         {
             this->activeFileTree = root.id;

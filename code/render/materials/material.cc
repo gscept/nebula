@@ -390,6 +390,15 @@ MaterialInvalidate(const MaterialId mat)
     auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferFlush(buf);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetTemplate(const MaterialId mat, const MaterialTemplatesGPULang::Entry* temp)
+{
+    materialAllocator.Set<Material_Template>(mat.id, temp);
+}
 #endif
 
 //------------------------------------------------------------------------------

@@ -23,7 +23,8 @@
 #include "particleasseteditor.h"
 
 #include "editor/tools/livebatcher.h"
-#include "io/assignregistry.h"
+#include "io/ioserver.h"
+
 
 #include "materials/gpulang/material_interfaces.h"
 
@@ -95,7 +96,7 @@ static const EditorFunc SavingFunctions[(uint)AssetEditor::AssetType::NumAssetTy
 {
     nullptr, // LEAVE THIS ONE AS IT IS
     MaterialSave,
-    nullptr,
+    ModelSave,
     nullptr,
     ParticleSave
 };
@@ -198,6 +199,7 @@ AssetEditor::Run(SaveMode save)
                                 auto& discardFunc = DiscardFunctions[(uint)item.assetType];
                                 if (discardFunc)
                                     discardFunc(this, &item);
+                                item.allocator.Release();
                                 this->editCounter -= item.editCounter;
                                 item.editCounter = 0;
                                 assetEditorState.items.Erase(&item);
@@ -352,6 +354,7 @@ AssetEditor::Open(const IO::URI& asset, const Util::String root, const AssetType
             item.path = exportFile;
             item.grabFocus = true;
             item.editCounter = 0;
+
             Setup(&item);
         }
     );

@@ -116,7 +116,14 @@ public:
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
     /// Changes the material for the first node in the model
     static void ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material);
-    /// get model
+    /// Changes the material for a specific node in the model, use GetNodeIndex to lookup by name
+    static void ChangeMaterial(const Graphics::GraphicsEntityId id, IndexT node, const Materials::MaterialId material);
+
+#if WITH_NEBULA_EDITOR
+    static void ChangeMaterialOnModels(const Models::ModelId mdlId, IndexT node, const Materials::MaterialId material);
+#endif
+    
+    /// Get model
     static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
 
     /// set the transform for a model

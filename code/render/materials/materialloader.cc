@@ -237,8 +237,13 @@ MaterialLoader::Setup()
     this->failResourceName = "sysmat:error.sur";
     this->loaderExtension = "sur";
 
-    // Run generated setup code
-    MaterialTemplatesGPULang::SetupMaterialTemplates();
+    // Run generated setup code, terrible hack because in this transition period we have two material loaders
+    static bool TemplatesSetup = false;
+    if (!TemplatesSetup)
+    {
+        MaterialTemplatesGPULang::SetupMaterialTemplates();
+        TemplatesSetup = true;
+    }
 
     // Create binding buffer
     CoreGraphics::BufferCreateInfo materialBindingInfo;

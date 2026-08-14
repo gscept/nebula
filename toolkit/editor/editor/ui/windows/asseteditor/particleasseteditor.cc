@@ -74,6 +74,7 @@ struct ParticleAssetItemData
         AssetEditorItem materialItem;
     };
     Util::Array<ParticleAsset> emitters;
+    ToolkitUtil::ParticleResourceT asset;
 };
 
 //------------------------------------------------------------------------------
@@ -795,6 +796,17 @@ ParticleSetup(AssetEditorItem* item)
 {
 	auto itemData = item->allocator.Alloc<ParticleAssetItemData>();
 	item->data = itemData;
+
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    if (assetFileStream->Open())
+    {
+        void* data = assetFileStream->MemoryMap();
+
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ParticleResource>(itemData->asset, (uint8_t*)data);
+
+        assetFileStream->MemoryUnmap();
+        assetFileStream->Close();
+    }
 
     Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetMutableEmitters(item->asset.particle);
     for (SizeT i = 0; i < emitters.meshes.Size(); i++)

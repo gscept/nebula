@@ -15,6 +15,13 @@
 #include "particles/particleresource.h"
 #include "dynui/imguicontext.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
+#include "flat/material.h"
+#include "flat/particle.h"
+
+
 namespace Presentation
 {
 
@@ -74,6 +81,7 @@ struct AssetEditorItem
 
         Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;
+
     Resources::ResourceId res;
     IO::URI source;
     IO::URI path;

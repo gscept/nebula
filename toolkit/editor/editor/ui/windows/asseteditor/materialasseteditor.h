@@ -20,6 +20,8 @@ struct MaterialEditorItemData
 
     ImageHolder* originalImages;
     ubyte* originalConstants;
+
+    ToolkitUtil::MaterialResourceT asset;
 };
 
 void MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item);

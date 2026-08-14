@@ -38,14 +38,17 @@ public:
     const Util::String& GetCategory() const;
     void SetCategory(const char* category);
 
-    //Get and set so that ImGui can access it
+    /// Open window and return reference to the open flag such that it can be modified elsewhere
     bool& Open();
 
-    // Runs and renders the interface once.
+    /// Runs and renders the window one frame
     virtual void Run(SaveMode save);
 
-    // Runs every frame, no matter if the window is open or not.
+    /// Runs every frame, no matter if the window is open or not.
     virtual void Update();
+    
+    /// Grab focus this frame
+    void Focus();
 
     const ImGuiWindowFlags_ GetAdditionalFlags() const;
 
@@ -90,6 +93,7 @@ protected:
 private:
     Math::vec2 windowPadding;
     bool usesCustomWindowPadding = false;
+    bool focusThisFrame = false;
 };
 
 } // namespace Presentation

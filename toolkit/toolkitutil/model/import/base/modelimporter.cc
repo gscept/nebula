@@ -133,8 +133,11 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         const void* data = stream->MemoryMap();
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ModelAsset>(modelAsset, (const uint8_t*)data);
 
+        stream->MemoryUnmap();
         stream->Close();
     }
+    IO::DeleteFile(outputAssetPath);
+
 
     if (mergedMeshes.Size() > 0)
     {

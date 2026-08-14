@@ -146,6 +146,7 @@ LiveBatcher::BatchFile(const IO::URI& filePath)
             args.Append("-rawlog ");
             args.Append(" -dir " + filePath.LocalPath().ExtractDirName());
             args.Append(" -file " + filePath.LocalPath().ExtractFileName());
+            args.Append(" -force");
             livebatcherState.startInfo.args = args;
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)

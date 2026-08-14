@@ -103,6 +103,8 @@ ubyte* MaterialGetConstants(const MaterialId mat);
 const Resources::ResourceId MaterialGetTexture(const MaterialId mat, const IndexT i);
 /// Invalidate material
 void MaterialInvalidate(const MaterialId mat);
+/// Set template for material
+void MaterialSetTemplate(const MaterialId mat, const MaterialTemplatesGPULang::Entry* temp);
 #endif
 
 struct MaterialConstant

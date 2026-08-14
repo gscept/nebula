@@ -105,6 +105,15 @@ BaseWindow::Update()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+BaseWindow::Focus()
+{
+    this->focusThisFrame = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const ImGuiWindowFlags_
 BaseWindow::GetAdditionalFlags() const
 {
@@ -267,7 +276,7 @@ BaseWindow::Edit()
 /**
 */
 void 
-BaseWindow::Unedit(int count)
+BaseWindow::Unedit(int count /* = 1 */)
 {
     this->editCounter -= count;
 }

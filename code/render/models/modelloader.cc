@@ -73,6 +73,10 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     Util::FixedArray<Models::JointMask> jointMasks;
     Util::FixedArray<Models::Take> takes;
 
+#if WITH_NEBULA_EDITOR
+    Util::Dictionary<Util::StringAtom, Models::ModelNode*> nodeLookup;
+#endif
+
     reader->SetStream(stream);
     if (reader->Open())
     {
@@ -85,7 +89,7 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
         streamData->requiredBits = LoadBits::NoBits;
         streamData->loadedBits = LoadBits::NoBits;
 
-        ret.loaderStreamData = _StreamData{ .stream = stream, .data = streamData };
+        ret.loaderStreamData = _StreamData(stream, streamData);
 
         FourCC magic = reader->ReadUInt();
         uint version = reader->ReadUInt();
@@ -183,6 +187,9 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
                 node->boundingBox = Math::bbox();
                 node->name = name;
                 node->tag = job.tag;
+#if WITH_NEBULA_EDITOR
+                nodeLookup.Add(name, node);
+#endif
                 if (!nodeStack.IsEmpty())
                 {
                     Models::ModelNode* parent = nodeStack.Peek();
@@ -218,6 +225,9 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     createInfo.nodes = nodes;
     createInfo.jointMasks = jointMasks;
     createInfo.takes = takes;
+#if WITH_NEBULA_EDITOR
+    createInfo.nodeLookup = nodeLookup;
+#endif
     ModelId id = CreateModel(createInfo);
     ret.id = id;
     return ret;

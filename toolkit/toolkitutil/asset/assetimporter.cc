@@ -127,6 +127,7 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil
         memcpy(data.data(), stream->MemoryMap(), stream->GetSize());
         texture.data = data;
 
+        stream->MemoryUnmap();
         stream->Close();
     }
     else
@@ -177,6 +178,7 @@ ImportAudio(const IO::URI& file, const IO::URI& destinationFolder)
         memcpy(data.data(), stream->MemoryMap(), stream->GetSize());
         audio.data = data;
 
+        stream->MemoryUnmap();
         stream->Close();
     }
     else

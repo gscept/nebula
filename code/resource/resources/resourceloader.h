@@ -140,6 +140,16 @@ public:
     {
         Ptr<IO::Stream> stream;
         void* data;
+
+        _StreamData()
+            : stream(nullptr)
+            , data(nullptr)
+        {}
+
+        _StreamData(const Ptr<IO::Stream>& stream, void* data)
+            : stream(stream)
+            , data(data)
+        {}
     };
 
     struct ResourceInitOutput

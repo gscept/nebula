@@ -177,6 +177,9 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
                 this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
+
+            stream->MemoryUnmap();
+            stream->Close();
         }
     }
     if ((this->packageMode & PackageModes::Textures) && ext == "natex")

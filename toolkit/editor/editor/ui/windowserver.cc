@@ -683,6 +683,13 @@ WindowServer::RunAll()
 
             if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
             {
+                if (it->focusThisFrame)
+                {
+                    ImGui::SetWindowFocus(it->GetName().AsCharPtr());
+                    ImGuiViewport* viewport = ImGui::GetWindowViewport();
+                    ImGui::GetPlatformIO().Platform_SetWindowFocus(viewport);
+                    it->focusThisFrame = false;
+                }
                 it->Run(this->save);
             }
             ImGui::End();

@@ -470,6 +470,9 @@ PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, Toolki
         Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
         fileNameNoExt.StripFileExtension();
 
+        stream->MemoryUnmap();
+        stream->Close();
+
         return PackageTexture(&tex, fileNameNoExt, destinationFolder, platform, logger);
     }
 
@@ -492,6 +495,10 @@ PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitU
 
         ToolkitUtil::AudioResourceT aud;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::AudioResource>(aud, (const uint8_t*)data);
+
+        stream->MemoryUnmap();
+        stream->Close();
+
         return true;
     }
     return false;
@@ -513,6 +520,10 @@ PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 
         ToolkitUtil::MaterialResourceT mat;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MaterialResource>(mat, (const uint8_t*)data);
+
+        stream->MemoryUnmap();
+        stream->Close();
+
         return PackageMaterial(&mat, file.LocalPath().ExtractFileName(), destinationFolder, platform, logger);
     }
     return false;
@@ -534,6 +545,10 @@ PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 
         ToolkitUtil::ParticleResourceT par;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::ParticleResource>(par, (const uint8_t*)data);
+
+        stream->MemoryUnmap();
+        stream->Close();
+
         return true;
     }
     return false;

@@ -96,6 +96,9 @@ struct ModelCreateInfo
     Util::Array<Models::ModelNode*> nodes;
     Util::FixedArray<JointMask> jointMasks;
     Util::FixedArray<Take> takes;
+#if WITH_NEBULA_EDITOR
+    Util::Dictionary<Util::StringAtom, Models::ModelNode*> nodeLookup;
+#endif
 };
 
 /// create model (resource)
@@ -108,12 +111,20 @@ const Util::Array<Models::ModelNode*>& ModelGetNodes(const ModelId id);
 /// Get model bounding box
 const Math::bbox& ModelGetBoundingBox(const ModelId id);
 
+#if WITH_NEBULA_EDITOR
+/// Get model node lookup table
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const ModelId id);
+#endif
+
 enum
 {
     Model_BoundingBox,
     Model_Nodes,
     Model_JointMasks,
     Model_Takes,
+#if WITH_NEBULA_EDITOR
+    Model_NodeLookup
+#endif
 };
 
 typedef Ids::IdAllocator<
@@ -121,6 +132,9 @@ typedef Ids::IdAllocator<
     Util::Array<Models::ModelNode*>,
     Util::FixedArray<JointMask>,
     Util::FixedArray<Take>
+#if WITH_NEBULA_EDITOR
+    , Util::Dictionary<Util::StringAtom, Models::ModelNode*>
+#endif
 > ModelAllocator;
 extern ModelAllocator modelAllocator;
 } // namespace Models

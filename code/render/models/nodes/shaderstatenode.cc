@@ -58,6 +58,21 @@ ShaderStateNode::CreateResourceTables()
     return ret;
 }
 
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::SetMaterial(const IO::URN& res)
+{
+    this->materialName = res;
+    Resources::CreateResource(this->materialName, this->tag, [this](Resources::ResourceId id)
+    {
+        this->material = id;
+    });
+}
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
