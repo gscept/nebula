@@ -58,7 +58,7 @@ RegisterModelEntity(
     Math::mat4 const& t
 )
 {
-    IO::URN modelURN(Util::Format("urn:mdl:%s", res.Value()));
+    IO::URN modelURN("mdl", res.Value());
     Models::ModelContext::RegisterEntity(gid);
     Models::ModelContext::Setup(
         gid,
