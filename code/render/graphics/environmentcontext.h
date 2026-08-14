@@ -25,6 +25,9 @@ public:
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
 
+    /// Set new material for the skybox
+    static void SetSkyboxMaterial(const Materials::MaterialId mat);
+
     /// set the fog color
     static void SetFogColor(const Math::vec4& fogColor);
     /// set the fog distances

@@ -55,12 +55,12 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     envState.skyBoxEntity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
-    // setup both model and visibility
-    Models::ModelContext::Setup(envState.skyBoxEntity, "sysmdl:skybox.n3", "system", []()
-        {
-            Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
-            Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
-        }, Graphics::ALL_STAGE_MASK);
+    // Create default skybox
+    const Resources::ResourceId skyboxMaterial = Resources::CreateResource("urn:mat:system/skybox"_urn, "environment", nullptr, nullptr, true, false);
+    const Resources::ResourceId boxMesh = Resources::CreateResource("urn:msh:system/box"_urn, "environment", nullptr, nullptr, true, false);
+    Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial.resource, boxMesh.resource, 0, Graphics::ALL_STAGE_MASK);
+    Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
+    Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
 
     envState.bloomColor = Math::vec4(1.0f);
     envState.bloomIntensity = 0.65f;
@@ -73,6 +73,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     envState.fadeValue = 1.0f;
     envState.skyTurbidity = 2.0f;
 
+    // Get rid of these, we have a procedural sky so irradiance can be precomputed as a SH, and the reflection can be reduced each frame
     envState.defaultEnvironmentMap = Resources::CreateResource("systex:sky_refl.dds"_atm, "system"_atm,
         [](const Resources::ResourceId id)
         {
@@ -235,6 +236,15 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
 
         ImGui::End();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EnvironmentContext::SetSkyboxMaterial(const Materials::MaterialId mat)
+{
+    Models::ModelContext::ChangeMaterial(envState.skyBoxEntity, mat);
 }
 
 //------------------------------------------------------------------------------
