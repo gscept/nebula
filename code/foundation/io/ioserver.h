@@ -164,6 +164,33 @@ FileExists(const IO::URI& uri)
 //------------------------------------------------------------------------------
 /**
 */
+inline bool
+DeleteFile(const IO::URI& uri)
+{
+    return IoServer::Instance()->DeleteFile(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+CopyFile(const IO::URI& from, const IO::URI& to)
+{
+    return IoServer::Instance()->CopyFile(from, to);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+DeleteDirectory(const IO::URI& uri)
+{
+    return IoServer::Instance()->DeleteDirectory(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
 {
