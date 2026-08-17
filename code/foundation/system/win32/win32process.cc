@@ -306,6 +306,9 @@ WaitForProcess(ProcessId processId)
     // wait until process exits
     WaitForSingleObject(processInfo.hProcess, INFINITE);
 
+    // Update streams
+    UpdateProcessStreams(processId);
+
     DWORD exitCode = 0;
     GetExitCodeProcess(processInfo.hProcess, &exitCode);
 
