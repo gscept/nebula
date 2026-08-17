@@ -256,7 +256,7 @@ macro(compile_gpulang_intern)
             set(base_path ${NROOT}/syswork/shaders/gpulang)
         else()
             set(foldername ${CurDir})
-            set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
+			set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
         endif()
 
         cmake_path(SET shd_path ${shd})
@@ -281,6 +281,11 @@ macro(compile_gpulang_intern)
             file(READ ${depoutput} deps)
         endif()
 
+		cmake_path(NORMAL_PATH binaryOutput)
+		cmake_path(NORMAL_PATH headerOutput)
+		cmake_path(NORMAL_PATH foldername)
+		cmake_path(NORMAL_PATH shd)
+		cmake_path(NORMAL_PATH GPULANGC)
         add_custom_command(OUTPUT ${binaryOutput}
             COMMAND ${GPULANGC} ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
             MAIN_DEPENDENCY ${shd}
