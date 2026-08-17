@@ -7,31 +7,31 @@
 
 namespace Attr
 {
-    DefineGuid(GuidValue, 'guid', ReadWrite);
-    DefineBool(BoolValue, 'bval', ReadWrite);
-    DefineFloat(FloatValue, 'fval', ReadWrite);
-    DefineInt(IntValue, 'ival',  ReadWrite);
-    DefineFloat4(Float4Value, 'v4vl', ReadWrite);
-    DefineMatrix44(Matrix44Value, 'mxvl', ReadWrite);
-    DefineString(StringValue, 'sval', ReadWrite);
-    DefineBlob(BlobValue, 'blob', ReadWrite);
+    DefineAttrGuid(GuidValue, 'guid', ReadWrite);
+    DefineAttrBool(BoolValue, 'bval', ReadWrite);
+    DefineAttrFloat(FloatValue, 'fval', ReadWrite);
+    DefineAttrInt(IntValue, 'ival',  ReadWrite);
+    DefineAttrFloat4(Float4Value, 'v4vl', ReadWrite);
+    DefineAttrMatrix44(Matrix44Value, 'mxvl', ReadWrite);
+    DefineAttrString(StringValue, 'sval', ReadWrite);
+    DefineAttrBlob(BlobValue, 'blob', ReadWrite);
 
-    DefineString(Name, 'NAME', ReadWrite);
-    DefineBool(Male, 'MALE', ReadWrite);
-    DefineFloat(IQ, 'IQ__', ReadWrite);
-    DefineInt(Age, 'AGE_', ReadWrite);
-    DefineFloat4(Velocity, 'VELO', ReadWrite);
-    DefineFloat4(Color, 'COLR', ReadWrite);
-    DefineMatrix44(Transform, 'TFRM', ReadWrite);
-    DefineString(CarModel, 'CARM', ReadWrite);
-    DefineString(Street, 'STRT', ReadWrite);
-    DefineString(Product, 'PROD', ReadWrite);
-    DefineString(City, 'CITY', ReadWrite);
-    DefineString(Phone, 'PHON', ReadWrite);
-    DefineGuid(GUID, 'GUID', ReadWrite);
-    DefineInt(Nr, 'NR__', ReadWrite);
-    DefineInt(Price, 'PRCE', ReadWrite);
-    DefineInt(Stock, 'STCK', ReadWrite);
-    DefineString(Country, 'CTRY', ReadWrite);
+    DefineAttrString(Name, 'NAME', ReadWrite);
+    DefineAttrBool(Male, 'MALE', ReadWrite);
+    DefineAttrFloat(IQ, 'IQ__', ReadWrite);
+    DefineAttrInt(Age, 'AGE_', ReadWrite);
+    DefineAttrFloat4(Velocity, 'VELO', ReadWrite);
+    DefineAttrFloat4(Color, 'COLR', ReadWrite);
+    DefineAttrMatrix44(Transform, 'TFRM', ReadWrite);
+    DefineAttrString(CarModel, 'CARM', ReadWrite);
+    DefineAttrString(Street, 'STRT', ReadWrite);
+    DefineAttrString(Product, 'PROD', ReadWrite);
+    DefineAttrString(City, 'CITY', ReadWrite);
+    DefineAttrString(Phone, 'PHON', ReadWrite);
+    DefineAttrGuid(GUID, 'GUID', ReadWrite);
+    DefineAttrInt(Nr, 'NR__', ReadWrite);
+    DefineAttrInt(Price, 'PRCE', ReadWrite);
+    DefineAttrInt(Stock, 'STCK', ReadWrite);
+    DefineAttrString(Country, 'CTRY', ReadWrite);
 };
 

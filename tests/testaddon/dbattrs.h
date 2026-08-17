@@ -13,32 +13,32 @@
 //------------------------------------------------------------------------------
 namespace Attr
 {
-    DeclareGuid(GuidValue, 'guid', ReadWrite);
-    DeclareBool(BoolValue, 'bval', ReadWrite);
-    DeclareFloat(FloatValue, 'fval', ReadWrite);
-    DeclareInt(IntValue, 'ival',  ReadWrite);
-    DeclareFloat4(Float4Value, 'v4vl', ReadWrite);
-    DeclareMatrix44(Matrix44Value, 'mxvl', ReadWrite);
-    DeclareString(StringValue, 'sval', ReadWrite);
-    DeclareBlob(BlobValue, 'blob', ReadWrite);
+    DeclareAttrGuid(GuidValue);
+    DeclareAttrBool(BoolValue);
+    DeclareAttrFloat(FloatValue);
+    DeclareAttrInt(IntValue);
+    DeclareAttrFloat4(Float4Value);
+    DeclareAttrMatrix44(Matrix44Value);
+    DeclareAttrString(StringValue);
+    DeclareAttrBlob(BlobValue);
 
-    DeclareString(Name, 'NAME', ReadWrite);
-    DeclareBool(Male, 'MALE', ReadWrite);
-    DeclareFloat(IQ, 'IQ__', ReadWrite);
-    DeclareInt(Age, 'AGE_', ReadWrite);
-    DeclareFloat4(Velocity, 'VELO', ReadWrite);
-    DeclareFloat4(Color, 'COLR', ReadWrite);
-    DeclareMatrix44(Transform, 'TFRM', ReadWrite);
-    DeclareString(CarModel, 'CARM', ReadWrite);
-    DeclareString(Street, 'STRT', ReadWrite);
-    DeclareString(Product, 'PROD', ReadWrite);
-    DeclareString(City, 'CITY', ReadWrite);
-    DeclareString(Phone, 'PHON', ReadWrite);
-    DeclareGuid(GUID, 'GUID', ReadWrite);
-    DeclareInt(Nr, 'NR__', ReadWrite);
-    DeclareInt(Price, 'PRCE', ReadWrite);
-    DeclareInt(Stock, 'STCK', ReadWrite);
-    DeclareString(Country, 'CTRY', ReadWrite);
+    DeclareAttrString(Name);
+    DeclareAttrBool(Male);
+    DeclareAttrFloat(IQ);
+    DeclareAttrInt(Age);
+    DeclareAttrFloat4(Velocity);
+    DeclareAttrFloat4(Color);
+    DeclareAttrMatrix44(Transform);
+    DeclareAttrString(CarModel);
+    DeclareAttrString(Street);
+    DeclareAttrString(Product);
+    DeclareAttrString(City);
+    DeclareAttrString(Phone);
+    DeclareAttrGuid(GUID);
+    DeclareAttrInt(Nr);
+    DeclareAttrInt(Price);
+    DeclareAttrInt(Stock);
+    DeclareAttrString(Country);
 };
 //------------------------------------------------------------------------------
 #endif

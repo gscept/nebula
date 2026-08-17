@@ -316,7 +316,7 @@ StringTest::Run()
 
     // StripSubpath
     str = "root/sub/file.txt";
-    str = str.StripSubpath("root/sub");
+    str = str.StripSubstring("root/sub");
     VERIFY(str == "file.txt");
 
     // Empty string edge cases

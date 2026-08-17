@@ -16,6 +16,16 @@
 #include "db/database.h"
 #include "db/dbfactory.h"
 
+
+namespace Attr
+{
+DeclareAttrInt(URNHash);
+DeclareAttrInt(WorkHash);
+DeclareAttrString(Export);
+DeclareAttrString(Work);
+}
+
+
 typedef void (*AssetProcessorProgressCallback) (float progress, const Util::String& status);
 typedef void (*AssetProcessorMinMaxCallback) (int min, int max);
 //------------------------------------------------------------------------------

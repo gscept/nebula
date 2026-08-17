@@ -125,8 +125,7 @@ template <class T>
 inline void
 FiberQueue::Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, Threading::Interlocked::AtomicCounter* counter)
 {
-    Threading::Interlocked::Exchange(counter, contexts.Size());
-
+    counter->Exchange(contexts.Size());
     for (uint i = 0; i < contexts.Size(); i++)
     {
         Job job;

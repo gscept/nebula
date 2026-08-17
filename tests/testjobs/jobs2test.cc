@@ -41,7 +41,7 @@ Jobs2Test::Run()
     portInfo.priority = UINT_MAX;
     JobSystemInit(portInfo);
 
-    Threading::AtomicCounter waitCounters[3] = { 1,1,1 };
+    Threading::Interlocked::AtomicCounter waitCounters[3] = { 1,1,1 };
     EventManual finishedEvent[3];
     Threading::Event hostEvent;
     struct Context

@@ -21,6 +21,14 @@ using namespace Net;
 using namespace IO;
 using namespace Util;
 
+namespace Attr
+{
+DefineAttrInt(URNHash, 'FURN', Attr::ReadWrite);
+DefineAttrInt(WorkHash, 'FWRK', Attr::ReadWrite);
+DefineAttrString(Export, 'FEXP', Attr::ReadWrite);
+DefineAttrString(Work, 'FWOR', Attr::ReadWrite);
+}
+
 namespace Base
 {
 __ImplementClass(Base::AssetProcessorBase, 'EXBA', Core::RefCounted);
