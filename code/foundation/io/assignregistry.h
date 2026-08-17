@@ -17,17 +17,6 @@
 #include "util/hashtable.h"
 #include "threading/criticalsection.h"
 #include "core/singleton.h"
-#include "db/dbfactory.h"
-#include "db/database.h"
-
-
-namespace Attr
-{
-DeclareAttrInt(URNHash);
-DeclareAttrInt(WorkHash);
-DeclareAttrString(Export);
-DeclareAttrString(Work);
-}
 
 
 //------------------------------------------------------------------------------
@@ -67,13 +56,6 @@ public:
     /// prints all assigns and their paths to the console. Useful for debugging.
     void PrintAll() const;
 
-    /// Resolve a path from work to export
-    IO::URI ResolveWorkToExport(const IO::URI& uri) const;
-    /// Resolve URN to work path
-    IO::URI ResolveURNToWork(const IO::URN& urn) const;
-    /// Resolve URN to export path
-    IO::URI ResolveURNToExport(const IO::URN& urn) const;
-
 private:
     /// setup standard system assigns (e.g. home:, etc...)
     void SetupSystemAssigns();
@@ -83,10 +65,6 @@ private:
     bool isValid;
     Threading::CriticalSection critSect;
     Util::HashTable<Util::String, Util::String> assignTable;
-
-    Ptr<Db::Database> database;
-    Ptr<Db::Table> mappings;
-    Ptr<Db::DbFactory> dbFactory;
 };
 
 } // namespace IO
