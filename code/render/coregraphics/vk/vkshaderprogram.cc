@@ -758,6 +758,22 @@ VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRuntimeInf
     if (rt.ri != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.ri, nullptr);
     if (rt.ca != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.ca, nullptr);
     if (pipeline != VK_NULL_HANDLE)                 vkDestroyPipeline(info.dev, pipeline, nullptr);
+
+    rt.vs = VK_NULL_HANDLE;
+    rt.hs = VK_NULL_HANDLE;
+    rt.ds = VK_NULL_HANDLE;
+    rt.gs = VK_NULL_HANDLE;
+    rt.ps = VK_NULL_HANDLE;
+    rt.cs = VK_NULL_HANDLE;
+    rt.ts = VK_NULL_HANDLE;
+    rt.ms = VK_NULL_HANDLE;
+    rt.rg = VK_NULL_HANDLE;
+    rt.ra = VK_NULL_HANDLE;
+    rt.rc = VK_NULL_HANDLE;
+    rt.rm = VK_NULL_HANDLE;
+    rt.ri = VK_NULL_HANDLE;
+    rt.ca = VK_NULL_HANDLE;
+    pipeline = VK_NULL_HANDLE;
 }
 
 } // namespace Vulkan

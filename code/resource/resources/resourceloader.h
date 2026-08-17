@@ -51,7 +51,8 @@ enum LoadFlags
 {
     None = 0x0,
     Create = 0x1,
-    Update = 0x2
+    Update = 0x2,
+    Reload = 0x4
 };
 __ImplementEnumBitOperators(LoadFlags);
 
@@ -266,7 +267,7 @@ protected:
     /// Stream resource
     virtual ResourceStreamOutput StreamResource(const ResourceLoadJob& job);
     /// perform a reload
-    virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+    virtual ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream);
 
     /// Create load mask based on LOD. This will be used to determine if the resoure is fully loaded
     virtual uint LodMask(const _StreamData& stream, float lod, bool async) const;

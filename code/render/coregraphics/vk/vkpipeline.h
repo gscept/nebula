@@ -25,10 +25,15 @@ struct Pipeline
 
 enum
 {
-    Pipeline_Object
+    Pipeline_Object,
+    Pipeline_CreateInfo
 };
 
-extern Ids::IdAllocator<Pipeline> pipelineAllocator;
+typedef Ids::IdAllocator<
+    Pipeline,
+    CoreGraphics::PipelineCreateInfo
+> PipelineAllocator;
+extern PipelineAllocator pipelineAllocator;
 
 /// Get device used to create pipeline
 VkDevice PipelineGetVkDevice(const CoreGraphics::PipelineId id);

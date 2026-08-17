@@ -30,6 +30,9 @@ PipelineId CreateGraphicsPipeline(const PipelineCreateInfo& info);
 /// Destroy pipeline
 void DestroyGraphicsPipeline(const PipelineId pipeline);
 
+/// Invalidate pipelines with shader program
+void InvalidatePipelines(const CoreGraphics::ShaderProgramId program);
+
 struct PipelineRayTracingTable
 {
     CoreGraphics::PipelineId pipeline;

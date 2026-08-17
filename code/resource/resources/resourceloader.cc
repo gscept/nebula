@@ -114,11 +114,15 @@ ResourceLoader::StreamResource(const ResourceLoadJob& job)
 //------------------------------------------------------------------------------
 /**
 */
-Resource::State
-ResourceLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
+ResourceLoader::ResourceInitOutput
+ResourceLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     // Assume the loader doesn't support streaming, whereby all data is loaded on initialize
-    return Resource::Failed;
+    ResourceInitOutput ret;
+    ret.id = job.id.resource;
+    ret.loaderStreamData.data = nullptr;
+    ret.loaderStreamData.stream = stream;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -355,7 +359,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     streamResult.pendingBits = job.loadState.pendingBits;
     streamResult.loadedBits = job.loadState.loadedBits;
 
-    if (AllBits(job.flags, LoadFlags::Create))
+    if (AnyBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
@@ -363,7 +367,11 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         if (stream->Open())
         {
             // If new resource, initialize it
-            ResourceLoader::ResourceInitOutput initResult = loader->InitializeResource(job, stream);
+            ResourceLoader::ResourceInitOutput initResult;
+            if (AllBits(job.flags, LoadFlags::Create))
+                initResult = loader->InitializeResource(job, stream);
+            else if (AllBits(job.flags, LoadFlags::Reload))
+                initResult = loader->ReinitializeResource(job, stream);
             job.streamData = initResult.loaderStreamData;
             job.id.resourceId = initResult.id.resourceId;
             job.id.generation = initResult.id.generation;
@@ -746,7 +754,7 @@ void
 ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
-    IndexT i = this->ids.FindIndex(res);
+    IndexT i = this->ids.FindIndex(IO::URI(res.Value()).LocalPath());
     if (i != InvalidIndex)
     {
         // get id of resource
@@ -759,11 +767,12 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
-        pending.flags = LoadFlags::Create;
+        pending.flags = LoadFlags::Reload;
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
+        this->pendingLoads.Append(ret.loaderInstanceId);
     }
     else
     {
@@ -792,6 +801,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
     this->loads[id.loaderInstanceId] = pending;
     this->states[id.loaderInstanceId] = Resource::Pending;
     this->callbacks[id.loaderInstanceId].Append({ success, failed });
+    this->pendingLoads.Append(id.loaderInstanceId);
 }
 
 //------------------------------------------------------------------------------

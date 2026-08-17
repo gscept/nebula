@@ -34,7 +34,7 @@ private:
     /// load shader
     ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// reload shader
-    Resources::Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream) override;
+    ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
 
     /// unload shader
     void Unload(const Resources::ResourceId id) override;
