@@ -110,7 +110,7 @@ public:
     virtual void* Map();
     /// unmap stream
     virtual void Unmap();
-    /// memory map stream to memory
+    /// memory map stream to virtual memory (no allocs)
     virtual void* MemoryMap();
     /// unmap memory stream 
     virtual void MemoryUnmap();
