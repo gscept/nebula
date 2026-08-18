@@ -31,6 +31,28 @@ namespace Tools
 //------------------------------------------------------------------------------
 /**
 */
+static bool
+HasSelectedAncestor(Editor::Entity entity, const Util::Array<Editor::Entity>& selection)
+{
+    Game::World* editorWorld = Editor::state.editorWorld;
+    while (editorWorld->HasComponent<Game::HTransform>(entity))
+    {
+        entity = editorWorld->GetComponent<Game::HTransform>(entity).parent;
+        if (entity == Game::Entity::Invalid() || !editorWorld->IsValid(entity) || !editorWorld->HasInstance(entity))
+        {
+            return false;
+        }
+        if (selection.BinarySearchIndex(entity) != InvalidIndex)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 SelectionTool::Update(Presentation::Modules::Viewport* viewport)
 {
@@ -177,12 +199,19 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
 
         for (IndexT i = 0; i < selection.Size(); i++)
         {
+            if (HasSelectedAncestor(selection[i], selection))
+            {
+                continue;
+            }
             Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(selection[i]);
             pos += this->translation.delta;
 
-            Game::Entity const gameEntity = Editor::state.editables[selection[i].index].gameEntity;
-            defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
-            defaultWorld->MarkAsModified(gameEntity);
+            Edit::PreviewWorldTransform(
+                selection[i],
+                pos,
+                Editor::state.editorWorld->GetComponent<Game::Orientation>(selection[i]),
+                Editor::state.editorWorld->GetComponent<Game::Scale>(selection[i])
+            );
         }
     }
     else if (this->translation.isDirty)
@@ -195,9 +224,13 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
             Edit::CommandManager::BeginMacro("Translate entities", false);
             for (IndexT i = 0; i < selection.Size(); i++)
             {
+                if (HasSelectedAncestor(selection[i], selection))
+                {
+                    continue;
+                }
                 Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(selection[i]);
                 pos += this->translation.delta;
-                Edit::SetComponent(selection[i], Game::GetComponentId<Game::Position>(), &pos);
+                Edit::SetWorldPosition(selection[i], pos);
             }
             Edit::CommandManager::EndMacro();
             this->translation.isDirty = false;
@@ -208,10 +241,22 @@ SelectionTool::Render(Presentation::Modules::Viewport* viewport)
             // Reset game entity position to be same as editors
             for (IndexT i = 0; i < selection.Size(); i++)
             {
-                Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(selection[i]);
-                Game::Entity const gameEntity = Editor::state.editables[selection[i].index].gameEntity;
-                defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
-                defaultWorld->MarkAsModified(gameEntity);
+                if (HasSelectedAncestor(selection[i], selection))
+                {
+                    continue;
+                }
+                Edit::PreviewWorldTransform(
+                    selection[i],
+                    Editor::state.editorWorld->GetComponent<Game::Position>(selection[i]),
+                    Editor::state.editorWorld->GetComponent<Game::Orientation>(selection[i]),
+                    Editor::state.editorWorld->GetComponent<Game::Scale>(selection[i])
+                );
+            }
+            this->translation.isDirty = false;
+            this->translation.delta = Math::vec3(0);
+            if (SelectionContext::IsPaused())
+            {
+                SelectionContext::Unpause();
             }
         }
     }

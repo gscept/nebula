@@ -4,22 +4,12 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "entitysystemtest.h"
-#include "timing/timer.h"
-#include "basegamefeature/managers/blueprintmanager.h"
-#include "basegamefeature/basegamefeatureunit.h"
+#include "basegamefeature/level.h"
 #include "framesync/framesynctimer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
 #include "testcomponents.h"
-
-#include "nflatbuffer/flatbufferinterface.h"
-#include "flatbuffers/util.h"
-
-#include "basegamefeature/components/basegamefeature.h"
-
-#include "io/textreader.h"
-#include "io/filestream.h"
-
+#include "io/ioserver.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
@@ -48,6 +38,43 @@ StepFrame()
     Game::GameServer::Instance()->OnEndFrame();
 }
 
+//--------------------------------------------------------------------------
+/**
+*/
+Game::Entity CreatePlayerEntity(Game::World* world)
+{
+    Game::Entity entity = world->CreateEntity();
+    world->AddComponent<TestHealth>(entity);
+    world->AddComponent<TestStruct>(entity);
+    world->AddComponent<TestEmptyStruct>(entity);
+    return entity;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+Game::Entity CreateEnemyEntity(Game::World* world)
+{
+    Game::Entity entity = world->CreateEntity();
+    world->AddComponent<TestHealth>(entity);
+    world->AddComponent<TestVec4>(entity);
+    world->AddComponent<TestStruct>(entity);
+    return entity;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+Game::Entity CreateAsyncTestEntity(Game::World* world)
+{
+    Game::Entity entity = world->CreateEntity();
+    world->AddComponent<TestHealth>(entity);
+    world->AddComponent<TestStruct>(entity);
+    world->AddComponent<TestEmptyStruct>(entity);
+    world->AddComponent<TestAsyncComponent>(entity);
+    return entity;
+}
+
 //------------------------------------------------------------------------------
 /**
     @todo   this test should be more thorough and make sure that instances retain
@@ -71,20 +98,17 @@ EntitySystemTest::Run()
         t = FrameSync::FrameSyncTimer::Instance();
     }
 
-    TemplateId const playerBlueprint = Game::GetTemplateId("Player"_atm);
-    TemplateId const enemyBlueprint = Game::GetTemplateId("Enemy"_atm);
-
     World* world = Game::GetWorld(WORLD_DEFAULT);
 
     for (int i = 0; i < 500; i++)
     {
-        Entity player = world->CreateEntity({playerBlueprint});
+        Entity player = CreatePlayerEntity(world);
     }
 
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = world->CreateEntity({enemyBlueprint});
+        Entity enemy = CreateEnemyEntity(world);
         enemies.Append(enemy);
     }
 
@@ -119,7 +143,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = world->CreateEntity({enemyBlueprint});
+        Entity enemy = CreateEnemyEntity(world);
         queue.Enqueue(enemy);
     }
 
@@ -149,7 +173,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = world->CreateEntity({enemyBlueprint});
+        Entity enemy = CreateEnemyEntity(world);
         stack.Push(enemy);
     }
 
@@ -177,16 +201,17 @@ EntitySystemTest::Run()
     StepFrame();
 
     Game::Entity entities[10] = {
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint}),
-        world->CreateEntity({playerBlueprint})};
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world),
+        CreatePlayerEntity(world)
+    };
 
     // run a frame
     StepFrame();
@@ -211,13 +236,12 @@ EntitySystemTest::Run()
     {
         ComponentId decayComponentId = Game::GetComponentId<DecayTestComponent>();
         
-        Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
         Game::Entity enemies[] = {
-            world->CreateEntity(enemyInfo),
-            world->CreateEntity(enemyInfo),
-            world->CreateEntity(enemyInfo),
-            world->CreateEntity(enemyInfo),
-            world->CreateEntity(enemyInfo),
+            CreateEnemyEntity(world),
+            CreateEnemyEntity(world),
+            CreateEnemyEntity(world),
+            CreateEnemyEntity(world),
+            CreateEnemyEntity(world),
         };
 
         // All entities should have these components
@@ -334,7 +358,7 @@ EntitySystemTest::Run()
     StepFrame();
 
     {
-        Entity entity = world->CreateEntity({ .templateId = playerBlueprint, .immediate = true });
+        Entity entity = CreatePlayerEntity(world);
 
         Game::Position pos = world->GetComponent<Game::Position>(entity);
         Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
@@ -372,7 +396,7 @@ EntitySystemTest::Run()
     }
 
     {
-        Entity entity = world->CreateEntity({.templateId = playerBlueprint, .immediate = true});
+        Entity entity = CreatePlayerEntity(world);
 
         // create a temporary component.
         // these are constructed directly if it has an OnStage delegate.
@@ -401,6 +425,29 @@ EntitySystemTest::Run()
 
         VERIFY(world->GetComponent<TestResource>(entity).resource == "foobar.res"_atm);
     }
+    {
+        Game::EntityTableCreateInfo tableInfo;
+        tableInfo.name = "RawAllocationTest";
+        tableInfo.components = Util::FixedArray<Game::ComponentId>(5);
+        tableInfo.components[0] = Game::GetComponentId<Game::Entity>();
+        tableInfo.components[1] = Game::GetComponentId<Game::Position>();
+        tableInfo.components[2] = Game::GetComponentId<Game::Orientation>();
+        tableInfo.components[3] = Game::GetComponentId<Game::Scale>();
+        tableInfo.components[4] = Game::GetComponentId<TestVec4>();
+        MemDb::TableId const table = world->CreateEntityTable(tableInfo);
+
+        Entity const entity = world->AllocateEntityId();
+        world->AllocateInstance(entity, table);
+        VERIFY(world->GetComponent<TestVec4>(entity).v4 == Math::vec4(1, 2, 3, 4));
+        world->InitializeInstance(entity);
+        VERIFY(world->GetComponent<TestVec4>(entity).v4 == Math::vec4(123, 123, 123, 123));
+
+        Entity const prefetchedEntity = world->AllocateEntityId();
+        MemDb::RowId const prefetchedInstance = world->AllocateInstance(prefetchedEntity, table);
+        VERIFY(world->GetComponent<TestVec4>(prefetchedEntity).v4 == Math::vec4(1, 2, 3, 4));
+        world->InitializeInstance(prefetchedEntity, table, prefetchedInstance);
+        VERIFY(world->GetComponent<TestVec4>(prefetchedEntity).v4 == Math::vec4(123, 123, 123, 123));
+    }
     bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
     {
@@ -424,11 +471,9 @@ EntitySystemTest::Run()
     VERIFY(hasExecutedUpdateFunc);
 
     // Test async processors
-    Game::EntityCreateInfo asyncEntityInfo = {Game::GetTemplateId("AsyncTestEntity"), true};
-    
     for (int i = 0; i < 10000; i++)
     {
-        world->CreateEntity(asyncEntityInfo);
+        CreateAsyncTestEntity(world);
     }
 
     StepFrame();
@@ -436,6 +481,49 @@ EntitySystemTest::Run()
     Game::ProcessorBuilder(world, "TestUpdateFuncAsync").Func(updateFuncAsync).Async().Build();
     
     StepFrame();
+
+    // Packed levels can be instantiated repeatedly and unloading only releases packed source data.
+    Util::String const packedLevelPath = "temp:levels/entitysystemtest.nlvl";
+    Game::World sourceWorld(Game::WorldHash('LSRC'), 7);
+    Game::Entity sourceEntity = sourceWorld.CreateEntity(true);
+    TestHealth* sourceHealth = sourceWorld.AddComponent<TestHealth>(sourceEntity);
+    sourceHealth->value = 123;
+    TestVec4* sourceVector = sourceWorld.AddComponent<TestVec4>(sourceEntity);
+    sourceVector->v4 = Math::vec4(1, 2, 3, 4);
+    sourceWorld.ExecuteAddComponentCommands();
+    VERIFY(sourceWorld.ExportLevel(packedLevelPath));
+
+    Game::World destinationWorld(Game::WorldHash('LDST'), 8);
+    Game::PackedLevel* packedLevel = destinationWorld.PreloadLevel(packedLevelPath);
+    VERIFY(packedLevel != nullptr);
+    if (packedLevel != nullptr)
+    {
+        Util::Array<Game::Entity> firstInstance = packedLevel->Instantiate();
+        Util::Array<Game::Entity> secondInstance = packedLevel->Instantiate();
+        VERIFY(firstInstance.Size() == 1);
+        VERIFY(secondInstance.Size() == 1);
+        VERIFY(destinationWorld.GetComponent<TestHealth>(firstInstance[0]).value == 123);
+        VERIFY(destinationWorld.GetComponent<TestHealth>(secondInstance[0]).value == 123);
+        VERIFY(destinationWorld.GetComponent<TestVec4>(firstInstance[0]).v4 == Math::vec4(123, 123, 123, 123));
+        VERIFY(destinationWorld.GetComponent<TestVec4>(secondInstance[0]).v4 == Math::vec4(123, 123, 123, 123));
+
+        destinationWorld.UnloadLevel(packedLevel);
+        VERIFY(destinationWorld.IsValid(firstInstance[0]));
+        VERIFY(destinationWorld.IsValid(secondInstance[0]));
+    }
+
+    Game::World stagingWorld(Game::WorldHash('LSTG'), 9);
+    stagingWorld.componentInitializationEnabled = false;
+    Game::PackedLevel* stagingLevel = stagingWorld.PreloadLevel(packedLevelPath);
+    VERIFY(stagingLevel != nullptr);
+    if (stagingLevel != nullptr)
+    {
+        Util::Array<Game::Entity> stagingInstance = stagingLevel->Instantiate();
+        VERIFY(stagingInstance.Size() == 1);
+        VERIFY(stagingWorld.GetComponent<TestVec4>(stagingInstance[0]).v4 == Math::vec4(1, 2, 3, 4));
+        stagingWorld.UnloadLevel(stagingLevel);
+    }
+    IO::IoServer::Instance()->DeleteFile(packedLevelPath);
 
     t->StopTime();
 }

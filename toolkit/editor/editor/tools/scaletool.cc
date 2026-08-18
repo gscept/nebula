@@ -100,14 +100,18 @@ ScaleTool::Render(Presentation::Modules::Viewport* viewport)
         //    //this->translation.delta.y = Math::round(this->translation.delta.y / state.grid.size) * state.grid.size;
         //    //this->translation.delta.z = Math::round(this->translation.delta.z / state.grid.size) * state.grid.size;
         //}
-        defaultWorld->SetComponent<Game::Scale>(gameEntity, gizmoScale);
-        defaultWorld->MarkAsModified(gameEntity);
+        Edit::PreviewWorldTransform(
+            selection.Back(),
+            Editor::state.editorWorld->GetComponent<Game::Position>(selection.Back()),
+            Editor::state.editorWorld->GetComponent<Game::Orientation>(selection.Back()),
+            Game::Scale(gizmoScale)
+        );
     }
     else if (this->translation.isDirty)
     {
         // User has release gizmo, we can set real transform and add to undo queue
         Edit::CommandManager::BeginMacro("Scale", false);
-        Edit::SetComponent(selection.Back(), Game::GetComponentId<Game::Scale>(), &gizmoScale);
+        Edit::SetWorldScale(selection.Back(), Game::Scale(gizmoScale));
         Edit::CommandManager::EndMacro();
         this->translation.gizmoTransforming = false;
         this->translation.isDirty = false;
@@ -130,7 +134,20 @@ ScaleTool::IsModifying() const
 void
 ScaleTool::Abort()
 {
-    // abort transformations
+    if (this->translation.isDirty && !SelectionContext::Selection().IsEmpty())
+    {
+        Editor::Entity const entity = SelectionContext::Selection().Back();
+        Edit::PreviewWorldTransform(
+            entity,
+            Editor::state.editorWorld->GetComponent<Game::Position>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Orientation>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Scale>(entity)
+        );
+        if (SelectionContext::IsPaused())
+        {
+            SelectionContext::Unpause();
+        }
+    }
     this->translation.gizmoTransforming = false;
     this->translation.isDirty = false;
 }

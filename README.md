@@ -60,7 +60,7 @@ Once the project is set up and working there are some common operations that you
 Most of the steps and operations are required to be completed at least once to be able to run the project.
 
 ### Adding files – `fips gen`
-If you are adding new files, either source or templates or other flatbuffer things that you add to cmake or a cmake subfolder will typically picked up by running `fips gen`. This will regenerate your solution via cmake, in case you are using visual studio it will normally 
+If you are adding new files, either source or flatbuffer things that you add to cmake or a cmake subfolder will typically picked up by running `fips gen`. This will regenerate your solution via cmake, in case you are using visual studio it will normally 
 notice and prompt reloading. Generally calling `fips gen` is a safe operation you can do if dependencies change etc.
 
 #### Location of build files
@@ -121,7 +121,6 @@ With the newest iteration of Nebula, we've decided to keep improving by adopting
 * Data-driven
 * Minimal memory overhead per entity.
 * High performance without compromising usability or simplicity
-* Blueprint and template system for easily instantiating and categorizing entity types.
 * Automatic serialization and deserialization
 
 ## Screenshots

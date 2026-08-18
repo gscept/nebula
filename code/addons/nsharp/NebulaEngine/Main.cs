@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ConsoleHook;
-using Mathf;
+using Nebula;
 using Nebula.Game;
 using NebulaEngine;
 
@@ -131,17 +131,9 @@ namespace Nebula
         private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             IntPtr libHandle = IntPtr.Zero;
-            string strExeFilePath = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
             if (libraryName == "__Internal")
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    libHandle = NativeLibrary.Load(strExeFilePath + ".exe");
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    libHandle = NativeLibrary.Load(strExeFilePath);
-                }
+                libHandle = NativeLibrary.GetMainProgramHandle();
             }
             return libHandle;
         }

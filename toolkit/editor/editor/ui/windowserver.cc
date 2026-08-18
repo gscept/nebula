@@ -2,6 +2,7 @@
 //  windowmanager.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include "components/lighting.h"
 #include "foundation/stdneb.h"
 #include "windowserver.h"
 #include "imgui.h"
@@ -18,6 +19,7 @@
 #include "editor/commandmanager.h"
 #include "editor/editor.h"
 #include "editor/cmds.h"
+#include "editor/tools/selectioncontext.h"
 #include "uimanager.h"
 
 #include "toolkit-common/logger.h"
@@ -522,25 +524,33 @@ WindowServer::RunAll()
                 Util::String path;
                 if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, { "*.json" }, path))
                 {
-                    Ptr<Editor::EntityLoader> loader = Editor::EntityLoader::Create();
-                    loader->SetWorld(Editor::state.editorWorld);
-                    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-                    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
-                    if (reader->Open())
-                    {
-                        loader->LoadJsonLevel(reader);
-                    }
-                    reader->Close();
+                    Editor::LoadLevel(path);
+                }
+            }
+            if (ImGui::MenuItem("Instantiate Level"))
+            {
+                static Util::String localpath = IO::URI("proj:work/levels").LocalPath();
+                Util::String path;
+                if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, { "*.json" }, path))
+                {
+                    Editor::LoadLevel(path, true);
                 }
             }
             if (ImGui::MenuItem("Save", "Ctrl+S"))
             {
+                Editor::SaveLevelWithDialog();
                 Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive);
             }
 
             if (ImGui::MenuItem("Save All", "Ctrl+Shift+S"))
             {
+                Editor::SaveLevelWithDialog();
                 Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll);
+            }
+
+            if (ImGui::MenuItem("Save As"))
+            {
+                Editor::SaveLevelWithDialog(true);
             }
             ImGui::EndMenu();
         }
@@ -560,30 +570,42 @@ WindowServer::RunAll()
 
         if (ImGui::BeginMenu("    Create    "))
         {
-            if (ImGui::MenuItem("Entity", "Ctrl+C"))
+            if (ImGui::MenuItem("Entity", "Ctrl+A"))
             {
-                Presentation::WindowServer::Instance()->GetWindow("Create Object")->Open() = true;
+                Edit::CreateEntity();
             }
             if (ImGui::BeginMenu("Light"))
             {
                 if (ImGui::MenuItem("Point Light"))
                 {
                     Edit::CommandManager::BeginMacro("Create point light", true);
-                    Editor::Entity newEntity = Edit::CreateEntity("PointLight");
+                    Editor::Entity newEntity = Edit::CreateEntity();
+                    Edit::AddComponent(newEntity, Game::GetComponentId<GraphicsFeature::PointLight>());
+                    Util::String name = "Point Light ";
+                    name.AppendInt(newEntity.index);
+                    Edit::SetEntityName(newEntity, name);
                     Edit::SetSelection({ newEntity });
                     Edit::CommandManager::EndMacro();
                 }
                 if (ImGui::MenuItem("Spot Light"))
                 {
                     Edit::CommandManager::BeginMacro("Create spot light", true);
-                    Editor::Entity newEntity = Edit::CreateEntity("SpotLight");
+                    Editor::Entity newEntity = Edit::CreateEntity();
+                    Edit::AddComponent(newEntity, Game::GetComponentId<GraphicsFeature::SpotLight>());
+                    Util::String name = "Spot Light ";
+                    name.AppendInt(newEntity.index);
+                    Edit::SetEntityName(newEntity, name);
                     Edit::SetSelection({ newEntity });
                     Edit::CommandManager::EndMacro();
                 }
                 if (ImGui::MenuItem("Area Light"))
                 {
                     Edit::CommandManager::BeginMacro("Create area light", true);
-                    Editor::Entity newEntity = Edit::CreateEntity("AreaLight");
+                    Editor::Entity newEntity = Edit::CreateEntity();
+                    Edit::AddComponent(newEntity, Game::GetComponentId<GraphicsFeature::AreaLight>());
+                    Util::String name = "Area Light ";
+                    name.AppendInt(newEntity.index);
+                    Edit::SetEntityName(newEntity, name);
                     Edit::SetSelection({ newEntity });
                     Edit::CommandManager::EndMacro();
                 }
@@ -669,6 +691,8 @@ WindowServer::RunAll()
     }
 
     RunImportWindows(&this->logger);
+    // clear transient hover state, it's re-evaluated as windows run
+    Tools::SelectionContext::ClearHovered();
 
     //Run all windows
     for (SizeT i = 0; i < this->windows.Size(); i++)

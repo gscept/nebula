@@ -12,7 +12,6 @@
 #include "entitypool.h"
 #include "memory/arenaallocator.h"
 #include "ids/idallocator.h"
-#include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
 #include "basegamefeature/components/basegamefeature.h"
@@ -93,63 +92,136 @@ World::PreloadLevel(Util::String const& path)
     Ptr<IO::BinaryReader> reader = IO::BinaryReader::Create();
     reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
     reader->SetMemoryMappingEnabled(true);
-    reader->Open();
+    if (!reader->Open())
+    {
+        n_warning("Could not open packed level '%s'\n", path.AsCharPtr());
+        delete level;
+        return nullptr;
+    }
 
     ubyte* data = reader->mapCursor;
+    SizeT const dataSize = reader->GetStream()->GetSize();
+    flatbuffers::Verifier verifier(data, dataSize);
+    if (!Game::Serialization::VerifyLevelBuffer(verifier))
+    {
+        n_warning("Packed level '%s' is not a valid NLVL file\n", path.AsCharPtr());
+        reader->Close();
+        delete level;
+        return nullptr;
+    }
 
     auto flatLevel = Game::Serialization::GetLevel(data);
     auto flatTables = flatLevel->tables();
-
-    Util::FixedArray<ComponentId> componentIds(flatLevel->component_descriptions()->size());
-    uint componentIndex = 0;
-    for (auto desc : *flatLevel->component_descriptions())
+    auto flatDescriptions = flatLevel->component_descriptions();
+    auto flatStrings = flatLevel->strings();
+    if (flatTables == nullptr || flatDescriptions == nullptr || flatStrings == nullptr)
     {
-        const char* componentName = desc->name()->c_str();
-        ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
-        componentIds[componentIndex++] = cid;
-
-#ifndef PUBLIC_BUILD
-        Game::ComponentInterface const* cInterface =
-            static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
-
-        // TODO: Validate all fields types as well and assert if incorrect!
-        n_assert(cInterface->GetNumFields() == desc->fields()->size());
-#endif
+        n_warning("Packed level '%s' is missing required data\n", path.AsCharPtr());
+        reader->Close();
+        delete level;
+        return nullptr;
     }
 
-    Util::FixedArray<Util::StringAtom> strings(flatLevel->strings()->size());
-
-    for (uint32_t i = 0; i < flatLevel->strings()->size(); i++)
+    Util::FixedArray<ComponentId> componentIds(flatDescriptions->size());
+    uint componentIndex = 0;
+    for (auto desc : *flatDescriptions)
     {
-        Util::StringAtom strAtm = (*flatLevel->strings())[i]->data();
+        if (desc == nullptr || desc->name() == nullptr || desc->fields() == nullptr)
+        {
+            n_warning("Packed level '%s' contains an invalid component description\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
+        const char* componentName = desc->name()->c_str();
+        ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
+        Game::ComponentInterface const* cInterface = cid != ComponentId::Invalid()
+            ? static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid))
+            : nullptr;
+        if (cInterface == nullptr || cInterface->typeSize != desc->size() || cInterface->GetNumFields() != desc->fields()->size())
+        {
+            n_warning("Packed level '%s' has an unknown or incompatible component '%s'\n", path.AsCharPtr(), componentName);
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
+        for (IndexT fieldIndex = 0; fieldIndex < cInterface->GetNumFields(); fieldIndex++)
+        {
+            if (Util::String::StrCmp(cInterface->GetFieldNames()[fieldIndex], (*desc->fields())[fieldIndex]->name()->c_str()) != 0)
+            {
+                n_warning("Packed level '%s' has an incompatible field layout for component '%s'\n", path.AsCharPtr(), componentName);
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
+        }
+        componentIds[componentIndex++] = cid;
+    }
+
+    Util::FixedArray<Util::StringAtom> strings(flatStrings->size());
+
+    for (uint32_t i = 0; i < flatStrings->size(); i++)
+    {
+        Util::StringAtom strAtm = (*flatStrings)[i]->data();
         strings[i] = strAtm;
     }
 
     for (auto table : *flatTables)
     {
+        if (table == nullptr || table->components() == nullptr || table->columns() == nullptr)
+        {
+            n_warning("Packed level '%s' contains an invalid entity group\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
         Game::PackedLevel::EntityGroup entityGroup;
 
         size_t const numTableComponents = table->components()->size();
+        if (numTableComponents == 0 || table->columns()->size() != numTableComponents || table->num_rows() == 0)
+        {
+            n_warning("Packed level '%s' contains an invalid entity group\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
         Util::FixedArray<ComponentId> components((SizeT)numTableComponents);
         componentIndex = 0;
         for (auto c : *table->components())
         {
+            if (c >= componentIds.Size())
+            {
+                n_warning("Packed level '%s' contains an invalid component index\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
             ComponentId cid = componentIds[c];
             components[componentIndex++] = cid;
         }
-        MemDb::TableId const tableId = this->CreateEntityTable({.name = "", .components = components});
-        entityGroup.dstTable = tableId;
         entityGroup.numRows = table->num_rows();
 
-        n_assert(entityGroup.numRows > 0);
-
         size_t bytesInWholeTable = 0;
-        for (auto column : *table->columns())
+        for (IndexT columnIndex = 0; columnIndex < table->columns()->size(); columnIndex++)
         {
+            auto column = (*table->columns())[columnIndex];
+            if (column == nullptr || column->bytes() == nullptr)
+            {
+                n_warning("Packed level '%s' contains an invalid column\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
+            SizeT const expectedSize = entityGroup.numRows * MemDb::AttributeRegistry::TypeSize(components[columnIndex]);
+            if (column->bytes()->size() != expectedSize)
+            {
+                n_warning("Packed level '%s' contains an invalid column size\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
             bytesInWholeTable += column->bytes()->size();
         }
-
-        n_assert(bytesInWholeTable > 0);
 
         entityGroup.columns = new byte[bytesInWholeTable];
 
@@ -189,15 +261,33 @@ World::PreloadLevel(Util::String const& path)
 
                         Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
                         uint64_t asInt = *reinterpret_cast<uint64_t*>(it);
-
+                        if (asInt >= strings.Size())
+                        {
+                            n_warning("Packed level '%s' contains an invalid string index\n", path.AsCharPtr());
+                            delete[] entityGroup.columns;
+                            entityGroup.columns = nullptr;
+                            reader->Close();
+                            delete level;
+                            return nullptr;
+                        }
                         *asStringAtom = strings[asInt];
 
+                        it += cInterface->typeSize;
+                    }
+                }
+                else if (component_field->feature() == Game::Serialization::ComponentFieldFeature_EntityId)
+                {
+                    ubyte* it = entityGroup.columns + offset + cInterface->GetFieldByteOffsets()[i];
+                    while (it < entityGroup.columns + offset + bytesInColumn)
+                    {
+                        *reinterpret_cast<Game::Entity*>(it) = Game::Entity::Invalid();
                         it += cInterface->typeSize;
                     }
                 }
             }
             offset += (*table->columns())[componentIndex]->bytes()->size();
         }
+        entityGroup.dstTable = this->CreateEntityTable({.name = "", .components = components});
         level->tables.Append(std::move(entityGroup));
     }
 
@@ -218,7 +308,7 @@ World::UnloadLevel(PackedLevel* level)
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 World::ExportLevel(Util::String const& path)
 {
     using namespace Game::Serialization;
@@ -382,13 +472,24 @@ World::ExportLevel(Util::String const& path)
 
     auto flat_level = CreateLevel(builder, vector_descs, vector_entity_groups, vector_strings);
 
-    builder.Finish(flat_level);
+    FinishLevelBuffer(builder, flat_level);
+
+    if (!IO::IoServer::Instance()->EnsureDirectoriesForFile(path))
+    {
+        n_warning("Could not create output directory for packed level '%s'\n", path.AsCharPtr());
+        return false;
+    }
 
     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
     writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
-    writer->Open();
+    if (!writer->Open())
+    {
+        n_warning("Could not open packed level '%s' for writing\n", path.AsCharPtr());
+        return false;
+    }
     writer->WriteRawData(builder.GetBufferPointer(), builder.GetSize());
     writer->Close();
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -583,38 +684,6 @@ World::CreateEntity(bool immediate)
 //------------------------------------------------------------------------------
 /**
 */
-Game::Entity
-World::CreateEntity(EntityCreateInfo const& info)
-{
-    World::AllocateInstanceCommand cmd;
-    if (info.templateId != TemplateId::Invalid())
-    {
-        cmd.tid = info.templateId;
-    }
-    else
-    {
-        n_warning("Trying to instantiate an invalid template!");
-        return Game::Entity::Invalid();
-    }
-    Entity const entity = this->AllocateEntityId();
-    cmd.entity = entity;
-
-    if (!info.immediate)
-    {
-        this->AllocateInstance(cmd.entity, cmd.tid, false);
-        this->allocQueue.Enqueue(std::move(cmd));
-    }
-    else
-    {
-        this->AllocateInstance(cmd.entity, cmd.tid, true);
-    }
-
-    return entity;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 World::DeleteEntity(Game::Entity entity)
 {
@@ -678,6 +747,15 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
 void*
 World::AddComponent(Entity entity, Game::ComponentId id)
 {
+    return this->AddComponent(entity, id, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+World::AddComponent(Entity entity, Game::ComponentId id, const void* value)
+{
 #if NEBULA_DEBUG
     n_assert2(
         !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
@@ -685,8 +763,8 @@ World::AddComponent(Entity entity, Game::ComponentId id)
 #endif
     SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(id);
     void* data = this->componentStageAllocator.Alloc(typeSize);
-    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
-    Memory::Copy(defaultValue, data, typeSize);
+    const void* initialValue = value != nullptr ? value : MemDb::AttributeRegistry::DefaultValue(id);
+    Memory::Copy(initialValue, data, typeSize);
 
     AddStagedComponentCommand cmd = {
         .entity = entity,
@@ -1110,6 +1188,15 @@ World::CreateEntityTable(EntityTableCreateInfo const& info)
 /**
 */
 MemDb::RowId
+World::AllocateInstance(Entity entity)
+{
+    return this->AllocateInstance(entity, this->defaultTableId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MemDb::RowId
 World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data)
 {
     n_assert(this->IsValid(entity));
@@ -1143,8 +1230,6 @@ World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* c
     Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[instance.index] = entity;
 
-    InitializeAllComponents(entity, table, instance);
-
     return instance;
 }
 
@@ -1152,10 +1237,20 @@ World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* c
 /**
 */
 void
-World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
+World::InitializeInstance(Entity entity)
 {
-    if (!this->componentInitializationEnabled)
-        return;
+    EntityMapping const& mapping = this->entityMap[entity.index];
+    this->InitializeInstance(entity, mapping.table, mapping.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
+{
+    n_assert(tableId != MemDb::InvalidTableId);
+    n_assert(row != MemDb::InvalidRow);
 
     n_assert(this->IsValid(entity));
 
@@ -1178,91 +1273,15 @@ World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::Row
 //------------------------------------------------------------------------------
 /**
 */
-MemDb::RowId
-World::AllocateInstance(Entity entity, BlueprintId blueprint)
-{
-    n_assert(this->IsValid(entity));
-    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
-
-    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
-    {
-        n_warning("Entity already registered!\n");
-        return MemDb::InvalidRow;
-    }
-
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, blueprint);
-    this->entityMap[entity.index] = mapping;
-
-#if _DEBUG
-    // make sure the first column in always owner
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) ==
-        Game::Entity::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) ==
-        Game::Position::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) ==
-        Game::Orientation::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) ==
-        Game::Scale::Traits::fixed_column_index
-    );
-#endif
-
-    // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
-                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
-    owners[mapping.instance.index] = entity;
-
-    InitializeAllComponents(entity, mapping.table, mapping.instance);
-
-    return mapping.instance;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-MemDb::RowId
-World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize)
-{
-    n_assert(this->IsValid(entity));
-    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
-
-    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
-    {
-        n_warning("Entity instance already allocated!\n");
-        return MemDb::InvalidRow;
-    }
-
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, templateId);
-    this->entityMap[entity.index] = mapping;
-
-    // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
-                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
-    owners[mapping.instance.index] = entity;
-
-    if (performInitialize)
-    {
-        InitializeAllComponents(entity, mapping.table, mapping.instance);
-    }
-
-    return mapping.instance;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 World::FinalizeAllocate(Entity entity)
 {
     n_assert(this->IsValid(entity));
     EntityMapping& mapping = this->entityMap[entity.index];
-    InitializeAllComponents(entity, mapping.table, mapping.instance);
+    if (this->componentInitializationEnabled)
+    {
+        this->InitializeInstance(entity, mapping.table, mapping.instance);
+    }
 }
 //------------------------------------------------------------------------------
 /**
@@ -1715,7 +1734,6 @@ World::RenderDebug()
 void
 World::Override(World* src, World* dst)
 {
-    dst->blueprintToTableMap = src->blueprintToTableMap;
     dst->entityMap = src->entityMap;
     dst->numEntities = src->numEntities;
     dst->pool = src->pool;
@@ -1723,27 +1741,21 @@ World::Override(World* src, World* dst)
     dst->db = MemDb::Database::Create();
     src->db->Copy(dst->db);
 
-    if (src->componentInitializationEnabled == false && dst->componentInitializationEnabled)
+    Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
+    Game::Dataset data = dst->Query(filter);
+    for (int v = 0; v < data.numViews; v++)
     {
-        // Initialize all component if the source db haven't already.
-        Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
-        Game::Dataset data = dst->Query(filter);
-
-        for (int v = 0; v < data.numViews; v++)
+        Game::Dataset::View const& view = data.views[v];
+        Game::Entity* entities = (Game::Entity*)view.buffers[0];
+        for (uint16_t i = 0; i < view.numInstances; ++i)
         {
-            Game::Dataset::View const& view = data.views[v];
-            Game::Entity* entities = (Game::Entity*)view.buffers[0];
-
-            for (uint16_t i = 0; i < view.numInstances; ++i)
+            if (view.validInstances.IsSet(i))
             {
-                Game::Entity& entity = entities[i];
-                entity.world = dst->worldId;
-                MemDb::RowId row = {.partition = view.partitionId, .index = i};
-                dst->InitializeAllComponents(entity, view.tableId, row);
+                entities[i].world = dst->worldId;
             }
         }
-        Game::DestroyFilter(filter);
     }
+    Game::DestroyFilter(filter);
 
     dst->PrefilterProcessors();
 }

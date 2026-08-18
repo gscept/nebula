@@ -42,6 +42,7 @@ public:
 
     // TODO: RegisterTypes?
 
+    /// called when added to game server
     virtual void OnActivate();
     /// called when removed from game server
     virtual void OnDeactivate();

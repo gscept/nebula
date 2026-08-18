@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using ConsoleHook;
-using Mathf;
+using Nebula;
 using Nebula.Game;
 using NST;
 
@@ -26,12 +26,12 @@ namespace NST
         public int i = 0;
         public float f;
         public string s;
-        public Mathf.Vector3 v;
+        public Vector3 v;
 
         public override void OnBeginFrame()
         {
             i++;
-            Nebula.Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", 0));
+            Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", i));
         }
 
         public override void OnMessage(in Msg msg)
@@ -61,10 +61,10 @@ namespace NST
 
     class AudioEmitterProperty : Property
     {
-        public bool autoplay;
-        public bool loop;
-        public float volume;
-        public float pitch;
+        public bool autoplay = false;
+        public bool loop = false;
+        public float volume = 0;
+        public float pitch = 0;
 
         public override void OnActivate()
         {
@@ -82,7 +82,7 @@ namespace NST
         {
             base.OnBeginFrame();
 
-            Mathf.Vector3 pos = this.Entity.GetPosition();
+            Vector3 pos = this.Entity.GetPosition();
             AudioEmitterProperty prop = this.Entity.GetProperty<AudioEmitterProperty>();
 
             // Do on frame stuff
@@ -182,11 +182,11 @@ namespace NST
         public class VariablePassing
         {
             [DllImport("__Internal", EntryPoint = "PassVec2"), SuppressUnmanagedCodeSecurity]
-            public static extern void TestPassVec2(in Mathf.Vector2 vec);
+            public static extern void TestPassVec2(in Vector2 vec);
             [DllImport("__Internal", EntryPoint = "PassVec3"), SuppressUnmanagedCodeSecurity]
-            public static extern void TestPassVec3(in Mathf.Vector3 vec);
+            public static extern void TestPassVec3(in Vector3 vec);
             [DllImport("__Internal", EntryPoint = "PassVec4"), SuppressUnmanagedCodeSecurity]
-            public static extern void TestPassVec4(in Mathf.Vector4 vec);
+            public static extern void TestPassVec4(in Vector4 vec);
 
             [UnmanagedCallersOnly]
             public static void RunTests()
@@ -211,11 +211,11 @@ namespace NST
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfVec3")]
             [SuppressGCTransition]
-            public static extern void TestArrayOfVec3(Mathf.Vector3[] arr, int size);
+            public static extern void TestArrayOfVec3(Vector3[] arr, int size);
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfVec4")]
             [SuppressGCTransition] // This attribute can be used to avoid transitioning the GC, saving on performance. There are rules however: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.suppressgctransitionattribute?view=net-7.0
-            public static extern void TestArrayOfVec4(Mathf.Vector4[] arr, int size);
+            public static extern void TestArrayOfVec4(Vector4[] arr, int size);
 
             [UnmanagedCallersOnly]
             public static void RunTests()
@@ -230,7 +230,7 @@ namespace NST
                 }
                 TestArrayOfInt(arr, arr.Length);
 
-                Mathf.Vector3[] vec3Arr = new Mathf.Vector3[10];
+                Vector3[] vec3Arr = new Vector3[10];
                 for (int i = 0; i < vec3Arr.Length; i++)
                 {
                     vec3Arr[i] = new Vector3(1, 2, 3);
@@ -238,7 +238,7 @@ namespace NST
                 TestArrayOfVec3(vec3Arr, vec3Arr.Length);
 
 
-                Mathf.Vector4[] vec4Arr = new Mathf.Vector4[10];
+                Vector4[] vec4Arr = new Vector4[10];
                 for (int i = 0; i < vec4Arr.Length; i++)
                 {
                     vec4Arr[i] = new Vector4(1, 2, 3, 4);
@@ -276,7 +276,7 @@ namespace NST
 
             Console.Write("Console.Write works!\n");
             Console.WriteLine("Console.WriteLine works!");
-            Nebula.Debug.Log("Nebula.Debug.Log works!\n");
+            Debug.Log("Debug.Log works!\n");
         }
     }
 }
@@ -286,32 +286,32 @@ public class AppEntry
     [UnmanagedCallersOnly]
     static public void Main()
     {
-        Nebula.Runtime.OverrideNebulaApp(new TestApp());
-        Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
-        Nebula.Runtime.Start();
+        Runtime.OverrideNebulaApp(new TestApp());
+        Runtime.Setup(Assembly.GetExecutingAssembly());
+        Runtime.Start();
     }
 
     [UnmanagedCallersOnly]
     static public void OnBeginFrame()
     {
-        Nebula.Runtime.OnBeginFrame();
+        Runtime.OnBeginFrame();
     }
 
     [UnmanagedCallersOnly]
     static public void OnFrame()
     {
-        Nebula.Runtime.OnFrame();
+        Runtime.OnFrame();
     }
 
     [UnmanagedCallersOnly]
     static public void OnEndFrame()
     {
-        Nebula.Runtime.OnEndFrame();
+        Runtime.OnEndFrame();
     }
 
     [UnmanagedCallersOnly]
     static public void Exit()
     {
-        Nebula.Runtime.Close();
+        Runtime.Close();
     }
 }

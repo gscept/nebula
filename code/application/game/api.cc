@@ -9,7 +9,6 @@
 #include "memdb/tablesignature.h"
 #include "memdb/database.h"
 #include "memory/arenaallocator.h"
-#include "basegamefeature/managers/blueprintmanager.h"
 #include "profiling/profiling.h"
 #include "util/fixedarray.h"
 
@@ -100,24 +99,6 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
     }
 
     return data;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-BlueprintId
-GetBlueprintId(Util::StringAtom name)
-{
-    return BlueprintManager::GetBlueprintId(name);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TemplateId
-GetTemplateId(Util::StringAtom name)
-{
-    return BlueprintManager::GetTemplateId(name);
 }
 
 } // namespace Game

@@ -14,6 +14,7 @@ __ImplementClass(Test::TestCase, 'TSTC', Core::RefCounted);
 /**
 */
 TestCase::TestCase() :
+    verbose(0),
     numVerified(0),
     numSucceeded(0),
     numFailed(0)
@@ -47,12 +48,18 @@ TestCase::Verify(bool b, const char * test, const char * file, int line)
 {
     if (b)
     {
-        n_printf("%s #%d: ok\n", this->GetClassName().AsCharPtr(), this->numVerified);
+        if (verbose)
+        {
+            n_printf("%s #%d: ok\n", this->GetClassName().AsCharPtr(), this->numVerified);
+        }
         this->numSucceeded++;
     }
     else
     {
-        n_printf("%s #%d: FAILED\n\"%s\"\n%s(%d)\n\n", this->GetClassName().AsCharPtr(), this->numVerified, test, file, line);
+        if (verbose)
+        {
+                n_printf("%s #%d: FAILED\n\"%s\"\n%s(%d)\n\n", this->GetClassName().AsCharPtr(), this->numVerified, test, file, line);
+        }
         FailedTest f = { test, file, line };
         this->failed.Append(f);
         this->numFailed++;

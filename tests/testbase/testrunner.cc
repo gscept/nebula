@@ -24,6 +24,15 @@ TestRunner::AttachTestCase(TestCase* testCase)
     this->testCases.Append(testCase);
 }
 
+//--------------------------------------------------------------------------
+/**
+*/
+void
+TestRunner::ParseCommandLineArgs(Util::CommandLineArgs const& args)
+{
+    this->verbose = args.GetBool("verbose", false);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -37,6 +46,7 @@ TestRunner::Run()
     for (i = 0; i < this->testCases.Size(); i++)
     {
         TestCase* curTestCase = this->testCases[i];
+        curTestCase->SetVerbose(this->verbose);
         n_printf("-> Running test: %s\n", curTestCase->GetClassName().AsCharPtr());        
         sprintf(checkpointBuffer, "%s::Run() before", curTestCase->GetClassName().AsCharPtr());
         STACK_CHECKPOINT(checkpointBuffer);

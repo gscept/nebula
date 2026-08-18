@@ -112,8 +112,17 @@ LevelExporter::ProcessFile( const URI& file )
         this->Progress(5, file.AsString());
         this->logger->Print("Exporting: %s\n", file.GetHostAndLocalPath().ExtractFileName().AsCharPtr());
        
+        Util::String outputName = file.GetHostAndLocalPath().ExtractFileName();
+        outputName.StripFileExtension();
+        IO::URI outputFile("export:levels/" + outputName + ".nlvl");
+        IO::IoServer::Instance()->EnsureDirectoriesForFile(outputFile);
+
         Game::World* world = new Game::World(Game::WorldHash('TEMP'), 0);
-        this->ExportLevel(jsonReader, world, file);
+        if (!this->ExportLevel(jsonReader, world, outputFile))
+        {
+            this->logger->Error("Could not export level: %s\n", file.GetHostAndLocalPath().AsCharPtr());
+            this->SetHasErrors(true);
+        }
         delete world;
     }
     else
@@ -137,8 +146,7 @@ LevelExporter::ExportLevel(const Ptr<IO::JsonReader>& reader, Game::World* world
     Util::Array<Game::Entity> entities = parser->LoadJsonLevel(reader);
     if (!entities.IsEmpty())
     {
-        world->ExportLevel(outputFile.GetHostAndLocalPath());
-        return true;
+        return world->ExportLevel(outputFile.AsString());
     }
     return false;
 }

@@ -62,6 +62,11 @@ SetupClientProcessors(BaseMultiplayerClient* client)
 void
 ShutdownClientProcessors()
 {
+    if (!frameEvent.IsValid())
+    {
+        return;
+    }
+
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
     Game::FramePipeline& pipeline = world->GetFramePipeline();
     Game::FrameEvent* event = pipeline.GetFrameEvent(frameEvent);

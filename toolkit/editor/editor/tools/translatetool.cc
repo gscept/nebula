@@ -92,14 +92,18 @@ TranslateTool::Render(Presentation::Modules::Viewport* viewport)
         //    //this->translation.delta.y = Math::round(this->translation.delta.y / state.grid.size) * state.grid.size;
         //    //this->translation.delta.z = Math::round(this->translation.delta.z / state.grid.size) * state.grid.size;
         //}
-        defaultWorld->SetComponent<Game::Position>(gameEntity, gizmoTranslation);
-        defaultWorld->MarkAsModified(gameEntity);
+        Edit::PreviewWorldTransform(
+            selection.Back(),
+            gizmoTranslation,
+            Editor::state.editorWorld->GetComponent<Game::Orientation>(selection.Back()),
+            Editor::state.editorWorld->GetComponent<Game::Scale>(selection.Back())
+        );
     }
     else if (this->translation.isDirty)
     {
         // User has release gizmo, we can set real transform and add to undo queue
         Edit::CommandManager::BeginMacro("Translate", false);
-        Edit::SetComponent(selection.Back(), Game::GetComponentId<Game::Position>(), &gizmoTranslation);
+        Edit::SetWorldPosition(selection.Back(), gizmoTranslation);
         Edit::CommandManager::EndMacro();
         this->translation.gizmoTransforming = false;
         this->translation.isDirty = false;
@@ -113,7 +117,20 @@ TranslateTool::Render(Presentation::Modules::Viewport* viewport)
 void
 TranslateTool::Abort()
 {
-    // abort transformations
+    if (this->translation.isDirty && !SelectionContext::Selection().IsEmpty())
+    {
+        Editor::Entity const entity = SelectionContext::Selection().Back();
+        Edit::PreviewWorldTransform(
+            entity,
+            Editor::state.editorWorld->GetComponent<Game::Position>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Orientation>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Scale>(entity)
+        );
+        if (SelectionContext::IsPaused())
+        {
+            SelectionContext::Unpause();
+        }
+    }
     this->translation.gizmoTransforming = false;
     this->translation.isDirty = false;
 }

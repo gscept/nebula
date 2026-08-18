@@ -20,16 +20,16 @@ def run(fips_dir, proj_dir, args) :
                 # FIXME all of this only works on windows at the moment and is super hacky
                 
                 if len(args) != 3 :
-                    log.error("expected compiler target [vc15, vc16, vc17] [debug, checked, release]")
+                    log.error("expected compiler target [vc16, vc17, vc18] [debug, checked, release]")
                 
                 buildmapping = {"debug" : "Debug", "checked" : "Checked", "release":"Release" } 
                 if args[2] not in buildmapping :
                     log.error("unknown build configuration, should be debug, checked or release")
                 buildconfig = buildmapping[args[2]]
                 
-                vcversions = ["vc15", "vc16", "vc17"]
+                vcversions = ["vc16", "vc17", "vc18"]
                 if args[1] not in vcversions :
-                    log.error("unknown vc version configuration, should be vc15, vc16 or vc17")
+                    log.error("unknown vc version configuration, should be vc16, vc17 or vc18")
 
                 vcstring = args[1] + "win64-cpu-only-nebula"
                 physxbuild = os.path.abspath(proj_dir + "/../physx/physx")
@@ -80,6 +80,6 @@ def run(fips_dir, proj_dir, args) :
 def help():
     """print 'physx' help"""
     log.info(log.YELLOW +
-             "fips physx [build, deploy] [linux, vc15, vc16, vc17] [debug, checked, release]\n"
+             "fips physx [build, deploy] [linux, vc16, vc17, vc18] [debug, checked, release]\n"
              "  builds PhysX dlls with the given toolchain\n"
              )

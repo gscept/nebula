@@ -80,7 +80,7 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
         norm = Math::max(norm, dot3(abs(rotation.r[2] - nextRotation.r[2]), vec4(_plus1)));
         
         rotation = nextRotation;
-    } while (count < 100 && norm > 0.00001f);
+    } while (count++ < 100 && norm > 0.00001f);
 
     outRotation = rotationmatrix(rotation);
 

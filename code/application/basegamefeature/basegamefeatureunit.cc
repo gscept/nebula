@@ -5,13 +5,9 @@
 //------------------------------------------------------------------------------
 
 #include "basegamefeature/basegamefeatureunit.h"
-#include "appgame/gameapplication.h"
-#include "core/factory.h"
 #include "game/gameserver.h"
-#include "io/ioserver.h"
-#include "io/console.h"
-#include "managers/blueprintmanager.h"
 #include "managers/timemanager.h"
+#include "managers/hierarchymanager.h"
 #include "imgui.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "components/position.h"
@@ -24,7 +20,6 @@ namespace BaseGameFeature
 __ImplementClass(BaseGameFeature::BaseGameFeatureUnit, 'GAGF', Game::FeatureUnit);
 __ImplementSingleton(BaseGameFeatureUnit);
 
-using namespace App;
 using namespace Game;
 
 //------------------------------------------------------------------------------
@@ -55,6 +50,7 @@ BaseGameFeatureUnit::OnAttach()
     this->RegisterComponentType<Game::Scale>();
     this->RegisterComponentType<Game::IsActive>();
     this->RegisterComponentType<Game::Static>();
+    this->RegisterComponentType<Game::HTransform>();
     this->RegisterComponentType<Game::Velocity>();
     this->RegisterComponentType<Game::AngularVelocity>();
 }
@@ -67,13 +63,13 @@ BaseGameFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    this->blueprintManager = BlueprintManager::Create();
     this->timeManager = TimeManager::Create();
+    this->hierarchyManager = HierarchyManager::Create();
 
-    this->AttachManager(this->blueprintManager);
     this->AttachManager(this->timeManager);
+    this->AttachManager(this->hierarchyManager);
 
-    this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "1", "Enable world debugging");
+    this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "0", "Enable world debugging");
 }
 
 //------------------------------------------------------------------------------
@@ -82,11 +78,11 @@ BaseGameFeatureUnit::OnActivate()
 void
 BaseGameFeatureUnit::OnDeactivate()
 {
-    this->RemoveManager(this->blueprintManager);
     this->RemoveManager(this->timeManager);
+    this->RemoveManager(this->hierarchyManager);
 
-    this->blueprintManager = nullptr;
     this->timeManager = nullptr;
+    this->hierarchyManager = nullptr;
 
     FeatureUnit::OnDeactivate();
 }

@@ -15,7 +15,11 @@ namespace System
 typedef Win32::Win32Library Library;
 }
 #else
-#error "System::Library not implemented on this platform!"
+#include "posix/posixlibrary.h"
+namespace System
+{
+typedef Posix::PosixLibrary Library;
+}
 #endif
 //------------------------------------------------------------------------------
     

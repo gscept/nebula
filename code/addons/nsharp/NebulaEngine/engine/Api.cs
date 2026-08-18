@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
-using Mathf;
-
 
 /*
 Entities are only ids as per usual, pointing into their respective tables in unmanaged code
@@ -31,8 +29,8 @@ namespace Nebula
 
         public class NebulaApiV1 : INebulaApi
         {
-            [DllImport("__Internal", EntryPoint = "EntityCreateFromTemplate")]
-            public static extern UInt64 CreateEntity(uint worldId, string template);
+            [DllImport("__Internal", EntryPoint = "EntityCreate")]
+            public static extern UInt64 CreateEntity(uint worldId);
 
             [DllImport("__Internal", EntryPoint = "EntityIsValid")]
             public static extern bool IsValid(UInt64 entityId);

@@ -7,7 +7,6 @@
 #include "game/gameserver.h"
 #include "core/factory.h"
 #include "profiling/profiling.h"
-#include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "jobs2/jobs2.h"
 
@@ -41,8 +40,6 @@ GameServer::~GameServer()
     _discard_timer(GameServerOnEndFrame);
     _discard_timer(GameServerManageEntities);
 
-    this->state.templateDatabase = nullptr;
-
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
@@ -66,7 +63,6 @@ GameServer::Open()
     n_assert(!this->isStarted);
     this->isOpen = true;
 
-    this->state.templateDatabase = MemDb::Database::Create();
     this->CreateWorld(WORLD_DEFAULT);
 
     for (IndexT i = 0; i < this->gameFeatures.Size(); i++)

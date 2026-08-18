@@ -1491,6 +1491,8 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 void
 Array<TYPE, SMALL_VECTOR_SIZE>::Sort()
 {
+    if (this->Size() == 0)
+        return;
     n_assert(this->elements != nullptr);
     std::sort(this->Begin(), this->End());
 }
@@ -1503,7 +1505,10 @@ template <class TYPE, int SMALL_VECTOR_SIZE>
 void
 Array<TYPE, SMALL_VECTOR_SIZE>::QuickSort()
 {
-    n_assert(this->Size() > 0);
+    if (this->Size() == 0)
+    {
+        return;
+    }
     n_assert(this->elements != nullptr);
     std::qsort(
         this->Begin(),
@@ -1526,7 +1531,10 @@ void
 Util::Array<TYPE, SMALL_VECTOR_SIZE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
     n_assert(func != nullptr);
-    n_assert(this->Size() > 0);
+    if (this->Size() == 0)
+    {
+        return;
+    }
     n_assert(this->elements != nullptr);
     std::sort(this->Begin(), this->End(), func);
 }
@@ -1539,7 +1547,8 @@ void
 Array<TYPE, SMALL_VECTOR_SIZE>::QuickSortWithFunc(int (*func)(const void* lhs, const void* rhs))
 {
     n_assert(func != nullptr);
-    n_assert(this->Size() > 0);
+    if (this->Size() == 0)
+        return;
     n_assert(this->elements != nullptr);
     std::qsort(
         this->Begin(),

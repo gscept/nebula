@@ -32,7 +32,8 @@ public:
     int GetNumFailed() const;
     /// return overall number of verifies
     int GetNumVerified() const;
-
+    /// set verbose output
+    void SetVerbose(bool verbose);
 
     struct FailedTest
     {
@@ -47,6 +48,7 @@ private:
     int numVerified;
     int numSucceeded;
     int numFailed;  
+    bool verbose;
 
     Util::Array< FailedTest> failed;
 };
@@ -90,6 +92,15 @@ const Util::Array<TestCase::FailedTest> &
 TestCase::GetFailed() const
 {
     return this->failed;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+inline void
+TestCase::SetVerbose(bool verbose)
+{
+    this->verbose = verbose;
 }
 
 };

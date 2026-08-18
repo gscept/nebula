@@ -90,8 +90,8 @@ protected:
 private:
     Util::Array<Util::String> invalidAttrs;
     Util::HashTable<Util::Guid, Game::Entity> guidToEntity;
-    Game::World* world;
-}; 
+    Game::World* world = nullptr;
+};
 
 } // namespace BaseGameFeature
 //------------------------------------------------------------------------------

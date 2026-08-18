@@ -24,7 +24,7 @@ NEBULA_EXPORT bool EntityIsValid(uint64_t entity);
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT uint64_t EntityCreateFromTemplate(uint32_t worldId, const char* tmpl);
+NEBULA_EXPORT uint64_t EntityCreate(uint32_t worldId);
 
 //------------------------------------------------------------------------------
 /**

@@ -34,17 +34,6 @@ namespace Game
 
 class PackedLevel;
 
-//------------------------------------------------------------------------------
-/**
-*/
-struct EntityCreateInfo
-{
-    /// template to instantiate.
-    TemplateId templateId = TemplateId::Invalid();
-    /// set if the entity should be instantiated immediately or deferred until end of frame.
-    bool immediate = false;
-};
-
 /// returns a world by hash
 World* GetWorld(WorldHash worldHash);
 /// returns a world by id
@@ -91,8 +80,6 @@ public:
 
     /// Create a new empty entity
     Entity CreateEntity(bool immediate = true);
-    /// Create a new entity from create info
-    Entity CreateEntity(EntityCreateInfo const& info);
     /// Delete entity
     void DeleteEntity(Entity entity);
 
@@ -113,6 +100,8 @@ public:
     void AddComponent(Entity entity, TYPE const& component);
     /// Queues a component to be added to the entity in a command buffer.
     void* AddComponent(Entity entity, ComponentId component);
+    /// Queues a component with initial data, copied before component initialization.
+    void* AddComponent(Entity entity, ComponentId component, const void* value);
 
     /// Check if entity has a specific component.
     template <typename TYPE>
@@ -150,7 +139,7 @@ public:
     /// unload a preloaded level
     void UnloadLevel(PackedLevel* level);
     /// Export the world as a level
-    void ExportLevel(Util::String const& path);
+    bool ExportLevel(Util::String const& path);
 
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();
@@ -168,18 +157,20 @@ public:
     void ReinitializeComponent(Entity entity, ComponentId component, void* value, uint64_t size);
     /// Create a table in the entity database that has a specific set of components
     MemDb::TableId CreateEntityTable(EntityTableCreateInfo const& info);
-    /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
+    /// Copy src over dst without initializing components. This is extremely destructive.
     static void Override(World* src, World* dst);
     /// Allocate an entity id. Use this with caution!
     Entity AllocateEntityId();
     /// Deallocate an entity id. Use this with caution!
     void DeallocateEntityId(Entity entity);
-    /// Allocate an entity instance in a table. Use this with caution!
+    /// Allocate an entity instance in default (empty) table without initializing components. Use this with caution!
+    MemDb::RowId AllocateInstance(Entity entity);
+    /// Allocate an entity instance in a table without initializing components. Use this with caution!
     MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data = nullptr);
-    /// Allocate an entity instance from a blueprint. Use this with caution!
-    MemDb::RowId AllocateInstance(Entity entity, BlueprintId blueprint);
-    /// Allocate an entity instance from a template. Use this with caution!
-    MemDb::RowId AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize);
+    /// Initialize all components on an allocated entity instance.
+    void InitializeInstance(Entity entity);
+    /// Initialize all components using an already fetched table and row.
+    void InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
     void FinalizeAllocate(Entity entity);
     /// Deallocate an entity instance. Use this with caution!
     void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
@@ -193,6 +184,8 @@ public:
     void* GetColumnData(MemDb::TableId const tableId, uint16_t partitionId, MemDb::ColumnIndex const column);
     /// dispatches all staged components to be added to entities
     void ExecuteAddComponentCommands();
+    /// dispatches all staged components to be removed from entities
+    void ExecuteRemoveComponentCommands();
     /// Disable if initialization of components is not required (ex. when running as editor db)
     bool componentInitializationEnabled = true;
 
@@ -200,13 +193,11 @@ public:
 
 private:
     friend class GameServer;
-    friend class BlueprintManager;
     friend class PackedLevel;
 
     struct AllocateInstanceCommand
     {
         Game::Entity entity = Game::Entity::Invalid();
-        TemplateId tid = TemplateId::Invalid();
     };
 
     struct DeallocInstanceCommand
@@ -241,8 +232,6 @@ private:
     /// Clears all decay buffers. This is called by the game server automatically.
     void ClearDecayBuffers();
 
-    void ExecuteRemoveComponentCommands();
-
     /// Get total number of instances in an entity table
     SizeT GetNumInstances(MemDb::TableId tid);
 
@@ -262,9 +251,6 @@ private:
     ///  Move a instance/row within a partition
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
 
-    /// Run OnInit on all components. Use with caution, since they can only be initialized once and the function doesn't check for this.
-    void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
-
     /// Adds all components in cmds to entity 
     void AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds);
     /// Removes all components in cmds from entity
@@ -282,8 +268,6 @@ private:
     WorldHash hash;
     /// world id
     WorldId worldId;
-    /// maps from blueprint to a table that has the same signature
-    Util::HashTable<BlueprintId, MemDb::TableId> blueprintToTableMap;
     /// Stores all deferred allocation commands
     Util::Queue<AllocateInstanceCommand> allocQueue;
     /// Stores all deferred deallocation commands
@@ -441,7 +425,7 @@ World::AddComponent(Entity entity)
     ComponentInterface* cInterface;
     cInterface = static_cast<ComponentInterface*>(attr);
 
-    if (cInterface->Init != nullptr)
+    if (this->componentInitializationEnabled && cInterface->Init != nullptr)
     {
         // run initialization function if it exists.
         cInterface->Init(this, entity, data);
@@ -482,7 +466,7 @@ World::AddComponent(Entity entity, TYPE const& component)
     ComponentInterface* cInterface;
     cInterface = static_cast<ComponentInterface*>(attr);
 
-    if (cInterface->Init != nullptr)
+    if (this->componentInitializationEnabled && cInterface->Init != nullptr)
     {
         // run initialization function if it exists.
         cInterface->Init(this, entity, data);

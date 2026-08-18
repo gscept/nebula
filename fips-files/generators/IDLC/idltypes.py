@@ -3,6 +3,13 @@ import genutil as util
 #------------------------------------------------------------------------------
 ##
 #
+def IsStdArrayType(attrType):
+    T = attrType.replace(" ", "")
+    return T.startswith("std::array<") and T.endswith(">")
+
+#------------------------------------------------------------------------------
+##
+#
 def GetCppTypeString(attrType):
     T = attrType.lower()
     if (T == "byte"):
@@ -164,6 +171,8 @@ def GetCsTypeString(attrType):
         return "short"
     elif (T == "uint16"):
         return "ushort"
+    elif (T == "uint16_t"):
+        return "ushort"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -177,21 +186,21 @@ def GetCsTypeString(attrType):
     elif (T == "bool"):
         return "bool"
     elif (T == "int2"):
-        return "Mathf.Vector2Int"
+        return "Vector2Int"
     elif (T == "vec2"):
-        return "Mathf.Vector2"
+        return "Vector2"
     elif (T == "vec3"):
-        return "Mathf.Vector3"
+        return "Vector3"
     elif (T == "vec4"):
-        return "Mathf.Vector4"
+        return "Vector4"
     elif (T == "vector"):
-        return "Mathf.Vector3"
+        return "Vector3"
     elif (T == "point"):
-        return "Mathf.Vector3"
+        return "Vector3"
     elif (T == "quat"):
-        return "Mathf.Quaternion"
+        return "Quaternion"
     elif (T == "mat4"):
-        return "Mathf.Matrix"
+        return "Matrix"
     elif (T == "string"):
         return "string"
     elif (T == "resource"):
@@ -199,7 +208,11 @@ def GetCsTypeString(attrType):
     elif (T == "entity"):
         return "EntityId"
     elif (T == "color"):
-        return "Mathf.Vector4" # XNA Mathf.Color is a packed uint, while Util::Color is a vec4. We need to reflect the native type in C#
+        return "Vector4" # XNA Mathf.Color is a packed uint, while Util::Color is a vec4. We need to reflect the native type in C#
+    elif (T == "bitfield16"):
+        return "ushort"
+    elif (T == "physics::characterid"):
+        return "uint"
     elif (T.startswith("[") and T.endswith("]")):
         return "[{}]".format(GetCppTypeString(attrType[1:-1]))
     else:

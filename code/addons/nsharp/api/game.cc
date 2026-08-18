@@ -36,13 +36,10 @@ EntityIsValid(uint64_t entity)
 /**
 */
 uint64_t
-EntityCreateFromTemplate(uint32_t worldId, const char* tmpl)
+EntityCreate(uint32_t worldId)
 {
     Game::World* world = Game::GetWorld(worldId);
-    Game::EntityCreateInfo info;
-    info.immediate = true;
-    info.templateId = Game::GetTemplateId(tmpl);
-    Game::Entity entity = world->CreateEntity(info);
+    Game::Entity entity = world->CreateEntity(true);
     return uint64_t(entity);
 }
 

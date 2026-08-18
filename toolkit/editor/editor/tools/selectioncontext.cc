@@ -79,6 +79,33 @@ SelectionContext::Selection()
 //------------------------------------------------------------------------------
 /**
 */
+Editor::Entity const&
+SelectionContext::Hovered()
+{
+    return Singleton->hovered;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SelectionContext::SetHovered(Editor::Entity entity)
+{
+    Singleton->hovered = entity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SelectionContext::ClearHovered()
+{
+    Singleton->hovered = Editor::Entity::Invalid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 SelectionContext::PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
 {

@@ -20,6 +20,11 @@ PackedLevel::Instantiate() const
 {
     Util::Array<Game::Entity> entities;
 
+    SizeT totalEntities = 0;
+    for (EntityGroup const& table : this->tables)
+        totalEntities += table.numRows;
+    entities.Reserve(totalEntities);
+
     for (IndexT i = 0; i < this->tables.Size(); i++)
     {
         EntityGroup const& dataTable = this->tables[i];
@@ -37,7 +42,7 @@ PackedLevel::Instantiate() const
         while (numRowsLeft > 0)
         {
             SizeT numRows = Math::min(numRowsLeft, (SizeT)MemDb::Table::Partition::CAPACITY - (SizeT)partition->numRows);
-            numRowsLeft -= (SizeT)MemDb::Table::Partition::CAPACITY - partition->numRows;
+            numRowsLeft -= numRows;
 
             SizeT const numColumns = table.GetAttributes().Size();
             SizeT byteOffset = 0;
@@ -70,7 +75,10 @@ PackedLevel::Instantiate() const
 
                 entities.Append(entity);
                 // TODO: could initialize all components of a specific type at the same time
-                this->world->InitializeAllComponents(entity, mapping.table, mapping.instance);
+                if (this->world->componentInitializationEnabled)
+                {
+                    this->world->InitializeInstance(entity, mapping.table, mapping.instance);
+                }
             }
 
             partition->numRows += numRows;

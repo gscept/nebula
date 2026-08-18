@@ -27,9 +27,7 @@
 #include "core/singleton.h"
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
-#include "ids/idgenerationpool.h"
 #include "api.h"
-#include "entitypool.h"
 #include "memdb/database.h"
 #include "world.h"
 #include "processor.h"
@@ -118,9 +116,6 @@ public:
         uint numWorlds = 0;
 
         Util::HashTable<WorldHash, WorldId, 32, 1> worldTable;
-
-        /// Contains all templates
-        Ptr<MemDb::Database> templateDatabase;
     } state;
 
 protected:

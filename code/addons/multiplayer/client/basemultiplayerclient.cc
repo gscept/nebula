@@ -11,6 +11,7 @@
 #include "GameNetworkingSockets/steam/isteamnetworkingutils.h"
 #include "game/api.h"
 #include "game/world.h"
+#include "imgui.h"
 #include "multiplayer/client/clientprocessors.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
@@ -303,6 +304,35 @@ BaseMultiplayerClient::SyncAll()
 
     this->PollIncomingMessages();
     this->PushPendingMessages();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerClient::DrawNetworkDebugInfo()
+{
+    ImGui::Text("Client");
+    ImGui::Text("Status: %i", (int)this->connectionStatus);
+    if (this->connectionStatus != ConnectionStatus::Connected || this->connectionId == k_HSteamNetConnection_Invalid)
+        return;
+
+    SteamNetConnectionRealTimeStatus_t status;
+    EResult res = this->netInterface->GetConnectionRealTimeStatus(this->connectionId, &status, 0, nullptr);
+    if (res != k_EResultOK)
+    {
+        ImGui::Text("Connection status unavailable: %i", (int)res);
+        return;
+    }
+
+    ImGui::Text("Ping: %i ms", status.m_nPing);
+    ImGui::Text("Out: %.1f KB/s (%.1f pkt/s)", status.m_flOutBytesPerSec / 1024.0f, status.m_flOutPacketsPerSec);
+    ImGui::Text("In:  %.1f KB/s (%.1f pkt/s)", status.m_flInBytesPerSec / 1024.0f, status.m_flInPacketsPerSec);
+    ImGui::Text("Send capacity: %.1f KB/s", (float)status.m_nSendRateBytesPerSecond / 1024.0f);
+    ImGui::Text("Pending: reliable=%i B unreliable=%i B", status.m_cbPendingReliable, status.m_cbPendingUnreliable);
+    ImGui::Text("Unacked reliable: %i B", status.m_cbSentUnackedReliable);
+    ImGui::Text("Queue time: %.2f ms", (double)status.m_usecQueueTime / 1000.0);
+    ImGui::Text("Quality: local=%.2f remote=%.2f", status.m_flConnectionQualityLocal, status.m_flConnectionQualityRemote);
 }
 
 //--------------------------------------------------------------------------

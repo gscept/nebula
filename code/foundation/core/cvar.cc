@@ -31,7 +31,11 @@ struct CVar
 constexpr uint16_t MAX_CVARS = 1024;
 uint16_t cVarOffset = 0;
 CVar cVars[MAX_CVARS];
-Util::HashTable<Util::String, uint16_t> cVarTable;
+static Util::HashTable<Util::String, uint16_t>& CVarTable()
+{
+    static Util::HashTable<Util::String, uint16_t> table;
+    return table;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -46,7 +50,7 @@ CVarCreate(CVarCreateInfo const& info)
         IndexT varIndex = cVarOffset++;
         n_assert(varIndex < MAX_CVARS);
         ptr = &cVars[varIndex];
-        cVarTable.Add(info.name, varIndex);
+        CVarTable().Add(info.name, varIndex);
     }
     n_assert2(!Util::String(info.name).ContainsCharFromSet(" "), "CVar name cannot contain spaces.");
         
@@ -85,10 +89,10 @@ CVar*
 CVarGet(const char* name)
 {
     Util::String const str = name;
-    IndexT const index = cVarTable.FindIndex(str);
+    IndexT const index = CVarTable().FindIndex(str);
     if (index != InvalidIndex)
     {
-        return &cVars[cVarTable.ValueAtIndex(str, index)];
+        return &cVars[CVarTable().ValueAtIndex(str, index)];
     }
 
     return nullptr;

@@ -117,14 +117,18 @@ RotateTool::Render(Presentation::Modules::Viewport* viewport)
         //    //this->translation.delta.z = Math::round(this->translation.delta.z / state.grid.size) * state.grid.size;
         //}
         
-        defaultWorld->SetComponent<Game::Orientation>(gameEntity, q);
-        defaultWorld->MarkAsModified(gameEntity);
+        Edit::PreviewWorldTransform(
+            selection.Back(),
+            Editor::state.editorWorld->GetComponent<Game::Position>(selection.Back()),
+            Game::Orientation(q),
+            Editor::state.editorWorld->GetComponent<Game::Scale>(selection.Back())
+        );
     }
     else if (this->translation.isDirty)
     {
         // User has release gizmo, we can set real transform and add to undo queue
         Edit::CommandManager::BeginMacro("Rotate", false);
-        Edit::SetComponent(selection.Back(), Game::GetComponentId<Game::Orientation>(), &q);
+        Edit::SetWorldOrientation(selection.Back(), Game::Orientation(q));
         Edit::CommandManager::EndMacro();
         this->translation.gizmoTransforming = false;
         this->translation.isDirty = false;
@@ -138,7 +142,20 @@ RotateTool::Render(Presentation::Modules::Viewport* viewport)
 void
 RotateTool::Abort()
 {
-    // abort transformations
+    if (this->translation.isDirty && !SelectionContext::Selection().IsEmpty())
+    {
+        Editor::Entity const entity = SelectionContext::Selection().Back();
+        Edit::PreviewWorldTransform(
+            entity,
+            Editor::state.editorWorld->GetComponent<Game::Position>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Orientation>(entity),
+            Editor::state.editorWorld->GetComponent<Game::Scale>(entity)
+        );
+        if (SelectionContext::IsPaused())
+        {
+            SelectionContext::Unpause();
+        }
+    }
     this->translation.gizmoTransforming = false;
     this->translation.isDirty = false;
 }

@@ -19,6 +19,7 @@ def WriteCSHeader(f):
     f.WriteLine("DO NOT EDIT")
     f.DecreaseIndent()
     f.WriteLine("*/")
+    f.WriteLine("using Nebula;")
 
 #------------------------------------------------------------------------------
 ## Write header for include file

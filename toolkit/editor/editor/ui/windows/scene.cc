@@ -172,47 +172,72 @@ Scene::FocusCamera()
 //------------------------------------------------------------------------------
 /**
 */
+static void
+DrawEntityOutline(Game::Entity const gameEntity, Math::vec4 const& color)
+{
+    Game::World* defaultWorld = Game::GetWorld(gameEntity.world);
+
+    if (defaultWorld->HasComponent<GraphicsFeature::Model>(gameEntity))
+    {
+        // TODO: Outline maybe?
+        Graphics::GraphicsEntityId const gfxEntity =
+            defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
+        if (Models::ModelContext::IsEntityRegistered(gfxEntity))
+        {
+            Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+            Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
+            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, color);
+        }
+    }
+    else if (defaultWorld->HasComponent<GraphicsFeature::Terrain>(gameEntity))
+    {
+    }
+    else
+    {
+        Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
+        Math::vec3 scale = defaultWorld->GetComponent<Game::Scale>(gameEntity);
+        const Math::bbox box = Math::bbox(location, scale);
+        Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, color);
+    }
+
+    if (defaultWorld->HasComponent<GraphicsFeature::PointLight>(gameEntity))
+    {
+        Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
+        const GraphicsFeature::PointLight& light = defaultWorld->GetComponent<GraphicsFeature::PointLight>(gameEntity);
+        Math::mat4 sphere = Math::mat4::identity;
+        sphere.scale(Math::vec3(light.range, light.range, light.range));
+        sphere.translate(location);
+        Im3d::Im3dContext::DrawSphere(sphere, color);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Scene::DrawOutlines()
 {
+    Math::vec4 const selectionColor = {1.0f, 0.30f, 0.0f, 1.0f};
+    Math::vec4 const hoverColor = {0.5f, 0.15f, 0.0f, 1.0f};
+
+    Editor::Entity const hovered = Tools::SelectionContext::Hovered();
+
     auto const& selection = Tools::SelectionContext::Selection();
     for (auto const editorEntity : selection)
     {
+        // draw the hovered entity once below, in the hover color
+        if (editorEntity == hovered)
+        {
+            continue;
+        }
         Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
-        Game::World* defaultWorld = Game::GetWorld(gameEntity.world);
+        DrawEntityOutline(gameEntity, selectionColor);
+    }
 
-        if (defaultWorld->HasComponent<GraphicsFeature::Model>(gameEntity))
-        {
-            // TODO: Outline maybe?
-            Graphics::GraphicsEntityId const gfxEntity =
-                defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
-            if (Models::ModelContext::IsEntityRegistered(gfxEntity))
-            {
-                Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
-                Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
-                Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
-            }
-        }
-        else if (defaultWorld->HasComponent<GraphicsFeature::Terrain>(gameEntity))
-        {
-        }
-        else
-        {
-            Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
-            Math::vec3 scale = defaultWorld->GetComponent<Game::Scale>(gameEntity);
-            const Math::bbox box = Math::bbox(location, scale);
-            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, {1.0f, 0.30f, 0.0f, 1.0f});
-        }
-
-        if (defaultWorld->HasComponent<GraphicsFeature::PointLight>(gameEntity))
-        {
-            Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
-            const GraphicsFeature::PointLight& light = defaultWorld->GetComponent<GraphicsFeature::PointLight>(gameEntity);
-            Math::mat4 sphere = Math::mat4::identity;
-            sphere.scale(Math::vec3(light.range, light.range, light.range));
-            sphere.translate(location);
-            Im3d::Im3dContext::DrawSphere(sphere, {1.0f, 0.30f, 0.0f, 1.0f});
-        }
+    if (hovered != Editor::Entity::Invalid())
+    {
+        Game::Entity const gameEntity = Editor::state.editables[hovered.index].gameEntity;
+        DrawEntityOutline(gameEntity, hoverColor);
     }
 }
 

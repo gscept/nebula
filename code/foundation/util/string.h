@@ -427,6 +427,11 @@ public:
     static bool IsLower(char c);
     /// test if provided character is an upper-case character
     static bool IsUpper(char c);
+    
+    /// convert char to lowercase
+    static char ToLower(char c);
+    /// convert char to uppercase
+    static char ToUpper(char c);
 
     /// lowlevel string compare wrapper function
     static int StrCmp(const char* str0, const char* str1);

@@ -22,7 +22,6 @@
 #include "windows/settings.h"
 #include "windows/profiler.h"
 #include "windows/terraineditor/terraineditor.h"
-#include "windows/createobjectwindow.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
@@ -92,15 +91,36 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
-    windowServer->RegisterWindow("Presentation::CreateObjectWindow", "Create Object", "Editor");
 
-    windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
-    windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
+    UI::Icons::play          = NLoadIcon("tex:editor/icon_play.dds");
+    UI::Icons::pause         = NLoadIcon("tex:editor/icon_pause.dds");
+    UI::Icons::stop          = NLoadIcon("tex:editor/icon_stop.dds");
+    UI::Icons::environment   = NLoadIcon("tex:editor/icon_environment.dds");
+    UI::Icons::game          = NLoadIcon("tex:editor/icon_game.dds");
+    UI::Icons::light         = NLoadIcon("tex:editor/icon_light.dds");
+    
+    windowServer->RegisterCommand([]()
+    {
+        static Util::String localpath = IO::URI("proj:work/levels").LocalPath();
+        Util::String path;
+        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, { "*.json" }, path))
+            Editor::LoadLevel(path);
+    }, "Open Level", "Ctrl+O", "File");
+    windowServer->RegisterCommand([]()
+    {
+        Editor::SaveLevelWithDialog();
+        Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive);
+    }, "Save", "Ctrl+S", "Edit");
+    windowServer->RegisterCommand([]()
+    {
+        Editor::SaveLevelWithDialog();
+        Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll);
+    }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
     windowServer->RegisterCommand([]() { Editor::PlayGame(); }, "Play", "Ctrl+P", "Game");
     windowServer->RegisterCommand([]() { Editor::PauseGame(); }, "Pause", "Ctrl+Shift+P", "Game");
-    windowServer->RegisterCommand([]() { Editor::StopGame(); }, "Stop", "Ctrl+S", "Game");
+    windowServer->RegisterCommand([]() { Editor::StopGame(); }, "Stop", "", "Game");
     windowServer->RegisterCommand([]() { Presentation::WindowServer::Instance()->GetWindow("Create Object")->Open() = true; }, "Create Object", "Ctrl+C", "Create");
     
     windowServer->RegisterCommand([]()
@@ -132,8 +152,11 @@ UIManager::OnActivate()
         {
             auto gameWorld = Game::GetWorld(WORLD_DEFAULT);
             Game::PackedLevel* pLevel = gameWorld->PreloadLevel(path);
-            auto ents = pLevel->Instantiate();
-            gameWorld->UnloadLevel(pLevel);
+            if (pLevel != nullptr)
+            {
+                auto ents = pLevel->Instantiate();
+                gameWorld->UnloadLevel(pLevel);
+            }
         }
     }, "Import nlvl (game only)", "Ctrl+Shift+I", "File");
 

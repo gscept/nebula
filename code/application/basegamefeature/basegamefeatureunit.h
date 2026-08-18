@@ -51,8 +51,8 @@ public:
     void OnFrame() override;
     
 protected:
-    Ptr<Game::Manager> blueprintManager;
     Ptr<Game::Manager> timeManager;
+    Ptr<Game::Manager> hierarchyManager;
     Core::CVar* cl_debug_worlds;
 };
 

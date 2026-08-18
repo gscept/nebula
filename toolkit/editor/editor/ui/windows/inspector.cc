@@ -131,7 +131,14 @@ Inspector::Run(SaveMode save)
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
             if (ImGui::Button("Remove"))
             {
-                Edit::RemoveComponent(entity, component);
+                if (component == Game::GetComponentId<Game::HTransform>())
+                {
+                    Edit::ClearParent(entity);
+                }
+                else
+                {
+                    Edit::RemoveComponent(entity, component);
+                }
                 ImGui::PopID();
                 return; // return, otherwise we're reading stale data.
             }
@@ -191,7 +198,42 @@ Inspector::Run(SaveMode save)
 
         if (commitChange)
         {
-            Edit::SetComponent(entity, component, tempComponent.buffer);
+            if (component == Game::GetComponentId<Game::Position>())
+            {
+                Edit::SetWorldPosition(entity, *(Game::Position*)tempComponent.buffer);
+            }
+            else if (component == Game::GetComponentId<Game::Orientation>())
+            {
+                Edit::SetWorldOrientation(entity, *(Game::Orientation*)tempComponent.buffer);
+            }
+            else if (component == Game::GetComponentId<Game::Scale>())
+            {
+                Edit::SetWorldScale(entity, *(Game::Scale*)tempComponent.buffer);
+            }
+            else if (component == Game::GetComponentId<Game::HTransform>())
+            {
+                Game::HTransform const& oldTransform = *(Game::HTransform*)data;
+                Game::HTransform const& newTransform = *(Game::HTransform*)tempComponent.buffer;
+                if (oldTransform.parent != newTransform.parent)
+                {
+                    if (newTransform.parent == Game::Entity::Invalid())
+                    {
+                        Edit::ClearParent(entity);
+                    }
+                    else
+                    {
+                        Edit::SetParent(entity, newTransform.parent);
+                    }
+                }
+                else
+                {
+                    Edit::SetComponent(entity, component, tempComponent.buffer);
+                }
+            }
+            else
+            {
+                Edit::SetComponent(entity, component, tempComponent.buffer);
+            }
             tempComponent.isDirty = false;
         }
         ImGui::Separator();
@@ -256,6 +298,7 @@ Inspector::ShowAddComponentMenu()
             Game::Position::Traits::name,
             Game::Orientation::Traits::name,
             Game::Scale::Traits::name,
+            Game::HTransform::Traits::name,
             Game::IsActive::Traits::name};
 
         for (SizeT i = 0; i < numComponents; i++)

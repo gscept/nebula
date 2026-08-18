@@ -38,6 +38,15 @@ public:
 
     static void PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera);
 
+    /// return the entity currently hovered, or invalid if none
+    static Editor::Entity const& Hovered();
+
+    /// set the entity currently hovered. This is a transient per-frame state and is not undoable.
+    static void SetHovered(Editor::Entity entity);
+
+    /// clear the hovered entity. Called at the start of every frame.
+    static void ClearHovered();
+
     static void ValidateSelection();
 
     /// Pause picking momentarily. Remember to PickingContext::Unpause when done.
@@ -59,6 +68,9 @@ private:
     friend Edit::CMDSetSelection;
 
     Util::Array<Editor::Entity> selection;
+
+    /// the entity currently hovered in the outline. transient per-frame state, not undoable.
+    Editor::Entity hovered = Editor::Entity::Invalid();
 
     /// increment to disallow picking temporarily. Remember to decrement when done.
     int pauseCounter = 0;

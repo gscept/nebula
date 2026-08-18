@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "basegamefeature/levelparser.h"
+#include "util/hashtable.h"
 
 namespace Editor
 {
@@ -22,6 +23,11 @@ public:
     EntityLoader();
     ~EntityLoader();
 
+    /// Generate new persistent GUIDs instead of retaining GUIDs from the source level.
+    void SetGenerateGuids(bool generate);
+    /// Load editor-only collection data after the level entities have been parsed.
+    void LoadCollections(const Ptr<IO::JsonReader>& reader);
+
 private:
     /// called at beginning of load
     virtual void BeginLoad() override;
@@ -33,6 +39,10 @@ private:
     virtual void CommitEntity(Game::Entity entity) override;
     /// parsing done
     virtual void CommitLevel() override;
+
+    bool generateGuids = false;
+    Util::HashTable<Util::Guid, Game::Entity> sourceEntities;
+    Util::Array<Game::Entity> loadedEntities;
 };
 
 } // namespace Edit

@@ -99,7 +99,8 @@ UnpackEntity(Game::World* world, Util::Blob const& data)
     MemDb::TableId tableId = world->CreateEntityTable(info);
     
     Game::Entity entity = world->AllocateEntityId();
-    world->AllocateInstance(entity, tableId, &data);
+    MemDb::RowId const instance = world->AllocateInstance(entity, tableId, &data);
+    world->InitializeInstance(entity, tableId, instance);
     return entity;
 }
 

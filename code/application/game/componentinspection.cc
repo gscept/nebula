@@ -116,18 +116,18 @@ ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     Game::Entity* entity = (Game::Entity*)data;
-    Game::World* world = Game::GetWorld(entity->world);
 
     if (*entity == Game::Entity::Invalid())
     {
         ImGui::Text("Unassigned");
     }
-    else if (!world->IsValid(*entity) || !world->HasInstance(*entity))
+    else if (!Game::GetWorld(entity->world)->IsValid(*entity) || !Game::GetWorld(entity->world)->HasInstance(*entity))
     {
         ImGui::TextColored({1.0f,0.1f,0.1f,1.0f}, "Invalid");
     }
     else
     {
+        Game::World* world = Game::GetWorld(entity->world);
         ImGui::BeginGroup();
         //if (Game::EditorState::Instance()->isRunning)
         //{

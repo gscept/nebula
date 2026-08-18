@@ -36,9 +36,4 @@ Dataset Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& table
 /// Recycles all current datasets allocated memory to be reused
 void ReleaseDatasets();
 
-/// Returns a blueprint id by name
-BlueprintId GetBlueprintId(Util::StringAtom name);
-/// Returns a template id by name
-TemplateId GetTemplateId(Util::StringAtom name);
-
 } // namespace Game

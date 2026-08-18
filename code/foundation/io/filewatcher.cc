@@ -133,7 +133,10 @@ FileWatcher::CheckQueue()
 void 
 FileWatcher::DoWork()
 {
-    this->ioServer = IO::IoServer::Create();
+    if (!this->ioServer.isvalid())
+    {
+        this->ioServer = IO::IoServer::HasInstance() ? IO::IoServer::Instance() : IO::IoServer::Create();
+    }
     FileWatcherImpl::Init();
     while (!this->ThreadStopRequested())
     {        

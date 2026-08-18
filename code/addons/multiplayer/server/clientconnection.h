@@ -25,9 +25,19 @@ enum class ClientGroup
     Lobby,
     Game,
     Monitoring,
+    
+    // Custom groups:
+    GroupA, 
+    GroupB, 
+    GroupC,
+    GroupD,
+    GroupE,
+    GroupF,
+    GroupG,
+    GroupH,
+    
     NumClientGroups
 };
-
 
 //--------------------------------------------------------------------------
 /**
@@ -55,6 +65,9 @@ public:
 
     /// Gets the estimated current packet roundtrip time (server->client->server).
     Timing::Time GetCurrentPing() const;
+
+    /// draw imgui network debug information
+    void DrawNetworkDebugInfo();
 
     uint64_t GetUserData() const;
 

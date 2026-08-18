@@ -5,7 +5,6 @@
 
 #include "entitypool.h"
 #include "gameserver.h"
-#include "basegamefeature/managers/blueprintmanager.h"
 
 namespace Game
 {

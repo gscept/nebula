@@ -912,9 +912,9 @@ ImguiContext::Create()
     colors[ImGuiCol_Button] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
     colors[ImGuiCol_ButtonHovered] = ImVec4(0.50f, 0.25f, 0.00f, 1.00f);
     colors[ImGuiCol_ButtonActive] = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
-    colors[ImGuiCol_Header] = ImVec4(1.00f, 0.55f, 0.10f, 0.60f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(1.00f, 0.55f, 0.10f, 0.70f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.74f, 0.37f, 0.00f, 0.90f);
+    colors[ImGuiCol_Header] = ImVec4(1.00f, 0.55f, 0.10f, 0.40f);
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.74f, 0.37f, 0.00f, 0.20f);
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.74f, 0.37f, 0.00f, 0.30f);
     colors[ImGuiCol_Separator] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
     colors[ImGuiCol_SeparatorHovered] = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
     colors[ImGuiCol_SeparatorActive] = ImVec4(0.90f, 0.20f, 0.05f, 1.00f);
