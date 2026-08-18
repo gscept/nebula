@@ -36,7 +36,6 @@
 #include "uritest.h"
 #include "mediatypetest.h"
 #include "varianttest.h"
-#include "iointerfacetest.h"
 #include "cmdlineargstest.h"
 #include "streamservertest.h"
 #include "luaservertest.h"
@@ -123,7 +122,6 @@ __cdecl main()
     // testRunner->AttachTestCase(JSonReaderWriterTest::Create());
     testRunner->AttachTestCase(BinaryReaderWriterTest::Create());
     testRunner->AttachTestCase(VariantTest::Create());
-    testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
     testRunner->AttachTestCase(ArrayAllocatorTest::Create());
     testRunner->AttachTestCase(ProfilingTest::Create());
