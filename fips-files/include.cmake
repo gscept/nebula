@@ -55,6 +55,7 @@ if (N_SHADER_VALIDATION)
 endif()
 
 add_definitions(-DNEBULA_BINARY_FOLDER=\"${FIPS_PROJECT_DEPLOY_DIR}\")
+add_definitions(-DNEBULA_BUILD_FOLDER=\"${FIPS_PROJECT_BUILD_DIR}\")
 
 include(create_resource)
 include(CMakeDependentOption)
@@ -245,6 +246,7 @@ macro(nebula_flatc root)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${output}")
         source_group("${CurGroup}\\Source" FILES ${fbs})
     endforeach()
+    fips_dir(.)
 endmacro()
 
 macro(compile_gpulang_intern)
@@ -269,6 +271,8 @@ macro(compile_gpulang_intern)
 
         set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.gplb)
         set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
+        cmake_path(NORMAL_PATH binaryOutput)
+		cmake_path(NORMAL_PATH headerOutput)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
@@ -284,8 +288,7 @@ macro(compile_gpulang_intern)
             file(READ ${depoutput} deps)
         endif()
 
-		cmake_path(NORMAL_PATH binaryOutput)
-		cmake_path(NORMAL_PATH headerOutput)
+
 		cmake_path(NORMAL_PATH foldername)
 		cmake_path(NORMAL_PATH shd)
 		cmake_path(NORMAL_PATH GPULANGC)
