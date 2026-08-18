@@ -250,7 +250,7 @@ DestroyResourceTable(const ResourceTableId id)
 const ResourceTableLayoutId&
 ResourceTableGetLayout(ResourceTableId id)
 {
-    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id);
+    return resourceTableAllocator.ConstGet<ResourceTable_Layout>(id.id);
 }
 
 //------------------------------------------------------------------------------
