@@ -6,7 +6,6 @@
 #include "editor.h"
 
 #include "io/assignregistry.h"
-#include "scripting/scriptserver.h"
 #include "memdb/database.h"
 #include "game/api.h"
 #include "basegamefeature/basegamefeatureunit.h"
@@ -113,12 +112,6 @@ Create()
 void
 Start()
 {
-    Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
-    Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
-
-    /// Import reload to be able to reload modules.
-    Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
-
     Game::EditorState::Instance()->isRunning = true;
 }
 

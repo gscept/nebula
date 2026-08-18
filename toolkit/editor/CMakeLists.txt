@@ -54,11 +54,6 @@ fips_dir(editor)
         level.h
         level.cc
     )
-    fips_dir(editor/bindings)
-        fips_files(
-            editorbindings.cc
-            editorbindings.h
-        )
     fips_dir(editor/components)
         nebula_idl_compile(
 			editorcomponents.json
@@ -85,8 +80,6 @@ fips_dir(editor)
                 environment.h
                 console.cc
                 console.h
-                scriptedwindow.cc
-                scriptedwindow.h
                 scene.cc
                 scene.h
                 history.cc

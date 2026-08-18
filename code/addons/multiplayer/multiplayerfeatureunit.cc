@@ -317,7 +317,7 @@ MultiplayerFeatureUnit::DrawNetworkDebugInfo()
     }
 }
 
-} // namespace Scripting
+} // namespace Multiplayer
 
 //--------------------------------------------------------------------------
 namespace IO

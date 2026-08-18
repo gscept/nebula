@@ -161,13 +161,15 @@ namespace NebulaEngine
 
             Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
 
+            Nebula.Runtime.Start();
+
 #if DEBUG
             Console.WriteLine("[NSharp] NebulaEngine.AppEntry.Main() returned with code 0");
 #endif
         }
 
         [UnmanagedCallersOnly]
-        static public void Shutdown()
+        static public void Exit()
         {
             Nebula.Runtime.Close();
         }

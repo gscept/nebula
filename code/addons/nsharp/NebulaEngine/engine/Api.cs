@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
@@ -14,13 +15,27 @@ namespace Nebula
     public class Debug
     {
         [DllImport("__Internal", EntryPoint = "N_Print")]
-        public static extern void Log(string val);
+        private static extern void Print(IntPtr data, int isStdout);
+
+        public static unsafe void Log(string val)
+        {
+            int byteCount = Encoding.UTF8.GetByteCount(val);
+            Span<byte> buffer = stackalloc byte[byteCount + 1];
+            byteCount = Encoding.UTF8.GetBytes(val.AsSpan(), buffer);
+            buffer[byteCount] = 0;
+            fixed (byte* ptr = &buffer[0])
+            {
+                Print((IntPtr)ptr, 1);
+            }
+        }
 
         [DllImport("__Internal", EntryPoint = "N_Assert")]
-        public static extern void Assert(bool value);
+        public static extern void Assert([MarshalAs(UnmanagedType.I1)] bool value);
 
-        [DllImport("__Internal", EntryPoint = "N_Assert")]
-        public static extern void Assert(bool value, string message);
+        public static void Assert(bool value, string message)
+        {
+            Assert(value);
+        }
     }
 
     namespace Game
@@ -33,6 +48,7 @@ namespace Nebula
             public static extern UInt64 CreateEntity(uint worldId);
 
             [DllImport("__Internal", EntryPoint = "EntityIsValid")]
+            [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool IsValid(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
@@ -57,10 +73,22 @@ namespace Nebula
             public static extern void SetScale(UInt64 entityId, Vector3 position);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
+            [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool HasComponent(UInt64 entityId, uint componentId);
 
-            [DllImport("__Internal", EntryPoint = "ComponentGetId")]
-            public static extern uint GetComponentId(string name);
+            [DllImport("__Internal", EntryPoint = "ComponentGetIdUtf8")]
+            private static extern uint GetComponentIdUtf8(IntPtr name, uint length);
+
+            public static unsafe uint GetComponentId(string name)
+            {
+                int byteCount = Encoding.UTF8.GetByteCount(name);
+                Span<byte> buffer = stackalloc byte[byteCount + 1];
+                byteCount = Encoding.UTF8.GetBytes(name.AsSpan(), buffer);
+                fixed (byte* ptr = &buffer[0])
+                {
+                    return GetComponentIdUtf8((IntPtr)ptr, (uint)byteCount);
+                }
+            }
 
             [DllImport("__Internal", EntryPoint = "ComponentGetData")]
             public static extern void GetComponentData(UInt64 entityId, uint componentId, IntPtr data, int dataSize);

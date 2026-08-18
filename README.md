@@ -13,13 +13,8 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 2. Compiler with support for C++20.
 3. GPU and drivers supporting Vulkan 1.2+
 4. [CMake 3.21+](https://cmake.org/download/)
-5. [Python 3.5+](https://www.python.org/downloads)
-    * Python requirements (Windows):
-        1. Matching architecture (64-bit if you're building for 64-bit systems)
-        2. Installed for all users
-        3. Added to PATH
-        4. Installed with debugging symbols and binaries
-
+5. [Python 3](https://www.python.org/downloads)
+    
 #### Other useful references and tools
 * [Vulkan SDK](https://vulkan.lunarg.com/) and [Vulkan Documentation](https://docs.vulkan.org/) for render pipeline debugging
 * [What is Fips](https://floooh.github.io/fips/)
@@ -86,7 +81,7 @@ Nebula is being developed continuously, which means that features keep getting a
 * Data structure suite, from containers to OS wrappers, everything is designed for performance and minimal call stacks.
 * Multithreading.
 * SSE-accelerated and intuitive maths library.
-* Full python supported scripting layer.
+* C# Scripting
 * Advanced rendering framework and shaders.
 * Test-benches and benchmarking.
 * Profiling tools.

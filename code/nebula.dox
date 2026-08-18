@@ -10,7 +10,7 @@ Nebula is being developed continuously, which means that features keep getting a
 - Data structure suite, from containers to OS wrappers, everything is designed for performance and minimal call stacks.
 - Multithreading.
 - SSE-accelerated and intuitive maths library.
-- Full python supported scripting layer.
+- C# scripting
 - Advanced rendering framework and shaders.
 - Test-benches and benchmarking.
 - Profiling tools.

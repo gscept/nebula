@@ -80,5 +80,5 @@ MultiplayerFeatureUnit::SetClient(BaseMultiplayerClient* client)
     this->client = client;
 }
 
-} // namespace Scripting
+} // namespace Multiplayer
 //------------------------------------------------------------------------------

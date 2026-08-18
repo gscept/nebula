@@ -146,6 +146,16 @@ ComponentGetId(const char* name)
 //------------------------------------------------------------------------------
 /**
 */
+uint32_t
+ComponentGetIdUtf8(const char* name, uint32_t length)
+{
+    Util::String componentName(name, length);
+    return (uint32_t)Game::GetComponentId(componentName.AsCharPtr()).id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ComponentGetData(uint64_t entityId, uint32_t componentId, void* outData, int dataSize)
 {

@@ -57,9 +57,9 @@ PassVec4(Math::vec4 const& obj)
 };
 
 NEBULA_EXPORT void
-PassString(Util::String const& string)
+PassStringUtf8(const char* string, int size)
 {
-    reg_string = string;
+    reg_string.Set(string, size);
 }
 
 NEBULA_EXPORT void

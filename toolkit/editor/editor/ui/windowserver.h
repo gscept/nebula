@@ -42,8 +42,6 @@ public:
     void RegisterWindow(const Util::FourCC fourcc, const char* label, const char* category = NULL);
     /// register an interface by pointer
     void RegisterWindow(const Ptr<BaseWindow>& base);
-    /// register a scripted window
-    void RegisterWindowScript(const char* script, const char* label);
 
     /// register a executable command shotcut. this is also placed in the menu bar tab and category
     /// shortcut is a single, or combination of keys, ex. "Ctrl+S", "A", "Left" "Ctrl+Shift+F10", etc.

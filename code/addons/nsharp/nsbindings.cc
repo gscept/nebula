@@ -15,7 +15,7 @@ namespace Scripting
 void
 N_Print(const char * string, int32_t is_stdout)
 {
-	n_printf(string);
+	n_printf("%s", string);
 }
 
 //------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ N_Print(const char * string, int32_t is_stdout)
 void
 N_Error(const char * string, int32_t is_stdout)
 {
-	n_error(string);
+	n_error("%s", string);
 }
 
 //------------------------------------------------------------------------------

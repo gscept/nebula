@@ -4,9 +4,9 @@
 
 nebula_begin_module(dynui)
 fips_ide_group(addons)
-fips_deps(render imgui scripting application)
+fips_deps(render imgui application)
 #add_definitions(-DIMGUI_DISABLE_OBSOLETE_KEYIO)
-target_include_directories(dynui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation ${Python_INCLUDE_DIRS})
+target_include_directories(dynui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation)
 
 fips_files(
     imguiinputhandler.cc
@@ -40,9 +40,6 @@ fips_dir(im3d)
     fips_files(im3d.h im3d.cpp im3d_config.h im3d_math.h im3dcontext.h im3dcontext.cc)
 fips_dir(graph)
     fips_files(imguigraph.h imguigraph.cc)
-fips_dir(scripting)
-    fips_files(deargui.cpp)
-
 fips_dir(imguifiledialog)
 	fips_files(ImGuiFileDialog.h ImGuiFileDialog.cpp ImGuiFileDialogConfig.h)
 target_compile_definitions(dynui PRIVATE USE_STD_FILESYSTEM)

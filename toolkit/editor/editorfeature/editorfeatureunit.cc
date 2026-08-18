@@ -7,7 +7,6 @@
 #include "editor/editor.h"
 #include "editor/ui/uimanager.h"
 #include "editor/components/editorcomponents.h"
-#include "editor/bindings/editorbindings.h"
 
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphicsfeature/components/model.h"
@@ -55,7 +54,6 @@ void
 EditorFeatureUnit::OnAttach()
 {
     this->RegisterComponentType<Editor::EditorEntity>();
-    Scripting::RegisterEditorBinds();
 }
 
 //------------------------------------------------------------------------------

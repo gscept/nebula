@@ -13,7 +13,6 @@
 #include "databasetest.h"
 #include "entitysystemtest.h"
 #include "hierarchytransformtest.h"
-#include "scriptingtest.h"
 
 #include "testcomponents.h"
 
@@ -96,7 +95,6 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(DatabaseTest::Create());
     testRunner->AttachTestCase(EntitySystemTest::Create());
     testRunner->AttachTestCase(HierarchyTransformTest::Create());
-    //testRunner->AttachTestCase(ScriptingTest::Create());
     
     bool result = testRunner->Run(); 
 

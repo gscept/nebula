@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace Nebula
 {
@@ -15,6 +16,7 @@ namespace Nebula
     */
     [DataContract]
     [DebuggerDisplay("{DebugDisplayString,nq}")]
+    [StructLayout(LayoutKind.Sequential, Pack = 16, Size = 16)]
     public struct Quaternion : IEquatable<Quaternion>
     {
         #region Private Fields

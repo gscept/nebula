@@ -74,6 +74,11 @@ NEBULA_EXPORT uint32_t ComponentGetId(const char* name);
 //------------------------------------------------------------------------------
 /**
 */
+NEBULA_EXPORT uint32_t ComponentGetIdUtf8(const char* name, uint32_t length);
+
+//------------------------------------------------------------------------------
+/**
+*/
 NEBULA_EXPORT void ComponentGetData(uint64_t entity, uint32_t componentId, void* outData, int dataSize);
 
 //------------------------------------------------------------------------------

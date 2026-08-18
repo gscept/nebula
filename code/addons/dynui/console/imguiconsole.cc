@@ -13,14 +13,7 @@
 #include "io/textwriter.h"
 #include "io/ioserver.h"
 #include "app/application.h"
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-#endif
-#include "nanobind/nanobind.h"
 #include "core/cvar.h"
-
-namespace py = nanobind;
 
 struct completion_t
 {
@@ -189,91 +182,12 @@ TextEditCVars(ImGuiInputTextCallbackData* data)
 //------------------------------------------------------------------------------
 /**
 */
-int
-TextEditPython(ImGuiInputTextCallbackData* data)
-{
-    Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
-
-    if (!Scripting::ScriptServer::HasInstance())
-        return 0;
-
-    switch (data->EventFlag)
-    {
-    case ImGuiInputTextFlags_CallbackCompletion:
-    {
-        // python command completion using jedi
-        try
-        {
-#if 0
-            py::object jedi = py::module::import("jedi");
-            py::object inter = jedi.attr("Interpreter");
-            py::object scope = py::module::import("__main__").attr("__dict__");
-            py::list scopes;
-            scopes.append(scope);
-            py::list pcompletions = inter(data->Buf, scopes).attr("completions")();
-            if (pcompletions.size() == 1)
-            {
-                std::string rest = (std::string)py::str(pcompletions[0].attr("complete"));
-                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());
-            }
-            else if (pcompletions.size() > 0)
-            {
-                open_autocomplete = true;
-                IndexT j = 0;
-                for (auto const& c : pcompletions)
-                {
-                    Util::String name = ((std::string)py::str(pcompletions[j].attr("name"))).c_str();
-                    Util::String complete = ((std::string)py::str(pcompletions[j].attr("complete"))).c_str();
-                    Util::String tooltip = ((std::string)py::str(pcompletions[j].attr("docstring")())).c_str();
-                    completions.Append({ name,complete,tooltip });
-                    ++j;
-                    if (j == 10)
-                        break;
-                }
-
-            }
-#endif
-        }
-        catch (...)
-        {
-            //n_printf("%s", e.what());
-        }
-
-
-        break;
-    }
-    case ImGuiInputTextFlags_CallbackHistory:
-    {
-        ListHistory(data);
-        break;
-    }
-
-    }
-    if (!selectedCompletion.IsEmpty())
-    {
-        data->InsertChars(data->CursorPos, selectedCompletion.AsCharPtr(), selectedCompletion.AsCharPtr() + selectedCompletion.Length());
-        selectedCompletion.Clear();
-        completions.Clear();
-    }
-
-
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 static int
 TextEditCallback(ImGuiInputTextCallbackData* data)
 {
     Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
     completions.Clear();
-
-    if (console->cmdMode == Dynui::ImguiConsole::CommandMode::Python)
-        return TextEditPython(data);
-    else if (console->cmdMode == Dynui::ImguiConsole::CommandMode::CVar)
-        return TextEditCVars(data);
-    return 0;
+    return TextEditCVars(data);
 }
 
 using namespace Input;
@@ -311,10 +225,6 @@ ImguiConsole::Setup()
 {
     // clear command buffer
     memset(this->command, '\0', 65535);
-
-    // get script server
-    if (Scripting::ScriptServer::HasInstance())
-        this->scriptServer = Scripting::ScriptServer::Instance();
 
     // load persistent history
     auto reader = IO::TextReader::Create();
@@ -459,30 +369,22 @@ ImguiConsole::RenderContent()
     
     ImGui::Columns(2, 0, false);
     ImGui::SetColumnWidth(0, 50.0f);
-    if (!this->scriptServer.isvalid() || this->command[0] == '>')
+    if (ImGui::Button("CVar"))
     {
-        this->cmdMode = CommandMode::CVar;
-        if (ImGui::Button("CVar"))
-        {
-            ImGui::OpenPopup("list_cvar_popup");
-        }
-        if (ImGui::BeginPopup("list_cvar_popup"))
-        {
-            const char* selected = ListAllCVars();
-            if (selected)
-            {
-                int strLen = Util::String::StrLen(selected);
-                Memory::Copy(selected, this->command + 1, strLen);
-                this->command[strLen + 1] = '\0';
-            }
-            ImGui::EndPopup();
-        }
+        ImGui::OpenPopup("list_cvar_popup");
     }
-    else
+    if (ImGui::BeginPopup("list_cvar_popup"))
     {
-        this->cmdMode = CommandMode::Python;
-        ImGui::Text("   Py");
+        const char* selected = ListAllCVars();
+        if (selected)
+        {
+            int strLen = Util::String::StrLen(selected);
+            Memory::Copy(selected, this->command + 1, strLen);
+            this->command[strLen + 1] = '\0';
+        }
+        ImGui::EndPopup();
     }
+
     ImGui::NextColumn();
     
     if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
@@ -575,17 +477,6 @@ ImguiConsole::Execute(const Util::String& command)
     Util::Array<Util::String> splits = command.Tokenize(" ");
     if (splits[0] == "HELP")
     {
-        /*SizeT numCommands = this->scriptServer->GetNumCommands();
-        IndexT i;
-        for (i = 0; i < numCommands; i++)
-        { 
-            const Ptr<Scripting::Command> cmd = this->scriptServer->GetCommandByIndex(i);
-            Util::String output;
-            output.Format("%s - %s\n", cmd->GetSyntax().AsCharPtr(), cmd->GetHelp().AsCharPtr());
-            output.SubstituteString("<br />", "\n");
-            this->consoleBuffer.Add(output);
-        }
-        */
         this->consoleBuffer.Add({ LogMessageType::N_MESSAGE, "Go away" });
     }
     else if (splits[0] == "clear")
@@ -594,21 +485,7 @@ ImguiConsole::Execute(const Util::String& command)
     }
     else
     {
-        if (this->cmdMode == CommandMode::Python)
-        {
-            if (!this->scriptServer.isvalid())
-            {
-                this->AppendToLog({ LogMessageType::N_SYSTEM, "Script server not running!" });
-            }
-            else if (!this->scriptServer->Eval(command))
-            {
-                //this->consoleBuffer.Add(this->scriptServer->GetError() + "\n");
-            }
-        }
-        else if (this->cmdMode == CommandMode::CVar)
-        {
-            this->EvaluateCVar(splits);
-        }
+        this->EvaluateCVar(splits);
     }
 /*  else if (this->commands.Contains(splits[0]) && splits.Size() == 2)
     {

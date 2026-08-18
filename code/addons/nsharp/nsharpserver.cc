@@ -201,7 +201,7 @@ NSharpServer::CloseHostFxr()
 void*
 NSharpServer::GetDelegatePointer(AssemblyId assemblyId, Util::String const& function, Util::String const& delegateName)
 {
-    if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
+    if (assemblyId.id >= this->assemblies.Size() || assemblyId == InvalidIndex)
     {
         n_warning("Invalid assembly id!");
         return nullptr;
@@ -250,7 +250,7 @@ NSharpServer::GetDelegatePointer(AssemblyId assemblyId, Util::String const& func
 void*
 NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const& function)
 {
-    if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
+    if (assemblyId.id >= this->assemblies.Size() || assemblyId == InvalidIndex)
     {
         n_warning("Invalid assembly id!");
         return nullptr;
@@ -302,7 +302,7 @@ LoadAssemblyAndGetExport(Util::String const& configPath)
     hostfxr_handle cxt = nullptr;
 
     int rc = api.InitConfig(ToWideString(configPath).c_str(), nullptr, &cxt);
-    if (((rc != Success && rc != Success_HostAlreadyInitialized && rc != Success_DifferentRuntimeProperties) && cxt == nullptr))
+    if (((rc != Success && rc != Success_HostAlreadyInitialized && rc != Success_DifferentRuntimeProperties) || cxt == nullptr))
     {
         n_error("Failed to initialize .NET Core!");
         api.Close(cxt);
@@ -364,11 +364,10 @@ NSharpServer::Open()
 {
     n_assert(!this->IsOpen());
     // Host custom .net runtime
-    bool res = this->LoadHostFxr();
-    n_assert(res);
+    this->isOpen = this->LoadHostFxr();
+    n_assert(this->isOpen);
 
-    this->isOpen = true;
-    return true;
+    return this->isOpen;
 }
 
 //------------------------------------------------------------------------------
@@ -378,6 +377,8 @@ void
 NSharpServer::Close()
 {
     n_assert(this->IsOpen());
+    
+    /// @todo Unload assemblies and clear the assemblies array
 
     this->CloseHostFxr();
 

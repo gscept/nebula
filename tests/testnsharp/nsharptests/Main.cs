@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 using ConsoleHook;
 using Nebula;
 using Nebula.Game;
@@ -21,7 +22,7 @@ namespace NST
         public float f;
     }
 
-    public class TestProperty : Property
+    public class TestProperty : Property, IMessageHandler<TestMsg>
     {
         public int i = 0;
         public float f;
@@ -34,20 +35,14 @@ namespace NST
             Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", i));
         }
 
-        public override void OnMessage(in Msg msg)
+        public void OnMessage(in TestMsg msg)
         {
-            if (msg.GetType() == typeof(TestMsg))
-            {
-                Console.WriteLine("Received TestMsg : " + ((TestMsg)msg).f);
-            }
+            Console.WriteLine("Received TestMsg : " + msg.f);
         }
 
-        public override Type[] AcceptedMessages()
+        protected override void RegisterMessages()
         {
-            return new Type[]
-                {
-                    typeof(TestMsg)
-                };
+            this.RegisterMessage<TestMsg>();
         }
 
         public override FrameEvent[] AcceptedEvents()
@@ -59,7 +54,7 @@ namespace NST
         }
     }
 
-    class AudioEmitterProperty : Property
+    class AudioEmitterProperty : Property, IMessageHandler<PlayAudioMessage>
     {
         public bool autoplay = false;
         public bool loop = false;
@@ -73,9 +68,13 @@ namespace NST
             // Do on activate stuff
         }
 
-        public override void OnMessage(in Msg msg)
+        protected override void RegisterMessages()
         {
+            this.RegisterMessage<PlayAudioMessage>();
+        }
 
+        public void OnMessage(in PlayAudioMessage msg)
+        {
         }
 
         public override void OnBeginFrame()
@@ -86,14 +85,6 @@ namespace NST
             AudioEmitterProperty prop = this.Entity.GetProperty<AudioEmitterProperty>();
 
             // Do on frame stuff
-        }
-
-        public override System.Type[] AcceptedMessages()
-        {
-            return new[]
-            {
-                 typeof(PlayAudioMessage)
-            };
         }
 
         public override Nebula.Game.FrameEvent[] AcceptedEvents()
@@ -202,8 +193,19 @@ namespace NST
 
         public class DLLImportCalls
         {
-            [DllImport("__Internal", EntryPoint = "PassString")]
-            public static extern void PassString([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Util.StringMarshaler))] string val);
+            [DllImport("__Internal", EntryPoint = "PassStringUtf8")]
+            private static extern void PassStringUtf8(IntPtr data, int length);
+
+            private static unsafe void PassString(string val)
+            {
+                int byteCount = Encoding.UTF8.GetByteCount(val);
+                Span<byte> buffer = stackalloc byte[byteCount + 1];
+                byteCount = Encoding.UTF8.GetBytes(val.AsSpan(), buffer);
+                fixed (byte* ptr = &buffer[0])
+                {
+                    PassStringUtf8((IntPtr)ptr, byteCount);
+                }
+            }
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfInt")]
             [SuppressGCTransition]

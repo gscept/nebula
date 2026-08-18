@@ -43,8 +43,6 @@
 #include "components/model.h"
 #include "components/terrain.h"
 
-#include "scripting/deargui.h"
-
 #include "terrain/terraincontext.h"
 
 #include "frame/default.h"
@@ -96,7 +94,6 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
     this->RegisterComponentType<Terrain>({ .decay = true, .OnInit = &GraphicsManager::InitTerrain });
     this->RegisterComponentType<Camera>();
-    Scripting::RegisterDearguiModule();
 }
 
 //------------------------------------------------------------------------------

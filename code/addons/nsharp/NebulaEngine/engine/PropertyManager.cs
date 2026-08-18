@@ -49,7 +49,7 @@ namespace Nebula
             /// <see cref="Nebula.Game.Entity.AddProperty(Property)"/>
             public void RegisterProperty(Property property)
             {
-                FrameEvent[] acceptedEvents = property.AcceptedEvents();
+                FrameEvent[] acceptedEvents = property.GetAcceptedEvents();
                 if (acceptedEvents != null)
                 {
                     for (int i = 0; i < acceptedEvents.Length; i++)
@@ -57,6 +57,16 @@ namespace Nebula
                         this.eventListeners[(int)acceptedEvents[i]].Add(property);
                     }
                 }
+            }
+
+            public void UnregisterProperty(Property property)
+            {
+                FrameEvent[] acceptedEvents = property.GetAcceptedEvents();
+                if (acceptedEvents == null)
+                    return;
+
+                for (int i = 0; i < acceptedEvents.Length; i++)
+                    this.eventListeners[(int)acceptedEvents[i]].Remove(property);
             }
 
             /// <summary>

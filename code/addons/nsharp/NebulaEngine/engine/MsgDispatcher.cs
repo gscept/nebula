@@ -12,40 +12,89 @@ namespace Nebula
     {
         public class MsgDispatcher
         {
-            public delegate void HandleMessage(in Msg msg);
-            private Dictionary<Type, MsgEvent> events = new Dictionary<Type, MsgEvent>();
-
-            public void AttachHandler(HandleMessage handler, Type[] msgTypes)
+            private interface IMessageChannel
             {
-                if (msgTypes == null)
-                    return;
-                
-                for (int i = 0; i < msgTypes.Length; i++) 
+                void Remove(Property property);
+                bool IsEmpty { get; }
+            }
+
+            private sealed class MessageChannel<T> : IMessageChannel where T : Msg
+            {
+                private List<IMessageHandler<T>> handlers = new List<IMessageHandler<T>>();
+
+                public void Add(IMessageHandler<T> handler)
                 {
-                    if (!events.ContainsKey(msgTypes[i]))
+                    this.handlers.Add(handler);
+                }
+
+                public void Remove(Property property)
+                {
+                    for (int i = this.handlers.Count - 1; i >= 0; i--)
                     {
-                        events[msgTypes[i]] = new MsgEvent();
+                        if (Object.ReferenceEquals(this.handlers[i], property))
+                            this.handlers.RemoveAt(i);
                     }
-                    events[msgTypes[i]].OnMessageEvent += handler;
+                }
+
+                public bool IsEmpty { get { return this.handlers.Count == 0; } }
+
+                public void Dispatch(in T message)
+                {
+                    for (int i = 0; i < this.handlers.Count; i++)
+                        this.handlers[i].OnMessage(in message);
                 }
             }
 
-            public void Dispatch<T>(T msg) where T : struct, Msg
+            private Dictionary<Type, IMessageChannel> channels;
+            private List<Type> emptyChannels;
+
+            public void Register<T>(IMessageHandler<T> handler) where T : Msg
             {
-                Type type = typeof(T);
-                if (events.ContainsKey(type))
+                if (this.channels == null)
+                    this.channels = new Dictionary<Type, IMessageChannel>();
+
+                Type messageType = typeof(T);
+                IMessageChannel channel;
+                if (!this.channels.TryGetValue(messageType, out channel))
                 {
-                    events[type].Dispatch(msg);
+                    MessageChannel<T> typedChannel = new MessageChannel<T>();
+                    this.channels.Add(messageType, typedChannel);
+                    channel = typedChannel;
+                }
+
+                ((MessageChannel<T>)channel).Add(handler);
+            }
+
+            public void Unregister(Property property)
+            {
+                if (this.channels == null)
+                    return;
+
+                if (this.emptyChannels == null)
+                    this.emptyChannels = new List<Type>();
+                this.emptyChannels.Clear();
+
+                foreach (KeyValuePair<Type, IMessageChannel> entry in this.channels)
+                {
+                    entry.Value.Remove(property);
+                    if (entry.Value.IsEmpty)
+                        this.emptyChannels.Add(entry.Key);
+                }
+
+                for (int i = 0; i < this.emptyChannels.Count; i++)
+                {
+                    this.channels.Remove(this.emptyChannels[i]);
                 }
             }
 
-            private class MsgEvent
+            public void Dispatch<T>(in T message) where T : Msg
             {
-                public event HandleMessage OnMessageEvent;
-                public void Dispatch<T>(T msg) where T : struct, Msg
-                {
-                    OnMessageEvent?.Invoke((Msg)msg);
-                }
+                if (this.channels == null)
+                    return;
+
+                IMessageChannel channel;
+                if (this.channels.TryGetValue(typeof(T), out channel))
+                    ((MessageChannel<T>)channel).Dispatch(in message);
             }
         }
     }

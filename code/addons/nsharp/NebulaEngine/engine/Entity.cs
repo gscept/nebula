@@ -27,7 +27,7 @@ namespace Nebula
             private World world = null;
             private UInt64 id = 0xFFFFFFFFFFFFFFFF;
             private List<Property> properties;
-            private MsgDispatcher dispatcher = new MsgDispatcher();
+            private MsgDispatcher dispatcher;
 
             /// <summary>
             /// The world that this entity belongs to
@@ -45,7 +45,6 @@ namespace Nebula
             {
                 this.world = world;
                 this.id = entityId;
-                this.properties = new List<Property>();
             }
 
             /// <summary>
@@ -66,34 +65,37 @@ namespace Nebula
             /// Set the value of a native, unmanaged component.
             /// </summary>
             /// <remarks>
-            /// This method does allocate and copy memory, thus should be used sparringly in time-critical code.
+            /// This method copies the component through a stack-backed buffer.
             /// </remarks>
-            public void SetComponent<T>(in T component) where T : struct, NativeComponent
+            public unsafe void SetComponent<T>(in T component) where T : struct, NativeComponent
             {
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
-                // HACK: there might be more efficient ways to avoid GC problems, if there are any...
-                IntPtr ptr = Marshal.AllocHGlobal(size);
-                Marshal.StructureToPtr(component, ptr, false);
-                Api.SetComponentData(this.id, componentId, ptr, size);
-                Marshal.FreeHGlobal(ptr);
+                Span<byte> buffer = stackalloc byte[size];
+                T value = component;
+                MemoryMarshal.Write(buffer, in value);
+                fixed (byte* ptr = &buffer[0])
+                {
+                    Api.SetComponentData(this.id, componentId, (IntPtr)ptr, size);
+                }
             }
 
             /// <summary>
             /// Gets a value copy of the native, unmanaged component.
             /// </summary>
             /// <remarks>
-            /// This method does allocate and copy memory, thus should be used sparringly in time-critical code.
+            /// This method copies the component through a stack-backed buffer.
             /// </remarks>
-            public T GetComponent<T>() where T : struct, NativeComponent
+            public unsafe T GetComponent<T>() where T : struct, NativeComponent
             {
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
-                IntPtr ptr = Marshal.AllocHGlobal(size);
-                Api.GetComponentData(this.id, componentId, ptr, size);
-                T component = Marshal.PtrToStructure<T>(ptr);
-                Marshal.FreeHGlobal(ptr);
-                return component;
+                Span<byte> buffer = stackalloc byte[size];
+                fixed (byte* ptr = &buffer[0])
+                {
+                    Api.GetComponentData(this.id, componentId, (IntPtr)ptr, size);
+                }
+                return MemoryMarshal.Read<T>(buffer);
             }
 
             /// <summary>
@@ -104,6 +106,9 @@ namespace Nebula
             /// </remarks>
             public bool HasProperty<T>() where T : Property
             {
+                if (this.properties == null)
+                    return false;
+
                 for (int i = 0; i < this.properties.Count; i++)
                 {
                     if (this.properties[i] is T)
@@ -120,12 +125,14 @@ namespace Nebula
             public void AddProperty(Property property)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
+                if (this.properties == null)
+                    this.properties = new List<Property>();
+
                 property.Entity = this;
                 this.properties.Add(property);
                 PropertyManager.Instance.RegisterProperty(property);
+                property.AttachMessages();
                 property.Active = true;
-
-                this.dispatcher.AttachHandler(property.OnMessage, property.AcceptedMessages());
             }
 
             /// <summary>
@@ -139,6 +146,9 @@ namespace Nebula
             /// </returns>
             public T GetProperty<T>() where T : Property
             {
+                if (this.properties == null)
+                    return null;
+
                 for (int i = 0; i < this.properties.Count; i++)
                 {
                     if (this.properties[i] is T)
@@ -202,9 +212,23 @@ namespace Nebula
             /// Sends this entity a message.
             /// The message will be propagated into all Properties that this entity has, that accepts the message.
             /// </summary>
-            public void Send<T>(in T msg) where T : struct, Msg
+            public void Send<T>(in T msg) where T : Msg
             {
-                this.dispatcher.Dispatch(msg);
+                if (this.dispatcher != null)
+                    this.dispatcher.Dispatch(in msg);
+            }
+
+            internal void RegisterMessage<T>(IMessageHandler<T> handler) where T : Msg
+            {
+                if (this.dispatcher == null)
+                    this.dispatcher = new MsgDispatcher();
+                this.dispatcher.Register(handler);
+            }
+
+            internal void UnregisterMessages(Property property)
+            {
+                if (this.dispatcher != null)
+                    this.dispatcher.Unregister(property);
             }
 
             /// <summary>
@@ -219,9 +243,14 @@ namespace Nebula
                 Api.DeleteEntity(entity.id);
                 entity.id = 0xFFFFFFFFFFFFFFFF;
 
+                if (entity.properties == null)
+                    return;
+
                 for (int i = 0; i < entity.properties.Count; i++)
                 {
                     Property property = entity.properties[i];
+                    PropertyManager.Instance.UnregisterProperty(property);
+                    property.DetachMessages();
                     property.Destroy();
                 }
 

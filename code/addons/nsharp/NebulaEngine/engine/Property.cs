@@ -26,6 +26,8 @@ namespace Nebula
         {
             private bool active = false;
             private Entity entity = null;
+            private FrameEvent[] acceptedEvents;
+            private bool acceptedEventsCached;
             
             /// <summary>
             /// Activate or deactivate property
@@ -91,12 +93,33 @@ namespace Nebula
                 return null;
             }
 
-            /// <summary>
-            /// Override in subclass
-            /// </summary>
-            public virtual System.Type[] AcceptedMessages()
+            internal FrameEvent[] GetAcceptedEvents()
             {
-                return null;
+                if (!this.acceptedEventsCached)
+                {
+                    this.acceptedEvents = this.AcceptedEvents();
+                    this.acceptedEventsCached = true;
+                }
+                return this.acceptedEvents;
+            }
+
+            protected virtual void RegisterMessages() { }
+
+            internal void AttachMessages()
+            {
+                this.RegisterMessages();
+            }
+
+            protected void RegisterMessage<T>() where T : Msg
+            {
+                if (this.entity != null)
+                    this.entity.RegisterMessage<T>((IMessageHandler<T>)this);
+            }
+
+            internal void DetachMessages()
+            {
+                if (this.entity != null)
+                    this.entity.UnregisterMessages(this);
             }
 
             /// <summary>
@@ -177,8 +200,9 @@ namespace Nebula
                 if (IsValid && active)
                 {
                     this.OnDeactivate();
-                    entity = null;
                 }
+                active = false;
+                entity = null;
             }
         }
     }

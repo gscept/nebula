@@ -12,7 +12,6 @@
 #include "app/application.h"
 #include "input/inputserver.h"
 #include "input/keyboard.h"
-#include "windows/scriptedwindow.h"
 #include "io/filedialog.h"
 #include "editor/entityloader.h"
 #include "editor/editor.h"
@@ -865,20 +864,6 @@ WindowServer::RegisterWindow(const Ptr<BaseWindow>& base)
     this->windowByName.Add(base->GetName(), base);
     this->windows.Append(base);
     this->AddCategory(base->GetCategory());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WindowServer::RegisterWindowScript(const char* script, const char* label)
-{
-	Ptr<ScriptedWindow> wnd = ScriptedWindow::Create();
-	wnd->SetName(label);
-	if (wnd->LoadModule(script))
-	{
-		this->RegisterWindow(wnd.upcast<BaseWindow>());
-	}
 }
 
 //------------------------------------------------------------------------------

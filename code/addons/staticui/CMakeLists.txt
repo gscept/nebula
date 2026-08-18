@@ -4,8 +4,8 @@
 
 nebula_begin_module(staticui)
 fips_ide_group(addons)
-fips_deps(render ultralight scripting)
-target_include_directories(staticui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation ${Python_INCLUDE_DIRS})
+fips_deps(render ultralight)
+target_include_directories(staticui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation)
 target_precompile_headers(staticui PRIVATE <render/stdneb.h>)
 fips_files(
     staticuicontext.cc

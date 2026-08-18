@@ -10,7 +10,6 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "scripting/scriptserver.h"
 #include "util/ringbuffer.h"
 #include "io/textwriter.h"
 
@@ -73,15 +72,8 @@ public:
 
     bool EvaluateCVar(Util::Array<Util::String> const& splits);
 
-    //Util::Dictionary<Util::String, Ptr<Scripting::Command>> commands;
     Util::Array<Util::String> previousCommands;
     int previousCommandIndex;
-
-    enum CommandMode
-    {
-        Python,
-        CVar
-    } cmdMode;
 
 private:
     const char * LogEntryTypeAsCharPtr(const LogMessageType & type) const;
@@ -94,7 +86,6 @@ private:
     char command[65535];
     Util::RingBuffer<LogEntry> consoleBuffer;   
     IndexT selectedSuggestion;
-    Ptr<Scripting::ScriptServer> scriptServer;
     bool visible;
 
     Ptr<IO::TextWriter> persistentHistory;

@@ -49,16 +49,9 @@ jobs:
           vulkan-query-version: 1.4.304.1
           vulkan-components: SPIRV-Tools, Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
-           
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.13' # Semantic version range syntax or exact version of a Python version
-          architecture: 'x64' # Optional - x64 or x86, defaults to x64
       
       - name: Clone dependencies
         run: |
-          #pip install py7zr
           python fips fetch
           python fips set config ${{ matrix.config }}
           
@@ -129,7 +122,6 @@ jobs:
         run: |
           python fips nebula set work tests
           python fips nebula set toolkit .
-          #python fips ultralight
           python fips gen
 
       - name: Compile 
