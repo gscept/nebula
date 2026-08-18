@@ -7,6 +7,7 @@
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
 #include "editor/cmds.h"
+#include "dynui/nebula_icons.h"
 
 using namespace Editor;
 

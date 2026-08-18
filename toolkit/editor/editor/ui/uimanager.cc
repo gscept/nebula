@@ -91,13 +91,6 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
-
-    UI::Icons::play          = NLoadIcon("tex:editor/icon_play.dds");
-    UI::Icons::pause         = NLoadIcon("tex:editor/icon_pause.dds");
-    UI::Icons::stop          = NLoadIcon("tex:editor/icon_stop.dds");
-    UI::Icons::environment   = NLoadIcon("tex:editor/icon_environment.dds");
-    UI::Icons::game          = NLoadIcon("tex:editor/icon_game.dds");
-    UI::Icons::light         = NLoadIcon("tex:editor/icon_light.dds");
     
     windowServer->RegisterCommand([]()
     {
