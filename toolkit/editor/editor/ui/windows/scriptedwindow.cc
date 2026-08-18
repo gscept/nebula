@@ -4,6 +4,10 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "scriptedwindow.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "nanobind/nanobind.h"
 #include "io/ioserver.h"
 

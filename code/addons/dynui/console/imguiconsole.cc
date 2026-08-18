@@ -13,6 +13,10 @@
 #include "io/textwriter.h"
 #include "io/ioserver.h"
 #include "app/application.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "nanobind/nanobind.h"
 #include "core/cvar.h"
 

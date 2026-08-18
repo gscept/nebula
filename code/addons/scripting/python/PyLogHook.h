@@ -29,6 +29,10 @@
 #ifdef TYTI_PYLOGHOOK_USE_BOOST
 #include <boost/python.hpp>
 #else
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "nanobind/nanobind.h"
 #endif
 

@@ -18,6 +18,10 @@
 #ifdef max
 #undef max
 #endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "nanobind/nanobind.h"
 
 using namespace Math;

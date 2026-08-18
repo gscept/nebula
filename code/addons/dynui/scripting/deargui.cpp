@@ -1,5 +1,9 @@
 #pragma warning (disable : 4267)
 #include "render/stdneb.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "nanobind/nanobind.h"
 #include "nanobind/make_iterator.h"
 #include <array>
