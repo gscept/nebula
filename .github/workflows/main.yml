@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-24.04]
+        name: [windows-latest, ubuntu-26.04]
         include:
           - name: windows-latest
             os: windows-2025-vs2026
