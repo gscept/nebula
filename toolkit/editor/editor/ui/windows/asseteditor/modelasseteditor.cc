@@ -43,7 +43,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             resourceNode->SetMaterial(res);
 
             // Then load the resource and update all models
-            Resources::CreateResource(res, "editor", [item, mdl, nodeIndex](Resources::ResourceId id)
+            Resources::CreateResource(res, "editor", [mdl, nodeIndex](Resources::ResourceId id)
             {
                 Models::ModelContext::ChangeMaterialOnModels(mdl, nodeIndex, id);
             });
@@ -174,7 +174,7 @@ ModelSave(AssetEditor* assetEditor, AssetEditorItem* item)
     }
     else
     {
-        n_printf("Failed to save asset src:assets/%s.nasset\n", item->source);
+        n_printf("Failed to save asset src:assets/%s.nasset\n", item->source.AsString().AsCharPtr());
     }
 }
 

@@ -28,7 +28,7 @@
 #include "dynui/imguicontext.h"
 #include "toolkitutil/asset/assetimporter.h"
 #include "toolkitutil/asset/assetpackager.h"
-#include "dynui/imguifiledialog/imguifiledialog.h"
+#include "dynui/imguifiledialog/ImGuiFileDialog.h"
 #include "tinyfiledialogs.h"
 
 #include "dynui/nebula_icons.h"
