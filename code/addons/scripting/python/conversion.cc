@@ -4,18 +4,19 @@
 //------------------------------------------------------------------------------
 //#pragma warning (disable : 4267)
 #include "foundation/stdneb.h"
-#include "conversion.h"
-#include "nanobind/nanobind.h"
-#include "nanobind/ndarray.h"
-#include <nanobind/operators.h>
-#include "util/random.h"
-#include "scripting/scriptserver.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #pragma clang diagnostic ignored "-Wmacro-redefined"
 #endif
+
+#include "conversion.h"
+#include "nanobind/nanobind.h"
+#include "nanobind/ndarray.h"
+#include <nanobind/operators.h>
+#include "util/random.h"
+#include "scripting/scriptserver.h"
 
 namespace Python
 {

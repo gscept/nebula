@@ -4,6 +4,12 @@
 //------------------------------------------------------------------------------
 #define NOMINMAX
 #include "foundation/stdneb.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
+
 #include "scripting/python/pythonserver.h"
 #include "nanobind/nanobind.h"
 #include "conversion.h"
@@ -11,10 +17,7 @@
 #include "io/ioserver.h"
 #include "io/textreader.h"
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-#endif
+
 
 using namespace IO;
 
