@@ -164,6 +164,33 @@ FileExists(const IO::URI& uri)
 //------------------------------------------------------------------------------
 /**
 */
+inline Util::Array<Util::String>
+ListFiles(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+{
+    return IoServer::Instance()->ListFiles(dir, pattern, asFullPath);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Util::Array<Util::String>
+ListDirectories(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+{
+    return IoServer::Instance()->ListDirectories(dir, pattern, asFullPath);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+DirectoryExists(const IO::URI& uri)
+{
+    return IoServer::Instance()->DirectoryExists(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline bool
 DeleteFile(const IO::URI& uri)
 {
