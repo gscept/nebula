@@ -288,8 +288,9 @@ macro(compile_gpulang_intern)
             file(READ ${depoutput} deps)
         endif()
 
-
-		cmake_path(NORMAL_PATH foldername)
+        if (${foldername})
+		    cmake_path(NORMAL_PATH foldername)
+        endif()
 		cmake_path(NORMAL_PATH shd)
 		cmake_path(NORMAL_PATH GPULANGC)
         add_custom_command(OUTPUT ${binaryOutput}
