@@ -189,8 +189,6 @@ nebula_begin_module(foundation)
             ioserver.h
             iointerface.cc
             iointerface.h
-            iointerfacehandler.cc
-            iointerfacehandler.h
             logfileconsolehandler.cc
             logfileconsolehandler.h
             jsonreader.cc
@@ -229,8 +227,6 @@ nebula_begin_module(foundation)
             util/bxmlfilestructs.h
             util/bxmlloaderutil.cc
             util/bxmlloaderutil.h
-            #fixme. these have to be nidld
-            iointerfaceprotocol.cc
         )
         fips_dir(io/zipfs)
         fips_files(ziparchive.cc

@@ -50,7 +50,6 @@
 #include "ringbuffertest.h"
 #include "excelxmlreadertest.h"
 #include "delegatetest.h"
-#include "delegatetabletest.h"
 #include "httpclienttest.h"
 #include "bxmlreadertest.h"
 #include "blobtest.h"
@@ -83,7 +82,6 @@ __cdecl main()
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
     testRunner->AttachTestCase(CVarTest::Create());    
     testRunner->AttachTestCase(HttpClientTest::Create());    
-    testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
     testRunner->AttachTestCase(BlobTest::Create());
     testRunner->AttachTestCase(BitFieldTest::Create());

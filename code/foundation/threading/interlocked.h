@@ -59,10 +59,7 @@ int Decrement(int volatile* var);
 /// interlocked decrement, return result
 int64 Decrement(int64 volatile* var);
 
-// Replace with std::hardware_destructive_interference_size when it's available in clang
-#define CACHE_SIZE 64
-
-struct alignas(CACHE_SIZE) AtomicInt
+struct alignas(std::hardware_destructive_interference_size) AtomicInt
 {
     /// Constructor
     AtomicInt()
@@ -124,7 +121,7 @@ struct alignas(CACHE_SIZE) AtomicInt
     volatile int value;
 };
 
-struct alignas(CACHE_SIZE) AtomicInt64
+struct alignas(std::hardware_destructive_interference_size) AtomicInt64
 {
     /// Constructor
     AtomicInt64()
@@ -186,7 +183,7 @@ struct alignas(CACHE_SIZE) AtomicInt64
     volatile int64 value;
 };
 
-struct alignas(CACHE_SIZE) AtomicPointer
+struct alignas(std::hardware_destructive_interference_size) AtomicPointer
 {
     /// Constructor
     AtomicPointer(void* initial)
@@ -213,7 +210,7 @@ struct alignas(CACHE_SIZE) AtomicPointer
 };
 
 /// Atomic value only used to decrement, increment and read a 32 bit value
-struct alignas(CACHE_SIZE) AtomicCounter
+struct alignas(std::hardware_destructive_interference_size) AtomicCounter
 {
     volatile int counter;
 
@@ -312,7 +309,7 @@ struct alignas(CACHE_SIZE) AtomicCounter
 };
 
 /// Atomic value only used to decrement, increment and read a 64 bit value
-struct alignas(CACHE_SIZE) AtomicCounter64
+struct alignas(std::hardware_destructive_interference_size) AtomicCounter64
 {
     volatile int64 counter;
 

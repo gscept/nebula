@@ -17,7 +17,6 @@
 #include "interface/interfacebase.h"
 #include "io/console.h"
 #include "io/ioserver.h"
-#include "io/iointerfaceprotocol.h"
 
 //------------------------------------------------------------------------------
 namespace IO

@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 
 #include "io/iointerface.h"
-#include "io/iointerfacehandler.h"
 #include "messaging/blockinghandlerthread.h"
 
 namespace IO
@@ -42,7 +41,6 @@ IoInterface::Open()
     Ptr<BlockingHandlerThread> handlerThread = BlockingHandlerThread::Create();
     handlerThread->SetName("IoInterface Thread");
     handlerThread->SetThreadAffinity(System::Cpu::Core3);
-    handlerThread->AttachHandler(IoInterfaceHandler::Create());
     this->SetHandlerThread(handlerThread.cast<HandlerThreadBase>());
 
     InterfaceBase::Open();
