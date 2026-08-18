@@ -44,7 +44,7 @@ fips_dir(scripting)
     fips_files(deargui.cpp)
 
 fips_dir(imguifiledialog)
-	fips_files(imguifiledialog.h imguifiledialog.cpp imguifiledialogconfig.h)
+	fips_files(ImguiFileDialog.h ImguiFileDialog.cpp ImguiFileDialogConfig.h)
 target_compile_definitions(dynui PRIVATE USE_STD_FILESYSTEM)
 nebula_end_module()
 

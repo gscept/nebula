@@ -685,8 +685,8 @@ nebula_begin_module(foundation)
 			fips_files(posixfiber.cc)
 		fips_dir(memory/base)
 			fips_files(
-				memory/base/genericmemorypool.cc
-				memory/base/genericmemorypool.h
+				genericmemorypool.cc
+				genericmemorypool.h
 			)
     endif()
     fips_dir(.)
