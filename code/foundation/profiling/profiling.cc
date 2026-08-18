@@ -117,7 +117,7 @@ ProfilingRegisterThread(int priority)
 {
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
-    ProfilingContextIndex = ProfilingContextCounter.Increment();
+    ProfilingContextIndex = ProfilingContextCounter.Add(1);
     profilingContexts.Append(ProfilingContext(priority));
     profilingContextsLastFrame.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
