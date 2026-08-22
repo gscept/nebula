@@ -58,7 +58,7 @@ TestCase::Verify(bool b, const char * test, const char * file, int line)
     {
         if (verbose)
         {
-                n_printf("%s #%d: FAILED\n\"%s\"\n%s(%d)\n\n", this->GetClassName().AsCharPtr(), this->numVerified, test, file, line);
+            n_printf("%s #%d: FAILED\n\"%s\"\n%s(%d)\n\n", this->GetClassName().AsCharPtr(), this->numVerified, test, file, line);
         }
         FailedTest f = { test, file, line };
         this->failed.Append(f);

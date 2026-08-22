@@ -61,7 +61,7 @@ using namespace Core;
 using namespace Test;
 
 int
-__cdecl main()
+__cdecl main(int argc, const char** argv)
 {
     // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
@@ -77,8 +77,11 @@ __cdecl main()
     n_printf("NEBULA FOUNDATION TESTS\n");
     n_printf("========================\n");
 
+    Util::CommandLineArgs args = Util::CommandLineArgs(argc, argv);
+
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
+    testRunner->ParseCommandLineArgs(args);
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
     testRunner->AttachTestCase(CVarTest::Create());
     testRunner->AttachTestCase(ProcessTest::Create());

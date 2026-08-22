@@ -30,7 +30,7 @@ TestRunner::AttachTestCase(TestCase* testCase)
 void
 TestRunner::ParseCommandLineArgs(Util::CommandLineArgs const& args)
 {
-    this->verbose = args.GetBool("verbose", false);
+    this->verbose = args.GetBoolFlag("-verbose");
 }
 
 //------------------------------------------------------------------------------

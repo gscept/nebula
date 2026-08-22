@@ -17,7 +17,7 @@ void
 ProcessTest::Run()
 {
 #if __WIN32__
-    const IO::URI shell("C:/Windows/System32/cmd.exe");
+    const IO::URI shell("C:\\Windows\\System32\\cmd.exe");
     const Util::String outputCommand = "/C \"echo stdout & echo stderr 1>&2 & exit /B 7\"";
     const Util::String delayedCommand = "/C \"ping 127.0.0.1 -n 2 > NUL & exit /B 3\"";
 #else
@@ -45,16 +45,17 @@ ProcessTest::Run()
     VERIFY(System::WaitForProcess(outputProcess) == 7);
     
 #if __WIN32__
-    // Windows emits \r\n, so expect one extra byte.
-    const int expectedBytes = 7;
+    const char expectedStdout[] = "stdout\r\n";
+    const char expectedStderr[] = "stderr\r\n";
 #else
-    const int expectedBytes = 6;
+    const char expectedStdout[] = "stdout";
+    const char expectedStderr[] = "stderr";
 #endif
 
-    VERIFY(stdoutStream->GetSize() == expectedBytes);
-    VERIFY(stderrStream->GetSize() == expectedBytes);
-    VERIFY(memcmp(stdoutStream->GetRawPointer(), "stdout", expectedBytes) == 0);
-    VERIFY(memcmp(stderrStream->GetRawPointer(), "stderr", expectedBytes) == 0);
+    VERIFY(stdoutStream->GetSize() == sizeof(expectedStdout) - 1);
+    VERIFY(stderrStream->GetSize() == sizeof(expectedStderr) - 1);
+    VERIFY(memcmp(stdoutStream->GetRawPointer(), expectedStdout, sizeof(expectedStdout) - 1) == 0);
+    VERIFY(memcmp(stderrStream->GetRawPointer(), expectedStderr, sizeof(expectedStderr) - 1) == 0);
 
 #if !__WIN32__
     Ptr<IO::MemoryStream> workingDirectoryStream = IO::MemoryStream::Create();

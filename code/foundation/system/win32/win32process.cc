@@ -19,6 +19,15 @@ ProcessIdAllocator processIdAllocator(0xFFF);
 /**
 */
 bool
+IsValidProcessId(ProcessId processId)
+{
+    return processId != InvalidProcessId && processId.id < processIdAllocator.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
 CreateCapturePipe(PHANDLE read, PHANDLE write)
 {
     // configure pipe security attributes
@@ -107,6 +116,8 @@ StartProcess(const ProcessStartInfo& createInfo)
     }
 
     // create the process, return false if this fails
+    LPCSTR workingDir = createInfo.workingDir.IsValid() ? createInfo.workingDir.LocalPath().AsCharPtr() : NULL;
+
     if (!CreateProcess(NULL,                        // lpApplicationName
         (LPSTR)cmdLine.AsCharPtr(),                // lpCommandLine
         NULL,                                       // lpProcessAttributes
@@ -114,7 +125,7 @@ StartProcess(const ProcessStartInfo& createInfo)
         TRUE,                                       // bInheritsHandle
         creationFlags,                              // dwCreationFlags
         NULL,                                       // lpEnvironment
-        createInfo.workingDir.LocalPath().AsCharPtr(),   // lpCurrentDirectory
+        workingDir,                                 // lpCurrentDirectory
         &startupInfo,                               // lpStartupInfo
         (LPPROCESS_INFORMATION) &processInfo)) // lpProcessInformation
     {
@@ -164,6 +175,10 @@ StartProcess(const ProcessStartInfo& createInfo)
 void
 UpdateProcessStreams(ProcessId processId)
 {
+    if (!IsValidProcessId(processId))
+    {
+        return;
+    }
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(processId.id);
     HANDLE& stdoutRead = processIdAllocator.Get<Process_StdoutRead>(processId.id);
     HANDLE& stderrRead = processIdAllocator.Get<Process_StderrRead>(processId.id);
@@ -243,6 +258,10 @@ UpdateProcessStreams(ProcessId processId)
 bool
 IsProcessRunning(ProcessId processId)
 {
+    if (!IsValidProcessId(processId))
+    {
+        return false;
+    }
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(processId.id);
 
     DWORD exitCode = 0;
@@ -285,6 +304,10 @@ IsProcessRunning(ProcessId processId)
 uint
 WaitForProcess(ProcessId processId)
 {
+    if (!IsValidProcessId(processId))
+    {
+        return 0;
+    }
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(processId.id);
 
     // wait until process exits

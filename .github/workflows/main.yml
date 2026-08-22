@@ -130,11 +130,11 @@ jobs:
 
       - name: Run Testmath
         run: |
-           python fips run testmath
+           python fips run testmath -- -verbose
 
       - name: Run Testfoundation
         run: |
-           python fips run testfoundation
+           python fips run testfoundation -- -verbose
            
   Notify:
     runs-on: ubuntu-latest
