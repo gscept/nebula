@@ -43,10 +43,18 @@ ProcessTest::Run()
     System::ProcessId outputProcess = System::StartProcess(outputInfo);
     VERIFY(outputProcess != System::InvalidProcessId);
     VERIFY(System::WaitForProcess(outputProcess) == 7);
-    VERIFY(stdoutStream->GetSize() == 6);
-    VERIFY(stderrStream->GetSize() == 6);
-    VERIFY(memcmp(stdoutStream->GetRawPointer(), "stdout", 6) == 0);
-    VERIFY(memcmp(stderrStream->GetRawPointer(), "stderr", 6) == 0);
+    
+#if __WIN32__
+    // Windows emits \r\n, so expect one extra byte.
+    const int expectedBytes = 7;
+#else
+    const int expectedBytes = 6;
+#endif
+
+    VERIFY(stdoutStream->GetSize() == expectedBytes);
+    VERIFY(stderrStream->GetSize() == expectedBytes);
+    VERIFY(memcmp(stdoutStream->GetRawPointer(), "stdout", expectedBytes) == 0);
+    VERIFY(memcmp(stderrStream->GetRawPointer(), "stderr", expectedBytes) == 0);
 
 #if !__WIN32__
     Ptr<IO::MemoryStream> workingDirectoryStream = IO::MemoryStream::Create();

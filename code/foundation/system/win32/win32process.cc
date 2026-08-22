@@ -62,7 +62,10 @@ StartProcess(const ProcessStartInfo& createInfo)
     processIdAllocator.Set<Process_StdoutStream>(id, createInfo.outputStream);
     processIdAllocator.Set<Process_StderrStream>(id, createInfo.errorStream);
     Util::String& asyncBuffer = processIdAllocator.Get<Process_AsyncBuffer>(id);
-    asyncBuffer.Fill(4096, 0);
+    if (asyncBuffer.Length() < 4096)
+    {
+        asyncBuffer.Fill(4096, 0);
+    }
 
     // build a command line
     String cmdLine = createInfo.exePath.LocalPath();
@@ -163,7 +166,7 @@ UpdateProcessStreams(ProcessId processId)
 {
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(processId.id);
     HANDLE& stdoutRead = processIdAllocator.Get<Process_StdoutRead>(processId.id);
-    HANDLE& stderrRead = processIdAllocator.Get<Process_StderrWrite>(processId.id);
+    HANDLE& stderrRead = processIdAllocator.Get<Process_StderrRead>(processId.id);
     DWORD& numAsyncBytesRead = processIdAllocator.Get<Process_NumAsyncBytesRead>(processId.id);
     DWORD& numAsyncBytesAvailable = processIdAllocator.Get<Process_NumAsyncBytesAvailable>(processId.id);
 
