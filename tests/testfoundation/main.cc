@@ -55,6 +55,7 @@
 #include "profilingtest.h"
 #include "bitfieldtest.h"
 #include "cvartest.h"
+#include "processtest.h"
 
 using namespace Core;
 using namespace Test;
@@ -79,7 +80,8 @@ __cdecl main()
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
-    testRunner->AttachTestCase(CVarTest::Create());    
+    testRunner->AttachTestCase(CVarTest::Create());
+    testRunner->AttachTestCase(ProcessTest::Create());
     testRunner->AttachTestCase(HttpClientTest::Create());    
     testRunner->AttachTestCase(DelegateTest::Create());
     testRunner->AttachTestCase(BlobTest::Create());

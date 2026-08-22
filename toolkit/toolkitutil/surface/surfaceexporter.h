@@ -8,7 +8,8 @@
     (C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/assetprocessorbase.h"
+#include "asset/assetprocessorbase.h"
+
 namespace ToolkitUtil
 {
 class SurfaceExporter : public Base::AssetProcessorBase

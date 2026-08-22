@@ -7,7 +7,7 @@
     
     (C) 2012-2015 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/assetprocessorbase.h"
+#include "asset/assetprocessorbase.h"
 #include "toolkit-common/platform.h"
 #include "io/jsonreader.h"
 #include "toolkit-common/toolkitconsolehandler.h"

@@ -10,7 +10,7 @@
 #include "ids/id.h"
 namespace System
 {
-ID_24_8_TYPE(ProcessId);
+ID_32_TYPE(ProcessId);
 
 struct ProcessStartInfo
 {
@@ -21,8 +21,6 @@ struct ProcessStartInfo
     Ptr<IO::Stream> outputStream, errorStream;
 };
 
-/// Find a process using URI
-bool FindProcess(const IO::URI& uri);
 /// Create a process
 ProcessId StartProcess(const ProcessStartInfo& createInfo);
 /// Update streams

@@ -3,7 +3,7 @@
 //  (C) 2011-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "base/assetprocessorbase.h"
+#include "assetprocessorbase.h"
 #include "net/socket/ipaddress.h"
 #include "io/ioserver.h"
 

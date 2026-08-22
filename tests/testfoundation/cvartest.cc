@@ -18,6 +18,7 @@ using namespace Core;
 void
 CVarTest::Run()
 {
+    n_printf("Note: this test will warn about incorrect type reading - this is intended.\n");
     CVarCreateInfo intInfo;
     intInfo.name = "testInt";
     intInfo.defaultValue = "10";

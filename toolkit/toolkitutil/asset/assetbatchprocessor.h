@@ -10,7 +10,7 @@
     (C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/assetprocessorbase.h"
+#include "asset/assetprocessorbase.h"
 
 #include "toolkitutil/model/import/fbx/fbxfileimporter.h"
 #include "texutil/textureconverter.h"

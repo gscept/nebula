@@ -34,6 +34,8 @@ fips_begin_lib(toolkitutil)
 				assetimporter.h
 				assetpackager.cc
 				assetpackager.h
+                assetprocessorbase.cc
+                assetprocessorbase.h
             )
         fips_dir(filedb)
             fips_files(

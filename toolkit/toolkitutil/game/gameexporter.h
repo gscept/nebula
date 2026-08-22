@@ -5,7 +5,7 @@
     
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/base/assetprocessorbase.h"
+#include "asset/assetprocessorbase.h"
 #include "toolkit-common/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------

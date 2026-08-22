@@ -672,8 +672,9 @@ nebula_begin_module(foundation)
 				posixsysteminfo.cc
 				posixenvironment.cc
 				posixenvironment.h
-        posixlibrary.cc
-        posixlibrary.h
+                posixlibrary.cc
+                posixlibrary.h
+				posixprocess.cc
 				posixsettings.cc
 				posixsettings.h
 			)

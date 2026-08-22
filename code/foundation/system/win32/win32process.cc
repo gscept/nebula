@@ -41,25 +41,6 @@ CreateCapturePipe(PHANDLE read, PHANDLE write)
 //------------------------------------------------------------------------------
 /**
 */
-bool
-FindProcess(const IO::URI& uri)
-{
-    bool exists = false;
-    PROCESSENTRY32 entry;
-    entry.dwSize = sizeof(PROCESSENTRY32);
-    Util::String procname = uri.LocalPath().ExtractFileName();
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-    if (Process32First(snapshot, &entry))
-        while (Process32Next(snapshot, &entry))
-            if (procname == entry.szExeFile)
-                exists = true;
-    CloseHandle(snapshot);
-    return exists;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 ProcessId
 StartProcess(const ProcessStartInfo& createInfo)
 {
