@@ -4,8 +4,8 @@
     @class Util::ArrayAllocatorSafe
     
     The ArrayAllocatorSafe provides a thread safe variadic list of types which is to be contained in the allocator
-    and fetching each value by providing the index into the list of types, which means the members
-    are nameless.
+    and fetching each value by providing the index into the list of types. NamedSlot can be used
+    to associate a compile-time name with a type and fetch it by that name instead.
 
     Note that this is not a container for multiple arrays, but a object allocator that uses
     multiple arrays to store their variables parallelly, and should be treated as such.
@@ -63,6 +63,8 @@ struct AllocatorLock
 template <uint MAX_ALLOCS = 0xFFFF, class ... TYPES>
 class ArrayAllocatorSafe
 {
+    static_assert(soa_names_unique<TYPES...>::value, "NamedSlot names must be unique within an ArrayAllocatorSafe");
+
 public:
     /// constructor
     ArrayAllocatorSafe();
@@ -141,7 +143,7 @@ public:
 protected:
      
     uint32_t size;
-    std::tuple<Util::PinnedArray<MAX_ALLOCS, TYPES>...> objects;
+    std::tuple<Util::PinnedArray<MAX_ALLOCS, soa_value_type_t<TYPES>>...> objects;
     Util::PinnedArray<MAX_ALLOCS, Threading::ThreadId> owners;
 
     Threading::Spinlock allocationLock;
@@ -317,7 +319,7 @@ inline tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Get(const uint32_t index)
 {
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId());
-    return std::get<MEMBER>(this->objects)[index];
+    return std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -330,7 +332,7 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::ConstGet(const uint32_t index) const
 {
     // Allow const get when no thread is owning the element as well
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId() || this->owners[index] == Threading::InvalidThreadId);
-    return std::get<MEMBER>(this->objects)[index];
+    return std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -343,7 +345,7 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Get(const uint32_t index) const
 {
     // Allow const get when no thread is owning the element as well
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId() || this->owners[index] == Threading::InvalidThreadId);
-    return std::get<MEMBER>(this->objects)[index];
+    return std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -355,7 +357,7 @@ inline void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
 {
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId());
-    std::get<MEMBER>(this->objects)[index] = type;
+    std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects)[index] = type;
 }
 
 //------------------------------------------------------------------------------
@@ -366,7 +368,7 @@ template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::GetArray() const
 {
-    return std::get<MEMBER>(this->objects);
+    return std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects);
 }
 
 //------------------------------------------------------------------------------
@@ -377,7 +379,7 @@ template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::GetArray()
 {
-    return std::get<MEMBER>(this->objects);
+    return std::get<soa_tuple_index_v<MEMBER, TYPES...>>(this->objects);
 }
 
 //------------------------------------------------------------------------------

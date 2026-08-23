@@ -4,12 +4,167 @@
     Tuple helper functions and typedefs
 
     @copyright
-    (C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2026 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <tuple>
+
 namespace Util
 {
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class TYPE>
+class NamedSlot : public Array<TYPE>
+{
+public:
+    static constexpr int Name = NAME;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+struct soa_storage
+{
+    using type = Util::Array<TYPE>;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class TYPE>
+struct soa_storage<NamedSlot<NAME, TYPE>>
+{
+    using type = NamedSlot<NAME, TYPE>;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+using soa_storage_t = typename soa_storage<TYPE>::type;
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+struct soa_value_type
+{
+    using type = TYPE;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class TYPE>
+struct soa_value_type<NamedSlot<NAME, TYPE>>
+{
+    using type = TYPE;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+using soa_value_type_t = typename soa_value_type<TYPE>::type;
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+struct soa_slot_name
+{
+    static constexpr int value = -1;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class TYPE>
+struct soa_slot_name<NamedSlot<NAME, TYPE>>
+{
+    static constexpr int value = NAME;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class... TYPES>
+struct soa_named_slot_count;
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME>
+struct soa_named_slot_count<NAME>
+{
+    static constexpr int value = 0;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class TYPE, class... TYPES>
+struct soa_named_slot_count<NAME, TYPE, TYPES...>
+{
+    static constexpr int value =
+        (soa_slot_name<TYPE>::value == -1 || soa_slot_name<TYPE>::value != NAME ? 0 : 1)
+        + soa_named_slot_count<NAME, TYPES...>::value;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class... TYPES>
+struct soa_names_unique;
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<>
+struct soa_names_unique<>
+{
+    static constexpr bool value = true;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, class... TYPES>
+struct soa_names_unique<TYPE, TYPES...>
+{
+    static constexpr int name = soa_slot_name<TYPE>::value;
+    static constexpr bool value =
+        (name == -1 || soa_named_slot_count<name, TYPES...>::value == 0)
+        && soa_names_unique<TYPES...>::value;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, int INDEX, class TYPE, class... TYPES>
+struct soa_tuple_index
+{
+    static constexpr int value = soa_slot_name<TYPE>::value == NAME ?
+        INDEX : soa_tuple_index<NAME, INDEX + 1, TYPES...>::value;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, int INDEX, class TYPE>
+struct soa_tuple_index<NAME, INDEX, TYPE>
+{
+    static constexpr int value = soa_slot_name<TYPE>::value == NAME ? INDEX : NAME;
+};
+
+//--------------------------------------------------------------------------
+/**
+*/
+template<int NAME, class... TYPES>
+inline constexpr int soa_tuple_index_v = soa_tuple_index<NAME, 0, TYPES...>::value;
 
 //------------------------------------------------------------------------------
 /**
@@ -69,6 +224,12 @@ Get(const Pair<A, B>& pair)
 
 template <typename C>
 struct get_template_type;
+
+template<int NAME, class TYPE>
+struct get_template_type<NamedSlot<NAME, TYPE>>
+{
+    using type = TYPE;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -331,5 +492,5 @@ set_size_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t size)
     Get type of contained element in Util::Array stored in std::tuple
 */
 template <int MEMBER, class ... TYPES>
-using tuple_array_t = get_template_type_t<std::tuple_element_t<MEMBER, std::tuple<Util::Array<TYPES>...>>>;
+using tuple_array_t = soa_value_type_t<std::tuple_element_t<soa_tuple_index_v<MEMBER, TYPES...>, std::tuple<TYPES...>>>;
 }

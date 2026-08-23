@@ -7,8 +7,8 @@
 
     There are two versions of this type, an unsafe and a safe one. Both are implemented
     in the same way, providing a variadic list of types which is to be contained in the allocator
-    and fetching each value by providing the index into the list of types, which means the members
-    are nameless. 
+    and fetching each value by providing the index into the list of types. Util::NamedSlot can be
+    used to associate a compile-time name with a type and fetch it by that name instead.
 
     The thread safe allocator requires the Get-methods to be within an Enter/Leave
     lockstep phase. 
