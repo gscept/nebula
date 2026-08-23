@@ -62,7 +62,6 @@ namespace Nebula
                             uint id = Api.GetComponentId(name);
                             componentManager.RegisterComponent(type, id);
                         }
-
                     }
                 }
             }

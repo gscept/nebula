@@ -51,7 +51,10 @@ EntityDelete(uint64_t entity)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
-    world->DeleteEntity(e);
+    if (world->IsValid(e))
+    {
+        world->DeleteEntity(e);
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -448,7 +448,8 @@ NSharpServer::ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& funct
         func();
         return 0;
     }
-    
+
+    n_printf("[NSharpServer] Could not find managed function '%s'!\n", function.AsCharPtr());
     return 1;
 }
 

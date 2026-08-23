@@ -237,6 +237,8 @@ namespace Nebula
             /// </summary>
             public static void Destroy(Entity entity)
             {
+                entity.world.DeregisterEntity(entity);
+
                 if (entity.id == 0xFFFFFFFFFFFFFFFF)
                     return; // Already destroyed
 

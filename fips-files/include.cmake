@@ -202,6 +202,7 @@ IF (USE_DOTNET)
     cmake_policy(SET CMP0074 NEW)
     find_package(Dotnet REQUIRED)
     cmake_policy(POP)
+    add_compile_definitions(NEBULA_DOTNET)
 ENDIF (USE_DOTNET)
 
 macro(nebula_flatc root)

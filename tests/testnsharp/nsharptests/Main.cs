@@ -120,12 +120,12 @@ namespace NST
             World world = World.Get(World.DEFAULT_WORLD);
 
             TestProperty testProp0 = new TestProperty();
-            Entity entity = world.CreateEntity("Empty");
+            Entity entity = world.CreateEntity();
             entity.AddProperty(testProp0);
 
             Verify(entity.IsValid());
 
-            Entity entity2 = world.CreateEntity("Empty");
+            Entity entity2 = world.CreateEntity();
             Verify(entity2.IsValid());
             Verify(entity2.Id != entity.Id);
 
@@ -139,7 +139,7 @@ namespace NST
             Verify(!entity2.IsValid());
 
             TestProperty p1 = new TestProperty();
-            Entity entity3 = world.CreateEntity("Empty");
+            Entity entity3 = world.CreateEntity();
             entity3.AddProperty(p1);
 
             Vector3 position = entity3.GetPosition();

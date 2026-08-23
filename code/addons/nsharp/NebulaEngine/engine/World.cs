@@ -18,6 +18,7 @@ namespace Nebula
             public uint Id { get { return id; } }
 
             private List<Entity> entities;
+            private Dictionary<UInt64, Entity> entityMap;
             
             public Entity CreateEntity()
             {
@@ -27,9 +28,22 @@ namespace Nebula
                 return entity;
             }
 
-            public Entity CreateEntity(string name)
+            public Entity GetEntity(UInt64 id)
             {
-                return this.CreateEntity();
+                if (this.entityMap.TryGetValue(id, out Entity entity))
+                {
+                    return entity;
+                }
+
+                // Lazily create entity if id is valid.
+                if (Api.IsValid(id))
+                {
+                    Entity newEntity = new Entity(this, id);
+                    this.RegisterEntity(newEntity);
+                    return newEntity;
+                }
+
+                return null;
             }
             
             private void RegisterEntity(Entity entity)
@@ -37,11 +51,18 @@ namespace Nebula
                 this.entities.Add(entity);
             }
 
+            public void DeregisterEntity(Entity entity)
+            {
+                this.entities.EraseSwap(entity);
+                this.entityMap.Remove(entity.Id);
+            }
+
             static World() { }
             private World(uint id)
             {
                 this.id = id;
                 this.entities = new List<Entity>();
+                this.entityMap = new Dictionary<ulong, Entity>();
             }
             private static readonly World tempDefaultWorld = new World(DEFAULT_WORLD);
             
@@ -61,8 +82,9 @@ namespace Nebula
                     Entity entity = this.entities[i];
                     if (!entity.IsValid())
                     {
-                        Entity.Destroy(entity);
                         this.entities.EraseSwap(i);
+                        this.entityMap.Remove(entity.Id);
+                        Entity.Destroy(entity);
                         i--; // rerun same index, since we've swapped and erased.
                         continue;
                     }
