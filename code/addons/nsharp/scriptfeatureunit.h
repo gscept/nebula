@@ -29,7 +29,6 @@ public:
     
     /// call this before attaching the feature unit
     void SetScriptAssembly(IO::URI const& path);
-
     Scripting::AssemblyId GetAssemblyId() const;
 
     void OnActivate() override;
@@ -40,9 +39,9 @@ public:
     virtual void OnRenderDebug();
 
 private:
+    IO::URI engineAssemblyPath;
     IO::URI assemblyPath;
-    Scripting::AssemblyId assemblyId;
-
+    Scripting::AssemblyId engineAssemblyId;
     Ptr<Scripting::NSharpServer> server;
 };
 

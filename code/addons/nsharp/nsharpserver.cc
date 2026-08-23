@@ -455,6 +455,29 @@ NSharpServer::ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& funct
 
 //------------------------------------------------------------------------------
 /**
+	Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
+*/
+int
+NSharpServer::ExecUnmanagedCall(
+    AssemblyId assemblyId,
+    Util::String const& function,
+    Util::String const& argument
+)
+{
+    typedef int(CORECLR_DELEGATE_CALLTYPE * custom_entry_point_fn)(const char*, int32_t);
+    custom_entry_point_fn func = nullptr;
+    func = (custom_entry_point_fn)GetUnmanagedFuncPointer(assemblyId, function);
+    if (func != nullptr)
+    {
+        return func(argument.AsCharPtr(), argument.Length());
+    }
+
+    n_printf("[NSharpServer] Could not find managed function '%s'!\n", function.AsCharPtr());
+    return 1;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool const
 NSharpServer::IsOpen()

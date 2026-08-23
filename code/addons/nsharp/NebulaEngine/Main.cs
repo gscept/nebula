@@ -16,6 +16,7 @@ namespace Nebula
         private class RuntimeData
         {
             public NebulaApp App = new NebulaApp();
+            public bool EngineSetup;
         }
         private static readonly RuntimeData runtimeData = new RuntimeData();
         // Explicit static constructor to tell C# compiler
@@ -35,6 +36,11 @@ namespace Nebula
             runtimeData.App = app;
         }
 
+        internal static void ResetNebulaApp()
+        {
+            runtimeData.App = new NebulaApp();
+        }
+
         /// <summary> Call to initialize the Nebula C# runtime </summary>
         /// <param name="currentAssembly"> 
         /// The assembly that is currently executing. You can get this via Assembly.GetExecutingAssembly()
@@ -46,10 +52,8 @@ namespace Nebula
             Nebula.Game.ComponentManager componentManager = Nebula.Game.ComponentManager.Instance;
 
             Assembly engineAssembly = typeof(NebulaEngine.AppEntry).Assembly;
-            if (currentAssembly != engineAssembly)
+            if (!runtimeData.EngineSetup)
             {
-                NativeLibrary.SetDllImportResolver(engineAssembly, Nebula.Runtime.ImportResolver);
-
                 // Register all native components and tie them to their respective component id in the unmanaged runtime
                 foreach (var type in engineAssembly.GetTypes())
                 {
@@ -64,18 +68,22 @@ namespace Nebula
                         }
                     }
                 }
+                runtimeData.EngineSetup = true;
             }
 
-            foreach (var type in currentAssembly.GetTypes())
+            if (currentAssembly != engineAssembly)
             {
-                Type[] interfaces = type.GetInterfaces();
-                for (int i = 0; i < interfaces.Length; i++)
+                foreach (var type in currentAssembly.GetTypes())
                 {
-                    if (interfaces[i] == typeof(NativeComponent))
+                    Type[] interfaces = type.GetInterfaces();
+                    for (int i = 0; i < interfaces.Length; i++)
                     {
-                        string name = type.Name;
-                        uint id = Api.GetComponentId(name);
-                        componentManager.RegisterComponent(type, id);
+                        if (interfaces[i] == typeof(NativeComponent))
+                        {
+                            string name = type.Name;
+                            uint id = Api.GetComponentId(name);
+                            componentManager.RegisterComponent(type, id);
+                        }
                     }
                 }
             }
@@ -145,32 +153,60 @@ namespace NebulaEngine
 {
     public class AppEntry
     {
-        [UnmanagedCallersOnly]
-        static public void Main()
-        {
-            Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
+        private static Nebula.GamePluginContext gamePlugin;
 
-            // Setup console redirect / log hook
-            using (var consoleWriter = new ConsoleWriter())
+        [UnmanagedCallersOnly]
+        static public int Main(IntPtr pluginPath, int pluginPathLength)
+        {
+            try
             {
+                Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
+
+                // Setup console redirect / log hook
+                var consoleWriter = new ConsoleWriter();
                 consoleWriter.WriteEvent += ConsoleEvents.WriteFunc;
                 consoleWriter.WriteLineEvent += ConsoleEvents.WriteLineFunc;
                 Console.SetOut(consoleWriter);
+
+                Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
+                string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
+                gamePlugin = Nebula.GamePluginContext.Load(path);
+
+                return 0;
             }
-
-            Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
-
-            Nebula.Runtime.Start();
-
-#if DEBUG
-            Console.WriteLine("[NSharp] NebulaEngine.AppEntry.Main() returned with code 0");
-#endif
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("[NSharp] Failed to load game plugin: " + exception);
+                return 1;
+            }
         }
 
         [UnmanagedCallersOnly]
         static public void Exit()
         {
-            Nebula.Runtime.Close();
+            if (gamePlugin != null)
+            {
+                gamePlugin.Unload();
+                gamePlugin = null;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        static public void OnBeginFrame()
+        {
+            Nebula.Runtime.OnBeginFrame();
+        }
+
+        [UnmanagedCallersOnly]
+        static public void OnFrame()
+        {
+            Nebula.Runtime.OnFrame();
+        }
+
+        [UnmanagedCallersOnly]
+        static public void OnEndFrame()
+        {
+            Nebula.Runtime.OnEndFrame();
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.ComponentModel;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -10,8 +9,22 @@ using Nebula;
 using Nebula.Game;
 using NST;
 
+[assembly: NebulaGamePlugin(typeof(NST.TestPlugin))]
+
 namespace NST
 {
+    public sealed class TestPlugin : IGamePlugin
+    {
+        public void OnLoad(GamePluginContext context)
+        {
+            context.SetApplication(new TestApp());
+        }
+
+        public void OnUnload()
+        {
+        }
+    }
+
     public struct TestMsg : Msg
     {
         public float f;
@@ -114,7 +127,6 @@ namespace NST
             VERIFY(test, filePath, lineNumber);
         }
 
-        [UnmanagedCallersOnly]
         static public void PerformTests()
         {
             World world = World.Get(World.DEFAULT_WORLD);
@@ -179,7 +191,6 @@ namespace NST
             [DllImport("__Internal", EntryPoint = "PassVec4"), SuppressUnmanagedCodeSecurity]
             public static extern void TestPassVec4(in Vector4 vec);
 
-            [UnmanagedCallersOnly]
             public static void RunTests()
             {
                 Vector2 vec2 = new Vector2(1, 2);
@@ -216,10 +227,9 @@ namespace NST
             public static extern void TestArrayOfVec3(Vector3[] arr, int size);
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfVec4")]
-            [SuppressGCTransition] // This attribute can be used to avoid transitioning the GC, saving on performance. There are rules however: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.suppressgctransitionattribute?view=net-7.0
+            [SuppressGCTransition]
             public static extern void TestArrayOfVec4(Vector4[] arr, int size);
 
-            [UnmanagedCallersOnly]
             public static void RunTests()
             {
                 string myStr = "This is a C# string!\n";
@@ -252,6 +262,8 @@ namespace NST
 
     public class TestApp : NebulaApp
     {
+        private bool testsRun;
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
@@ -264,6 +276,13 @@ namespace NST
 
         public override void OnFrame()
         {
+            if (!this.testsRun)
+            {
+                this.testsRun = true;
+                Tests.VariablePassing.RunTests();
+                Tests.DLLImportCalls.RunTests();
+                Tests.PerformTests();
+            }
             base.OnFrame();
         }
 
@@ -280,40 +299,5 @@ namespace NST
             Console.WriteLine("Console.WriteLine works!");
             Debug.Log("Debug.Log works!\n");
         }
-    }
-}
-
-public class AppEntry
-{
-    [UnmanagedCallersOnly]
-    static public void Main()
-    {
-        Runtime.OverrideNebulaApp(new TestApp());
-        Runtime.Setup(Assembly.GetExecutingAssembly());
-        Runtime.Start();
-    }
-
-    [UnmanagedCallersOnly]
-    static public void OnBeginFrame()
-    {
-        Runtime.OnBeginFrame();
-    }
-
-    [UnmanagedCallersOnly]
-    static public void OnFrame()
-    {
-        Runtime.OnFrame();
-    }
-
-    [UnmanagedCallersOnly]
-    static public void OnEndFrame()
-    {
-        Runtime.OnEndFrame();
-    }
-
-    [UnmanagedCallersOnly]
-    static public void Exit()
-    {
-        Runtime.Close();
     }
 }

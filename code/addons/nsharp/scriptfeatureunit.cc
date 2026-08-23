@@ -8,13 +8,14 @@
 
 namespace Scripting
 {
-__ImplementClass(Scripting::ScriptFeatureUnit, 'AUFU', Game::FeatureUnit);
+__ImplementClass(Scripting::ScriptFeatureUnit, 'SCFU', Game::FeatureUnit);
 __ImplementSingleton(ScriptFeatureUnit);
 
 //------------------------------------------------------------------------------
 /**
 */
 ScriptFeatureUnit::ScriptFeatureUnit()
+    : engineAssemblyPath("bin:NebulaEngine.dll")
 {
     __ConstructSingleton;
 }
@@ -36,13 +37,10 @@ ScriptFeatureUnit::SetScriptAssembly(IO::URI const& path)
     this->assemblyPath = path;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
 Scripting::AssemblyId
 ScriptFeatureUnit::GetAssemblyId() const
 {
-    return this->assemblyId;
+    return this->engineAssemblyId;
 }
 
 //------------------------------------------------------------------------------
@@ -61,10 +59,16 @@ ScriptFeatureUnit::OnActivate()
 
     if (this->assemblyPath.IsValid())
     {
-        this->assemblyId = this->server->LoadAssembly(this->assemblyPath);
-        n_assert(this->assemblyId != Scripting::AssemblyId::Invalid());
+        this->engineAssemblyId = this->server->LoadAssembly(this->engineAssemblyPath);
+        n_assert(this->engineAssemblyId != Scripting::AssemblyId::Invalid());
 
-        this->server->ExecUnmanagedCall(assemblyId, "AppEntry::Main()");
+        Util::String pluginPath = this->assemblyPath.GetHostAndLocalPath();
+        int result = this->server->ExecUnmanagedCall(
+            this->engineAssemblyId,
+            "NebulaEngine.AppEntry::Main()",
+            pluginPath
+        );
+        n_assert(result == 0);
     }
 }
 
@@ -74,7 +78,7 @@ ScriptFeatureUnit::OnActivate()
 void
 ScriptFeatureUnit::OnDeactivate()
 {
-    this->server->ExecUnmanagedCall(this->assemblyId, "AppEntry::Exit()");
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::Exit()");
     this->server->Close();
     FeatureUnit::OnDeactivate();
 }
@@ -85,7 +89,7 @@ ScriptFeatureUnit::OnDeactivate()
 void
 ScriptFeatureUnit::OnBeginFrame()
 {
-    this->server->ExecUnmanagedCall(this->assemblyId, "AppEntry::OnBeginFrame()");
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnBeginFrame()");
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +98,7 @@ ScriptFeatureUnit::OnBeginFrame()
 void
 ScriptFeatureUnit::OnFrame()
 {
-    this->server->ExecUnmanagedCall(this->assemblyId, "AppEntry::OnFrame()");
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnFrame()");
 }
 
 //------------------------------------------------------------------------------
@@ -103,7 +107,7 @@ ScriptFeatureUnit::OnFrame()
 void
 ScriptFeatureUnit::OnEndFrame()
 {
-    this->server->ExecUnmanagedCall(this->assemblyId, "AppEntry::OnEndFrame()");
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnEndFrame()");
 }
 
 //------------------------------------------------------------------------------

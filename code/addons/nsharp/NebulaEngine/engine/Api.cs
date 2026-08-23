@@ -2,8 +2,6 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
-using System.Collections.Generic;
 
 /*
 Entities are only ids as per usual, pointing into their respective tables in unmanaged code
@@ -70,7 +68,7 @@ namespace Nebula
             public static extern Vector3 GetScale(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntitySetScale")]
-            public static extern void SetScale(UInt64 entityId, Vector3 position);
+            public static extern void SetScale(UInt64 entityId, Vector3 scale);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
             [return: MarshalAs(UnmanagedType.I1)]

@@ -4,13 +4,10 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "nsharptest.h"
-#include "nsharp/nsharpserver.h"
+#include "nsharp/nsconfig.h"
 #include "timing/timer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
-#include "nsharp/scriptfeatureunit.h"
-
-using namespace Scripting;
 
 namespace Test
 {
@@ -142,10 +139,7 @@ NSharpTest::Run()
     verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
     { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
 
-    Ptr<NSharpServer> nsServer = NSharpServer::Instance();
-    AssemblyId assemblyId = Scripting::ScriptFeatureUnit::Instance()->GetAssemblyId();
-
-    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+VariablePassing::RunTests()"));
+    StepFrame();
 
     Math::vec2 const v2 = {1.0f, 2.0f};
     VERIFY(reg_vec2 == v2);
@@ -156,8 +150,6 @@ NSharpTest::Run()
     Math::vec4 const v4 = {1.0f, 2.0f, 3.0f, 4.0f};
     VERIFY(reg_vec4 == v4);
 
-    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+DLLImportCalls::RunTests()"));
-
     VERIFY(reg_string == "This is a C# string!\n");
     VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...
     n_printf(reg_string.AsCharPtr());
@@ -165,8 +157,6 @@ NSharpTest::Run()
     VERIFY(testArrayOfIntResult);
     VERIFY(testArrayOfVec3Result);
     VERIFY(testArrayOfVec4Result);
-
-    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests::PerformTests()"));
 
     while(false)
         StepFrame();
