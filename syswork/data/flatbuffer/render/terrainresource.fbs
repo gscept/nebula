@@ -1,0 +1,48 @@
+//------------------------------------------------------------------------------
+//
+//    Terrain resource type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+include "foundation/math.fbs";
+
+namespace Render;
+
+table TerrainResource
+{
+	min_height : float = 0.0;
+	max_height : float = 128.0;
+	world_size_x : float = 1024.0;
+	world_size_z : float = 1024.0;
+	tile_width : float = 64.0;
+	tile_height : float = 64.0;
+	quads_per_tile_x : float = 16.0;
+	quads_per_tile_z : float = 16.0;
+	height_map : string = "urn:tex:system/white";
+	decision_map : string = "urn:tex:system/white";
+	enable_ray_tracing : bool = false;
+	biomes : [Biome];
+}
+
+table Biome
+{
+	mask : string = "urn:tex:system/white";
+	slope_threshold : float = 0.5;
+	height_threshold : float = 0.5;
+	uv_scale_factor : float = 1.0;
+	flat : BiomeMaterial;
+	slope : BiomeMaterial;
+	height : BiomeMaterial;
+	height_slope : BiomeMaterial;
+}
+
+table BiomeMaterial
+{
+	albedo : string = "urn:tex:system/white";
+	normals : string = "urn:tex:system/nobump";
+	material : string = "urn:tex:system/default_material";
+}
+
+root_type TerrainResource;
+file_identifier "TERE";
+file_extension "nater";

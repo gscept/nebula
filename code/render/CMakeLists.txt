@@ -627,6 +627,7 @@ ENDIF()
                 terrainculljob.cc
                 texturetilecache.h
             )
+        nebula_flatc(SYSTEM render/terrainresource.fbs)
         fips_dir(terrain/shaders)
             compile_gpulang(terrain_include.gpuh terrain.gpul terrain_tile_write.gpul terrain_mesh_generate.gpul)
 

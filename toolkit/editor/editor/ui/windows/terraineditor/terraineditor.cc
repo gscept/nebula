@@ -39,6 +39,10 @@
 
 #include "gpulang/editor/editor/ui/windows/terraineditor/terrainbrush.h"
 
+#include "nflatbuffer/nebula_flat.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "flat/render/terrainresource.h"
+
 using namespace Editor;
 
 struct BiomeTextures
@@ -319,6 +323,7 @@ TerrainEditor::Run(SaveMode save)
 
             CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
             CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
+
             CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(basePath + heightmapName + ".png"));
             CoreGraphics::DestroyImage(image);
 
@@ -359,6 +364,9 @@ TerrainEditor::Run(SaveMode save)
             IO::URI heightMapPath = IO::URI(baseExportPath + heightmapName + ".dds");
             terrainComponent.heightMap = heightMapPath.LocalPath();
             Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
+
+            Render::TerrainResourceT resource;
+            resource.height_map = heightMapPath.LocalPath();
 
             Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
 
@@ -892,4 +900,4 @@ TerrainEditorTool::IsModifying() const
     return terrainEditorState.paint;
 }
 
-}
+} // namespace Presentation
