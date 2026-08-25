@@ -23,6 +23,10 @@
 #include "gi/ddgicontext.h"
 #include "terrain/terraincontext.h"
 
+#include "nflatbuffer/nebula_flat.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "flat/render/terrainresource.h"
+
 namespace GraphicsFeature
 {
 
@@ -522,40 +526,51 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     terrain->graphicsEntityId = Graphics::CreateEntity().id;
     ::Terrain::TerrainContext::RegisterEntity(terrain->graphicsEntityId);
     ::Terrain::TerrainCreateInfo createInfo;
-    createInfo.minHeight = terrain->minHeight;
-    createInfo.maxHeight = terrain->maxHeight;
-    createInfo.quadsPerTileX = terrain->quadsPerTileX;
-    createInfo.quadsPerTileY = terrain->quadsPerTileZ;
-    createInfo.tileWidth = terrain->tileWidth;
-    createInfo.tileHeight = terrain->tileHeight;
-    createInfo.width = terrain->worldSizeX;
-    createInfo.height = terrain->worldSizeZ;
-    createInfo.heightMap = terrain->heightMap;
-    createInfo.decisionMap = terrain->decisionMap;
-    createInfo.enableRayTracing = terrain->enableRaytracing;
-    ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 
-    for (auto const& biome : terrain->biomes)
+    Render::TerrainResourceT resource;
+    Ptr<IO::Stream> resourceFile = IO::CreateStream(terrain->terrainResourcePath);
+    if (resourceFile->Open())
     {
-        ::Terrain::BiomeSettings settings;
-        settings.biomeMask = biome.mask;
-        settings.materials[0].albedo = biome.flat.albedo;
-        settings.materials[0].material = biome.flat.material;
-        settings.materials[0].normal = biome.flat.normals;
-        settings.materials[1].albedo = biome.slope.albedo;
-        settings.materials[1].material = biome.slope.material;
-        settings.materials[1].normal = biome.slope.normals;
-        settings.materials[2].albedo = biome.height.albedo;
-        settings.materials[2].material = biome.height.material;
-        settings.materials[2].normal = biome.height.normals;
-        settings.materials[3].albedo = biome.heightSlope.albedo;
-        settings.materials[3].material = biome.heightSlope.material;
-        settings.materials[3].normal = biome.heightSlope.normals;
-        settings.biomeParameters.heightThreshold = biome.heightThreshold;
-        settings.biomeParameters.slopeThreshold = biome.slopeThreshold;
-        settings.biomeParameters.uvScaleFactor = biome.uvScaleFactor;
-        ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+        void* buf = resourceFile->MemoryMap();
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(resource, (uint8_t*)buf);
+
+        createInfo.minHeight = resource.min_height;
+        createInfo.maxHeight = resource.max_height;
+        createInfo.quadsPerTileX = terrain->quadsPerTileX;
+        createInfo.quadsPerTileY = terrain->quadsPerTileZ;
+        createInfo.tileWidth = terrain->tileWidth;
+        createInfo.tileHeight = terrain->tileHeight;
+        createInfo.width = terrain->worldSizeX;
+        createInfo.height = terrain->worldSizeZ;
+        createInfo.heightMap = terrain->heightMap;
+        createInfo.decisionMap = terrain->decisionMap;
+        createInfo.enableRayTracing = terrain->enableRaytracing;
+        ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
+
+        for (auto const& biome : terrain->biomes)
+        {
+            ::Terrain::BiomeSettings settings;
+            settings.biomeMask = biome.mask;
+            settings.materials[0].albedo = biome.flat.albedo;
+            settings.materials[0].material = biome.flat.material;
+            settings.materials[0].normal = biome.flat.normals;
+            settings.materials[1].albedo = biome.slope.albedo;
+            settings.materials[1].material = biome.slope.material;
+            settings.materials[1].normal = biome.slope.normals;
+            settings.materials[2].albedo = biome.height.albedo;
+            settings.materials[2].material = biome.height.material;
+            settings.materials[2].normal = biome.height.normals;
+            settings.materials[3].albedo = biome.heightSlope.albedo;
+            settings.materials[3].material = biome.heightSlope.material;
+            settings.materials[3].normal = biome.heightSlope.normals;
+            settings.biomeParameters.heightThreshold = biome.heightThreshold;
+            settings.biomeParameters.slopeThreshold = biome.slopeThreshold;
+            settings.biomeParameters.uvScaleFactor = biome.uvScaleFactor;
+            ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+        }
     }
+
+
 }
 
 //------------------------------------------------------------------------------

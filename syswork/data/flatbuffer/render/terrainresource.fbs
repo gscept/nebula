@@ -30,10 +30,7 @@ table Biome
 	slope_threshold : float = 0.5;
 	height_threshold : float = 0.5;
 	uv_scale_factor : float = 1.0;
-	flat : BiomeMaterial;
-	slope : BiomeMaterial;
-	height : BiomeMaterial;
-	height_slope : BiomeMaterial;
+	materials: [BiomeMaterial];
 }
 
 table BiomeMaterial
