@@ -16,11 +16,13 @@ namespace Nebula
             private List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
 
             private static readonly PropertyManager instance = new PropertyManager();
+            
             // Explicit static constructor to tell C# compiler
             // not to mark type as beforefieldinit
             static PropertyManager()
             {
             }
+
             private PropertyManager()
             {
                 for (int i = 0; i < this.eventListeners.Length; i++)
@@ -63,10 +65,22 @@ namespace Nebula
             {
                 FrameEvent[] acceptedEvents = property.GetAcceptedEvents();
                 if (acceptedEvents == null)
+                {
                     return;
+                }
 
                 for (int i = 0; i < acceptedEvents.Length; i++)
+                {
                     this.eventListeners[(int)acceptedEvents[i]].Remove(property);
+                }
+            }
+
+            internal void Clear()
+            {
+                for (int i = 0; i < this.eventListeners.Length; i++)
+                {
+                    this.eventListeners[i].Clear();
+                }
             }
 
             /// <summary>
@@ -78,7 +92,7 @@ namespace Nebula
                 for (int i = 0; i < props.Count; i++)
                 {
                     Property prop = props[i];
-                    if (!prop.IsValid)
+                    if (!prop.IsValid())
                     {
                         // Remove invalid properties
                         props.EraseSwap(i);
@@ -86,7 +100,9 @@ namespace Nebula
                         continue;
                     }
                     if (prop.Active)
+                    {
                         prop.OnBeginFrame();
+                    }
                 }
             }
 
@@ -99,7 +115,7 @@ namespace Nebula
                 for (int i = 0; i < props.Count; i++)
                 {
                     Property prop = props[i];
-                    if (!prop.IsValid)
+                    if (!prop.IsValid())
                     {
                         // Remove invalid properties
                         props.EraseSwap(i);
@@ -108,7 +124,9 @@ namespace Nebula
                     }
 
                     if (prop.Active)
+                    {
                         prop.OnFrame();
+                    }
                 }
             }
 
@@ -121,7 +139,7 @@ namespace Nebula
                 for (int i = 0; i < props.Count; i++)
                 {
                     Property prop = props[i];
-                    if (!prop.IsValid)
+                    if (!prop.IsValid())
                     {
                         // Remove invalid properties
                         props.EraseSwap(i);
@@ -130,7 +148,9 @@ namespace Nebula
                     }
 
                     if (prop.Active)
+                    {
                         prop.OnEndFrame();
+                    }
                 }
             }
         }

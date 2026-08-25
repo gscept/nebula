@@ -77,7 +77,7 @@ namespace Nebula
             this.application = application;
         }
 
-        internal static GamePluginContext Load(string pluginPath)
+        internal static GamePluginContext Load(string pluginPath, bool start = true)
         {
             string fullPath = Path.GetFullPath(pluginPath);
             if (!File.Exists(fullPath))
@@ -108,15 +108,45 @@ namespace Nebula
                 throw new InvalidOperationException("The game plugin did not configure a NebulaApp.");
             }
 
-            Nebula.Runtime.OverrideNebulaApp(context.application);
-            Nebula.Runtime.Start();
+            if (start)
+            {
+                context.Start();
+            }
             return context;
+        }
+
+        internal HotReloadState CaptureState()
+        {
+            HotReloadState state = new HotReloadState();
+            state.Capture("plugin", this.plugin);
+            state.Capture("application", this.application);
+            state.CaptureProperties(Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+            return state;
+        }
+
+        internal void RestoreState(HotReloadState state)
+        {
+            state.Restore("plugin", this.plugin);
+            state.Restore("application", this.application);
+            state.RestoreProperties(this.assembly, Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+        }
+
+        internal void Start(bool resume = false)
+        {
+            Nebula.Runtime.OverrideNebulaApp(this.application);
+            if (resume)
+                this.application.Resume();
+            else
+                Nebula.Runtime.Start();
         }
 
         internal void Unload()
         {
             Nebula.Runtime.Close();
             this.plugin.OnUnload();
+            Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD).ClearProperties();
+            Nebula.Game.PropertyManager.Instance.Clear();
+            Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly);
             Nebula.Runtime.ResetNebulaApp();
 
             this.application = null;

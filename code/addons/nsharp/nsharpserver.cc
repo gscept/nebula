@@ -87,9 +87,7 @@ ToWideString(Util::String const& str)
 /**
 */
 NSharpServer::NSharpServer()
-    : isOpen(false),
-      waitForDebugger(false),
-      debuggerEnabled(false)
+    : isOpen(false)
 {
     __ConstructSingleton;
 }
@@ -383,24 +381,6 @@ NSharpServer::Close()
     this->CloseHostFxr();
 
     this->isOpen = false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-NSharpServer::SetDebuggingEnabled(bool enabled)
-{
-    this->debuggerEnabled = enabled;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-NSharpServer::WaitForDebuggerToConnect(bool enabled)
-{
-    this->waitForDebugger = enabled;
 }
 
 //------------------------------------------------------------------------------

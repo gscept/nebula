@@ -51,6 +51,26 @@ namespace Nebula
             {
                 this.componentRegistry[type] = id;
             }
+
+
+            /// <summary>
+            /// Clears all registered components that belong to a specific assembly.
+            /// </summary>
+            internal void ClearPluginComponents(System.Reflection.Assembly assembly)
+            {
+                List<Type> remove = new List<Type>();
+
+                foreach (KeyValuePair<Type, uint> entry in this.componentRegistry)
+                {
+                    if (entry.Key.Assembly == assembly)
+                        remove.Add(entry.Key);
+                }
+
+                for (int i = 0; i < remove.Count; i++)
+                {
+                    this.componentRegistry.Remove(remove[i]);
+                }
+            }
         }
 
         /// <summary>

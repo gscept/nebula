@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Nebula;
 using Nebula.Game;
 
@@ -79,11 +80,6 @@ namespace Nebula
                     }
                 }
             }
-
-            /// <summary>
-            /// Checks if the property is valid (attached to an entity)
-            /// </summary>
-            public bool IsValid { get { return entity != null; } }
 
             /// <summary>
             /// Override in subclass to tell the property manager which methods to call for this class
@@ -197,13 +193,34 @@ namespace Nebula
             /// </remarks>
             public void Destroy()
             {
-                if (IsValid && active)
+                if (this.IsValid() && this.active)
                 {
                     this.OnDeactivate();
                 }
-                active = false;
-                entity = null;
+                this.active = false;
+                this.entity = null;
             }
+        }
+
+        //--------------------------------------------------------------------------
+        /**
+        */
+        public static class PropertyExtensions
+        {
+            //--------------------------------------------------------------------------
+            /** <summary>
+                Checks if the property is valid (attached to an entity)
+
+                This is safe to call even if the property == null.
+                </summary>
+            */
+            #nullable enable
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsValid([NotNullWhen(true)] this Property? prop)
+            {
+                return prop != null && prop.Entity.IsValid();
+            }
+            #nullable restore
         }
     }
 }

@@ -19,6 +19,8 @@ namespace Nebula
 
             private List<Entity> entities;
             private Dictionary<UInt64, Entity> entityMap;
+
+            static World() { }
             
             public Entity CreateEntity()
             {
@@ -49,6 +51,20 @@ namespace Nebula
             private void RegisterEntity(Entity entity)
             {
                 this.entities.Add(entity);
+                this.entityMap[entity.Id] = entity;
+            }
+
+            internal List<Entity> GetEntities()
+            {
+                return this.entities;
+            }
+
+            internal void ClearProperties()
+            {
+                for (int i = 0; i < this.entities.Count; i++)
+                {
+                    this.entities[i].ClearProperties();
+                }
             }
 
             public void DeregisterEntity(Entity entity)
@@ -57,13 +73,13 @@ namespace Nebula
                 this.entityMap.Remove(entity.Id);
             }
 
-            static World() { }
             private World(uint id)
             {
                 this.id = id;
                 this.entities = new List<Entity>();
                 this.entityMap = new Dictionary<ulong, Entity>();
             }
+
             private static readonly World tempDefaultWorld = new World(DEFAULT_WORLD);
             
             public static World Get(uint id)

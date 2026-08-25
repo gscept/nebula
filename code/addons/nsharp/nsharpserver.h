@@ -40,10 +40,7 @@ public:
     bool Open();
     /// close the script server
     void Close();
-    /// enable debugging. this needs to be called before Open()
-	void SetDebuggingEnabled(bool enabled);
-	void WaitForDebuggerToConnect(bool enabled);
-	/// Load dotnet exe or DLL at path
+    /// Load dotnet exe or DLL at path
     AssemblyId LoadAssembly(IO::URI const& uri);
     /// Execute function in an assembly. This is not very efficient and should not be used in place of delegates
     int ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& function);
@@ -71,9 +68,6 @@ private:
 
     Util::ArrayAllocator<Assembly*> assemblies;
 	Util::Dictionary<Util::String, uint32_t> assemblyTable;
-
-    bool debuggerEnabled;
-	bool waitForDebugger;
 
 	bool isOpen;
     System::Library hostfxr;

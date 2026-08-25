@@ -16,6 +16,8 @@ nebula_idl_generate_cs_target(
 
 SET(NEBULAENGINE_CS_FILES
     ${NROOT}/code/addons/nsharp/NebulaEngine/Main.cs
+    ${NROOT}/code/addons/nsharp/NebulaEngine/HotReloadState.cs
+    ${NROOT}/code/addons/nsharp/NebulaEngine/HotReloadManager.cs
     ${NROOT}/code/addons/nsharp/NebulaEngine/util/String.cs
     ${NROOT}/code/addons/nsharp/NebulaEngine/util/ListExtensions.cs
     ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Api.cs

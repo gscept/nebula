@@ -8,6 +8,8 @@
 */
 #include "game/featureunit.h"
 #include "assemblyid.h"
+#include "threading/safequeue.h"
+#include "util/array.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
@@ -43,6 +45,9 @@ private:
     IO::URI assemblyPath;
     Scripting::AssemblyId engineAssemblyId;
     Ptr<Scripting::NSharpServer> server;
+    Threading::SafeQueue<Util::String> reloadQueue;
+    Util::Array<Util::String> reloads;
+    Util::String reloadWatchPath;
 };
 
 } // namespace Scripting

@@ -114,6 +114,11 @@ namespace Nebula
                 this.isRunning = false;
             }
 
+            internal void Resume()
+            {
+                this.isRunning = true;
+            }
+
             public virtual void OnBeginFrame()
             {
                 // TODO: loop over all worlds and collect garbage

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using Api = Nebula.Game.NebulaApiV1;
 
@@ -46,11 +47,6 @@ namespace Nebula
                 this.world = world;
                 this.id = entityId;
             }
-
-            /// <summary>
-            /// Check if entity is valid (not destroyed)
-            /// </summary>
-            public bool IsValid() { return Api.IsValid(this.id); }
 
             /// <summary>
             /// Check if entity has some unmanaged component
@@ -122,17 +118,19 @@ namespace Nebula
             /// <summary>
             /// Adds a property to the entity
             /// </summary>
-            public void AddProperty(Property property)
+            public void AddProperty(Property property, bool active = true)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
                 if (this.properties == null)
+                {
                     this.properties = new List<Property>();
+                }
 
                 property.Entity = this;
                 this.properties.Add(property);
                 PropertyManager.Instance.RegisterProperty(property);
                 property.AttachMessages();
-                property.Active = true;
+                property.Active = active;
             }
 
             /// <summary>
@@ -231,6 +229,27 @@ namespace Nebula
                     this.dispatcher.Unregister(property);
             }
 
+            internal List<Property> GetProperties()
+            {
+                return this.properties;
+            }
+
+            internal void ClearProperties()
+            {
+                if (this.properties == null)
+                    return;
+
+                for (int i = 0; i < this.properties.Count; i++)
+                {
+                    Property property = this.properties[i];
+                    PropertyManager.Instance.UnregisterProperty(property);
+                    property.DetachMessages();
+                    property.Destroy();
+                }
+                this.properties.Clear();
+                this.dispatcher = null;
+            }
+
             /// <summary>
             /// Schedule the entity for destruction.
             /// Note that this does not immediately remove the entity from the native backend.
@@ -266,6 +285,27 @@ namespace Nebula
             {
                 return id.ToString();
             }
+        }
+
+        //--------------------------------------------------------------------------
+        /**
+        */
+        public static class EntityExtensions
+        {
+            //--------------------------------------------------------------------------
+            /** <summary>
+                Returns true if entity is valid (not destroyed).
+
+                This is safe to call even if the entity == null.
+                </summary>
+            */
+            #nullable enable
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsValid([NotNullWhen(true)] this Entity? entity)
+            {
+                return entity != null && Api.IsValid(entity.Id);
+            }
+            #nullable restore
         }
     }
 }

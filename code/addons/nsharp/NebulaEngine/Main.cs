@@ -153,7 +153,7 @@ namespace NebulaEngine
 {
     public class AppEntry
     {
-        private static Nebula.GamePluginContext gamePlugin;
+        private static HotReloadManager hotReloadManager;
 
         [UnmanagedCallersOnly]
         static public int Main(IntPtr pluginPath, int pluginPathLength)
@@ -168,9 +168,9 @@ namespace NebulaEngine
                 consoleWriter.WriteLineEvent += ConsoleEvents.WriteLineFunc;
                 Console.SetOut(consoleWriter);
 
-                Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
                 string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
-                gamePlugin = Nebula.GamePluginContext.Load(path);
+                hotReloadManager = new HotReloadManager();
+                hotReloadManager.Load(path);
 
                 return 0;
             }
@@ -184,11 +184,20 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         static public void Exit()
         {
-            if (gamePlugin != null)
+            if (hotReloadManager != null)
             {
-                gamePlugin.Unload();
-                gamePlugin = null;
+                hotReloadManager.Unload();
+                hotReloadManager = null;
             }
+        }
+
+        [UnmanagedCallersOnly]
+        static public void RequestReload(IntPtr pluginPath, int pluginPathLength)
+        {
+            if (hotReloadManager == null)
+                return;
+            string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
+            hotReloadManager.RequestReload(path);
         }
 
         [UnmanagedCallersOnly]
@@ -207,6 +216,8 @@ namespace NebulaEngine
         static public void OnEndFrame()
         {
             Nebula.Runtime.OnEndFrame();
+            if (hotReloadManager != null)
+                hotReloadManager.ProcessPendingReload();
         }
     }
 }

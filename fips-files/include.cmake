@@ -530,8 +530,12 @@ function(nebula_dotnet_project)
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>\n\
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>\n\
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>\n\
-    <LangVersion>7.2</LangVersion>\n\
+    <LangVersion>latestMajor</LangVersion>\n\
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n\
+  </PropertyGroup>\n\
+  <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">\n\
+    <DebugSymbols>true</DebugSymbols>\n\
+    <DebugType>portable</DebugType>\n\
   </PropertyGroup>\n\
   <ItemGroup>\n\
 ${compile_items}  </ItemGroup>\n\
