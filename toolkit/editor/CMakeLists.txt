@@ -25,8 +25,6 @@ fips_dir(.)
         )
     endforeach()
 
-    fips_files_ex(scripts/ *.py GROUP "scripts")
-
 fips_dir(render)
     nebula_framescript_add(editorframe.json) 
 	nebula_framescript_add(preview.json) 

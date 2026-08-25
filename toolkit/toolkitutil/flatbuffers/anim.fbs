@@ -3,6 +3,8 @@
 //    animation import type
 //
 //    (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
 include "foundation/math.fbs";
 
 namespace ToolkitUtil;
