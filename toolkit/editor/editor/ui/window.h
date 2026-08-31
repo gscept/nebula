@@ -44,6 +44,9 @@ public:
     /// Runs and renders the window one frame
     virtual void Run(SaveMode save);
 
+    /// Checks if the window should run at all (contextual)
+    virtual bool ShouldRun();
+
     /// Runs every frame, no matter if the window is open or not.
     virtual void Update();
     

@@ -35,24 +35,13 @@ URN::Split(const String& s)
     this->Clear();
     this->isEmpty = false;
 
-    // resolve assigns first
-    String str;
-    if (AssignRegistry::HasInstance())
-    {
-        str = AssignRegistry::Instance()->ResolveAssignsInString(s);
-    }
-    else
-    {
-        str = s;
-    }
-
     // URN must start with "urn:"
-    if (str.Length() < 5)
+    if (s.Length() < 5)
     {
         this->Clear();
         return false;
     }
-    String prefix = str.ExtractRange(0, 4);
+    String prefix = s.ExtractRange(0, 4);
     prefix.ToLower();
     if (prefix != "urn:")
     {
@@ -61,7 +50,7 @@ URN::Split(const String& s)
     }
 
     // split off fragment and query from the URN body
-    String body = str.ExtractToEnd(4);
+    String body = s.ExtractToEnd(4);
     IndexT fragmentIndex = body.FindCharIndex('#');
     if (InvalidIndex != fragmentIndex)
     {
@@ -95,6 +84,7 @@ URN::Split(const String& s)
     nid.ToLower();
     this->SetNamespace(nid);
     this->SetSpecific(nss);
+    this->string = this->Build();
     return true;
 }
 

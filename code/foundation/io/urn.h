@@ -45,7 +45,7 @@ public:
     /// set complete URI string
     void Set(const Util::String& s);
     /// return as concatenated string
-    Util::String AsString() const;
+    const Util::String& AsString() const;
 
     /// return true if the URN is empty
     bool IsEmpty() const;
@@ -83,6 +83,7 @@ private:
     Util::String nss;
     Util::String query;
     Util::String fragment;
+    Util::String string;
 };
 
 //------------------------------------------------------------------------------
@@ -234,10 +235,10 @@ URN::Clear()
 /**
 */
 inline 
-Util::String
+const Util::String&
 URN::AsString() const
 {
-    return this->Build();
+    return this->string;
 }
 
 //------------------------------------------------------------------------------

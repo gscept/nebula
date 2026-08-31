@@ -56,7 +56,6 @@ WindowServer::~WindowServer()
     __DestructSingleton;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -82,33 +81,30 @@ RunImportWindows(ToolkitUtil::Logger* logger)
     static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
     static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> FbxFiles;
     static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> GltfFiles;
-    if (!Dynui::ImguiDragAndDropFiles.IsEmpty())
+    for (const auto& file : Dynui::ImguiDragAndDropFiles)
     {
-        for (const auto& file : Dynui::ImguiDragAndDropFiles)
-        {
-            static Util::String ext;
-            ext = file.GetFileExtension();
+        static Util::String ext;
+        ext = file.GetFileExtension();
 
-            if (ext == "fbx")
-            {
-                FbxFiles.Append({ file, {} });
-            }
-            else if (ext == "gltf" || ext == "glb")
-            {
-                GltfFiles.Append({ file, {} });
-            }
-            else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
-            {
-                TextureResources.Append(
-                    {
-                        file,
-                        ToolkitUtil::SetupTextureImportSettingsFromPath(file),
-                        CoreGraphics::InvalidTextureId,
-                        Dynui::AllocateImguiTextureId({}),
-                        Resources::InvalidResourceId
-                    }
-                );
-            }
+        if (ext == "fbx")
+        {
+            FbxFiles.Append({ file, {} });
+        }
+        else if (ext == "gltf" || ext == "glb")
+        {
+            GltfFiles.Append({ file, {} });
+        }
+        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
+        {
+            TextureResources.Append(
+                {
+                    file,
+                    ToolkitUtil::SetupTextureImportSettingsFromPath(file),
+                    CoreGraphics::InvalidTextureId,
+                    Dynui::AllocateImguiTextureId({}),
+                    Resources::InvalidResourceId
+                }
+            );
         }
     }
 
@@ -689,7 +685,9 @@ WindowServer::RunAll()
         ImGui::EndMainMenuBar();
     }
 
-    RunImportWindows(&this->logger);
+    if (!Dynui::ImguiDragAndDropFiles.IsEmpty())
+        RunImportWindows(&this->logger);
+
     // clear transient hover state, it's re-evaluated as windows run
     Tools::SelectionContext::ClearHovered();
 
@@ -697,6 +695,9 @@ WindowServer::RunAll()
     for (SizeT i = 0; i < this->windows.Size(); i++)
     {
         auto it = this->windows[i];
+
+        if (!it->ShouldRun())
+            continue;
         
         N_SCOPE_DYN(it->name.AsCharPtr(), UI)
         if (it->Open())

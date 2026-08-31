@@ -50,15 +50,15 @@ struct BiomeTextures
     Ids::Id32 imguiMaskId;
     Dynui::ImguiTextureId mask;
     CoreGraphics::TextureId maskTex;
-    Util::FixedArray<Resources::ResourceName> albedoPaths;
+    Util::FixedArray<IO::URN> albedoPaths;
     Util::FixedArray<Resources::ResourceId> albedoResources;
     Util::FixedArray<Dynui::ImguiTextureId> albedo;
     Util::FixedArray<Ids::Id32> imguiAlbedoId;
-    Util::FixedArray<Resources::ResourceName> normalsPaths;
+    Util::FixedArray<IO::URN> normalsPaths;
     Util::FixedArray<Resources::ResourceId> normalsResources;
     Util::FixedArray<Dynui::ImguiTextureId> normals;
     Util::FixedArray<Ids::Id32> imguiNormalId;
-    Util::FixedArray<Resources::ResourceName> materialPaths;
+    Util::FixedArray<IO::URN> materialPaths;
     Util::FixedArray<Resources::ResourceId> materialResources;
     Util::FixedArray<Dynui::ImguiTextureId> material;
     Util::FixedArray<Ids::Id32> imguiMaterialId;
@@ -281,37 +281,17 @@ void
 TerrainEditor::Run(SaveMode save)
 {
     auto const& selection = Tools::SelectionContext::Selection();
-    if (selection.Size() != 1)
-    {
-        return;
-    }
-
     Editor::Entity entity = selection[0];
     Game::World* world = Game::GetWorld(entity.world);
     static GraphicsFeature::Terrain terrainComponent;
-
-    bool isTerrain = false;
+    terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(entity);
 
     if (entity != selectedTerrainEntity)
     {
-        Editor::Entity const entity = selection[0];
-        Game::EntityMapping entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
-        auto const& components = world->GetDatabase()->GetTable(entityMapping.table).GetAttributes();
+        // File can't open, assume path is not set and create an empty terrain resource
+        selectedTerrainResource = Render::TerrainResourceT();
 
-        auto terrainComponentId = Game::GetComponentId<GraphicsFeature::Terrain>();
-        for (int i = 0; i < components.Size(); i++)
-        {
-            auto component = components[i];
-
-            if (component == terrainComponentId)
-            {
-                terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(entity);
-                isTerrain = true;
-                break;
-            }
-        }
-
-        if (isTerrain)
+        if (terrainComponent.terrainResourcePath.IsValid())
         {
             Ptr<IO::Stream> terrainResource = IO::CreateStream(terrainComponent.terrainResourcePath);
             if (terrainResource->Open())
@@ -322,81 +302,257 @@ TerrainEditor::Run(SaveMode save)
                 );
                 terrainResource->Close();
             }
-            else
-            {
-                // File can't open, assume path is not set and create an empty terrain resource
-                selectedTerrainResource = Render::TerrainResourceT();
-            }
+        }
+        selectedTerrainEntity = entity;
+    }
+
+    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
+    terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
+    terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
+    CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
+
+    terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);
+
+    if (save == SaveMode::SaveActive || save == SaveMode::SaveAll)
+    {
+        Util::String heightmapName = Util::String::Sprintf("%s_height", Editor::state.editables[entity.index].guid.AsString().AsCharPtr());
+        Util::String basePath = Util::String::Sprintf(BaseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
+        IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
+
+        const Util::String heightMapPath = basePath + heightmapName + ".png";
+        CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
+        CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
+        CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(heightMapPath));
+        CoreGraphics::DestroyImage(image);
+
+        selectedTerrainResource.height_map = heightMapPath;
+
+        for (uint i = 0; i < terrainEditorState.biomes.Size(); i++)
+        {
+            Util::String maskName = Util::String::Sprintf("biomemask_%s_%d", Editor::state.editables[entity.index].guid.AsString().AsCharPtr(), i);
+            const Util::String biomeMaskPath = basePath + maskName + ".png";
+            image = CoreGraphics::CreateImage(terrainEditorState.biomeTextures[i].maskTex, CoreGraphics::PipelineStage::AllShadersRead);
+            CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit8UInt, true);
+            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(biomeMaskPath));
+            CoreGraphics::DestroyImage(image);
+
+            selectedTerrainResource.biomes[i]->mask = biomeMaskPath;
+        }
+            
+        Util::String baseExportPath = Util::String::Sprintf(BaseTerrainExportPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
+        IO::URI resourcePathName = IO::URI(baseExportPath + Editor::state.editables[entity.index].guid.AsString());
+        terrainComponent.terrainResourcePath = resourcePathName.LocalPath();
+        Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
+
+        Util::Blob serialized = Flat::FlatbufferInterface::SerializeFlatbuffer<Render::TerrainResource>(selectedTerrainResource);
+        Ptr<IO::Stream> file = IO::CreateStream(resourcePathName);
+        file->SetAccessMode(IO::Stream::WriteAccess);
+        if (file->Open())
+        {
+            file->Write(serialized.GetPtr(), serialized.Size());
+            file->Close();
+        }
+        else
+        {
+            n_warning("[Terrain Editor] Failed to save %s\n", resourcePathName.LocalPath().AsCharPtr());
+        }
+
+        Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
+    }
+
+    // Setup initial state
+    if (terrainEditorState.activeHeightMap == CoreGraphics::InvalidTextureId)
+    {
+        CoreGraphics::TextureCreateInfo texInfo;
+        texInfo.name = "Editor Height Map";
+        texInfo.width = selectedTerrainResource.world_size_x;
+        texInfo.height = selectedTerrainResource.world_size_z;
+        texInfo.format = CoreGraphics::PixelFormat::R16;
+        texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
+        terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
+
+        terrainEditorState.brushUniforms.heightmapSize[0] = selectedTerrainResource.world_size_x;
+        terrainEditorState.brushUniforms.heightmapSize[1] = selectedTerrainResource.world_size_z;
+
+        CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
+            terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
+        });
+
+        CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
+
+        // Load heightmap for copying to our editable resource
+        Resources::ResourceId heightMapRes = Resources::CreateResource(selectedTerrainResource.height_map, "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
+        {
+            // Copy over data from resource to our editable texture
+            CoreGraphics::TextureId source = id;
+            CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(source);
+            CoreGraphics::TextureCopy from, to;
+            from.layer = 0;
+            from.mip = 0;
+            from.region = Math::rectangle<SizeT>(0, 0, dims.width, dims.height);
+            from.bits = CoreGraphics::ImageBits::ColorBits;
+            to.layer = 0;
+            to.mip = 0;
+            to.region = Math::rectangle<SizeT>(0, 0, selectedTerrainResource.world_size_x, selectedTerrainResource.world_size_z);
+            to.bits = CoreGraphics::ImageBits::ColorBits;
+
+            CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
+            cmdBufInfo.pool = terrainEditorState.cmdPool;
+            cmdBufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);
+
+            CoreGraphics::CmdBufferBeginInfo beginInfo;
+            beginInfo.submitOnce = true;
+            beginInfo.submitDuringPass = false;
+            beginInfo.resubmittable = false;
+            CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::BarrierDomain::Global,
+                                    {
+                                        CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                    });
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ImageInitial, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+                                    {
+                                        CoreGraphics::TextureBarrierInfo{.tex = heightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                    });
+            CoreGraphics::CmdBlit(cmdBuf, source, from, heightMap, to);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                                    {
+                                        CoreGraphics::TextureBarrierInfo{.tex = heightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                    });
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                                    {
+                                        CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                    });
+            CoreGraphics::CmdEndRecord(cmdBuf);
+
+
+            CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::GraphicsQueueType);
+
+
+        }, nullptr, true, false);
+    }
+
+    Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
+
+    for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
+    {
+        terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", i));
+
+        const std::unique_ptr<Render::BiomeT>& biomeComp = selectedTerrainResource.biomes[i];
+
+        BiomeTextures biomeTextures;
+        Terrain::BiomeSettings& biomeSettings = terrainEditorState.biomeSettings[i];
+
+        for (IndexT j = 0; j < 4; j++)
+        {
+            biomeTextures.albedoPaths[j] = IO::URN(biomeComp->materials[j]->albedo);
+            biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
+            biomeTextures.albedo[j].nebulaHandle = biomeTextures.albedoResources[j];
+            biomeTextures.normalsPaths[j] = IO::URN(biomeComp->materials[j]->normals);
+            biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
+            biomeTextures.normals[j].nebulaHandle = biomeTextures.normalsResources[j];
+            biomeTextures.materialPaths[j] = IO::URN(biomeComp->materials[j]->material);
+            biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
+            biomeTextures.material[j].nebulaHandle = biomeTextures.materialResources[j];
+
+            biomeSettings.materials[j].albedo = IO::URN(biomeComp->materials[j]->albedo);
+            biomeSettings.materials[j].normal = IO::URN(biomeComp->materials[j]->normals);
+            biomeSettings.materials[j].material = IO::URN(biomeComp->materials[j]->material);
+        }
+
+        biomeSettings.biomeMask = biomeComp->mask;
+        biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
+        biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
+        biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
+
+        Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, terrainEditorState.biomeSettings[i]);
+        terrainEditorState.biomes.Append(biome);
+        terrainEditorState.biomeTextures.Append(biomeTextures);
+        terrainEditorState.biomeSettings.Append(biomeSettings);
+    }
+
+    if (ImGui::CollapsingHeader("Terrain Generation"))
+    {
+        ImGui::SliderFloat("Min Height", &selectedTerrainResource.min_height, 0.0f, 1024.0f);
+        ImGui::SliderFloat("Max Height", &selectedTerrainResource.max_height, 0.0f, 1024.0f);
+        ImGui::SliderFloat("Quads Per Tile Horizontal", &selectedTerrainResource.quads_per_tile_x, 16, 512);
+        ImGui::SliderFloat("Quads Per Tile Vertical", &selectedTerrainResource.quads_per_tile_z, 16, 512);
+        ImGui::SliderFloat("Tile Height", &selectedTerrainResource.tile_height, 16, 512);
+        ImGui::SliderFloat("Tile Width", &selectedTerrainResource.tile_width, 16, 512);
+        ImGui::SliderFloat("World Width", &selectedTerrainResource.world_size_x, 1024, 16384);
+        ImGui::SliderFloat("World Height", &selectedTerrainResource.world_size_z, 1024, 16384);
+        Editor::state.editorWorld->MarkAsModified(entity);
+
+        ImGui::NewLine();
+        if (ImGui::Button("Generate Terrain"))
+        {
+            Terrain::TerrainCreateInfo info;
+            info.minHeight = selectedTerrainResource.min_height;
+            info.maxHeight = selectedTerrainResource.max_height;
+            info.quadsPerTileX = selectedTerrainResource.quads_per_tile_x;
+            info.quadsPerTileY = selectedTerrainResource.quads_per_tile_z;
+            info.tileWidth = selectedTerrainResource.tile_width;
+            info.tileHeight = selectedTerrainResource.tile_height;
+            info.width = selectedTerrainResource.world_size_x;
+            info.height = selectedTerrainResource.world_size_z;
+                
+            Terrain::TerrainContext::SetupTerrain(terrainComponent.graphicsEntityId, info);
         }
     }
 
-    if (isTerrain)
+    terrainEditorState.brushUniforms.minHeight = selectedTerrainResource.min_height;
+    terrainEditorState.brushUniforms.maxHeight = selectedTerrainResource.max_height;
+    terrainEditorState.invalidateBrush = true;
+    CoreGraphics::TextureDimensions brushDims = CoreGraphics::TextureGetDimensions(terrainEditorState.brushTexture);
+
+    terrainEditorState.brushUniforms.brushTextureSize[0] = brushDims.width;
+    terrainEditorState.brushUniforms.brushTextureSize[1] = brushDims.height;
+
+    if (terrainEditorState.invalidateBrush)
     {
-        Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-        Math::vec2 mousePos = mouse->GetPixelPosition();
-        terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
-        terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
-        CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
-
-        terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);
-
-        if (save == SaveMode::SaveActive || save == SaveMode::SaveAll)
+        terrainEditorState.brushGenerationUniforms.size[0] = brushDims.width;
+        terrainEditorState.brushGenerationUniforms.size[1] = brushDims.height;
+        terrainEditorState.brushGenerationUniforms.hardness = terrainEditorState.brushHardness;
+        terrainEditorState.brushGenerationUniforms.shape = terrainEditorState.brushShape;
+        CoreGraphics::BufferUpdate(terrainEditorState.brushGenerationUniformBuffer, terrainEditorState.brushGenerationUniforms);
+    }
+    if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
         {
-            Util::String heightmapName = Util::String::Sprintf("%s_height", Editor::state.editables[entity.index].guid.AsString().AsCharPtr());
-            Util::String basePath = Util::String::Sprintf(BaseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
-            IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
+            static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+            Dynui::ImguiTextureId textureInfo;
+            textureInfo.nebulaHandle = terrainEditorState.activeHeightMap.id;
+            textureInfo.mip = 0;
+            textureInfo.layer = 0;
+            textureInfo.rangeMin = selectedTerrainResource.min_height;
+            textureInfo.rangeMax = selectedTerrainResource.max_height;
+            textureInfo.splat = 1;
+            Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
-            const Util::String heightMapPath = basePath + heightmapName + ".png";
-            CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
-            CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
-            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(heightMapPath));
-            CoreGraphics::DestroyImage(image);
+            ImVec2 imageSize = { 128.0f, 128.0f };
 
-            selectedTerrainResource.height_map = heightMapPath;
-
-            for (uint i = 0; i < terrainEditorState.biomes.Size(); i++)
-            {
-                Util::String maskName = Util::String::Sprintf("biomemask_%s_%d", Editor::state.editables[entity.index].guid.AsString().AsCharPtr(), i);
-                const Util::String biomeMaskPath = basePath + maskName + ".png";
-                image = CoreGraphics::CreateImage(terrainEditorState.biomeTextures[i].maskTex, CoreGraphics::PipelineStage::AllShadersRead);
-                CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit8UInt, true);
-                CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(biomeMaskPath));
-                CoreGraphics::DestroyImage(image);
-
-                selectedTerrainResource.biomes[i]->mask = biomeMaskPath;
-            }
-            
-            Util::String baseExportPath = Util::String::Sprintf(BaseTerrainExportPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
-            IO::URI resourcePathName = IO::URI(baseExportPath + Editor::state.editables[entity.index].guid.AsString());
-            terrainComponent.terrainResourcePath = resourcePathName.LocalPath();
-            Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
-
-            Util::Blob serialized = Flat::FlatbufferInterface::SerializeFlatbuffer<Render::TerrainResource>(selectedTerrainResource);
-            Ptr<IO::Stream> file = IO::CreateStream(resourcePathName);
-            file->SetAccessMode(IO::Stream::WriteAccess);
-            if (file->Open())
-            {
-                file->Write(serialized.GetPtr(), serialized.Size());
-                file->Close();
-            }
-            else
-            {
-                n_warning("[Terrain Editor] Failed to save %s\n", resourcePathName.LocalPath().AsCharPtr());
-            }
-
-            Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
+            ImTextureRef ref {imguiTexId};
+            ImGui::Image(ref, imageSize);
         }
 
-        // Setup initial state
-        if (terrainEditorState.activeHeightMap == CoreGraphics::InvalidTextureId)
+        if (ImGui::Button("New Heightmap"))
         {
+            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
+            {
+                CoreGraphics::DestroyTexture(terrainEditorState.activeHeightMap);
+                terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
+            }
+
             CoreGraphics::TextureCreateInfo texInfo;
             texInfo.name = "Editor Height Map";
             texInfo.width = selectedTerrainResource.world_size_x;
             texInfo.height = selectedTerrainResource.world_size_z;
             texInfo.format = CoreGraphics::PixelFormat::R16;
-            texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
+            texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferSource;
             terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
+            Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
 
             terrainEditorState.brushUniforms.heightmapSize[0] = selectedTerrainResource.world_size_x;
             terrainEditorState.brushUniforms.heightmapSize[1] = selectedTerrainResource.world_size_z;
@@ -406,448 +562,287 @@ TerrainEditor::Run(SaveMode save)
             });
 
             CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
-
-            // Load heightmap for copying to our editable resource
-            Resources::ResourceId heightMapRes = Resources::CreateResource(selectedTerrainResource.height_map, "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
-            {
-                // Copy over data from resource to our editable texture
-                CoreGraphics::TextureId source = id;
-                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(source);
-                CoreGraphics::TextureCopy from, to;
-                from.layer = 0;
-                from.mip = 0;
-                from.region = Math::rectangle<SizeT>(0, 0, dims.width, dims.height);
-                from.bits = CoreGraphics::ImageBits::ColorBits;
-                to.layer = 0;
-                to.mip = 0;
-                to.region = Math::rectangle<SizeT>(0, 0, selectedTerrainResource.world_size_x, selectedTerrainResource.world_size_z);
-                to.bits = CoreGraphics::ImageBits::ColorBits;
-
-                CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
-                cmdBufInfo.pool = terrainEditorState.cmdPool;
-                cmdBufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-                CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);
-
-                CoreGraphics::CmdBufferBeginInfo beginInfo;
-                beginInfo.submitOnce = true;
-                beginInfo.submitDuringPass = false;
-                beginInfo.resubmittable = false;
-                CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
-                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::BarrierDomain::Global,
-                                        {
-                                            CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
-                                        });
-                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ImageInitial, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
-                                        {
-                                            CoreGraphics::TextureBarrierInfo{.tex = heightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
-                                        });
-                CoreGraphics::CmdBlit(cmdBuf, source, from, heightMap, to);
-                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
-                                        {
-                                            CoreGraphics::TextureBarrierInfo{.tex = heightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
-                                        });
-                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
-                                        {
-                                            CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
-                                        });
-                CoreGraphics::CmdEndRecord(cmdBuf);
-
-
-                CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::GraphicsQueueType);
-
-
-            }, nullptr, true, false);
         }
 
-        Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
-
-        for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
+        if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
         {
-            terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", i));
-
-            const std::unique_ptr<Render::BiomeT>& biomeComp = selectedTerrainResource.biomes[i];
-
-            BiomeTextures biomeTextures;
-            Terrain::BiomeSettings& biomeSettings = terrainEditorState.biomeSettings[i];
-
-            for (IndexT j = 0; j < 4; j++)
+            if (drawModeButton("Raise", terrainEditorState.brushUniforms.mode, Terrainbrush::Raise))
             {
-                biomeTextures.albedoPaths[j] = biomeComp->materials[j]->albedo;
-                biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
-                biomeTextures.albedo[j].nebulaHandle = biomeTextures.albedoResources[j];
-                biomeTextures.normalsPaths[j] = biomeComp->materials[j]->normals;
-                biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
-                biomeTextures.normals[j].nebulaHandle = biomeTextures.normalsResources[j];
-                biomeTextures.materialPaths[j] = biomeComp->materials[j]->material;
-                biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
-                biomeTextures.material[j].nebulaHandle = biomeTextures.materialResources[j];
-
-                biomeSettings.materials[j].albedo = biomeComp->materials[j]->albedo;
-                biomeSettings.materials[j].normal = biomeComp->materials[j]->normals;
-                biomeSettings.materials[j].material = biomeComp->materials[j]->material;
+                terrainEditorState.brushUniforms.mode = Terrainbrush::Raise;
             }
+            ImGui::SameLine();
 
-            biomeSettings.biomeMask = biomeComp->mask;
-            biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
-            biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
-            biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
+            if (drawModeButton("Lower", terrainEditorState.brushUniforms.mode, Terrainbrush::Lower))
+            {
+                terrainEditorState.brushUniforms.mode = Terrainbrush::Lower;
+            }
+            ImGui::SameLine();
 
-            Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, terrainEditorState.biomeSettings[i]);
-            terrainEditorState.biomes.Append(biome);
-            terrainEditorState.biomeTextures.Append(biomeTextures);
-            terrainEditorState.biomeSettings.Append(biomeSettings);
+            if (drawModeButton("Flatten", terrainEditorState.brushUniforms.mode, Terrainbrush::Flatten))
+            {
+                terrainEditorState.brushUniforms.mode = Terrainbrush::Flatten;
+            }
+            ImGui::SameLine();
+
+            if (drawModeButton("Smooth", terrainEditorState.brushUniforms.mode, Terrainbrush::Smooth))
+            {
+                terrainEditorState.brushUniforms.mode = Terrainbrush::Smooth;
+            }
         }
 
-        if (ImGui::CollapsingHeader("Terrain Generation"))
+        if (ImGui::CollapsingHeader("Brush"))
         {
-            ImGui::SliderFloat("Min Height", &selectedTerrainResource.min_height, 0.0f, 1024.0f);
-            ImGui::SliderFloat("Max Height", &selectedTerrainResource.max_height, 0.0f, 1024.0f);
-            ImGui::SliderFloat("Quads Per Tile Horizontal", &selectedTerrainResource.quads_per_tile_x, 16, 512);
-            ImGui::SliderFloat("Quads Per Tile Vertical", &selectedTerrainResource.quads_per_tile_z, 16, 512);
-            ImGui::SliderFloat("Tile Height", &selectedTerrainResource.tile_height, 16, 512);
-            ImGui::SliderFloat("Tile Width", &selectedTerrainResource.tile_width, 16, 512);
-            ImGui::SliderFloat("World Width", &selectedTerrainResource.world_size_x, 1024, 16384);
-            ImGui::SliderFloat("World Height", &selectedTerrainResource.world_size_z, 1024, 16384);
+            static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+            Dynui::ImguiTextureId textureInfo;
+            textureInfo.nebulaHandle = terrainEditorState.brushTexture;
+            Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+
+            ImVec2 imageSize = { 64.0f, 64.0f };
+            ImTextureRef ref {imguiTexId};
+            ImGui::Image(ref, imageSize);
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            {
+                static const char* shapeStr = "Circle";
+                if (ImGui::BeginCombo("Shape", shapeStr))
+                {
+                    if (ImGui::Selectable("Circle"))
+                    {
+                        shapeStr = "Circle";
+                        terrainEditorState.brushShape = Terrainbrush::BrushGenerationShape::Circle;
+                    }
+                    if (ImGui::Selectable("Rectangle"))
+                    {
+                        shapeStr = "Rectangle";
+                        terrainEditorState.brushShape = Terrainbrush::BrushGenerationShape::Rectangle;
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::SliderFloat("Hardness", &terrainEditorState.brushHardness, 0.0f, 0.999f);
+                ImGui::SliderFloat("Falloff", &terrainEditorState.brushFalloff, 0.0f, 1.0f);
+                ImGui::SliderFloat("Size", &terrainEditorState.brushSize, 1.0f, 512.0f);
+                ImGui::SliderFloat("Strength", &terrainEditorState.brushUniforms.strength, 0.1f, 1.0f);
+            }
+            ImGui::EndGroup();
+        }
+
+        if (terrainEditorState.paint)
+        {
+            Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
             Editor::state.editorWorld->MarkAsModified(entity);
-
-            ImGui::NewLine();
-            if (ImGui::Button("Generate Terrain"))
-            {
-                Terrain::TerrainCreateInfo info;
-                info.minHeight = selectedTerrainResource.min_height;
-                info.maxHeight = selectedTerrainResource.max_height;
-                info.quadsPerTileX = selectedTerrainResource.quads_per_tile_x;
-                info.quadsPerTileY = selectedTerrainResource.quads_per_tile_z;
-                info.tileWidth = selectedTerrainResource.tile_width;
-                info.tileHeight = selectedTerrainResource.tile_height;
-                info.width = selectedTerrainResource.world_size_x;
-                info.height = selectedTerrainResource.world_size_z;
-                
-                Terrain::TerrainContext::SetupTerrain(terrainComponent.graphicsEntityId, info);
-            }
         }
 
-        terrainEditorState.brushUniforms.minHeight = selectedTerrainResource.min_height;
-        terrainEditorState.brushUniforms.maxHeight = selectedTerrainResource.max_height;
-        terrainEditorState.invalidateBrush = true;
-        CoreGraphics::TextureDimensions brushDims = CoreGraphics::TextureGetDimensions(terrainEditorState.brushTexture);
-
-        terrainEditorState.brushUniforms.brushTextureSize[0] = brushDims.width;
-        terrainEditorState.brushUniforms.brushTextureSize[1] = brushDims.height;
-
-        if (terrainEditorState.invalidateBrush)
+        if (ImGui::CollapsingHeader("Biomes"))
         {
-            terrainEditorState.brushGenerationUniforms.size[0] = brushDims.width;
-            terrainEditorState.brushGenerationUniforms.size[1] = brushDims.height;
-            terrainEditorState.brushGenerationUniforms.hardness = terrainEditorState.brushHardness;
-            terrainEditorState.brushGenerationUniforms.shape = terrainEditorState.brushShape;
-            CoreGraphics::BufferUpdate(terrainEditorState.brushGenerationUniformBuffer, terrainEditorState.brushGenerationUniforms);
-        }
-        if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
+            if (ImGui::Button("New Biome"))
             {
-                static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
-                Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainEditorState.activeHeightMap.id;
-                textureInfo.mip = 0;
-                textureInfo.layer = 0;
-                textureInfo.rangeMin = selectedTerrainResource.min_height;
-                textureInfo.rangeMax = selectedTerrainResource.max_height;
-                textureInfo.splat = 1;
-                Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
+                selectedTerrainResource.biomes.push_back(std::move(std::make_unique<Render::BiomeT>()));
+                const std::unique_ptr<Render::BiomeT>& biomeT = selectedTerrainResource.biomes.back();
 
-                ImVec2 imageSize = { 128.0f, 128.0f };
+                Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, {});
+                terrainEditorState.biomes.Append(biome);
+                terrainEditorState.biomeSettings.Append({});
+                terrainEditorState.biomeTextures.Append(BiomeTextures());
+                BiomeTextures& textures = terrainEditorState.biomeTextures.Back();
 
-                ImTextureRef ref {imguiTexId};
-                ImGui::Image(ref, imageSize);
-            }
+                // Create new mask
+                CoreGraphics::TextureCreateInfo maskTexInfo;
+                maskTexInfo.name = "Biome Mask Texture";
+                maskTexInfo.width = selectedTerrainResource.world_size_x;
+                maskTexInfo.height = selectedTerrainResource.world_size_z;
+                maskTexInfo.format = CoreGraphics::PixelFormat::R8;
+                maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
+                textures.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
+                textures.mask.nebulaHandle = textures.maskTex;
+                textures.mask.splat = 1;
 
-            if (ImGui::Button("New Heightmap"))
-            {
-                if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
+                terrainEditorState.activeBiomeMask = textures.maskTex;
+                Terrain::TerrainContext::SetBiomeMask(terrainComponent.graphicsEntityId, biome, textures.maskTex);
+
+                for (int i = 0; i < 4; i++)
                 {
-                    CoreGraphics::DestroyTexture(terrainEditorState.activeHeightMap);
-                    terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
+                    Dynui::ImguiTextureId& alb = textures.albedo[i];
+                    textures.albedoPaths[i] = IO::URN("urn:tex:system/white");
+                    biomeT->materials[i]->albedo = textures.albedoPaths[i].AsString();
+                    textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, true, false);
+                    alb.nebulaHandle = textures.albedoResources[i];
+
+                    Dynui::ImguiTextureId& nor = textures.normals[i];
+                    textures.normalsPaths[i] = IO::URN("urn:tex:system/nobump");
+                    biomeT->materials[i]->normals = textures.normalsPaths[i].AsString();
+                    textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, true, false);
+                    nor.nebulaHandle = textures.normalsResources[i];
+
+                    Dynui::ImguiTextureId& mat = textures.material[i];
+                    textures.materialPaths[i] = IO::URN("urn:tex:system/default_material");
+                    biomeT->materials[i]->material = textures.materialPaths[i].AsString();
+                    textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, true, false);
+                    mat.nebulaHandle = textures.materialResources[i];
                 }
+                terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", terrainEditorState.biomes.Size() - 1));
+            }
 
-                CoreGraphics::TextureCreateInfo texInfo;
-                texInfo.name = "Editor Height Map";
-                texInfo.width = selectedTerrainResource.world_size_x;
-                texInfo.height = selectedTerrainResource.world_size_z;
-                texInfo.format = CoreGraphics::PixelFormat::R16;
-                texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferSource;
-                terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
-                Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
+            static int selectedBiome = -1;
+            if (ImGui::BeginListBox("###BiomeList"))
+            {
+                for (int i = 0; i < terrainEditorState.biomes.Size(); i++)
+                {
+                    if (ImGui::Selectable(terrainEditorState.biomeNames[i].AsCharPtr()))
+                    {
+                        selectedBiome = i;
+                    }
+                }
+                ImGui::EndListBox();
+            }
 
-                terrainEditorState.brushUniforms.heightmapSize[0] = selectedTerrainResource.world_size_x;
-                terrainEditorState.brushUniforms.heightmapSize[1] = selectedTerrainResource.world_size_z;
-
+            if (selectedBiome != -1)
+            {
+                auto biomeId = terrainEditorState.biomes[selectedBiome];
+                auto& biomeSettings = terrainEditorState.biomeSettings[selectedBiome];
+                terrainEditorState.activeBiomeMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
                 CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-                    terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
+                    terrainEditorState.activeBiomeMask, Terrainbrush::OutputMask::BINDING
                 });
-
                 CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
-            }
 
-            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
-            {
-                if (drawModeButton("Raise", terrainEditorState.brushUniforms.mode, Terrainbrush::Raise))
-                {
-                    terrainEditorState.brushUniforms.mode = Terrainbrush::Raise;
-                }
+                ImGui::Text("Mask");
+                ImTextureRef ref {terrainEditorState.biomeTextures[selectedBiome].imguiMaskId};
+                ImGui::Image(ref, ImVec2(128, 128));
                 ImGui::SameLine();
-
-                if (drawModeButton("Lower", terrainEditorState.brushUniforms.mode, Terrainbrush::Lower))
+                if (drawModeButton("Paint", terrainEditorState.brushUniforms.mode, Terrainbrush::Biome))
                 {
-                    terrainEditorState.brushUniforms.mode = Terrainbrush::Lower;
-                }
-                ImGui::SameLine();
-
-                if (drawModeButton("Flatten", terrainEditorState.brushUniforms.mode, Terrainbrush::Flatten))
-                {
-                    terrainEditorState.brushUniforms.mode = Terrainbrush::Flatten;
-                }
-                ImGui::SameLine();
-
-                if (drawModeButton("Smooth", terrainEditorState.brushUniforms.mode, Terrainbrush::Smooth))
-                {
-                    terrainEditorState.brushUniforms.mode = Terrainbrush::Smooth;
-                }
-            }
-
-            if (ImGui::CollapsingHeader("Brush"))
-            {
-                static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
-                Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainEditorState.brushTexture;
-                Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
-
-                ImVec2 imageSize = { 64.0f, 64.0f };
-                ImTextureRef ref {imguiTexId};
-                ImGui::Image(ref, imageSize);
-                ImGui::SameLine();
-                ImGui::BeginGroup();
-                {
-                    static const char* shapeStr = "Circle";
-                    if (ImGui::BeginCombo("Shape", shapeStr))
-                    {
-                        if (ImGui::Selectable("Circle"))
-                        {
-                            shapeStr = "Circle";
-                            terrainEditorState.brushShape = Terrainbrush::BrushGenerationShape::Circle;
-                        }
-                        if (ImGui::Selectable("Rectangle"))
-                        {
-                            shapeStr = "Rectangle";
-                            terrainEditorState.brushShape = Terrainbrush::BrushGenerationShape::Rectangle;
-                        }
-                        ImGui::EndCombo();
-                    }
-                    ImGui::SliderFloat("Hardness", &terrainEditorState.brushHardness, 0.0f, 0.999f);
-                    ImGui::SliderFloat("Falloff", &terrainEditorState.brushFalloff, 0.0f, 1.0f);
-                    ImGui::SliderFloat("Size", &terrainEditorState.brushSize, 1.0f, 512.0f);
-                    ImGui::SliderFloat("Strength", &terrainEditorState.brushUniforms.strength, 0.1f, 1.0f);
-                }
-                ImGui::EndGroup();
-            }
-
-            if (terrainEditorState.paint)
-            {
-                Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
-                Editor::state.editorWorld->MarkAsModified(entity);
-            }
-
-            if (ImGui::CollapsingHeader("Biomes"))
-            {
-                if (ImGui::Button("New Biome"))
-                {
-                    selectedTerrainResource.biomes.push_back(std::move(std::make_unique<Render::BiomeT>()));
-                    const std::unique_ptr<Render::BiomeT>& biomeT = selectedTerrainResource.biomes.back();
-
-
-                    Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, {});
-                    terrainEditorState.biomes.Append(biome);
-                    terrainEditorState.biomeSettings.Append({});
-                    terrainEditorState.biomeTextures.Append(BiomeTextures());
-                    BiomeTextures& textures = terrainEditorState.biomeTextures.Back();
-
-                    // Create new mask
-                    CoreGraphics::TextureCreateInfo maskTexInfo;
-                    maskTexInfo.name = "Biome Mask Texture";
-                    maskTexInfo.width = selectedTerrainResource.world_size_x;
-                    maskTexInfo.height = selectedTerrainResource.world_size_z;
-                    maskTexInfo.format = CoreGraphics::PixelFormat::R8;
-                    maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
-                    textures.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
-                    textures.mask.nebulaHandle = textures.maskTex;
-                    textures.mask.splat = 1;
-
-                    terrainEditorState.activeBiomeMask = textures.maskTex;
-                    Terrain::TerrainContext::SetBiomeMask(terrainComponent.graphicsEntityId, biome, textures.maskTex);
-
-                    for (int i = 0; i < 4; i++)
-                    {
-                        Dynui::ImguiTextureId& alb = textures.albedo[i];
-                        textures.albedoPaths[i] = "systex:white.dds";
-                        textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, true, false);
-                        alb.nebulaHandle = textures.albedoResources[i];
-
-                        Dynui::ImguiTextureId& nor = textures.normals[i];
-                        textures.normalsPaths[i] = "systex:nobump.dds";
-                        textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, true, false);
-                        nor.nebulaHandle = textures.normalsResources[i];
-
-                        Dynui::ImguiTextureId& mat = textures.material[i];
-                        textures.materialPaths[i] = "systex:default_material.dds";
-                        textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, true, false);
-                        mat.nebulaHandle = textures.materialResources[i];
-                    }
-                    terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", terrainEditorState.biomes.Size() - 1));
+                    terrainEditorState.brushUniforms.mode = Terrainbrush::Biome;
                 }
 
-                static int selectedBiome = -1;
-                if (ImGui::BeginListBox("###BiomeList"))
+                const char* labels[4] = { "Flat", "Slope", "Height", "Height slope" };
+                const char* textures[3] = { "Albedo", "Normals", "Material" };
+
+                bool pressed = false;
+                for (int i = 0; i < 4; i++)
                 {
-                    for (int i = 0; i < terrainEditorState.biomes.Size(); i++)
-                    {
-                        if (ImGui::Selectable(terrainEditorState.biomeNames[i].AsCharPtr()))
-                        {
-                            selectedBiome = i;
-                        }
-                    }
-                    ImGui::EndListBox();
-                }
-
-                if (selectedBiome != -1)
-                {
-                    auto biomeId = terrainEditorState.biomes[selectedBiome];
-                    auto& biomeSettings = terrainEditorState.biomeSettings[selectedBiome];
-                    terrainEditorState.activeBiomeMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
-                    CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-                        terrainEditorState.activeBiomeMask, Terrainbrush::OutputMask::BINDING
-                    });
-                    CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
-
-                    ImGui::Text("Mask");
-                    ImTextureRef ref {terrainEditorState.biomeTextures[selectedBiome].imguiMaskId};
-                    ImGui::Image(ref, ImVec2(128, 128));
-                    ImGui::SameLine();
-                    if (drawModeButton("Paint", terrainEditorState.brushUniforms.mode, Terrainbrush::Biome))
-                    {
-                        terrainEditorState.brushUniforms.mode = Terrainbrush::Biome;
-                    }
-
-                    const char* labels[4] = { "Flat", "Slope", "Height", "Height slope" };
-                    const char* textures[3] = { "Albedo", "Normals", "Material" };
-
-                    bool pressed = false;
-                    for (int i = 0; i < 4; i++)
-                    {
-                        ImGui::BeginGroup();
-                        ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
-                        ImGui::Text(labels[i]);
-                        ImGui::PopFont();
-                        for (int j = 0; j < 3; j++)
-                        {
-                            Ids::Id32 tex = 0;
-                            const char* path = nullptr;
-                            switch (j)
-                            {
-                            case 0:
-                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i];
-                                path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].Value();
-                                break;
-                            case 1:
-                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i];
-                                path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].Value();
-                                break;
-                            case 2:
-                                tex = terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i];
-                                path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].Value();
-                                break;
-                            default:
-                                n_error("Can't happen");
-                                break;
-                            }
-                            ImTextureRef ref {tex};
-                            pressed |= ImGui::ImageButton(textures[j], ref, ImVec2(64, 64));
-                            ImGui::SameLine(); 
-                            ImGui::BeginGroup();
-                                ImGui::Text(textures[j]);
-                                pressed |= ImGui::Button(path);
-                            ImGui::EndGroup();
-
-                            if (pressed)
-                            {
-                                // TODO: Replace file dialog with asset browser view/instance
-                                const char* patterns[] = { "*.dds" };
-                                const char* filePath = tinyfd_openFileDialog(textures[j], IO::URI(path).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
-
-                                if (filePath != nullptr)
-                                {
-                                    switch (j)
-                                    {
-                                        case 0:
-                                            terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i] = filePath;
-                                            terrainEditorState.biomeTextures[selectedBiome].albedoResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                            terrainEditorState.biomeTextures[selectedBiome].albedo[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].albedoResources[i];
-                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i], terrainEditorState.biomeTextures[selectedBiome].albedo[i]);
-                                            break;
-                                        case 1:
-                                            terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i] = filePath;
-                                            terrainEditorState.biomeTextures[selectedBiome].normalsResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                            terrainEditorState.biomeTextures[selectedBiome].normals[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].normalsResources[i];
-                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i], terrainEditorState.biomeTextures[selectedBiome].normals[i]);
-                                            break;
-                                        case 2:
-                                            terrainEditorState.biomeTextures[selectedBiome].materialPaths[i] = filePath;
-                                            terrainEditorState.biomeTextures[selectedBiome].materialResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                            terrainEditorState.biomeTextures[selectedBiome].material[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].materialResources[i];
-                                            Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i], terrainEditorState.biomeTextures[selectedBiome].material[i]);
-                                            break;
-                                        default:
-                                            n_error("Can't happen");
-                                            break;
-                                    }
-                                }
-
-                                // Update biome in terrain system
-                                Terrain::TerrainContext::SetBiomeLayer(terrainComponent.graphicsEntityId, selectedBiome, Terrain::BiomeSettings::BiomeMaterialLayer(i),
-                                    terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i],
-                                    terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i],
-                                    terrainEditorState.biomeTextures[selectedBiome].materialPaths[i]
-                                );
-                                Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
-
-                            }
-                        }
-                        ImGui::EndGroup();
-                    }
-
-                    bool applyRules = false;
                     ImGui::BeginGroup();
-                        ImGui::Text("Rules");
-                        applyRules |= ImGui::SliderFloat("Slope Threshold", &selectedTerrainResource.biomes[selectedBiome]->slope_threshold, 0.0f, 1.0f);
-                        applyRules |= ImGui::SliderFloat("Height Threshold", &selectedTerrainResource.biomes[selectedBiome]->height_threshold, 0.0f, 1.0f);
-                        applyRules |= ImGui::SliderFloat("UV Scale Factor", &selectedTerrainResource.biomes[selectedBiome]->uv_scale_factor, 1.0f, 256.0f);
-                    ImGui::EndGroup();
-
-                    if (applyRules)
+                    ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
+                    ImGui::Text(labels[i]);
+                    ImGui::PopFont();
+                    for (int j = 0; j < 3; j++)
                     {
-                        Terrain::TerrainContext::SetBiomeRules(terrainComponent.graphicsEntityId, selectedBiome, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
-                        Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
+                        Ids::Id32 tex = 0;
+                        const char* path = nullptr;
+                        switch (j)
+                        {
+                        case 0:
+                            tex = terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i];
+                            path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].AsString().AsCharPtr();
+                            break;
+                        case 1:
+                            tex = terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i];
+                            path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].AsString().AsCharPtr();
+                            break;
+                        case 2:
+                            tex = terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i];
+                            path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].AsString().AsCharPtr();
+                            break;
+                        default:
+                            n_error("Can't happen");
+                            break;
+                        }
+                        ImTextureRef ref {tex};
+                        pressed |= ImGui::ImageButton(textures[j], ref, ImVec2(64, 64));
+                        ImGui::SameLine(); 
+                        ImGui::BeginGroup();
+                            ImGui::Text(textures[j]);
+                            pressed |= ImGui::Button(path);
+                        ImGui::EndGroup();
+
+                        if (pressed)
+                        {
+                            // TODO: Replace file dialog with asset browser view/instance
+                            const char* patterns[] = { "*.dds" };
+                            const char* filePath = tinyfd_openFileDialog(textures[j], IO::URI(path).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
+
+                            if (filePath != nullptr)
+                            {
+                                switch (j)
+                                {
+                                    case 0:
+                                        terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i] = IO::URN(filePath);
+                                        terrainEditorState.biomeTextures[selectedBiome].albedoResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                        terrainEditorState.biomeTextures[selectedBiome].albedo[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].albedoResources[i];
+                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i], terrainEditorState.biomeTextures[selectedBiome].albedo[i]);
+                                        break;
+                                    case 1:
+                                        terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i] = IO::URN(filePath);
+                                        terrainEditorState.biomeTextures[selectedBiome].normalsResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                        terrainEditorState.biomeTextures[selectedBiome].normals[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].normalsResources[i];
+                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i], terrainEditorState.biomeTextures[selectedBiome].normals[i]);
+                                        break;
+                                    case 2:
+                                        terrainEditorState.biomeTextures[selectedBiome].materialPaths[i] = IO::URN(filePath);
+                                        terrainEditorState.biomeTextures[selectedBiome].materialResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                        terrainEditorState.biomeTextures[selectedBiome].material[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].materialResources[i];
+                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i], terrainEditorState.biomeTextures[selectedBiome].material[i]);
+                                        break;
+                                    default:
+                                        n_error("Can't happen");
+                                        break;
+                                }
+                            }
+
+                            // Update biome in terrain system
+                            Terrain::TerrainContext::SetBiomeLayer(terrainComponent.graphicsEntityId, selectedBiome, Terrain::BiomeSettings::BiomeMaterialLayer(i),
+                                terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i],
+                                terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i],
+                                terrainEditorState.biomeTextures[selectedBiome].materialPaths[i]
+                            );
+                            Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
+
+                        }
                     }
+                    ImGui::EndGroup();
+                }
+
+                bool applyRules = false;
+                ImGui::BeginGroup();
+                    ImGui::Text("Rules");
+                    applyRules |= ImGui::SliderFloat("Slope Threshold", &selectedTerrainResource.biomes[selectedBiome]->slope_threshold, 0.0f, 1.0f);
+                    applyRules |= ImGui::SliderFloat("Height Threshold", &selectedTerrainResource.biomes[selectedBiome]->height_threshold, 0.0f, 1.0f);
+                    applyRules |= ImGui::SliderFloat("UV Scale Factor", &selectedTerrainResource.biomes[selectedBiome]->uv_scale_factor, 1.0f, 256.0f);
+                ImGui::EndGroup();
+
+                if (applyRules)
+                {
+                    Terrain::TerrainContext::SetBiomeRules(terrainComponent.graphicsEntityId, selectedBiome, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
+                    Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
                 }
             }
         }
-        Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
     }
-    else
+    Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+TerrainEditor::ShouldRun()
+{
+    auto const& selection = Tools::SelectionContext::Selection();
+    if (selection.Size() != 1)
     {
-        terrainEditorState.activeBiomeMask = CoreGraphics::InvalidTextureId;
-        terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
+        return false;
     }
+
+    Editor::Entity entity = selection[0];
+    Game::World* world = Game::GetWorld(entity.world);
+    static GraphicsFeature::Terrain terrainComponent;
+
+    Game::EntityMapping entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
+    auto const& components = world->GetDatabase()->GetTable(entityMapping.table).GetAttributes();
+
+    auto terrainComponentId = Game::GetComponentId<GraphicsFeature::Terrain>();
+
+    return world->HasComponent<GraphicsFeature::Terrain>(entity);
 }
 
 } // namespace Presentation

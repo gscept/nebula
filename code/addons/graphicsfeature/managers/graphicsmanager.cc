@@ -562,9 +562,9 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
         settings.biomeMask = biome->mask;
         for (uint i = 0; i < 4; i++)
         {
-            settings.materials[i].albedo = biome->materials[i]->albedo;
-            settings.materials[i].material = biome->materials[i]->material;
-            settings.materials[i].normal = biome->materials[i]->normals;
+            settings.materials[i].albedo = IO::URN(biome->materials[i]->albedo);
+            settings.materials[i].material = IO::URN(biome->materials[i]->material);
+            settings.materials[i].normal = IO::URN(biome->materials[i]->normals);
         }
         settings.biomeParameters.heightThreshold = biome->height_threshold;
         settings.biomeParameters.slopeThreshold = biome->slope_threshold;

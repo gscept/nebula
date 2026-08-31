@@ -259,6 +259,7 @@ GraphicsFeatureUnit::OnActivate()
         Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
+        ::Terrain::TerrainContext::UpdateLOD,
         ModelContext::WaitForWork,
         Lighting::LightContext::UpdateLights,
         Raytracing::RaytracingContext::WaitForJobs,
@@ -269,7 +270,7 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
-        ::Terrain::TerrainContext::UpdateLOD
+        
     };
 
     this->gfxServer->SetupPreLogicCalls(preLogicCalls);

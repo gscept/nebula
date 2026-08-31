@@ -23,6 +23,8 @@ public:
 
     void Run(SaveMode save) override;
 
+    bool ShouldRun() override;
+
 private:
 };
 __RegisterClass(TerrainEditor)

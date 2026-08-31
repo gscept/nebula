@@ -61,34 +61,34 @@ struct BiomeParameters
 
 struct BiomeMaterial
 {
-    Resources::ResourceName albedo = "systex:white.dds";
+    IO::URN albedo = IO::URN("urn:tex:system/white");
     Resources::ResourceId albedoRes;
-    Resources::ResourceName normal = "systex:nobump.dds";
+    IO::URN normal = IO::URN("urn:tex:system/nobump");
     Resources::ResourceId normalRes;
-    Resources::ResourceName material = "systex:default_material.dds";
+    IO::URN material = IO::URN("urn:tex:system/default_material");
     Resources::ResourceId materialRes;
 };
 
 struct BiomeMaterialBuilder
 {
     /// Set albedo
-    BiomeMaterialBuilder& Albedo(const Resources::ResourceName& name)
+    BiomeMaterialBuilder& Albedo(const IO::URN& name)
     {
-        this->material.albedo = name.IsValid() ? name : "systex:white.dds";
+        this->material.albedo = name.IsValid() ? name : IO::URN("urn:tex:system/white");
         return *this;
     }
 
     /// Set normal
-    BiomeMaterialBuilder& Normal(const Resources::ResourceName& name)
+    BiomeMaterialBuilder& Normal(const IO::URN& name)
     {
-        this->material.normal = name.IsValid() ? name : "systex:nobump.dds";
+        this->material.normal = name.IsValid() ? name : IO::URN("urn:tex:system/nobump");
         return *this;
     }
 
     /// Set material
-    BiomeMaterialBuilder& Material(const Resources::ResourceName& name)
+    BiomeMaterialBuilder& Material(const IO::URN& name)
     {
-        this->material.material = name.IsValid() ? name : "systex:default_material.dds";
+        this->material.material = name.IsValid() ? name : IO::URN("urn:tex:system/default_material");
         return *this;
     }
 
@@ -283,7 +283,7 @@ public:
     /// cull terrain patches
     static void CullPatches(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
     /// update sparse texture mips
-    static void UpdateLOD(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
+    static void UpdateLOD(const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
     /// clear the tile cache (use when we need to force update the terrain)
@@ -303,7 +303,7 @@ public:
     /// Set heightmap to a system controller texture instead of a resource
     static void SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::TextureId heightmap);
     static void SetBiomeMask(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask);
-    static void SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const Resources::ResourceName& albedo, const Resources::ResourceName& normal, const Resources::ResourceName& material);
+    static void SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::URN& albedo, const IO::URN& normal, const IO::URN& material);
     static void SetBiomeRules(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor);
     static void InvalidateTerrain(Graphics::GraphicsEntityId entity);
 #endif
