@@ -537,6 +537,11 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
             Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(resource, (uint8_t*)buf);
         }
     }
+
+    if (resource.height_map == nullptr)
+        resource.height_map = "urn:tex:white";
+    if (resource.decision_map == nullptr)
+        resource.decision_map = "urn:tex:white";
     
     createInfo.minHeight = resource.min_height;
     createInfo.maxHeight = resource.max_height;
@@ -546,8 +551,8 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     createInfo.tileHeight = resource.tile_height;
     createInfo.width = resource.world_size_x;
     createInfo.height = resource.world_size_z;
-    createInfo.heightMap = resource.height_map;
-    createInfo.decisionMap = resource.decision_map;
+    createInfo.heightMap = IO::URN(resource.height_map);
+    createInfo.decisionMap = IO::URN(resource.decision_map);
     createInfo.enableRayTracing = resource.enable_ray_tracing;
     ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 

@@ -45,8 +45,8 @@ struct TerrainCreateInfo
     float width, height;                // Width and height of the terrain
     float tileWidth, tileHeight;        // Size of each tile, number of tiles becoming (width/tileWidth, height/tileHeight)
     float quadsPerTileX, quadsPerTileY; // Geometric density measured in quads per tile
-    Resources::ResourceName heightMap;
-    Resources::ResourceName decisionMap;
+    IO::URN heightMap;
+    IO::URN decisionMap;
     bool enableRayTracing;
 };
 

@@ -149,7 +149,9 @@ Resources::ResourceServer::CreateResource(
     // get resource loader by extension
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
-    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    n_warn_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    if (i == InvalidIndex)
+        return Resources::InvalidResourceId;
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
@@ -230,7 +232,9 @@ ResourceServer::CreateResource(
     // get resource loader by extension
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
-    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    n_warn_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    if (i == InvalidIndex)
+        return Resources::InvalidResourceId;
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
@@ -287,7 +291,9 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
     // get resource loader by extension
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
-    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    n_warn_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+    if (i == InvalidIndex)
+        return;
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
