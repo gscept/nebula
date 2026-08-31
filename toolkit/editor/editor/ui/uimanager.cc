@@ -90,6 +90,8 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
     windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
+
+    windowServer->LoadState();
     
     windowServer->RegisterCommand([]()
     {
@@ -232,6 +234,7 @@ void
 UIManager::OnDeactivate()
 {
     Game::Manager::OnDeactivate();
+    windowServer->SaveState();
     windowServer = nullptr;
 }
 

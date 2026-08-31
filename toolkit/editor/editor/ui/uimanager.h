@@ -26,7 +26,6 @@ public:
 private:
     /// fugly
     bool delayedImguiLoad = true;
-    ;
 };
 
 } // namespace Editor

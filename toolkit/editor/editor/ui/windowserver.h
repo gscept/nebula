@@ -24,14 +24,25 @@ class WindowServer : public Core::RefCounted
     __DeclareClass(WindowServer);
     __DeclareSingleton(WindowServer);
 public:
+
+    /// Constructor
     WindowServer();
+
+    /// Destructor
     ~WindowServer();
+
+    /// Save state of windows
+    void SaveState();
+    /// Load state of windows
+    void LoadState();
 
     /// Render all windows
     void RunAll();
 
     /// update all windows
     void Update();
+
+
 
     /// Broadcast save 
     void BroadcastSave(BaseWindow::SaveMode mode);

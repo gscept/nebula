@@ -23,6 +23,8 @@
 
 #include "toolkit-common/logger.h"
 #include "io/ioserver.h"
+#include "io/textwriter.h"
+#include "io/textreader.h"
 
 #include "dynui/imguicontext.h"
 #include "toolkitutil/asset/assetimporter.h"
@@ -54,6 +56,65 @@ WindowServer::WindowServer()
 WindowServer::~WindowServer()
 {
     __DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WindowServer::SaveState()
+{
+    IO::CreateDirectory("user:nebula-editor"_uri.LocalPath());
+    IO::URI settings("user:nebula-editor/window_state.ini");
+    Ptr<IO::Stream> state = IO::CreateStream(settings);
+    state->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+    if (state->Open())
+    {
+        Ptr<IO::TextWriter> writer = IO::TextWriter::Create();
+        writer->SetStream(state);
+        writer->Open();
+        auto it = windowByName.Begin();
+        while (it != windowByName.End())
+        {
+            writer->WriteString(*it.key);
+            writer->WriteString("=");
+            writer->WriteChar((*it.val)->open ? '1' : '0');
+            writer->WriteChar('\n');
+            it++;
+        }
+        state->Close();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WindowServer::LoadState()
+{
+    IO::URI settings("user:nebula-editor/window_state.ini");
+    Ptr<IO::Stream> state = IO::CreateStream(settings);
+    state->SetAccessMode(IO::Stream::AccessMode::ReadAccess);
+    if (state->Open())
+    {
+        Ptr<IO::TextReader> reader = IO::TextReader::Create();
+        reader->SetStream(state);
+
+        Util::Array<Util::String> lines = reader->ReadAllLines();
+        for (const Util::String& line : lines)
+        {
+            Util::Array<Util::String> parts = line.Tokenize("=");
+            const Util::String& window = parts[0];
+            const Util::String& flag = parts[1];
+
+            IndexT windowIndex = this->windowByName.FindIndex(window);
+            if (windowIndex != InvalidIndex)
+            {
+                const bool open = flag.AsInt();
+                this->windowByName.ValueAtIndex(window, windowIndex)->open = open;
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
