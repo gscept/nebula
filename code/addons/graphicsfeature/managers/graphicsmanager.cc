@@ -528,43 +528,44 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     ::Terrain::TerrainCreateInfo createInfo;
 
     Render::TerrainResourceT resource;
-    Ptr<IO::Stream> resourceFile = IO::CreateStream(terrain->terrainResourcePath);
-    if (resourceFile->Open())
+    if (terrain->terrainResourcePath.IsValid())
     {
-        void* buf = resourceFile->MemoryMap();
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(resource, (uint8_t*)buf);
-
-        createInfo.minHeight = resource.min_height;
-        createInfo.maxHeight = resource.max_height;
-        createInfo.quadsPerTileX = resource.quads_per_tile_x;
-        createInfo.quadsPerTileY = resource.quads_per_tile_z;
-        createInfo.tileWidth = resource.tile_width;
-        createInfo.tileHeight = resource.tile_height;
-        createInfo.width = resource.world_size_x;
-        createInfo.height = resource.world_size_z;
-        createInfo.heightMap = resource.height_map;
-        createInfo.decisionMap = resource.decision_map;
-        createInfo.enableRayTracing = resource.enable_ray_tracing;
-        ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
-
-        for (auto const& biome : resource.biomes)
+        Ptr<IO::Stream> resourceFile = IO::CreateStream(terrain->terrainResourcePath);
+        if (resourceFile->Open())
         {
-            ::Terrain::BiomeSettings settings;
-            settings.biomeMask = biome->mask;
-            for (uint i = 0; i < 4; i++)
-            {
-                settings.materials[i].albedo = biome->materials[i]->albedo;
-                settings.materials[i].material = biome->materials[i]->material;
-                settings.materials[i].normal = biome->materials[i]->normals;
-            }
-            settings.biomeParameters.heightThreshold = biome->height_threshold;
-            settings.biomeParameters.slopeThreshold = biome->slope_threshold;
-            settings.biomeParameters.uvScaleFactor = biome->uv_scale_factor;
-            ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+            void* buf = resourceFile->MemoryMap();
+            Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(resource, (uint8_t*)buf);
         }
     }
+    
+    createInfo.minHeight = resource.min_height;
+    createInfo.maxHeight = resource.max_height;
+    createInfo.quadsPerTileX = resource.quads_per_tile_x;
+    createInfo.quadsPerTileY = resource.quads_per_tile_z;
+    createInfo.tileWidth = resource.tile_width;
+    createInfo.tileHeight = resource.tile_height;
+    createInfo.width = resource.world_size_x;
+    createInfo.height = resource.world_size_z;
+    createInfo.heightMap = resource.height_map;
+    createInfo.decisionMap = resource.decision_map;
+    createInfo.enableRayTracing = resource.enable_ray_tracing;
+    ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 
-
+    for (auto const& biome : resource.biomes)
+    {
+        ::Terrain::BiomeSettings settings;
+        settings.biomeMask = biome->mask;
+        for (uint i = 0; i < 4; i++)
+        {
+            settings.materials[i].albedo = biome->materials[i]->albedo;
+            settings.materials[i].material = biome->materials[i]->material;
+            settings.materials[i].normal = biome->materials[i]->normals;
+        }
+        settings.biomeParameters.heightThreshold = biome->height_threshold;
+        settings.biomeParameters.slopeThreshold = biome->slope_threshold;
+        settings.biomeParameters.uvScaleFactor = biome->uv_scale_factor;
+        ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+    }
 }
 
 //------------------------------------------------------------------------------

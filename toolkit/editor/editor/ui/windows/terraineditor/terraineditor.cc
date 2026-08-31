@@ -294,8 +294,8 @@ TerrainEditor::Run(SaveMode save)
 
     if (entity != selectedTerrainEntity)
     {
-        Game::Entity ent = Editor::state.editables[entity.index].gameEntity;
-        Game::EntityMapping entityMapping = world->GetEntityMapping(ent);
+        Editor::Entity const entity = selection[0];
+        Game::EntityMapping entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
         auto const& components = world->GetDatabase()->GetTable(entityMapping.table).GetAttributes();
 
         auto terrainComponentId = Game::GetComponentId<GraphicsFeature::Terrain>();
@@ -305,23 +305,28 @@ TerrainEditor::Run(SaveMode save)
 
             if (component == terrainComponentId)
             {
-                terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(ent);
+                terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(entity);
                 isTerrain = true;
                 break;
             }
         }
 
-        Ptr<IO::Stream> terrainResource = IO::CreateStream(terrainComponent.terrainResourcePath);
-        if (terrainResource->Open())
+        if (isTerrain)
         {
-            void* buf = terrainResource->MemoryMap();
-            Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(selectedTerrainResource, (const uint8_t*)buf);
-            terrainResource->Close();
-        }
-        else
-        {
-            // File can't open, assume path is not set and create an empty terrain resource
-            selectedTerrainResource = Render::TerrainResourceT();
+            Ptr<IO::Stream> terrainResource = IO::CreateStream(terrainComponent.terrainResourcePath);
+            if (terrainResource->Open())
+            {
+                void* buf = terrainResource->MemoryMap();
+                Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(
+                    selectedTerrainResource, (const uint8_t*)buf
+                );
+                terrainResource->Close();
+            }
+            else
+            {
+                // File can't open, assume path is not set and create an empty terrain resource
+                selectedTerrainResource = Render::TerrainResourceT();
+            }
         }
     }
 
