@@ -103,6 +103,9 @@ void RemapComponentToEditor(Game::ComponentId component, void* data);
 /// Remap all direct entity fields on an allocated entity instance to the game world.
 void RemapInstanceToGame(Game::World* world, Game::Entity entity);
 
+/// Get the game entity corresponding to this editor entity
+Game::Entity GetGameEntity(const Editor::Entity& entity);
+
 /// global editor state
 extern State state;
 

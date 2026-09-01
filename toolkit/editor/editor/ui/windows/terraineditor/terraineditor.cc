@@ -148,6 +148,9 @@ TerrainEditor::TerrainEditor()
     bufInfo.elementSize = sizeof(Terrainbrush::BrushGenerationUniforms::STRUCT);
     terrainEditorState.brushGenerationUniformBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
+    terrainEditorState.brushUniforms.strength = 1.0f;
+    
+
     CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
 #if NEBULA_GRAPHICS_DEBUG
     cmdPoolInfo.name = "TerrainEditorCmdPool";
@@ -282,11 +285,14 @@ TerrainEditor::Run(SaveMode save)
 {
     auto const& selection = Tools::SelectionContext::Selection();
     Editor::Entity entity = selection[0];
-    Game::World* world = Game::GetWorld(entity.world);
     static GraphicsFeature::Terrain terrainComponent;
-    terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(entity);
+    
+    Game::Entity const gameEntity = Editor::GetGameEntity(entity);
+    Game::World* world = Game::GetWorld(gameEntity.world);
 
-    if (entity != selectedTerrainEntity)
+    terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(gameEntity);
+
+    if (gameEntity != selectedTerrainEntity)
     {
         // File can't open, assume path is not set and create an empty terrain resource
         selectedTerrainResource = Render::TerrainResourceT();
@@ -303,7 +309,7 @@ TerrainEditor::Run(SaveMode save)
                 terrainResource->Close();
             }
         }
-        selectedTerrainEntity = entity;
+        selectedTerrainEntity = gameEntity;
     }
 
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
@@ -837,11 +843,7 @@ TerrainEditor::ShouldRun()
     Game::World* world = Game::GetWorld(entity.world);
     static GraphicsFeature::Terrain terrainComponent;
 
-    Game::EntityMapping entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
-    auto const& components = world->GetDatabase()->GetTable(entityMapping.table).GetAttributes();
-
     auto terrainComponentId = Game::GetComponentId<GraphicsFeature::Terrain>();
-
     return world->HasComponent<GraphicsFeature::Terrain>(entity);
 }
 
@@ -866,7 +868,7 @@ void
 TerrainEditorTool::Update(Presentation::Modules::Viewport* viewport)
 {
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Math::vec2 mousePos = mouse->GetPixelPosition();
+    Math::vec2 mousePos = viewport->viewportScreenPosition + mouse->GetPixelPosition();
     terrainEditorState.brushUniforms.cursor[0] = mousePos.x - viewport->lastViewportImagePositionAbsolute.x;
     terrainEditorState.brushUniforms.cursor[1] = mousePos.y - viewport->lastViewportImagePositionAbsolute.y;
     CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);

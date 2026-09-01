@@ -432,4 +432,13 @@ RemapInstanceToGame(Game::World* world, Game::Entity entity)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Game::Entity
+GetGameEntity(const Editor::Entity& entity)
+{
+    return Editor::state.editables[entity.index].gameEntity;
+}
+
 } // namespace Editor

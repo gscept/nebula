@@ -281,6 +281,7 @@ Viewport::Render()
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };
     
+    this->viewportScreenPosition = {ImGui::GetWindowViewport()->Pos.x, ImGui::GetWindowViewport()->Pos.y};
     this->lastViewportImagePositionAbsolute = { elementPos.x, elementPos.y };
     this->lastViewportImageSizeAbsolute = { imageSize.x, imageSize.y };
     this->lastViewportImagePosition = { imagePosition.x, imagePosition.y };
