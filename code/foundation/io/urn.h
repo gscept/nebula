@@ -127,6 +127,7 @@ URN::URN(const char* nid, const Util::String& nss)
     this->isEmpty = strlen(nid) == 0 || nss.Length() == 0;
     this->nid = nid;
     this->nss = nss;
+    this->string = this->Build();
     n_assert(this->IsValid());
 }
 
@@ -139,6 +140,7 @@ URN::URN(const char* nid, const char* nss)
     this->isEmpty = strlen(nid) == 0 || strlen(nss) == 0;
     this->nid = nid;
     this->nss = nss;
+    this->string = this->Build();
     n_assert(this->IsValid());
 }
 
@@ -151,7 +153,8 @@ URN::URN(const URN& rhs) :
     nid(rhs.nid),
     nss(rhs.nss),
     query(rhs.query),
-    fragment(rhs.fragment)
+    fragment(rhs.fragment),
+    string(rhs.string)
 {
     // empty
 }
@@ -168,6 +171,7 @@ URN::operator=(const URN& rhs)
     this->nss = rhs.nss;
     this->query = rhs.query;
     this->fragment = rhs.fragment;
+    this->string = rhs.string;
 }
 
 //------------------------------------------------------------------------------
@@ -229,6 +233,7 @@ URN::Clear()
     this->nss.Clear();
     this->query.Clear();
     this->fragment.Clear();
+    this->string.Clear();
 }
 
 //------------------------------------------------------------------------------
