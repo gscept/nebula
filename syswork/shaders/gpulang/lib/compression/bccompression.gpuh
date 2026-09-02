@@ -141,11 +141,11 @@ GetIndicesRGB(block : [16]f32x3, minColor : f32x3, maxColor : f32x3) u32
 // Name: GetIndicesAlpha
 // Desc: Calculate the BC block indices for an alpha channel
 //--------------------------------------------------------------------------------------
-GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, out output : u32x2) void
+GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, input : u32x2) u32x2
 {
     const d = minA - maxA;
     const stepInc = 7.0f / d;
-    var outputValue = output;
+    var outputValue = input;
 
     // Both packed.x and packed.y contain index values, so we need two loops
 
@@ -185,7 +185,7 @@ GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, out output : u32x2) voi
         outputValue.y |= (index << shift);
         shift += 3;
     }
-    output = outputValue;
+    return outputValue;
 }
 
 //--------------------------------------------------------------------------------------
@@ -231,7 +231,7 @@ CompressBC3Block(blockRGB : [16]f32x3, blockA : [16]f32, valueScale : f32) u32x4
     var outA = u32x2((minAPacked << 8) | maxAPacked, 0);
     if minAPacked < maxAPacked
     {
-        GetIndicesAlpha(blockA, minA, maxA, outA);
+        outA = GetIndicesAlpha(blockA, minA, maxA, outA);
     }
 
     return u32x4(outA.x, outA.y, (minColor565 << 16) | maxColor565, indices);
@@ -260,12 +260,12 @@ CompressBC5Block(blockU : [16]f32, blockV : [16]f32, valueScale : f32) u32x4
 
     if minUPacked < maxUPacked
     {
-        GetIndicesAlpha(blockU, minU, maxU, outU);
+        outU = GetIndicesAlpha(blockU, minU, maxU, outU);
     }
 
     if minVPacked < maxVPacked
     {
-        GetIndicesAlpha(blockV, minV, maxV, outV);
+        outV = GetIndicesAlpha(blockV, minV, maxV, outV);
     }
 
     return u32x4(outU.x, outU.y, outV.x, outV.y);
