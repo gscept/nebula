@@ -539,9 +539,25 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     }
 
     if (resource.height_map == nullptr)
-        resource.height_map = "urn:tex:white";
+        resource.height_map = "urn:tex:black";
     if (resource.decision_map == nullptr)
         resource.decision_map = "urn:tex:white";
+
+    // If biomes are empty, create a basic one
+    if (resource.biomes.empty())
+    {
+        auto biome = std::make_unique<Render::BiomeT>();
+        biome->mask = "urn:tex:system/white";
+        for (uint i = 0; i < 4; i++)
+        {
+            auto biomeMaterial = std::make_unique<Render::BiomeMaterialT>();
+            biomeMaterial->albedo = "urn:tex:system/white";
+            biomeMaterial->normals = "urn:tex:system/nobump";
+            biomeMaterial->material = "urn:tex:system/default_material";
+            biome->materials.push_back(std::move(biomeMaterial));
+        }
+        resource.biomes.push_back(std::move(biome));
+    }
     
     createInfo.minHeight = resource.min_height;
     createInfo.maxHeight = resource.max_height;
@@ -559,7 +575,7 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     for (auto const& biome : resource.biomes)
     {
         ::Terrain::BiomeSettings settings;
-        settings.biomeMask = biome->mask;
+        settings.biomeMask = IO::URN(biome->mask);
         for (uint i = 0; i < 4; i++)
         {
             settings.materials[i].albedo = IO::URN(biome->materials[i]->albedo);
