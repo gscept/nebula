@@ -114,7 +114,7 @@ struct BiomeSettings
     };
     BiomeParameters biomeParameters;
     BiomeMaterial materials[BiomeMaterialLayer::NumLayers];
-    Resources::ResourceName biomeMask = "systex:white.dds";
+    IO::URN biomeMask = IO::URN("urn:tex:system/white");
 };
 
 struct BiomeSettingsBuilder
@@ -179,10 +179,10 @@ public:
     }
 
     /// Builder for biome mask
-    BiomeSettingsBuilder& Mask(const Resources::ResourceName& mask)
+    BiomeSettingsBuilder& Mask(const IO::URN& mask)
     {
         this->bits |= BuilderBits::BiomeMask;
-        this->settings.biomeMask = mask.IsValid() ? mask : "tex:system/white.dds";
+        this->settings.biomeMask = mask.IsValid() ? mask : IO::URN("urn:tex:system/white");
         return *this;
     }
 
