@@ -102,7 +102,6 @@ ShaderServerBase::Open()
 
                 Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
 
-
                 System::ProcessStartInfo processInfo;
                 processInfo.workingDir = file->GetURI().LocalPath().ExtractDirName();
                 processInfo.exePath = cmd;
@@ -146,6 +145,42 @@ ShaderServerBase::Open()
                     // reload shader
                     this->pendingShaderReloads.Enqueue(exportedFilePath);
                 }
+            }
+        }
+    };
+
+    // Traverse shader dependencies folder
+    if (!IO::DirectoryExists(NEBULA_BUILD_FOLDER"/shader_dependencies"))
+    {
+        n_printf("Can't find shader dependencies folder. To use shader hot reloading, you need to have Nebula built from source.");
+    }
+
+    Util::Dictionary<const char*, Util::Set<Util::String>> shaderReloadMap;
+
+    // Function to recursively traverse folders and build the shader assocation map
+    const auto traverseFolder = [&shaderReloadMap](const IO::URI& folder)
+    {
+        const Util::Array<Util::String> dirs = IO::ListDirectories(folder);
+        const Util::Array<Util::String> files = IO::ListFiles(folder);
+        for (const Util::String& file : files)
+        {
+            Util::Set<Util::String>& files = shaderReloadMap.Emplace(file.AsCharPtr());
+
+            // Read .dep file and split on ;
+            const Ptr<IO::Stream>& depFile = IO::CreateStream(file);
+            if (depFile->Open())
+            {
+                void* data = depFile->MemoryMap();
+                SizeT size = depFile->GetSize();
+
+                Util::String file((char*)data, size);
+                Util::Array<Util::String> dependencies = file.Tokenize(";");
+
+                for (const Util::String& depPath : dependencies)
+                {
+                    files.Add(depPath);
+                }
+                depFile->Close();
             }
         }
     };

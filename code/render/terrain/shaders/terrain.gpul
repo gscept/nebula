@@ -446,22 +446,16 @@ psTerrainResolve(
         }
     }
 
-    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldPos);
-    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
-
     var light = f32x3(0, 0, 0);
     const pixelPos = pixelGetCoordinates();
-    light += CalculateLight(WorldPos, pixelPos.xyz, albedo.rgb, material, normal);
-    //light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
-    //light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, pixelPos.z);
-    //light += IBL(albedo, F0, normal, viewVec, material);
-    light += albedo.rgb * material[MAT_EMISSIVE];
+    light += CalculateLight(WorldPos, pixelPos.xyz, f32x3(1,1,1), f32x4(0,1,1,0), normal);
+    //light += albedo.rgb * material[MAT_EMISSIVE];
     pixelExportColor(f32x4(light.rgb, 1), 0);
 }
 
 //------------------------------------------------------------------------------
 /**
-    Copy between indirection textures
+    Render terrain cast shadows
 */
 threads_x(64)
 entry_point

@@ -451,7 +451,7 @@ CalculateGlobalLight(
             const terrainUv = mad(worldSpacePosition.xz, PerTickParams.InvTerrainSize, f32x2(0.5f));
             //shadowFactor *= sample2DLod(PerTickParams.TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
             const terrainShadow = TerrainShadows(PerTickParams.TerrainShadowBuffer, terrainUv, PerTickParams.TerrainShadowMapPixelSize);
-            const blend = abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f);
+            const blend = saturate(abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f));
             shadowFactor *= terrainShadow.x * blend;
         }
         

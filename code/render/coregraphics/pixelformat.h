@@ -82,6 +82,7 @@ public:
 
         BC1 = DXT1,
         BC3 = DXT5,
+        BC3sRGB = DXT5sRGB,
         InvalidPixelFormat = 0xFFFFFFFF,
     };
 

@@ -194,9 +194,10 @@ csWriteTile() void
     const localThreads = computeGetLocalThreadIndices();
 
     // Prepare for BC compression
-    AlbedoCacheResult[localThreads.x][localThreads.y] = totalAlbedo;
-    NormalCacheResult[localThreads.x][localThreads.y] = (totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f);
-    MaterialCacheResult[localThreads.x][localThreads.y] = totalMaterial;
+    AlbedoCacheResult[localThreads.x][localThreads.y] = saturate(totalAlbedo);
+    NormalCacheResult[localThreads.x][localThreads.y] = saturate((totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f));
+    MaterialCacheResult[localThreads.x][localThreads.y] = saturate(totalMaterial);
+    executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
     // only perform write for each invocation in a 8x8 work group
@@ -254,10 +255,7 @@ csWriteLowres() void
     const normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
 
     // setup the TBN
-    var tangent = cross(normal.xyz, f32x3(0, 0, 1));
-    tangent = normalize(cross(normal.xyz, tangent));
-    const binormal = normalize(cross(normal.xyz, tangent));
-    const tbn = f32x3x3(tangent, binormal, normal.xyz);
+    const tbn = PlaneTBN(normal);
 
     // calculate weights for triplanar mapping
     var triplanarWeights = abs(normal.xyz);
@@ -289,9 +287,10 @@ csWriteLowres() void
 
     /* Enable when we can figure out how to mipmap BC textures easily
     // Prepare for BC compression
-    AlbedoCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalAlbedo;
-    NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = (totalNormal.xy + vec2(1, 1)) * vec2(0.5f);
-    MaterialCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalMaterial;
+    AlbedoCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate(totalAlbedo);
+    NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate((totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f));
+    MaterialCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate(totalMaterial);
+    executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
     // only perform write for each invocation in a 8x8 work group

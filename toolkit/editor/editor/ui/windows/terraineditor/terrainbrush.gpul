@@ -145,7 +145,7 @@ csBrushHeight() void
 
     // Get world space position of cursor
     const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
-    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - f32x2(BrushUniforms.size) * 0.5f + f32x2(thread);
+    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - (f32x2(BrushUniforms.size) * 0.5f + f32x2(thread));
     const uvRatio = f32x2(BrushUniforms.brushTextureSize) / f32x2(BrushUniforms.size);
     const weight = textureFetch(Brush, i32x2(thread * uvRatio), 0).r;
 

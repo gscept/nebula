@@ -255,8 +255,8 @@ CompressBC5Block(blockU : [16]f32, blockV : [16]f32, valueScale : f32) u32x4
     const minVPacked = u32(round(minV * valueScale * 255.0f));
     const maxVPacked = u32(round(maxV * valueScale * 255.0f));
 
-    var outU = u32x2((minUPacked << 8) | maxUPacked, 0);
-    var outV = u32x2((minVPacked << 8) | maxVPacked, 0);
+    var outU = u32x2((minUPacked << 8u) | maxUPacked, 0u);
+    var outV = u32x2((minVPacked << 8u) | maxVPacked, 0u);
 
     if minUPacked < maxUPacked
     {
