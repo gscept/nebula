@@ -290,6 +290,8 @@ TerrainEditor::Run(SaveMode save)
     Game::Entity const gameEntity = Editor::GetGameEntity(entity);
     Game::World* world = Game::GetWorld(gameEntity.world);
 
+    bool initialize = false;
+
     terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(gameEntity);
 
     if (gameEntity != selectedTerrainEntity)
@@ -309,7 +311,31 @@ TerrainEditor::Run(SaveMode save)
                 terrainResource->Close();
             }
         }
+        else
+        {
+            if (selectedTerrainResource.height_map == nullptr)
+                selectedTerrainResource.height_map = "urn:tex:black";
+            if (selectedTerrainResource.decision_map == nullptr)
+                selectedTerrainResource.decision_map = "urn:tex:white";
+
+            // If biomes are empty, create a basic one
+            if (selectedTerrainResource.biomes.empty())
+            {
+                auto biome = std::make_unique<Render::BiomeT>();
+                biome->mask = "urn:tex:system/white";
+                for (uint i = 0; i < 4; i++)
+                {
+                    auto biomeMaterial = std::make_unique<Render::BiomeMaterialT>();
+                    biomeMaterial->albedo = "urn:tex:system/white";
+                    biomeMaterial->normals = "urn:tex:system/nobump";
+                    biomeMaterial->material = "urn:tex:system/default_material";
+                    biome->materials.push_back(std::move(biomeMaterial));
+                }
+                selectedTerrainResource.biomes.push_back(std::move(biome));
+            }
+        }
         selectedTerrainEntity = gameEntity;
+        initialize = true;
     }
 
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
@@ -368,7 +394,7 @@ TerrainEditor::Run(SaveMode save)
     }
 
     // Setup initial state
-    if (terrainEditorState.activeHeightMap == CoreGraphics::InvalidTextureId)
+    if (initialize)
     {
         CoreGraphics::TextureCreateInfo texInfo;
         texInfo.name = "Editor Height Map";
@@ -388,7 +414,7 @@ TerrainEditor::Run(SaveMode save)
         CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
         // Load heightmap for copying to our editable resource
-        Resources::ResourceId heightMapRes = Resources::CreateResource(selectedTerrainResource.height_map, "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
+        Resources::ResourceId heightMapRes = Resources::CreateResource(IO::URN(selectedTerrainResource.height_map), "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
         {
             // Copy over data from resource to our editable texture
             CoreGraphics::TextureId source = id;
@@ -437,46 +463,60 @@ TerrainEditor::Run(SaveMode save)
 
 
         }, nullptr, true, false);
+
+        for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
+        {
+            terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", i));
+
+            const std::unique_ptr<Render::BiomeT>& biomeComp = selectedTerrainResource.biomes[i];
+
+            BiomeTextures biomeTextures;
+            Terrain::BiomeSettings biomeSettings;
+
+            biomeTextures.maskTex = Resources::CreateResource(IO::URN(biomeComp->mask), "editor", nullptr, nullptr, true, false);
+            biomeTextures.mask.nebulaHandle = biomeTextures.maskTex;
+            Dynui::ImguiTextureId imguiHandle{ biomeTextures.maskTex };
+            biomeTextures.imguiMaskId = Dynui::AllocateImguiTextureId(imguiHandle);
+
+            for (IndexT j = 0; j < 4; j++)
+            {
+                biomeTextures.albedoPaths[j] = IO::URN(biomeComp->materials[j]->albedo);
+                biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.albedo[j].nebulaHandle = biomeTextures.albedoResources[j];
+                biomeTextures.imguiAlbedoId[j] = Dynui::AllocateImguiTextureId(biomeTextures.albedo[j]);
+
+                biomeTextures.normalsPaths[j] = IO::URN(biomeComp->materials[j]->normals);
+                biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.normals[j].nebulaHandle = biomeTextures.normalsResources[j];
+                biomeTextures.imguiNormalId[j] = Dynui::AllocateImguiTextureId(biomeTextures.normals[j]);
+
+                biomeTextures.materialPaths[j] = IO::URN(biomeComp->materials[j]->material);
+                biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.material[j].nebulaHandle = biomeTextures.materialResources[j];
+                biomeTextures.imguiMaterialId[j] = Dynui::AllocateImguiTextureId(biomeTextures.material[j]);
+
+                biomeSettings.materials[j].albedo = IO::URN(biomeComp->materials[j]->albedo);
+                biomeSettings.materials[j].normal = IO::URN(biomeComp->materials[j]->normals);
+                biomeSettings.materials[j].material = IO::URN(biomeComp->materials[j]->material);
+            }
+
+            biomeSettings.biomeMask = IO::URN(biomeComp->mask);
+            biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
+            biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
+            biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
+
+            Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, biomeSettings);
+            terrainEditorState.biomes.Append(biome);
+            terrainEditorState.biomeTextures.Append(biomeTextures);
+            terrainEditorState.biomeSettings.Append(biomeSettings);
+        }
+
+        Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
     }
 
     Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
 
-    for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
-    {
-        terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", i));
 
-        const std::unique_ptr<Render::BiomeT>& biomeComp = selectedTerrainResource.biomes[i];
-
-        BiomeTextures biomeTextures;
-        Terrain::BiomeSettings& biomeSettings = terrainEditorState.biomeSettings[i];
-
-        for (IndexT j = 0; j < 4; j++)
-        {
-            biomeTextures.albedoPaths[j] = IO::URN(biomeComp->materials[j]->albedo);
-            biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
-            biomeTextures.albedo[j].nebulaHandle = biomeTextures.albedoResources[j];
-            biomeTextures.normalsPaths[j] = IO::URN(biomeComp->materials[j]->normals);
-            biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
-            biomeTextures.normals[j].nebulaHandle = biomeTextures.normalsResources[j];
-            biomeTextures.materialPaths[j] = IO::URN(biomeComp->materials[j]->material);
-            biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
-            biomeTextures.material[j].nebulaHandle = biomeTextures.materialResources[j];
-
-            biomeSettings.materials[j].albedo = IO::URN(biomeComp->materials[j]->albedo);
-            biomeSettings.materials[j].normal = IO::URN(biomeComp->materials[j]->normals);
-            biomeSettings.materials[j].material = IO::URN(biomeComp->materials[j]->material);
-        }
-
-        biomeSettings.biomeMask = biomeComp->mask;
-        biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
-        biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
-        biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
-
-        Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, terrainEditorState.biomeSettings[i]);
-        terrainEditorState.biomes.Append(biome);
-        terrainEditorState.biomeTextures.Append(biomeTextures);
-        terrainEditorState.biomeSettings.Append(biomeSettings);
-    }
 
     if (ImGui::CollapsingHeader("Terrain Generation"))
     {
@@ -502,6 +542,8 @@ TerrainEditor::Run(SaveMode save)
             info.tileHeight = selectedTerrainResource.tile_height;
             info.width = selectedTerrainResource.world_size_x;
             info.height = selectedTerrainResource.world_size_z;
+            info.heightMap = IO::URN(selectedTerrainResource.height_map);
+            info.decisionMap = IO::URN(selectedTerrainResource.decision_map);
                 
             Terrain::TerrainContext::SetupTerrain(terrainComponent.graphicsEntityId, info);
         }
