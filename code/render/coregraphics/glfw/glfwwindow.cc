@@ -178,7 +178,16 @@ ScrollFunc(const CoreGraphics::WindowId& id, double xs, double ys)
 {
     if (ys != 0.0)
     {
-        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(ys > 0.0f ? DisplayEvent::MouseWheelForward : DisplayEvent::MouseWheelBackward));
+        GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+
+        double x, y;
+        glfwGetCursorPos(wnd, &x, &y);
+
+        const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
+        vec2 absMousePos((float)x, (float)y);
+        vec2 pos;
+        pos.set(((float)x) / float(mode.GetWidth()), (float)(y) / float(mode.GetHeight()));
+        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(ys > 0.0f ? DisplayEvent::MouseWheelForward : DisplayEvent::MouseWheelBackward, id, absMousePos, pos));
     }
 }
 
