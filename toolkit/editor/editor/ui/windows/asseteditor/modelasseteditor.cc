@@ -78,7 +78,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 ImGui::SameLine();
                 if (ImGui::Button(shorterMaterialName.AsCharPtr()))
                 {
-                    const Ptr<BaseWindow> window = WindowServer::Instance()->GetWindow("Asset Browser");
+                    BaseWindow* window = Presentation::AssetBrowserWindow;
                     window->Open();
                     window->Focus();
                 }

@@ -22,6 +22,8 @@ struct BrushData
     maxHeight : f32;
     brushTextureSize : i32x2;
     mode : BrushMode;
+	invView : f32x4x4;
+	invProj : f32x4x4;
 };
 uniform BrushUniforms : *BrushData;
 
@@ -49,6 +51,8 @@ render_state BrushRenderState
 {
     Cull = CullFace.Front;
     BlendEnabled[0] = true;
+	SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
     DepthTestEnabled = false;
     DepthWriteEnabled = false;
     DepthTestFunction = CompareMode.GreaterEqual;
@@ -89,7 +93,8 @@ psBrushPreview(
     const worldPos = PixelToWorld(pixelPos.xy * BrushUniforms.invViewport, depth, ViewConstants.InvView, ViewConstants.InvProjection);
     const localPos = (worldPos.xz - worldOffset.xz) / f32x2(BrushUniforms.size.x * 0.5f);
     if any(abs(localPos) > f32x2(0.5f)) { discard; }
-    const color = f32x4(textureSampleLod(Brush, LinearSampler, localPos + f32x2(0.5f), 0).r);
+    var color = f32x4(textureSampleLod(Brush, LinearSampler, localPos + f32x2(0.5f), 0).r);
+	color.a *= 0.2f;
     pixelExportColor(color, 0);
 }
 
@@ -110,21 +115,22 @@ csBrushMask() void
     if depth == 1.0f { return; }
 
     // Get world space position of cursor
-    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
-    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - f32x2(BrushUniforms.size) * 0.5f + f32x2(thread);
+    const worldPos = PixelToWorld(seed, depth, BrushUniforms.invView, BrushUniforms.invProj);
+    // Heightmap UV is world.xz / worldSize + 0.5; editor textures are 1 texel per meter
+    const coordinate = worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f - f32x2(BrushUniforms.size) * 0.5f + f32x2(thread);
     const uvRatio = f32x2(BrushUniforms.brushTextureSize) / f32x2(BrushUniforms.size);
     const weight = textureFetch(Brush, i32x2(thread * uvRatio), 0).r;
 
     // The brush coordinates should be the xz coordinates of the world space screen position
 
     // If outside, skip brush
-    if any(coordinate > BrushUniforms.heightmapSize) { return; }
+    if any(coordinate < f32x2(0, 0)) || any(coordinate >= f32x2(BrushUniforms.heightmapSize)) { return; }
 
     var oldValue = textureLoad(OutputMask, coordinate).x;
 
-    oldValue = lerp(oldValue, 1.0f, BrushUniforms.strength * weight);
+    const newValue = lerp(oldValue, 1.0f, BrushUniforms.strength * weight);
 
-    textureStore(OutputMask, coordinate, f32x4(oldValue, 0, 0, 1));
+    textureStore(OutputMask, coordinate, f32x4(newValue, 0, 0, 1));
 }
 
 //------------------------------------------------------------------------------
@@ -144,33 +150,34 @@ csBrushHeight() void
     if depth == 1.0f { return; }
 
     // Get world space position of cursor
-    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
-    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - (f32x2(BrushUniforms.size) * 0.5f + f32x2(thread));
+    const worldPos = PixelToWorld(seed, depth, BrushUniforms.invView, BrushUniforms.invProj);
+    // Heightmap UV is world.xz / worldSize + 0.5; editor textures are 1 texel per meter
+    var coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f + f32x2(thread) - f32x2(BrushUniforms.size) * 0.5f);
     const uvRatio = f32x2(BrushUniforms.brushTextureSize) / f32x2(BrushUniforms.size);
     const weight = textureFetch(Brush, i32x2(thread * uvRatio), 0).r;
 
     // The brush coordinates should be the xz coordinates of the world space screen position
 
     // If outside, skip brush
-    if any(coordinate > BrushUniforms.heightmapSize) { return; }
+    if any(coordinate < f32x2(0, 0)) || any(coordinate >= f32x2(BrushUniforms.heightmapSize)) { return; }
 
     var oldValue = textureLoad(OutputHeight, coordinate).x;
-
+	var newValue = oldValue;
     if BrushUniforms.mode == BrushMode.Raise
     {
         const intensity = saturate(BrushUniforms.strength * weight - oldValue) * 0.001f;
-        oldValue = min(BrushUniforms.strength, oldValue + intensity);
+        newValue = min(BrushUniforms.strength, oldValue + intensity);
     }
     else if BrushUniforms.mode == BrushMode.Lower
     {
         const intensity = saturate(BrushUniforms.strength * weight - oldValue) * 0.001f;
-        oldValue = min(BrushUniforms.strength, oldValue - intensity);
+        newValue = min(BrushUniforms.strength, oldValue - intensity);
     }
     else if BrushUniforms.mode == BrushMode.Flatten
     {
         const targetHeight = worldPos.y;
         const intensity = saturate(targetHeight - oldValue) * 0.001f;
-        oldValue = min(BrushUniforms.strength, oldValue + intensity);
+        newValue = min(BrushUniforms.strength, oldValue + intensity);
     }
     else if BrushUniforms.mode == BrushMode.Smooth
     {
@@ -190,12 +197,12 @@ csBrushHeight() void
             }
         }
         const average = sum / count;
-        oldValue = lerp(oldValue, average, BrushUniforms.strength * weight);
+        newValue = lerp(oldValue, average, BrushUniforms.strength * weight);
     }
 
-    oldValue = clamp(oldValue, BrushUniforms.minHeight, BrushUniforms.maxHeight);
+    newValue = clamp(newValue, BrushUniforms.minHeight, BrushUniforms.maxHeight);
 
-    textureStore(OutputHeight, coordinate, f32x4(oldValue, 0, 0, 1));
+    textureStore(OutputHeight, coordinate, f32x4(newValue, 0, 0, 1));
 }
 
 //------------------------------------------------------------------------------

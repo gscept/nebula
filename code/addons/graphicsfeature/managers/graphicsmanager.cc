@@ -543,22 +543,6 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     if (resource.decision_map == nullptr)
         resource.decision_map = "urn:tex:white";
 
-    // If biomes are empty, create a basic one
-    if (resource.biomes.empty())
-    {
-        auto biome = std::make_unique<Render::BiomeT>();
-        biome->mask = "urn:tex:system/white";
-        for (uint i = 0; i < 4; i++)
-        {
-            auto biomeMaterial = std::make_unique<Render::BiomeMaterialT>();
-            biomeMaterial->albedo = "urn:tex:system/white";
-            biomeMaterial->normals = "urn:tex:system/nobump";
-            biomeMaterial->material = "urn:tex:system/default_material";
-            biome->materials.push_back(std::move(biomeMaterial));
-        }
-        resource.biomes.push_back(std::move(biome));
-    }
-    
     createInfo.minHeight = resource.min_height;
     createInfo.maxHeight = resource.max_height;
     createInfo.quadsPerTileX = resource.quads_per_tile_x;

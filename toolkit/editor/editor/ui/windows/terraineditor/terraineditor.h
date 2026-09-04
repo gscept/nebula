@@ -6,7 +6,6 @@
     (C) 2025 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/ui/modules/viewport.h"
 #include "editor/tools/toolinterface.h"
@@ -16,7 +15,6 @@ namespace Presentation
 
 class TerrainEditor : public BaseWindow
 {
-    __DeclareClass(TerrainEditor)
 public:
     TerrainEditor();
     ~TerrainEditor();
@@ -27,7 +25,6 @@ public:
 
 private:
 };
-__RegisterClass(TerrainEditor)
 } // namespace Presentation
 
 

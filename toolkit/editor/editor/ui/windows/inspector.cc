@@ -18,7 +18,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Inspector, 'InWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

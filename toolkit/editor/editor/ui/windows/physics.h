@@ -8,7 +8,6 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 
 namespace Presentation
@@ -16,7 +15,6 @@ namespace Presentation
 
 class Physics: public BaseWindow
 {
-    __DeclareClass(Physics)
 public:
     Physics();
     ~Physics();
@@ -26,7 +24,6 @@ public:
 private:
     Graphics::GraphicsEntityId defaultCamera;
 };
-__RegisterClass(Physics)
 
 } // namespace Presentation
 

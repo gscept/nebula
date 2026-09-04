@@ -47,7 +47,6 @@ namespace Presentation
 {
 class LiveBatcherWindow : public BaseWindow
 {
-    __DeclareClass(LiveBatcherWindow)
 
 public:
 

@@ -12,7 +12,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::History, 'HsWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

@@ -675,8 +675,6 @@ TerrainContext::Create()
                 CoreGraphics::BarrierPop(cmdBuf);
                 CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileWriteProgram, queue);
                 CmdSetResourceTable(cmdBuf, terrainInstance.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
-
-                // go through pending page updates and render into the physical texture caches
                 CmdSetResourceTable(cmdBuf, terrainInstance.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
                 static const uint numDispatches = Math::divandroundup(PhysicalTextureTilePaddedSize, 8);
 
@@ -1046,7 +1044,7 @@ TerrainContext::SetupTerrain(
     normalCacheInfo.name = "Terrain Cache Normals"_atm;
     normalCacheInfo.width = PhysicalTexturePaddedSize;
     normalCacheInfo.height = PhysicalTexturePaddedSize;
-    normalCacheInfo.format = CoreGraphics::PixelFormat::BC5;
+    normalCacheInfo.format = CoreGraphics::PixelFormat::BC3;
     normalCacheInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
     normalCacheInfo.allowCast = true;
     instanceInfo.physicalNormalCacheBC = CoreGraphics::CreateTexture(normalCacheInfo);
@@ -2168,6 +2166,7 @@ TerrainContext::UpdateLOD(const Graphics::FrameContext& ctx)
     for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
     {
         TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
+        TerrainRuntimeInfo& runtime = runtimes[instanceIndex];
 
         if (terrainState.sun != Graphics::InvalidGraphicsEntityId)
         {
@@ -2207,7 +2206,7 @@ TerrainContext::UpdateLOD(const Graphics::FrameContext& ctx)
                 bool allBitsLoaded = AllBits(terrainInstance.biomeLoaded[j][i].value, BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
                 biomesLoaded &= allBitsLoaded;
             }
-            if (!terrainInstance.biomeLowresGenerated[j] && biomesLoaded)
+            if (!terrainInstance.biomeLowresGenerated[j] && biomesLoaded || !runtime.lowresGenerated)
             {
                 terrainInstance.updateLowres = true;
                 terrainInstance.biomeLowresGenerated[j] = true;
@@ -2704,6 +2703,7 @@ TerrainContext::SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::Te
 {
     Graphics::ContextEntityId id = GetContextId(entity);
     TerrainRuntimeInfo& rt = terrainAllocator.Get<Terrain_RuntimeInfo>(id.id);
+    
     rt.heightMap = heightmap;
 }
 

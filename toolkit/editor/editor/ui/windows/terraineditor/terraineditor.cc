@@ -20,6 +20,8 @@
 #include "coregraphics/meshresource.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 
+#include "editor/ui/windows/scene.h"
+
 #include "toolkitutil/texutil/textureattrtable.h"
 #include "toolkitutil/texutil/textureattrs.h"
 
@@ -124,7 +126,6 @@ const char* BaseTerrainExportPath = "export:textures/level_%s/";
 
 namespace Presentation
 {
-__ImplementClass(Presentation::TerrainEditor, 'TrEd', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**
@@ -314,9 +315,9 @@ TerrainEditor::Run(SaveMode save)
         else
         {
             if (selectedTerrainResource.height_map == nullptr)
-                selectedTerrainResource.height_map = "urn:tex:black";
+                selectedTerrainResource.height_map = "urn:tex:system/black";
             if (selectedTerrainResource.decision_map == nullptr)
-                selectedTerrainResource.decision_map = "urn:tex:white";
+                selectedTerrainResource.decision_map = "urn:tex:system/white";
 
             // If biomes are empty, create a basic one
             if (selectedTerrainResource.biomes.empty())
@@ -342,6 +343,13 @@ TerrainEditor::Run(SaveMode save)
     Math::vec2 mousePos = mouse->GetPixelPosition();
     terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
     terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
+
+    Scene* sceneWindow = (Presentation::Scene*)Presentation::SceneWindow;
+    
+    Graphics::ViewId view = sceneWindow->viewPort.GetView();
+    const auto viewData = Graphics::ViewGetViewConstants(view);
+    memcpy(terrainEditorState.brushUniforms.invView, viewData.InvView, sizeof(viewData.InvView));
+    memcpy(terrainEditorState.brushUniforms.invProj, viewData.InvProjection, sizeof(viewData.InvProjection));
     CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
 
     terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);

@@ -6,7 +6,6 @@
     (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "io/filetime.h"
 #include "util/array.h"
@@ -25,7 +24,6 @@ class ScanFolderJob;
 class AssetEditor;
 class AssetBrowser : public BaseWindow
 {
-    __DeclareClass(AssetBrowser)
 public:
     AssetBrowser();
     ~AssetBrowser();
@@ -84,7 +82,6 @@ private:
     Threading::SafeQueue<uint64_t> refreshedFolders;
     Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
 };
-__RegisterClass(AssetBrowser)
 
 } // namespace Presentation
 

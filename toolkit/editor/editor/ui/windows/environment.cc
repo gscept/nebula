@@ -18,7 +18,6 @@ using namespace Lighting;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Environment, 'EnWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**
@@ -60,7 +59,7 @@ Environment::Run(SaveMode save)
     // mildly hacky
     float zenithrad = Math::acos(direction.y);
     float zenith = Math::rad2deg(zenithrad);
-    float azimuth = Math::nearequal(zenithrad, 0.0f, TINY) ? 0.0f : Math::rad2deg(Math::asin(direction.z / Math::sin(zenithrad)));
+    static float azimuth = Math::nearequal(zenithrad, 0.0f, TINY) ? 0.0f : Math::rad2deg(Math::asin(direction.z / Math::sin(zenithrad)));
     bool changed = ImGui::SliderFloat("Azimut", &azimuth, 0.0f, 360.0f);
     changed |= ImGui::SliderFloat("Zenith", &zenith, 0.0f, 90.0f);
     if (changed)

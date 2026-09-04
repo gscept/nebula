@@ -32,7 +32,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Scene, 'SCWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

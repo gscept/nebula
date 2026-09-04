@@ -8,7 +8,6 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/editor.h"
 
@@ -17,7 +16,6 @@ namespace Presentation
 
 class Environment : public BaseWindow
 {
-    __DeclareClass(Environment)
 public:
     Environment();
     ~Environment();
@@ -28,7 +26,6 @@ public:
 private:
     
 };
-__RegisterClass(Environment)
 
 } // namespace Presentation
 

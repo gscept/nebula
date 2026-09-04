@@ -13,7 +13,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Toolbar, 'TBWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

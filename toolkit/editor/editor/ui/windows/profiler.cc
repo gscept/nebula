@@ -12,7 +12,6 @@
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Profiler, 'PrBw', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

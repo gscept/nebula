@@ -8,7 +8,6 @@
     (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/editor.h"
 
@@ -17,7 +16,6 @@ namespace Presentation
 
 class Inspector : public BaseWindow
 {
-    __DeclareClass(Inspector)
 public:
     Inspector();
     ~Inspector();
@@ -38,7 +36,6 @@ private:
     Editor::Entity latestInspectedEntity;
     uint64_t latestEntityVersion;
 };
-__RegisterClass(Inspector)
 
 } // namespace Presentation
 

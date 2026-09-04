@@ -8,7 +8,6 @@
     (C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "graphics/view.h"
 #include "coregraphics/graphicsdevice.h"
@@ -20,7 +19,6 @@ namespace Presentation
 
 class Console : public BaseWindow
 {
-    __DeclareClass(Console)
 public:
     Console();
     ~Console();
@@ -33,7 +31,5 @@ private:
     Ptr<Dynui::ImguiConsoleHandler> consoleHandler;
 
 };
-
-__RegisterClass(Console);
 
 } // namespace Presentation

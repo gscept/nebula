@@ -14,7 +14,6 @@ namespace Presentation
 
 class Profiler : public BaseWindow
 {
-    __DeclareClass(Profiler)
 public:
     Profiler();
     ~Profiler();
@@ -46,6 +45,5 @@ private:
     Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkersCompute;
 };
 
-__RegisterClass(Profiler)
 
 } // namespace Presentation

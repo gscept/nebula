@@ -8,7 +8,6 @@
     (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/editor.h"
 
@@ -17,7 +16,6 @@ namespace Presentation
 
 class Outline : public BaseWindow
 {
-    __DeclareClass(Outline)
 public:
     Outline();
     ~Outline();
@@ -63,6 +61,5 @@ private:
     bool openRenamePopup = false;
     char renameBuffer[128] = {};
 };
-__RegisterClass(Outline)
 
 } // namespace Presentation

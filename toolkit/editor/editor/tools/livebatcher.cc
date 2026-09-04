@@ -220,7 +220,6 @@ LiveBatcher::Wait()
 namespace Presentation
 {
 
-__ImplementClass(Presentation::LiveBatcherWindow, 'LiBw', Presentation::BaseWindow)
 
 //------------------------------------------------------------------------------
 /**

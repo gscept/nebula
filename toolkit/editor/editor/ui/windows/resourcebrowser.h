@@ -14,7 +14,6 @@ namespace Presentation
 
 class ResourceBrowser : public BaseWindow
 {
-    __DeclareClass(ResourceBrowser)
 public:
     ResourceBrowser();
     ~ResourceBrowser();
@@ -24,6 +23,5 @@ public:
 private:
 };
 
-__RegisterClass(ResourceBrowser)
 
 } // namespace Presentation

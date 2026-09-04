@@ -18,7 +18,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Physics, 'PtPh', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**
@@ -44,11 +43,8 @@ Physics::Run(SaveMode save)
 {
     if (this->defaultCamera == Graphics::GraphicsEntityId::Invalid())
     {
-        Ptr<Scene> sceneWindow = Presentation::WindowServer::Instance()->GetWindow("Scene View").downcast<Presentation::Scene>();
-        if (sceneWindow.isvalid())
-        {
-            this->defaultCamera = ViewGetCamera(sceneWindow->viewPort.GetView());
-        }
+        Scene* sceneWindow = (Presentation::Scene*)Presentation::SceneWindow;
+        this->defaultCamera = ViewGetCamera(sceneWindow->viewPort.GetView());
     }
     if (this->defaultCamera == Graphics::GraphicsEntityId::Invalid())
     {

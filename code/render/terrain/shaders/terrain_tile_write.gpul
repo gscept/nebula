@@ -6,7 +6,7 @@
 #include "lib/compression/bccompression.gpuh"
 
 workgroup AlbedoCacheResult : [8][8]f32x3;
-workgroup NormalCacheResult : [8][8]f32x2;
+workgroup NormalCacheResult : [8][8]f32x3;
 workgroup MaterialCacheResult : [8][8]f32x4;
 
 //------------------------------------------------------------------------------
@@ -45,6 +45,32 @@ BlockCompressAlbedo(blockStart : u32x2) u32x4
 */
 BlockCompressNormals(blockStart : u32x2) u32x4
 {
+    var blockRGB : [16]f32x3;
+    var blockA : [16]f32 = [1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f];
+
+    blockRGB[0] = NormalCacheResult[blockStart.x][blockStart.y];
+    blockRGB[1] = NormalCacheResult[blockStart.x + 1][blockStart.y];
+    blockRGB[2] = NormalCacheResult[blockStart.x + 2][blockStart.y];
+    blockRGB[3] = NormalCacheResult[blockStart.x + 3][blockStart.y];
+
+    blockRGB[4] = NormalCacheResult[blockStart.x][blockStart.y + 1];
+    blockRGB[5] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1];
+    blockRGB[6] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1];
+    blockRGB[7] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1];
+
+    blockRGB[8] = NormalCacheResult[blockStart.x][blockStart.y + 2];
+    blockRGB[9] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2];
+    blockRGB[10] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2];
+    blockRGB[11] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2];
+
+    blockRGB[12] = NormalCacheResult[blockStart.x][blockStart.y + 3];
+    blockRGB[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3];
+    blockRGB[14] = NormalCacheResult[blockStart.x + 2][blockStart.y + 3];
+    blockRGB[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3];
+
+    return CompressBC3Block(blockRGB, blockA, 1.0f);
+
+/*
     var blockU, blockV : [16]f32;
     blockU[0] = NormalCacheResult[blockStart.x][blockStart.y].x;
     blockU[1] = NormalCacheResult[blockStart.x + 1][blockStart.y].x;
@@ -83,6 +109,9 @@ BlockCompressNormals(blockStart : u32x2) u32x4
     blockV[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3].y;
 
     return CompressBC5Block(blockU, blockV, 1.0f);
+	return u32x4(0);
+	*/
+
 }
 
 //------------------------------------------------------------------------------
@@ -148,54 +177,20 @@ csWriteTile() void
     const tileWrite = bufferLoad(TileWrites, threadIndices.z);
     const writeOffset = i32x2(unpack_2u16(tileWrite.WriteOffset_MetersPerTile.x));
     const metersPerTile = castToF32(tileWrite.WriteOffset_MetersPerTile.y);
-    const UV = (f32x2(location) + f32x2(0.5f)) / f32x2(TerrainInstanceUniforms.PhysicalTilePaddedSize, TerrainInstanceUniforms.PhysicalTilePaddedSize);
+    const UV = f32x2(location) / f32x2(TerrainInstanceUniforms.PhysicalTilePaddedSize);
     const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
-    const invWorldSize = 1.0f / worldSize;
-    const worldPos2D = f32x2(tileWrite.WorldOffset + UV * metersPerTile) + worldSize * 0.5f;
-    const inputUv = worldPos2D;
+    const worldXZ = tileWrite.WorldOffset + UV * metersPerTile + worldSize * 0.5f;
 
-    //vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
-    const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
-    const height = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
-
-    const worldPos = f32x3(worldPos2D.x, height, worldPos2D.y);
-
-    // calculate normals by grabbing pixels around our UV
-    const offset = i32x3(-1, 1, 0.0f);
-    const normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
-
-    // setup the TBN
-    const tbn = PlaneTBN(normal);
-
-    // calculate weights for triplanar mapping
-    var triplanarWeights = abs(normal.xyz);
-    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
-
-    var totalAlbedo = f32x3(0, 0, 0);
-    var totalMaterial = f32x4(0, 0, 0, 0);
-    var totalNormal = f32x3(0, 0, 0);
-
-    for (var i = 0u; i < TerrainSystemUniforms.NumBiomes; i++)
-    {
-        // get biome data
-        const mask = SampleBiomeMaskLod(i, TextureSampler, inputUv * invWorldSize, 0).r;
-        const rules = TerrainSystemUniforms.BiomeRules[i];
-        const heightThreshold = TerrainInstanceUniforms.MinHeight + rules.y * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
-
-        // calculate rules
-        const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
-        const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
-
-        const tilingFactor = f32x2(rules.z);
-
-        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
-    }
+    var totalAlbedo : f32x3;
+    var totalMaterial : f32x4;
+    var totalNormal : f32x3;
+    EvaluateTerrainSample(worldXZ, totalAlbedo, totalMaterial, totalNormal);
 
     const localThreads = computeGetLocalThreadIndices();
 
     // Prepare for BC compression
     AlbedoCacheResult[localThreads.x][localThreads.y] = saturate(totalAlbedo);
-    NormalCacheResult[localThreads.x][localThreads.y] = saturate((totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f));
+    NormalCacheResult[localThreads.x][localThreads.y] = PackCacheNormal(totalNormal);
     MaterialCacheResult[localThreads.x][localThreads.y] = saturate(totalMaterial);
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
@@ -218,9 +213,9 @@ csWriteTile() void
 
         // The offset within the workgroup should just be invocation id which ranges between 0..1
         const workgroupOffset = i32x2(localThreads.xy);
-        textureStore(AlbedoCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(albedoRes));
-        textureStore(MaterialCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(materialRes));
-        textureStore(NormalCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(normalRes));
+        textureStore(AlbedoCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, albedoRes);
+        textureStore(MaterialCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, materialRes);
+        textureStore(NormalCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, normalRes);
     }
 }
 
@@ -234,7 +229,6 @@ csWriteLowres() void
 {
     // calculate 
     const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
-    const invWorldSize = 1.0f / worldSize;
 
     const numWorkgroups = computeGetNumWorkgroups();
     const workgroupSize = u32x2(8, 8);
@@ -242,53 +236,21 @@ csWriteLowres() void
 
     const texelSize = 1 / f32x2(numWorkgroups.xy * workgroupSize.xy);
     const pixel = f32x2(threadIndices.xy);
-    const uv = (pixel + f32x2(0.5f)) * texelSize;
-    const pixelToWorldScale = worldSize * texelSize;
+    const worldXZ = (pixel + f32x2(0.5f)) * texelSize * worldSize;
 
-    const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv, 0).r;
-    const height = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
-
-    const worldPos = f32x3(pixel.x * pixelToWorldScale.x, height, pixel.y * pixelToWorldScale.y);
-
-    // calculate normals by grabbing pixels around our UV
-    const offset = i32x3(-1, 1, 0.0f);
-    const normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
-
-    // setup the TBN
-    const tbn = PlaneTBN(normal);
-
-    // calculate weights for triplanar mapping
-    var triplanarWeights = abs(normal.xyz);
-    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
-
-    var totalAlbedo = f32x3(0, 0, 0);
-    var totalMaterial = f32x4(0, 0, 0, 0);
-    var totalNormal = f32x3(0, 0, 0);
-
-    for (var i = 0u; i < TerrainSystemUniforms.NumBiomes; i++)
-    {
-        // get biome data
-        const mask = SampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
-        const rules = TerrainSystemUniforms.BiomeRules[i];
-        const heightThreshold = TerrainInstanceUniforms.MinHeight + rules.y * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
-
-        // calculate rules
-        const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
-        const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
-
-        const tilingFactor = f32x2(rules.z);
-
-        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
-    }
+    var totalAlbedo : f32x3;
+    var totalMaterial : f32x4;
+    var totalNormal : f32x3;
+    EvaluateTerrainSample(worldXZ, totalAlbedo, totalMaterial, totalNormal);
 
     textureStore(AlbedoLowresOutput, i32x2(pixel), f32x4(totalAlbedo, 0));
-    textureStore(NormalLowresOutput, i32x2(pixel), f32x4(totalNormal, 0));
+    textureStore(NormalLowresOutput, i32x2(pixel), f32x4(PackCacheNormal(totalNormal), 0));
     textureStore(MaterialLowresOutput, i32x2(pixel), totalMaterial);
 
     /* Enable when we can figure out how to mipmap BC textures easily
     // Prepare for BC compression
     AlbedoCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate(totalAlbedo);
-    NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate((totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f));
+    NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = PackCacheNormal(totalNormal);
     MaterialCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = saturate(totalMaterial);
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();

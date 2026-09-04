@@ -13,7 +13,6 @@
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Console, 'cosl', Presentation::BaseWindow)
 
 //------------------------------------------------------------------------------
 /**

@@ -329,10 +329,11 @@ FlipY(uv : f32x2) f32x2
 */
 PlaneTBN(normal : f32x3) f32x3x3
 {
-    var tangent : f32x3 = cross(normal.xyz, f32x3(0, 0, 1));
-    tangent = normalize(cross(normal.xyz, tangent));
-    const binormal : f32x3 = normalize(cross(normal.xyz, tangent));
-    return f32x3x3(tangent, binormal, normal.xyz);
+    const n = normalize(normal.xyz);
+    const helper = (abs(n.z) > 0.999f) ? f32x3(1, 0, 0) : f32x3(0, 0, 1);
+    const tangent = normalize(cross(n, helper));
+    const binormal = normalize(cross(n, tangent));
+    return f32x3x3(tangent, binormal, n);
 }
 
 //------------------------------------------------------------------------------

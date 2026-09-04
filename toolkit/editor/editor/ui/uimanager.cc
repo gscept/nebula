@@ -73,26 +73,6 @@ UIManager::OnActivate()
 
     Tools::SelectionContext::Create();
 
-    windowServer->RegisterWindow("Presentation::Console", "Console", "Debug");
-    windowServer->RegisterWindow("Presentation::Outline", "Outline");
-    windowServer->RegisterWindow("Presentation::History", "History", "Editor");
-    windowServer->RegisterWindow("Presentation::StyleEditor", "Style Editor", "Editor");
-    windowServer->RegisterWindow("Presentation::Toolbar", "Toolbar");
-    windowServer->RegisterWindow("Presentation::Environment", "Environment");
-    windowServer->RegisterWindow("Presentation::Scene", "Scene View");
-    windowServer->RegisterWindow("Presentation::Inspector", "Inspector");
-    windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
-    windowServer->RegisterWindow("Presentation::AssetEditor", "Asset Editor", "Editor");
-    windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
-    windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
-    windowServer->RegisterWindow("Presentation::Physics", "Physics");
-    windowServer->RegisterWindow("Presentation::Navigation", "Navigation");
-    windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
-    windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
-    windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
-
-    windowServer->LoadState();
-    
     windowServer->RegisterCommand([]()
     {
         static Util::String localpath = IO::URI("proj:work/levels").LocalPath();
@@ -115,7 +95,6 @@ UIManager::OnActivate()
     windowServer->RegisterCommand([]() { Editor::PlayGame(); }, "Play", "Ctrl+P", "Game");
     windowServer->RegisterCommand([]() { Editor::PauseGame(); }, "Pause", "Ctrl+Shift+P", "Game");
     windowServer->RegisterCommand([]() { Editor::StopGame(); }, "Stop", "", "Game");
-    windowServer->RegisterCommand([]() { Presentation::WindowServer::Instance()->GetWindow("Create Object")->Open() = true; }, "Create Object", "Ctrl+C", "Create");
     
     windowServer->RegisterCommand([]()
     {

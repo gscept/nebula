@@ -11,7 +11,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::StyleEditor, 'SEWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

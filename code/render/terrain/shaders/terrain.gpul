@@ -181,7 +181,7 @@ psTerrainPrepass(
 {
     var Pos : f32x2;
     Pos.x = 0.0f;
-    Pos.y = textureGetSampledMip(Textures2D[TerrainSystemUniforms.AlbedoLowresBuffer], TextureSampler, UV).y;
+    Pos.y = textureGetSampledMip(Textures2D[TerrainSystemUniforms.IndirectionBuffer], TextureSampler, UV).y;
 
     // convert world space to positive integer interval [0..WorldSize]
     const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
@@ -203,11 +203,10 @@ psTerrainPrepass(
     {
         // calculate pixel position relative to the world coordinate for the subtexture
         const relativePos = WorldPos.xz - subTexture.worldCoordinate;
-        //float lod = (Pos.w / IndirectionNumMips) * maxMip;
         
-        const lodScale = 4 * tiles;
-        const dy = ddy(WorldPos.xz * lodScale);
-        const dx = ddx(WorldPos.xz * lodScale);
+        const lodScale = f32(TerrainInstanceUniforms.PhysicalTileSize * tiles) / f32(TerrainInstanceUniforms.VirtualTerrainSubTextureSize.x);
+        const dy = ddy(WorldPos.xz) * lodScale;
+        const dx = ddx(WorldPos.xz) * lodScale;
         var d = max(1.0f, max(dot(dx, dx), dot(dy, dy)));
         d = clamp(sqrt(d), 1.0f, pow(2.0f, f32(maxMip)));
         const lod = log2(d);
@@ -251,16 +250,16 @@ psTerrainPrepass(
             var subTextureTile : u32x2;
             var pageCoord : u32x2;
             CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoord, subTextureTile, dummy);
-
+		
             mipOffset = TerrainInstanceUniforms.VirtualPageBufferMipOffsets[upperMip / 4][upperMip % 4];
             mipSize = TerrainInstanceUniforms.VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
-
+		
             index = mipOffset + pageCoord.x + pageCoord.y * mipSize;
             const status = atomicExchange(bufferPtr(PageStatuses, index).&bits, 1u, MemorySemantics.Relaxed);
             if status == 0u
             {
                 const entry = PackPageDataEntry(1u, subTextureIndex, upperMip, maxMip, subTextureTile.x, subTextureTile.y);
-
+		
                 const entryIndex = atomicAdd(PageUpdateList.&NumEntries, 1, MemorySemantics.Relaxed);
                 PageUpdateList.Entry[entryIndex] = entry;
                 PageUpdateList.PageStatuses[entryIndex] = index;
@@ -311,9 +310,9 @@ psTerrainResolve(
     const unsignedPos = WorldPos.xz + worldSize * 0.5f;
     const subTextureCoord = i32x2(unsignedPos / TerrainInstanceUniforms.VirtualTerrainSubTextureSize);
 
-    var albedo = sample2DLod(TerrainSystemUniforms.AlbedoLowresBuffer, TextureSampler, worldUv, posBuf.y).rgb;
-    var normal = sample2DLod(TerrainSystemUniforms.NormalLowresBuffer, TextureSampler, worldUv, posBuf.y).xyz;
-    var material = sample2DLod(TerrainSystemUniforms.MaterialLowresBuffer, TextureSampler, worldUv, posBuf.y);
+    var albedo = sample2DLod(TerrainSystemUniforms.AlbedoLowresBuffer, TextureSampler, worldUv, posBuf.x).rgb;
+    var normal = UnpackCacheNormal(sample2DLod(TerrainSystemUniforms.NormalLowresBuffer, TextureSampler, worldUv, posBuf.x).xyz);
+    var material = sample2DLod(TerrainSystemUniforms.MaterialLowresBuffer, TextureSampler, worldUv, posBuf.x);
 
     if any(subTextureCoord < i32x2(0, 0)) || any(subTextureCoord >= TerrainInstanceUniforms.VirtualTerrainNumSubTextures)
     {
@@ -331,8 +330,8 @@ psTerrainResolve(
 
         if tiles != 1
         {
-            const lowerMip = i32(floor(posBuf.x));
-            const upperMip = i32(ceil(posBuf.x));
+            const lowerMip = u32(floor(posBuf.x));
+            const upperMip = u32(ceil(posBuf.x));
 
             const cameraRelativePos = WorldPos.xz - ViewConstants.EyePos.xz;
             const distSquared = dot(cameraRelativePos, cameraRelativePos);
@@ -361,23 +360,23 @@ psTerrainResolve(
                 var dummy : u32x2;
                 var subTextureTileFractUpper : f32x2; 
                 CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
-                const physicalUvUpper = subTextureTileFractUpper * (TerrainInstanceUniforms.PhysicalTileSize) + TerrainInstanceUniforms.PhysicalTilePadding;
-
+                const physicalUvUpper = subTextureTileFractUpper * TerrainInstanceUniforms.PhysicalTileSize + TerrainInstanceUniforms.PhysicalTilePadding;
+			
                 // get the indirection coord and normalize it to the physical space
-                const indirectionUpper = FetchIndirection(i32x2(pageCoordUpper), i32(upperMip), 0);
-                const indirectionLower = FetchIndirection(i32x2(pageCoordLower), i32(lowerMip), 0);
-
+                const indirectionUpper = FetchIndirection(i32x2(pageCoordUpper), upperMip, 0);
+                const indirectionLower = FetchIndirection(i32x2(pageCoordLower), lowerMip, 0);
+			
                 var albedo1 : f32x3;
                 var normal1 : f32x3;
                 var material1 : f32x4;
-
+			
                 // if valid mip, sample from physical cache
                 if indirectionUpper.z != 0xF
                 {
                     // convert from texture space to normalized space
                     const indirection = (indirectionUpper.xy + physicalUvUpper) * f32x2(TerrainInstanceUniforms.PhysicalInvPaddedTextureSize);
                     albedo0 = sample2DLod(TerrainSystemUniforms.AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
-                    normal0 = UnpackBC5Normal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xy);
+                    normal0 = UnpackCacheNormal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz);
                     material0 = sample2DLod(TerrainSystemUniforms.MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
                 }
                 else
@@ -387,14 +386,14 @@ psTerrainResolve(
                     normal0 = normal;
                     material0 = material;
                 }
-
+			
                 // same here
                 if indirectionLower.z != 0xF
                 {
                     // convert from texture space to normalized space
                     const indirection = (indirectionLower.xy + physicalUvLower) * f32x2(TerrainInstanceUniforms.PhysicalInvPaddedTextureSize);
                     albedo1 = sample2DLod(TerrainSystemUniforms.AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
-                    normal1 = UnpackBC5Normal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xy);
+                    normal1 = UnpackCacheNormal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz);
                     material1 = sample2DLod(TerrainSystemUniforms.MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
                 }
                 else
@@ -403,7 +402,7 @@ psTerrainResolve(
                     normal1 = normal;
                     material1 = material;
                 }
-
+			
                 const weight = fract(posBuf.x);
                 albedo0 = lerp(albedo1, albedo0, weight);
                 normal0 = lerp(normal1, normal0, weight);
@@ -419,7 +418,7 @@ psTerrainResolve(
                 {
                     const indir = (indirection.xy + physicalUvLower) * f32x2(TerrainInstanceUniforms.PhysicalInvPaddedTextureSize);
                     albedo0 = sample2DLod(TerrainSystemUniforms.AlbedoPhysicalCacheBuffer, TextureSampler, indir.xy, 0).rgb;
-                    normal0 = UnpackBC5Normal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indir.xy, 0).xy);
+                    normal0 = UnpackCacheNormal(sample2DLod(TerrainSystemUniforms.NormalPhysicalCacheBuffer, TextureSampler, indir.xy, 0).xyz);
                     material0 = sample2DLod(TerrainSystemUniforms.MaterialPhysicalCacheBuffer, TextureSampler, indir.xy, 0);
                 }
                 else
@@ -446,16 +445,17 @@ psTerrainResolve(
         }
     }
 
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldPos);
+
     var light = f32x3(0, 0, 0);
-    const pixelPos = pixelGetCoordinates();
-    light += CalculateLight(WorldPos, pixelPos.xyz, f32x3(1,1,1), f32x4(0,1,1,0), normal);
-    //light += albedo.rgb * material[MAT_EMISSIVE];
+    light += CalculateLight(WorldPos, pixelGetCoordinates().xyz, albedo.rgb, material, normal);
+    light += albedo.rgb * material[MAT_EMISSIVE];
     pixelExportColor(f32x4(light.rgb, 1), 0);
 }
 
 //------------------------------------------------------------------------------
 /**
-    Render terrain cast shadows
+    Copy between indirection textures
 */
 threads_x(64)
 entry_point

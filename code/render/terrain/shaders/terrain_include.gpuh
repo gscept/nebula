@@ -172,9 +172,9 @@ group(SYSTEM_GROUP) sampler_state AnisoSampler
     TILE WRITE PARAMS
 */
 //------------------------------------------------------------------------------
-group(BATCH_GROUP) uniform AlbedoCacheOutputBC : *mutable rgba32f texture2D;
-group(BATCH_GROUP) uniform NormalCacheOutputBC : *mutable rgba32f texture2D;
-group(BATCH_GROUP) uniform MaterialCacheOutputBC : *mutable rgba32f texture2D;
+group(BATCH_GROUP) uniform AlbedoCacheOutputBC : *mutable rgba32u texture2D;
+group(BATCH_GROUP) uniform NormalCacheOutputBC : *mutable rgba32u texture2D;
+group(BATCH_GROUP) uniform MaterialCacheOutputBC : *mutable rgba32u texture2D;
 
 group(BATCH_GROUP) uniform AlbedoLowresOutput : *mutable rgba8 texture2D;
 group(BATCH_GROUP) uniform NormalLowresOutput : *mutable rgba8 texture2D;
@@ -196,35 +196,24 @@ CalculateNormalFromHeight(uv : f32x2, offset : f32x3) f32x3
     const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.yz, 0).r;
     const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zx, 0).r;
     const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zy, 0).r;
-    var normal = f32x3(0, 0, 0);
-    normal.x = (hl - hr);
-    normal.y = 2.0f;
-    normal.z = (ht - hb);
-    normal *= f32x3((TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight), 1, (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight));
-    normal += f32x3(TerrainInstanceUniforms.MinHeight, 0, TerrainInstanceUniforms.MinHeight);
-    normal = normalize(normal);
-    return normal;
+    const heightScale = TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight;
+    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
 }
 
 //------------------------------------------------------------------------------
 /**
+    worldXZ is in heightmap space [0, WorldSize], same units as uv * worldSize.
+    offset is in meters (typically ±1).
 */
-CalculateNormalFromHeight(pixel : f32x2, offset : i32x3, scale : f32x2) f32x3
+CalculateNormalFromHeight(worldXZ : f32x2, offset : i32x3, scale : f32x2) f32x3
 {
-    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.xz) * scale, 0).r;
-    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.yz) * scale, 0).r;
-    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.zx) * scale, 0).r;
-    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.zy) * scale, 0).r;
-    var normal = f32x3(0, 0, 0);
-    normal.x = (hl - hr);
-    normal.y = 2.0f;
-    normal.z = (ht - hb);
-    normal *= f32x3((TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight), 1, (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight));
-    normal += f32x3(TerrainInstanceUniforms.MinHeight, 0, TerrainInstanceUniforms.MinHeight);
-    normal = normalize(normal);
-    return normal;
+    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.xz) * scale, 0).r;
+    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.yz) * scale, 0).r;
+    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.zy) * scale, 0).r;
+    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.zx) * scale, 0).r;
+    const heightScale = TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight;
+    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -266,8 +255,8 @@ SampleSlopeRule(
     outAlbedo += SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
     outMaterial = SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex) * (1.0f - angle);
     outMaterial += SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1) * angle;
-    outNormal = SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
-    outNormal += SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
+    outNormal = UnpackBC5Normal(SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).xy) * (1.0f - angle);
+    outNormal += UnpackBC5Normal(SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).xy) * angle;
 }
 
 //------------------------------------------------------------------------------
@@ -369,6 +358,22 @@ UnpackIndirection(indirection : u32) u32x3
 //------------------------------------------------------------------------------
 /**
 */
+PackCacheNormal(normal : f32x3) f32x3
+{
+    return normal.xyz * 0.5f + 0.5f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackCacheNormal(packedNormal : f32x3) f32x3
+{
+    return normalize(packedNormal * 2.0f - 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FetchIndirection(coords : i32x2, mip : u32, bias: u32) u32x3 
 { 
     return UnpackIndirection(castToU32(fetch2D(TerrainSystemUniforms.IndirectionBuffer, coords, i32(mip + bias)).x)); 
@@ -376,10 +381,21 @@ FetchIndirection(coords : i32x2, mip : u32, bias: u32) u32x3
 
 //------------------------------------------------------------------------------
 /**
+    n1 = geom in this plane's tangent frame, n2 = unpacked detail. Both [-1, 1].
+*/
+BlendRNM(n1 : f32x3, n2 : f32x3) f32x3
+{
+    const base = f32x3(n1.x, n1.y, n1.z + 1.0f);
+    const detail = f32x3(-n2.x, -n2.y, n2.z);
+    return base * dot(base, detail) / base.z - detail;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 SampleTerrain(
     biome : u32
-    , tbn : f32x3x3
+    , geomNormal : f32x3
     , angle : f32
     , heightCutoff : f32
     , mask : f32
@@ -393,78 +409,127 @@ SampleTerrain(
 {
     if mask > 0.0f
     {
-        var blendNormal = f32x3(0, 0, 0);
+        const absGeom = abs(geomNormal);
+        const axisSign = f32x3(
+            geomNormal.x < 0.0f ? -1.0f : 1.0f,
+            geomNormal.y < 0.0f ? -1.0f : 1.0f,
+            geomNormal.z < 0.0f ? -1.0f : 1.0f);
+        // X+ right, Y+ up, Z- forward: U along right of the face, V along up of the face.
+        const uvX = worldPos.zy * f32x2(-1, 1) / tilingFactor;
+        const uvY = worldPos.xz * f32x2(1, -1) / tilingFactor;
+        const uvZ = worldPos.xy / tilingFactor;
+
         var blendAlbedo = f32x3(0, 0, 0);
         var blendMaterial = f32x4(0, 0, 0, 0);
+        var tnormalX = f32x3(0, 0, 1);
+        var tnormalY = f32x3(0, 0, 1);
+        var tnormalZ = f32x3(0, 0, 1);
+
+        var albedo = f32x3(0, 0, 0);
+        var normal = f32x3(0, 0, 0);
+        var material = f32x4(0, 0, 0, 0);
+
         if heightCutoff == 0.0f
         {
-            var albedo = f32x3(0, 0, 0);
-            var normal = f32x3(0, 0, 0);
-            var material = f32x4(0, 0, 0, 0);
-
-            SampleSlopeRule(biome, 0, angle, worldPos.yz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvX, albedo, material, tnormalX);
             blendAlbedo += albedo * triplanarWeights.x;
             blendMaterial += material * triplanarWeights.x;
-            blendNormal += normal * triplanarWeights.x;
 
-            SampleSlopeRule(biome, 0, angle, worldPos.xz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvY, albedo, material, tnormalY);
             blendAlbedo += albedo * triplanarWeights.y;
             blendMaterial += material * triplanarWeights.y;
-            blendNormal += normal * triplanarWeights.y;
 
-            SampleSlopeRule(biome, 0, angle, worldPos.xy / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvZ, albedo, material, tnormalZ);
             blendAlbedo += albedo * triplanarWeights.z;
             blendMaterial += material * triplanarWeights.z;
-            blendNormal += normal * triplanarWeights.z;
-
-            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-            outNormal += (tbn * blendNormal) * mask;
-            outAlbedo += blendAlbedo * mask;   
-            outMaterial += blendMaterial * mask;
         }
         else
         {
-            var albedo = f32x3(0, 0, 0);
-            var normal = f32x3(0, 0, 0);
-            var material = f32x4(0, 0, 0, 0);
-
-            SampleSlopeRule(biome, 2, angle, worldPos.yz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 2, angle, uvX, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.x * heightCutoff;
             blendMaterial += material * triplanarWeights.x * heightCutoff;
-            blendNormal += normal * triplanarWeights.x * heightCutoff;
+            tnormalX = normal * heightCutoff;
 
-            SampleSlopeRule(biome, 2, angle, worldPos.xz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 2, angle, uvY, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.y * heightCutoff;
             blendMaterial += material * triplanarWeights.y * heightCutoff;
-            blendNormal += normal * triplanarWeights.y * heightCutoff;
+            tnormalY = normal * heightCutoff;
 
-            SampleSlopeRule(biome, 2, angle, worldPos.xy / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 2, angle, uvZ, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.z * heightCutoff;
             blendMaterial += material * triplanarWeights.z * heightCutoff;
-            blendNormal += normal * triplanarWeights.z * heightCutoff;
+            tnormalZ = normal * heightCutoff;
 
-            SampleSlopeRule(biome, 0, angle, worldPos.yz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvX, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
-            blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
+            tnormalX += normal * (1.0f - heightCutoff);
 
-            SampleSlopeRule(biome, 0, angle, worldPos.xz / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvY, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
-            blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
+            tnormalY += normal * (1.0f - heightCutoff);
 
-            SampleSlopeRule(biome, 0, angle, worldPos.xy / tilingFactor, albedo, material, normal);
+            SampleSlopeRule(biome, 0, angle, uvZ, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
-            blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
+            tnormalZ += normal * (1.0f - heightCutoff);
 
-            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-
-            outNormal += (tbn * blendNormal) * mask;
-            outAlbedo += blendAlbedo * mask;
-            outMaterial += blendMaterial * mask;
+            tnormalX = normalize(tnormalX);
+            tnormalY = normalize(tnormalY);
+            tnormalZ = normalize(tnormalZ);
         }
+
+        tnormalX = BlendRNM(f32x3(-geomNormal.z, geomNormal.y, absGeom.x), tnormalX);
+        tnormalY = BlendRNM(f32x3(geomNormal.x, -geomNormal.z, absGeom.y), tnormalY);
+        tnormalZ = BlendRNM(f32x3(geomNormal.x, geomNormal.y, absGeom.z), tnormalZ);
+
+        const worldN = normalize(
+            f32x3(tnormalX.z * axisSign.x, tnormalX.y, -tnormalX.x) * triplanarWeights.x +
+            f32x3(tnormalY.x, tnormalY.z * axisSign.y, -tnormalY.y) * triplanarWeights.y +
+            f32x3(tnormalZ.x, tnormalZ.y, tnormalZ.z * axisSign.z) * triplanarWeights.z);
+
+        outNormal = lerp(outNormal, worldN, mask);
+        outAlbedo = lerp(outAlbedo, blendAlbedo, mask);
+        outMaterial = lerp(outMaterial, blendMaterial, mask);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Shared by tile and lowres writes. worldXZ is heightmap space [0, WorldSize]
+    (mesh XZ + WorldSize * 0.5).
+*/
+EvaluateTerrainSample(worldXZ : f32x2, out outAlbedo : f32x3, out outMaterial : f32x4, out outNormal : f32x3) void
+{
+    const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
+    const invWorldSize = 1.0f / worldSize;
+    const uv = worldXZ * invWorldSize;
+
+    const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv, 0).r;
+    const height = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
+    const worldPos = f32x3(worldXZ.x, height, worldXZ.y);
+
+    const offset = i32x3(-1, 1, 0);
+    const normal = CalculateNormalFromHeight(worldXZ, offset, invWorldSize);
+
+    var triplanarWeights = abs(normal.xyz);
+    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
+
+    outAlbedo = f32x3(0, 0, 0);
+    outMaterial = f32x4(0, 0, 0, 0);
+    outNormal = normal;
+
+    for (var i = 0u; i < TerrainSystemUniforms.NumBiomes; i++)
+    {
+        const mask = SampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
+        const rules = TerrainSystemUniforms.BiomeRules[i];
+        const heightThreshold = TerrainInstanceUniforms.MinHeight + rules.y * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
+        const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
+        const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
+        const tilingFactor = f32x2(rules.z);
+	
+		// THIS BREAKS NORMALS
+        SampleTerrain(i, normal, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, outAlbedo, outMaterial, outNormal);
     }
 }

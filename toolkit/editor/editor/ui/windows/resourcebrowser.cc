@@ -10,7 +10,6 @@
 #include "graphics/view.h"
 namespace Presentation
 {
-__ImplementClass(Presentation::ResourceBrowser, 'RsBw', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

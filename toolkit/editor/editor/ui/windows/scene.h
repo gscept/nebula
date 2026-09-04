@@ -22,7 +22,6 @@ namespace Presentation
 
 class Scene : public BaseWindow
 {
-    __DeclareClass(Scene)
 public:
     Scene();
     ~Scene();
@@ -54,7 +53,6 @@ private:
     Tools::ToolInterface* allTools[5];
 };
 
-__RegisterClass(Scene)
 
 } // namespace Presentation
 

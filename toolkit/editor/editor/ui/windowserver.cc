@@ -32,6 +32,24 @@
 #include "dynui/imguifiledialog/ImGuiFileDialog.h"
 #include "tinyfiledialogs.h"
 
+#include "windows/console.h"
+#include "windows/outline.h"
+#include "windows/history.h"
+#include "windows/styleeditor.h"
+#include "windows/toolbar.h"
+#include "windows/environment.h"
+#include "windows/scene.h"
+#include "windows/inspector.h"
+#include "windows/assetbrowser.h"
+#include "windows/asseteditor/asseteditor.h"
+#include "windows/resourcebrowser.h"
+#include "windows/profiler.h"
+#include "windows/physics.h"
+#include "windows/navigation.h"
+#include "windows/settings.h"
+#include "windows/terraineditor/terraineditor.h"
+#include "editor/tools/livebatcher.h"
+
 #include "dynui/nebula_icons.h"
 
 using namespace Util;
@@ -39,8 +57,33 @@ using namespace Util;
 namespace Presentation
 {
 
+BaseWindow* ConsoleWindow;
+BaseWindow* OutlineWindow;
+BaseWindow* HistoryWindow;
+BaseWindow* StyleEditorWindow;
+BaseWindow* ToolbarWindow;
+BaseWindow* EnvironmentWindow;
+BaseWindow* SceneWindow;
+BaseWindow* InspectorWindow;
+BaseWindow* AssetBrowserWindow;
+BaseWindow* AssetEditorWindow;
+BaseWindow* ResourceBrowserWindow;
+BaseWindow* ProfilerWindow;
+BaseWindow* PhysicsWindow;
+BaseWindow* NavigationWindow;
+BaseWindow* SettingsWindow;
+BaseWindow* TerrainEditorWindow;
+BaseWindow* BatcherWindow;
+
 __ImplementClass(Presentation::WindowServer, 'wSrv', Core::RefCounted);
 __ImplementSingleton(Presentation::WindowServer);
+
+#define SETUP_WINDOW(var, type, name, category)\
+    var = new type(); var->SetName(#name); var->SetCategory(#category);\
+    this->windowByName.Add(#name, var);\
+    this->windows.Append(var);\
+    this->AddCategory(#category);
+
 
 //------------------------------------------------------------------------------
 /**
@@ -48,6 +91,25 @@ __ImplementSingleton(Presentation::WindowServer);
 WindowServer::WindowServer()
 {
     __ConstructSingleton;
+    SETUP_WINDOW(ConsoleWindow, Console, Console, Debug);
+    SETUP_WINDOW(OutlineWindow, Outline, Outline, );
+    SETUP_WINDOW(HistoryWindow, History, History, Editor);
+    SETUP_WINDOW(StyleEditorWindow, StyleEditor, Style Editor, Editor);
+    SETUP_WINDOW(ToolbarWindow, Toolbar, Toolbar, );
+    SETUP_WINDOW(EnvironmentWindow, Environment, Environment, );
+    SETUP_WINDOW(SceneWindow, Scene, Scene, );
+    SETUP_WINDOW(InspectorWindow, Inspector, Inspector, );
+    SETUP_WINDOW(AssetBrowserWindow, AssetBrowser, Asset Browser, );
+    SETUP_WINDOW(AssetEditorWindow, AssetEditor, Asset Editor, Editor);
+    SETUP_WINDOW(ResourceBrowserWindow, ResourceBrowser, Resource Browser, );
+    SETUP_WINDOW(ProfilerWindow, Profiler, Profiler, );
+    SETUP_WINDOW(PhysicsWindow, Physics, Physics, );
+    SETUP_WINDOW(NavigationWindow, Navigation, Navigation, );
+    SETUP_WINDOW(SettingsWindow, Settings, Settings, );
+    SETUP_WINDOW(TerrainEditorWindow, TerrainEditor, Terrain Editor, );
+    SETUP_WINDOW(BatcherWindow, LiveBatcherWindow, Live Batcher, );
+
+    this->LoadState();
 }
 
 //------------------------------------------------------------------------------
@@ -885,48 +947,6 @@ WindowServer::BroadcastSave(BaseWindow::SaveMode mode)
     this->save = mode;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WindowServer::RegisterWindow(const Util::String & className, const char * label, const char* category)
-{
-    Ptr<BaseWindow> intFace((BaseWindow*)Core::Factory::Instance()->Create(className));
-    n_assert2(intFace != nullptr, "Interface could not be found by provided class name!");
-
-    intFace->SetName(label);
-    intFace->SetCategory(category);
-    this->windowByName.Add(label, intFace);
-    this->windows.Append(intFace);
-    this->AddCategory(category);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WindowServer::RegisterWindow(const Util::FourCC fourcc, const char * label, const char* category)
-{
-    Ptr<BaseWindow> intFace((BaseWindow*)Core::Factory::Instance()->Create(fourcc));
-    n_assert2(intFace != nullptr, "Interface could not be found by provided FourCC");
-
-    intFace->SetName(label);
-    intFace->SetCategory(category);
-    this->windowByName.Add(label, intFace);
-    this->windows.Append(intFace);
-    this->AddCategory(category);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WindowServer::RegisterWindow(const Ptr<BaseWindow>& base)
-{
-    this->windowByName.Add(base->GetName(), base);
-    this->windows.Append(base);
-    this->AddCategory(base->GetCategory());
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -970,21 +990,6 @@ WindowServer::RegisterCommand(Util::Delegate<void()> func, Util::String const& l
     };
 
     this->commands.Add(label, info);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Ptr<BaseWindow>
-WindowServer::GetWindow(const Util::String & name)
-{
-    auto i = this->windowByName.FindIndex(name);
-    if (i != InvalidIndex)
-    {
-        return this->windowByName.ValueAtIndex(name, i);
-    }
-
-    return nullptr;
 }
 
 //------------------------------------------------------------------------------

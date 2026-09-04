@@ -37,7 +37,6 @@ struct
 
 } assetEditorState;
 
-__ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

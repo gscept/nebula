@@ -9,8 +9,6 @@
 namespace Presentation
 {
 
-__ImplementClass(Presentation::BaseWindow, 'bWnd', Core::RefCounted)
-
 //------------------------------------------------------------------------------
 /**
 */

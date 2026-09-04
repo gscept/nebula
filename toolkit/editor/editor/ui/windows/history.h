@@ -8,7 +8,6 @@
     (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 
 namespace Presentation
@@ -16,7 +15,6 @@ namespace Presentation
 
 class History : public BaseWindow
 {
-    __DeclareClass(History)
 public:
     History();
     ~History();
@@ -24,7 +22,6 @@ public:
     void Update();
     void Run(SaveMode save) override;
 };
-__RegisterClass(History)
 
 } // namespace Presentation
 

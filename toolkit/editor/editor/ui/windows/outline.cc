@@ -12,7 +12,6 @@
 
 namespace Presentation
 {
-__ImplementClass(Presentation::Outline, 'OtWn', Presentation::BaseWindow);
 
 //------------------------------------------------------------------------------
 /**

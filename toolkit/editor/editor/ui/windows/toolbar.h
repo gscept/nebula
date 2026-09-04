@@ -6,7 +6,6 @@
     (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 
 namespace Presentation
@@ -14,7 +13,6 @@ namespace Presentation
 
 class Toolbar : public BaseWindow
 {
-    __DeclareClass(Toolbar)
 public:
     Toolbar();
     ~Toolbar();
@@ -23,7 +21,6 @@ public:
 
 private:
 };
-__RegisterClass(Toolbar)
 
 } // namespace Presentation
 

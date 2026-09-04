@@ -16,9 +16,8 @@
 //------------------------------------------------------------------------------
 namespace Presentation
 {
-class BaseWindow : public Core::RefCounted
+class BaseWindow
 {
-    __DeclareClass(BaseWindow)
 public:
 
     enum class SaveMode

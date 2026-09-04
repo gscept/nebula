@@ -17,7 +17,6 @@ namespace Presentation
 
 class Settings : public BaseWindow
 {
-    __DeclareClass(Settings)
 public:
     Settings();
     ~Settings();
@@ -28,7 +27,6 @@ public:
 private:
     
 };
-__RegisterClass(Settings)
 
 } // namespace Presentation
 

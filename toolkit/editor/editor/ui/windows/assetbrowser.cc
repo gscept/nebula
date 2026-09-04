@@ -22,7 +22,6 @@ using namespace Editor;
 
 namespace Presentation
 {
-__ImplementClass(Presentation::AssetBrowser, 'AsBw', Presentation::BaseWindow);
 
 namespace
 {
@@ -621,7 +620,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         if (hasFileToOpen)
         {
             IO::URI uri = fileToOpen.filePath;
-            Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
+            AssetEditor* assetEditor = (AssetEditor*)Presentation::AssetEditorWindow;
 
             Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
             

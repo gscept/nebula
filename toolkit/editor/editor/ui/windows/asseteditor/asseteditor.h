@@ -6,7 +6,6 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/ui/modules/viewport.h"
 #include "graphics/view.h"
@@ -27,7 +26,6 @@ namespace Presentation
 
 class AssetEditor : public BaseWindow
 {
-    __DeclareClass(AssetEditor)
 public:
 
     enum class AssetType
@@ -51,7 +49,6 @@ public:
     // Select material for previewing
     void Open(const IO::URI& asset, const Util::String root, const AssetType type);
 };
-__RegisterClass(AssetEditor)
 
 struct ImageHolder
 {
