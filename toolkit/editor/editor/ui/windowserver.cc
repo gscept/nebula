@@ -66,6 +66,7 @@ BaseWindow* EnvironmentWindow;
 BaseWindow* SceneWindow;
 BaseWindow* InspectorWindow;
 BaseWindow* AssetBrowserWindow;
+BaseWindow* AssetBrowserPickerWindow;
 BaseWindow* AssetEditorWindow;
 BaseWindow* ResourceBrowserWindow;
 BaseWindow* ProfilerWindow;
@@ -100,6 +101,7 @@ WindowServer::WindowServer()
     SETUP_WINDOW(SceneWindow, Scene, Scene, );
     SETUP_WINDOW(InspectorWindow, Inspector, Inspector, );
     SETUP_WINDOW(AssetBrowserWindow, AssetBrowser, Asset Browser, );
+    SETUP_WINDOW(AssetBrowserPickerWindow, AssetBrowser, Asset Picker, );
     SETUP_WINDOW(AssetEditorWindow, AssetEditor, Asset Editor, Editor);
     SETUP_WINDOW(ResourceBrowserWindow, ResourceBrowser, Resource Browser, );
     SETUP_WINDOW(ProfilerWindow, Profiler, Profiler, );
@@ -110,6 +112,9 @@ WindowServer::WindowServer()
     SETUP_WINDOW(BatcherWindow, LiveBatcherWindow, Live Batcher, );
 
     this->LoadState();
+
+    AssetBrowserPickerWindow->Modal();
+    AssetBrowserPickerWindow->open = false;
 }
 
 //------------------------------------------------------------------------------
@@ -407,7 +412,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
 
                         if (ToolkitUtil::PackageTexture(
                             &textureResource,
-                            file.ExtractFileName(),
+                            Util::Format("%d", hashCode),
                             "temp:importer/",
                             ToolkitUtil::Platform::Code::Win32,
                             logger
@@ -423,8 +428,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                                 Dynui::ImguiTextureId tex;
                                 tex.nebulaHandle = texture;
                                 Dynui::SetImguiTextureIdData(imguiId, tex);
-                            }
-                            );
+                            });
                             texture = resId.resourceId;
                         }
 
@@ -436,7 +440,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                     Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, fileNameNoExt.ExtractFileName().AsCharPtr());
                 if (ImGui::Button(saveButton.AsCharPtr()))
                 {
-                    ToolkitUtil::ImportTexture(file, Destination, textureResource);
+                    ToolkitUtil::ImportTexture(file, Destination, textureResource, logger);
                     TextureResources.EraseIndex(textureResourceIndex);
                 }
 
@@ -808,8 +812,7 @@ WindowServer::RunAll()
         ImGui::EndMainMenuBar();
     }
 
-    if (!Dynui::ImguiDragAndDropFiles.IsEmpty())
-        RunImportWindows(&this->logger);
+    RunImportWindows(&this->logger);
 
     // clear transient hover state, it's re-evaluated as windows run
     Tools::SelectionContext::ClearHovered();
@@ -823,23 +826,45 @@ WindowServer::RunAll()
             continue;
         
         N_SCOPE_DYN(it->name.AsCharPtr(), UI)
+
+        if (it->modal)
+        {
+            if (ImGui::BeginPopupModal(it->GetName().AsCharPtr(), nullptr, it->GetAdditionalFlags()))
+            {
+                it->Run(this->save);
+
+                if (!it->open)
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+        }
         if (it->Open())
         {
             if (it->usesCustomWindowPadding)
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {it->windowPadding.x, it->windowPadding.y});
 
-            if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
+            if (it->modal)
             {
-                if (it->focusThisFrame)
-                {
-                    ImGui::SetWindowFocus(it->GetName().AsCharPtr());
-                    ImGuiViewport* viewport = ImGui::GetWindowViewport();
-                    ImGui::GetPlatformIO().Platform_SetWindowFocus(viewport);
-                    it->focusThisFrame = false;
-                }
-                it->Run(this->save);
+                ImGui::OpenPopup(it->GetName().AsCharPtr());
             }
-            ImGui::End();
+            else
+            {
+                if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
+                {
+                    if (it->focusThisFrame)
+                    {
+                        ImGui::SetWindowFocus(it->GetName().AsCharPtr());
+                        ImGuiViewport* viewport = ImGui::GetWindowViewport();
+                        ImGui::GetPlatformIO().Platform_SetWindowFocus(viewport);
+                        it->focusThisFrame = false;
+                    }
+                    it->Run(this->save);
+                }
+                ImGui::End();
+            }
 
             if (it->usesCustomWindowPadding)
                 ImGui::PopStyleVar();

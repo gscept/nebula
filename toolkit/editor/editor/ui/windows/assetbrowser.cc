@@ -157,19 +157,9 @@ AssetBrowser::~AssetBrowser()
 void
 AssetBrowser::Update()
 {
-    
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AssetBrowser::Run(SaveMode save)
-{
-    static bool showProgress = true;
-    if(this->isDoneRefreshingCaches.Test())
+    if (this->isDoneRefreshingCaches.Test())
     {
-        showProgress = false;
+        this->showProgress = false;
         this->isDoneRefreshingCaches.Clear();
         this->fileDB.Close();
         // reopen as filebased to ensure all changes are flushed and we have access to file paths for watchers
@@ -254,10 +244,19 @@ AssetBrowser::Run(SaveMode save)
             if (cacheNeedsRefresh)
             {
                 this->RefreshFileInfoCaches();
+                this->RefreshFolderInfoCaches();
             }
         }
     }
-    if(showProgress && this->currentScanJob != nullptr)
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::Run(SaveMode save)
+{
+    if(this->showProgress && this->currentScanJob != nullptr)
     {
         ImGui::ProgressBar(this->currentScanJob->GetProgress(), ImVec2(0.0f, 0.0f), "Scanning...");
     }
@@ -270,11 +269,40 @@ AssetBrowser::Run(SaveMode save)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+AssetBrowser::Open(const Util::String& path, std::function<void(const Util::String& path)> picker)
+{
+    // Wait for this to finish
+    while (this->isDoneRefreshingCaches.Test());
+    this->open = true;
+
+    IndexT folderIndex = this->folderInfoDict.FindIndex(path);
+    if (folderIndex == InvalidIndex)
+    {
+        folderIndex = this->folderInfoDict.FindIndex("proj:work/assets");
+    }
+    uint64_t folder = this->folderInfoDict.ValueAtIndex(folderIndex);
+    this->SetActiveFolder(folder);
+
+    this->pickFunction = picker;
+    
+    //Util::String folder = path.Tokenize(":")[0];
+    //picker(folder);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 AssetBrowser::RefreshFolderInfoCaches()
 {
     this->folderInfoCache.Clear();
-    if (this->activeFileTree != 0)
+    this->folderInfoDict.Clear();
+
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> rootFolders;
+    this->fileDB.GetRootFolders(rootFolders);
+
+    for (auto& root : rootFolders)
     {
         std::function<void(uint64_t)> fillFolders;
         fillFolders = [this, &fillFolders](uint64_t folderId)
@@ -290,13 +318,14 @@ AssetBrowser::RefreshFolderInfoCaches()
                 else
                 {
                     this->folderInfoCache.Add(child.id, child);
+                    this->folderInfoDict.Add(child.folderPath, child.id);
                 }
                 fillFolders(child.id);
             }
         };
 
-        this->fileDB.GetFolderInfo(this->activeFileTree, this->folderInfoCache.Emplace(this->activeFileTree));
-        fillFolders(this->activeFileTree);
+        this->fileDB.GetFolderInfo(root.id, this->folderInfoCache.Emplace(root.id));
+        fillFolders(root.id);
     }
 }
 
@@ -308,6 +337,7 @@ AssetBrowser::RefreshFileInfoCaches()
 {
     this->fileInfoCache.Clear();
     this->fileInfoDict.Clear();
+
     if (this->activeFileTree != 0 && this->activeFolder != 0)
     {
         Util::Array<ToolkitUtil::FileDB::FileInfo> files;
@@ -321,8 +351,6 @@ AssetBrowser::RefreshFileInfoCaches()
         }
     }
 }
-
-
 
 //------------------------------------------------------------------------------
 /**
@@ -423,6 +451,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         {
             case ToolkitUtil::FileType::Asset:
                 return AssetEditor::AssetType::Model;
+            case ToolkitUtil::FileType::Texture:
+                return AssetEditor::AssetType::Texture;
             case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
             case ToolkitUtil::FileType::Particle:
@@ -619,12 +649,19 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
         if (hasFileToOpen)
         {
-            IO::URI uri = fileToOpen.filePath;
-            AssetEditor* assetEditor = (AssetEditor*)Presentation::AssetEditorWindow;
-
-            Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
-            
-            assetEditor->Open(uri, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
+            if (this->pickFunction)
+            {
+                this->pickFunction(fileToOpen.filePath);
+                this->pickFunction = nullptr;
+                this->open = false;
+            }
+            else
+            {
+                IO::URI uri = fileToOpen.filePath;
+                AssetEditor* assetEditor = (AssetEditor*)Presentation::AssetEditorWindow;
+                Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
+                assetEditor->Open(uri, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
+            }
         }    
     }
 }
@@ -705,6 +742,7 @@ AssetBrowser::DisplayFileTree()
     if (oldActiveFileTree != this->activeFileTree)
     {
         this->RefreshFolderInfoCaches();
+        this->RefreshFileInfoCaches();
     }
     ImGui::NewLine();
     ImGui::InputText("##search", buffer, NEBULA_MAXPATH, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);

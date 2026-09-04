@@ -306,6 +306,7 @@ PackageTexture(
     {
         IO::CreateDirectory(destinationFolder);
         IO::URI destFile = Util::Format("%s/%s.dds", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
+        logger->Print("%s", destFile.LocalPath().AsCharPtr());
         Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
         writer->SetStream(IO::IoServer::Instance()->CreateStream(destFile));
         if (writer->Open())

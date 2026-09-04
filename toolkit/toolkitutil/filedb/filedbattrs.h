@@ -29,4 +29,5 @@ namespace Attr
     DeclareAttrString(EntityUri);
     DeclareAttrInt64(ModifiedDate);
     DeclareAttrString(EntityName);  // Generic name for folders/files    
+    DeclareAttrString(Path);
 }

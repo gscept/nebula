@@ -194,6 +194,7 @@ FileDB::CreateTables()
         folderTable->AddColumn(Column(Attr::FolderId, Column::Primary));
         folderTable->AddColumn(Column(Attr::ParentFolderId, Column::Indexed));
         folderTable->AddColumn(Column(Attr::EntityName));
+        folderTable->AddColumn(Column(Attr::Path));
         folderTable->AddColumn(Column(Attr::ModifiedDate));
         folderTable->AddColumn(Column(Attr::IsRootFolder));
         folderTable->AddColumn(Column(Attr::IsArchive));
@@ -208,6 +209,7 @@ FileDB::CreateTables()
         fileTable->AddColumn(Column(Attr::FileId, Column::Primary));
         fileTable->AddColumn(Column(Attr::FileFolderId, Column::Indexed));
         fileTable->AddColumn(Column(Attr::EntityName));
+        fileTable->AddColumn(Column(Attr::Path));
         fileTable->AddColumn(Column(Attr::FileType, Column::Indexed));
         fileTable->AddColumn(Column(Attr::FileSize));
         fileTable->AddColumn(Column(Attr::ModifiedDate));
@@ -235,6 +237,7 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
     dataset->AddColumn(Attr::FolderId);
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
@@ -254,6 +257,7 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
     values->SetInt64(Attr::FolderId, rowIdx, folderId);
     values->SetInt64(Attr::ParentFolderId, rowIdx, 0);
     values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetString(Attr::Path, rowIdx, name);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, rowIdx, true);
     values->SetBool(Attr::IsArchive, rowIdx, isArchive);
@@ -276,18 +280,26 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
         
     Ptr<Table> folderTable = this->database->GetTableByName("Folders");
     Ptr<Dataset> dataset = folderTable->CreateDataset();
+    Ptr<Dataset> parentDataset = folderTable->CreateDataset();
     
     dataset->AddColumn(Attr::FolderId);
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
+
+    parentDataset->AddColumn(Attr::Path);
 
 
     Ptr<FilterSet> filter = dataset->Filter();
     filter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
     dataset->PerformQuery();
+
+    Ptr<FilterSet> parentFilter = parentDataset->Filter();
+    parentFilter->AddEqualCheck(Attr::Attribute(Attr::FolderId, parentFolderId));
+    parentDataset->PerformQuery();
     
     Ptr<ValueTable> values = dataset->Values();
     IndexT rowIdx = 0;
@@ -299,6 +311,7 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
     values->SetInt64(Attr::FolderId, rowIdx, folderId);
     values->SetInt64(Attr::ParentFolderId, rowIdx, parentFolderId);
     values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetString(Attr::Path, rowIdx, parentDataset->Values()->GetString(Attr::Path, 0) + "/" + name);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, rowIdx, false);
     values->SetBool(Attr::IsArchive, rowIdx, isArchive);
@@ -321,6 +334,7 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     dataset->AddColumn(Attr::FolderId);
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
@@ -340,6 +354,7 @@ FileDB::GetFolderInfo(uint64_t folderId, FolderInfo& outInfo)
     outInfo.name = values->GetString(Attr::EntityName, 0);
     outInfo.parentId = values->GetInt64(Attr::ParentFolderId, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
+    outInfo.folderPath = values->GetString(Attr::Path, 0);
     outInfo.isRoot = values->GetBool(Attr::IsRootFolder, 0);
     outInfo.isArchive = values->GetBool(Attr::IsArchive, 0);
     {
@@ -370,6 +385,7 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
     dataset->AddColumn(Attr::FolderId);
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsArchive);
     
@@ -384,6 +400,7 @@ FileDB::GetChildFolders(uint64_t parentFolderId, Array<FolderInfo>& outFolders)
         FolderInfo info;
         info.id = values->GetInt64(Attr::FolderId, i);
         info.parentId = parentFolderId;
+        info.folderPath = values->GetString(Attr::Path, i);
         info.name = values->GetString(Attr::EntityName, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         info.isRoot = false;
@@ -409,6 +426,7 @@ FileDB::GetRootFolders(Array<FolderInfo>& outFolders)
     dataset->AddColumn(Attr::FolderId);
     dataset->AddColumn(Attr::ParentFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::ModifiedDate);
     dataset->AddColumn(Attr::IsRootFolder);
     dataset->AddColumn(Attr::IsArchive);
@@ -425,6 +443,7 @@ FileDB::GetRootFolders(Array<FolderInfo>& outFolders)
         info.id = values->GetInt64(Attr::FolderId, i);
         info.parentId = values->GetInt64(Attr::ParentFolderId, i);
         info.name = values->GetString(Attr::EntityName, i);
+        info.folderPath = values->GetString(Attr::Path, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
         info.isRoot = values->GetBool(Attr::IsRootFolder, i);
         info.isArchive = values->GetBool(Attr::IsArchive, i);
@@ -573,6 +592,7 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     dataset->AddColumn(Attr::FileId);
     dataset->AddColumn(Attr::FileFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::FileType);
     dataset->AddColumn(Attr::FileSize);
     dataset->AddColumn(Attr::ModifiedDate);
@@ -580,6 +600,13 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     Ptr<FilterSet> filter = dataset->Filter();
     filter->AddEqualCheck(Attr::Attribute(Attr::FileId, fileId));
     dataset->PerformQuery();
+
+    Ptr<Dataset> folderDataset = this->database->GetTableByName("Folders")->CreateDataset();
+    folderDataset->AddColumn(Attr::Path);
+
+    Ptr<FilterSet> folderFilter = folderDataset->Filter();
+    folderFilter->AddEqualCheck(Attr::Attribute(Attr::FolderId, folderId));
+    folderDataset->PerformQuery();
     
     Ptr<ValueTable> values = dataset->Values();
     IndexT rowIdx = 0;
@@ -593,6 +620,7 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     values->SetInt64(Attr::FileFolderId, rowIdx, folderId);
     
     values->SetString(Attr::EntityName, rowIdx, name);
+    values->SetString(Attr::Path, rowIdx, folderDataset->Values()->GetString(Attr::Path, 0) + "/" + name);
     values->SetInt(Attr::FileType, rowIdx, static_cast<int>(type));
     values->SetInt64(Attr::FileSize, rowIdx, size);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());

@@ -109,6 +109,7 @@ ConvertTexture(const TextureConversionInfo& info)
 
     if (info.texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB)
     {
+        args.Append(" -srgbi ");
         args.Append(" -srgbo ");
     }
 

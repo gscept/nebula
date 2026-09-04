@@ -27,8 +27,8 @@ bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUt
 /// Setup a texture resource based on file name
 ToolkitUtil::TextureResourceT SetupTextureImportSettingsFromPath(const IO::URI& file);
 /// Import a texture
-bool ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture);
+bool ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture, ToolkitUtil::Logger* logger);
 /// Import an audio file
-bool ImportAudio(const IO::URI& file, const IO::URI& destinationFolder);
+bool ImportAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Logger* logger);
 
 }

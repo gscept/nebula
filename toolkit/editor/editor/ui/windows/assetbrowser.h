@@ -25,11 +25,18 @@ class AssetEditor;
 class AssetBrowser : public BaseWindow
 {
 public:
+    /// Constructor
     AssetBrowser();
+
+    /// Destructor
     ~AssetBrowser();
+
 
     void Update();
     void Run(SaveMode save) override;
+
+    /// Open file (using assigns, like work:system/white)
+    void Open(const Util::String& path, std::function<void(const Util::String& path)> picker);
 private:
     
     void ScanFolderTree(ToolkitUtil::FileDB& fileDB, const Util::String& treeName, const Util::String& folderPath, bool useArchive);
@@ -77,10 +84,14 @@ private:
     Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
     Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
     Util::Dictionary<Util::String, uint64_t> fileInfoDict;
+    Util::Dictionary<Util::String, uint64_t> folderInfoDict;
     Threading::SafeFlag isDoneRefreshingCaches;
     Threading::SafeQueue<IO::WatchEvent> pendingWatchEvents;
     Threading::SafeQueue<uint64_t> refreshedFolders;
     Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
+
+    std::function<void(const Util::String& path)> pickFunction;
+    bool showProgress = false;
 };
 
 } // namespace Presentation

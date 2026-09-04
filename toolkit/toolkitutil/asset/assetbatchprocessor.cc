@@ -83,12 +83,12 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds"))
     {
         ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
-        ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture);
+        ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture, this->logger);
     }
 
     if ((this->importMode & ImportModes::Sound) && (ext == "wav" || ext == "ogg" || ext == "mp3"))
     {
-        ToolkitUtil::ImportAudio(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()));
+        ToolkitUtil::ImportAudio(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), this->logger);
     }
 
     //------------------------------------------------------------------------------

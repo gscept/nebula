@@ -28,6 +28,7 @@ extern BaseWindow* EnvironmentWindow;
 extern BaseWindow* SceneWindow;
 extern BaseWindow* InspectorWindow;
 extern BaseWindow* AssetBrowserWindow;
+extern BaseWindow* AssetBrowserPickerWindow;
 extern BaseWindow* AssetEditorWindow;
 extern BaseWindow* ResourceBrowserWindow;
 extern BaseWindow* ProfilerWindow;

@@ -52,6 +52,9 @@ public:
     /// Grab focus this frame
     void Focus();
 
+    /// Make window modal
+    void Modal();
+
     const ImGuiWindowFlags_ GetAdditionalFlags() const;
 
     /// Retrieve window padding from window
@@ -96,6 +99,7 @@ private:
     Math::vec2 windowPadding;
     bool usesCustomWindowPadding = false;
     bool focusThisFrame = false;
+    bool modal = false;
 };
 
 } // namespace Presentation

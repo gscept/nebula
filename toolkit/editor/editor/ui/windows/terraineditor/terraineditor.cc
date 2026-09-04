@@ -21,6 +21,7 @@
 #include "graphicsfeature/graphicsfeatureunit.h"
 
 #include "editor/ui/windows/scene.h"
+#include "editor/ui/windows/assetbrowser.h"
 
 #include "toolkitutil/texutil/textureattrtable.h"
 #include "toolkitutil/texutil/textureattrs.h"
@@ -739,16 +740,13 @@ TerrainEditor::Run(SaveMode save)
             }
 
             static int selectedBiome = -1;
-            if (ImGui::BeginListBox("###BiomeList"))
+            for (int i = 0; i < terrainEditorState.biomes.Size(); i++)
             {
-                for (int i = 0; i < terrainEditorState.biomes.Size(); i++)
+                if (Dynui::ImGuiToggleButton(terrainEditorState.biomeNames[i].AsCharPtr(), selectedBiome == i))
                 {
-                    if (ImGui::Selectable(terrainEditorState.biomeNames[i].AsCharPtr()))
-                    {
-                        selectedBiome = i;
-                    }
+                    selectedBiome = i;
                 }
-                ImGui::EndListBox();
+
             }
 
             if (selectedBiome != -1)
@@ -772,8 +770,8 @@ TerrainEditor::Run(SaveMode save)
 
                 const char* labels[4] = { "Flat", "Slope", "Height", "Height slope" };
                 const char* textures[3] = { "Albedo", "Normals", "Material" };
+                static Util::String labelTextures[4][3];
 
-                bool pressed = false;
                 for (int i = 0; i < 4; i++)
                 {
                     ImGui::BeginGroup();
@@ -788,22 +786,26 @@ TerrainEditor::Run(SaveMode save)
                         {
                         case 0:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].AsString().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].GetSpecific().AsCharPtr();
                             break;
                         case 1:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].AsString().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].GetSpecific().AsCharPtr();
                             break;
                         case 2:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].AsString().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].GetSpecific().AsCharPtr();
                             break;
                         default:
                             n_error("Can't happen");
                             break;
                         }
                         ImTextureRef ref {tex};
-                        pressed |= ImGui::ImageButton(textures[j], ref, ImVec2(64, 64));
+                        bool pressed = false;
+
+                        labelTextures[i][j] = Util::Format("%s%s", labels[i], textures[j]);
+
+                        pressed |= ImGui::ImageButton(labelTextures[i][j].AsCharPtr(), ref, ImVec2(64, 64));
                         ImGui::SameLine(); 
                         ImGui::BeginGroup();
                             ImGui::Text(textures[j]);
@@ -812,45 +814,57 @@ TerrainEditor::Run(SaveMode save)
 
                         if (pressed)
                         {
-                            // TODO: Replace file dialog with asset browser view/instance
-                            const char* patterns[] = { "*.dds" };
-                            const char* filePath = tinyfd_openFileDialog(textures[j], IO::URI(path).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
-
-                            if (filePath != nullptr)
+                            auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
+                            Util::String file = Util::Format("proj:work/%s", path);
+                            Util::String folder = file.ExtractToLastSlash();
+                            assetBrowser->Open(folder, [i, j](const Util::String& filePath)
                             {
-                                switch (j)
+                                Util::String relativePath = filePath.StripSubstring("proj:work/assets");
+                                relativePath.StripFileExtension();
+                                if (filePath != nullptr)
                                 {
-                                    case 0:
-                                        terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i] = IO::URN(filePath);
-                                        terrainEditorState.biomeTextures[selectedBiome].albedoResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                        terrainEditorState.biomeTextures[selectedBiome].albedo[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].albedoResources[i];
-                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i], terrainEditorState.biomeTextures[selectedBiome].albedo[i]);
-                                        break;
-                                    case 1:
-                                        terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i] = IO::URN(filePath);
-                                        terrainEditorState.biomeTextures[selectedBiome].normalsResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                        terrainEditorState.biomeTextures[selectedBiome].normals[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].normalsResources[i];
-                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i], terrainEditorState.biomeTextures[selectedBiome].normals[i]);
-                                        break;
-                                    case 2:
-                                        terrainEditorState.biomeTextures[selectedBiome].materialPaths[i] = IO::URN(filePath);
-                                        terrainEditorState.biomeTextures[selectedBiome].materialResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
-                                        terrainEditorState.biomeTextures[selectedBiome].material[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].materialResources[i];
-                                        Dynui::SetImguiTextureIdData(terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i], terrainEditorState.biomeTextures[selectedBiome].material[i]);
-                                        break;
-                                    default:
-                                        n_error("Can't happen");
-                                        break;
-                                }
-                            }
+                                    BiomeTextures& biomeTextureSet = terrainEditorState.biomeTextures[selectedBiome];
+                                    switch (j)
+                                    {
+                                        case 0:
+                                            biomeTextureSet.albedoPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.albedoResources[i] = Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", nullptr, nullptr, true, false);
+                                            biomeTextureSet.albedo[i].nebulaHandle = biomeTextureSet.albedoResources[i];
+                                            Dynui::SetImguiTextureIdData(biomeTextureSet.imguiAlbedoId[i], biomeTextureSet.albedo[i]);
+                                            break;
+                                        case 1:
+                                            biomeTextureSet.normalsPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.normalsResources[i] = Resources::CreateResource(biomeTextureSet.normalsPaths[i], "terrain", nullptr, nullptr, true, false);
+                                            biomeTextureSet.normals[i].nebulaHandle = biomeTextureSet.normalsResources[i];
+                                            Dynui::SetImguiTextureIdData(biomeTextureSet.imguiNormalId[i], biomeTextureSet.normals[i]);
+                                            break;
+                                        case 2:
+                                            biomeTextureSet.materialPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.materialResources[i] = Resources::CreateResource(biomeTextureSet.materialPaths[i], "terrain", nullptr, nullptr, true, false);
+                                            biomeTextureSet.material[i].nebulaHandle = biomeTextureSet.materialResources[i];
+                                            Dynui::SetImguiTextureIdData(biomeTextureSet.imguiMaterialId[i], biomeTextureSet.material[i]);
+                                            break;
+                                        default:
+                                            n_error("Can't happen");
+                                            break;
+                                    }
 
-                            // Update biome in terrain system
-                            Terrain::TerrainContext::SetBiomeLayer(terrainComponent.graphicsEntityId, selectedBiome, Terrain::BiomeSettings::BiomeMaterialLayer(i),
-                                terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i],
-                                terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i],
-                                terrainEditorState.biomeTextures[selectedBiome].materialPaths[i]
-                            );
-                            Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
+
+                                    // Update biome in terrain system
+                                    Terrain::TerrainContext::SetBiomeLayer(terrainComponent.graphicsEntityId, selectedBiome, Terrain::BiomeSettings::BiomeMaterialLayer(i),
+                                        biomeTextureSet.albedoPaths[i],
+                                        biomeTextureSet.normalsPaths[i],
+                                        biomeTextureSet.materialPaths[i]
+                                    );
+                                    Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
+                                }
+                            });
+                            const char* patterns[] = { "*.natex" };
+                            const char* sourcePath = IO::URI(Util::Format("work:assets/%s.natex", path)).LocalPath().AsCharPtr();
+
+                            /*
+
+                            */
 
                         }
                     }

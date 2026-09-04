@@ -116,7 +116,7 @@ SetupTextureImportSettingsFromPath(const IO::URI& file)
 /**
 */
 bool
-ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture)
+ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture, ToolkitUtil::Logger* logger)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
@@ -136,11 +136,12 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil
     }
 
 
-
     // Save nebula texture 
     Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
     fileNameNoExt.StripFileExtension();
     IO::URI output = Util::String::Sprintf("%s/%s.natex", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+    logger->Print("%s -> %s\n", file.LocalPath().AsCharPtr(), output.LocalPath().AsCharPtr());
+
     stream = IO::IoServer::Instance()->CreateStream(output);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
@@ -159,7 +160,7 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil
 /**
 */
 bool
-ImportAudio(const IO::URI& file, const IO::URI& destinationFolder)
+ImportAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Logger* logger)
 {
     ToolkitUtil::AudioResourceT audio;
     Util::String ext = file.LocalPath().GetFileExtension();
@@ -190,6 +191,8 @@ ImportAudio(const IO::URI& file, const IO::URI& destinationFolder)
 
     // Save nebula texture 
     IO::URI output = Util::String::Sprintf("%s/%s.naaud", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
+
+    logger->Print("%s -> %s\n", file.LocalPath().AsCharPtr(), output.LocalPath().AsCharPtr());
     stream = IO::IoServer::Instance()->CreateStream(output);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())

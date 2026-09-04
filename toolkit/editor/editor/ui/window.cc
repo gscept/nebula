@@ -121,6 +121,15 @@ BaseWindow::Focus()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+BaseWindow::Modal()
+{
+    this->modal = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const ImGuiWindowFlags_
 BaseWindow::GetAdditionalFlags() const
 {
