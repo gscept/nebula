@@ -275,6 +275,7 @@ AssetBrowser::Open(const Util::String& path, std::function<void(const Util::Stri
     // Wait for this to finish
     while (this->isDoneRefreshingCaches.Test());
     this->open = true;
+    this->popupThisFrame = true;
 
     IndexT folderIndex = this->folderInfoDict.FindIndex(path);
     if (folderIndex == InvalidIndex)

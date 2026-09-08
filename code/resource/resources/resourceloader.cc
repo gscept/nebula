@@ -572,8 +572,35 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
             _PendingResourceLoad& pend = this->loads[instanceId];
             if (!pend.inflight)
             {
-                // flip the immediate flag, this is in case we decide to perform a later load using immediate override
+                // If not in flight but the job became immediate, take it off the pending stack
+                bool wasImmediate = pend.immediate;
                 pend.immediate = pend.immediate || immediate;
+                if (pend.immediate && !wasImmediate)
+                {
+                    // Find the pending load and cancel it
+                    IndexT index = this->pendingLoads.FindIndex(instanceId);
+                    n_assert(index != InvalidIndex);
+                    this->pendingLoads.EraseIndex(index);
+
+                    // Load 
+                    ResourceLoadJob job = ResourceLoadJob::FromPending(this, -1, pend);
+                    ResourceLoadOutput output = _LoadInternal(this, job);
+                    output.UpdateLoaderState(this);
+                    SetupIdFromEntry(output.id.loaderInstanceId, ret);
+                    if (output.state == Resource::Loaded && success != nullptr)
+                        success(ret);
+                    else if (output.state == Resource::Failed && failed != nullptr)
+                        failed(ret);
+
+                    // Call all stacked callbacks too
+                    for (auto& callback : this->callbacks[instanceId])
+                    {
+                        if (output.state == Resource::Loaded && callback.success != nullptr)
+                            callback.success(ret);
+                        else if (output.state == Resource::Failed && callback.failed != nullptr)
+                            callback.failed(ret);
+                    }
+                }
             }
 
             // since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback

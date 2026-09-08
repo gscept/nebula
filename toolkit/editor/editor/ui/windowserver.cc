@@ -827,19 +827,10 @@ WindowServer::RunAll()
         
         N_SCOPE_DYN(it->name.AsCharPtr(), UI)
 
-        if (it->modal)
+        if (it->popupThisFrame)
         {
-            if (ImGui::BeginPopupModal(it->GetName().AsCharPtr(), nullptr, it->GetAdditionalFlags()))
-            {
-                it->Run(this->save);
+            ImGui::OpenPopup(it->GetName().AsCharPtr());
 
-                if (!it->open)
-                {
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::EndPopup();
-            }
         }
         if (it->Open())
         {
@@ -848,7 +839,17 @@ WindowServer::RunAll()
 
             if (it->modal)
             {
-                ImGui::OpenPopup(it->GetName().AsCharPtr());
+                if (ImGui::BeginPopupModal(it->GetName().AsCharPtr(), &it->open, it->GetAdditionalFlags()))
+                {
+                    it->Run(this->save);
+
+                    if (!it->open)
+                    {
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    ImGui::EndPopup();
+                }
             }
             else
             {

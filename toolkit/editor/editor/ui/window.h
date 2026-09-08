@@ -94,6 +94,7 @@ protected:
     Util::String category;
     bool open;
     int editCounter;
+    bool popupThisFrame = false;
 
 private:
     Math::vec2 windowPadding;

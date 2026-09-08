@@ -828,9 +828,12 @@ TerrainEditor::Run(SaveMode save)
                                     {
                                         case 0:
                                             biomeTextureSet.albedoPaths[i] = IO::URN("tex", relativePath);
-                                            biomeTextureSet.albedoResources[i] = Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", nullptr, nullptr, true, false);
-                                            biomeTextureSet.albedo[i].nebulaHandle = biomeTextureSet.albedoResources[i];
-                                            Dynui::SetImguiTextureIdData(biomeTextureSet.imguiAlbedoId[i], biomeTextureSet.albedo[i]);
+                                            biomeTextureSet.albedoResources[i] = Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
+                                            {
+                                                biomeTextureSet.albedo[i].nebulaHandle = id;
+                                                Dynui::SetImguiTextureIdData(biomeTextureSet.imguiAlbedoId[i], biomeTextureSet.albedo[i]);
+                                            }, nullptr, false, false);
+                                            
                                             break;
                                         case 1:
                                             biomeTextureSet.normalsPaths[i] = IO::URN("tex", relativePath);
