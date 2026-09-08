@@ -79,7 +79,7 @@ public:
     /// clear pending unloads
     void ClearPendingUnloads();
 
-    /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
+    /// Create a resource from URI, returns project placeholder resource unless immediate
     Resources::ResourceId CreateResource(const IO::URI& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// Create a resoujrce using URN, the loader itself decides how to resolve the path
     Resources::ResourceId CreateResource(const IO::URN& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);

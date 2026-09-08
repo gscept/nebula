@@ -239,6 +239,7 @@ ResourceLoader::Update(IndexT frameIndex)
     for (IndexT i = 0; i < this->pendingLoads.Size(); i++)
     {
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
+        resourceLoad.inflight = true;
         Resource::State state = this->states[resourceLoad.entry];
 
         // Skip loads of resources already done
@@ -570,41 +571,59 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
 
             // pending resource may not be in-flight in thread
             _PendingResourceLoad& pend = this->loads[instanceId];
-            if (!pend.inflight)
+            bool loadImmediate = immediate;
+            if (pend.inflight && pend.immediate != immediate)
             {
-                // If not in flight but the job became immediate, take it off the pending stack
-                bool wasImmediate = pend.immediate;
-                pend.immediate = pend.immediate || immediate;
-                if (pend.immediate && !wasImmediate)
-                {
-                    // Find the pending load and cancel it
-                    IndexT index = this->pendingLoads.FindIndex(instanceId);
-                    n_assert(index != InvalidIndex);
-                    this->pendingLoads.EraseIndex(index);
+                this->streamerThread->Wait();
 
-                    // Load 
-                    ResourceLoadJob job = ResourceLoadJob::FromPending(this, -1, pend);
-                    ResourceLoadOutput output = _LoadInternal(this, job);
-                    output.UpdateLoaderState(this);
-                    SetupIdFromEntry(output.id.loaderInstanceId, ret);
-                    if (output.state == Resource::Loaded && success != nullptr)
-                        success(ret);
-                    else if (output.state == Resource::Failed && failed != nullptr)
-                        failed(ret);
+                // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
+                n_printf(
+                    "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread\n",
+                    this->RTTI.GetName().AsCharPtr(),
+                    path.GetHostAndLocalPath().AsCharPtr()
+                );
 
-                    // Call all stacked callbacks too
-                    for (auto& callback : this->callbacks[instanceId])
-                    {
-                        if (output.state == Resource::Loaded && callback.success != nullptr)
-                            callback.success(ret);
-                        else if (output.state == Resource::Failed && callback.failed != nullptr)
-                            callback.failed(ret);
-                    }
-                }
+                // Loaded already
+                loadImmediate = false;
             }
 
-            // since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
-            this->callbacks[instanceId].Append({ success, failed });
+            if (loadImmediate)
+            {
+                // If we swap the immediateness, then load
+                pend.immediate = immediate;
+
+                // Find the pending load and cancel it
+                IndexT index = this->pendingLoads.FindIndex(instanceId);
+                n_assert(index != InvalidIndex);
+                this->pendingLoads.EraseIndex(index);
+
+                // Load
+                ResourceLoadJob job = ResourceLoadJob::FromPending(this, -1, pend);
+                ResourceLoadOutput output = _LoadInternal(this, job);
+                output.UpdateLoaderState(this);
+                SetupIdFromEntry(output.id.loaderInstanceId, ret);
+
+                job.flags = Resources::LoadFlags::None;
+                if (output.state == Resource::Loaded && success != nullptr)
+                    success(ret);
+                else if (output.state == Resource::Failed && failed != nullptr)
+                    failed(ret);
+
+                // Call all stacked callbacks too
+                for (auto& callback : this->callbacks[instanceId])
+                {
+                    if (output.state == Resource::Loaded && callback.success != nullptr)
+                        callback.success(ret);
+                    else if (output.state == Resource::Failed && callback.failed != nullptr)
+                        callback.failed(ret);
+                }
+                this->callbacks[instanceId].Clear();
+            }
+            else
+            {
+                // since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
+                this->callbacks[instanceId].Append({success, failed});
+            }            
         }
         else if (state == Resource::Unloaded)
         {
