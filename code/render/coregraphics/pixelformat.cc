@@ -296,9 +296,9 @@ PixelFormat::ToTexelSize(Code code)
         case PixelFormat::R8G8B8A8:         return 4;
         case PixelFormat::R8G8B8:           return 3;
         case PixelFormat::R5G6B5:           return 2;
-        case PixelFormat::SRGBA8:           return 3;
+        case PixelFormat::SRGBA8:           return 4;
         case PixelFormat::R5G5B5A1:         return 2;
-        case PixelFormat::R4G4B4A4:         return 4;
+        case PixelFormat::R4G4B4A4:         return 2;
         case PixelFormat::DXT1:             return 8;
         case PixelFormat::DXT1A:            return 8;
         case PixelFormat::DXT1sRGB:         return 8;
