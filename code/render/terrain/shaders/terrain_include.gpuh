@@ -528,6 +528,11 @@ EvaluateTerrainSample(worldXZ : f32x2, out outAlbedo : f32x3, out outMaterial : 
         const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
         const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
         const tilingFactor = f32x2(rules.z);
+
+        if mask == 0.0f
+        {
+            continue;
+        }
 	
 		// THIS BREAKS NORMALS
         SampleTerrain(i, normal, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, outAlbedo, outMaterial, outNormal);
