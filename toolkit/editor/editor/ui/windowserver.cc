@@ -235,7 +235,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
             );
         }
     }
-
+    auto batcher = (Editor::LiveBatcher*)Presentation::BatcherWindow;
     IndexT textureResourceIndex = 0;
     for (auto& [file, textureResource, texture, imguiId, resId] : TextureResources)
     {
@@ -442,6 +442,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                 {
                     ToolkitUtil::ImportTexture(file, Destination, textureResource, logger);
                     TextureResources.EraseIndex(textureResourceIndex);
+                    batcher->BatchAsset(Destination);
                 }
 
                 ImGui::EndTable();
@@ -532,6 +533,7 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                 }
                 ToolkitUtil::ImportFBX(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, logger);
                 FbxFiles.EraseIndex(fbxFileIndex);
+                batcher->BatchAsset(Destination);
             }
 
             fbxFileIndex++;
@@ -621,6 +623,8 @@ RunImportWindows(ToolkitUtil::Logger* logger)
                 }
                 ToolkitUtil::ImportGLTF(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, logger);
                 GltfFiles.EraseIndex(gltfFileIndex);
+
+                batcher->BatchAsset(Destination);
             }
 
             gltfFileIndex++;
