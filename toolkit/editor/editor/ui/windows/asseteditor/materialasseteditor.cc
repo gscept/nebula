@@ -359,8 +359,8 @@ MaterialSetup(AssetEditorItem* item)
     itemData->originalConstants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
     itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
     item->data = itemData;
-
-    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->path.WorkURI("assets"));
     if (assetFileStream->Open())
     {
         void* data = assetFileStream->MemoryMap();
@@ -436,14 +436,14 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
-    stream->SetURI(item->source);
+    stream->SetURI(item->path.WorkURI("assets"));
 
     MaterialSerialize(stream, itemData, item->asset.material, materialTemplate);
 
     // Also perform export
     ToolkitUtil::BinaryXmlConverter converter;
     ToolkitUtil::Logger logger;
-    converter.ConvertFile(item->source.LocalPath(), item->path.LocalPath(), logger);
+    converter.ConvertFile(stream->GetURI().LocalPath(), item->path.ExportURI().LocalPath(), logger);
 
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;

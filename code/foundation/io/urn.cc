@@ -23,6 +23,9 @@ namespace IO
 {
 using namespace Util;
 
+Util::Dictionary<Util::StringAtom, Util::StringAtom> URN::ExportExtensions, URN::WorkExtensions;
+Util::StringAtom URN::WorkRoot;
+
 //------------------------------------------------------------------------------
 /**
     Resolve assigns and split URN string into its components.

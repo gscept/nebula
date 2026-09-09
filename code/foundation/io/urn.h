@@ -70,8 +70,18 @@ public:
     /// get fragment component (can be empty)
     const Util::String& GetFragment() const;
 
-    /// Convert to URI using file extension
-    const IO::URI MakeURI(const Util::StringAtom& extension) const;
+    /// Convert to an export URI using file extension, mappings are setup with AddExportMapping
+    const IO::URI ExportURI() const;
+    /// Convert to a work URI using project folder and extension, mappings are setup with AddWorkMapping
+    const IO::URI WorkURI(const Util::StringAtom& root);
+
+    /// Add an export binding using namespace -> file extension to use with ExportURI
+    static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
+    /// Add a work binding using namespace -> file extension to use with WorkURI
+    static void AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
+    /// Set the work folder
+    static void SetWorkRoot(const Util::StringAtom& root);
+
 private:
     /// split string into components
     bool Split(const Util::String& s);
@@ -84,6 +94,9 @@ private:
     Util::String query;
     Util::String fragment;
     Util::String string;
+
+    static Util::Dictionary<Util::StringAtom, Util::StringAtom> ExportExtensions, WorkExtensions;
+    static Util::StringAtom WorkRoot;
 };
 
 //------------------------------------------------------------------------------
@@ -344,9 +357,52 @@ IO::URN::GetFragment() const
 /**
 */
 inline const IO::URI 
-URN::MakeURI(const Util::StringAtom& extension) const
+URN::ExportURI() const
 {
-    return IO::URI(Util::Format("%s:%s.%s", this->nid.AsCharPtr(), this->nss.AsCharPtr(), extension.Value()));
+    IndexT i = URN::ExportExtensions.FindIndex(this->nid);
+    n_assert(i != InvalidIndex);
+    return IO::URI(Util::Format("%s:%s.%s", this->nid.AsCharPtr(), this->nss.AsCharPtr(), URN::ExportExtensions.ValueAtIndex(i).Value()));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const IO::URI
+URN::WorkURI(const Util::StringAtom& root)
+{
+    n_assert(URN::WorkRoot.IsValid());
+    IndexT i = URN::ExportExtensions.FindIndex(this->nid);
+    n_assert(i != InvalidIndex);
+    return IO::URI(Util::Format("%s:%s.%s", URN::WorkRoot.Value(), (this->nss + "/" + root.AsString()).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+URN::AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
+{
+    n_assert(URN::ExportExtensions.FindIndex(ns) == InvalidIndex);
+    URN::ExportExtensions.Add(ns, extension);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+URN::AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
+{
+    n_assert(URN::WorkExtensions.FindIndex(ns) == InvalidIndex);
+    URN::WorkExtensions.Add(ns, extension);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+URN::SetWorkRoot(const Util::StringAtom& root)
+{
+    URN::WorkRoot = root;
 }
 
 } // namespace IO

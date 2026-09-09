@@ -797,7 +797,7 @@ ParticleSetup(AssetEditorItem* item)
 	auto itemData = item->allocator.Alloc<ParticleAssetItemData>();
 	item->data = itemData;
 
-    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->path.WorkURI("assets"));
     if (assetFileStream->Open())
     {
         void* data = assetFileStream->MemoryMap();
@@ -862,7 +862,7 @@ ParticleSetup(AssetEditorItem* item)
     }
 
     Particles::ParticleContext::RegisterEntity(item->previewObject);
-    Particles::ParticleContext::Setup(item->previewObject, item->path.LocalPath(), 1 << 3);
+    Particles::ParticleContext::Setup(item->previewObject, item->path.ExportURI().LocalPath(), 1 << 3);
     Particles::ParticleContext::Play(item->previewObject, Particles::ParticleContext::PlayMode::RestartIfPlaying);
 }
 
@@ -873,7 +873,7 @@ void
 ParticleSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
-    stream->SetURI(item->source);
+    stream->SetURI(item->path.WorkURI("assets"));
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
     ParticleSerialize(stream, static_cast<ParticleAssetItemData*>(item->data)->emitters);
     assetEditor->Unedit(item->editCounter);

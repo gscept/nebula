@@ -139,6 +139,20 @@ GraphicsServer::Open()
         Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", CoreGraphics::TextureLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", Materials::MaterialLoader::RTTI);
 
+        // Add URN namespaces to resources (OS specific)
+    #if defined __WIN32__ || __linux__ || __POSIX__
+        IO::URN::AddExportMapping("mdl", "n3");
+        IO::URN::AddExportMapping("msh", "nvx");
+        IO::URN::AddExportMapping("tex", "dds");
+        IO::URN::AddExportMapping("nsk", "nsk");
+        IO::URN::AddExportMapping("nvx", "nvx");
+        IO::URN::AddExportMapping("sur", "sur");
+        IO::URN::AddExportMapping("mat", "sur");
+        IO::URN::AddExportMapping("par", "par");
+    #else
+        #error "Platform unsupported"
+    #endif
+
         RenderUtil::DrawFullScreenQuad::Setup();
 
         // load base textures before setting up major subsystems

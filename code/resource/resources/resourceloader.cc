@@ -698,7 +698,7 @@ ResourceLoader::CreateResource(
     bool immediate,
     bool stream)
 {
-    return CreateResource(res.MakeURI(this->loaderExtension), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
+    return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
 }
 
 //------------------------------------------------------------------------------

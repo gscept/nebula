@@ -44,6 +44,13 @@ struct
 AssetEditor::AssetEditor()
 {
     this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
+
+    // Setup URN work mappings
+    IO::URN::AddWorkMapping("mdl", "nasset");
+    IO::URN::AddWorkMapping("tex", "natex");
+    IO::URN::AddWorkMapping("par", "napar");
+    IO::URN::AddWorkMapping("mat", "namat");
+    IO::URN::SetWorkRoot("proj:work"); // This should come from the project info
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +164,7 @@ AssetEditor::Run(SaveMode save)
                 }
 
                 bool open = true;
-                Util::String assetName = Editor::PathConverter::StripAssetName(item.path.LocalPath());
+                Util::String assetName = Editor::PathConverter::StripAssetName(item.path.GetSpecific());
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
@@ -293,7 +300,7 @@ Setup(AssetEditorItem* item)
 /**
 */
 void
-AssetEditor::Open(const IO::URI& asset, const Util::String root, const AssetType type)
+AssetEditor::Open(const IO::URN& asset, const Util::String root, const AssetType type)
 {
     // If we try to load the same item, just focus that one
     for (AssetEditorItem& item : assetEditorState.items)
@@ -305,52 +312,30 @@ AssetEditor::Open(const IO::URI& asset, const Util::String root, const AssetType
         }
     }
 
-    const char* extensions[] = 
-    {
-        "",
-        "sur",  //Material,
-        "n3",   //Model,
-        "dds",  //Texture,
-        "par",  //Particle,
-    };
-
-    const char* exportAssigns[] =
-    {
-        "",
-        "mat", //Material,
-        "mdl", //Model,
-        "tex", //Texture,
-        "par", //Particle,
-    };
-
-    
-    Util::String relativePath = asset.LocalPath().StripSubstring(IO::URI(root + "/assets").LocalPath());
-    relativePath.StripFileExtension();
-    IO::URI exportFile = Util::Format("%s:%s.%s", exportAssigns[(uint)type], relativePath.AsCharPtr(), extensions[(uint)type]);
+    IO::URI exportFile = asset.ExportURI();
 
     // If there is no export, quickly batch it
     if (exportFile.IsEmpty())
     {
-        Editor::LiveBatcher::BatchFile(asset);
+        Editor::LiveBatcher::BatchFile(exportFile);
         Editor::LiveBatcher::Wait();
     }
 
-    if (!Resources::ResourceServer::Instance()->HasStreamLoader(exportFile.LocalPath().GetFileExtension()))
+    if (!Resources::ResourceServer::Instance()->HasStreamLoader(asset))
     {
         // we just ignore for now
         return;
     }
 
     // Otherwise, trigger an async load and setup a new item
-    Resources::CreateResource(exportFile.LocalPath(), "editor",
+    Resources::CreateResource(asset, "editor",
         [exportFile, asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;
             item.assetType = type;
             item.res = id;
-            item.source = asset;
-            item.path = exportFile;
+            item.path = asset;
             item.grabFocus = true;
             item.editCounter = 0;
 

@@ -658,7 +658,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             }
             else
             {
-                IO::URI uri = fileToOpen.filePath;
+                IO::URN uri = IO::URN(fileToOpen.filePath);
                 AssetEditor* assetEditor = (AssetEditor*)Presentation::AssetEditorWindow;
                 Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
                 assetEditor->Open(uri, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));

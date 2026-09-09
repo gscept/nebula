@@ -47,7 +47,7 @@ public:
     Modules::Viewport viewport;
 
     // Select material for previewing
-    void Open(const IO::URI& asset, const Util::String root, const AssetType type);
+    void Open(const IO::URN& asset, const Util::String root, const AssetType type);
 };
 
 struct ImageHolder
@@ -80,8 +80,7 @@ struct AssetEditorItem
     } asset;
 
     Resources::ResourceId res;
-    IO::URI source;
-    IO::URI path;
+    IO::URN path;
     Graphics::GraphicsEntityId previewObject;
 
 

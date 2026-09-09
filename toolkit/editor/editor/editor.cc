@@ -89,6 +89,9 @@ Create()
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("int", projectInfo.GetAttr("IntermediateDir")));
     IO::IoServer::Instance()->CreateDirectory("int:");
 
+    // Setup URN
+    IO::URN::SetWorkRoot("proj:work");
+
     LiveBatcher::Setup();
 
     Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);

@@ -22,7 +22,7 @@ void
 TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
-    ImGui::Text(item->source.LocalPath().AsCharPtr());
+    ImGui::Text(item->path.GetSpecific().AsCharPtr());
     ImGui::PopFont();
     auto itemData = (TextureEditorItemData*)item->data;
 

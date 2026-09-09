@@ -109,7 +109,7 @@ void
 ModelSetup(AssetEditorItem* item)
 {
     ModelEditorItemData* itemData = item->allocator.Alloc<ModelEditorItemData>();
-    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->path.WorkURI("assets"));
     if (assetFileStream->Open())
     {
         void* data = assetFileStream->MemoryMap();
@@ -126,7 +126,7 @@ ModelSetup(AssetEditorItem* item)
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
-        item->path.LocalPath(),
+        item->path.ExportURI().LocalPath(),
         "preview",
         [gid = item->previewObject]()
         {
@@ -154,8 +154,10 @@ ModelSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     ModelEditorItemData* itemData = (ModelEditorItemData*)item->data;
 
+    const IO::URI& destination = item->path.WorkURI("assets");
+
     // Save file replacing the old
-    Ptr<IO::Stream> stream = IO::CreateStream(item->source.LocalPath() + Util::String::FromInt((uintptr_t)itemData));
+    Ptr<IO::Stream> stream = IO::CreateStream(destination.LocalPath() + Util::String::FromInt((uintptr_t)itemData));
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
     {
@@ -164,17 +166,17 @@ ModelSave(AssetEditor* assetEditor, AssetEditorItem* item)
         stream->Close();
 
         // A bit safer approach, copy new file to old to replace it, and delete new
-        IO::CopyFile(stream->GetURI(), item->source);
+        IO::CopyFile(stream->GetURI(), destination);
         IO::DeleteFile(stream->GetURI());
 
         // Batch it
-        Editor::LiveBatcher::BatchFile(item->source);
+        Editor::LiveBatcher::BatchFile(destination);
 
         assetEditor->Unedit();
     }
     else
     {
-        n_printf("Failed to save asset src:assets/%s.nasset\n", item->source.AsString().AsCharPtr());
+        n_printf("Failed to save asset src:assets/%s.nasset\n", destination.AsString().AsCharPtr());
     }
 }
 
