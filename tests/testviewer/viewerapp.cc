@@ -295,6 +295,7 @@ SimpleViewerApplication::Open()
             Clustering::ClusterContext::UpdateResources,
             ObserverContext::RunVisibilityTests,
             ObserverContext::GenerateDrawLists,
+            Terrain::TerrainContext::UpdateLOD,
 
             // At the very latest point, wait for work to finish
             ModelContext::WaitForWork,
@@ -305,9 +306,6 @@ SimpleViewerApplication::Open()
 
         Util::Array<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
-
-            Terrain::TerrainContext::UpdateLOD,
-            //Vegetation::VegetationContext::UpdateViewResources
         };
 
         this->gfxServer->SetupPreLogicCalls(preLogicCalls);
