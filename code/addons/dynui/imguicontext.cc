@@ -233,11 +233,10 @@ ImFont* ImguiIconFont;
 void
 ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, ImDrawData* data)
 {
-    // get Imgui context
-    ImGuiIO& io = ImGui::GetIO();
-    int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
-    int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
-    data->ScaleClipRects(io.DisplayFramebufferScale);
+    const ImVec2 clipOff = data->DisplayPos;
+    const ImVec2 clipScale = data->FramebufferScale;
+    const int fbWidth = (int)(data->DisplaySize.x * clipScale.x);
+    const int fbHeight = (int)(data->DisplaySize.y * clipScale.y);
 
     if (data->Textures != nullptr)
     {
@@ -404,12 +403,18 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             }
             else
             {
-                // setup scissor rect
-                Math::rectangle<int> scissorRect((int)command->ClipRect.x - data->DisplayPos.x, (int)command->ClipRect.y - data->DisplayPos.y, (int)command->ClipRect.z - data->DisplayPos.x, (int)command->ClipRect.w - data->DisplayPos.y);
+                // ClipRect is in DisplayPos (OS) space; scissors are framebuffer-local
+                const float x = (command->ClipRect.x - clipOff.x) * clipScale.x;
+                const float y = (command->ClipRect.y - clipOff.y) * clipScale.y;
+                const float z = (command->ClipRect.z - clipOff.x) * clipScale.x;
+                const float w = (command->ClipRect.w - clipOff.y) * clipScale.y;
+                Math::rectangle<int> scissorRect((int)x, (int)y, (int)z, (int)w);
                 scissorRect.left = Math::max(0, scissorRect.left);
                 scissorRect.top = Math::max(0, scissorRect.top);
-                scissorRect.right = Math::min(data->DisplaySize.x, scissorRect.right);
-                scissorRect.bottom = Math::min(data->DisplaySize.y, scissorRect.bottom);
+                scissorRect.right = Math::min(fbWidth, scissorRect.right);
+                scissorRect.bottom = Math::min(fbHeight, scissorRect.bottom);
+                if (scissorRect.width() <= 0 || scissorRect.height() <= 0)
+                    continue;
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
 
                 const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(command->TexRef.GetTexID());
