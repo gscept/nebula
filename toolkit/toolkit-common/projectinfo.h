@@ -52,8 +52,6 @@ public:
     /// get error string for result code
     Util::String GetErrorString(Result res) const;
 
-    
-    
     /// return true if a platform attribute exists
     bool HasAttr(const Util::String& attrName) const;
     /// get platform attribute value
