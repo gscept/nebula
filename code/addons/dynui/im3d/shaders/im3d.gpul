@@ -93,8 +93,8 @@ gsMain(
     in size : [2]f32,
     in color : [2]f32x4,        
     out EdgeDistance : f32,
-    out Size : f32,
-    out Color : f32x4
+    out Color : f32x4,
+    out Size : f32
 ) void
 {
     const line = geometryGetLine();
@@ -137,7 +137,7 @@ gsMain(
 entry_point
 psMainTriangles(    
     in no_perspective size : f32,
-    in color : f32x4,  
+    in color : f32x4
 ) void
 {
     pixelExportColor(color, 0);
@@ -149,8 +149,8 @@ psMainTriangles(
 entry_point
 psMainLines(
     in no_perspective edgeDistance : f32,
-    in no_perspective size : f32,
     in color : f32x4,
+    in no_perspective size : f32
 ) void
 {
     var finalColor = color;
@@ -166,7 +166,7 @@ psMainLines(
 entry_point
 psMainPoints(    
     in no_perspective size : f32,
-    in color : f32x4,
+    in color : f32x4
 ) void
 {
     var finalColor = color;
