@@ -50,7 +50,7 @@ AssetEditor::AssetEditor()
     IO::URN::AddWorkMapping("tex", "natex");
     IO::URN::AddWorkMapping("par", "napar");
     IO::URN::AddWorkMapping("mat", "namat");
-    IO::URN::SetWorkRoot("proj:work"); // This should come from the project info
+    
 }
 
 //------------------------------------------------------------------------------
