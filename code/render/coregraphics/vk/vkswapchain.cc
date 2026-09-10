@@ -360,9 +360,10 @@ SwapchainSwap(const SwapchainId id)
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     uint& currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
     Util::FixedArray<CoreGraphics::SemaphoreId>& semaphores = swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id);
+    uint semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
 
     // get present fence and be sure it is finished before getting the next image
-    VkSemaphore sem = Vulkan::SemaphoreGetVk(semaphores[CoreGraphics::GetBufferedFrameIndex()]);
+    VkSemaphore sem = Vulkan::SemaphoreGetVk(semaphores[semaphorePair]);
 
     // get the next image
     VkResult res = vkAcquireNextImageKHR(dev, swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &currentBackbuffer);
@@ -531,7 +532,8 @@ SwapchainPresent(const SwapchainId id)
 #if NEBULA_GRAPHICS_DEBUG
     CoreGraphics::QueueEndMarker(queueType);
 #endif
-    semaphorePair++;
+
+    semaphorePair = (semaphorePair + 1) % images.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -548,7 +550,7 @@ SwapchainGetCurrentDisplaySemaphore(const SwapchainId id)
 /**
 */
 CoreGraphics::SemaphoreId
-SwapchainGetCurrentPresentSemaphore(const SwapchainId id)
+SwapchainGetCurrentRenderingSemaphore(const SwapchainId id)
 {
     const uint semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
     return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[semaphorePair];

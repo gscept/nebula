@@ -685,7 +685,7 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, presentSemaphores;
+    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, renderSemaphores;
 
     for (auto& func : this->endFrameCallbacks)
     {
@@ -697,13 +697,13 @@ GraphicsServer::EndFrame()
         CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
 
         CoreGraphics::SemaphoreId displaySemaphore = CoreGraphics::SwapchainGetCurrentDisplaySemaphore(swapchain);
-        CoreGraphics::SemaphoreId presentSemaphore = CoreGraphics::SwapchainGetCurrentPresentSemaphore(swapchain);
+        CoreGraphics::SemaphoreId renderSemaphore = CoreGraphics::SwapchainGetCurrentRenderingSemaphore(swapchain);
         displaySemaphores.Append(displaySemaphore);
-        presentSemaphores.Append(presentSemaphore);
+        renderSemaphores.Append(renderSemaphore);
     }
 
     // Finish submissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, presentSemaphores);
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, renderSemaphores);
 }
 
 //------------------------------------------------------------------------------

@@ -45,6 +45,6 @@ void SwapchainPresent(const SwapchainId id);
 /// Get present semaphore for the current backbuffer
 CoreGraphics::SemaphoreId SwapchainGetCurrentDisplaySemaphore(const SwapchainId id);
 /// Get the present fence for the current backbuffer
-CoreGraphics::SemaphoreId SwapchainGetCurrentPresentSemaphore(const SwapchainId id);
+CoreGraphics::SemaphoreId SwapchainGetCurrentRenderingSemaphore(const SwapchainId id);
 
 } // namespace CoreGraphics
