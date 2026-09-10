@@ -27,6 +27,11 @@ namespace Nebula
             }
         }
 
+        public static void Log<T>(T value)
+        {
+            Log(value?.ToString() ?? "null");
+        }
+
         [DllImport("__Internal", EntryPoint = "N_Assert")]
         public static extern void Assert([MarshalAs(UnmanagedType.I1)] bool value);
 
