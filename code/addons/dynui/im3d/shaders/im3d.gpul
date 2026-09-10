@@ -136,8 +136,9 @@ gsMain(
 */
 entry_point
 psMainTriangles(    
-    in no_perspective size : f32,
-    in color : f32x4
+    in no_perspective edgeDistance : f32,
+    in color : f32x4,
+    in no_perspective size : f32
 ) void
 {
     pixelExportColor(color, 0);
@@ -165,8 +166,9 @@ psMainLines(
 */
 entry_point
 psMainPoints(    
-    in no_perspective size : f32,
-    in color : f32x4
+    in no_perspective edgeDistance : f32,
+    in color : f32x4,
+    in no_perspective size : f32
 ) void
 {
     var finalColor = color;
