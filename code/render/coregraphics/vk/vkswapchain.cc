@@ -57,7 +57,8 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     swapchainAllocator.Set<Swapchain_Device>(id, Vulkan::GetCurrentDevice());
     VkSurfaceKHR& surface = swapchainAllocator.Get<Swapchain_Surface>(id);
     VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id);
-    uint& currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id);
+    swapchainAllocator.Set<Swapchain_CurrentBackbuffer>(id, 0);
+    swapchainAllocator.Set<Swapchain_CurrentSemaphorePair>(id, 0);
     VkQueue& queue = swapchainAllocator.Get<Swapchain_Queue>(id);
     Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id);
     Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id);
@@ -154,29 +155,6 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     // use at least as many swap images as we have buffered frames, if we don't have enough, the swap chain creation will fail
     uint32_t numSwapchainImages = Math::max(surfCaps.minImageCount, Math::min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount));
 
-#ifdef CreateSemaphore
-#pragma push_macro("CreateSemaphore")
-#undef CreateSemaphore
-#endif
-
-    displaySemaphores.Resize(CoreGraphics::GetNumBufferedFrames());
-    renderingSemaphores.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (uint i = 0; i < displaySemaphores.Size(); i++)
-    {
-        renderingSemaphores[i] = CreateSemaphore({
-#if NEBULA_GRAPHICS_DEBUG
-            .name = "WaitForRendering",
-#endif
-            .type = SemaphoreType::Binary });
-
-        displaySemaphores[i] = CreateSemaphore({
-#if NEBULA_GRAPHICS_DEBUG
-            .name = "Present",
-#endif
-            .type = SemaphoreType::Binary });
-    }
-
-#pragma pop_macro("CreateSemaphore")
 
     // create a transform
     VkSurfaceTransformFlagBitsKHR transform;
@@ -245,6 +223,30 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     res = vkGetSwapchainImagesKHR(dev, swapchain, &numBuffers, nullptr);
     n_assert(res == VK_SUCCESS);
 
+#ifdef CreateSemaphore
+#pragma push_macro("CreateSemaphore")
+#undef CreateSemaphore
+#endif
+    displaySemaphores.Resize(numBuffers);
+    renderingSemaphores.Resize(numBuffers);
+    for (uint i = 0; i < displaySemaphores.Size(); i++)
+    {
+        renderingSemaphores[i] = CreateSemaphore({
+#if NEBULA_GRAPHICS_DEBUG
+            .name = "WaitForRendering",
+#endif
+            .type = SemaphoreType::Binary
+        });
+
+        displaySemaphores[i] = CreateSemaphore({
+#if NEBULA_GRAPHICS_DEBUG
+            .name = "Present",
+#endif
+            .type = SemaphoreType::Binary
+        });
+    }
+#pragma pop_macro("CreateSemaphore")
+
     // get number of buffered frames from the graphics device, and limit the amount of backbuffers
     images.Resize(numBuffers);
     views.Resize(numBuffers);
@@ -304,7 +306,6 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         res = VkDebugObjectName(dev, &info);
         n_assert(res == VK_SUCCESS);
     }
-    currentBackbuffer = 0;
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
@@ -490,8 +491,9 @@ SwapchainPresent(const SwapchainId id)
     const CoreGraphics::QueueType queueType = swapchainAllocator.Get<Swapchain_QueueType>(id.id);
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
     const Util::FixedArray<CoreGraphics::SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id);
+    uint& semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
 
-    CoreGraphics::SemaphoreId sem = renderingSemaphores[CoreGraphics::GetBufferedFrameIndex()];
+    CoreGraphics::SemaphoreId sem = renderingSemaphores[semaphorePair];
     VkSemaphore semaphores[] =
     {
         SemaphoreGetVk(sem) // this will be the final semaphore of the graphics command buffer that finishes the frame
@@ -529,6 +531,7 @@ SwapchainPresent(const SwapchainId id)
 #if NEBULA_GRAPHICS_DEBUG
     CoreGraphics::QueueEndMarker(queueType);
 #endif
+    semaphorePair++;
 }
 
 //------------------------------------------------------------------------------
@@ -537,7 +540,8 @@ SwapchainPresent(const SwapchainId id)
 CoreGraphics::SemaphoreId
 SwapchainGetCurrentDisplaySemaphore(const SwapchainId id)
 {
-    return swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
+    const uint semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
+    return swapchainAllocator.Get<Swapchain_DisplaySemaphores>(id.id)[semaphorePair];
 }
 
 //------------------------------------------------------------------------------
@@ -546,7 +550,8 @@ SwapchainGetCurrentDisplaySemaphore(const SwapchainId id)
 CoreGraphics::SemaphoreId
 SwapchainGetCurrentPresentSemaphore(const SwapchainId id)
 {
-    return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[CoreGraphics::GetBufferedFrameIndex()];
+    const uint semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
+    return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[semaphorePair];
 }
 
 } // namespace CoreGraphics
