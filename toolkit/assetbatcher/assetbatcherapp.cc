@@ -400,7 +400,7 @@ void
 AssetBatcherApp::ShowHelp()
 {
     n_printf("Nebula asset batcher.\n"
-        "(C) 2012-2024 Individual contributors, see AUTHORS file.\n");
+        "(C) 2012-2026 Individual contributors, see AUTHORS file.\n");
     n_printf("-force       -- ignores time stamps\n"
              "-asset       -- asset name, implies source argument\n"
              "-source      -- select asset source from projectinfo, default all\n"
