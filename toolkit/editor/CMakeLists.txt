@@ -82,6 +82,8 @@ fips_dir(editor)
                 scene.h
                 history.cc
                 history.h
+				importwindow.cc
+				importwindow.h
                 outline.cc
                 outline.h
                 physics.cc

@@ -37,6 +37,7 @@ extern BaseWindow* NavigationWindow;
 extern BaseWindow* SettingsWindow;
 extern BaseWindow* TerrainEditorWindow;
 extern BaseWindow* BatcherWindow;
+extern BaseWindow* ImporterWindow;
 class WindowServer : public Core::RefCounted
 {   
     __DeclareClass(WindowServer);
