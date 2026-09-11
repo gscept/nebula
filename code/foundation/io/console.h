@@ -63,10 +63,14 @@ public:
     void __cdecl Error(const char* fmt, ...);
     /// put an error message and cancel execution
     void __cdecl Error(const char* fmt, va_list argList);
+    /// put an error string and cancel execution
+    void Error(const Util::String& str);
     /// put a warning message
     void __cdecl Warning(const char* fmt, ...);
     /// put a warning message
     void __cdecl Warning(const char* fmt, va_list argList);
+    /// put a warning message
+    void Warning(const Util::String& str);
     /// display a confirmation message box
     void __cdecl Confirm(const char* fmt, ...);
     /// display a confirmation message box

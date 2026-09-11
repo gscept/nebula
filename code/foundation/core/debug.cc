@@ -249,3 +249,70 @@ n_break()
 {
     debug_break();
 }
+
+
+namespace IO
+{
+
+//------------------------------------------------------------------------------
+/**
+*/
+void __cdecl
+Log(const char* logGroup, const char* fmt, ...)
+{
+    va_list argList;
+    va_start(argList, fmt);
+    Util::String str;
+    str.FormatArgList(fmt, argList);
+    va_end(argList);
+    str = Util::Format("[%s] %s\n", logGroup, str.AsCharPtr());
+    Console::Instance()->Print(str);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void __cdecl
+LogWarning(const char* logGroup, const char* fmt, ...)
+{
+    va_list argList;
+    va_start(argList, fmt);
+    Util::String str;
+    str.FormatArgList(fmt, argList);
+    va_end(argList);
+    str = Util::Format("[%s] Warning - %s\n", logGroup, str.AsCharPtr());
+    Console::Instance()->Warning(str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void __cdecl
+LogError(const char* logGroup, const char* fmt, ...)
+{
+    va_list argList;
+    va_start(argList, fmt);
+    Util::String str;
+    str.FormatArgList(fmt, argList);
+    va_end(argList);
+    str = Util::Format("[%s] Error - %s\n", logGroup, str.AsCharPtr());
+    Console::Instance()->Error(str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void __cdecl
+LogSource(const char* logGroup, const char* file, const int line, const char* fmt, ...)
+{
+    va_list argList;
+    va_start(argList, fmt);
+    Util::String str;
+    str.FormatArgList(fmt, argList);
+    va_end(argList);
+    str = Util::Format("[%s] %s(%d) %s\n", logGroup, file, line, str.AsCharPtr());
+    Console::Instance()->Print(str);
+}
+
+} // namespace IO

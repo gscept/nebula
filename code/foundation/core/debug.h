@@ -29,6 +29,14 @@ void n_cough2(const char*, const char*, const char*, int);
 void n_cough_fmt(const char*, const char*, const char*, int, ...);
 void n_break();
 
+namespace IO
+{
+void Log(const char* logGroup, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+void LogWarning(const char* logGroup, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+void LogError(const char* logGroup, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+void LogSource(const char* logGroup, const char* file, const int line, const char* fmt, ...) __attribute__((format(printf, 4, 5)));
+}
+
 // backward compatibility
 #define n_message n_confirm
 
@@ -61,5 +69,11 @@ void n_break();
 #define n_dxtrace(hr, msg) { if (FAILED(hr)) DXTrace(__FILE__,__LINE__,hr,msg,true); }
 #endif
 #endif
+
+#define LOG(group, fmt, ...) IO::Log(#group, fmt, __VA_ARGS__)
+#define LOG_WARN(group, fmt, ...) IO::LogWarning(#group, fmt, __VA_ARGS__)
+#define LOG_ERR(group, fmt, ...) IO::LogError(#group, fmt, __VA_ARGS__)
+#define LOG_SOURCE(group, fmt, ...) IO::LogSource(#group, __FILE__, __LINE__, fmt, __VA_ARGS__)
+
 
 //------------------------------------------------------------------------------
