@@ -14,8 +14,7 @@ using namespace Util;
 //------------------------------------------------------------------------------
 /**
 */
-Logger::Logger() :
-    verbose(true)
+Logger::Logger()
 {
     // empty
 }
@@ -40,10 +39,6 @@ Logger::Error(const char* msg, ...)
     String str;
     str.FormatArgList(msg, argList);
     this->messages.Append(String("[ERROR] ") + str);
-    if (this->verbose)
-    {
-        n_error("%s%s", this->indent.AsCharPtr(), Text(this->messages.Back()).Color(TextColor::Red).AsCharPtr());
-    }
     va_end(argList);
 }
      
@@ -58,10 +53,6 @@ Logger::Warning(const char* msg, ...)
     String str;
     str.FormatArgList(msg, argList);
     this->messages.Append(String("[WARNING] ") + str);
-    if (this->verbose)
-    {
-        n_warning("%s%s", this->indent.AsCharPtr(), Text(this->messages.Back()).Color(TextColor::Yellow).AsCharPtr());
-    }
     va_end(argList);
 }
 
@@ -76,10 +67,6 @@ Logger::Print(const char* msg, ...)
     String str;
     str.FormatArgList(msg, argList);
     this->messages.Append(str);
-    if (this->verbose)
-    {
-        n_printf("%s%s", this->indent.AsCharPtr(), str.AsCharPtr());
-    }
     va_end(argList);
 }
 

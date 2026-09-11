@@ -39,30 +39,14 @@ public:
     /// Unindent logger
     void Unindent();
 
+    /// Print contents to console
+    void Flush();
+
 protected:
-    bool verbose;
 
     Util::String indent;
     Util::Array<Util::String> messages;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-Logger::SetVerbose(bool b)
-{
-    this->verbose = b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-Logger::GetVerbose() const
-{
-    return this->verbose;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -80,6 +64,17 @@ inline void
 Logger::Unindent()
 {
     this->indent = this->indent.ExtractRange(0, this->indent.Length() - 4);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+Logger::Flush()
+{
+    for (const auto& message : this->messages)
+        n_printf(message.AsCharPtr());
+    this->messages.Clear();
 }
 
 } // namespace ToolkitUtil
