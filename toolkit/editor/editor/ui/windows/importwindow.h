@@ -22,6 +22,8 @@ public:
 
     /// Render
     void Run(SaveMode save) override;
+    ///
+    bool ShouldRun() const override;
 private:
 };
 
