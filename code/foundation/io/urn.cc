@@ -87,7 +87,7 @@ URN::Split(const String& s)
     nid.ToLower();
     this->SetNamespace(nid);
     this->SetSpecific(nss);
-    this->string = this->Build();
+    this->Build();
     return true;
 }
 
@@ -95,8 +95,8 @@ URN::Split(const String& s)
 /**
     This builds an URI string from its components.
 */
-String
-URN::Build() const
+void
+URN::Build()
 {
     n_assert(!this->IsEmpty());
     n_assert(this->nid.IsValid());
@@ -118,7 +118,7 @@ URN::Build() const
         str.Append("#");
         str.Append(this->fragment);
     }
-    return str;
+    this->string = str;
 }
 
 } // namespace IO

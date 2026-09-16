@@ -45,7 +45,7 @@ public:
     /// set complete URI string
     void Set(const Util::String& s);
     /// return as concatenated string
-    const Util::String& AsString() const;
+    const Util::String& AsString();
 
     /// return true if the URN is empty
     bool IsEmpty() const;
@@ -82,13 +82,16 @@ public:
     /// Set the work folder
     static void SetWorkRoot(const Util::StringAtom& root);
 
+    /// build string from components
+    void Build();
+
 private:
     /// split string into components
     bool Split(const Util::String& s);
-    /// build string from components
-    Util::String Build() const;
+
 
     bool isEmpty;
+    bool isDirty;
     Util::String nid;
     Util::String nss;
     Util::String query;
@@ -140,7 +143,7 @@ URN::URN(const char* nid, const Util::String& nss)
     this->isEmpty = strlen(nid) == 0 || nss.Length() == 0;
     this->nid = nid;
     this->nss = nss;
-    this->string = this->Build();
+    this->Build();
     n_assert(this->IsValid());
 }
 
@@ -153,7 +156,7 @@ URN::URN(const char* nid, const char* nss)
     this->isEmpty = strlen(nid) == 0 || strlen(nss) == 0;
     this->nid = nid;
     this->nss = nss;
-    this->string = this->Build();
+    this->Build();
     n_assert(this->IsValid());
 }
 
@@ -252,19 +255,20 @@ URN::Clear()
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-const Util::String&
-URN::AsString() const
+inline const Util::String&
+URN::AsString()
 {
+    if (this->isDirty)
+        this->Build();
+    this->isDirty = false;
     return this->string;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::Set(const Util::String& s)
+inline void
+URN::Set(const Util::String& s)
 {
     this->Split(s);
 }
@@ -272,20 +276,19 @@ IO::URN::Set(const Util::String& s)
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetNamespace(const Util::String& s)
+inline void
+URN::SetNamespace(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->nid = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetNamespace() const
+inline const Util::String&
+URN::GetNamespace() const
 {
     return this->nid;
 }
@@ -293,20 +296,19 @@ IO::URN::GetNamespace() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetSpecific(const Util::String& s)
+inline void
+URN::SetSpecific(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->nss = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetSpecific() const
+inline const Util::String&
+URN::GetSpecific() const
 {
     return this->nss;
 }
@@ -314,20 +316,19 @@ IO::URN::GetSpecific() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetQuery(const Util::String& s)
+inline void
+URN::SetQuery(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->query = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetQuery() const
+inline const Util::String&
+URN::GetQuery() const
 {
     return this->query;
 }
@@ -335,20 +336,19 @@ IO::URN::GetQuery() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetFragment(const Util::String& s)
+inline void
+URN::SetFragment(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->fragment = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetFragment() const
+inline const Util::String&
+URN::GetFragment() const
 {
     return this->fragment;
 }
