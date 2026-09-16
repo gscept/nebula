@@ -95,7 +95,7 @@ BaseWindow::Run(SaveMode save)
 /**
 */
 bool 
-BaseWindow::ShouldRun()
+BaseWindow::ShouldRun() const
 {
     return true;
 }

@@ -44,7 +44,7 @@ public:
     virtual void Run(SaveMode save);
 
     /// Checks if the window should run at all (contextual)
-    virtual bool ShouldRun();
+    virtual bool ShouldRun() const;
 
     /// Runs every frame, no matter if the window is open or not.
     virtual void Update();

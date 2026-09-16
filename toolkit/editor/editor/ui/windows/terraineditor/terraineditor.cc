@@ -806,7 +806,7 @@ TerrainEditor::Run(SaveMode save)
                             auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
                             Util::String file = Util::Format("proj:work/%s", path);
                             Util::String folder = file.ExtractToLastSlash();
-                            assetBrowser->Open(folder, [i, j](const Util::String& filePath)
+                            assetBrowser->PickFile(folder, [i, j](const Util::String& filePath)
                             {
                                 Util::String relativePath = filePath.StripSubstring("proj:work/assets");
                                 relativePath.StripFileExtension();
@@ -891,7 +891,7 @@ TerrainEditor::Run(SaveMode save)
 /**
 */
 bool 
-TerrainEditor::ShouldRun()
+TerrainEditor::ShouldRun() const
 {
     auto const& selection = Tools::SelectionContext::Selection();
     if (selection.Size() != 1)
