@@ -939,6 +939,26 @@ FileDB::CommitChanges(Logger& logger)
 /**
 */
 void
+FileDB::BeginTransaction()
+{
+    n_assert(this->isOpen);
+    this->database->BeginTransaction();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FileDB::EndTransaction()
+{
+    n_assert(this->isOpen);
+    this->database->EndTransaction();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FileDB::DumpSchema(Logger& logger) const
 {
     if (!this->database.isvalid())

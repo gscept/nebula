@@ -40,6 +40,7 @@ Sqlite3Database::Sqlite3Database() :
     cacheNumPages(2000),
     tempStore(Memory),
     syncMode(false),
+    inTransaction(false),
     busyTimeout(100),
     sqliteHandle(0)
 {
@@ -233,12 +234,14 @@ Sqlite3Database::Close()
 void
 Sqlite3Database::BeginTransaction()
 {
+    n_assert(!this->inTransaction);
     if (!this->beginTransactionCmd->IsValid())
     {
         this->beginTransactionCmd->Compile(this, "BEGIN");
     }
     bool beginTransactionExecuted = this->beginTransactionCmd->Execute();
     n_assert(beginTransactionExecuted);
+    this->inTransaction = true;
 }
 
 //------------------------------------------------------------------------------
@@ -248,12 +251,14 @@ Sqlite3Database::BeginTransaction()
 void
 Sqlite3Database::EndTransaction()
 {
+    n_assert(this->inTransaction);
     if (!this->endTransactionCmd->IsValid())
     {
         this->endTransactionCmd->Compile(this, "COMMIT");
     }
     bool endTransactionExecuted = this->endTransactionCmd->Execute();
     n_assert(endTransactionExecuted);
+    this->inTransaction = false;
 }
 
 //------------------------------------------------------------------------------

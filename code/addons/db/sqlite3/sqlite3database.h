@@ -80,6 +80,8 @@ public:
     virtual void BeginTransaction();
     /// end a transaction on the database
     virtual void EndTransaction();
+    /// return true if a transaction is currently open
+    virtual bool IsInTransaction() const;
 
     /// get the SQLite database handle
     sqlite3* GetSqliteHandle() const;
@@ -96,6 +98,7 @@ private:
     SizeT cacheNumPages;
     TempStore tempStore;
     bool syncMode;
+    bool inTransaction;
     int busyTimeout;
     sqlite3* sqliteHandle;
     Ptr<Command> beginTransactionCmd;
@@ -184,6 +187,15 @@ inline int
 Sqlite3Database::GetBusyTimeout() const
 {
     return this->busyTimeout;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+Sqlite3Database::IsInTransaction() const
+{
+    return this->inTransaction;
 }
 
 } // namespace Db
