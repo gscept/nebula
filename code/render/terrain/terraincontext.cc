@@ -2206,7 +2206,7 @@ TerrainContext::UpdateLOD(const Graphics::FrameContext& ctx)
                 bool allBitsLoaded = AllBits(terrainInstance.biomeLoaded[j][i].value, BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
                 biomesLoaded &= allBitsLoaded;
             }
-            if (!terrainInstance.biomeLowresGenerated[j] && biomesLoaded || !runtime.lowresGenerated)
+            if (!terrainInstance.biomeLowresGenerated[j] && (biomesLoaded || !runtime.lowresGenerated))
             {
                 terrainInstance.updateLowres = true;
                 terrainInstance.biomeLowresGenerated[j] = true;

@@ -146,6 +146,10 @@ public:
     
     /// flush all pending changes to disk
     void CommitChanges(Logger& logger);
+    /// begin a write transaction (nested dataset commits join this transaction)
+    void BeginTransaction();
+    /// commit the current write transaction
+    void EndTransaction();
     
     /// dump database schema and contents for debugging
     void DumpSchema(Logger& logger) const;

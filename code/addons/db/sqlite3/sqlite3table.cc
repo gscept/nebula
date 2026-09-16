@@ -466,8 +466,9 @@ Sqlite3Table::CommitChanges(bool resetModifiedState, bool useTransaction)
             }
         }
 
-        // run the updates inside a transaction?
-        if (useTransaction)
+        // run the updates inside a transaction unless the caller already opened one
+        const bool wrapTransaction = useTransaction && !this->database->IsInTransaction();
+        if (wrapTransaction)
         {
             this->database->BeginTransaction();
         }
@@ -493,7 +494,7 @@ Sqlite3Table::CommitChanges(bool resetModifiedState, bool useTransaction)
         }
 
         // commit the transaction
-        if (useTransaction)
+        if (wrapTransaction)
         {
             this->database->EndTransaction();
         }

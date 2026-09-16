@@ -18,7 +18,7 @@ ProcessTest::Run()
 {
 #if __WIN32__
     const IO::URI shell("C:\\Windows\\System32\\cmd.exe");
-    const Util::String outputCommand = "/C \"echo stdout & echo stderr 1>&2 & exit /B 7\"";
+    const Util::String outputCommand = "/C \"echo stdout&echo stderr>&2&exit /B 7\"";
     const Util::String delayedCommand = "/C \"ping 127.0.0.1 -n 2 > NUL & exit /B 3\"";
 #else
     const IO::URI shell("/bin/sh");
@@ -52,10 +52,10 @@ ProcessTest::Run()
     const char expectedStderr[] = "stderr";
 #endif
 
-    VERIFY(stdoutStream->GetSize() == sizeof(expectedStdout) - 1);
-    VERIFY(stderrStream->GetSize() == sizeof(expectedStderr) - 1);
-    VERIFY(memcmp(stdoutStream->GetRawPointer(), expectedStdout, sizeof(expectedStdout) - 1) == 0);
-    VERIFY(memcmp(stderrStream->GetRawPointer(), expectedStderr, sizeof(expectedStderr) - 1) == 0);
+    VERIFY(stdoutStream->GetSize() == strlen(expectedStdout));
+    VERIFY(stderrStream->GetSize() == strlen(expectedStderr));
+    VERIFY(memcmp(stdoutStream->GetRawPointer(), expectedStdout, strlen(expectedStdout)) == 0);
+    VERIFY(memcmp(stderrStream->GetRawPointer(), expectedStderr, strlen(expectedStderr)) == 0);
 
 #if !__WIN32__
     Ptr<IO::MemoryStream> workingDirectoryStream = IO::MemoryStream::Create();

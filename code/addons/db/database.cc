@@ -92,7 +92,16 @@ void
 Database::EndTransaction()
 {
     n_error("Database::EndTransaction() called!");
-}   
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+Database::IsInTransaction() const
+{
+    return false;
+}
 
 //------------------------------------------------------------------------------
 /**

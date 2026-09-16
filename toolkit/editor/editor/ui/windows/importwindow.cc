@@ -14,6 +14,7 @@
 #include "dynui/imguifiledialog/ImGuiFileDialog.h"
 #include "editor/ui/windowserver.h"
 #include "editor/tools/livebatcher.h"
+#include "editor/ui/windows/assetbrowser.h"
 
 #include "io/ioserver.h"
 #include "console.h"
@@ -37,6 +38,23 @@ AssetImporterWindow::~AssetImporterWindow()
 {
 }
 
+struct ModelImportSettings
+{
+    bool removeRedundantVertices = 1;
+    bool calculateNormals = 0;
+    bool flipUVs = 0;
+    bool importColors = 1;
+    bool importSecondaryUVs = 1;
+    bool calculateTangents = 0;
+    bool calculateRigidSkin = 0;
+    bool replaceExistingMesh = 0;
+    int scale = 1; // 0 means cm, 1 means m, 2 means km
+};
+
+static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
+static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> FbxFiles;
+static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> GltfFiles;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -44,27 +62,11 @@ void
 AssetImporterWindow::Run(SaveMode save)
 {
     static Util::Array<Util::String> Files;
-    static Util::String Destination = IO::URI("src:assets").LocalPath();
+    static Util::String Destination = "src:assets";
 
     auto console = (Presentation::Console*)Presentation::ConsoleWindow;
     static ToolkitUtil::Logger logger;
 
-    struct ModelImportSettings
-    {
-        bool removeRedundantVertices = 1;
-        bool calculateNormals = 0;
-        bool flipUVs = 0;
-        bool importColors = 1;
-        bool importSecondaryUVs = 1;
-        bool calculateTangents = 0;
-        bool calculateRigidSkin = 0;
-        bool replaceExistingMesh = 0;
-        int scale = 1; // 0 means cm, 1 means m, 2 means km
-    };
-
-    static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
-    static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> FbxFiles;
-    static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> GltfFiles;
     for (const auto& file : Dynui::ImguiDragAndDropFiles)
     {
         static Util::String ext;
@@ -101,14 +103,11 @@ AssetImporterWindow::Run(SaveMode save)
             Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
-                IGFD::FileDialogConfig config;
-                config.flags = ImGuiFileDialogFlags_Modal;
-
-                static char absolutePathBuf[256];
-                memcpy(absolutePathBuf, Destination.data(), Destination.Length());
-                absolutePathBuf[Destination.Length()] = '\0';
-                config.path = absolutePathBuf;
-                ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                {
+                    Destination = path;
+                });
             }
             ImGui::SameLine();
             Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
@@ -317,14 +316,11 @@ AssetImporterWindow::Run(SaveMode save)
             Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
-                IGFD::FileDialogConfig config;
-                config.flags = ImGuiFileDialogFlags_Modal;
-
-                static char absolutePathBuf[256];
-                memcpy(absolutePathBuf, Destination.data(), Destination.Length());
-                absolutePathBuf[Destination.Length()] = '\0';
-                config.path = absolutePathBuf;
-                ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                {
+                    Destination = path;
+                });
             }
             ImGui::SameLine();
             Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
@@ -407,14 +403,11 @@ AssetImporterWindow::Run(SaveMode save)
             Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
-                IGFD::FileDialogConfig config;
-                config.flags = ImGuiFileDialogFlags_Modal;
-
-                static char absolutePathBuf[256];
-                memcpy(absolutePathBuf, Destination.data(), Destination.Length());
-                absolutePathBuf[Destination.Length()] = '\0';
-                config.path = absolutePathBuf;
-                ImGuiFileDialog::Instance()->OpenDialog("ChoseFolderDlgKey", "Output directory", nullptr, config);
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                {
+                    Destination = path;
+                });
             }
             ImGui::SameLine();
             Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
@@ -494,9 +487,9 @@ AssetImporterWindow::Run(SaveMode save)
 /**
 */
 bool 
-AssetImporterWindow::ShouldRun()
+AssetImporterWindow::ShouldRun() const
 {
-    return !Dynui::ImguiDragAndDropFiles.IsEmpty();
+    return !TextureResources.IsEmpty() || !GltfFiles.IsEmpty() || !FbxFiles.IsEmpty() || !Dynui::ImguiDragAndDropFiles.IsEmpty();
 }
 
 } // namespace Presentation

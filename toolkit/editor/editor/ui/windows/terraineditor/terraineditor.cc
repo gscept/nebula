@@ -682,7 +682,7 @@ TerrainEditor::Run(SaveMode save)
         {
             if (ImGui::Button("New Biome"))
             {
-                selectedTerrainResource.biomes.push_back(std::move(std::make_unique<Render::BiomeT>()));
+                selectedTerrainResource.biomes.push_back(std::make_unique<Render::BiomeT>());
                 const std::unique_ptr<Render::BiomeT>& biomeT = selectedTerrainResource.biomes.back();
 
                 Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(terrainComponent.graphicsEntityId, {});
@@ -708,7 +708,7 @@ TerrainEditor::Run(SaveMode save)
 
                 for (int i = 0; i < 4; i++)
                 {
-                    biomeT->materials.push_back(std::move(std::make_unique<Render::BiomeMaterialT>()));
+                    biomeT->materials.push_back(std::make_unique<Render::BiomeMaterialT>());
                     auto& matT = biomeT->materials.back();
                     textures.albedoPaths[i] = IO::URN("urn:tex:system/white");
                     matT->albedo = textures.albedoPaths[i].AsString();
@@ -806,7 +806,7 @@ TerrainEditor::Run(SaveMode save)
                             auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
                             Util::String file = Util::Format("proj:work/%s", path);
                             Util::String folder = file.ExtractToLastSlash();
-                            assetBrowser->Open(folder, [i, j](const Util::String& filePath)
+                            assetBrowser->PickFile(folder, [i, j](const Util::String& filePath)
                             {
                                 Util::String relativePath = filePath.StripSubstring("proj:work/assets");
                                 relativePath.StripFileExtension();
@@ -891,7 +891,7 @@ TerrainEditor::Run(SaveMode save)
 /**
 */
 bool 
-TerrainEditor::ShouldRun()
+TerrainEditor::ShouldRun() const
 {
     auto const& selection = Tools::SelectionContext::Selection();
     if (selection.Size() != 1)

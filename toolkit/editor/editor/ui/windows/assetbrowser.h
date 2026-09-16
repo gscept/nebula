@@ -35,11 +35,12 @@ public:
     void Update();
     void Run(SaveMode save) override;
 
-    /// Open file (using assigns, like work:system/white)
-    void Open(const Util::String& path, std::function<void(const Util::String& path)> picker);
+    /// Pick file (using assigns, like work:system/white)
+    void PickFile(const Util::String& path, std::function<void(const Util::String& path)> picker);
+    /// Pick folder
+    void PickFolder(const Util::String& path, std::function<void(const Util::String& path)> picker);
 private:
     
-    void ScanFolderTree(ToolkitUtil::FileDB& fileDB, const Util::String& treeName, const Util::String& folderPath, bool useArchive);
     void DisplayFileTree();
 
 private:
@@ -69,29 +70,50 @@ private:
     static ToolkitUtil::FileType DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and sync entries to FileDB
     void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
+    /// replace this folder's files in the search index after a disk scan
+    void IndexFolderForSearch(uint64_t folderId, const Util::Array<ToolkitUtil::FileDB::FileInfo>& files);
     friend class ScanFolderJob;
     Ptr<ScanFolderJob> currentScanJob;
     ToolkitUtil::FileDB fileDB;
     ToolkitUtil::Logger logger;
 
-    /// refresh caches for folder and file info to avoid redundant DB queries during tree display
-    void RefreshFolderInfoCaches();
     void RefreshFileInfoCaches();
 
     /// set active folder from selection and trigger watcher and sync updates if necessary
     void SetActiveFolder(uint64_t folderId);
 
+    struct FolderScanResult
+    {
+        uint64_t folderId = 0;
+        Util::Array<ToolkitUtil::FileDB::FileInfo> files;
+        Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
+    };
+
     Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
     Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
     Util::Dictionary<Util::String, uint64_t> fileInfoDict;
     Util::Dictionary<Util::String, uint64_t> folderInfoDict;
+    Util::Array<uint64_t> rootFolderIds;
+    Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
     Threading::SafeFlag isDoneRefreshingCaches;
+    Threading::SafeFlag isDoneWithDictionaries;
     Threading::SafeQueue<IO::WatchEvent> pendingWatchEvents;
     Threading::SafeQueue<uint64_t> refreshedFolders;
     Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
+    Threading::SafeQueue<FolderScanResult> pendingScanResults;
+    Util::Dictionary<uint64_t, bool> scannedFolders;
+    Util::Array<ToolkitUtil::FileDB::FileInfo> searchIndex;
+    Util::Array<ToolkitUtil::FileDB::FileInfo> searchResults;
+    char searchFilter[512] = { 0 };
+    Util::String lastSearchFilter;
+    bool searchIndexDirty = false;
 
-    std::function<void(const Util::String& path)> pickFunction;
+    std::function<void(const Util::String& path)> pickFileFunction, pickFolderFunction;
+    Util::String pendingPickPath;
+    bool fileTreeReady = false;
+    bool backgroundScanFinished = false;
     bool showProgress = false;
+    bool ownsScanJob = false;
 };
 
 } // namespace Presentation
