@@ -891,7 +891,7 @@ ReloadShader(const ShaderId id, const GPULangShaderCreateInfo& info)
             }
             else
             {
-                n_log(Shaders, "Reloaded shader % s has a new program % s.This program will not be loaded.Please restart the engine to see this change.\n", info.name.Value(), name.AsCharPtr());
+                n_log(Shaders, "Reloaded shader %s has a new program %s. This program will not be loaded. Please restart the engine to see this change.\n", info.name.Value(), name.AsCharPtr());
             }
         }
     }

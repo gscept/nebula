@@ -410,7 +410,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             // If we can't use the material for this object, abort
             if (bufferBinding == -1)
             {
-                n_log_source(Raytracing, "Material '%s' cannot be used for raytracing, skipping object setup!\n", Materials::MaterialGetName(mat).Value());
+                n_log_source(Raytracing, "Material '%s' cannot be used for raytracing, skipping object setup!", Materials::MaterialGetName(mat).Value());
                 return;
             }
 
