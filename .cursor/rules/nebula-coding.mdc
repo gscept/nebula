@@ -1,0 +1,43 @@
+---
+description: Nebula C++ style — inline single-use code, data-oriented, Util over STL, fail with asserts
+alwaysApply: true
+---
+
+# Nebula coding
+
+## Do not extract single-use functions
+
+If a block of code has one call site, leave it at that site. Do not invent a helper, lambda, or `static` function "for clarity." Extract only when a second caller exists, or the user asks for an API.
+
+```cpp
+// BAD — helper with a single caller
+static uint64_t LookupFolderOrDefault(const Util::Dictionary<Util::String, uint64_t>& dict, const Util::String& path)
+{
+    IndexT i = dict.FindIndex(path);
+    if (i == InvalidIndex)
+        i = dict.FindIndex("proj:work/assets");
+    return dict.ValueAtIndex(i);
+}
+
+// GOOD — that lookup stays at the call site until a second caller appears
+```
+
+## Data-oriented
+
+Prefer plain structs, explicit arrays, integer ids, and transforms over data. Avoid new class hierarchies, inheritance, and virtual functions. If you think you need them, stop and argue why data, a function table, or an id + arrays cannot do it.
+
+Do not use STL/STD containers, strings, or smart pointers (`std::vector`, `std::string`, `std::unordered_map`, `std::unique_ptr`, …). Use Nebula types: `Util::Array`, `Util::Dictionary`, `Util::String`, `Util::FixedArray`, `Ptr<>` where the engine already uses it, foundation allocators and id pools.
+
+```cpp
+// BAD
+std::vector<Item> items;
+std::string name;
+if (ptr == nullptr) return;
+
+// GOOD
+Util::Array<Item> items;
+Util::String name;
+n_assert(ptr != nullptr);
+```
+
+Fail early. `n_assert` / `n_assert2` / `n_assert_fmt` on invariants (including non-null). Do not swallow bad input with a nullptr check and a silent `return`. Recovery is allowed only for expected user/file/network failure, and must be visible (log, `n_error`, or a handled error path).
