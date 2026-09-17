@@ -6,7 +6,7 @@
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
 #include "asset/assetprocessorbase.h"
-#include "toolkit-common/toolkitconsolehandler.h"
+#include "toolkitutil/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil

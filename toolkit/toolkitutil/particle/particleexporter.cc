@@ -6,8 +6,8 @@
 #include "particleexporter.h"
 #include "io/xmlreader.h"
 #include "io/ioserver.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
+#include "toolkitutil/text.h"
 
 using namespace Util;
 using namespace IO;

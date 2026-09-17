@@ -17,7 +17,7 @@
 #if __ANYFX__
 #include "afxcompiler.h"
 #endif
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 
 using namespace Util;
 using namespace IO;

@@ -11,7 +11,7 @@ fips_files(shadercompiler.cc
 fips_end_lib()
 fips_begin_app(shaderbatcher cmdline)
     fips_vs_warning_level(3)
-    fips_deps(foundation toolkit-common shadercompiler anyfx antlr4 mcpp)
+    fips_deps(foundation toolkitutil shadercompiler anyfx antlr4 mcpp)
         fips_files(
             shaderbatcher.cc
             shaderbatcherapp.cc

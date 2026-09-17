@@ -19,7 +19,7 @@
 #include "io/filetime.h"
 #include "util/string.h"
 #include "util/array.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil

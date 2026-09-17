@@ -11,7 +11,7 @@
 */
 #include "util/string.h"
 #include "toolkitutil/texutil/textureattrtable.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 #include "system/process.h"
 

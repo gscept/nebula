@@ -11,7 +11,7 @@
 #include "math/vec4.h"
 #include "util/string.h"
 #include "model/animutil/animbuilder.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "math/bbox.h"
 #include "model/meshutil/meshbuilder.h"
 #include "jobs/jobs.h"

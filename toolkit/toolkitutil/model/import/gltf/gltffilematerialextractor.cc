@@ -13,7 +13,7 @@
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/material.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 using namespace Util;
 namespace ToolkitUtil

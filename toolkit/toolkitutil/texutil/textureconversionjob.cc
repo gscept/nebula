@@ -6,7 +6,7 @@
 #include "foundation/stdneb.h"
 #include "textureconversionjob.h"
 #include "io/ioserver.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 #include "flat/texture.h"
 

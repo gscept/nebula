@@ -5,7 +5,7 @@
 #include "assetpackager.h"
 #include "io/ioserver.h"
 #include "io/xmlwriter.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 #include "toolkitutil/model/binarymodelwriter.h"
 
 #include "nflatbuffer/flatbufferinterface.h"
@@ -25,8 +25,8 @@
 #include "model/animutil/animbuildersaver.h"
 #include "texutil/textureconverter.h"
 
-#include "toolkit-common/text.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/text.h"
+#include "toolkitutil/logger.h"
 
 namespace ToolkitUtil
 {

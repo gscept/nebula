@@ -7,7 +7,7 @@
 #include "io/ioserver.h"
 #include "coregraphics/config.h"
 #include "app/application.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 
 #if __ANYFX__
 #include "afxcompiler.h"

@@ -8,7 +8,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "toolkitutil/texutil/textureconversionjob.h"
-#include "toolkit-common/applauncher.h"
+#include "toolkitutil/applauncher.h"
 #include "io/uri.h"
 
 #include "flat/texture.h"

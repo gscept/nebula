@@ -19,7 +19,7 @@
 #include "gltffilematerialextractor.h"
 #include "jobs2/jobs2.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 #include "flat/texture.h"
 #include "nflatbuffer/flatbufferinterface.h"

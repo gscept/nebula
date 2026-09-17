@@ -26,7 +26,7 @@
 
 #include "model/scenewriter.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 using namespace Util;
 namespace ToolkitUtil

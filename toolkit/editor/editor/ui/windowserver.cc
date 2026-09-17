@@ -21,7 +21,7 @@
 #include "editor/tools/selectioncontext.h"
 #include "uimanager.h"
 
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 #include "io/ioserver.h"
 #include "io/textwriter.h"
 #include "io/textreader.h"

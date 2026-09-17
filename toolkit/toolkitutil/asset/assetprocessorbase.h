@@ -9,8 +9,8 @@
 */
 #include "core/refcounted.h"
 #include "io/uri.h"
-#include "toolkit-common/platform.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/platform.h"
+#include "toolkitutil/logger.h"
 #include "net/socket/socket.h"
 #include "io/console.h"
 #include "db/database.h"

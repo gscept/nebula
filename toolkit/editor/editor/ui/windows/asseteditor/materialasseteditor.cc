@@ -14,7 +14,7 @@
 
 #include "io/filestream.h"
 #include "io/xmlwriter.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 
 #include "toolkitutil/surface/surfacebuilder.h"
 

@@ -11,7 +11,7 @@
 #include "system/systeminfo.h"
 #include "system/process.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 namespace ToolkitUtil
 {

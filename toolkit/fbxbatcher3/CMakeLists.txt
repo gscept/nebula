@@ -4,7 +4,7 @@
 fips_begin_app(fbxbatcher cmdline)
     fips_vs_warning_level(3)
     target_include_directories(fbxbatcher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/toolkit/toolkitutil)
-    fips_deps(foundation toolkitutil toolkit-common)
+    fips_deps(foundation toolkitutil)
         fips_files(
             fbxbatcher3.cc
             fbxbatcher3app.cc

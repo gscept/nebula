@@ -8,7 +8,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "model/import/base/modelimporter.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "gltfdata.h"
 #include "node/ngltfscene.h"
 

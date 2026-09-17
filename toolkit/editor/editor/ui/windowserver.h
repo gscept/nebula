@@ -13,7 +13,7 @@
 #include "io/uri.h"
 #include "util/delegate.h"
 #include "input/key.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 //------------------------------------------------------------------------------
 namespace Presentation

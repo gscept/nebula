@@ -8,7 +8,7 @@
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "nfbxnode.h"
 #include "model/import/base/scenenode.h"
 #include "math/vec2.h"

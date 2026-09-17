@@ -15,7 +15,7 @@
 #include "flat/physics/material.h"
 #include "jobs2/jobs2.h"
 #include "system/nebulasettings.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"

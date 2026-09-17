@@ -5,13 +5,91 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
     
-    fips_deps(foundation render physics application db)
+    fips_deps(foundation)
+        fips_files(
+            applauncher.cc
+            applauncher.h       
+            logger.cc
+            logger.h
+            platform.cc
+            platform.h
+            projectinfo.cc
+            projectinfo.h
+            rcswrapper.cc
+            rcswrapper.h     
+            text.cc
+            text.h
+            toolkitapp.cc
+            toolkitapp.h
+            toolkitconsolehandler.cc
+            toolkitconsolehandler.h
+            toolkitversion.cc
+            toolkitversion.h            
+        )       
+        fips_dir(base)
+            fips_files(
+                applauncherbase.h
+                exporttypes.h
+            )
+        fips_dir(converters)
+            fips_files(
+                binaryxmlconverter.cc
+                binaryxmlconverter.h
+                #n2batchconverter.cc
+                #n2batchconverter.h
+                #n2converter.cc
+                #n2converter.h
+            )
+        IF (MSVC)
+            fips_dir(win32)
+                fips_files(
+                    win32applauncher.cc
+                    win32applauncher.h
+                )
+        ELSE()
+            fips_dir(posix)
+            fips_files(
+                posixapplauncher.cc
+                posixapplauncher.h
+            )
+        ENDIF()
+
+        fips_dir(distributedtools)
+            fips_files(
+                distributedjobscheduler.cc
+                distributedjobscheduler.h
+                distributedtoolkitapp.cc
+                distributedtoolkitapp.h
+                remotejobservice.cc
+                remotejobservice.h
+                shareddircontrol.cc
+                shareddircontrol.h
+                shareddircreator.cc
+                shareddircreator.h
+                shareddirfilesystem.cc
+                shareddirfilesystem.h
+                shareddirftp.cc
+                shareddirftp.h
+            )
+            fips_dir(distributedtools/distributedjobs)
+                fips_files(
+                    distributedappjob.cc
+                    distributedappjob.h
+                    distributedcreateemptyfilejob.cc
+                    distributedcreateemptyfilejob.h
+                    distributeddeletedirectorycontentjob.cc
+                    distributeddeletedirectorycontentjob.h
+                    distributedjob.cc
+                    distributedjob.h
+                )
 
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MD CMP_Framework_MD)
     else()
         fips_libs(xml2 CMP_Framework CMP_Common CMP_Core CMP_Core_SSE CMP_Core_AVX512 CMP_Core_AVX CMP_Compressonator CMP_GpuDecode Image_DDS Image_EXR Image_KTX Image_TGA)
     endif()
+    
+    fips_dir(.)
         fips_files(
             assetfile.cc
             assetfile.h
@@ -78,7 +156,6 @@ fips_begin_lib(toolkitutil)
                 skeletonbuildersaver.cc
                 skeletonbuildersaver.h
             )
-    IF(NOT N_MINIMAL_TOOLKIT)
         fips_dir(texutil)
             fips_files(
                 # cubefilterer.cc
@@ -93,8 +170,7 @@ fips_begin_lib(toolkitutil)
                 # textureconversionjob.h
                 textureconverter.cc
                 textureconverter.h
-            )
-    ENDIF()     
+            )   
         fips_dir(model/import/base)
             fips_files(
                 modelimporter.cc
@@ -147,7 +223,6 @@ fips_begin_lib(toolkitutil)
                     meshprimitive.cc
                     meshprimitive.h
                 )
-IF(NOT N_MINIMAL_TOOLKIT)
         fips_dir(game)
            fips_files(
                gameexporter.cc
@@ -156,12 +231,6 @@ IF(NOT N_MINIMAL_TOOLKIT)
                levelexporter.h
            )
 
-        #fips_dir(gui)
-        #   fips_files(
-        #       guiexporter.cc
-        #       guiexporter.h
-        #   )
-ENDIF()         
         fips_dir(model/modelutil)
             fips_files(
                 clip.cc
@@ -215,4 +284,5 @@ ENDIF()
 	fips_dir(flatbuffers)
 		nebula_flatc(LOCAL anim.fbs audio.fbs material.fbs mesh.fbs model.fbs particle.fbs physics.fbs scene.fbs skeleton.fbs texture.fbs)
 
+    fips_deps(foundation render physics application db)
 fips_end_lib()

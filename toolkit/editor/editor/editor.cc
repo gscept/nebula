@@ -28,7 +28,7 @@
 #include "game/editorstate.h"
 #include "game/component.h"
 
-#include "toolkit-common/projectinfo.h"
+#include "toolkitutil/projectinfo.h"
 
 namespace Editor
 {

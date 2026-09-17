@@ -13,7 +13,7 @@
 */
 //------------------------------------------------------------------------------
 #include "io/uri.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "flat/texture.h"
 
 namespace ToolkitUtil

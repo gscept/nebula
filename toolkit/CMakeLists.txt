@@ -17,7 +17,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #add_subdirectory(assetc)
 
 fips_ide_group(Toolkit)
-add_subdirectory(toolkit-common)
 add_subdirectory(toolkitutil)
 add_subdirectory(assetbatcher)
 

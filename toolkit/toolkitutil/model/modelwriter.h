@@ -9,7 +9,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "io/streamwriter.h" 
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil

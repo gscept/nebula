@@ -10,7 +10,7 @@
 #include "util/string.h"
 #include "io/uri.h"
 #include "io/stream.h"
-#include "toolkit-common/base/applauncherbase.h"
+#include "toolkitutil/base/applauncherbase.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil 

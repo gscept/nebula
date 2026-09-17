@@ -8,7 +8,7 @@
     (C) 2012 Gustav Sterbrant
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/uri.h"
 #include "util/string.h"
 namespace ToolkitUtil

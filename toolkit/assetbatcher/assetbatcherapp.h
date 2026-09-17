@@ -7,8 +7,8 @@
     
     (C) Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/distributedtools/distributedtoolkitapp.h"
-#include "toolkit-common/toolkitconsolehandler.h"
+#include "toolkitutil/distributedtools/distributedtoolkitapp.h"
+#include "toolkitutil/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
