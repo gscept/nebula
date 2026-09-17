@@ -533,6 +533,7 @@ SwapchainPresent(const SwapchainId id)
     CoreGraphics::QueueEndMarker(queueType);
 #endif
 
+    // Progress to the next frame
     semaphorePair = (semaphorePair + 1) % images.Size();
 }
 
