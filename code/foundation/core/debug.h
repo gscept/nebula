@@ -70,10 +70,10 @@ void LogSource(const char* logGroup, const char* file, const int line, const cha
 #endif
 #endif
 
-#define LOG(group, fmt, ...) IO::Log(#group, fmt, __VA_ARGS__)
-#define LOG_WARN(group, fmt, ...) IO::LogWarning(#group, fmt, __VA_ARGS__)
-#define LOG_ERR(group, fmt, ...) IO::LogError(#group, fmt, __VA_ARGS__)
-#define LOG_SOURCE(group, fmt, ...) IO::LogSource(#group, __FILE__, __LINE__, fmt, __VA_ARGS__)
+#define n_log(group, fmt, ...) IO::Log(#group, fmt, __VA_ARGS__)
+#define n_log_warn(group, fmt, ...) IO::LogWarning(#group, fmt, __VA_ARGS__)
+#define n_log_err(group, fmt, ...) IO::LogError(#group, fmt, __VA_ARGS__)
+#define n_log_source(group, fmt, ...) IO::LogSource(#group, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
 
 //------------------------------------------------------------------------------

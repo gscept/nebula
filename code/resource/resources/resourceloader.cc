@@ -402,7 +402,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
                 job.state = Resource::Failed;
                 job.id.resourceId = loader->failResourceId.resourceId;
                 job.id.generation = loader->failResourceId.generation;
-                n_printf("[Resource loader] Failed to load resource %s\n", job.name.AsCharPtr());
+                n_log(Resource Loader, "Failed to load resource %s", job.name.AsCharPtr());
                 goto skip_stream;
             }
         }
@@ -410,7 +410,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             job.id.resourceId = loader->failResourceId.resourceId;
             job.id.generation = loader->failResourceId.generation;
-            n_printf("[Resource loader] Failed to open resource %s\n", job.name.AsCharPtr());
+            n_log(Resource Loader, "Failed to load resource %s", job.name.AsCharPtr());
             job.state = Resource::Failed;
             goto skip_stream;
         }
@@ -577,11 +577,9 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
                 this->streamerThread->Wait();
 
                 // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
-                n_printf(
-                    "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread\n",
+                n_log(Resource Loader, "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
                     this->RTTI.GetName().AsCharPtr(),
-                    path.GetHostAndLocalPath().AsCharPtr()
-                );
+                    path.GetHostAndLocalPath().AsCharPtr());
 
                 // Loaded already
                 loadImmediate = false;
