@@ -112,10 +112,12 @@ FileWatcher::CheckQueue()
     {
         if (e.callback)
         {
-            n_assert(!this->watchers.Contains(e.folder));
-            this->watchers.Add(e.folder, e);
-            EventHandlerData& eventData = this->watchers[e.folder];
-            FileWatcherImpl::CreateWatcher(eventData);
+            if (!this->watchers.Contains(e.folder))
+            {
+                this->watchers.Add(e.folder, e);
+                EventHandlerData& eventData = this->watchers[e.folder];
+                FileWatcherImpl::CreateWatcher(eventData);
+            }
         }
         else
         {
