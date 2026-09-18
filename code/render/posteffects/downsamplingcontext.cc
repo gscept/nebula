@@ -241,13 +241,14 @@ DownsamplingContext::Setup()
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
         DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));//TextureGetNumMips(FrameScript_default::Texture_LightBuffer()) - 1;
+        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));
         constants.NumGroups = dispatchX * dispatchY;
-        for (size_t i = 0; i <= constants.Mips; i++)
+        for (IndexT i = 0; i < 16; i++)
         {
-            constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
-            constants.Dimensions[i][1] = (viewport.height() - 1)  >> i;
+            constants.Dimensions[i][0] = Math::max(1, viewport.width() >> i);
+            constants.Dimensions[i][1] = Math::max(1, viewport.height() >> i);
         }
+        CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
         CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
 
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
@@ -263,14 +264,14 @@ DownsamplingContext::Setup()
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
         DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-
-        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));//TextureGetNumMips(FrameScript_default::Texture_Depth()) - 1;
+        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));
         constants.NumGroups = dispatchX * dispatchY;
-        for (size_t i = 0; i <= constants.Mips; i++)
+        for (IndexT i = 0; i < 16; i++)
         {
-            constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
-            constants.Dimensions[i][1] = (viewport.height() - 1) >> i;
+            constants.Dimensions[i][0] = Math::max(1, viewport.width() >> i);
+            constants.Dimensions[i][1] = Math::max(1, viewport.height() >> i);
         }
+        CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
         CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
 
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);

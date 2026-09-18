@@ -12,11 +12,33 @@ const SharedMemSize = 16u;
 
 struct DownsampleData
 {
-    Dimensions : [16]i32x4; // This must be per mip!
+    Dimensions : [16]i32x4;
     Mips : u32;
     NumGroups : u32;
 };
 uniform DownsampleUniforms : *DownsampleData;
+
+Inside(texel : i32x2, mip : u32) b8
+{
+    return all(texel >= i32x2(0)) && all(texel < DownsampleUniforms.Dimensions[mip].xy);
+}
+
+TapWeight(texel : i32x2, srcMip : u32, dstMip : u32) f32
+{
+    if (!Inside(texel, srcMip))
+    {
+        return 0.0f;
+    }
+    if (DownsampleUniforms.Dimensions[dstMip].x == 1 && (texel.x & 1) != 0)
+    {
+        return 0.0f;
+    }
+    if (DownsampleUniforms.Dimensions[dstMip].y == 1 && (texel.y & 1) != 0)
+    {
+        return 0.0f;
+    }
+    return 1.0f;
+}
 
 generate
 {
@@ -38,23 +60,51 @@ generate
     if ImageFormatType == ImageFormat.R32f
     {
         alias dataType as f32;
+        Zero() dataType { return 0.0f; }
     }
     else if ImageFormatType == ImageFormat.R11g11b10f
     {
         alias dataType as f32x3;
+        Zero() dataType { return f32x3(0); }
     }
 
     if Kernel == KernelMethod.Avg
     {
         Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return (p0 + p1 + p2 + p3) * 0.25f; }
+        Combine(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType, w0 : f32, w1 : f32, w2 : f32, w3 : f32) dataType
+        {
+            const s = w0 + w1 + w2 + w3;
+            if (s == 0.0f) { return Zero(); }
+            return (p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3) / s;
+        }
     }
     else if Kernel == KernelMethod.Max
     {
         Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return max(max(max(p0, p1), p2), p3); }
+        Combine(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType, w0 : f32, w1 : f32, w2 : f32, w3 : f32) dataType
+        {
+            var acc = Zero();
+            var any = false;
+            if (w0 > 0.0f) { acc = p0; any = true; }
+            if (w1 > 0.0f) { acc = any ? max(acc, p1) : p1; any = true; }
+            if (w2 > 0.0f) { acc = any ? max(acc, p2) : p2; any = true; }
+            if (w3 > 0.0f) { acc = any ? max(acc, p3) : p3; any = true; }
+            return acc;
+        }
     }
     else if Kernel == KernelMethod.Min
     {
         Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return min(min(min(p0, p1), p2), p3); }
+        Combine(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType, w0 : f32, w1 : f32, w2 : f32, w3 : f32) dataType
+        {
+            var acc = Zero();
+            var any = false;
+            if (w0 > 0.0f) { acc = p0; any = true; }
+            if (w1 > 0.0f) { acc = any ? min(acc, p1) : p1; any = true; }
+            if (w2 > 0.0f) { acc = any ? min(acc, p2) : p2; any = true; }
+            if (w3 > 0.0f) { acc = any ? min(acc, p3) : p3; any = true; }
+            return acc;
+        }
     }
 
     if ImageFormatType == ImageFormat.R32f
@@ -66,27 +116,38 @@ generate
 			uniform Output : [13]* mutable r32f texture2DArray;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel), slice)).x;
-                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0)), slice)).x;
-                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1)), slice)).x;
-                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1)), slice)).x;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Input, i32x3(c0, slice)).x,
+                    textureLoad(Input, i32x3(c1, slice)).x,
+                    textureLoad(Input, i32x3(c2, slice)).x,
+                    textureLoad(Input, i32x3(c3, slice)).x,
+                    TapWeight(c0, 0, 1), TapWeight(c1, 0, 1), TapWeight(c2, 0, 1), TapWeight(c3, 0, 1));
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel), slice)).x;
-                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 0)), slice)).x;
-                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(0, 1)), slice)).x;
-                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 1)), slice)).x;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Output[5], i32x3(c0, slice)).x,
+                    textureLoad(Output[5], i32x3(c1, slice)).x,
+                    textureLoad(Output[5], i32x3(c2, slice)).x,
+                    textureLoad(Output[5], i32x3(c3, slice)).x,
+                    TapWeight(c0, 6, 7), TapWeight(c1, 6, 7), TapWeight(c2, 6, 7), TapWeight(c3, 6, 7));
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions[mip + 1].xy, texel), slice), value.x);
+                if (Inside(texel, mip + 1))
+                {
+                    textureStore(Output[mip], i32x3(texel, slice), value.x);
+                }
             }
         }
         else
@@ -95,27 +156,38 @@ generate
 			uniform Output : [13]* mutable r32f texture2D;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel)).x;
-                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0))).x;
-                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1))).x;
-                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1))).x;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Input, c0).x,
+                    textureLoad(Input, c1).x,
+                    textureLoad(Input, c2).x,
+                    textureLoad(Input, c3).x,
+                    TapWeight(c0, 0, 1), TapWeight(c1, 0, 1), TapWeight(c2, 0, 1), TapWeight(c3, 0, 1));
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel)).x;
-                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 0))).x;
-                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(0, 1))).x;
-                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 1))).x;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Output[5], c0).x,
+                    textureLoad(Output[5], c1).x,
+                    textureLoad(Output[5], c2).x,
+                    textureLoad(Output[5], c3).x,
+                    TapWeight(c0, 6, 7), TapWeight(c1, 6, 7), TapWeight(c2, 6, 7), TapWeight(c3, 6, 7));
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], min(DownsampleUniforms.Dimensions[mip + 1].xy, texel), value);
+                if (Inside(texel, mip + 1))
+                {
+                    textureStore(Output[mip], texel, value);
+                }
             }
         }
         workgroup SharedMemory : [SharedMemSize][SharedMemSize]f32;
@@ -128,27 +200,38 @@ generate
 			uniform Output : [13]* mutable r11g11b10f texture2DArray;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel), slice)).xyz;
-                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0)), slice)).xyz;
-                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1)), slice)).xyz;
-                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1)), slice)).xyz;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Input, i32x3(c0, slice)).xyz,
+                    textureLoad(Input, i32x3(c1, slice)).xyz,
+                    textureLoad(Input, i32x3(c2, slice)).xyz,
+                    textureLoad(Input, i32x3(c3, slice)).xyz,
+                    TapWeight(c0, 0, 1), TapWeight(c1, 0, 1), TapWeight(c2, 0, 1), TapWeight(c3, 0, 1));
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel), slice)).xyz;
-                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 0)), slice)).xyz;
-                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(0, 1)), slice)).xyz;
-                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 1)), slice)).xyz;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Output[5], i32x3(c0, slice)).xyz,
+                    textureLoad(Output[5], i32x3(c1, slice)).xyz,
+                    textureLoad(Output[5], i32x3(c2, slice)).xyz,
+                    textureLoad(Output[5], i32x3(c3, slice)).xyz,
+                    TapWeight(c0, 6, 7), TapWeight(c1, 6, 7), TapWeight(c2, 6, 7), TapWeight(c3, 6, 7));
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(Dimensions[mip + 1].xy, texel), slice), f32x4(value, 0));
+                if (Inside(texel, mip + 1))
+                {
+                    textureStore(Output[mip], i32x3(texel, slice), f32x4(value, 0));
+                }
             }
         }
         else
@@ -157,27 +240,38 @@ generate
 			uniform Output : [13]* mutable r11g11b10f texture2D;
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel)).xyz;
-                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 0))).xyz;
-                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(0, 1))).xyz;
-                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions[0].xy, texel + i32x2(1, 1))).xyz;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Input, c0).xyz,
+                    textureLoad(Input, c1).xyz,
+                    textureLoad(Input, c2).xyz,
+                    textureLoad(Input, c3).xyz,
+                    TapWeight(c0, 0, 1), TapWeight(c1, 0, 1), TapWeight(c2, 0, 1), TapWeight(c3, 0, 1));
             }
 
             Sample2x2Output(texel: i32x2, slice: u32) dataType 
             {
-                var samples: [4]dataType;
-                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel)).xyz;
-                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 0))).xyz;
-                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(0, 1))).xyz;
-                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions[6].xy, texel + i32x2(1, 1))).xyz;
-                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+                const c0 = texel;
+                const c1 = texel + i32x2(1, 0);
+                const c2 = texel + i32x2(0, 1);
+                const c3 = texel + i32x2(1, 1);
+                return Combine(
+                    textureLoad(Output[5], c0).xyz,
+                    textureLoad(Output[5], c1).xyz,
+                    textureLoad(Output[5], c2).xyz,
+                    textureLoad(Output[5], c3).xyz,
+                    TapWeight(c0, 6, 7), TapWeight(c1, 6, 7), TapWeight(c2, 6, 7), TapWeight(c3, 6, 7));
             }
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], min(DownsampleUniforms.Dimensions[mip + 1].xy, texel), f32x4(value, 0));
+                if (Inside(texel, mip + 1))
+                {
+                    textureStore(Output[mip], texel, f32x4(value, 0));
+                }
             }
         }
 
@@ -213,13 +307,17 @@ LDSStore(x : u32, y : u32, value : dataType) void
 /**
     Use quad wave intrinsics to reduce by reading from neighbouring threads
 */
-ReduceQuad(pixel : dataType) dataType
+ReduceQuad(pixel : dataType, coord : i32x2, srcMip : u32, dstMip : u32) dataType
 {
     const p0 = pixel;
     const p1 = subgroupSwapHorizontal(pixel);
     const p2 = subgroupSwapVertical(pixel);
     const p3 = subgroupSwapDiagonal(pixel);
-    return Reduce(p0, p1, p2, p3);
+    const w = TapWeight(coord, srcMip, dstMip);
+    const w1 = subgroupSwapHorizontal(w);
+    const w2 = subgroupSwapVertical(w);
+    const w3 = subgroupSwapDiagonal(w);
+    return Combine(p0, p1, p2, p3, w, w1, w2, w3);
 }
 
 //------------------------------------------------------------------------------
@@ -266,10 +364,10 @@ Mips0_1(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mips : u32, sli
     }
 
     // now all we have to do is to reduce the same pixels using subgroup intrinsics to get neighbouring thread values!
-    pixels[0] = ReduceQuad(pixels[0]);
-    pixels[1] = ReduceQuad(pixels[1]);
-    pixels[2] = ReduceQuad(pixels[2]);
-    pixels[3] = ReduceQuad(pixels[3]);
+    pixels[0] = ReduceQuad(pixels[0], workGroupId * 32 + i32x2(x, y), 1, 2);
+    pixels[1] = ReduceQuad(pixels[1], workGroupId * 32 + i32x2(x + 16, y), 1, 2);
+    pixels[2] = ReduceQuad(pixels[2], workGroupId * 32 + i32x2(x, y + 16), 1, 2);
+    pixels[3] = ReduceQuad(pixels[3], workGroupId * 32 + i32x2(x + 16, y + 16), 1, 2);
 
     // only store value for every fourth pixel
     if ((localIndex % 4) == 0)
@@ -304,7 +402,7 @@ Mips0_1(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mips : u32, sli
 Mip2_8(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
 {
     var pixel = LDSLoad(x, y);
-    pixel = ReduceQuad(pixel);
+    pixel = ReduceQuad(pixel, workGroupId * 16 + i32x2(x, y), mip, mip + 1);
 
     if ((localIndex % 4) == 0)
     {
@@ -322,7 +420,7 @@ Mip3_9(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice
     if (localIndex < 64)
     {
         var pixel = LDSLoad(x * 2 + y % 2, y * 2);
-        pixel = ReduceQuad(pixel);
+        pixel = ReduceQuad(pixel, workGroupId * 8 + i32x2(x, y), mip, mip + 1);
 
         if ((localIndex % 4) == 0)
         {
@@ -341,7 +439,7 @@ Mip4_10(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slic
     if (localIndex < 16)
     {
         var pixel = LDSLoad(x * 4 + y, y * 4);
-        pixel = ReduceQuad(pixel);
+        pixel = ReduceQuad(pixel, workGroupId * 4 + i32x2(x, y), mip, mip + 1);
 
         if ((localIndex % 4) == 0)
         {
@@ -360,7 +458,7 @@ Mip5_11(workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
     if (localIndex < 4)
     {
         var pixel = LDSLoad(localIndex, 0);
-        pixel = ReduceQuad(pixel);
+        pixel = ReduceQuad(pixel, workGroupId * 2 + i32x2(i32(localIndex % 2), i32(localIndex / 2)), mip, mip + 1);
 
         if ((localIndex % 4) == 0)
         {
@@ -422,7 +520,11 @@ Mips6_7(x : u32, y : u32, mips : u32, slice : u32) void
     // skip mip 7 if we don't have one
     if (mips <= 7) { return; }
 
-    const pixel = Reduce(p0, p1, p2, p3);
+    const pixel = Combine(p0, p1, p2, p3,
+        TapWeight(i32x2(x * 2 + 0, y * 2 + 0), 7, 8),
+        TapWeight(i32x2(x * 2 + 1, y * 2 + 0), 7, 8),
+        TapWeight(i32x2(x * 2 + 0, y * 2 + 1), 7, 8),
+        TapWeight(i32x2(x * 2 + 1, y * 2 + 1), 7, 8));
     Save(i32x2(x, y), pixel, 7, slice);
     LDSStore(x, y, pixel);
 }
