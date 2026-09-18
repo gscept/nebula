@@ -104,8 +104,10 @@ ResourceBrowser::Run(SaveMode save)
 
             const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetView("mainview");
             Math::rectangle<int> viewport = ViewGetViewport(view);
-            float scaleX = float(viewport.width()) / dims.width;
-            float scaleY = float(viewport.height()) / dims.height;
+            const float scaleX = float(viewport.width()) / dims.width;
+            const float scaleY = float(viewport.height()) / dims.height;
+            const float offsetX = float(viewport.left) / dims.width;
+            const float offsetY = float(viewport.top) / dims.height;
             static int mip = 0, layer = 0;
             static bool alpha = false;
             static bool range = false;
@@ -126,6 +128,7 @@ ResourceBrowser::Run(SaveMode save)
             textureInfo.green = green;
             textureInfo.blue = blue;
             textureInfo.alpha = a;
+            textureInfo.pointFilter = 1;
             Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
             if (ImGui::BeginChild("Preview", ImVec2{ 0, 0 }))
@@ -149,7 +152,9 @@ ResourceBrowser::Run(SaveMode save)
                     ImVec2 max = ImGui::GetItemRectMax();
 
                     ImDrawList* drawList = ImGui::GetWindowDrawList();
-                    drawList->AddRect(min, ImVec2{ min.x + (max.x - min.x) * scaleX * relativeWidth, min.y + (max.y - min.y) * scaleY * relativeHeight }, ImGui::GetColorU32(ImVec4{ 1, 0, 0, 1 }));
+                    const ImVec2 viewportMin = ImVec2{ min.x + (max.x - min.x) * offsetX, min.y + (max.y - min.y) * offsetY };
+                    const ImVec2 viewportMax = ImVec2{ viewportMin.x + (max.x - min.x) * scaleX * relativeWidth, viewportMin.y + (max.y - min.y) * scaleY * relativeHeight };
+                    drawList->AddRect(viewportMin, viewportMax, ImGui::GetColorU32(ImVec4{ 1, 0, 0, 1 }));
                 }
                 ImGui::InputInt("Mip", &mip);
                 ImGui::InputInt("Layer", &layer);

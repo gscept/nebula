@@ -46,6 +46,7 @@ struct ImguiTextureId
     uint blue : 1 = 1;
     uint alpha : 1 = 1;
     uint splat : 1 = 0;
+    uint pointFilter : 1 = 0;
 };
 
 extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;

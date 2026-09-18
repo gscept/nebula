@@ -361,6 +361,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint useAlpha : 1;
         uint splat : 1;
         uint id : 11;
+        uint pointFilter : 1;
     };
 
     union ColorMask
@@ -423,6 +424,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.useRange = tex.useRange;
                 texInfo.useAlpha = tex.useAlpha;
                 texInfo.splat = tex.splat;
+                texInfo.pointFilter = tex.pointFilter;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
                 CoreGraphics::TextureIdLock _0(tex.nebulaHandle);
