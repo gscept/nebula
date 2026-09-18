@@ -31,6 +31,7 @@
 #include "coregraphics/shaderidentifier.h"
 #include "coregraphics/shaderloader.h"
 #include "threading/safequeue.h"
+#include "util/set.h"
 
 namespace Threading
 {
@@ -106,7 +107,9 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-    Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;      
+    Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;
+    Util::Dictionary<Util::String, Util::Set<Util::String>> shaderReloadMap;
+    Util::Array<Util::String> shaderWatchFolders;
     Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
     Ids::Id32 objectIdShaderVar;
 
