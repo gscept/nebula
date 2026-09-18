@@ -1,5 +1,5 @@
 ---
-description: Nebula C++ style — inline single-use code, data-oriented, Util over STL, fail with asserts
+description: Nebula C++ style — inline single-use code, data-oriented, Util over STL, fail-fast no defensive coding
 alwaysApply: true
 ---
 
@@ -40,4 +40,25 @@ Util::String name;
 n_assert(ptr != nullptr);
 ```
 
-Fail early. `n_assert` / `n_assert2` / `n_assert_fmt` on invariants (including non-null). Do not swallow bad input with a nullptr check and a silent `return`. Recovery is allowed only for expected user/file/network failure, and must be visible (log, `n_error`, or a handled error path).
+## Fail fast — no defensive coding
+
+Do not hide bugs. If an invariant is broken, crash. Do not clamp, skip, default, renormalize, or early-return to "make it work."
+
+Invariants (null, OOB index, bad id, impossible state): `n_assert` / `n_assert2` / `n_assert_fmt`. Expected failure (file/network/user input): `n_error`, a log, or a handled error path that is visible. Recovery is never silent.
+
+```cpp
+// BAD — swallows the bug
+if (ptr == nullptr) return;
+if (index >= count) index = count - 1;
+IndexT i = dict.FindIndex(path);
+if (i == InvalidIndex)
+    i = dict.FindIndex("fallback");
+
+// GOOD
+n_assert(ptr != nullptr);
+n_assert(index < count);
+IndexT i = dict.FindIndex(path);
+n_assert(i != InvalidIndex);
+```
+
+Same in shaders: do not remap out-of-bounds work into valid data. No `ValidTexel` skips, no `min(lastTexel, coord)` clamps, no dummy 0 and continue. If the dispatch or indexing produces OOB, fix that. If OOB is inherent to the algorithm (e.g. SPD's 64×64 tiles), leave the coordinate alone — do not clamp it onto the last valid texel.
