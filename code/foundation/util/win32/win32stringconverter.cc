@@ -64,18 +64,13 @@ Win32StringConverter::WideToUTF8(const ushort* src, SizeT length)
     String returnString;
     char dstBuf[1024];
     int numBytesWritten = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) src, length, dstBuf, sizeof(dstBuf), 0, 0);
-    int strLength = Math::max(0, numBytesWritten - 1); // WideCharToMultiByte will return num bytes including null termination character, so length should be minimum of 2 characters
-    if (strLength > 0)
-    {
-        n_assert(numBytesWritten < sizeof(dstBuf));
-        returnString.Set(dstBuf, strLength);
-        return returnString;
-    }
-    else
-    {
-        n_error("Win32StringConverter::WideToUTF8(): failed to convert string!");
-        return 0;
-    }
+    n_assert(numBytesWritten > 0);
+    n_assert(numBytesWritten < sizeof(dstBuf));
+    // cchWideChar == -1 converts a null-terminated string and includes the terminator in the byte count.
+    // A positive length converts exactly that many WCHARs and does not write a terminator.
+    int strLength = (length == -1) ? numBytesWritten - 1 : numBytesWritten;
+    returnString.Set(dstBuf, strLength);
+    return returnString;
 }
 
 } // namespace Win32
