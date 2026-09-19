@@ -86,6 +86,7 @@ MeshLoader::MeshLoader()
     cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
     cmdPoolInfo.resetable = false;
     cmdPoolInfo.shortlived = true;
+    cmdPoolInfo.name = "Mesh Loader Cmd Pool";
     this->asyncTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
     this->immediateTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
 }

@@ -1315,8 +1315,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
     setupResourcePoolInfo.resetable = true;
     setupResourcePoolInfo.shortlived = true;
+    setupResourcePoolInfo.name = "Graphics Setup Cmd Pool";
     state.setupGraphicsCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
+    setupResourcePoolInfo.name = "Transfer Setup Cmd Pool";
     state.setupTransferCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
 
     state.pendingDeletes.Resize(info.numBufferedFrames);
