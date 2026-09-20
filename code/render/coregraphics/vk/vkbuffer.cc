@@ -154,6 +154,8 @@ CreateBuffer(const BufferCreateInfo& info)
     size_t baseAlignment = memoryReqs.alignment;
     if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::AccelerationStructureInstances))
         baseAlignment = 16;
+    if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::AccelerationStructureScratch))
+        baseAlignment = Math::max(baseAlignment, (size_t)CoreGraphics::AccelerationStructureScratchAlignment);
     if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::ShaderTable))
         baseAlignment = Math::max(baseAlignment, CoreGraphics::ShaderGroupAlignment);
 
