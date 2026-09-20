@@ -26,6 +26,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
     //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
     materialAllocator.Set<Material_MinLOD>(id, 1.0f);
     materialAllocator.Set<Material_Name>(id, name);
+    materialAllocator.Set<Material_BufferOffset>(id, -1);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);

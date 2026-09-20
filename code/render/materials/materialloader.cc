@@ -33,12 +33,12 @@ struct MaterialBuffer
     {
         this->hostBufferCreateInfo.name = Util::String::Sprintf("%s Host Buffer", name);
         this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
-        this->hostBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        this->hostBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         this->hostBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
 
         this->deviceBufferCreateInfo.name = Util::String::Sprintf("%s Device Buffer", name);
         this->deviceBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination | CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite;
-        this->deviceBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        this->deviceBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         this->deviceBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     }
 
@@ -498,6 +498,10 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             {
                 auto loader = LoaderMap.ValueAtIndex(loaderIndex);
                 loader(reader, id, job.tag);
+            }
+            else
+            {
+                MaterialSetBufferBinding(id, -1);
             }
 
             // This is the legacy material system loaded with the new surface format
