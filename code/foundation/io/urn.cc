@@ -98,10 +98,6 @@ URN::Split(const String& s)
 void
 URN::Build()
 {
-    n_assert(!this->IsEmpty());
-    n_assert(this->nid.IsValid());
-    n_assert(this->nss.IsValid());
-
     String str;
     str.Reserve(256);
     str.Append("urn:");
