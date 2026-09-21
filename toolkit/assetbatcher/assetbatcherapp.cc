@@ -330,10 +330,10 @@ AssetBatcherApp::DoWork()
             {
                 exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All);
                 exporter->UpdateSource();
-                IO::URI basePath("src:");
+                IO::URI basePath("work:");
                 exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ProcessFile("src:" + file);
+                exporter->ProcessFile(file);
 
                 break;
             }
@@ -341,7 +341,7 @@ AssetBatcherApp::DoWork()
     }
     
     exporter->Close();
-
+    this->logger.Flush();
     Jobs2::JobSystemUninit();
 
 #if 0
