@@ -164,7 +164,7 @@ AssetEditor::Run(SaveMode save)
                 }
 
                 bool open = true;
-                Util::String assetName = Editor::PathConverter::StripAssetName(item.path.GetSpecific());
+                Util::String assetName = item.path.GetSpecific();
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {

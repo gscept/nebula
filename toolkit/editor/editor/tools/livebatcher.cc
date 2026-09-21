@@ -64,11 +64,11 @@ struct
 void 
 LiveBatcher::Setup()
 {
+    livebatcherState.outputStream = IO::MemoryStream::Create();
     livebatcherState.startInfo.workingDir = workPath;
     livebatcherState.startInfo.outputStream = livebatcherState.outputStream.upcast<IO::Stream>();
     livebatcherState.startInfo.consoleWindow = false;
-    livebatcherState.startInfo.exePath = Util::String::Sprintf(batcherPath, System::PlatformTypeAsString(System::Platform));
-    livebatcherState.outputStream = IO::MemoryStream::Create();
+    livebatcherState.startInfo.exePath = batcherPath;
 
     livebatcherState.batchThread = LiveBatcherThread::Create();
     livebatcherState.batchThread->Start();
@@ -120,12 +120,13 @@ LiveBatcher::BatchAsset(const IO::URI& assetPath)
         {
             Util::String args;
             args.Append("-rawlog ");
-            args.Append("-asset " + assetPath.LocalPath());
+            args.Append("-file " + assetPath.LocalPath());
             livebatcherState.startInfo.args = args;
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
+                n_log(Live Batcher, "%s", livebatcherState.outputStream->GetRawPointer());
                 return true;
             }
             return false;

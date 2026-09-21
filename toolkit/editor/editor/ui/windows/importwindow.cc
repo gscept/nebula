@@ -62,7 +62,7 @@ void
 AssetImporterWindow::Run(SaveMode save)
 {
     static Util::Array<Util::String> Files;
-    static Util::String Destination = "src:assets";
+    static IO::URN Destination;
 
     auto console = (Presentation::Console*)Presentation::ConsoleWindow;
     static ToolkitUtil::Logger logger;
@@ -100,17 +100,16 @@ AssetImporterWindow::Run(SaveMode save)
         Util::String title = Util::Format("Import Texture: %s", file.ExtractFileName().AsCharPtr());
         if (ImGui::Begin(title.AsCharPtr()))
         {
-            Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
+            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -120,24 +119,6 @@ AssetImporterWindow::Run(SaveMode save)
             fileNameNoExt.StripFileExtension();
             Util::String label = Util::Format("/%s.natex##destination", fileNameNoExt.AsCharPtr());
             ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
-            const ImGuiStyle& style = ImGui::GetStyle();
-            ImGuiFileDialog::Instance()->SetFileStyle(
-                IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
-            );
-            if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
-            {
-                if (ImGuiFileDialog::Instance()->IsOk())
-                {
-                    Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
-                }
-                ImGuiFileDialog::Instance()->Close();
-            }
-            ImGui::PopFont();
-
-            ImGui::PopStyleVar();
 
             if (ImGui::BeginTable("TextureImportTable", 2))
             {
@@ -295,9 +276,10 @@ AssetImporterWindow::Run(SaveMode save)
                     Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, fileNameNoExt.ExtractFileName().AsCharPtr());
                 if (ImGui::Button(saveButton.AsCharPtr()))
                 {
-                    ToolkitUtil::ImportTexture(file, Destination, textureResource, &logger);
+                    ToolkitUtil::ImportTexture(file, Destination.WorkURI("assets"), textureResource, &logger);
                     TextureResources.EraseIndex(textureResourceIndex);
-                    batcher->BatchAsset(Destination);
+                    IO::URN workAsset("tex", Destination.GetSpecific() + "/" + fileNameNoExt);
+                    batcher->BatchAsset(workAsset.WorkURI("assets"));
                 }
 
                 ImGui::EndTable();
@@ -313,17 +295,16 @@ AssetImporterWindow::Run(SaveMode save)
         Util::String title = Util::Format("Import FBX: %s", file.ExtractFileName().AsCharPtr());
         if (ImGui::Begin(title.AsCharPtr()))
         {
-            Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
+            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -333,24 +314,6 @@ AssetImporterWindow::Run(SaveMode save)
             fileNameNoExt.StripFileExtension();
             Util::String label = Util::Format("##destination %s", fileNameNoExt.AsCharPtr());
             ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
-            const ImGuiStyle& style = ImGui::GetStyle();
-            ImGuiFileDialog::Instance()->SetFileStyle(
-                IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
-            );
-            if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
-            {
-                if (ImGuiFileDialog::Instance()->IsOk())
-                {
-                    Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
-                }
-                ImGuiFileDialog::Instance()->Close();
-            }
-            ImGui::PopFont();
-
-            ImGui::PopStyleVar();
 
             ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
             ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
@@ -383,9 +346,9 @@ AssetImporterWindow::Run(SaveMode save)
                     case 1: scale = 1.0f; break; // m to m
                     case 2: scale = 1000.0f; break; // km to m
                 }
-                ToolkitUtil::ImportFBX(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                batcher->BatchAsset(Destination);
+                batcher->BatchAsset(Destination.WorkURI("assets"));
             }
 
             fbxFileIndex++;
@@ -400,17 +363,16 @@ AssetImporterWindow::Run(SaveMode save)
         if (ImGui::Begin(title.AsCharPtr()))
         {
 
-            Destination.ConvertBackslashes();
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const Util::String& path)
+                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = Destination.StripSubstring(IO::URI("src:").LocalPath());
+            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -420,24 +382,6 @@ AssetImporterWindow::Run(SaveMode save)
             fileNameNoExt.StripFileExtension();
             Util::String label = Util::Format("##destination %s", fileNameNoExt.AsCharPtr());
             ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-            ImGui::PushFont(Dynui::ImguiIconFont, 0.0f);
-            const ImGuiStyle& style = ImGui::GetStyle();
-            ImGuiFileDialog::Instance()->SetFileStyle(
-                IGFD_FileStyleByTypeDir, "", style.Colors[ImGuiCol_TabSelected], ICON_ttf_FOLDER_OPEN
-            );
-            if (ImGuiFileDialog::Instance()->Display("ChoseFolderDlgKey"))
-            {
-                if (ImGuiFileDialog::Instance()->IsOk())
-                {
-                    Destination = ImGuiFileDialog::Instance()->GetCurrentPath().c_str();
-                }
-                ImGuiFileDialog::Instance()->Close();
-            }
-            ImGui::PopFont();
-
-            ImGui::PopStyleVar();
 
             ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
             ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
@@ -470,10 +414,9 @@ AssetImporterWindow::Run(SaveMode save)
                     case 1: scale = 1.0f; break; // m to m
                     case 2: scale = 1000.0f; break; // km to m
                 }
-                ToolkitUtil::ImportGLTF(file, Destination, (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 GltfFiles.EraseIndex(gltfFileIndex);
-
-                batcher->BatchAsset(Destination);
+                batcher->BatchAsset(Destination.WorkURI("assets"));
             }
 
             gltfFileIndex++;

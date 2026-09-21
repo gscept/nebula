@@ -36,9 +36,9 @@ public:
     void Run(SaveMode save) override;
 
     /// Pick file (using assigns, like work:system/white)
-    void PickFile(const Util::String& path, std::function<void(const Util::String& path)> picker);
+    void PickFile(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
     /// Pick folder
-    void PickFolder(const Util::String& path, std::function<void(const Util::String& path)> picker);
+    void PickFolder(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
 private:
     
     void DisplayFileTree();
@@ -93,7 +93,7 @@ private:
     Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
     Util::Dictionary<Util::String, uint64_t> fileInfoDict;
     Util::Dictionary<Util::String, uint64_t> folderInfoDict;
-    Util::Array<uint64_t> rootFolderIds;
+    uint64_t rootFolderId;
     Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
     Threading::SafeFlag isDoneRefreshingCaches;
     Threading::SafeFlag isDoneWithDictionaries;
@@ -108,8 +108,8 @@ private:
     Util::String lastSearchFilter;
     bool searchIndexDirty = false;
 
-    std::function<void(const Util::String& path)> pickFileFunction, pickFolderFunction;
-    Util::String pendingPickPath;
+    std::function<void(const IO::URN& path)> pickFileFunction, pickFolderFunction;
+    IO::URN pendingPickPath;
     bool fileTreeReady = false;
     bool backgroundScanFinished = false;
     bool showProgress = false;

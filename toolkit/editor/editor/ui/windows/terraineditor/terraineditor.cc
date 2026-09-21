@@ -804,19 +804,16 @@ TerrainEditor::Run(SaveMode save)
                         if (pressed)
                         {
                             auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                            Util::String file = Util::Format("proj:work/%s", path);
-                            Util::String folder = file.ExtractToLastSlash();
-                            assetBrowser->PickFile(folder, [i, j](const Util::String& filePath)
+                            IO::URN folder = IO::URN(ToolkitUtil::FileTypeURNMapping[ToolkitUtil::FileType::Texture], path);
+                            assetBrowser->PickFile(folder, [i, j](const IO::URN& filePath)
                             {
-                                Util::String relativePath = filePath.StripSubstring("proj:work/assets");
-                                relativePath.StripFileExtension();
-                                if (filePath != nullptr)
+                                if (filePath.IsValid())
                                 {
                                     BiomeTextures& biomeTextureSet = terrainEditorState.biomeTextures[selectedBiome];
                                     switch (j)
                                     {
                                         case 0:
-                                            biomeTextureSet.albedoPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.albedoPaths[i] = filePath;
                                             biomeTextureSet.albedoResources[i] = Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
                                             {
                                                     Dynui::SetImguiTextureIdData(
@@ -826,14 +823,14 @@ TerrainEditor::Run(SaveMode save)
                                             
                                             break;
                                         case 1:
-                                            biomeTextureSet.normalsPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.normalsPaths[i] = filePath;
                                             biomeTextureSet.normalsResources[i] = Resources::CreateResource(biomeTextureSet.normalsPaths[i], "terrain", nullptr, nullptr, true, false);
                                             Dynui::SetImguiTextureIdData(
                                                 biomeTextureSet.imguiNormalId[i], {biomeTextureSet.normalsResources[i].resource}
                                             );
                                             break;
                                         case 2:
-                                            biomeTextureSet.materialPaths[i] = IO::URN("tex", relativePath);
+                                            biomeTextureSet.materialPaths[i] = filePath;
                                             biomeTextureSet.materialResources[i] = Resources::CreateResource(biomeTextureSet.materialPaths[i], "terrain", nullptr, nullptr, true, false);
                                             Dynui::SetImguiTextureIdData(
                                                 biomeTextureSet.imguiMaterialId[i],
