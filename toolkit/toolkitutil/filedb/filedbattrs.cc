@@ -28,4 +28,5 @@ namespace Attr
     DefineAttrInt64(ModifiedDate, 'MDAT', Attr::ReadWrite);
     DefineAttrString(EntityName, 'NAME', Attr::ReadWrite);  // Generic name for folders/files    
     DefineAttrString(Path, 'PATH', Attr::ReadWrite);
+    DefineAttrString(Root, 'FROT', Attr::ReadWrite);
 }

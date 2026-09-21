@@ -21,8 +21,41 @@ using namespace Util;
 using namespace IO;
 using namespace Db;
 
+Util::Dictionary<FileType, const char*> FileTypeURNMapping =
+{
+    { FileType::Unknown, ""},
+    { FileType::Asset, "mdl" },
+    { FileType::Texture, "tex" },
+    { FileType::Particle, "par" },
+    { FileType::Surface, "mat" },
+    { FileType::Audio, "aud", },
+    { FileType::Text, "" },
+    { FileType::Frame, "" },
+    { FileType::Shader, "" },
+    { FileType::Physics, "actor" },
+    { FileType::NavMesh, "navmesh" },
+    { FileType::Other, "" }
+};
+
+Util::Dictionary<FileType, const char*> FileTypeNames =
+{
+    { FileType::Unknown, "Unknown"},
+    { FileType::Asset, "Asset" },
+    { FileType::Texture, "Texture" },
+    { FileType::Particle, "Particle" },
+    { FileType::Surface, "Material" },
+    { FileType::Audio, "Audio", },
+    { FileType::Text, "Text" },
+    { FileType::Frame, "Frame Script" },
+    { FileType::Shader, "Shader" },
+    { FileType::Physics, "Physics" },
+    { FileType::NavMesh, "Nav Mesh" },
+    { FileType::Other, "Other" }
+};
+
 namespace
 {
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -257,7 +290,7 @@ FileDB::CreateRootFolder(const Util::String& name, const IO::FileTime& modifiedD
     values->SetInt64(Attr::FolderId, rowIdx, folderId);
     values->SetInt64(Attr::ParentFolderId, rowIdx, 0);
     values->SetString(Attr::EntityName, rowIdx, name);
-    values->SetString(Attr::Path, rowIdx, name);
+    values->SetString(Attr::Path, rowIdx, "");
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, rowIdx, true);
     values->SetBool(Attr::IsArchive, rowIdx, isArchive);
@@ -311,7 +344,8 @@ FileDB::CreateFolder(Logger& logger, const Util::String& name, uint64_t parentFo
     values->SetInt64(Attr::FolderId, rowIdx, folderId);
     values->SetInt64(Attr::ParentFolderId, rowIdx, parentFolderId);
     values->SetString(Attr::EntityName, rowIdx, name);
-    values->SetString(Attr::Path, rowIdx, parentDataset->Values()->GetString(Attr::Path, 0) + "/" + name);
+    Util::String parentPath = parentDataset->Values()->GetString(Attr::Path, 0);
+    values->SetString(Attr::Path, rowIdx, parentPath.IsEmpty() ? name : parentPath + "/" + name);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
     values->SetBool(Attr::IsRootFolder, rowIdx, false);
     values->SetBool(Attr::IsArchive, rowIdx, isArchive);
@@ -456,77 +490,34 @@ FileDB::GetRootFolders(Array<FolderInfo>& outFolders)
 //------------------------------------------------------------------------------
 /**
 */
-Util::String
+IO::URN
 FileDB::GetFolderPath(uint64_t folderId)
 {
     n_assert(this->isOpen);
-    
-    Util::String outPath;
 
     FolderInfo current;
     if (!this->GetFolderInfo(folderId, current))
     {
-        return outPath;
+        return IO::URN();
     }
-    
-    Util::Array<Util::String> pathComponents;
-    // Build path from leaf to root
-    do
-    {
-        pathComponents.Insert(0, current.name);
-
-        if (current.isRoot)
-        {
-            break;
-        }
-        
-        // Get parent and continue
-        if (current.parentId == 0)
-        {
-            break;
-        }
-        
-        if (!this->GetFolderInfo(current.parentId, current))
-        {
-            break;
-        }
-    } while (true);
-
-    for(const auto& component : pathComponents)
-    {
-        if (!outPath.IsEmpty())
-        {
-            outPath.Append("/");
-        }
-        outPath.Append(component);
-    }
-    
-    return  outPath;
+    return IO::URN("", current.folderPath);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Util::String
+IO::URN
 FileDB::GetFilePath(uint64_t fileId)
 {
     n_assert(this->isOpen);
     
     FileInfo fileInfo;
     if (!this->GetFileInfo(fileId, fileInfo))
-    {
-        return Util::String();
-    }
-    
-    Util::String folderPath = this->GetFolderPath(fileInfo.folderId);
-    if (folderPath.IsEmpty())
-    {
-        return fileInfo.name;
-    }
-    else
-    {
-        return folderPath + "/" + fileInfo.name;
-    }
+        return IO::URN();
+    IndexT extensionIndex = FileTypeURNMapping.FindIndex(fileInfo.type);
+    if (extensionIndex == -1)
+        return IO::URN();
+    return IO::URN(FileTypeURNMapping.ValueAtIndex(extensionIndex), fileInfo.filePath);
 }
 
 //------------------------------------------------------------------------------
@@ -620,7 +611,8 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     values->SetInt64(Attr::FileFolderId, rowIdx, folderId);
     
     values->SetString(Attr::EntityName, rowIdx, name);
-    values->SetString(Attr::Path, rowIdx, folderDataset->Values()->GetString(Attr::Path, 0) + "/" + name);
+    Util::String folderPath = folderDataset->Values()->GetString(Attr::Path, 0);
+    values->SetString(Attr::Path, rowIdx, folderPath.IsEmpty() ? name : folderPath + "/" + name);
     values->SetInt(Attr::FileType, rowIdx, static_cast<int>(type));
     values->SetInt64(Attr::FileSize, rowIdx, size);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
@@ -643,6 +635,7 @@ FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
     dataset->AddColumn(Attr::FileId);
     dataset->AddColumn(Attr::FileFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::FileType);
     dataset->AddColumn(Attr::FileSize);
     dataset->AddColumn(Attr::ModifiedDate);
@@ -661,6 +654,7 @@ FileDB::GetFileInfo(uint64_t fileId, FileInfo& outInfo)
     outInfo.id = fileId;
     outInfo.folderId = values->GetInt64(Attr::FileFolderId, 0);
     outInfo.name = values->GetString(Attr::EntityName, 0);
+    outInfo.filePath = values->GetString(Attr::Path, 0);
     outInfo.type = static_cast<FileType>(values->GetInt(Attr::FileType, 0));
     outInfo.size = (SizeT)values->GetInt64(Attr::FileSize, 0);
     outInfo.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, 0));
@@ -682,6 +676,7 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
     dataset->AddColumn(Attr::FileId);
     dataset->AddColumn(Attr::FileFolderId);
     dataset->AddColumn(Attr::EntityName);
+    dataset->AddColumn(Attr::Path);
     dataset->AddColumn(Attr::FileType);
     dataset->AddColumn(Attr::FileSize);
     dataset->AddColumn(Attr::ModifiedDate);
@@ -691,17 +686,16 @@ FileDB::GetFilesInFolder(uint64_t folderId, Array<FileInfo>& outFiles)
     
     dataset->PerformQuery();
     Ptr<ValueTable> values = dataset->Values();
-    Util::String folderPath = this->GetFolderPath(folderId);
     for (IndexT i = 0; i < values->GetNumRows(); ++i)
     {
         FileInfo info;
         info.id = values->GetInt64(Attr::FileId, i);
         info.folderId = folderId;
         info.name = values->GetString(Attr::EntityName, i);
+        info.filePath = values->GetString(Attr::Path, i);
         info.type = static_cast<FileType>(values->GetInt(Attr::FileType, i));
         info.size = (SizeT)values->GetInt64(Attr::FileSize, i);
         info.modifiedDate = IO::FileTime(values->GetInt64(Attr::ModifiedDate, i));
-        info.filePath = folderPath.IsEmpty() ? info.name : folderPath + "/" + info.name;
         
         outFiles.Append(info);
     }

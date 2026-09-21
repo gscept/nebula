@@ -39,6 +39,9 @@ enum class FileType : int
     NavMesh = 10,
     Other = 11
 };
+
+extern Util::Dictionary<FileType, const char*> FileTypeURNMapping;
+extern Util::Dictionary<FileType, const char*> FileTypeNames;
 class FileDB
 {
 public:
@@ -48,7 +51,7 @@ public:
     {
         uint64_t id;
         Util::String name;
-        Util::String folderPath;    // path from root to this folder (excluding this folder)
+        Util::String folderPath;    // Path column: relative to root (empty for the root)
         uint64_t parentId;
         IO::FileTime modifiedDate;
         bool isRoot;
@@ -61,7 +64,7 @@ public:
     {
         uint64_t id;
         Util::String name;
-        Util::String filePath;
+        Util::String filePath;      // Path column: relative to root
         uint64_t folderId;
         SizeT size;
         FileType type;
@@ -102,8 +105,8 @@ public:
     /// get all root folders
     bool GetRootFolders(Util::Array<FolderInfo>& outFolders);
     
-    /// get the path from root to a given folder
-    Util::String GetFolderPath(uint64_t folderId);
+    /// get the work-relative path of a folder (empty for a work root)
+    IO::URN GetFolderPath(uint64_t folderId);
     
     /// delete a folder (fails if not empty)
     bool DeleteFolder(Logger& logger, uint64_t folderId);
@@ -114,8 +117,8 @@ public:
     uint64_t AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
                        SizeT size, FileType type, const IO::FileTime& modifiedDate);
     
-    /// get the path from root to a given file
-    Util::String GetFilePath(uint64_t fileId);
+    /// get the work-relative path of a file
+    IO::URN GetFilePath(uint64_t fileId);
 
     /// get file info by ID
     bool GetFileInfo(uint64_t fileId, FileInfo& outInfo);
