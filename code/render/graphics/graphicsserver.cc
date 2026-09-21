@@ -144,9 +144,6 @@ GraphicsServer::Open()
         IO::URN::AddExportMapping("mdl", "n3");
         IO::URN::AddExportMapping("msh", "nvx");
         IO::URN::AddExportMapping("tex", "dds");
-        IO::URN::AddExportMapping("nsk", "nsk");
-        IO::URN::AddExportMapping("nvx", "nvx");
-        IO::URN::AddExportMapping("sur", "sur");
         IO::URN::AddExportMapping("mat", "sur");
         IO::URN::AddExportMapping("par", "par");
     #else
