@@ -79,6 +79,7 @@ struct SceneSetup
     VkAccelerationStructureBuildGeometryInfoKHR geometryInfo;
     VkAccelerationStructureBuildSizesInfoKHR buildSizes;
     Util::Array<VkAccelerationStructureBuildRangeInfoKHR> rangeInfos;
+    uint maxInstances;
 };
 
 enum

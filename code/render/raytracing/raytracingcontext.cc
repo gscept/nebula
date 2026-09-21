@@ -13,6 +13,8 @@
 #include "materials/shaderconfig.h"
 #include "materials/materialloader.h"
 #include "coregraphics/meshloader.h"
+#include "core/cvar.h"
+#include "imgui.h"
 
 #include "gpulang/render/raytracing/shaders/raytracetest.h"
 #include "gpulang/render/raytracing/shaders/brdfhit.h"
@@ -38,7 +40,7 @@ struct
     Util::Array<CoreGraphics::MeshId> blasInstanceMeshes;
     Util::Array<CoreGraphics::BlasId> blasesToRebuild;
     Util::Array<CoreGraphics::BlasId> blases;
-    CoreGraphics::TlasId toplevelAccelerationStructure;
+    Util::FixedArray<CoreGraphics::TlasId> toplevelAccelerationStructures;
     Memory::RangeAllocator blasInstanceAllocator;
     bool topLevelNeedsReconstruction, topLevelNeedsBuild, topLevelNeedsUpdate;
 
@@ -59,15 +61,26 @@ struct
     CoreGraphics::BufferId lightGridIndexLists;
 
     CoreGraphics::PipelineRayTracingTable raytracingBundle;
+    CoreGraphics::ShaderProgramId hitPrograms[NumObjectTypes];
+
+    CoreGraphics::MeshId placeholderMesh;
+    Materials::MaterialId placeholderMaterial;
 
     Threading::Event jobWaitEvent;
 
     SizeT maxAllowedInstances = 0;
     SizeT numRegisteredInstances = 0;
+    SizeT pendingBlasSetups = 0;
     SizeT numInstancesToFlush;
+    uint lastBuildInstanceCount = 0;
+    uint lastBuildBlasCount = 0;
 } state;
 
 static uint MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::Num];
+static Core::CVar* r_RaytracingDispatch = Core::CVarCreate(Core::CVar_Int, "r_RaytracingDispatch", "2", "Ray dispatch: 0=build only, 1=1x1 capture stub, 2=full test (640x480)");
+static Core::CVar* r_RaytracingDDGI = Core::CVarCreate(Core::CVar_Int, "r_RaytracingDDGI", "1", "DDGI probe rays [0,1]. Independent of r_RaytracingDispatch.");
+static Core::CVar* r_RaytracingValidate = Core::CVarCreate(Core::CVar_Int, "r_RaytracingValidate", "1", "Assert TLAS instance records on the CPU before the GPU build [0,1]");
+static Core::CVar* r_RaytracingDebug = Core::CVarCreate(Core::CVar_Int, "r_RaytracingDebug", "0", "Show raytracing instance inspector [0,1]");
 //------------------------------------------------------------------------------
 /**
 */
@@ -102,32 +115,26 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
     auto raygenShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/raytracetest.gplb");
     auto raygenProgram = CoreGraphics::ShaderGetProgram(raygenShader, CoreGraphics::ShaderFeatureMask("test"));
-    auto brdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/brdfhit.gplb");
-    auto brdfHitProgram = CoreGraphics::ShaderGetProgram(brdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto bsdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/bsdfhit.gplb");
-    auto bsdfHitProgram = CoreGraphics::ShaderGetProgram(bsdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto gltfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/gltfhit.gplb");
-    auto gltfHitProgram = CoreGraphics::ShaderGetProgram(gltfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto terrainHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/terrainhit.gplb");
-    auto terrainHitProgram = CoreGraphics::ShaderGetProgram(terrainHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
     state.lightGridShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/light_grid_cs.gplb");
     state.lightGridCullProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("Cull"));
     state.lightGridGenProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("AABBGenerate"));
 
-    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings((SizeT)MaterialTemplatesGPULang::MaterialProperties::Num + 1, 0);
-    shaderMappings.Append(raygenProgram);
-    shaderMappings.Append(brdfHitProgram);
-    shaderMappings.Append(bsdfHitProgram);
-    shaderMappings.Append(gltfHitProgram);
-    shaderMappings.Append(terrainHitProgram);
+    for (IndexT i = 0; i < NumObjectTypes; i++)
+    {
+        auto shader = CoreGraphics::ShaderGet(HitShaderPaths[i]);
+        state.hitPrograms[i] = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Hit"));
+    }
 
-    uint bindingCounter = 0;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::BRDF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::BSDF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::GLTF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::BlendAdd] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::Skybox] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::Terrain] = bindingCounter++;
+    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings;
+    shaderMappings.Append(raygenProgram);
+    shaderMappings.AppendArray(state.hitPrograms, NumObjectTypes);
+
+    for (uint i = 0; i < (uint)MaterialTemplatesGPULang::MaterialProperties::Num; i++)
+        MaterialPropertyMappings[i] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::BRDF] = BRDFObject;
+    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::BSDF] = BSDFObject;
+    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::GLTF] = GLTFObject;
+    MaterialPropertyMappings[(uint)MaterialTemplatesGPULang::MaterialProperties::Terrain] = TerrainObject;
 
     state.raytracingTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3, "Raytracing Descriptors");
     state.raytracingTestOutputTable = CoreGraphics::ShaderCreateResourceTable(raygenShader, NEBULA_SYSTEM_GROUP);
@@ -176,10 +183,15 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     bufInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
     bufInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::AccelerationStructureInstances;
     state.blasInstanceBuffer.Create(bufInfo);
+    for (IndexT i = 0; i < state.blasInstanceBuffer.hostBuffers.buffers.Size(); i++)
+    {
+        CoreGraphics::BufferId host = state.blasInstanceBuffer.hostBuffers.buffers[i];
+        memset(CoreGraphics::BufferMap(host), 0, CoreGraphics::BufferGetByteSize(host));
+    }
 
     CoreGraphics::BufferCreateInfo objectBindingBufferCreateInfo;
     objectBindingBufferCreateInfo.name = "Raytracing Object Binding Buffer";
-    objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::TlasInstanceBuffer::STRUCT) * settings.maxNumAllowedInstances;
+    objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::TlasInstance) * settings.maxNumAllowedInstances;
     objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite;
     objectBindingBufferCreateInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     state.objectBindingBuffer.Create(objectBindingBufferCreateInfo);
@@ -245,80 +257,77 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                 );
             }
             CoreGraphics::CmdEndMarker(cmdBuf);
+            state.lastBuildBlasCount = (uint)state.blasesToRebuild.Size();
             state.blasesToRebuild.Clear();
         }
 
-        // Copy instances from staging to host
-        if (state.numRegisteredInstances > 0)
+        const uint instanceCount = (state.pendingBlasSetups == 0) ? (uint)state.blasInstances.Size() : 0;
+        if (instanceCount != state.lastBuildInstanceCount)
+        {
+            n_log(Raytracing, "TLAS build instances=%u pending=%d blases_built=%u objects=%d registered=%d buffer=%d", instanceCount, state.pendingBlasSetups, state.lastBuildBlasCount, state.objects.Size(), state.numRegisteredInstances, bufferIndex);
+            state.lastBuildInstanceCount = instanceCount;
+        }
+        if (instanceCount > 0 && Core::CVarReadInt(r_RaytracingValidate) != 0)
+        {
+            for (uint i = 0; i < instanceCount; i++)
+            {
+                n_assert_fmt(state.blasInstances[i] != CoreGraphics::InvalidBlasInstanceId, "TLAS slot %u has no BLAS instance", i);
+                CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
+                const CoreGraphics::BlasInstanceInfo info = CoreGraphics::BlasInstanceGetInfo(state.blasInstances[i]);
+                n_assert_fmt(info.blasDeviceAddress != 0, "TLAS slot %u has a null BLAS device address (mask=%u sbt=%u custom=%u)", i, info.mask, info.shaderOffset, info.customIndex);
+                n_assert_fmt(info.shaderOffset < NumObjectTypes, "TLAS slot %u SBT offset %u is past hit program count %u", i, info.shaderOffset, NumObjectTypes);
+                n_assert_fmt(info.customIndex < (uint)state.objects.Size(), "TLAS slot %u custom index %u is past object count %d", i, info.customIndex, state.objects.Size());
+                n_assert_fmt(state.objects[info.customIndex].PositionsPtr != 0, "TLAS slot %u object %u has a null PositionsPtr", i, info.customIndex);
+                n_assert_fmt(state.objects[info.customIndex].IndexPtr != 0, "TLAS slot %u object %u has a null IndexPtr", i, info.customIndex);
+            }
+        }
+        if (instanceCount > 0)
         {
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Bottom Level Instance Copy");
-            state.blasInstanceBuffer.Flush(cmdBuf, state.numRegisteredInstances * CoreGraphics::BlasInstanceGetSize());
+            state.blasInstanceBuffer.Flush(cmdBuf, instanceCount * CoreGraphics::BlasInstanceGetSize());
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::TransferWrite,
+                CoreGraphics::PipelineStage::AccelerationStructureRead,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    CoreGraphics::BufferBarrierInfo{ .buf = state.blasInstanceBuffer.DeviceBuffer(), .subres = CoreGraphics::BufferSubresourceInfo() }
+                }
+            );
             CoreGraphics::CmdEndMarker(cmdBuf);
         }
 
-        // Update top level acceleration
-        if (state.topLevelNeedsBuild)
-        {
-            CoreGraphics::CmdBarrier(
-                cmdBuf,
-                CoreGraphics::PipelineStage::AccelerationStructureRead,
-                CoreGraphics::PipelineStage::AccelerationStructureWrite,
-                CoreGraphics::BarrierDomain::Global,
-                nullptr,
-                nullptr,
-                {
-                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
-                }
-            );
+        n_assert(bufferIndex < state.toplevelAccelerationStructures.Size());
+        const CoreGraphics::TlasId tlas = state.toplevelAccelerationStructures[bufferIndex];
+        n_assert(tlas != CoreGraphics::InvalidTlasId);
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            CoreGraphics::PipelineStage::AccelerationStructureRead,
+            CoreGraphics::PipelineStage::AccelerationStructureWrite,
+            CoreGraphics::BarrierDomain::Global,
+            nullptr,
+            nullptr,
+            {
+                CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = tlas, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+            }
+        );
 
-            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Build");
-            CoreGraphics::TlasInitBuild(state.toplevelAccelerationStructure);
-            CoreGraphics::CmdBuildTlas(cmdBuf, state.toplevelAccelerationStructure);
-            CoreGraphics::CmdEndMarker(cmdBuf);
+        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Build");
+        CoreGraphics::TlasInitBuild(tlas, instanceCount);
+        CoreGraphics::CmdBuildTlas(cmdBuf, tlas);
+        CoreGraphics::CmdEndMarker(cmdBuf);
 
-            CoreGraphics::CmdBarrier(
-                cmdBuf,
-                CoreGraphics::PipelineStage::AccelerationStructureWrite,
-                CoreGraphics::PipelineStage::AccelerationStructureRead,
-                CoreGraphics::BarrierDomain::Global,
-                nullptr,
-                nullptr,
-                {
-                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
-                }
-            );
-        }
-        else if (state.topLevelNeedsUpdate)
-        {
-            CoreGraphics::CmdBarrier(
-                cmdBuf,
-                CoreGraphics::PipelineStage::AccelerationStructureRead,
-                CoreGraphics::PipelineStage::AccelerationStructureWrite,
-                CoreGraphics::BarrierDomain::Global,
-                nullptr,
-                nullptr,
-                {
-                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
-                }
-            );
-
-            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Update");
-            CoreGraphics::TlasInitUpdate(state.toplevelAccelerationStructure);
-            CoreGraphics::CmdBuildTlas(cmdBuf, state.toplevelAccelerationStructure);
-            CoreGraphics::CmdEndMarker(cmdBuf);
-
-            CoreGraphics::CmdBarrier(
-                cmdBuf,
-                CoreGraphics::PipelineStage::AccelerationStructureWrite,
-                CoreGraphics::PipelineStage::AccelerationStructureRead,
-                CoreGraphics::BarrierDomain::Global,
-                nullptr,
-                nullptr,
-                {
-                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
-                }
-            );
-        }
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            CoreGraphics::PipelineStage::AccelerationStructureWrite,
+            CoreGraphics::PipelineStage::RayTracingShaderRead,
+            CoreGraphics::BarrierDomain::Global,
+            nullptr,
+            nullptr,
+            {
+                CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = tlas, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+            }
+        );
         state.blasLock.Leave();
     }, {
         { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::TransferWrite }
@@ -326,14 +335,17 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
     FrameScript_default::RegisterSubgraph_RaytracingTest_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+        const int dispatchMode = Core::CVarReadInt(r_RaytracingDispatch);
+        if (dispatchMode > 0)
         {
+            const int dimX = (dispatchMode == 1) ? 1 : 640;
+            const int dimY = (dispatchMode == 1) ? 1 : 480;
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, { CoreGraphics::TextureBarrierInfo{.tex = FrameScript_default::Texture_RayTracingTestOutput(), .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() }}, nullptr, nullptr);
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline, queue);
             CoreGraphics::CmdSetResourceTable(cmdBuf,  state.raytracingTestOutputTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
-            CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
+            CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, dimX, dimY, 1);
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global, { CoreGraphics::TextureBarrierInfo{.tex = FrameScript_default::Texture_RayTracingTestOutput(), .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() }}, nullptr, nullptr);
         }
     }, {
@@ -344,8 +356,60 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
 
     state.maxAllowedInstances = settings.maxNumAllowedInstances;
-    state.topLevelNeedsReconstruction = true;
+    state.topLevelNeedsReconstruction = false;
     state.blasInstanceAllocator = Memory::RangeAllocator(0xFFFFF, settings.maxNumAllowedInstances);
+
+    state.placeholderMesh = CoreGraphics::MeshResourceGetMesh(Resources::CreateResource("sysmsh:placeholder.nvx", "system", nullptr, nullptr, true, false), 0);
+    state.placeholderMaterial = Resources::CreateResource("sysmat:placeholder.sur", "system", nullptr, nullptr, true, false);
+    n_assert(Materials::MaterialGetBufferBinding(state.placeholderMaterial) != -1);
+    n_assert(MaterialPropertyMappings[(uint)Materials::MaterialGetTemplate(state.placeholderMaterial)->properties] != 0xFFFFFFFF);
+
+    const CoreGraphics::VertexLayoutId placeholderLayout = CoreGraphics::MeshGetVertexLayout(state.placeholderMesh);
+    const Util::Array<CoreGraphics::VertexComponent>& placeholderComps = CoreGraphics::VertexLayoutGetComponents(placeholderLayout);
+    const Util::Array<CoreGraphics::PrimitiveGroup>& placeholderPrimGroups = CoreGraphics::MeshGetPrimitiveGroups(state.placeholderMesh);
+    n_assert(placeholderPrimGroups.Size() > 0);
+    Util::Array<CoreGraphics::BlasId> placeholderBlases;
+    placeholderBlases.Reserve(placeholderPrimGroups.Size());
+    for (auto& group : placeholderPrimGroups)
+    {
+        CoreGraphics::BlasCreateInfo createInfo;
+        createInfo.vbo = CoreGraphics::MeshGetVertexBuffer(state.placeholderMesh, 0);
+        createInfo.ibo = CoreGraphics::MeshGetIndexBuffer(state.placeholderMesh);
+        createInfo.indexType = CoreGraphics::MeshGetIndexType(state.placeholderMesh);
+        createInfo.positionsFormat = placeholderComps[0].GetFormat();
+        createInfo.stride = CoreGraphics::VertexLayoutGetStreamSize(placeholderLayout, 0);
+        createInfo.vertexOffset = CoreGraphics::MeshGetVertexOffset(state.placeholderMesh, 0);
+        createInfo.indexOffset = CoreGraphics::MeshGetIndexOffset(state.placeholderMesh);
+        createInfo.primGroup = group;
+        createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
+        CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
+        placeholderBlases.Append(blas);
+        state.blases.Append(blas);
+        CoreGraphics::BlasIdRelease(blas);
+        state.blasesToRebuild.Append(blas);
+    }
+    state.blasLookup.Add(state.placeholderMesh, Util::MakeTuple(1, placeholderBlases));
+
+    n_assert(settings.maxNumAllowedInstances > 0);
+    CoreGraphics::TlasCreateInfo tlasInfo;
+    tlasInfo.numInstances = settings.maxNumAllowedInstances;
+    tlasInfo.instanceBuffer = state.blasInstanceBuffer.deviceBuffer;
+    tlasInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastBuild | CoreGraphics::AccelerationStructureBuildFlags::Dynamic;
+    const SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+    state.toplevelAccelerationStructures.Resize(numFrames);
+    for (IndexT i = 0; i < numFrames; i++)
+        state.toplevelAccelerationStructures[i] = CoreGraphics::CreateTlas(tlasInfo);
+    state.topLevelNeedsBuild = false;
+    state.topLevelNeedsReconstruction = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ShaderProgramId*
+RaytracingContext::GetHitPrograms()
+{
+    return state.hitPrograms;
 }
 
 //------------------------------------------------------------------------------
@@ -371,6 +435,9 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     const Models::NodeInstanceRange& nodes = Models::ModelContext::GetModelRenderableRange(id);
     SizeT numObjects = nodes.end - nodes.begin;
     n_assert((state.blasInstances.Size() + numObjects) < state.maxAllowedInstances);
+
+    state.blasLock.Enter();
+    state.pendingBlasSetups += numObjects;
     Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(numObjects);
     state.blasInstances.Extend((SizeT)alloc.offset + numObjects);
     state.blasInstanceMeshes.Extend((SizeT)alloc.offset + numObjects);
@@ -383,8 +450,9 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
         constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
         constants.AttrPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
         constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
-        constants.Use16BitIndex = false;
+        constants.MaterialOffset = 0;
         constants.AttributeStride = 0;
+        constants.Use16BitIndex = false;
         constants.VertexLayout = (uint)CoreGraphics::VertexLayoutType::Normal;
         state.objects[(uint)alloc.offset + i] = constants;
     }
@@ -392,7 +460,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
     raytracingContextAllocator.Set<Raytracing_UpdateType>(contextId.id, UpdateType::Dynamic);
-
+    state.blasLock.Leave();
     IndexT instanceCounter = 0;
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
@@ -406,16 +474,24 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             Materials::MaterialId mat = pNode->GetMaterial();
             const MaterialTemplatesGPULang::Entry* temp = Materials::MaterialGetTemplate(mat);
             IndexT bufferBinding = Materials::MaterialGetBufferBinding(mat);
-
-            // If we can't use the material for this object, abort
-            if (bufferBinding == -1)
-            {
-                n_log_source(Raytracing, "Material '%s' cannot be used for raytracing, skipping object setup!", Materials::MaterialGetName(mat).Value());
-                return;
-            }
-
-            // Create Blas if we haven't registered it yet
             CoreGraphics::MeshId mesh = MeshResourceGetMesh(meshRes, pNode->GetMeshIndex());
+            uint primGroupIndex = pNode->GetPrimitiveGroupIndex();
+            uint shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
+            if (temp->vertexLayout == CoreGraphics::VertexLayoutType::Particle)
+                shaderOffset = ParticleObject;
+
+            if (bufferBinding == -1 || shaderOffset == 0xFFFFFFFF)
+            {
+                n_log_source(Raytracing, "Material '%s' cannot be used for raytracing, using placeholder!", Materials::MaterialGetName(mat).Value());
+                mat = state.placeholderMaterial;
+                temp = Materials::MaterialGetTemplate(mat);
+                bufferBinding = Materials::MaterialGetBufferBinding(mat);
+                shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
+                n_assert(bufferBinding != -1);
+                n_assert(shaderOffset != 0xFFFFFFFF);
+                mesh = state.placeholderMesh;
+                primGroupIndex = 0;
+            }
             IndexT blasIndex = state.blasLookup.FindIndex(mesh);
             if (blasIndex == InvalidIndex)
             {
@@ -454,17 +530,19 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             Raytracetest::TlasInstance constants;
             constants.MaterialOffset = bufferBinding;
 
-            CoreGraphics::BufferIdLock _1(CoreGraphics::GetVertexBuffer());
-            CoreGraphics::BufferIdLock _2(CoreGraphics::GetIndexBuffer());
+            CoreGraphics::BufferId vbo = CoreGraphics::MeshGetVertexBuffer(mesh, 0);
+            CoreGraphics::BufferId ibo = CoreGraphics::MeshGetIndexBuffer(mesh);
+            CoreGraphics::BufferIdLock _1(vbo);
+            CoreGraphics::BufferIdLock _2(ibo);
 
             // Because the smallest machine unit is 4 bytes, the offset must be in integers, not in bytes
             CoreGraphics::IndexType::Code indexType = CoreGraphics::MeshGetIndexType(mesh);
             uint positionsStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 0);
             uint attributeStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 1);
-            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, pNode->GetPrimitiveGroupIndex());
-            CoreGraphics::DeviceAddress positionsAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
-            CoreGraphics::DeviceAddress attributeAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
-            CoreGraphics::DeviceAddress indexAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
+            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, primGroupIndex);
+            CoreGraphics::DeviceAddress positionsAddress = CoreGraphics::BufferGetDeviceAddress(vbo) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            CoreGraphics::DeviceAddress attributeAddress = CoreGraphics::BufferGetDeviceAddress(vbo) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
+            CoreGraphics::DeviceAddress indexAddress = CoreGraphics::BufferGetDeviceAddress(ibo) + CoreGraphics::MeshGetIndexOffset(mesh);
             constants.PositionsPtr = positionsAddress + (CoreGraphics::DeviceAddress)group.GetBaseVertex() * positionsStride;
             constants.AttrPtr = attributeAddress + (CoreGraphics::DeviceAddress)group.GetBaseVertex() * attributeStride;
             constants.IndexPtr = indexAddress + (CoreGraphics::DeviceAddress)group.GetBaseIndex() * CoreGraphics::IndexType::SizeOf(indexType);
@@ -479,9 +557,9 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             CoreGraphics::BlasInstanceCreateInfo createIntInfo;
             createIntInfo.flags = flags;
             createIntInfo.mask = mask;
-            createIntInfo.shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
+            createIntInfo.shaderOffset = shaderOffset;
             createIntInfo.instanceIndex = instanceIndex;
-            createIntInfo.blas = blases[pNode->GetPrimitiveGroupIndex()];
+            createIntInfo.blas = blases[primGroupIndex];
             createIntInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
             // Disable instance if the vertex layout isn't supported
@@ -489,13 +567,20 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             state.blasInstances[instanceIndex] = CoreGraphics::CreateBlasInstance(createIntInfo);
             state.blasInstanceMeshes[instanceIndex] = mesh;
 
+            const SizeT instanceOffset = instanceIndex * CoreGraphics::BlasInstanceGetSize();
+            CoreGraphics::BlasInstanceIdLock _4(state.blasInstances[instanceIndex]);
+            for (IndexT b = 0; b < state.blasInstanceBuffer.hostBuffers.buffers.Size(); b++)
+                CoreGraphics::BlasInstanceUpdate(state.blasInstances[instanceIndex], createIntInfo.transform, state.blasInstanceBuffer.hostBuffers.buffers[b], instanceOffset);
+
             state.numRegisteredInstances++;
-            state.topLevelNeedsReconstruction = true;
+            n_assert(state.pendingBlasSetups > 0);
+            state.pendingBlasSetups--;
+            if (state.pendingBlasSetups == 0)
+                state.topLevelNeedsReconstruction = true;
         };
         Resources::CreateResourceListener(pNode->GetMeshResource(), setupLambda, setupLambda);
         instanceCounter++;
     }
-    state.topLevelNeedsReconstruction = true;
 }
 
 //------------------------------------------------------------------------------
@@ -564,9 +649,10 @@ void RaytracingContext::SetupMesh(
         state.blasInstances[i] = CoreGraphics::CreateBlasInstance(instanceCreateInfo);
         state.blasInstanceMeshes[i] = CoreGraphics::InvalidMeshId;
 
-        // Update buffer
-        CoreGraphics::BlasInstanceIdLock _1(state.blasInstances[i]);
-        CoreGraphics::BlasInstanceUpdate(state.blasInstances[i], transforms[patchCounter], state.blasInstanceBuffer.HostBuffer(), i * CoreGraphics::BlasInstanceGetSize());
+        const SizeT instanceOffset = i * CoreGraphics::BlasInstanceGetSize();
+        CoreGraphics::BlasInstanceIdLock _4(state.blasInstances[i]);
+        for (IndexT b = 0; b < state.blasInstanceBuffer.hostBuffers.buffers.Size(); b++)
+            CoreGraphics::BlasInstanceUpdate(state.blasInstances[i], transforms[patchCounter], state.blasInstanceBuffer.hostBuffers.buffers[b], instanceOffset);
 
         CoreGraphics::BufferIdLock _2(CoreGraphics::GetVertexBuffer());
         CoreGraphics::BufferIdLock _3(CoreGraphics::GetIndexBuffer());
@@ -609,47 +695,110 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
     if (!CoreGraphics::RayTracingSupported)
         return;
 
-    if (state.topLevelNeedsReconstruction)
+    Threading::CriticalScope _s(&state.blasLock);
+    const CoreGraphics::TlasId tlas = state.toplevelAccelerationStructures[ctx.bufferIndex];
+    n_assert(tlas != CoreGraphics::InvalidTlasId);
+    state.topLevelNeedsReconstruction = false;
+
+    CoreGraphics::ResourceTableSetRWTexture(state.raytracingTestOutputTable,
+        CoreGraphics::ResourceTableTexture(FrameScript_default::Texture_RayTracingTestOutput(), Raytracetest::RaytracingOutput::BINDING)
+    );
+    CoreGraphics::ResourceTableSetAccelerationStructure(
+        state.raytracingTables.tables[ctx.bufferIndex],
+        CoreGraphics::ResourceTableTlas(tlas, Raytracetest::TLAS::BINDING)
+    );
+
+    CoreGraphics::ResourceTableSetConstantBuffer(
+        state.raytracingTables.tables[ctx.bufferIndex],
+        CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::MaterialPointers::BINDING)
+    );
+
+    CoreGraphics::ResourceTableSetRWBuffer(
+        state.raytracingTables.tables[ctx.bufferIndex],
+        CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::TlasInstanceBuffer::BINDING)
+    );
+
+    CoreGraphics::ResourceTableCommitChanges(state.raytracingTables.tables[ctx.bufferIndex]);
+    CoreGraphics::ResourceTableCommitChanges(state.raytracingTestOutputTable);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RaytracingContext::RenderUI(const Graphics::FrameContext& ctx)
+{
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
+    if (Core::CVarReadInt(r_RaytracingDebug) == 0)
+        return;
+
+    Threading::CriticalScope _s(&state.blasLock);
+    if (ImGui::Begin("Raytracing"))
     {
-        if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+        ImGui::Text("Dispatch %d (0=build 1=1x1 2=full)  DDGI %d  Validate %d", Core::CVarReadInt(r_RaytracingDispatch), Core::CVarReadInt(r_RaytracingDDGI), Core::CVarReadInt(r_RaytracingValidate));
+        ImGui::Text("Pending setups %d  Instances %d  Registered %d  Objects %d", state.pendingBlasSetups, state.blasInstances.Size(), state.numRegisteredInstances, state.objects.Size());
+        ImGui::Text("BLAS rebuild queue %d  Last BLAS builds %u  Last TLAS instances %u", state.blasesToRebuild.Size(), state.lastBuildBlasCount, state.lastBuildInstanceCount);
+        ImGui::Text("TLAS slots %d  Frame %d", state.toplevelAccelerationStructures.Size(), ctx.bufferIndex);
+        if (ImGui::BeginTable("Instances", 6, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
         {
-            CoreGraphics::DestroyTlas(state.toplevelAccelerationStructure);
+            ImGui::TableSetupColumn("Slot");
+            ImGui::TableSetupColumn("Mask");
+            ImGui::TableSetupColumn("SBT");
+            ImGui::TableSetupColumn("Custom");
+            ImGui::TableSetupColumn("BLAS addr");
+            ImGui::TableSetupColumn("Pos ptr");
+            ImGui::TableHeadersRow();
+            const SizeT rows = state.blasInstances.Size();
+            for (IndexT i = 0; i < rows; i++)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%d", i);
+                if (state.blasInstances[i] == CoreGraphics::InvalidBlasInstanceId)
+                {
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted("invalid");
+                    ImGui::TableNextColumn();
+                    ImGui::TableNextColumn();
+                    ImGui::TableNextColumn();
+                    ImGui::TableNextColumn();
+                    continue;
+                }
+                CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
+                const CoreGraphics::BlasInstanceInfo info = CoreGraphics::BlasInstanceGetInfo(state.blasInstances[i]);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", info.mask);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", info.shaderOffset);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", info.customIndex);
+                ImGui::TableNextColumn();
+                ImGui::Text("%llx", (unsigned long long)info.blasDeviceAddress);
+                ImGui::TableNextColumn();
+                if (info.customIndex < (uint)state.objects.Size())
+                    ImGui::Text("%llx", (unsigned long long)state.objects[info.customIndex].PositionsPtr);
+            }
+            ImGui::EndTable();
         }
-        CoreGraphics::TlasCreateInfo createInfo;
-        createInfo.numInstances = state.blasInstances.Size();
-        createInfo.instanceBuffer = state.blasInstanceBuffer.deviceBuffer;
-        createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastBuild | CoreGraphics::AccelerationStructureBuildFlags::Dynamic;
-        state.toplevelAccelerationStructure = CoreGraphics::CreateTlas(createInfo);
-        state.topLevelNeedsReconstruction = false;
-        state.topLevelNeedsBuild = true;
-    }
-    else if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
-    {
-        state.topLevelNeedsBuild = true;
-    }
-
-    if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
-    {
-        CoreGraphics::ResourceTableSetRWTexture(state.raytracingTestOutputTable,
-            CoreGraphics::ResourceTableTexture(FrameScript_default::Texture_RayTracingTestOutput(), Raytracetest::RaytracingOutput::BINDING)
-        );
-        CoreGraphics::ResourceTableSetAccelerationStructure(
-            state.raytracingTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableTlas(state.toplevelAccelerationStructure, Raytracetest::TLAS::BINDING)
-        );
-
-        CoreGraphics::ResourceTableSetConstantBuffer(
-            state.raytracingTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::MaterialPointers::BINDING)
-        );
-
-        CoreGraphics::ResourceTableSetRWBuffer(
-            state.raytracingTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::TlasInstanceBuffer::BINDING)
-        );
-
-        CoreGraphics::ResourceTableCommitChanges(state.raytracingTables.tables[ctx.bufferIndex]);
-        CoreGraphics::ResourceTableCommitChanges(state.raytracingTestOutputTable);
+        if (ImGui::Button("Dump instances to log"))
+        {
+            n_log(Raytracing, "Dump pending=%d instances=%d objects=%d registered=%d", state.pendingBlasSetups, state.blasInstances.Size(), state.objects.Size(), state.numRegisteredInstances);
+            for (IndexT i = 0; i < state.blasInstances.Size(); i++)
+            {
+                if (state.blasInstances[i] == CoreGraphics::InvalidBlasInstanceId)
+                {
+                    n_log(Raytracing, "  [%d] invalid", i);
+                    continue;
+                }
+                CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
+                const CoreGraphics::BlasInstanceInfo info = CoreGraphics::BlasInstanceGetInfo(state.blasInstances[i]);
+                const Raytracetest::TlasInstance* obj = (info.customIndex < (uint)state.objects.Size()) ? &state.objects[info.customIndex] : nullptr;
+                n_log(Raytracing, "  [%d] mask=%u sbt=%u custom=%u blas=0x%llx pos=0x%llx idx=0x%llx layout=%u", i, info.mask, info.shaderOffset, info.customIndex, (unsigned long long)info.blasDeviceAddress, obj ? (unsigned long long)obj->PositionsPtr : 0ull, obj ? (unsigned long long)obj->IndexPtr : 0ull, obj ? obj->VertexLayout : 0u);
+            }
+        }
+        ImGui::End();
     }
 }
 
@@ -672,7 +821,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
     const Util::Array<Graphics::GraphicsEntityId>& entities = RaytracingContext::__state.entities;
 
-    if (!entities.IsEmpty() && state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+    if (!entities.IsEmpty())
     {
         static Util::Array<uint32_t> nodes;
         nodes.Clear();
@@ -798,9 +947,10 @@ RaytracingContext::GetLightGridResourceTable(IndexT bufferIndex)
 /**
 */
 CoreGraphics::TlasId
-RaytracingContext::GetTLAS()
+RaytracingContext::GetTLAS(const IndexT bufferIndex)
 {
-    return state.toplevelAccelerationStructure;
+    n_assert(bufferIndex < state.toplevelAccelerationStructures.Size());
+    return state.toplevelAccelerationStructures[bufferIndex];
 }
 
 //------------------------------------------------------------------------------

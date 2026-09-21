@@ -88,6 +88,16 @@ void BlasInstanceSetMask(const BlasInstanceId id, uint mask);
 /// Get instance size (platform dependent)
 const SizeT BlasInstanceGetSize();
 
+struct BlasInstanceInfo
+{
+    uint customIndex;
+    uint mask;
+    uint shaderOffset;
+    uint64_t blasDeviceAddress;
+};
+/// Read the CPU instance record submitted to the TLAS
+const BlasInstanceInfo BlasInstanceGetInfo(const BlasInstanceId id);
+
 struct TlasCreateInfo
 {
     SizeT numInstances;
@@ -103,8 +113,8 @@ TlasId CreateTlas(const TlasCreateInfo& info);
 void DestroyTlas(const TlasId tlas);
 
 /// Initiate Tlas for build
-void TlasInitBuild(const TlasId tlas);
+void TlasInitBuild(const TlasId tlas, uint instanceCount);
 /// Initiate Tlas for update
-void TlasInitUpdate(const TlasId tlas);
+void TlasInitUpdate(const TlasId tlas, uint instanceCount);
 
 } // namespace CoreGraphics

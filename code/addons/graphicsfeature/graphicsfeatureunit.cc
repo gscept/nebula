@@ -236,6 +236,7 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::UpdateFogVolumes,
         Particles::ParticleContext::UpdateParticles,
         Raytracing::RaytracingContext::UpdateResources,
+        Raytracing::RaytracingContext::RenderUI,
         ::Terrain::TerrainContext::RenderUI,
         ObserverContext::RunVisibilityTests,
         ObserverContext::GenerateDrawLists,
