@@ -40,6 +40,8 @@ public:
     Dictionary(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// move constructor
     Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs) noexcept;
+    /// initializer list constructor
+    Dictionary(const std::initializer_list<KeyValuePair<KEYTYPE, VALUETYPE>>&& pairs);
     /// assignment operator
     void operator=(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// move operator
@@ -149,6 +151,23 @@ Dictionary<KEYTYPE, VALUETYPE>::Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs)
 #if NEBULA_BOUNDSCHECKS
     n_assert(!rhs.inBulkInsert);
 #endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE> inline 
+Dictionary<KEYTYPE, VALUETYPE>::Dictionary(const std::initializer_list<KeyValuePair<KEYTYPE, VALUETYPE>>&& pairs)
+{
+    this->inBulkInsert = true;
+    this->keyValuePairs.Resize((SizeT)pairs.size());
+    IndexT i = 0;
+    for (const auto& pair : pairs)
+    {
+        this->keyValuePairs[i++] = pair;
+    }
+    this->keyValuePairs.Sort();
+    this->inBulkInsert = false;
 }
 
 //------------------------------------------------------------------------------
