@@ -609,8 +609,11 @@ FileDB::AddFile(Logger& logger, const Util::String& name, uint64_t folderId,
     
     values->SetString(Attr::EntityName, rowIdx, name);
 
-    IO::Path folderPath = IO::Path::Parse(folderDataset->Values()->GetString(Attr::Path, 0));
-    values->SetString(Attr::Path, rowIdx, (folderPath / name).AsString());
+    IO::Path filePath = IO::Path::Parse(folderDataset->Values()->GetString(Attr::Path, 0));
+    Util::String fileName = name;
+    fileName.StripFileExtension();
+    filePath.SetFile(fileName, FileTypeURNMapping[type]);
+    values->SetString(Attr::Path, rowIdx, filePath.AsString());
     values->SetInt(Attr::FileType, rowIdx, static_cast<int>(type));
     values->SetInt64(Attr::FileSize, rowIdx, size);
     values->SetInt64(Attr::ModifiedDate, rowIdx, modifiedDate.AsEpochTime());
