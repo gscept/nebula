@@ -42,6 +42,34 @@ Path::Path(const Path& path)
 /**
 */
 Path
+Path::Parse(const Util::String& serialized)
+{
+    Path ret;
+    Util::Array<Util::String> parts = serialized.Tokenize(":");
+    if (parts.IsEmpty())
+        return ret;
+    else
+    {
+        Util::String* fields[] =
+        {
+            &ret.folder,
+            &ret.file,
+            &ret.type
+        };
+        for (SizeT i = 0; i < parts.Size(); i++)
+        {
+            *(fields[i]) = parts[i];
+        }
+        ret.isFile = !ret.file.IsEmpty();
+        ret.Build();
+    }
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Path
 Path::Folder(const Util::String& folder)
 {
     Path ret;
@@ -70,7 +98,37 @@ Path::FolderAndFile(const Util::String& type, const Util::String& folderAndFile)
 /**
 */
 Path
+Path::FolderAndFile(const char* type, const Util::String& folderAndFile)
+{
+    Path ret;
+    ret.folder = folderAndFile.ExtractToLastSlash();
+    ret.file = folderAndFile.ExtractFileName();
+    ret.type = type;
+    ret.isFile = true;
+    ret.Build();
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Path
 Path::File(const Util::String& folder, const Util::String& file, const Util::String& type)
+{
+    Path ret;
+    ret.folder = folder;
+    ret.file = file;
+    ret.type = type;
+    ret.isFile = true;
+    ret.Build();
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Path
+Path::File(const Util::String& folder, const Util::String& file, const char* type)
 {
     Path ret;
     ret.folder = folder;
@@ -123,6 +181,15 @@ Path::IsFile() const
 //------------------------------------------------------------------------------
 /**
 */
+const Util::String
+Path::AsString()
+{
+    return Util::Format("%s:%s:%s", this->folder.AsCharPtr(), this->file.AsCharPtr(), this->type.AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 Path::operator==(const Path& path) const
 {
@@ -132,11 +199,32 @@ Path::operator==(const Path& path) const
 //------------------------------------------------------------------------------
 /**
 */
+bool
+Path::operator<(const Path& path) const
+{
+    return this->folderAndFile < path.folderAndFile;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+Path::operator>(const Path& path) const
+{
+    return this->folderAndFile > path.folderAndFile;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Path
 Path::operator/(const char* folder) const
 {
     Path ret = *this;
-    ret.folder += "/" + Util::String(folder);
+    if (!ret.IsEmpty())
+        ret.folder += "/" + Util::String(folder);
+    else
+        ret.folder += Util::String(folder);
     ret.Build();
     return ret;
 }
@@ -148,10 +236,29 @@ Path
 Path::operator/(const Util::String& folder) const
 {
     Path ret = *this;
-    ret.folder += "/" + Util::String(folder);
+    if (!ret.IsEmpty())
+        ret.folder += "/" + folder;
+    else
+        ret.folder += folder;
     ret.Build();
     return ret;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+Path
+Path::operator/(const IO::Path& folder) const
+{
+    Path ret = *this;
+    if (!ret.IsEmpty())
+        ret.folder += "/" + folder.folder;
+    else
+        ret.folder += folder.folder;
+    ret.Build();
+    return ret;
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -160,15 +267,21 @@ URI
 Path::WorkURI(const char* workFolder) const
 {
     n_assert(URN::WorkRoot.IsValid());
-    n_assert(this->file.IsValid())
-    IndexT i = URN::WorkExtensions.FindIndex(this->type);
-    if (i == InvalidIndex)
+    if (!this->file.IsValid())
     {
         return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
     }
     else
     {
-        return IO::URI(Util::Format("%s/%s.%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
+        IndexT i = URN::WorkExtensions.FindIndex(this->type);
+        if (i == InvalidIndex)
+        {
+            return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
+        }
+        else
+        {
+            return IO::URI(Util::Format("%s/%s.%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
+        }
     }
 }
 
@@ -269,7 +382,10 @@ Path::GetType() const
 void
 Path::Build()
 {
-    this->folderAndFile = this->folder + "/" + this->file;
+    if (!this->file.IsEmpty())
+        this->folderAndFile = this->folder + "/" + this->file;
+    else
+        this->folderAndFile = this->folder;
 }
 
 } // namespace IO

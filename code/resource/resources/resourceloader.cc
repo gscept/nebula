@@ -577,8 +577,7 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
                 this->streamerThread->Wait();
 
                 // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
-                n_log(Resource Loader, "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
-                    this->RTTI.GetName().AsCharPtr(),
+                n_log(Resource Loader, "Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
                     path.GetHostAndLocalPath().AsCharPtr());
 
                 // Loaded already

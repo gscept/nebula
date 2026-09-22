@@ -45,8 +45,8 @@ struct TerrainCreateInfo
     float width, height;                // Width and height of the terrain
     float tileWidth, tileHeight;        // Size of each tile, number of tiles becoming (width/tileWidth, height/tileHeight)
     float quadsPerTileX, quadsPerTileY; // Geometric density measured in quads per tile
-    IO::URN heightMap;
-    IO::URN decisionMap;
+    IO::Path heightMap;
+    IO::Path decisionMap;
     bool enableRayTracing;
 };
 
@@ -74,21 +74,21 @@ struct BiomeMaterialBuilder
     /// Set albedo
     BiomeMaterialBuilder& Albedo(const IO::Path& name)
     {
-        this->material.albedo = name.IsValid() ? name : IO::URN("urn:tex:system/white");
+        this->material.albedo = name.IsFile() ? name : IO::Path::FolderAndFile("tex", "system/white");
         return *this;
     }
 
     /// Set normal
     BiomeMaterialBuilder& Normal(const IO::Path& name)
     {
-        this->material.normal = name.IsValid() ? name : IO::URN("urn:tex:system/nobump");
+        this->material.normal = name.IsFile() ? name : IO::Path::FolderAndFile("tex", "system/nobump");
         return *this;
     }
 
     /// Set material
     BiomeMaterialBuilder& Material(const IO::Path& name)
     {
-        this->material.material = name.IsValid() ? name : IO::URN("urn:tex:system/default_material");
+        this->material.material = name.IsFile() ? name : IO::Path::FolderAndFile("tex", "system/default_material");
         return *this;
     }
 
@@ -179,10 +179,10 @@ public:
     }
 
     /// Builder for biome mask
-    BiomeSettingsBuilder& Mask(const IO::URN& mask)
+    BiomeSettingsBuilder& Mask(const IO::Path& mask)
     {
         this->bits |= BuilderBits::BiomeMask;
-        this->settings.biomeMask = mask.IsValid() ? mask : IO::URN("urn:tex:system/white");
+        this->settings.biomeMask = mask.IsFile() ? mask : IO::Path::FolderAndFile("tex", "system/white");
         return *this;
     }
 
@@ -303,7 +303,7 @@ public:
     /// Set heightmap to a system controller texture instead of a resource
     static void SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::TextureId heightmap);
     static void SetBiomeMask(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask);
-    static void SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::URN& albedo, const IO::URN& normal, const IO::URN& material);
+    static void SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::Path& albedo, const IO::Path& normal, const IO::Path& material);
     static void SetBiomeRules(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor);
     static void InvalidateTerrain(Graphics::GraphicsEntityId entity);
 #endif

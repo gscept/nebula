@@ -33,12 +33,18 @@ public:
     /// Copy constructor
     Path(const Path& path);
 
+    /// Parse from serialized Path
+    static Path Parse(const Util::String& serialized);
     /// Construct from folder
     static Path Folder(const Util::String& folder);
     /// Construct from file type, combined folder and file path
     static Path FolderAndFile(const Util::String& type, const Util::String& folderAndFile);
+    /// Construct from file type, combined folder and file path
+    static Path FolderAndFile(const char* type, const Util::String& folderAndFile);
     /// Construct from folder, file and type separately
     static Path File(const Util::String& folder, const Util::String& file, const Util::String& type);
+    /// Construct from folder, file and type separately
+    static Path File(const Util::String& folder, const Util::String& file, const char* type);
 
     /// Clear the path
     void Clear();
@@ -49,12 +55,21 @@ public:
     /// Returns true if the path is a file
     bool IsFile() const;
 
+    /// Serialize to string
+    const Util::String AsString();
+
     /// Comparison test
     bool operator==(const Path& path) const;
+    /// Less test
+    bool operator<(const Path& path) const;
+    /// Greater test
+    bool operator>(const Path& path) const;
     /// Append to folder path
     Path operator/(const char* folder) const;
     /// Append to folder path
     Path operator/(const Util::String& folder) const;
+    /// Append to folder path
+    Path operator/(const Path& folder) const;
     /// Convert to a URI seated in the provided folder
     IO::URI WorkURI(const char* workFolder) const;
     /// Convert to a folder in 'export'
