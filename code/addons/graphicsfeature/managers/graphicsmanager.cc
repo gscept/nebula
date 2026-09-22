@@ -539,9 +539,9 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     }
 
     if (resource.height_map == nullptr)
-        resource.height_map = "urn:tex:black";
+        resource.height_map = "system/black";
     if (resource.decision_map == nullptr)
-        resource.decision_map = "urn:tex:white";
+        resource.decision_map = "system/white";
 
     createInfo.minHeight = resource.min_height;
     createInfo.maxHeight = resource.max_height;
@@ -551,20 +551,20 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     createInfo.tileHeight = resource.tile_height;
     createInfo.width = resource.world_size_x;
     createInfo.height = resource.world_size_z;
-    createInfo.heightMap = IO::URN(resource.height_map);
-    createInfo.decisionMap = IO::URN(resource.decision_map);
+    createInfo.heightMap = IO::Path::FolderAndFile("tex", resource.height_map);
+    createInfo.decisionMap = IO::Path::FolderAndFile("tex", resource.decision_map);
     createInfo.enableRayTracing = resource.enable_ray_tracing;
     ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 
     for (auto const& biome : resource.biomes)
     {
         ::Terrain::BiomeSettings settings;
-        settings.biomeMask = IO::URN(biome->mask);
+        settings.biomeMask = IO::Path::FolderAndFile("tex", biome->mask);
         for (uint i = 0; i < 4; i++)
         {
-            settings.materials[i].albedo = IO::URN(biome->materials[i]->albedo);
-            settings.materials[i].material = IO::URN(biome->materials[i]->material);
-            settings.materials[i].normal = IO::URN(biome->materials[i]->normals);
+            settings.materials[i].albedo = IO::Path::FolderAndFile("tex", biome->materials[i]->albedo);
+            settings.materials[i].material = IO::Path::FolderAndFile("tex", biome->materials[i]->material);
+            settings.materials[i].normal = IO::Path::FolderAndFile("tex", biome->materials[i]->normals);
         }
         settings.biomeParameters.heightThreshold = biome->height_threshold;
         settings.biomeParameters.slopeThreshold = biome->slope_threshold;
