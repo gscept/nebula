@@ -74,6 +74,7 @@ Path::Folder(const Util::String& folder)
 {
     Path ret;
     ret.folder = folder;
+    ret.folder.TrimRight("/\\");
     ret.Build();
     ret.isFile = false;
     return ret;
@@ -87,6 +88,7 @@ Path::FolderAndFile(const Util::String& type, const Util::String& folderAndFile)
 {
     Path ret;
     ret.folder = folderAndFile.ExtractToLastSlash();
+    ret.folder.TrimRight("/\\");
     ret.file = folderAndFile.ExtractFileName();
     ret.type = type;
     ret.isFile = true;
@@ -102,6 +104,7 @@ Path::FolderAndFile(const char* type, const Util::String& folderAndFile)
 {
     Path ret;
     ret.folder = folderAndFile.ExtractToLastSlash();
+    ret.folder.TrimRight("/\\");
     ret.file = folderAndFile.ExtractFileName();
     ret.type = type;
     ret.isFile = true;
@@ -117,6 +120,7 @@ Path::File(const Util::String& folder, const Util::String& file, const Util::Str
 {
     Path ret;
     ret.folder = folder;
+    ret.folder.TrimRight("/\\");
     ret.file = file;
     ret.type = type;
     ret.isFile = true;
@@ -132,6 +136,7 @@ Path::File(const Util::String& folder, const Util::String& file, const char* typ
 {
     Path ret;
     ret.folder = folder;
+    ret.folder.TrimRight("/\\");
     ret.file = file;
     ret.type = type;
     ret.isFile = true;
@@ -322,9 +327,10 @@ Path::ClearFolder()
 /**
 */
 void
-Path::SetFile(const Util::String& file)
+Path::SetFile(const Util::String& file, const Util::String& type)
 {
     this->file = file;
+    this->type = type;
     this->isFile = true;
     this->Build();
 }

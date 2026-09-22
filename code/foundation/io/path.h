@@ -80,7 +80,7 @@ public:
     /// Clear the folder
     void ClearFolder();
     /// Set the file
-    void SetFile(const Util::String& file);
+    void SetFile(const Util::String& file, const Util::String& type);
     /// Clear the file
     void ClearFile();
 
