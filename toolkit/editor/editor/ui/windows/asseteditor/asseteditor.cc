@@ -164,7 +164,7 @@ AssetEditor::Run(SaveMode save)
                 }
 
                 bool open = true;
-                Util::String assetName = item.path.GetSpecific();
+                Util::String assetName = item.path.GetFolderAndFile();
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
@@ -300,7 +300,7 @@ Setup(AssetEditorItem* item)
 /**
 */
 void
-AssetEditor::Open(const IO::URN& asset, const Util::String root, const AssetType type)
+AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetType type)
 {
     // If we try to load the same item, just focus that one
     for (AssetEditorItem& item : assetEditorState.items)

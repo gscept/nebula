@@ -61,32 +61,32 @@ struct BiomeParameters
 
 struct BiomeMaterial
 {
-    IO::URN albedo = IO::URN("urn:tex:system/white");
+    IO::Path albedo = IO::Path::FolderAndFile("tex", "system/white");
     Resources::ResourceId albedoRes;
-    IO::URN normal = IO::URN("urn:tex:system/nobump");
+    IO::Path normal = IO::Path::FolderAndFile("tex", "system/nobump");
     Resources::ResourceId normalRes;
-    IO::URN material = IO::URN("urn:tex:system/default_material");
+    IO::Path material = IO::Path::FolderAndFile("tex", "system/default_material");
     Resources::ResourceId materialRes;
 };
 
 struct BiomeMaterialBuilder
 {
     /// Set albedo
-    BiomeMaterialBuilder& Albedo(const IO::URN& name)
+    BiomeMaterialBuilder& Albedo(const IO::Path& name)
     {
         this->material.albedo = name.IsValid() ? name : IO::URN("urn:tex:system/white");
         return *this;
     }
 
     /// Set normal
-    BiomeMaterialBuilder& Normal(const IO::URN& name)
+    BiomeMaterialBuilder& Normal(const IO::Path& name)
     {
         this->material.normal = name.IsValid() ? name : IO::URN("urn:tex:system/nobump");
         return *this;
     }
 
     /// Set material
-    BiomeMaterialBuilder& Material(const IO::URN& name)
+    BiomeMaterialBuilder& Material(const IO::Path& name)
     {
         this->material.material = name.IsValid() ? name : IO::URN("urn:tex:system/default_material");
         return *this;
@@ -114,7 +114,7 @@ struct BiomeSettings
     };
     BiomeParameters biomeParameters;
     BiomeMaterial materials[BiomeMaterialLayer::NumLayers];
-    IO::URN biomeMask = IO::URN("urn:tex:system/white");
+    IO::Path biomeMask = IO::Path::FolderAndFile("tex", "system/white");
 };
 
 struct BiomeSettingsBuilder

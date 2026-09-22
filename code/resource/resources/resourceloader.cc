@@ -702,6 +702,24 @@ ResourceLoader::CreateResource(
 //------------------------------------------------------------------------------
 /**
 */
+Resources::ResourceId
+ResourceLoader::CreateResource(
+    const IO::Path& res,
+    const void* loadInfo,
+    SizeT loadInfoSize,
+    const Util::StringAtom& tag,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed,
+    bool immediate,
+    bool stream
+)
+{
+    return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 {

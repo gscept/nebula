@@ -52,13 +52,13 @@ struct BiomeTextures
 {
     Ids::Id32 imguiMaskId;
     CoreGraphics::TextureId maskTex;
-    Util::FixedArray<IO::URN> albedoPaths;
+    Util::FixedArray<IO::Path> albedoPaths;
     Util::FixedArray<Resources::ResourceId> albedoResources;
     Util::FixedArray<Ids::Id32> imguiAlbedoId;
-    Util::FixedArray<IO::URN> normalsPaths;
+    Util::FixedArray<IO::Path> normalsPaths;
     Util::FixedArray<Resources::ResourceId> normalsResources;
     Util::FixedArray<Ids::Id32> imguiNormalId;
-    Util::FixedArray<IO::URN> materialPaths;
+    Util::FixedArray<IO::Path> materialPaths;
     Util::FixedArray<Resources::ResourceId> materialResources;
     Util::FixedArray<Ids::Id32> imguiMaterialId;
 
@@ -481,24 +481,24 @@ TerrainEditor::Run(SaveMode save)
 
             for (IndexT j = 0; j < 4; j++)
             {
-                biomeTextures.albedoPaths[j] = IO::URN(biomeComp->materials[j]->albedo);
+                biomeTextures.albedoPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
                 biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiAlbedoId[j] = Dynui::AllocateImguiTextureId({biomeTextures.albedoResources[j].resource});
 
-                biomeTextures.normalsPaths[j] = IO::URN(biomeComp->materials[j]->normals);
+                biomeTextures.normalsPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->normals);
                 biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiNormalId[j] = Dynui::AllocateImguiTextureId({biomeTextures.normalsResources[j].resource});
 
-                biomeTextures.materialPaths[j] = IO::URN(biomeComp->materials[j]->material);
+                biomeTextures.materialPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->material);
                 biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiMaterialId[j] = Dynui::AllocateImguiTextureId({biomeTextures.materialResources[j].resource});
 
-                biomeSettings.materials[j].albedo = IO::URN(biomeComp->materials[j]->albedo);
-                biomeSettings.materials[j].normal = IO::URN(biomeComp->materials[j]->normals);
-                biomeSettings.materials[j].material = IO::URN(biomeComp->materials[j]->material);
+                biomeSettings.materials[j].albedo = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
+                biomeSettings.materials[j].normal = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->normals);
+                biomeSettings.materials[j].material = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->material);
             }
 
-            biomeSettings.biomeMask = IO::URN(biomeComp->mask);
+            biomeSettings.biomeMask = IO::Path::FolderAndFile("tex", biomeComp->mask);
             biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
             biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
             biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
@@ -804,10 +804,10 @@ TerrainEditor::Run(SaveMode save)
                         if (pressed)
                         {
                             auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                            IO::URN folder = IO::URN(ToolkitUtil::FileTypeURNMapping[ToolkitUtil::FileType::Texture], path);
-                            assetBrowser->PickFile(folder, [i, j](const IO::URN& filePath)
+                            IO::Path folder = IO::Path::File(ToolkitUtil::FileTypeURNMapping[ToolkitUtil::FileType::Texture], path);
+                            assetBrowser->PickFile(folder, [i, j](const IO::Path& filePath)
                             {
-                                if (filePath.IsValid())
+                                if (filePath.IsFile())
                                 {
                                     BiomeTextures& biomeTextureSet = terrainEditorState.biomeTextures[selectedBiome];
                                     switch (j)

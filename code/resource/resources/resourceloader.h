@@ -36,6 +36,7 @@
 #include "util/stringatom.h"
 #include "io/stream.h"
 #include "io/urn.h"
+#include "io/path.h"
 #include "util/set.h"
 #include "resource.h"
 #include "threading/safequeue.h"
@@ -83,6 +84,8 @@ public:
     Resources::ResourceId CreateResource(const IO::URI& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// Create a resoujrce using URN, the loader itself decides how to resolve the path
     Resources::ResourceId CreateResource(const IO::URN& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
+    /// Create a resoujrce using URN, the loader itself decides how to resolve the path
+    Resources::ResourceId CreateResource(const IO::Path& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag

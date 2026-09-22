@@ -65,29 +65,29 @@ public:
         const bool dbOpened = fileDB.Open(logger, false);
         n_assert(dbOpened);
 
-        uint64_t rootFolderId = fileDB.CreateRootFolder("Root", IO::FSWrapper::GetFileWriteTime(IO::URN().WorkURI("assets").LocalPath()), false);
+        uint64_t rootFolderId = fileDB.CreateRootFolder("Root", IO::FSWrapper::GetFileWriteTime(IO::Path().WorkURI("assets").LocalPath()), false);
         ToolkitUtil::FileDB::FolderInfo rootFolderInfo;
         fileDB.GetFolderInfo(rootFolderId, rootFolderInfo);
 
         Util::Dictionary<Util::String, uint64_t> pathToId;
         pathToId.Add(rootFolderInfo.folderPath, rootFolderId);
 
-        Util::Array<IO::URN> pathStack;
+        Util::Array<IO::Path> pathStack;
         pathStack.Clear();
-        pathStack.Append(IO::URN("", ""));
+        pathStack.Append(IO::Path());
         while (!pathStack.IsEmpty())
         {
-            const IO::URN urn = pathStack.Back();
+            const IO::Path path = pathStack.Back();
             pathStack.EraseBack();
 
-            const IO::URI workUri = urn.WorkURI("assets");
+            const IO::URI workUri = path.WorkURI("assets");
 
             if (!ioServer->DirectoryExists(workUri))
             {
                 continue;
             }
 
-            IndexT idIndex = pathToId.FindIndex(urn.GetSpecific());
+            IndexT idIndex = pathToId.FindIndex(path.GetFolderAndFile());
             n_assert(idIndex != InvalidIndex);
             const uint64_t folderId = pathToId.ValueAtIndex(idIndex);
             this->browser->ScanFolder(fileDB, ioServer, workUri, false, folderId, false);
@@ -167,7 +167,7 @@ AssetBrowser::AssetBrowser()
     const bool dbOpened = this->fileDB.Open(this->logger, false);
     n_assert(dbOpened);
 
-    uint64_t rootFolderId = fileDB.CreateRootFolder("Root", IO::FSWrapper::GetFileWriteTime(IO::URN().WorkURI("assets").LocalPath()), false);
+    uint64_t rootFolderId = fileDB.CreateRootFolder("Root", IO::FSWrapper::GetFileWriteTime(IO::Path().WorkURI("assets").LocalPath()), false);
     ToolkitUtil::FileDB::FolderInfo rootFolder;
     this->fileDB.GetFolderInfo(rootFolderId, rootFolder);
     this->folderInfoCache.Add(rootFolderId, rootFolder);
@@ -382,7 +382,7 @@ AssetBrowser::Run(SaveMode save)
 {
     if (this->fileTreeReady && !this->pendingPickPath.IsEmpty())
     {
-        IndexT folderIndex = this->folderInfoDict.FindIndex(this->pendingPickPath.GetSpecific());
+        IndexT folderIndex = this->folderInfoDict.FindIndex(this->pendingPickPath.GetFolderAndFile());
         if (folderIndex == InvalidIndex)
         {
             folderIndex = this->folderInfoDict.FindIndex("proj:work/assets");
@@ -404,7 +404,7 @@ AssetBrowser::Run(SaveMode save)
 /**
 */
 void 
-AssetBrowser::PickFile(const IO::URN& path, std::function<void(const IO::URN& path)> picker)
+AssetBrowser::PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker)
 {
     this->open = true;
     this->popupThisFrame = true;
@@ -416,7 +416,7 @@ AssetBrowser::PickFile(const IO::URN& path, std::function<void(const IO::URN& pa
 /**
 */
 void 
-AssetBrowser::PickFolder(const IO::URN& path, std::function<void(const IO::URN& path)> picker)
+AssetBrowser::PickFolder(const IO::Path& path, std::function<void(const IO::Path& path)> picker)
 {
     this->open = true;
     this->popupThisFrame = true;
@@ -605,7 +605,7 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
     {
         if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && this->pickFolderFunction)
         {
-            this->pickFolderFunction(IO::URN("", info.folderPath));
+            this->pickFolderFunction(IO::Path::Folder(info.folderPath));
             this->pickFolderFunction = nullptr;
             this->open = false;
         }
@@ -1032,10 +1032,10 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
         if (hasFileToOpen)
         {
-            IO::URN urn = IO::URN(ToolkitUtil::FileTypeURNMapping[fileToOpen.type], fileToOpen.filePath);
+            IO::Path path = IO::Path::FolderAndFile(ToolkitUtil::FileTypeURNMapping[fileToOpen.type], fileToOpen.filePath);
             if (this->pickFileFunction)
             {
-                this->pickFileFunction(urn);
+                this->pickFileFunction(path);
                 this->pickFileFunction = nullptr;
                 this->open = false;
             }
@@ -1043,7 +1043,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             {
                 AssetEditor* assetEditor = (AssetEditor*)Presentation::AssetEditorWindow;
                 Util::String rootFolderPath = this->folderInfoCache[this->activeFileTree].folderPath;
-                assetEditor->Open(urn, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
+                assetEditor->Open(path, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
             }
         }    
     }
@@ -1151,7 +1151,7 @@ AssetBrowser::DisplayFileTree()
         if (ImGui::Button("Select folder"))
         {
             auto info = this->folderInfoCache[this->activeFileTree];
-            this->pickFolderFunction(IO::URN("", info.folderPath));
+            this->pickFolderFunction(IO::Path::Folder(info.folderPath));
             this->pickFolderFunction = nullptr;
             this->open = false;
         }

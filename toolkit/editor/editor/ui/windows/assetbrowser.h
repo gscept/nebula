@@ -12,6 +12,7 @@
 #include "util/dictionary.h"
 #include "util/string.h"
 #include "io/uri.h"
+#include "io/path.h"
 #include "filedb/filedb.h"
 #include "threading/safeflag.h"
 #include "threading/safequeue.h"
@@ -36,9 +37,10 @@ public:
     void Run(SaveMode save) override;
 
     /// Pick file (using assigns, like work:system/white)
-    void PickFile(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
+    void PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
     /// Pick folder
-    void PickFolder(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
+    void PickFolder(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
+
 private:
     
     void DisplayFileTree();
@@ -108,8 +110,8 @@ private:
     Util::String lastSearchFilter;
     bool searchIndexDirty = false;
 
-    std::function<void(const IO::URN& path)> pickFileFunction, pickFolderFunction;
-    IO::URN pendingPickPath;
+    std::function<void(const IO::Path& path)> pickFileFunction, pickFolderFunction;
+    IO::Path pendingPickPath;
     bool fileTreeReady = false;
     bool backgroundScanFinished = false;
     bool showProgress = false;
