@@ -95,7 +95,6 @@ private:
     Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
     Util::Dictionary<IO::Path, uint64_t> fileInfoDict;
     Util::Dictionary<IO::Path, uint64_t> folderInfoDict;
-    uint64_t rootFolderId;
     Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
     Threading::SafeFlag isDoneRefreshingCaches;
     Threading::SafeFlag isDoneWithDictionaries;
