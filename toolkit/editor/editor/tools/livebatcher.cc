@@ -126,7 +126,7 @@ LiveBatcher::BatchAsset(const IO::URI& assetPath)
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
-                n_log(Live Batcher, "%s", livebatcherState.outputStream->GetRawPointer());
+                n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
                 return true;
             }
             return false;

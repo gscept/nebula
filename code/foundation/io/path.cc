@@ -64,8 +64,8 @@ Path::Parse(const Util::String& serialized)
     n_assert_fmt(folderSeparatorIndex != InvalidIndex && fileSeparatorIndex != InvalidIndex, "String %s must be a valid path (folder:<file>:<type>", serialized.AsCharPtr());
 
     ret.folder = serialized.ExtractRange(0, folderSeparatorIndex);
-    ret.file = serialized.ExtractRange(folderSeparatorIndex, fileSeparatorIndex - folderSeparatorIndex);
-    ret.type = serialized.ExtractToEnd(fileSeparatorIndex);
+    ret.file = serialized.ExtractRange(folderSeparatorIndex + 1, fileSeparatorIndex - folderSeparatorIndex);
+    ret.type = serialized.ExtractToEnd(fileSeparatorIndex + 1);
     ret.Build();
    
     return ret;
