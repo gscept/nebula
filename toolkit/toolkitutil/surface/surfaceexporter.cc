@@ -56,9 +56,6 @@ SurfaceExporter::ProcessFile(const IO::URI& file)
     this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("sur:%s/%s.sur", category.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertFile(localPath, dst, *this->logger);
-
-    Util::String urn = Util::String::Sprintf("urn:sur:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
-    this->UpdateResourceMapping(urn, file.LocalPath(), IO::URI(dst).LocalPath());
 }
 
 } // namespace ToolkitUtil

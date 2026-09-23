@@ -76,24 +76,8 @@ public:
     void SetFragment(const Util::String& s);
     /// get fragment component (can be empty)
     const Util::String& GetFragment() const;
-
-    /// Convert to an export URI using file extension, mappings are setup with AddExportMapping
-    const IO::URI ExportURI() const;
-    /// Convert to a work URI using project folder and extension, mappings are setup with AddWorkMapping
-    const IO::URI WorkURI(const char* root) const;
-
-    /// Add an export binding using namespace -> file extension to use with ExportURI
-    static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
-    /// Add a work binding using namespace -> file extension to use with WorkURI
-    static void AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
-    /// Set the work folder
-    static void SetWorkRoot(const Util::StringAtom& root);
-
     /// build string from components
     void Build();
-
-    static Util::Dictionary<Util::StringAtom, Util::StringAtom> ExportExtensions, WorkExtensions;
-    static Util::StringAtom WorkRoot;
 private:
     /// split string into components
     bool Split(const Util::String& s);
@@ -386,71 +370,8 @@ URN::GetFragment() const
     return this->fragment;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const IO::URI 
-URN::ExportURI() const
-{
-    IndexT i = URN::ExportExtensions.FindIndex(this->nid);
-    n_assert(i != InvalidIndex);
-    return IO::URI(Util::Format("%s:%s.%s", this->nid.AsCharPtr(), this->nss.AsCharPtr(), URN::ExportExtensions.ValueAtIndex(i).Value()));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const IO::URI
-URN::WorkURI(const char* root) const
-{
-    n_assert(URN::WorkRoot.IsValid());
-    IndexT i = URN::WorkExtensions.FindIndex(this->nid);
-    if (i == InvalidIndex)
-    {
-        if (this->nss.IsValid())
-            return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), (Util::String(root) + "/" + this->nss).AsCharPtr()));
-        else
-            return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), root));
-    }
-    else
-    {
-        if (this->nss.IsValid())
-            return IO::URI(Util::Format("%s/%s.%s", URN::WorkRoot.Value(), (Util::String(root) + "/" + this->nss).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
-        else
-            return IO::URI(Util::Format("%s/%s.%s", URN::WorkRoot.Value(), root, URN::WorkExtensions.ValueAtIndex(i).Value()));
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
-{
-    n_assert(URN::ExportExtensions.FindIndex(ns) == InvalidIndex);
-    URN::ExportExtensions.Add(ns, extension);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
-{
-    n_assert(URN::WorkExtensions.FindIndex(ns) == InvalidIndex);
-    URN::WorkExtensions.Add(ns, extension);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::SetWorkRoot(const Util::StringAtom& root)
-{
-    URN::WorkRoot = root;
-}
-
 } // namespace IO
+
 //------------------------------------------------------------------------------
 /**
 */

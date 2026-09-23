@@ -11,6 +11,7 @@
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
 #include "core/cvar.h"
+#include "io/path.h"
 
 #include "graphics/globalconstants.h"
 
@@ -56,8 +57,8 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
     // Create default skybox
-    const Resources::ResourceId skyboxMaterial = Resources::CreateResource("urn:mat:system/skybox"_urn, "environment", nullptr, nullptr, true, false);
-    const Resources::ResourceId boxMesh = Resources::CreateResource("urn:msh:system/box"_urn, "environment", nullptr, nullptr, true, false);
+    const Resources::ResourceId skyboxMaterial = Resources::CreateResource("system:skybox:msh"_path, "environment", nullptr, nullptr, true, false);
+    const Resources::ResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, true, false);
     Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial.resource, boxMesh.resource, 0, Graphics::ALL_STAGE_MASK);
     Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
     Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);

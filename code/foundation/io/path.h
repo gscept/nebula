@@ -93,6 +93,16 @@ public:
     /// Get type
     const Util::String& GetType() const;
 
+    /// Add an export binding using namespace -> file extension to use with ExportURI
+    static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
+    /// Add a work binding using namespace -> file extension to use with WorkURI
+    static void AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
+    /// Set the work folder
+    static void SetWorkRoot(const Util::StringAtom& root);
+
+    static Util::Dictionary<Util::StringAtom, Util::StringAtom> ExportExtensions, WorkExtensions;
+    static Util::StringAtom WorkRoot;
+
 private:
     /// Build fileAndFolder
     void Build();
@@ -105,4 +115,39 @@ private:
     Util::String folderAndFile;
 };
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Path::AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
+{
+    n_assert(Path::ExportExtensions.FindIndex(ns) == InvalidIndex);
+    Path::ExportExtensions.Add(ns, extension);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Path::AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
+{
+    n_assert(Path::WorkExtensions.FindIndex(ns) == InvalidIndex);
+    Path::WorkExtensions.Add(ns, extension);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Path::SetWorkRoot(const Util::StringAtom& root)
+{
+    Path::WorkRoot = root;
+}
+
 } // namespace IO
+
+//------------------------------------------------------------------------------
+/**
+*/
+IO::Path operator""_path(const char* c, std::size_t s);

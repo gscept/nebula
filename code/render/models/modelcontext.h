@@ -80,7 +80,7 @@ public:
     /// Setup from a model resource
     static void Setup(
         const Graphics::GraphicsEntityId id
-        , const IO::URN& urn
+        , const IO::Path& urn
         , const Util::StringAtom& tag
         , std::function<void()> finishedCallback
         , const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK

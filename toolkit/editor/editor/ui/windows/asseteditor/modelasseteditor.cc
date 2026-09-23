@@ -37,7 +37,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         const auto UpdateMaterial = [item, assetEditor](const char* path, const char* nodeName, const Models::ModelId mdl, Models::ShaderStateNode* resourceNode)
         {
             const IndexT nodeIndex = Models::ModelContext::GetNodeIndex(item->previewObject, nodeName);
-            auto res = IO::URN("mat", path);
+            auto res = IO::Path::FolderAndFile("mat", path);
 
             // A bit of duplicated work, but first set the material on the resource level
             resourceNode->SetMaterial(res);

@@ -8,8 +8,21 @@
 #include "io/fswrapper.h"
 #include "core/config.h"
 
+//------------------------------------------------------------------------------
+/**
+    Literal constructor form string, to use "foobar"_urn will automatically construct an IO::URN
+*/
+IO::Path
+operator""_path(const char* c, std::size_t s)
+{
+    return IO::Path::Parse(c);
+}
+
 namespace IO
 {
+
+Util::Dictionary<Util::StringAtom, Util::StringAtom> Path::ExportExtensions, Path::WorkExtensions;
+Util::StringAtom Path::WorkRoot;
 
 //------------------------------------------------------------------------------
 /**
@@ -45,24 +58,16 @@ Path
 Path::Parse(const Util::String& serialized)
 {
     Path ret;
-    Util::Array<Util::String> parts = serialized.Tokenize(":");
-    if (parts.IsEmpty())
-        return ret;
-    else
-    {
-        Util::String* fields[] =
-        {
-            &ret.folder,
-            &ret.file,
-            &ret.type
-        };
-        for (SizeT i = 0; i < parts.Size(); i++)
-        {
-            *(fields[i]) = parts[i];
-        }
-        ret.isFile = !ret.file.IsEmpty();
-        ret.Build();
-    }
+
+    IndexT folderSeparatorIndex = serialized.FindCharIndex(':');
+    IndexT fileSeparatorIndex = serialized.FindCharIndex(':', folderSeparatorIndex + 1);
+    n_assert_fmt(folderSeparatorIndex != InvalidIndex && fileSeparatorIndex != InvalidIndex, "String %s must be a valid path (folder:<file>:<type>", serialized.AsCharPtr());
+
+    ret.folder = serialized.ExtractRange(0, folderSeparatorIndex);
+    ret.file = serialized.ExtractRange(folderSeparatorIndex, fileSeparatorIndex - folderSeparatorIndex);
+    ret.type = serialized.ExtractToEnd(fileSeparatorIndex);
+    ret.Build();
+   
     return ret;
 }
 
@@ -271,21 +276,21 @@ Path::operator/(const IO::Path& folder) const
 URI
 Path::WorkURI(const char* workFolder) const
 {
-    n_assert(URN::WorkRoot.IsValid());
+    n_assert(Path::WorkRoot.IsValid());
     if (!this->file.IsValid())
     {
-        return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
+        return IO::URI(Util::Format("%s/%s", Path::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
     }
     else
     {
-        IndexT i = URN::WorkExtensions.FindIndex(this->type);
+        IndexT i = Path::WorkExtensions.FindIndex(this->type);
         if (i == InvalidIndex)
         {
-            return IO::URI(Util::Format("%s/%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
+            return IO::URI(Util::Format("%s/%s", Path::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr()));
         }
         else
         {
-            return IO::URI(Util::Format("%s/%s.%s", URN::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
+            return IO::URI(Util::Format("%s/%s.%s", Path::WorkRoot.Value(), (Util::String(workFolder) + "/" + this->folderAndFile).AsCharPtr(), Path::WorkExtensions.ValueAtIndex(i).Value()));
         }
     }
 }
@@ -296,10 +301,10 @@ Path::WorkURI(const char* workFolder) const
 URI
 Path::ExportURI() const
 {
-    IndexT i = URN::ExportExtensions.FindIndex(this->type);
+    IndexT i = Path::ExportExtensions.FindIndex(this->type);
     n_assert(i != InvalidIndex);
     return IO::URI(
-        Util::Format("%s:%s.%s", this->type.AsCharPtr(), this->folderAndFile.AsCharPtr(), URN::ExportExtensions.ValueAtIndex(i).Value())
+        Util::Format("%s:%s.%s", this->type.AsCharPtr(), this->folderAndFile.AsCharPtr(), Path::ExportExtensions.ValueAtIndex(i).Value())
     );
 }
 

@@ -141,11 +141,11 @@ GraphicsServer::Open()
 
         // Add URN namespaces to resources (OS specific)
     #if defined __WIN32__ || __linux__ || __POSIX__
-        IO::URN::AddExportMapping("mdl", "n3");
-        IO::URN::AddExportMapping("msh", "nvx");
-        IO::URN::AddExportMapping("tex", "dds");
-        IO::URN::AddExportMapping("mat", "sur");
-        IO::URN::AddExportMapping("par", "par");
+        IO::Path::AddExportMapping("mdl", "n3");
+        IO::Path::AddExportMapping("msh", "nvx");
+        IO::Path::AddExportMapping("tex", "dds");
+        IO::Path::AddExportMapping("mat", "sur");
+        IO::Path::AddExportMapping("par", "par");
     #else
         #error "Platform unsupported"
     #endif

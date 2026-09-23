@@ -55,9 +55,6 @@ ParticleExporter::ProcessFile(const IO::URI& file)
     // simply convert xml to binary
     this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("par:%s/%s.par", category.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     IoServer::Instance()->CopyFile(localPath, dst);
-
-    Util::String urn = Util::String::Sprintf("urn:par:%s/%s", category.AsCharPtr(), fileName.AsCharPtr());
-    this->UpdateResourceMapping(urn, file.LocalPath(), IO::URI(dst).LocalPath());
 }
 
 } // namespace ToolkitUtil

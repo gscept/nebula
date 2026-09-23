@@ -46,10 +46,10 @@ AssetEditor::AssetEditor()
     this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
 
     // Setup URN work mappings
-    IO::URN::AddWorkMapping("mdl", "nasset");
-    IO::URN::AddWorkMapping("tex", "natex");
-    IO::URN::AddWorkMapping("par", "napar");
-    IO::URN::AddWorkMapping("mat", "namat");
+    IO::Path::AddWorkMapping("mdl", "nasset");
+    IO::Path::AddWorkMapping("tex", "natex");
+    IO::Path::AddWorkMapping("par", "napar");
+    IO::Path::AddWorkMapping("mat", "namat");
     
 }
 

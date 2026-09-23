@@ -37,12 +37,10 @@
 #include "io/stream.h"
 #include "io/urn.h"
 #include "io/path.h"
-#include "util/set.h"
 #include "resource.h"
-#include "threading/safequeue.h"
 #include "threading/threadid.h"
+#include "threading/safequeue.h"
 #include "ids/idpool.h"
-#include <tuple>
 #include <functional>
 
 namespace Resources

@@ -6,7 +6,6 @@
 #include "resourceloader.h"
 #include "io/ioserver.h"
 #include "resourceserver.h"
-#include "util/bit.h"
 #include "profiling/profiling.h"
 
 using namespace IO;
@@ -679,23 +678,6 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
     }
 
     return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceId
-ResourceLoader::CreateResource(
-    const IO::URN& res,
-    const void* loadInfo,
-    SizeT loadInfoSize,
-    const Util::StringAtom& tag,
-    std::function<void(const Resources::ResourceId)> success,
-    std::function<void(const Resources::ResourceId)> failed,
-    bool immediate,
-    bool stream)
-{
-    return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
 }
 
 //------------------------------------------------------------------------------

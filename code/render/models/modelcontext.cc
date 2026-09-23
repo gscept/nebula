@@ -252,7 +252,7 @@ ModelContext::Setup(
 void
 ModelContext::Setup(
     const Graphics::GraphicsEntityId gfxId
-    , const IO::URN& urn
+    , const IO::Path& path
     , const Util::StringAtom& tag
     , std::function<void()> finishedCallback
     , const Graphics::StageMask stageMask
@@ -413,7 +413,7 @@ ModelContext::Setup(
             setupCompleteQueue.Enqueue(finishedCallback);
     };
 
-    Resources::CreateResource(urn, tag, successCallback, successCallback, false);
+    Resources::CreateResource(path, tag, successCallback, successCallback, false);
 }
 
 //------------------------------------------------------------------------------

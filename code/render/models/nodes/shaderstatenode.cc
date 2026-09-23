@@ -63,7 +63,7 @@ ShaderStateNode::CreateResourceTables()
 /**
 */
 void
-ShaderStateNode::SetMaterial(const IO::URN& res)
+ShaderStateNode::SetMaterial(const IO::Path& res)
 {
     this->materialName = res;
     Resources::CreateResource(this->materialName, this->tag, [this](Resources::ResourceId id)
@@ -82,7 +82,7 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
     bool retval = true;
     if (FourCC('MATE') == fourcc)
     {
-        this->materialName = IO::URN(reader->ReadString());
+        this->materialName = IO::Path::Parse(reader->ReadString());
     }
     else
     {

@@ -368,40 +368,4 @@ AssetProcessorBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array
 	}
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-AssetProcessorBase::UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp)
-{
-    Ptr<Db::Table> exportMappings = this->database->GetTableByName("Mappings");
-    Ptr<Db::Dataset> exportDataset = exportMappings->CreateDataset();   
-    Ptr<Db::FilterSet> filter = exportDataset->Filter();
-
-    exportDataset->AddColumn(Attr::URNHash);
-    exportDataset->AddColumn(Attr::WorkHash);
-    exportDataset->AddColumn(Attr::Export);
-    exportDataset->AddColumn(Attr::Work);
-
-    int urnHash = urn.HashCode();
-    filter->AddEqualCheck(Attr::Attribute(Attr::URNHash, urnHash));
-    exportDataset->PerformQuery();
-    Ptr<Db::ValueTable> exportValues = exportDataset->Values();
-    IndexT rowIdx = 0;
-    if (exportValues->GetNumRows() == 0)
-    {
-        exportValues->AddRow();
-        rowIdx = exportValues->GetNumRows() - 1;
-    }
-
-    exportValues->AddRow();
-    exportValues->SetInt(Attr::URNHash, rowIdx, urnHash);
-    exportValues->SetInt(Attr::WorkHash, rowIdx, work.HashCode());
-    exportValues->SetString(Attr::Export, rowIdx, exp);
-    exportValues->SetString(Attr::Work, rowIdx, work);
-
-    exportDataset->CommitChanges();
-}
-
-
 } // namespace ToolkitUtil

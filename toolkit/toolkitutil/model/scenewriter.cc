@@ -53,8 +53,7 @@ SceneWriter::GenerateGraphicsModel(
     String resourcePath = Util::Format("%s/%s", category.AsCharPtr(), file.AsCharPtr());
 
     // create mesh name
-    String meshResource;
-    meshResource.Format("urn:msh:%s", resourcePath.AsCharPtr());
+    String meshResource = IO::Path::FolderAndFile("msh", resourcePath).AsString();
 
     auto model = std::make_unique<ToolkitUtil::SceneResourceT>();
     model->name = scene->GetName();
@@ -88,7 +87,7 @@ SceneWriter::GenerateGraphicsModel(
                 shape->prim_group = mesh->skin.skinFragments[j];
                 shape->mesh_resource = meshResource;
                 shape->mesh_index = mesh->mesh.meshIndex;
-                shape->material = Util::Format("urn:mat:%s", mesh->mesh.material.AsCharPtr());
+                shape->material = IO::Path::FolderAndFile("mat", mesh->mesh.material).AsString();
                 shape->transform = std::move(transform);
 
                 auto skinFragment = std::make_unique<ToolkitUtil::SkinFragmentNodeT>();
@@ -115,7 +114,7 @@ SceneWriter::GenerateGraphicsModel(
             shape->prim_group = mesh->mesh.groupId;
             shape->mesh_resource = meshResource;
             shape->mesh_index = mesh->mesh.meshIndex;
-            shape->material = Util::Format("urn:mat:%s", mesh->mesh.material.AsCharPtr());
+            shape->material = IO::Path::FolderAndFile("mat", mesh->mesh.material).AsString();
             shape->transform = std::move(transform);
             model->shapes.push_back(std::move(shape));
 

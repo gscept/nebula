@@ -18,15 +18,15 @@ table TerrainResource
 	tile_height : float = 64.0;
 	quads_per_tile_x : float = 16.0;
 	quads_per_tile_z : float = 16.0;
-	height_map : string = "urn:tex:system/white";
-	decision_map : string = "urn:tex:system/white";
+	height_map : string = "system:white:tex";
+	decision_map : string = "system:white:tex";
 	enable_ray_tracing : bool = false;
 	biomes : [Biome];
 }
 
 table Biome
 {
-	mask : string = "urn:tex:system/white";
+	mask : string = "system:white:tex";
 	slope_threshold : float = 0.5;
 	height_threshold : float = 0.5;
 	uv_scale_factor : float = 1.0;
@@ -35,9 +35,9 @@ table Biome
 
 table BiomeMaterial
 {
-	albedo : string = "urn:tex:system/white";
-	normals : string = "urn:tex:system/nobump";
-	material : string = "urn:tex:system/default_material";
+	albedo : string = "system:white:tex";
+	normals : string = "system:nobump:tex";
+	material : string = "system:default_material:tex";
 }
 
 root_type TerrainResource;
