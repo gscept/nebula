@@ -10,9 +10,6 @@
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 
-#include "db/dataset.h"
-#include "db/sqlite3/sqlite3factory.h"
-
 #include "io/assignregistry.h"
 #include "core/ptr.h"
 
@@ -68,43 +65,6 @@ AssetProcessorBase::Open()
 {
 	n_assert(!this->isOpen);
 	this->isOpen = true;
-
-    // Read the resource table and populate URN -> URI lookup map
-    URI resTableUri("export:resource_mappings.sqlite");
-
-    // Determine access mode
-    IoServer* ioServer = IoServer::Instance();
-    Db::Database::AccessMode accessMode = Db::Database::ReadWriteCreate;
-
-    // Create database factory and database
-    if (!Db::Sqlite3Factory::HasInstance())
-    {
-        this->dbFactory = Db::Sqlite3Factory::Create();
-    }
-    this->database = Db::DbFactory::Instance()->CreateDatabase();
-    this->database->SetURI(resTableUri);
-    this->database->SetAccessMode(accessMode);
-    this->database->SetIgnoreUnknownColumns(false);
-    this->database->SetInMemoryDatabase(false);
-
-    bool opened = this->database->Open();
-    n_assert_msg(opened, "Resource mapping database failed to open. Ensure no other process is using the file");
-
-    // If database is new, set it up
-    if (!this->database->HasTable("Mappings"))
-    {
-        // ==================== Create Export mappings Table ====================
-        {
-            Ptr<Db::Table> exportTable = Db::DbFactory::Instance()->CreateTable();
-            exportTable->SetName("Mappings");
-            exportTable->AddColumn(Db::Column(Attr::URNHash, Db::Column::Primary));
-            exportTable->AddColumn(Db::Column(Attr::WorkHash, Db::Column::Indexed));
-            exportTable->AddColumn(Db::Column(Attr::Export, Db::Column::Default));
-            exportTable->AddColumn(Db::Column(Attr::Work, Db::Column::Default));
-
-            this->database->AddTable(exportTable);
-        }
-    }
 }
 
 //------------------------------------------------------------------------------

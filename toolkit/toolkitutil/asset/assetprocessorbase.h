@@ -122,9 +122,6 @@ protected:
     AssetProcessorMinMaxCallback  minMaxCallback;
     ToolkitUtil::Logger* logger;
 
-    Ptr<Db::Database> database;
-    Ptr<Db::DbFactory> dbFactory;
-
     bool hasErrors;
 
     bool force;
