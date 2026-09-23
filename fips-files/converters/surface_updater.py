@@ -82,15 +82,82 @@ def convert_xml(input_file, output_file):
     except Exception as e:
         print(f"Error processing file {input_file}: {e}", file=sys.stderr)
 
-def process_directory(input_dir):
+def convert_urn(input_file, output_file):
+    input_file = os.path.normpath(input_file)
+    with open(input_file, "rb") as f:
+        data = f.read()
+
+
+    material = material_generated.MaterialResource.GetRootAsMaterialResource(data, 0)
+
+    builder = flatbuffers.Builder(1024)
+    template = builder.CreateString(material.TemplateName())
+
+    names = []
+    values = []
+
+    mappings = {
+        "systex": ( "system", "tex" ),
+        "sysmdl": ( "system", "mdl" ),
+        "sysmat": ( "system", "mat" ),
+        "sysphys": ( "system", "actor" ),
+    }
+    
+    for i in range(material.ValuesLength()):
+        name_offset = builder.CreateString(material.ValueNames(i))
+        names.append(name_offset)
+        valueAsString = material.Values(i).decode("utf-8")
+        parts = valueAsString.split(":")
+        if len(parts) == 2:
+            if parts[0] in mappings:
+                folder, type = mappings[parts[0]]
+                valueAsString = folder + ":" + parts[1] + ":" + type
+            else:
+                # Parse folder
+                folder, filename = parts[1].rsplit("/", 1)
+                valueAsString = folder + ":" + filename + ":" + parts[0]
+
+            print(valueAsString)
+
+        value_offset = builder.CreateString(valueAsString)
+        values.append(value_offset)
+
+    material_generated.MaterialResourceStartValueNamesVector(builder, len(names))
+    for name in reversed(names):
+        builder.PrependUOffsetTRelative(name)
+    names_vector = builder.EndVector(len(names))
+
+    material_generated.MaterialResourceStartValuesVector(builder, len(values))
+    for value in reversed(values):
+        builder.PrependUOffsetTRelative(value)
+    values_vector = builder.EndVector(len(values))
+
+    material_generated.MaterialResourceStart(builder)
+    material_generated.MaterialResourceAddTemplateName(builder, template)        
+    material_generated.MaterialResourceAddValueNames(builder, names_vector)
+
+    material_generated.MaterialResourceAddValues(builder, values_vector)
+    material_resource = material_generated.MaterialResourceEnd(builder)
+    builder.Finish(material_resource)
+
+    buf = builder.Output()
+    with open(output_file, "wb") as f:
+        f.write(buf)
+
+
+def process_directory(input_dir, mode):
     """Recursively processes all XML files in a directory structure."""
     for root, _, files in os.walk(input_dir):
+        ending = ".sur" if mode == 'XML' else ".namat"
         for file in files:
-            if file.endswith(".sur"):
+            if file.endswith(ending):
                 input_file = os.path.join(root, file)
                 output_file = os.path.splitext(input_file)[0] + ".namat"  # Overwrite the original file
                 print(f"Processing {input_file}...")
-                convert_xml(input_file, output_file)
+                if mode == 'XML':
+                    convert_xml(input_file, output_file)
+                elif mode == 'URN':
+                    convert_urn(input_file, output_file)
 
 def main():
     # Set up command-line argument parsing
@@ -104,6 +171,11 @@ def main():
         help="Path to a directory containing XML files to process recursively (mutually exclusive with --file)"
     )
 
+    parser.add_argument(
+        "--mode",
+        help="Conversion mode - `XML` means XML -> flatbuffers, `URN` means URN -> IO::Path"
+    )
+
     # Parse the arguments
     args = parser.parse_args()
 
@@ -111,16 +183,23 @@ def main():
         print("Error: You must specify either --file or --dir, not both.", file=sys.stderr)
         sys.exit(1)
 
+    if not args.mode:
+        print("Error: You must specify a mode, either 'XML' to convert from XML to fbs, or 'URN' to convert from URN paths to IO::Path.", file=sys.stderr)
+        sys.exit(1)
+
     if args.file:
         # Process a single file
         input_file = os.path.normpath(args.file)
         output_file = os.path.splitext(input_file)[0] + ".namat"  # Overwrite the original file
-        convert_xml(input_file, output_file)
+        if args.mode == 'XML':
+            convert_xml(input_file, output_file)
+        elif args.mode == 'URN':
+            convert_urn(input_file, output_file)
 
     elif args.dir:
         # Process all files in a directory recursively
         input_dir = os.path.normpath(args.dir)
-        process_directory(input_dir)
+        process_directory(input_dir, args.mode)
 
     else:
         print("Error: You must specify either --file or --dir.", file=sys.stderr)
