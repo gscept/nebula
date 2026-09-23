@@ -41,11 +41,6 @@ public:
     bool operator==(const URN& rhs) const;
     /// inequality operator
     bool operator!=(const URN& rhs) const;
-
-    /// append to URN operator with const char
-    IO::URN operator/(const char* path);
-    /// append to URN operator with string
-    IO::URN operator/(const Util::String& path);
     
     /// set complete URI string
     void Set(const Util::String& s);
@@ -208,24 +203,6 @@ inline bool
 URN::operator!=(const URN& rhs) const
 {
     return !(*this == rhs);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline IO::URN 
-URN::operator/(const char* path)
-{
-    this->nss += Util::Format("/%s", path);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline IO::URN 
-URN::operator/(const Util::String& path)
-{
-    this->nss += Util::Format("/%s", path.AsCharPtr());
 }
 
 //------------------------------------------------------------------------------
