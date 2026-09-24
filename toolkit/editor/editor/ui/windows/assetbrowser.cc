@@ -1167,7 +1167,7 @@ AssetBrowser::DisplayFileTree()
             }
             if (ImGui::MenuItem("Create Material###Item"))
             {
-                NewAsset("new_surface.sur", this->fileDB, ToolkitUtil::FileType::Surface, this->activeFolder, this->logger);
+                NewAsset("new_surface.mat", this->fileDB, ToolkitUtil::FileType::Surface, this->activeFolder, this->logger);
                 this->RefreshFileInfoCaches();
             }
             ImGui::EndPopup();

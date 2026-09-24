@@ -44,16 +44,16 @@ SurfaceExporter::ProcessFile(const IO::URI& file)
     String fileName = localPath.ExtractFileName();
     fileName.StripFileExtension();
     Util::String category = localPath.ExtractLastDirName();
-    String dst = String::Sprintf("sur:%s/%s.sur", category.AsCharPtr(), fileName.AsCharPtr());
+    String dst = String::Sprintf("mat:%s/%s.mat", category.AsCharPtr(), fileName.AsCharPtr());
 
     // create folder if it doesn't exist
-    if (!IoServer::Instance()->DirectoryExists("sur:" + category))
+    if (!IoServer::Instance()->DirectoryExists("mat:" + category))
     {
-        IoServer::Instance()->CreateDirectory("sur:" + category);
+        IoServer::Instance()->CreateDirectory("mat:" + category);
     }
 
     // simply convert xml to binary
-    this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("sur:%s/%s.sur", category.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
+    this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("mat:%s/%s.mat", category.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertFile(localPath, dst, *this->logger);
 }

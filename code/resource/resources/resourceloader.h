@@ -291,7 +291,7 @@ protected:
 
     struct _PlaceholderResource
     {
-        IO::URI placeholderName;
+        IO::Path placeholderName;
         Resources::ResourceId placeholderId;
     };
     Util::FixedArray<_PlaceholderResource> placeholders;
@@ -300,8 +300,8 @@ protected:
     Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
-    IO::URI placeholderResourceName;
-    IO::URI failResourceName;
+    IO::Path placeholderResourceName;
+    IO::Path failResourceName;
 
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;

@@ -77,14 +77,14 @@ ResourceLoader::LoadFallbackResources()
     }
 
     // load placeholder, don't load it async
-    if (this->placeholderResourceName.IsValid())
+    if (this->placeholderResourceName.IsFile())
     {
         this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
-    if (this->failResourceName.IsValid())
+    if (this->failResourceName.IsFile())
     {
         this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->failResourceId != Resources::InvalidResourceId);

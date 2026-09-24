@@ -160,8 +160,8 @@ FinishMips(CoreGraphics::CmdBufferId transferCommands, CoreGraphics::CmdBufferId
 TextureLoader::TextureLoader()
 {
     this->async = true;
-    this->placeholderResourceName = "systex:white.dds";
-    this->failResourceName = "systex:error.dds";
+    this->placeholderResourceName = IO::Path::File("system", "white", "tex");
+    this->failResourceName = IO::Path::File("system", "error", "tex");
     this->loaderExtension = "dds";
 
     this->streamerThreadName = "Texture Streamer Thread";
