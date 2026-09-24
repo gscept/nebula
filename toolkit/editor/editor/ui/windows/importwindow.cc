@@ -278,8 +278,8 @@ AssetImporterWindow::Run(SaveMode save)
                 {
                     ToolkitUtil::ImportTexture(file, Destination.WorkURI("assets"), textureResource, &logger);
                     TextureResources.EraseIndex(textureResourceIndex);
-                    auto workAsset = IO::Path::File("tex", Destination.GetFolderAndFile(), fileNameNoExt);
-                    batcher->BatchAsset(workAsset.WorkURI("assets"));
+                    auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "tex");
+                    batcher->BatchFile(workAsset);
                 }
 
                 ImGui::EndTable();
@@ -348,8 +348,8 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                auto workAsset = IO::Path::File("tex", Destination.GetFolderAndFile(), fileNameNoExt);
-                batcher->BatchAsset(workAsset.WorkURI("assets"));
+                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
+                batcher->BatchFile(workAsset);
             }
 
             fbxFileIndex++;
@@ -417,8 +417,8 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 GltfFiles.EraseIndex(gltfFileIndex);
-                auto workAsset = IO::Path::File("tex", Destination.GetFolderAndFile(), fileNameNoExt);
-                batcher->BatchAsset(workAsset.WorkURI("assets"));
+                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
+                batcher->BatchFile(workAsset);
             }
 
             gltfFileIndex++;

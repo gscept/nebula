@@ -312,12 +312,10 @@ AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetTyp
         }
     }
 
-    IO::URI exportFile = asset.ExportURI();
-
     // If there is no export, quickly batch it
-    if (exportFile.IsEmpty())
+    if (asset.IsFile())
     {
-        Editor::LiveBatcher::BatchFile(exportFile);
+        Editor::LiveBatcher::BatchFile(asset);
         Editor::LiveBatcher::Wait();
     }
 
@@ -329,7 +327,7 @@ AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetTyp
 
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
-        [exportFile, asset, type](Resources::ResourceId id)
+        [asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;

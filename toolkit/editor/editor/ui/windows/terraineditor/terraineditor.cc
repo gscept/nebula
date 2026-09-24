@@ -115,8 +115,8 @@ struct
     CoreGraphics::CmdBufferPoolId cmdPool;
 } terrainEditorState;
 
-const char* BaseTerrainAssetPath = "work:assets/level_%s/";
-const char* BaseTerrainExportPath = "export:textures/level_%s/";
+const char* BaseTerrainAssetPath = "level_%s";
+const char* BaseTerrainExportPath = "level_%s";
 
 namespace Presentation
 {
@@ -354,33 +354,34 @@ TerrainEditor::Run(SaveMode save)
         Util::String basePath = Util::String::Sprintf(BaseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
         IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
 
-        const Util::String heightMapPath = basePath + heightmapName + ".png";
+        const IO::Path heightMapPath = IO::Path::File(basePath, heightmapName, "tex");
         CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
         CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
-        CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(heightMapPath));
+        CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, heightMapPath.WorkURI("assets"));
         CoreGraphics::DestroyImage(image);
 
-        selectedTerrainResource.height_map = heightMapPath;
+        selectedTerrainResource.height_map = heightMapPath.AsString();
 
         for (uint i = 0; i < terrainEditorState.biomes.Size(); i++)
         {
             Util::String maskName = Util::String::Sprintf("biomemask_%s_%d", Editor::state.editables[entity.index].guid.AsString().AsCharPtr(), i);
-            const Util::String biomeMaskPath = basePath + maskName + ".png";
+            const IO::Path biomeMaskPath = IO::Path::File(basePath, maskName, "tex");
             image = CoreGraphics::CreateImage(terrainEditorState.biomeTextures[i].maskTex, CoreGraphics::PipelineStage::AllShadersRead);
             CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit8UInt, true);
-            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(biomeMaskPath));
+            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, biomeMaskPath.WorkURI("assets"));
             CoreGraphics::DestroyImage(image);
 
-            selectedTerrainResource.biomes[i]->mask = biomeMaskPath;
+            selectedTerrainResource.biomes[i]->mask = biomeMaskPath.AsString();
         }
             
+        // Hmm, this should probably save to work, and then export.
         Util::String baseExportPath = Util::String::Sprintf(BaseTerrainExportPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
-        IO::URI resourcePathName = IO::URI(baseExportPath + Editor::state.editables[entity.index].guid.AsString());
-        terrainComponent.terrainResourcePath = resourcePathName.LocalPath();
+        IO::Path resourcePathName = IO::Path::File(baseExportPath, Editor::state.editables[entity.index].guid.AsString(), "tex");
+        terrainComponent.terrainResourcePath = resourcePathName.AsString();
         Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
 
         Util::Blob serialized = Flat::FlatbufferInterface::SerializeFlatbuffer<Render::TerrainResource>(selectedTerrainResource);
-        Ptr<IO::Stream> file = IO::CreateStream(resourcePathName);
+        Ptr<IO::Stream> file = IO::CreateStream(resourcePathName.WorkURI("assets"));
         file->SetAccessMode(IO::Stream::WriteAccess);
         if (file->Open())
         {
@@ -389,10 +390,10 @@ TerrainEditor::Run(SaveMode save)
         }
         else
         {
-            n_warning("[Terrain Editor] Failed to save %s\n", resourcePathName.LocalPath().AsCharPtr());
+            n_log_warn(Terrain Editor, "Failed to save %s\n", file->GetURI().LocalPath().AsCharPtr());
         }
 
-        Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
+        Editor::LiveBatcher::BatchFile(IO::Path::File(basePath, heightmapName, "tex"));
     }
 
     // Setup initial state

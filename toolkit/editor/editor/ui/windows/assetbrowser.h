@@ -91,18 +91,18 @@ private:
         Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
     };
 
-    Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
-    Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
-    Util::Dictionary<IO::Path, uint64_t> fileInfoDict;
-    Util::Dictionary<IO::Path, uint64_t> folderInfoDict;
-    Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
+    static Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
+    static Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
+    static Util::Dictionary<IO::Path, uint64_t> fileInfoDict;
+    static Util::Dictionary<IO::Path, uint64_t> folderInfoDict;
+    static Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
     Threading::SafeFlag isDoneRefreshingCaches;
     Threading::SafeFlag isDoneWithDictionaries;
     Threading::SafeQueue<IO::WatchEvent> pendingWatchEvents;
     Threading::SafeQueue<uint64_t> refreshedFolders;
     Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
     Threading::SafeQueue<FolderScanResult> pendingScanResults;
-    Util::Dictionary<uint64_t, bool> scannedFolders;
+    static Util::Dictionary<uint64_t, bool> scannedFolders;
     Util::Array<ToolkitUtil::FileDB::FileInfo> searchIndex;
     Util::Array<ToolkitUtil::FileDB::FileInfo> searchResults;
     char searchFilter[512] = { 0 };
