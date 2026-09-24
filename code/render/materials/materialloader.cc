@@ -149,7 +149,7 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
 {
     if (reader->SetToFirstChild(name))
     {
-        auto tmp = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
+        auto tmp = Resources::CreateResource(IO::Path::Parse(reader->GetString("value")), tag,
         [&handle, &dirtyFlag](Resources::ResourceId rid) mutable
         {
             CoreGraphics::TextureIdLock _0(rid);
@@ -233,8 +233,8 @@ LoadFloat(const Ptr<IO::BXmlReader>& reader, const char* name, float& value, con
 void
 MaterialLoader::Setup()
 {
-    this->placeholderResourceName = "sysmat:placeholder.sur";
-    this->failResourceName = "sysmat:error.sur";
+    this->placeholderResourceName = IO::Path::File("system", "placeholder", "mat");
+    this->failResourceName = IO::Path::File("system", "error", "mat");
     this->loaderExtension = "sur";
 
     // Run generated setup code, terrible hack because in this transition period we have two material loaders
@@ -415,7 +415,7 @@ LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const M
         Util::String path = reader->GetOptString("value", value->resource);
         Resources::ResourceId tex;
 
-        tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, "materials",
+        tex = Resources::CreateResource(IO::Path::Parse(path), "materials",
             [id, value](Resources::ResourceId rid) mutable
         {
             CoreGraphics::TextureIdLock _0(rid);

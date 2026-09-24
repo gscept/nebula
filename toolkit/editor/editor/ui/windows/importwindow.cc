@@ -62,7 +62,7 @@ void
 AssetImporterWindow::Run(SaveMode save)
 {
     static Util::Array<Util::String> Files;
-    static IO::URN Destination;
+    static IO::Path Destination;
 
     auto console = (Presentation::Console*)Presentation::ConsoleWindow;
     static ToolkitUtil::Logger logger;
@@ -103,13 +103,13 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
+                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -278,8 +278,8 @@ AssetImporterWindow::Run(SaveMode save)
                 {
                     ToolkitUtil::ImportTexture(file, Destination.WorkURI("assets"), textureResource, &logger);
                     TextureResources.EraseIndex(textureResourceIndex);
-                    IO::URN workAsset("tex", Destination.GetSpecific() + "/" + fileNameNoExt);
-                    batcher->BatchAsset(workAsset.WorkURI("assets"));
+                    auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "tex");
+                    batcher->BatchFile(workAsset);
                 }
 
                 ImGui::EndTable();
@@ -298,13 +298,13 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
+                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -348,7 +348,8 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                batcher->BatchAsset(Destination.WorkURI("assets"));
+                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
+                batcher->BatchFile(workAsset);
             }
 
             fbxFileIndex++;
@@ -366,13 +367,13 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::URN& path)
+                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
                 {
                     Destination = path;
                 });
             }
             ImGui::SameLine();
-            Util::String shortenedPath = "assets/" + Destination.GetSpecific();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
             static char buf[256];
             memcpy(buf, shortenedPath.data(), shortenedPath.Length());
             buf[shortenedPath.Length()] = '\0';
@@ -416,7 +417,8 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 GltfFiles.EraseIndex(gltfFileIndex);
-                batcher->BatchAsset(Destination.WorkURI("assets"));
+                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
+                batcher->BatchFile(workAsset);
             }
 
             gltfFileIndex++;

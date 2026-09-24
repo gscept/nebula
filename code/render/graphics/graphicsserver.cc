@@ -124,6 +124,12 @@ GraphicsServer::Open()
         GlobalConstantsCreateInfo globalConstantsInfo;
         CreateGlobalConstants(globalConstantsInfo);
 
+        // New loaders
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mdl", Models::ModelLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("msh", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", CoreGraphics::TextureLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", Materials::MaterialLoader::RTTI);
+
         // Register graphics resource loaders
         Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
@@ -133,19 +139,13 @@ GraphicsServer::Open()
         Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("par", Particles::ParticleLoader::RTTI);
 
-        // New loaders
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("mdl", Models::ModelLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("msh", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", Materials::MaterialLoader::RTTI);
-
         // Add URN namespaces to resources (OS specific)
     #if defined __WIN32__ || __linux__ || __POSIX__
-        IO::URN::AddExportMapping("mdl", "n3");
-        IO::URN::AddExportMapping("msh", "nvx");
-        IO::URN::AddExportMapping("tex", "dds");
-        IO::URN::AddExportMapping("mat", "sur");
-        IO::URN::AddExportMapping("par", "par");
+        IO::Path::AddExportMapping("mdl", "n3");
+        IO::Path::AddExportMapping("msh", "nvx");
+        IO::Path::AddExportMapping("tex", "dds");
+        IO::Path::AddExportMapping("mat", "mat");
+        IO::Path::AddExportMapping("par", "par");
     #else
         #error "Platform unsupported"
     #endif

@@ -46,10 +46,10 @@ AssetEditor::AssetEditor()
     this->viewport.Init(Util::String("AssetEditorViewport"), 1 << 3);
 
     // Setup URN work mappings
-    IO::URN::AddWorkMapping("mdl", "nasset");
-    IO::URN::AddWorkMapping("tex", "natex");
-    IO::URN::AddWorkMapping("par", "napar");
-    IO::URN::AddWorkMapping("mat", "namat");
+    IO::Path::AddWorkMapping("mdl", "nasset");
+    IO::Path::AddWorkMapping("tex", "natex");
+    IO::Path::AddWorkMapping("par", "napar");
+    IO::Path::AddWorkMapping("mat", "namat");
     
 }
 
@@ -164,7 +164,7 @@ AssetEditor::Run(SaveMode save)
                 }
 
                 bool open = true;
-                Util::String assetName = item.path.GetSpecific();
+                Util::String assetName = item.path.GetFolderAndFile();
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
@@ -300,7 +300,7 @@ Setup(AssetEditorItem* item)
 /**
 */
 void
-AssetEditor::Open(const IO::URN& asset, const Util::String root, const AssetType type)
+AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetType type)
 {
     // If we try to load the same item, just focus that one
     for (AssetEditorItem& item : assetEditorState.items)
@@ -312,12 +312,10 @@ AssetEditor::Open(const IO::URN& asset, const Util::String root, const AssetType
         }
     }
 
-    IO::URI exportFile = asset.ExportURI();
-
     // If there is no export, quickly batch it
-    if (exportFile.IsEmpty())
+    if (asset.IsFile())
     {
-        Editor::LiveBatcher::BatchFile(exportFile);
+        Editor::LiveBatcher::BatchFile(asset);
         Editor::LiveBatcher::Wait();
     }
 
@@ -329,7 +327,7 @@ AssetEditor::Open(const IO::URN& asset, const Util::String root, const AssetType
 
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
-        [exportFile, asset, type](Resources::ResourceId id)
+        [asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;

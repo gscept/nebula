@@ -36,12 +36,11 @@
 #include "util/stringatom.h"
 #include "io/stream.h"
 #include "io/urn.h"
-#include "util/set.h"
+#include "io/path.h"
 #include "resource.h"
-#include "threading/safequeue.h"
 #include "threading/threadid.h"
+#include "threading/safequeue.h"
 #include "ids/idpool.h"
-#include <tuple>
 #include <functional>
 
 namespace Resources
@@ -83,6 +82,8 @@ public:
     Resources::ResourceId CreateResource(const IO::URI& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// Create a resoujrce using URN, the loader itself decides how to resolve the path
     Resources::ResourceId CreateResource(const IO::URN& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
+    /// Create a resoujrce using URN, the loader itself decides how to resolve the path
+    Resources::ResourceId CreateResource(const IO::Path& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
@@ -290,7 +291,7 @@ protected:
 
     struct _PlaceholderResource
     {
-        IO::URI placeholderName;
+        IO::Path placeholderName;
         Resources::ResourceId placeholderId;
     };
     Util::FixedArray<_PlaceholderResource> placeholders;
@@ -299,8 +300,8 @@ protected:
     Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
-    IO::URI placeholderResourceName;
-    IO::URI failResourceName;
+    IO::Path placeholderResourceName;
+    IO::Path failResourceName;
 
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;

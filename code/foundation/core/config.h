@@ -137,13 +137,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 
 #define USE_CURL 1
 
-// default resource names
-#if __WIN32__ || __LINUX__
-#define NEBULA_TEXTURE_EXTENSION ".dds"
-#define NEBULA_SURFACE_EXTENSION ".sur"
-#define NEBULA_MESH_EXTENSION ".nvx"
-#endif
-
 // VisualStudio settings
 #ifdef _MSC_VER
 #define __VC__ (1)

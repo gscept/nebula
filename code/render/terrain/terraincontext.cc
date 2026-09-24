@@ -2723,7 +2723,7 @@ TerrainContext::SetBiomeMask(Graphics::GraphicsEntityId entity, TerrainBiomeId b
 /**
 */
 void
-TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::URN& albedo, const IO::URN& normal, const IO::URN& material)
+TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::Path& albedo, const IO::Path& normal, const IO::Path& material)
 {
     const Graphics::ContextEntityId cid = GetContextId(entity);
     TerrainInstanceInfo& instanceInfo = terrainAllocator.Get<Terrain_InstanceInfo>(cid.id);

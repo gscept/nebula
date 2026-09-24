@@ -6,7 +6,6 @@
 #include "resourceloader.h"
 #include "io/ioserver.h"
 #include "resourceserver.h"
-#include "util/bit.h"
 #include "profiling/profiling.h"
 
 using namespace IO;
@@ -78,14 +77,14 @@ ResourceLoader::LoadFallbackResources()
     }
 
     // load placeholder, don't load it async
-    if (this->placeholderResourceName.IsValid())
+    if (this->placeholderResourceName.IsFile())
     {
         this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
-    if (this->failResourceName.IsValid())
+    if (this->failResourceName.IsFile())
     {
         this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->failResourceId != Resources::InvalidResourceId);
@@ -577,8 +576,7 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
                 this->streamerThread->Wait();
 
                 // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
-                n_log(Resource Loader, "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
-                    this->RTTI.GetName().AsCharPtr(),
+                n_log(Resource Loader, "Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
                     path.GetHostAndLocalPath().AsCharPtr());
 
                 // Loaded already
@@ -687,14 +685,15 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
 */
 Resources::ResourceId
 ResourceLoader::CreateResource(
-    const IO::URN& res,
+    const IO::Path& res,
     const void* loadInfo,
     SizeT loadInfoSize,
     const Util::StringAtom& tag,
     std::function<void(const Resources::ResourceId)> success,
     std::function<void(const Resources::ResourceId)> failed,
     bool immediate,
-    bool stream)
+    bool stream
+)
 {
     return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
 }

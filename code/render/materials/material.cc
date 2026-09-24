@@ -50,7 +50,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
         auto& value = entry->textures.ValueAtIndex(i);
         if (value->bindlessOffset != -1)
         {
-            Resources::ResourceId id = Resources::CreateResource(value->resource, "materials",
+            Resources::ResourceId id = Resources::CreateResource(IO::Path::Parse(value->resource), "materials",
                 [buffer, value](Resources::ResourceId id)
             {
                 CoreGraphics::TextureIdLock _0(id);
@@ -80,7 +80,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
     for (IndexT i = 0; i < entry->textures.Size(); i++)
     {
         auto& kvp = entry->textures.KeyValuePairAtIndex(i);
-        Resources::ResourceId res = Resources::CreateResource(kvp.Value()->resource, "materials", [i, textures](Resources::ResourceId id)
+        Resources::ResourceId res = Resources::CreateResource(IO::Path::Parse(kvp.Value()->resource), "materials", [i, textures](Resources::ResourceId id)
         {
             textures[i] = id;
         });

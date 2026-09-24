@@ -113,20 +113,20 @@ LiveBatcher::BatchAssets()
 /**
 */
 void
-LiveBatcher::BatchAsset(const IO::URI& assetPath)
+LiveBatcher::BatchAsset(const IO::Path& assetPath)
 {
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
         [assetPath]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
-            args.Append("-file " + assetPath.LocalPath());
+            args.Append(" -dir \"" + assetPath.GetFolder() + "\"");
             livebatcherState.startInfo.args = args;
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
-                n_log(Live Batcher, "%s", livebatcherState.outputStream->GetRawPointer());
+                n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
                 return true;
             }
             return false;
@@ -138,21 +138,22 @@ LiveBatcher::BatchAsset(const IO::URI& assetPath)
 /**
 */
 void 
-LiveBatcher::BatchFile(const IO::URI& filePath)
+LiveBatcher::BatchFile(const IO::Path& filePath)
 {
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
         [filePath]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
-            args.Append(" -dir " + filePath.LocalPath().ExtractDirName());
-            args.Append(" -file " + filePath.LocalPath().ExtractFileName());
+            args.Append(" -dir \"" + filePath.GetFolder() + "\"");
+            args.Append(" -file \"" + filePath.GetWorkFile() + "\"");
             args.Append(" -force");
             livebatcherState.startInfo.args = args;
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
+                n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
                 return true;
             }
             return false;

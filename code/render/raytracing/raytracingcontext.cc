@@ -359,8 +359,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     state.topLevelNeedsReconstruction = false;
     state.blasInstanceAllocator = Memory::RangeAllocator(0xFFFFF, settings.maxNumAllowedInstances);
 
-    state.placeholderMesh = CoreGraphics::MeshResourceGetMesh(Resources::CreateResource("sysmsh:placeholder.nvx", "system", nullptr, nullptr, true, false), 0);
-    state.placeholderMaterial = Resources::CreateResource("sysmat:placeholder.sur", "system", nullptr, nullptr, true, false);
+    state.placeholderMesh = CoreGraphics::MeshResourceGetMesh(Resources::CreateResource(IO::Path::File("system", "placeholder", "msh"), "system", nullptr, nullptr, true, false), 0);
+    state.placeholderMaterial = Resources::CreateResource(IO::Path::File("system", "placeholder", "mat"), "system", nullptr, nullptr, true, false);
     n_assert(Materials::MaterialGetBufferBinding(state.placeholderMaterial) != -1);
     n_assert(MaterialPropertyMappings[(uint)Materials::MaterialGetTemplate(state.placeholderMaterial)->properties] != 0xFFFFFFFF);
 

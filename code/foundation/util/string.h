@@ -821,6 +821,7 @@ String::ExtractToLastSlash() const
     {
         pathString = "";
     }
+    pathString.strLen = lastSlash - &pathString[0] + 1;
     return pathString;
 }
 

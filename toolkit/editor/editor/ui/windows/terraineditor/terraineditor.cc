@@ -52,13 +52,13 @@ struct BiomeTextures
 {
     Ids::Id32 imguiMaskId;
     CoreGraphics::TextureId maskTex;
-    Util::FixedArray<IO::URN> albedoPaths;
+    Util::FixedArray<IO::Path> albedoPaths;
     Util::FixedArray<Resources::ResourceId> albedoResources;
     Util::FixedArray<Ids::Id32> imguiAlbedoId;
-    Util::FixedArray<IO::URN> normalsPaths;
+    Util::FixedArray<IO::Path> normalsPaths;
     Util::FixedArray<Resources::ResourceId> normalsResources;
     Util::FixedArray<Ids::Id32> imguiNormalId;
-    Util::FixedArray<IO::URN> materialPaths;
+    Util::FixedArray<IO::Path> materialPaths;
     Util::FixedArray<Resources::ResourceId> materialResources;
     Util::FixedArray<Ids::Id32> imguiMaterialId;
 
@@ -115,8 +115,8 @@ struct
     CoreGraphics::CmdBufferPoolId cmdPool;
 } terrainEditorState;
 
-const char* BaseTerrainAssetPath = "work:assets/level_%s/";
-const char* BaseTerrainExportPath = "export:textures/level_%s/";
+const char* BaseTerrainAssetPath = "level_%s";
+const char* BaseTerrainExportPath = "level_%s";
 
 namespace Presentation
 {
@@ -309,21 +309,21 @@ TerrainEditor::Run(SaveMode save)
         else
         {
             if (selectedTerrainResource.height_map == nullptr)
-                selectedTerrainResource.height_map = "urn:tex:system/black";
+                selectedTerrainResource.height_map = "system/black";
             if (selectedTerrainResource.decision_map == nullptr)
-                selectedTerrainResource.decision_map = "urn:tex:system/white";
+                selectedTerrainResource.decision_map = "system/white";
 
             // If biomes are empty, create a basic one
             if (selectedTerrainResource.biomes.empty())
             {
                 auto biome = std::make_unique<Render::BiomeT>();
-                biome->mask = "urn:tex:system/white";
+                biome->mask = "system/white";
                 for (uint i = 0; i < 4; i++)
                 {
                     auto biomeMaterial = std::make_unique<Render::BiomeMaterialT>();
-                    biomeMaterial->albedo = "urn:tex:system/white";
-                    biomeMaterial->normals = "urn:tex:system/nobump";
-                    biomeMaterial->material = "urn:tex:system/default_material";
+                    biomeMaterial->albedo = "system/white";
+                    biomeMaterial->normals = "system/nobump";
+                    biomeMaterial->material = "system/default_material";
                     biome->materials.push_back(std::move(biomeMaterial));
                 }
                 selectedTerrainResource.biomes.push_back(std::move(biome));
@@ -354,33 +354,34 @@ TerrainEditor::Run(SaveMode save)
         Util::String basePath = Util::String::Sprintf(BaseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
         IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
 
-        const Util::String heightMapPath = basePath + heightmapName + ".png";
+        const IO::Path heightMapPath = IO::Path::File(basePath, heightmapName, "tex");
         CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
         CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
-        CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(heightMapPath));
+        CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, heightMapPath.WorkURI("assets"));
         CoreGraphics::DestroyImage(image);
 
-        selectedTerrainResource.height_map = heightMapPath;
+        selectedTerrainResource.height_map = heightMapPath.AsString();
 
         for (uint i = 0; i < terrainEditorState.biomes.Size(); i++)
         {
             Util::String maskName = Util::String::Sprintf("biomemask_%s_%d", Editor::state.editables[entity.index].guid.AsString().AsCharPtr(), i);
-            const Util::String biomeMaskPath = basePath + maskName + ".png";
+            const IO::Path biomeMaskPath = IO::Path::File(basePath, maskName, "tex");
             image = CoreGraphics::CreateImage(terrainEditorState.biomeTextures[i].maskTex, CoreGraphics::PipelineStage::AllShadersRead);
             CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit8UInt, true);
-            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(biomeMaskPath));
+            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, biomeMaskPath.WorkURI("assets"));
             CoreGraphics::DestroyImage(image);
 
-            selectedTerrainResource.biomes[i]->mask = biomeMaskPath;
+            selectedTerrainResource.biomes[i]->mask = biomeMaskPath.AsString();
         }
             
+        // Hmm, this should probably save to work, and then export.
         Util::String baseExportPath = Util::String::Sprintf(BaseTerrainExportPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
-        IO::URI resourcePathName = IO::URI(baseExportPath + Editor::state.editables[entity.index].guid.AsString());
-        terrainComponent.terrainResourcePath = resourcePathName.LocalPath();
+        IO::Path resourcePathName = IO::Path::File(baseExportPath, Editor::state.editables[entity.index].guid.AsString(), "tex");
+        terrainComponent.terrainResourcePath = resourcePathName.AsString();
         Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
 
         Util::Blob serialized = Flat::FlatbufferInterface::SerializeFlatbuffer<Render::TerrainResource>(selectedTerrainResource);
-        Ptr<IO::Stream> file = IO::CreateStream(resourcePathName);
+        Ptr<IO::Stream> file = IO::CreateStream(resourcePathName.WorkURI("assets"));
         file->SetAccessMode(IO::Stream::WriteAccess);
         if (file->Open())
         {
@@ -389,10 +390,10 @@ TerrainEditor::Run(SaveMode save)
         }
         else
         {
-            n_warning("[Terrain Editor] Failed to save %s\n", resourcePathName.LocalPath().AsCharPtr());
+            n_log_warn(Terrain Editor, "Failed to save %s\n", file->GetURI().LocalPath().AsCharPtr());
         }
 
-        Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
+        Editor::LiveBatcher::BatchFile(IO::Path::File(basePath, heightmapName, "tex"));
     }
 
     // Setup initial state
@@ -416,7 +417,7 @@ TerrainEditor::Run(SaveMode save)
         CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
         // Load heightmap for copying to our editable resource
-        Resources::ResourceId heightMapRes = Resources::CreateResource(IO::URN(selectedTerrainResource.height_map), "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
+        Resources::ResourceId heightMapRes = Resources::CreateResource(IO::Path::FolderAndFile("tex", selectedTerrainResource.height_map), "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
         {
             // Copy over data from resource to our editable texture
             CoreGraphics::TextureId source = id;
@@ -475,30 +476,30 @@ TerrainEditor::Run(SaveMode save)
             BiomeTextures biomeTextures;
             Terrain::BiomeSettings biomeSettings;
 
-            biomeTextures.maskTex = Resources::CreateResource(IO::URN(biomeComp->mask), "editor", nullptr, nullptr, true, false);
+            biomeTextures.maskTex = Resources::CreateResource(IO::Path::FolderAndFile("tex", biomeComp->mask), "editor", nullptr, nullptr, true, false);
             Dynui::ImguiTextureId imguiHandle{ .nebulaHandle = biomeTextures.maskTex, .splat = true };
             biomeTextures.imguiMaskId = Dynui::AllocateImguiTextureId(imguiHandle);
 
             for (IndexT j = 0; j < 4; j++)
             {
-                biomeTextures.albedoPaths[j] = IO::URN(biomeComp->materials[j]->albedo);
+                biomeTextures.albedoPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
                 biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiAlbedoId[j] = Dynui::AllocateImguiTextureId({biomeTextures.albedoResources[j].resource});
 
-                biomeTextures.normalsPaths[j] = IO::URN(biomeComp->materials[j]->normals);
+                biomeTextures.normalsPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->normals);
                 biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiNormalId[j] = Dynui::AllocateImguiTextureId({biomeTextures.normalsResources[j].resource});
 
-                biomeTextures.materialPaths[j] = IO::URN(biomeComp->materials[j]->material);
+                biomeTextures.materialPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->material);
                 biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
                 biomeTextures.imguiMaterialId[j] = Dynui::AllocateImguiTextureId({biomeTextures.materialResources[j].resource});
 
-                biomeSettings.materials[j].albedo = IO::URN(biomeComp->materials[j]->albedo);
-                biomeSettings.materials[j].normal = IO::URN(biomeComp->materials[j]->normals);
-                biomeSettings.materials[j].material = IO::URN(biomeComp->materials[j]->material);
+                biomeSettings.materials[j].albedo = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
+                biomeSettings.materials[j].normal = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->normals);
+                biomeSettings.materials[j].material = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->material);
             }
 
-            biomeSettings.biomeMask = IO::URN(biomeComp->mask);
+            biomeSettings.biomeMask = IO::Path::FolderAndFile("tex", biomeComp->mask);
             biomeSettings.biomeParameters.heightThreshold = biomeComp->height_threshold;
             biomeSettings.biomeParameters.slopeThreshold = biomeComp->slope_threshold;
             biomeSettings.biomeParameters.uvScaleFactor = biomeComp->uv_scale_factor;
@@ -540,8 +541,8 @@ TerrainEditor::Run(SaveMode save)
             info.tileHeight = selectedTerrainResource.tile_height;
             info.width = selectedTerrainResource.world_size_x;
             info.height = selectedTerrainResource.world_size_z;
-            info.heightMap = IO::URN(selectedTerrainResource.height_map);
-            info.decisionMap = IO::URN(selectedTerrainResource.decision_map);
+            info.heightMap = IO::Path::FolderAndFile("tex", selectedTerrainResource.height_map);
+            info.decisionMap = IO::Path::FolderAndFile("tex", selectedTerrainResource.decision_map);
                 
             Terrain::TerrainContext::SetupTerrain(terrainComponent.graphicsEntityId, info);
         }
@@ -710,17 +711,17 @@ TerrainEditor::Run(SaveMode save)
                 {
                     biomeT->materials.push_back(std::make_unique<Render::BiomeMaterialT>());
                     auto& matT = biomeT->materials.back();
-                    textures.albedoPaths[i] = IO::URN("urn:tex:system/white");
+                    textures.albedoPaths[i] = IO::Path::FolderAndFile("tex", "system/white");
                     matT->albedo = textures.albedoPaths[i].AsString();
                     textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, true, false);
                     textures.imguiAlbedoId[i] = Dynui::AllocateImguiTextureId({textures.albedoResources[i].resource});
 
-                    textures.normalsPaths[i] = IO::URN("urn:tex:system/nobump");
+                    textures.normalsPaths[i] = IO::Path::FolderAndFile("tex", "system/nobump");
                     matT->normals = textures.normalsPaths[i].AsString();
                     textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, true, false);
                     textures.imguiNormalId[i] = Dynui::AllocateImguiTextureId({textures.normalsResources[i].resource});
 
-                    textures.materialPaths[i] = IO::URN("urn:tex:system/default_material");
+                    textures.materialPaths[i] = IO::Path::FolderAndFile("tex", "system/default_material");
                     matT->material = textures.materialPaths[i].AsString();
                     textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, true, false);
                     textures.imguiMaterialId[i] = Dynui::AllocateImguiTextureId({textures.materialResources[i].resource});
@@ -775,15 +776,15 @@ TerrainEditor::Run(SaveMode save)
                         {
                         case 0:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiAlbedoId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].GetSpecific().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].GetFolderAndFile().AsCharPtr();
                             break;
                         case 1:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiNormalId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].GetSpecific().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].GetFolderAndFile().AsCharPtr();
                             break;
                         case 2:
                             tex = terrainEditorState.biomeTextures[selectedBiome].imguiMaterialId[i];
-                            path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].GetSpecific().AsCharPtr();
+                            path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].GetFolderAndFile().AsCharPtr();
                             break;
                         default:
                             n_error("Can't happen");
@@ -804,10 +805,10 @@ TerrainEditor::Run(SaveMode save)
                         if (pressed)
                         {
                             auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                            IO::URN folder = IO::URN(ToolkitUtil::FileTypeURNMapping[ToolkitUtil::FileType::Texture], path);
-                            assetBrowser->PickFile(folder, [i, j](const IO::URN& filePath)
+                            IO::Path folder = IO::Path::FolderAndFile("tex", path);
+                            assetBrowser->PickFile(folder, [i, j](const IO::Path& filePath)
                             {
-                                if (filePath.IsValid())
+                                if (filePath.IsFile())
                                 {
                                     BiomeTextures& biomeTextureSet = terrainEditorState.biomeTextures[selectedBiome];
                                     switch (j)

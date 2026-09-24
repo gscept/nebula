@@ -286,15 +286,15 @@
                     },
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "ParameterMap",
-                        "defaultValue": "systex:default_material.dds"
+                        "defaultValue": "system:default_material:tex"
                     },
                     {
                         "name": "NormalMap",
-                        "defaultValue": "systex:nobump.dds"
+                        "defaultValue": "system:nobump:tex"
                     }
                 ]
             },
@@ -500,7 +500,7 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "AlphaSensitivity",
@@ -604,19 +604,19 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "Layer2",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "Layer3",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "Layer4",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "UVAnim1",
@@ -788,15 +788,15 @@
                     },
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:white.dds"
+                        "defaultValue": "system:white:tex"
                     },
                     {
                         "name": "ParameterMap",
-                        "defaultValue": "systex:default_material.dds"
+                        "defaultValue": "system:default_material:tex"
                     },
                     {
                         "name": "NormalMap",
-                        "defaultValue": "systex:nobump.dds"
+                        "defaultValue": "system:nobump:tex"
                     },
                     {
                         "name": "Transmission",
@@ -844,7 +844,7 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "defaultValue": "systex:placeholder.dds",
+                        "defaultValue": "system:placeholder:tex",
                         "system": true
                     },
                     {
@@ -879,11 +879,11 @@
                 "variables": [
                     {
                         "name": "SkyLayer1",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "SkyLayer2",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     },
                     {
                         "name": "SkyBlendFactor",
@@ -945,7 +945,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     }
                 ]
             },
@@ -970,7 +970,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "system:placeholder:tex"
                     }
                 ]
             },
