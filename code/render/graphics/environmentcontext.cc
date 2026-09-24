@@ -56,10 +56,12 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     envState.skyBoxEntity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
+    // Create skybox material
+    const Materials::MaterialId skyboxMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__Skybox.entry, "Skybox");
+
     // Create default skybox
-    const Resources::ResourceId skyboxMaterial = Resources::CreateResource("system:skybox:mat"_path, "environment", nullptr, nullptr, true, false);
     const Resources::ResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, true, false);
-    Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial.resource, boxMesh.resource, 0, Graphics::ALL_STAGE_MASK);
+    Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial, boxMesh.resource, 0, Graphics::ALL_STAGE_MASK);
     Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
     Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
 
