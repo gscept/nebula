@@ -331,9 +331,10 @@ AssetBatcherApp::DoWork()
                 exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All);
                 exporter->UpdateSource();
                 IO::URI basePath("work:");
-                exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
+                Util::String relativePath = dir.StripSubstring(basePath.LocalPath());
+                exporter->SetFolder(relativePath);
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ProcessFile(file);
+                exporter->ProcessFile("work:" + relativePath + "/" + file);
 
                 break;
             }
