@@ -25,6 +25,16 @@ namespace IO
 class Path
 {
 public:
+
+    // TODO: switch from using a string for the type, and use an enum
+    enum FileTypes
+    {
+        Texture,
+        Model,
+        Material,
+        Mesh
+    };
+
     /// Constructor
     Path();
     /// Destructor
@@ -56,7 +66,7 @@ public:
     bool IsFile() const;
 
     /// Serialize to string
-    const Util::String AsString();
+    const Util::String AsString() const;
 
     /// Comparison test
     bool operator==(const Path& path) const;
@@ -72,6 +82,8 @@ public:
     Path operator/(const Path& folder) const;
     /// Convert to a URI seated in the provided folder
     IO::URI WorkURI(const char* workFolder) const;
+    /// Convert to a URI seated in the provided folder
+    IO::URI WorkURI(const Util::String& workFolder) const;
     /// Convert to a folder in 'export'
     IO::URI ExportURI() const;
 
@@ -92,6 +104,11 @@ public:
     const Util::String& GetFolder() const;
     /// Get type
     const Util::String& GetType() const;
+
+    /// Get file with work extension
+    Util::String GetWorkFile() const;
+    /// Get file with export extension
+    Util::String GetExportFile() const;
 
     /// Add an export binding using namespace -> file extension to use with ExportURI
     static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);

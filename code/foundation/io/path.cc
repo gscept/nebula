@@ -192,7 +192,7 @@ Path::IsFile() const
 /**
 */
 const Util::String
-Path::AsString()
+Path::AsString() const
 {
     return Util::Format("%s:%s:%s", this->folder.AsCharPtr(), this->file.AsCharPtr(), this->type.AsCharPtr());
 }
@@ -299,6 +299,31 @@ Path::WorkURI(const char* workFolder) const
 /**
 */
 URI
+Path::WorkURI(const Util::String& workFolder) const
+{
+    n_assert(Path::WorkRoot.IsValid());
+    if (!this->file.IsValid())
+    {
+        return IO::URI(Util::Format("%s/%s", Path::WorkRoot.Value(), (workFolder + "/" + this->folderAndFile).AsCharPtr()));
+    }
+    else
+    {
+        IndexT i = Path::WorkExtensions.FindIndex(this->type);
+        if (i == InvalidIndex)
+        {
+            return IO::URI(Util::Format("%s/%s", Path::WorkRoot.Value(), (workFolder + "/" + this->folderAndFile).AsCharPtr()));
+        }
+        else
+        {
+            return IO::URI(Util::Format("%s/%s.%s", Path::WorkRoot.Value(), (workFolder + "/" + this->folderAndFile).AsCharPtr(), Path::WorkExtensions.ValueAtIndex(i).Value()));
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+URI
 Path::ExportURI() const
 {
     IndexT i = Path::ExportExtensions.FindIndex(this->type);
@@ -385,6 +410,30 @@ const Util::String&
 Path::GetType() const
 {
     return this->type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+Path::GetWorkFile() const
+{
+    IndexT i = Path::WorkExtensions.FindIndex(this->type);
+    if (i != InvalidIndex)
+        return Util::Format("%s.%s", this->file.AsCharPtr(), Path::WorkExtensions.ValueAtIndex(i).Value());
+    else
+        return this->file;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+Path::GetExportFile() const
+{
+    IndexT i = Path::ExportExtensions.FindIndex(this->type);
+    n_assert(i != InvalidIndex);
+    return Util::Format("%s.%s", this->folderAndFile.AsCharPtr(), Path::ExportExtensions.ValueAtIndex(i).Value());
 }
 
 //------------------------------------------------------------------------------
