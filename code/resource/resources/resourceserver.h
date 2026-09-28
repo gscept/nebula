@@ -90,9 +90,9 @@ public:
     const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
 
     /// register a stream pool, which takes an extension and the RTTI of the resource type to create
-    void RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    void RegisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader);
     /// deregisters a stream pool
-    void DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    void DeregisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamLoader() const;
     /// query if a stream loader is registered for a given extension
@@ -115,8 +115,6 @@ private:
     Util::Dictionary<Util::StringAtom, IndexT> loaderMap;
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
     Util::Array<Ptr<ResourceLoader>> loaders;
-
-    static int32_t UniquePoolCounter;
 };
 
 //------------------------------------------------------------------------------
@@ -359,7 +357,7 @@ ResourceServer::GetName(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetName(id.resourceId);
+    return loader->GetName(id);
 }
 
 //------------------------------------------------------------------------------
@@ -371,7 +369,7 @@ ResourceServer::GetTag(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetTag(id.resourceId);
+    return loader->GetTag(id);
 }
 
 //------------------------------------------------------------------------------
@@ -383,7 +381,7 @@ ResourceServer::GetState(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetState(id.resourceId);
+    return loader->GetState(id);
 }
 
 //------------------------------------------------------------------------------
@@ -395,7 +393,7 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetUsage(id.resourceId);
+    return loader->GetUsage(id);
 }
 
 //------------------------------------------------------------------------------

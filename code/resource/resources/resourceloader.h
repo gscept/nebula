@@ -262,6 +262,7 @@ protected:
 
 
     static const uint32_t ResourceIndexGrow = 512;
+    static int32_t UniquePoolCounter;
 
     /// Initialize and create the resource, optionally load if no subresource management is necessary
     virtual ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) = 0;

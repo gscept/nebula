@@ -19,7 +19,6 @@ namespace Resources
 __ImplementClass(Resources::ResourceServer, 'RMGR', Core::RefCounted);
 __ImplementInterfaceSingleton(Resources::ResourceServer);
 
-int32_t ResourceServer::UniquePoolCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
@@ -47,7 +46,6 @@ ResourceServer::Open()
     n_assert(!this->open);
     this->loaders.Reserve(256); // lower 8 bits of resource id can only get to 256
     this->open = true;
-    UniquePoolCounter = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -72,10 +70,10 @@ ResourceServer::Close()
         for (auto & kvp : pool->ids)
         {
             const auto resource = pool->resources[kvp.Value()];
-            if (pool->GetUsage(kvp.Value()) != 0)
+            if (pool->GetUsage(resource) != 0)
             {
                 const Resources::ResourceName& name = kvp.Key();
-                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, pool->uniqueId, pool->GetUsage(kvp.Value()));
+                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, pool->uniqueId, pool->GetUsage(resource));
                 Core::SysFunc::DebugOut(msg.AsCharPtr());
                 hasLeaks = true;
             }
@@ -98,54 +96,39 @@ ResourceServer::Close()
 /**
 */
 void
-ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader)
 {
     n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));
-    void* obj = loaderClass.Create();
-    Ptr<ResourceLoader> loader((ResourceLoader*)obj);
-    loader->uniqueId = UniquePoolCounter++;
-    loader->Setup();
     this->loaders.Append(loader);
     this->extensionMap.Add(ext, this->loaders.Size() - 1);
-    this->typeMap.Add(&loaderClass, this->loaders.Size() - 1);
+    this->typeMap.Add(loader->GetRtti(), this->loaders.Size() - 1);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader)
 {
     n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));
     n_assert(this->extensionMap.Contains(ext));
-    n_assert(this->typeMap.Contains(&loaderClass));
 
     IndexT loaderIdx = this->extensionMap[ext];
-    for (const auto& it : this->typeMap)
-    {
-        if (it.Value() == loaderIdx)
-        {
-            this->typeMap.Erase(it.Key());
-        }
-    }
-    Ptr<ResourceLoader> loader = this->loaders[loaderIdx];
     this->loaders[loaderIdx] = nullptr;
     this->extensionMap.Erase(ext);
+    this->typeMap.Erase(loader->GetRtti());
     
     loader->ClearPendingUnloads();
     for (auto& kvp : loader->ids)
     {
         const auto resource = loader->resources[kvp.Value()];
-        if (loader->GetUsage(kvp.Value()) != 0)
+        if (loader->GetUsage(resource) != 0)
         {
             const Resources::ResourceName& name = kvp.Key();
-            Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, loader->uniqueId, loader->GetUsage(kvp.Value()));
+            Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, loader->uniqueId, loader->GetUsage(resource));
             Core::SysFunc::DebugOut(msg.AsCharPtr());
         }
     }
-    loader = nullptr;
 }
 
 //------------------------------------------------------------------------------

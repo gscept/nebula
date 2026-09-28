@@ -12,6 +12,7 @@ using namespace IO;
 namespace Resources
 {
 
+int32_t ResourceLoader::UniquePoolCounter = 0;
 __ImplementAbstractClass(Resources::ResourceLoader, 'RSLO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
@@ -43,6 +44,7 @@ ResourceLoader::Setup()
 {
     // implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
     this->uniqueResourceId = 0;
+    this->uniqueId = UniquePoolCounter++;
 
     // set the async flag in the constructor of your subclass implementation of the resource pool
     if (this->async)
@@ -718,7 +720,8 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 
                 if (this->streamDatas[id.loaderInstanceId].stream.isvalid())
                 {
-                    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+                    if (this->streamDatas[id.loaderInstanceId].stream->IsMapped())
+                        this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
                     this->streamDatas[id.loaderInstanceId].stream->Close();
                 }
                 
