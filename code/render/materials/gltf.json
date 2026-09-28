@@ -61,23 +61,23 @@
         "variables": [
           {
             "name": "baseColorTexture",
-            "defaultValue": "tex:system/white.dds"
+            "defaultValue": "system:white:tex"
           },
           {
             "name": "normalTexture",
-            "defaultValue": "tex:system/nobump.dds"
+            "defaultValue": "system:nobump:tex"
           },
           {
             "name": "metallicRoughnessTexture",
-            "defaultValue": "tex:system/default_material.dds"
+            "defaultValue": "system:default_material:tex"
           },
           {
             "name": "emissiveTexture",
-            "defaultValue": "tex:system/black.dds"
+            "defaultValue": "system:black:tex"
           },
           {
             "name": "occlusionTexture",
-            "defaultValue": "tex:system/white.dds"
+            "defaultValue": "system:white:tex"
           },
           {
             "name": "baseColorFactor",

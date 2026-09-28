@@ -40,8 +40,8 @@ ModelLoader::~ModelLoader()
 void
 ModelLoader::Setup()
 {
-    this->placeholderResourceName = "sysmdl:placeholder.n3";
-    this->failResourceName = "sysmdl:error.n3";
+    this->placeholderResourceName = IO::Path::File("system", "placeholder", "mdl");
+    this->failResourceName = IO::Path::File("system", "error", "mdl");
     this->loaderExtension = "n3";
 
     IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode);

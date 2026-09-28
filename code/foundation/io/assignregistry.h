@@ -13,7 +13,6 @@
 #include "core/refcounted.h"
 #include "io/assign.h"
 #include "io/uri.h"
-#include "io/urn.h"
 #include "util/hashtable.h"
 #include "threading/criticalsection.h"
 #include "core/singleton.h"

@@ -9,6 +9,7 @@
 */
 #include "game/featureunit.h"
 #include "graphics/graphicsentity.h"
+#include "streamnavmeshcache.h"
 
 //------------------------------------------------------------------------------
 namespace NavigationFeature
@@ -38,7 +39,7 @@ public:
     virtual void OnRenderDebug();
 
 private:
-
+    Ptr<Navigation::StreamNavMeshCache> navMeshCache;
 };
 
 /// render editor ui 

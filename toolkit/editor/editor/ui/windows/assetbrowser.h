@@ -12,6 +12,7 @@
 #include "util/dictionary.h"
 #include "util/string.h"
 #include "io/uri.h"
+#include "io/path.h"
 #include "filedb/filedb.h"
 #include "threading/safeflag.h"
 #include "threading/safequeue.h"
@@ -36,9 +37,10 @@ public:
     void Run(SaveMode save) override;
 
     /// Pick file (using assigns, like work:system/white)
-    void PickFile(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
+    void PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
     /// Pick folder
-    void PickFolder(const IO::URN& path, std::function<void(const IO::URN& path)> picker);
+    void PickFolder(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
+
 private:
     
     void DisplayFileTree();
@@ -89,27 +91,26 @@ private:
         Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
     };
 
-    Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
-    Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
-    Util::Dictionary<Util::String, uint64_t> fileInfoDict;
-    Util::Dictionary<Util::String, uint64_t> folderInfoDict;
-    uint64_t rootFolderId;
-    Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
+    static Util::Dictionary<uint64_t, ToolkitUtil::FileDB::FolderInfo> folderInfoCache;
+    static Util::Array<ToolkitUtil::FileDB::FileInfo> fileInfoCache;
+    static Util::Dictionary<IO::Path, uint64_t> fileInfoDict;
+    static Util::Dictionary<IO::Path, uint64_t> folderInfoDict;
+    static Util::Dictionary<uint64_t, Util::Array<uint64_t>> folderChildIds;
     Threading::SafeFlag isDoneRefreshingCaches;
     Threading::SafeFlag isDoneWithDictionaries;
     Threading::SafeQueue<IO::WatchEvent> pendingWatchEvents;
     Threading::SafeQueue<uint64_t> refreshedFolders;
     Threading::SafeQueue<uint64_t> pendingFolderRefreshes;
     Threading::SafeQueue<FolderScanResult> pendingScanResults;
-    Util::Dictionary<uint64_t, bool> scannedFolders;
+    static Util::Dictionary<uint64_t, bool> scannedFolders;
     Util::Array<ToolkitUtil::FileDB::FileInfo> searchIndex;
     Util::Array<ToolkitUtil::FileDB::FileInfo> searchResults;
     char searchFilter[512] = { 0 };
     Util::String lastSearchFilter;
     bool searchIndexDirty = false;
 
-    std::function<void(const IO::URN& path)> pickFileFunction, pickFolderFunction;
-    IO::URN pendingPickPath;
+    std::function<void(const IO::Path& path)> pickFileFunction, pickFolderFunction;
+    IO::Path pendingPickPath;
     bool fileTreeReady = false;
     bool backgroundScanFinished = false;
     bool showProgress = false;

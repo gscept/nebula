@@ -6,13 +6,13 @@
 #include "resourceloader.h"
 #include "io/ioserver.h"
 #include "resourceserver.h"
-#include "util/bit.h"
 #include "profiling/profiling.h"
 
 using namespace IO;
 namespace Resources
 {
 
+int32_t ResourceLoader::UniquePoolCounter = 0;
 __ImplementAbstractClass(Resources::ResourceLoader, 'RSLO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
@@ -44,6 +44,7 @@ ResourceLoader::Setup()
 {
     // implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
     this->uniqueResourceId = 0;
+    this->uniqueId = UniquePoolCounter++;
 
     // set the async flag in the constructor of your subclass implementation of the resource pool
     if (this->async)
@@ -78,14 +79,14 @@ ResourceLoader::LoadFallbackResources()
     }
 
     // load placeholder, don't load it async
-    if (this->placeholderResourceName.IsValid())
+    if (this->placeholderResourceName.IsFile())
     {
         this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
-    if (this->failResourceName.IsValid())
+    if (this->failResourceName.IsFile())
     {
         this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->failResourceId != Resources::InvalidResourceId);
@@ -577,8 +578,7 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
                 this->streamerThread->Wait();
 
                 // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
-                n_log(Resource Loader, "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
-                    this->RTTI.GetName().AsCharPtr(),
+                n_log(Resource Loader, "Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
                     path.GetHostAndLocalPath().AsCharPtr());
 
                 // Loaded already
@@ -687,14 +687,15 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
 */
 Resources::ResourceId
 ResourceLoader::CreateResource(
-    const IO::URN& res,
+    const IO::Path& res,
     const void* loadInfo,
     SizeT loadInfoSize,
     const Util::StringAtom& tag,
     std::function<void(const Resources::ResourceId)> success,
     std::function<void(const Resources::ResourceId)> failed,
     bool immediate,
-    bool stream)
+    bool stream
+)
 {
     return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
 }
@@ -719,7 +720,8 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 
                 if (this->streamDatas[id.loaderInstanceId].stream.isvalid())
                 {
-                    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+                    if (this->streamDatas[id.loaderInstanceId].stream->IsMapped())
+                        this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
                     this->streamDatas[id.loaderInstanceId].stream->Close();
                 }
                 

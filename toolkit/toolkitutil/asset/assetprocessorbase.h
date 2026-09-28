@@ -100,9 +100,6 @@ public:
     /// sets progress precision
     void SetProgressPrecision(int precision);
 
-    /// Update resource mappings
-    void UpdateResourceMapping(Util::String urn, Util::String work, Util::String exp);
-
 protected:
 
     /// reports an error, depending on what read state we are in, the error will be fatal or a warning
@@ -124,9 +121,6 @@ protected:
     AssetProcessorProgressCallback progressCallback;
     AssetProcessorMinMaxCallback  minMaxCallback;
     ToolkitUtil::Logger* logger;
-
-    Ptr<Db::Database> database;
-    Ptr<Db::DbFactory> dbFactory;
 
     bool hasErrors;
 

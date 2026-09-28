@@ -58,6 +58,7 @@ namespace Physics
 {
 
 void LoadMaterialTable(const IO::URI& materialTable);
+Ptr<Physics::StreamActorPool> actorLoader;
 //------------------------------------------------------------------------------
 /**
 */
@@ -65,7 +66,8 @@ void
 Setup()
 {
     state.Setup();
-    Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", Physics::StreamActorPool::RTTI);
+    actorLoader = Physics::StreamActorPool::Create(); actorLoader->Setup();
+    Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", actorLoader);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamLoader<Physics::StreamActorPool>();

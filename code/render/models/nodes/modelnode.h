@@ -18,14 +18,13 @@
 #include "core/refcounted.h"
 #include "util/stringatom.h"
 #include "io/binaryreader.h"
-#include "io/urn.h"
 #include "math/bbox.h"
+#include "io/path.h"
 #include "ids/id.h"
 #include "memory/arenaallocator.h"
 #include "models/model.h"
 #include "materials/material.h"
 #include "coregraphics/primitivegroup.h"
-
 #include "util/delegate.h"
 
 

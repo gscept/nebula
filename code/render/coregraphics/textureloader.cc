@@ -160,8 +160,8 @@ FinishMips(CoreGraphics::CmdBufferId transferCommands, CoreGraphics::CmdBufferId
 TextureLoader::TextureLoader()
 {
     this->async = true;
-    this->placeholderResourceName = "systex:white.dds";
-    this->failResourceName = "systex:error.dds";
+    this->placeholderResourceName = IO::Path::File("system", "white", "tex");
+    this->failResourceName = IO::Path::File("system", "error", "tex");
     this->loaderExtension = "dds";
 
     this->streamerThreadName = "Texture Streamer Thread";
@@ -265,6 +265,7 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
                     textureInfo.dataSize += ctx.image_size(i, j);
                 }
             }
+
         }
 
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
@@ -272,7 +273,12 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
         return ret;
     }
 
-    stream->MemoryUnmap();
+    if (job.immediate)
+    {
+        // If we load the entire texture, it's safe to unmap the stream
+        stream->MemoryUnmap();
+    }
+
     return ret;
 }
 

@@ -42,7 +42,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     if (FourCC('MESH') == fourcc)
     {
         // Get mesh resource
-        this->meshResource = IO::URN(reader->ReadString());
+        this->meshResource = IO::Path::Parse(reader->ReadString());
     }
     else if (FourCC('MSHI') == fourcc)
     {

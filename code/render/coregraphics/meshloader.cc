@@ -22,8 +22,8 @@ CoreGraphics::VertexLayoutId Layouts[(uint)CoreGraphics::VertexLayoutType::NumTy
 */
 MeshLoader::MeshLoader()
 {
-    this->placeholderResourceName = "sysmsh:placeholder.nvx";
-    this->failResourceName = "sysmsh:error.nvx";
+    this->placeholderResourceName = IO::Path::File("system", "placeholder", "msh");
+    this->failResourceName = IO::Path::File("system", "placeholder", "msh");
     this->loaderExtension = "nvx";
     this->async = true;
 

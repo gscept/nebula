@@ -37,7 +37,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         const auto UpdateMaterial = [item, assetEditor](const char* path, const char* nodeName, const Models::ModelId mdl, Models::ShaderStateNode* resourceNode)
         {
             const IndexT nodeIndex = Models::ModelContext::GetNodeIndex(item->previewObject, nodeName);
-            auto res = IO::URN("mat", path);
+            auto res = IO::Path::FolderAndFile("mat", path);
 
             // A bit of duplicated work, but first set the material on the resource level
             resourceNode->SetMaterial(res);
@@ -154,10 +154,12 @@ ModelSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     ModelEditorItemData* itemData = (ModelEditorItemData*)item->data;
 
-    const IO::URI& destination = item->path.WorkURI("assets");
+    IO::Path tempPath = item->path;
+    tempPath.SetFile(tempPath.GetFile() + Util::String::FromInt((uintptr_t)itemData), tempPath.GetType());
+    const IO::URI tempURI = tempPath.WorkURI("assets");
 
     // Save file replacing the old
-    Ptr<IO::Stream> stream = IO::CreateStream(destination.LocalPath() + Util::String::FromInt((uintptr_t)itemData));
+    Ptr<IO::Stream> stream = IO::CreateStream(tempURI);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
     {
@@ -166,16 +168,17 @@ ModelSave(AssetEditor* assetEditor, AssetEditorItem* item)
         stream->Close();
 
         // A bit safer approach, copy new file to old to replace it, and delete new
-        IO::CopyFile(stream->GetURI(), destination);
+        IO::CopyFile(stream->GetURI(), tempURI);
         IO::DeleteFile(stream->GetURI());
 
         // Batch it
-        Editor::LiveBatcher::BatchFile(destination);
+        Editor::LiveBatcher::BatchFile(item->path);
 
         assetEditor->Unedit();
     }
     else
     {
+        const IO::URI& destination = item->path.WorkURI("assets");
         n_printf("Failed to save asset src:assets/%s.nasset\n", destination.AsString().AsCharPtr());
     }
 }

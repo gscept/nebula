@@ -308,5 +308,7 @@ extern TextureId WhiteCubeArray;
 extern TextureId Red2D;
 extern TextureId Green2D;
 extern TextureId Blue2D;
+extern TextureId FlatNormal2D;
+extern TextureId DefaultMaterial2D;
 
 } // CoreGraphics

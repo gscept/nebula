@@ -7,6 +7,7 @@
 #include "graphicscontext.h"
 #include "view.h"
 #include "resources/resourceserver.h"
+
 #include "coregraphics/textureloader.h"
 #include "coregraphics/meshloader.h"
 #include "coregraphics/gpulangshaderloader.h"
@@ -15,6 +16,7 @@
 #include "particles/particleloader.h"
 #include "models/modelloader.h"
 #include "materials/materialloader.h"
+
 #include "renderutil/drawfullscreenquad.h"
 #include "renderutil/geometryhelpers.h"
 #include "io/ioserver.h"
@@ -112,8 +114,10 @@ GraphicsServer::Open()
 
     if (this->graphicsDevice)
     {
+        this->shaderLoader = CoreGraphics::GPULangShaderLoader::Create(); this->shaderLoader->Setup();
+
         // Setup shader server
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("gplb", CoreGraphics::GPULangShaderLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("gplb", this->shaderLoader);
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
 
@@ -124,28 +128,37 @@ GraphicsServer::Open()
         GlobalConstantsCreateInfo globalConstantsInfo;
         CreateGlobalConstants(globalConstantsInfo);
 
-        // Register graphics resource loaders
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("par", Particles::ParticleLoader::RTTI);
+        this->modelLoader = Models::ModelLoader::Create(); this->modelLoader->Setup();
+        this->meshLoader = CoreGraphics::MeshLoader::Create();  this->meshLoader->Setup();
+        this->textureLoader = CoreGraphics::TextureLoader::Create(); this->textureLoader->Setup();
+        this->materialLoader = Materials::MaterialLoader::Create(); this->materialLoader->Setup();
+        this->animationLoader = CoreAnimation::AnimationLoader::Create(); this->animationLoader->Setup();
+        this->skeletonLoader = Characters::SkeletonLoader::Create(); this->skeletonLoader->Setup();
+        this->particleLoader = Particles::ParticleLoader::Create(); this->particleLoader->Setup();
+
 
         // New loaders
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("mdl", Models::ModelLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("msh", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", Materials::MaterialLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mdl", this->modelLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("msh", this->meshLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("tex", this->textureLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("mat", this->materialLoader);
+
+        // Register graphics resource loaders
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", this->textureLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", this->animationLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", this->skeletonLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", this->meshLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", this->materialLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", this->modelLoader);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("par", this->particleLoader);
 
         // Add URN namespaces to resources (OS specific)
     #if defined __WIN32__ || __linux__ || __POSIX__
-        IO::URN::AddExportMapping("mdl", "n3");
-        IO::URN::AddExportMapping("msh", "nvx");
-        IO::URN::AddExportMapping("tex", "dds");
-        IO::URN::AddExportMapping("mat", "sur");
-        IO::URN::AddExportMapping("par", "par");
+        IO::Path::AddExportMapping("mdl", "n3");
+        IO::Path::AddExportMapping("msh", "nvx");
+        IO::Path::AddExportMapping("tex", "dds");
+        IO::Path::AddExportMapping("mat", "mat");
+        IO::Path::AddExportMapping("par", "par");
     #else
         #error "Platform unsupported"
     #endif
@@ -153,15 +166,15 @@ GraphicsServer::Open()
         RenderUtil::DrawFullScreenQuad::Setup();
 
         // load base textures before setting up major subsystems
-        const unsigned char white[6] = {0xFF};
-        const unsigned char black[6] = {0x00};
+        const unsigned int white[6] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        const unsigned int black[6] = {0x00000000, 0x0000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000};
         CoreGraphics::TextureCreateInfo texInfo;
         texInfo.usage = CoreGraphics::TextureUsage::Sample;
 
         texInfo.tag = "system";
-        texInfo.format = CoreGraphics::PixelFormat::R8;
+        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
         texInfo.bindless = true;
-        texInfo.dataSize = sizeof(unsigned char) * 6;
+        texInfo.dataSize = sizeof(white);
 
         texInfo.type = CoreGraphics::TextureType::Texture1D;
         texInfo.name = "White1D";
@@ -209,7 +222,6 @@ GraphicsServer::Open()
         const unsigned int green = 0x0000FF00;
         const unsigned int blue = 0x00FF0000;
         texInfo.type = CoreGraphics::TextureType::Texture2D;
-        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
 
         texInfo.name = "Red2D";
         texInfo.data = &red;
@@ -223,6 +235,16 @@ GraphicsServer::Open()
         texInfo.name = "Blue2D";
         texInfo.data = &blue;
         CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
+
+        const unsigned int flatNormal = 0x00007F7F;
+        texInfo.name = "FlatNormal2D";
+        texInfo.data = &flatNormal;
+        CoreGraphics::FlatNormal2D = CoreGraphics::CreateTexture(texInfo);
+
+        const unsigned int defaultMaterial = 0xFFFFFF00;
+        texInfo.name = "DefaultMaterial2D";
+        texInfo.data = &defaultMaterial;
+        CoreGraphics::DefaultMaterial2D = CoreGraphics::CreateTexture(texInfo);
 
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
         CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
@@ -274,12 +296,12 @@ GraphicsServer::Close()
     this->timer->StopTime();
     this->timer = nullptr;
 
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
-    Resources::ResourceServer::Instance()->DeregisterStreamLoader("n3", Models::ModelLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("dds", this->textureLoader);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nax", this->animationLoader);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nsk", this->skeletonLoader);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nvx", this->meshLoader);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("sur", this->materialLoader);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("n3", this->modelLoader);
 
     if (this->graphicsDevice)
         CoreGraphics::DestroyGraphicsDevice();

@@ -51,7 +51,7 @@ public:
     {
         uint64_t id;
         Util::String name;
-        Util::String folderPath;    // Path column: relative to root (empty for the root)
+        IO::Path folderPath;
         uint64_t parentId;
         IO::FileTime modifiedDate;
         bool isRoot;
@@ -64,7 +64,7 @@ public:
     {
         uint64_t id;
         Util::String name;
-        Util::String filePath;      // Path column: relative to root
+        IO::Path filePath;      // Path column: relative to root
         uint64_t folderId;
         SizeT size;
         FileType type;
@@ -106,7 +106,7 @@ public:
     bool GetRootFolders(Util::Array<FolderInfo>& outFolders);
     
     /// get the work-relative path of a folder (empty for a work root)
-    IO::URN GetFolderPath(uint64_t folderId);
+    IO::Path GetFolderPath(uint64_t folderId);
     
     /// delete a folder (fails if not empty)
     bool DeleteFolder(Logger& logger, uint64_t folderId);
@@ -118,7 +118,7 @@ public:
                        SizeT size, FileType type, const IO::FileTime& modifiedDate);
     
     /// get the work-relative path of a file
-    IO::URN GetFilePath(uint64_t fileId);
+    IO::Path GetFilePath(uint64_t fileId);
 
     /// get file info by ID
     bool GetFileInfo(uint64_t fileId, FileInfo& outInfo);

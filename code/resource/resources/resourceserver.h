@@ -17,6 +17,7 @@
 #include "resourceloader.h"
 #include "resourceloaderthread.h"
 #include "io/urn.h"
+#include "io/path.h"
 #include "io/assignregistry.h"
 #include "db/dbfactory.h"
 #include "db/database.h"
@@ -51,13 +52,13 @@ public:
     template<class METADATA> Resources::ResourceId CreateResource(const ResourceName& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
 
     /// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
-    Resources::ResourceId CreateResource(const IO::URN& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
+    Resources::ResourceId CreateResource(const IO::Path& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
     /// overload which also takes an identifying tag, which is used to group-discard resources
-    Resources::ResourceId CreateResource(const IO::URN& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
+    Resources::ResourceId CreateResource(const IO::Path& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
     /// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
-    template<class METADATA> Resources::ResourceId CreateResource(const IO::URN& res, const METADATA& metaData, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
+    template<class METADATA> Resources::ResourceId CreateResource(const IO::Path& res, const METADATA& metaData, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
     /// overload which also takes an identifying tag, which is used to group-discard resources
-    template<class METADATA> Resources::ResourceId CreateResource(const IO::URN& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
+    template<class METADATA> Resources::ResourceId CreateResource(const IO::Path& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false, bool stream = true);
 
     /// discard resource (stream-managed)
     void DiscardResource(const Resources::ResourceId res);
@@ -89,15 +90,17 @@ public:
     const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
 
     /// register a stream pool, which takes an extension and the RTTI of the resource type to create
-    void RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    void RegisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader);
     /// deregisters a stream pool
-    void DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    void DeregisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamLoader() const;
     /// query if a stream loader is registered for a given extension
     bool HasStreamLoader(const Util::StringAtom& ext) const;
     /// query if a stream loader is registered for a URN
     bool HasStreamLoader(const IO::URN& urn) const;
+    /// query if a stream loader is registered for a URN
+    bool HasStreamLoader(const IO::Path& path) const;
 
     /// Wait for all loader threads
     void WaitForLoaderThread();
@@ -112,8 +115,6 @@ private:
     Util::Dictionary<Util::StringAtom, IndexT> loaderMap;
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
     Util::Array<Ptr<ResourceLoader>> loaders;
-
-    static int32_t UniquePoolCounter;
 };
 
 //------------------------------------------------------------------------------
@@ -164,13 +165,13 @@ Resources::ResourceServer::CreateResource(
 //------------------------------------------------------------------------------
 /**
 */
-inline Resources::ResourceId 
+inline Resources::ResourceId
 ResourceServer::CreateResource(
-    const IO::URN& res
-    , std::function<void(const Resources::ResourceId)> success
-    , std::function<void(const Resources::ResourceId)> failed
-    , bool immediate
-    , bool stream
+    const IO::Path& res,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed,
+    bool immediate,
+    bool stream
 )
 {
     return CreateResource(res, "", success, failed, immediate, stream);
@@ -179,19 +180,19 @@ ResourceServer::CreateResource(
 //------------------------------------------------------------------------------
 /**
 */
-inline Resources::ResourceId 
+inline Resources::ResourceId
 ResourceServer::CreateResource(
-    const IO::URN& res
-    , const Util::StringAtom& tag
-    , std::function<void(const Resources::ResourceId)> success
-    , std::function<void(const Resources::ResourceId)> failed
-    , bool immediate
-    , bool stream
+    const IO::Path& res,
+    const Util::StringAtom& tag,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed,
+    bool immediate,
+    bool stream
 )
 {
     // get resource loader by extension
-    IndexT i = this->extensionMap.FindIndex(res.GetNamespace());
-    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
+    IndexT i = this->extensionMap.FindIndex(res.GetType());
+    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetType().AsCharPtr());
     const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
@@ -247,46 +248,6 @@ ResourceServer::CreateResource(
 //------------------------------------------------------------------------------
 /**
 */
-template<class METADATA>
-inline Resources::ResourceId ResourceServer::CreateResource(
-    const IO::URN& res
-    , const METADATA& metaData
-    , std::function<void(const Resources::ResourceId)> success
-    , std::function<void(const Resources::ResourceId)> failed
-    , bool immediate
-    , bool stream
-)
-{
-    return CreateResource(res, metaData, "", success, failed, immediate, stream);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class METADATA>
-inline Resources::ResourceId ResourceServer::CreateResource(
-    const IO::URN& res
-    , const METADATA& metaData
-    , const Util::StringAtom& tag
-    , std::function<void(const Resources::ResourceId)> success
-    , std::function<void(const Resources::ResourceId)> failed
-    , bool immediate
-    , bool stream
-)
-{
-    // get resource loader by extension
-    IndexT i = this->extensionMap.FindIndex(res.GetNamespace());
-    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetNamespace().AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
-
-    // create container and cast to actual resource type
-    Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate, stream);
-    return id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline void
 ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
@@ -319,6 +280,16 @@ inline bool
 ResourceServer::HasStreamLoader(const IO::URN& urn) const
 {
     IndexT i = this->extensionMap.FindIndex(urn.GetNamespace());
+    return i != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+ResourceServer::HasStreamLoader(const IO::Path& path) const
+{
+    IndexT i = this->extensionMap.FindIndex(path.GetType());
     return i != InvalidIndex;
 }
 
@@ -386,7 +357,7 @@ ResourceServer::GetName(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetName(id.resourceId);
+    return loader->GetName(id);
 }
 
 //------------------------------------------------------------------------------
@@ -398,7 +369,7 @@ ResourceServer::GetTag(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetTag(id.resourceId);
+    return loader->GetTag(id);
 }
 
 //------------------------------------------------------------------------------
@@ -410,7 +381,7 @@ ResourceServer::GetState(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetState(id.resourceId);
+    return loader->GetState(id);
 }
 
 //------------------------------------------------------------------------------
@@ -422,7 +393,7 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetUsage(id.resourceId);
+    return loader->GetUsage(id);
 }
 
 //------------------------------------------------------------------------------
@@ -514,34 +485,15 @@ CreateResource(
 */
 inline Resources::ResourceId
 CreateResource(
-    const IO::URN& res
-    , const Util::StringAtom& tag
-    , std::function<void(const Resources::ResourceId)> success = nullptr
-    , std::function<void(const Resources::ResourceId)> failed = nullptr
-    , bool immediate = false
-    , bool stream = true
+    const IO::Path& res,
+    const Util::StringAtom& tag,
+    std::function<void(const Resources::ResourceId)> success = nullptr,
+    std::function<void(const Resources::ResourceId)> failed = nullptr,
+    bool immediate = false,
+    bool stream = true
 )
 {
     return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate, stream);
-}
-
-//------------------------------------------------------------------------------
-/**
-    TODO: Make templated with success and failed and use a custom allocator to capture the closure
-*/
-template <class METADATA>
-inline Resources::ResourceId
-CreateResource(
-    const IO::URN& res
-    , const METADATA& metaData
-    , const Util::StringAtom& tag
-    , std::function<void(const Resources::ResourceId)> success = nullptr
-    , std::function<void(const Resources::ResourceId)> failed = nullptr
-    , bool immediate = false
-    , bool stream = true
-)
-{
-    return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate, stream);
 }
 
 //------------------------------------------------------------------------------

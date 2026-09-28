@@ -285,7 +285,10 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                     VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 #if NEBULA_GRAPHICS_DEBUG
                     VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
-                    VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME
+                    VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME,
+                    VK_EXT_DEVICE_FAULT_EXTENSION_NAME,
+                    VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_EXTENSION_NAME,
+                    VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
 #endif
                 };
 
@@ -747,8 +750,18 @@ DeviceLost()
             }
         }
         n_printf("******** END OF CRASH REPORT ********\n");
-
     }
+
+    VkDeviceFaultCountsEXT faults{ VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT };
+
+    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, nullptr);
+    Util::FixedArray<VkDeviceFaultInfoEXT> errors(faults.vendorInfoCount + faults.addressInfoCount);
+    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, errors.Begin());
+    for (const auto& deviceLostError : errors)
+    {
+        n_log_err(Vulkan, "Device lost: %s", deviceLostError.description);
+    }
+
     #endif
 }
 

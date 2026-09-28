@@ -60,8 +60,8 @@ void OpenScene()
     Terrain::TerrainContext::RegisterEntity(terrain);
 
     Terrain::TerrainCreateInfo terrainInfo;
-    terrainInfo.heightMap = IO::URN("urn:tex:terrain/everest Height Map (Merged)_PNG_BC4_1");
-    terrainInfo.decisionMap = IO::URN("urn:tex:system/black");
+    terrainInfo.heightMap = "terrain:everest Height Map (Merged)_PNG_BC4_1:tex"_path;
+    terrainInfo.decisionMap = "system:black:tex"_path;
     terrainInfo.enableRayTracing = false;
     terrainInfo.minHeight = 0.0f;
     terrainInfo.maxHeight = 1024.0f;
@@ -85,7 +85,7 @@ void OpenScene()
         .SlopeMaterial(Terrain::BiomeMaterialBuilder().Finish())
         .HeightMaterial(Terrain::BiomeMaterialBuilder().Finish())
         .HeightSlopeMaterial(Terrain::BiomeMaterialBuilder().Finish())
-        .Mask(IO::URN("urn:tex:system/white"))
+        .Mask("system:white:tex"_path)
         .Finish();
     Terrain::TerrainContext::CreateBiome(terrain, biomeParameters);
 };

@@ -414,7 +414,7 @@ PackageMaterial(
     ToolkitUtil::BinaryXmlConverter converter;
     Util::String fileNameNoExt = fileName;
     fileNameNoExt.StripFileExtension();
-    IO::URI output = Util::String::Sprintf("%s/%s.sur", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
+    IO::URI output = Util::String::Sprintf("%s/%s.mat", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
     logger->Print("%s\n",
                 Util::Format("Packaged material: %s",
                              Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());

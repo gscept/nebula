@@ -90,7 +90,7 @@ Create()
     IO::IoServer::Instance()->CreateDirectory("int:");
 
     // Setup URN
-    IO::URN::SetWorkRoot("proj:work");
+    IO::Path::SetWorkRoot("proj:work");
 
     LiveBatcher::Setup();
 
