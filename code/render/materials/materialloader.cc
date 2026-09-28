@@ -508,15 +508,8 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             else
             {
                 MaterialSetBufferBinding(id, -1);
+                n_log_warn(Materials, "Material %s has no registered loader, material properties can't be applied so won't render correctly", materialTemplate->name);
             }
-
-            // This is the legacy material system loaded with the new surface format
-            if (reader->SetToFirstChild()) do
-            {
-                Util::StringAtom paramName = reader->GetCurrentNodeName();
-                LoadMaterialParameter(reader, paramName, materialTemplate, id, job.immediate);
-            }
-            while (reader->SetToNextChild());
         }
         else
         {
