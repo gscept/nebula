@@ -8,6 +8,7 @@
 #include "lighting/lightcontext.h"
 #include "graphics/cameracontext.h"
 #include "models/modelcontext.h"
+#include "coregraphics/meshresource.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
 #include "core/cvar.h"
@@ -60,8 +61,8 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     const Materials::MaterialId skyboxMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__Skybox.entry, "Skybox");
 
     // Create default skybox
-    const Resources::ResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, true, false);
-    Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial, boxMesh.resource, 0, Graphics::ALL_STAGE_MASK);
+    const CoreGraphics::MeshResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, true, false);
+    Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), Math::bbox(Math::point(), Math::vector(1)), skyboxMaterial, CoreGraphics::MeshResourceGetMesh(boxMesh, 0), 0, Graphics::ALL_STAGE_MASK);
     Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
     Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
 
