@@ -265,6 +265,7 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
                     textureInfo.dataSize += ctx.image_size(i, j);
                 }
             }
+
         }
 
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
@@ -272,7 +273,12 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
         return ret;
     }
 
-    stream->MemoryUnmap();
+    if (job.immediate)
+    {
+        // If we load the entire texture, it's safe to unmap the stream
+        stream->MemoryUnmap();
+    }
+
     return ret;
 }
 
