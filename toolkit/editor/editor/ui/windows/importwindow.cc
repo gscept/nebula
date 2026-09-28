@@ -348,8 +348,7 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
-                batcher->BatchFile(workAsset);
+                batcher->BatchAsset(Destination);
             }
 
             fbxFileIndex++;
@@ -417,8 +416,7 @@ AssetImporterWindow::Run(SaveMode save)
                 }
                 ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 GltfFiles.EraseIndex(gltfFileIndex);
-                auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "mdl");
-                batcher->BatchFile(workAsset);
+                batcher->BatchAsset(Destination);
             }
 
             gltfFileIndex++;

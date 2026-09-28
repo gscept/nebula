@@ -730,7 +730,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
             ToolkitUtil::FileDB::FolderInfo folder = this->folderInfoCache[this->activeFileTree];
-            static Util::String filePath = file.GetFolderAndFile();
+            const Util::String filePath = file.AsString();
             ImGui::SetDragDropPayload("resource", filePath.AsCharPtr(), sizeof(char) * filePath.Length() + 1);
             ImGui::Text(filePath.AsCharPtr());
             ImGui::EndDragDropSource();

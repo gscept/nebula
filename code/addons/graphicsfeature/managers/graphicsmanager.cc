@@ -62,7 +62,7 @@ RegisterModelEntity(
     Math::mat4 const& t
 )
 {
-    auto modelURN = IO::Path::FolderAndFile("mdl", res.Value());
+    auto modelURN = IO::Path::Parse(res.Value());
     Models::ModelContext::RegisterEntity(gid);
     Models::ModelContext::Setup(
         gid,

@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "navigationfeatureunit.h"
-#include "streamnavmeshcache.h"
 #include "debug/detourdebug.h"
 #include "game/api.h"
 #include "resources/resourceserver.h"
@@ -46,7 +45,8 @@ NavigationFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    Resources::ResourceServer::Instance()->RegisterStreamLoader("navmesh", Navigation::StreamNavMeshCache::RTTI);
+    this->navMeshCache = Navigation::StreamNavMeshCache::Create(); this->navMeshCache->Setup();
+    Resources::ResourceServer::Instance()->RegisterStreamLoader("navmesh", this->navMeshCache);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("nav", "export:navigation"));
 
     Navigation::navMeshCache = Resources::GetStreamLoader<Navigation::StreamNavMeshCache>();
