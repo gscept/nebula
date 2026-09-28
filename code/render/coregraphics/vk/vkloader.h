@@ -231,6 +231,8 @@ _DEC_VK(vkCmdDrawMeshTasksEXT);
 _DEC_VK(vkCmdSetCheckpointNV);
 _DEC_VK(vkGetQueueCheckpointDataNV);
 
+_DEC_VK(vkGetDeviceFaultInfoEXT);
+
 #ifdef __cplusplus
 }
 #endif

@@ -232,7 +232,9 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkCmdTraceRaysKHR);
     _IMP_VK(vkGetRayTracingShaderGroupHandlesKHR);
 
-    _IMP_VK(vkCmdDrawMeshTasksEXT)
+    _IMP_VK(vkCmdDrawMeshTasksEXT);
+
+    _IMP_VK(vkGetDeviceFaultInfoEXT);
 }
 
 } // namespace Vulkan
@@ -418,7 +420,8 @@ _DEF_VK(vkCmdBuildAccelerationStructuresKHR);
 _DEF_VK(vkCmdTraceRaysKHR);
 _DEF_VK(vkGetRayTracingShaderGroupHandlesKHR);
 
-_DEF_VK(vkCmdDrawMeshTasksEXT)
+_DEF_VK(vkCmdDrawMeshTasksEXT);
 
-_DEF_VK(vkCmdSetCheckpointNV)
-_DEF_VK(vkGetQueueCheckpointDataNV)
+_DEF_VK(vkCmdSetCheckpointNV);
+_DEF_VK(vkGetQueueCheckpointDataNV);
+_DEF_VK(vkGetDeviceFaultInfoEXT);

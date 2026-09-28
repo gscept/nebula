@@ -374,7 +374,8 @@ SwapchainSwap(const SwapchainId id)
         case VK_SUBOPTIMAL_KHR:
             break;
         default:
-            n_error("Present failed");
+            Vulkan::DeviceLost();
+            n_log_err(Vulkan, "vkAcquireNextImageKHR failed: %d", res);
     }
 }
 
