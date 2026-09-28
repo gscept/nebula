@@ -22,6 +22,8 @@ TextureId WhiteCubeArray;
 TextureId Red2D;
 TextureId Green2D;
 TextureId Blue2D;
+TextureId FlatNormal2D;
+TextureId DefaultMaterial2D;
 
 #ifdef WITH_NEBULA_EDITOR
 Util::Array<CoreGraphics::TextureId> TrackedTextures;

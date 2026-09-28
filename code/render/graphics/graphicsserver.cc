@@ -153,15 +153,15 @@ GraphicsServer::Open()
         RenderUtil::DrawFullScreenQuad::Setup();
 
         // load base textures before setting up major subsystems
-        const unsigned char white[6] = {0xFF};
-        const unsigned char black[6] = {0x00};
+        const unsigned int white[6] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        const unsigned int black[6] = {0x00000000, 0x0000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000};
         CoreGraphics::TextureCreateInfo texInfo;
         texInfo.usage = CoreGraphics::TextureUsage::Sample;
 
         texInfo.tag = "system";
-        texInfo.format = CoreGraphics::PixelFormat::R8;
+        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
         texInfo.bindless = true;
-        texInfo.dataSize = sizeof(unsigned char) * 6;
+        texInfo.dataSize = sizeof(white);
 
         texInfo.type = CoreGraphics::TextureType::Texture1D;
         texInfo.name = "White1D";
@@ -223,6 +223,16 @@ GraphicsServer::Open()
         texInfo.name = "Blue2D";
         texInfo.data = &blue;
         CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
+
+        const unsigned int flatNormal = 0x00007F7F;
+        texInfo.name = "FlatNormal2D";
+        texInfo.data = &flatNormal;
+        CoreGraphics::FlatNormal2D = CoreGraphics::CreateTexture(texInfo);
+
+        const unsigned int defaultMaterial = 0xFFFFFF00;
+        texInfo.name = "DefaultMaterial2D";
+        texInfo.data = &defaultMaterial;
+        CoreGraphics::DefaultMaterial2D = CoreGraphics::CreateTexture(texInfo);
 
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
         CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);

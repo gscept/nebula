@@ -292,8 +292,8 @@ MaterialLoader::Setup()
     auto gltfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(GLTFMaterial);
         LoadTexture(reader, CoreGraphics::White2D, "baseColorTexture", tag.Value(), material.baseColorTexture, materialLoaderState.GLTFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Green2D, "normalTexture", tag.Value(), material.normalTexture, materialLoaderState.GLTFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Black2D, "metallicRoughnessTexture", tag.Value(), material.metallicRoughnessTexture, materialLoaderState.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::FlatNormal2D, "normalTexture", tag.Value(), material.normalTexture, materialLoaderState.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::DefaultMaterial2D, "metallicRoughnessTexture", tag.Value(), material.metallicRoughnessTexture, materialLoaderState.GLTFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::White2D, "emissiveTexture", tag.Value(), material.emissiveTexture, materialLoaderState.GLTFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::Black2D, "occlusionTexture", tag.Value(), material.occlusionTexture, materialLoaderState.GLTFMaterials.dirty);
         LoadVec4(reader, "baseColorFactor", material.baseColorFactor, Math::vec4(1));
@@ -302,28 +302,30 @@ MaterialLoader::Setup()
         LoadFloat(reader, "roughnessFactor", material.roughnessFactor, 1);
         LoadFloat(reader, "normalScale", material.normalScale, 1);
         LoadFloat(reader, "alphaCutoff", material.alphaCutoff, 1);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::GLTF, gltfLoader);
 
     auto brdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(BRDFMaterial);
         LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, materialLoaderState.BRDFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, materialLoaderState.BRDFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, materialLoaderState.BRDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::DefaultMaterial2D, "ParameterMap", tag.Value(), material.ParameterMap, materialLoaderState.BRDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::FlatNormal2D, "NormalMap", tag.Value(), material.NormalMap, materialLoaderState.BRDFMaterials.dirty);
         LoadVec4(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
         LoadVec4(reader, "MatSpecularIntensity", material.MatSpecularIntensity, Math::vec4(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
         LoadFloat(reader, "MatMetallicIntensity", material.MatMetallicIntensity, 1);
         LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BRDF, brdfLoader);
 
     auto bsdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(BSDFMaterial);
         LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, materialLoaderState.BSDFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, materialLoaderState.BSDFMaterials.dirty);
-        LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, materialLoaderState.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::DefaultMaterial2D, "ParameterMap", tag.Value(), material.ParameterMap, materialLoaderState.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::FlatNormal2D, "NormalMap", tag.Value(), material.NormalMap, materialLoaderState.BSDFMaterials.dirty);
         LoadVec4(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
         LoadVec4(reader, "MatSpecularIntensity", material.MatSpecularIntensity, Math::vec4(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
@@ -331,12 +333,14 @@ MaterialLoader::Setup()
         LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
         LoadFloat(reader, "Transmission", material.Transmission, 0);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BSDF, bsdfLoader);
 
     auto unlitLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(UnlitMaterial);
         LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, materialLoaderState.UnlitMaterials.dirty);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::Unlit, unlitLoader);
 
@@ -346,6 +350,7 @@ MaterialLoader::Setup()
         LoadTexture(reader, CoreGraphics::White2D, "Layer2", tag.Value(), material.Layer2, materialLoaderState.BlendAddMaterials.dirty);
         LoadTexture(reader, CoreGraphics::White2D, "Layer3", tag.Value(), material.Layer3, materialLoaderState.BlendAddMaterials.dirty);
         LoadTexture(reader, CoreGraphics::White2D, "Layer4", tag.Value(), material.Layer4, materialLoaderState.BlendAddMaterials.dirty);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BlendAdd, blendAddLoader);
 
@@ -357,6 +362,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "SkyRotationFactor", material.SkyRotationFactor, 0);
         LoadFloat(reader, "Contrast", material.Contrast, 1);
         LoadFloat(reader, "Brightness", material.Brightness, 1);
+        Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::Skybox, skyboxLoader);
 
