@@ -156,6 +156,7 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
             Materials::MaterialSetData(mat, data, (SizeT)dataSize);
+            MaterialAddLODTexture(mat, rid);
             dirtyFlag = true;
         },
         [&handle, &dirtyFlag, mat, data, dataSize](Resources::ResourceId rid) mutable
@@ -164,6 +165,7 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
             Materials::MaterialSetData(mat, data, (SizeT)dataSize);
+            MaterialAddLODTexture(mat, rid);
             dirtyFlag = true;
         });
         handle = CoreGraphics::TextureGetBindlessHandle(def);
