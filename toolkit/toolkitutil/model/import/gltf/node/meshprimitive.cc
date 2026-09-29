@@ -347,7 +347,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             }
         }
 
-        if (!AllBits(context->flags, ToolkitUtil::FlipUVs))
+        if (AllBits(context->flags, ToolkitUtil::FlipUVs))
         {
             meshBuilder->FlipUvs();
         }
