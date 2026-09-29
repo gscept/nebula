@@ -74,25 +74,26 @@ FileWatcherImpl::Update(EventHandlerData& data)
             Util::String file = fullRelative.ExtractFileName();
             switch (ev->Action)
             {
-            case FILE_ACTION_ADDED:
-            {
-                data.callback({ Created, data.folder, relativePath, file });
-            }
-            break;
-            case FILE_ACTION_MODIFIED:
-            {
-                data.callback({ Modified, data.folder, relativePath, file });
-            }
-            break;
-            case FILE_ACTION_REMOVED:
-            {
-                data.callback({ Deleted, data.folder, relativePath, file });
-            }
-            break;
-            case FILE_ACTION_RENAMED_NEW_NAME:
-            {
-                data.callback({ NameChange, data.folder, relativePath, file });
-            }
+                case FILE_ACTION_ADDED:
+                {
+                    data.callback({ Created, data.folder, relativePath, file });
+                    break;
+                }
+                case FILE_ACTION_MODIFIED:
+                {
+                    data.callback({ Modified, data.folder, relativePath, file });
+                    break;
+                }
+                case FILE_ACTION_REMOVED:
+                {
+                    data.callback({ Deleted, data.folder, relativePath, file });
+                    break;
+                }
+                case FILE_ACTION_RENAMED_NEW_NAME:
+                {
+                    data.callback({ NameChange, data.folder, relativePath, file });
+                    break;
+                }
 
             }
         }
@@ -124,4 +125,4 @@ void FileWatcherImpl::WaitForEvents(double timeoutSecs)
     Core::SysFunc::Sleep(timeoutSecs);
 }
 
-}
+} // namespace IO
