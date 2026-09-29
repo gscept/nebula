@@ -78,7 +78,9 @@ AssetImporterWindow::Run(SaveMode save)
         }
         else if (ext == "gltf" || ext == "glb")
         {
-            GltfFiles.Append({ file, {} });
+            ModelImportSettings gltfSettings;
+            gltfSettings.flipUVs = true;
+            GltfFiles.Append({ file, gltfSettings });
         }
         else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
         {
