@@ -384,7 +384,7 @@ WindowServer::RunAll()
         if (it->popupThisFrame)
         {
             ImGui::OpenPopup(it->GetName().AsCharPtr());
-
+            it->popupThisFrame = false;
         }
         if (it->Open())
         {

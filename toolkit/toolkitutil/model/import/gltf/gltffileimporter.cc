@@ -172,6 +172,15 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
             textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
         }
+        if (material.emissiveTexture.index != -1)
+        {
+            ToolkitUtil::TextureResourceT tex;
+            tex.target_format = ToolkitUtil::TexturePixelFormat_R8G8B8A8;
+            tex.color_space = ToolkitUtil::TextureColorSpace_sRGB;
+
+            int32_t imageIndex = gltfScene.textures[material.emissiveTexture.index].source;
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
+        }
     }
 
     return res;

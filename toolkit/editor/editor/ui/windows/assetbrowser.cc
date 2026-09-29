@@ -621,6 +621,7 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
             this->pickFolderFunction(info.folderPath);
             this->pickFolderFunction = nullptr;
             this->open = false;
+            this->popupThisFrame = false;
         }
 
         else
@@ -1057,6 +1058,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 this->pickFileFunction(path);
                 this->pickFileFunction = nullptr;
                 this->open = false;
+                this->popupThisFrame = false;
             }
             else
             {
@@ -1215,6 +1217,7 @@ AssetBrowser::DisplayFileTree()
             this->pickFolderFunction(info.folderPath);
             this->pickFolderFunction = nullptr;
             this->open = false;
+            this->popupThisFrame = false;
         }
     }
 

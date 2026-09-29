@@ -41,7 +41,7 @@ Util::Array<IO::URI>
 GltfFileMaterialExtractor::ExtractAll()
 {
     Util::Array<IO::URI> outputFiles;
-    this->textureDir = "tex:" + this->outputFolder.StripSubstring(IO::URI("src:assets").LocalPath());
+    this->textureDir = this->outputFolder.StripSubstring(IO::URI("src:assets").LocalPath());
 
     if (this->doc->materials.Size() > 0)
     {
@@ -139,53 +139,53 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
     if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
     {
         int baseColorTexture = this->doc->textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
-        Util::String value;
+        IO::Path value;
         if (this->doc->images[baseColorTexture].embedded)
-            value = this->textureDir + Util::String::FromInt(baseColorTexture);
+            value = IO::Path::File(this->textureDir, Util::String::FromInt(baseColorTexture), "tex");
         else
         {
             // texture is not embedded, we need to figure out the correct path to it
-            Util::String texFile = this->textureDir + "/" + this->doc->images[baseColorTexture].uri;
+            Util::String texFile = this->doc->images[baseColorTexture].uri;
             texFile.StripFileExtension();
-            value = texFile;
+            value = IO::Path::File(this->textureDir, Util::String::FromInt(baseColorTexture), "tex");
         }
 
         materialResource->value_names.push_back("baseColorTexture");
-        materialResource->values.push_back(value);
+        materialResource->values.push_back(value.AsString());
     }
 
     if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
     {
         int metallicRoughnessTexture = this->doc->textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
-        Util::String value;
+        IO::Path value;
         if (this->doc->images[metallicRoughnessTexture].embedded)
-            value = this->textureDir + Util::String::FromInt(metallicRoughnessTexture);
+            value = IO::Path::File(this->textureDir, Util::String::FromInt(metallicRoughnessTexture), "tex");
         else
         {
             // texture is not embedded, we need to find the correct path to it
-            Util::String texFile = this->textureDir + "/" + this->doc->images[metallicRoughnessTexture].uri;
+            Util::String texFile = this->doc->images[metallicRoughnessTexture].uri;
             texFile.StripFileExtension();
-            value = texFile;
+            value = IO::Path::File(this->textureDir, texFile, "tex");
         }
         materialResource->value_names.push_back("metallicRoughnessTexture");
-        materialResource->values.push_back(value);
+        materialResource->values.push_back(value.AsString());
     }
     
     if (material.normalTexture.index != -1)
     {
         int normalTexture = this->doc->textures[material.normalTexture.index].source;
-        Util::String value;
+        IO::Path value;
         n_assert(normalTexture > -1)
             if (this->doc->images[normalTexture].embedded)
-                value = this->textureDir + Util::String::FromInt(normalTexture);
+                value = IO::Path::File(this->textureDir, Util::String::FromInt(normalTexture), "tex");
             else
             {
-                Util::String texFile = this->textureDir + "/" + this->doc->images[normalTexture].uri;
+                Util::String texFile = this->doc->images[normalTexture].uri;
                 texFile.StripFileExtension();
-                value = texFile;
+                value = IO::Path::File(this->textureDir, texFile, "tex");
             }
         materialResource->value_names.push_back("normalTexture");
-        materialResource->values.push_back(value);
+        materialResource->values.push_back(value.AsString());
 
         materialResource->value_names.push_back("normalScale");
         materialResource->values.push_back(Util::String::FromFloat(material.normalTexture.scale));
@@ -194,37 +194,37 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
     if (material.emissiveTexture.index != -1)
     {
         int emissiveTexture = this->doc->textures[material.emissiveTexture.index].source;
-        Util::String value;
+        IO::Path value;
         n_assert(emissiveTexture > -1)
             if (this->doc->images[emissiveTexture].embedded)
-                value = this->textureDir + Util::String::FromInt(emissiveTexture);
+                value = IO::Path::File(this->textureDir, Util::String::FromInt(emissiveTexture), "tex");
             else
             {
                 // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->textureDir + "/" + this->doc->images[emissiveTexture].uri;
+                Util::String texFile = this->doc->images[emissiveTexture].uri;
                 texFile.StripFileExtension();
-                value = texFile;
+                value = IO::Path::File(this->textureDir, texFile, "tex");
             }
         materialResource->value_names.push_back("emissiveTexture");
-        materialResource->values.push_back(value);
+        materialResource->values.push_back(value.AsString());
     }
 
     if (material.occlusionTexture.index != -1)
     {
         int occlusionTexture = this->doc->textures[material.occlusionTexture.index].source;
-        Util::String value;
+        IO::Path value;
         n_assert(occlusionTexture > -1)
             if (this->doc->images[occlusionTexture].embedded)
-                value = this->textureDir + Util::String::FromInt(occlusionTexture);
+                value = IO::Path::File(this->textureDir, Util::String::FromInt(occlusionTexture), "tex");
             else
             {
                 // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->textureDir + "/" + this->doc->images[occlusionTexture].uri;
+                Util::String texFile = this->doc->images[occlusionTexture].uri;
                 texFile.StripFileExtension();
-                value = texFile;
+                value = IO::Path::File(this->textureDir, texFile, "tex");
             }
         materialResource->value_names.push_back("occlusionTexture");
-        materialResource->values.push_back(value);
+        materialResource->values.push_back(value.AsString());
     }
 
     materialResource->value_names.push_back("baseColorFactor"); 
