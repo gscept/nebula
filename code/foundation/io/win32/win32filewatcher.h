@@ -17,16 +17,10 @@ namespace IO
 struct EventHandlerData;
 struct FileWatcherPlatform
 {
-    HANDLE dirHandle;
-    OVERLAPPED overlapped;
-
     Util::Array<HANDLE> handles;
     Util::Array<OVERLAPPED> overlaps;
     Util::PinnedArray<0xFFF, Util::FixedArray<BYTE>> buffers;
-    Util::Array<Util::String> relativePaths;
-    Util::Array<Util::String> fullPaths;
     DWORD notifyFilter;
-    BYTE buffer[16 * 1024];
     Util::Dictionary<HANDLE, Util::String> relativePathLookup;
     bool recursive;        
 };
