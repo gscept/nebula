@@ -5,6 +5,8 @@
 #include "livebatcher.h"
 #include "system/process.h"
 #include "io/memorystream.h"
+#include "io/ioserver.h"
+#include "editor/ui/windowserver.h"
 
 const char* batcherPath = NEBULA_BINARY_FOLDER "/assetbatcher.exe";
 const char* workPath = "proj:work/";
@@ -52,6 +54,8 @@ struct
     System::ProcessStartInfo startInfo;
     Ptr<IO::MemoryStream> outputStream;
     Ptr<LiveBatcherThread> batchThread;
+    Threading::SafeQueue<Util::String> filesToReload;
+
 
     bool autoScroll = true;
 } livebatcherState;
@@ -92,6 +96,7 @@ LiveBatcher::Discard()
 void
 LiveBatcher::BatchAssets()
 {
+    Presentation::BatcherWindow->Open() = true;
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
         []() -> bool
         {
@@ -115,8 +120,10 @@ LiveBatcher::BatchAssets()
 void
 LiveBatcher::BatchAsset(const IO::Path& assetPath)
 {
+    Presentation::BatcherWindow->Open() = true;
+    IO::IoServer* ioServer = IO::IoServer::Instance();
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        [assetPath]() -> bool
+        [assetPath, ioServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -127,8 +134,30 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
             {
                 System::WaitForProcess(process);
                 n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+
+                /// Hmm, maybe it'd be better if the batcher could produce a list of files for us instead...
+                static const char* exportFolders[] =
+                {
+                    "mdl",
+                    "msh",
+                    "tex",
+                    "phys"
+                };
+
+                for (SizeT i = 0; i < lengthof(exportFolders); i++)
+                {
+                    const char* basePath = exportFolders[i];
+                    Util::Array<Util::String> files = ioServer->ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
+                    for (const auto& file : files)
+                    {
+                        livebatcherState.filesToReload.Enqueue(Util::Format("%s:%s/%s", basePath, assetPath.GetFolder().AsCharPtr(), file.AsCharPtr()));
+                    }
+                }
+                
+
                 return true;
             }
+
             return false;
         }
     });
@@ -140,6 +169,7 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
 void 
 LiveBatcher::BatchFile(const IO::Path& filePath)
 {
+    Presentation::BatcherWindow->Open() = true;
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
         [filePath]() -> bool
         {
@@ -154,6 +184,9 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
             {
                 System::WaitForProcess(process);
                 n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+
+                livebatcherState.filesToReload.Enqueue(filePath.GetExportFile());
+
                 return true;
             }
             return false;
@@ -276,6 +309,11 @@ LiveBatcherWindow::Run(SaveMode save)
 void
 LiveBatcherWindow::Update()
 {
+    // Dequeue pending reloads and run them
+    Util::Array<Util::String> filesToReload;
+    Editor::livebatcherState.filesToReload.DequeueAll(filesToReload);
+    for (const auto& file : filesToReload)
+        Resources::ReloadResource(file);
 }
 
 } // namespace Presentation

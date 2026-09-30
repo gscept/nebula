@@ -216,6 +216,7 @@ public:
         LoadState loadState;
         Resource::State state;
         ResourceId id;
+        LoadFlags flags;
         ResourceLoadJob remainderJob;
 
         void UpdateLoaderState(ResourceLoader* loader) const
@@ -276,6 +277,9 @@ protected:
     /// Set lod factor for resource
     virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
 
+    /// Register a reload listener callback
+    void AddReloadListener(const std::function<void(Resources::ResourceId)>& callback);
+
     /// unload resource (overload to implement resource deallocation)
     virtual void Unload(const Resources::ResourceId id) = 0;
     /// update the resource loader, this is done every frame
@@ -318,6 +322,8 @@ protected:
     Util::Array<_PendingResourceUnload> pendingUnloads;
     Util::Array<_PendingStreamLod> pendingStreamLods;
     Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
+
+    Util::Array<std::function<void(Resources::ResourceId)>> reloadListeners;
 
     Threading::SafeQueue<ResourceLoadOutput> loadOutputs;
     Util::Array<ResourceLoadJob> dependentJobs;

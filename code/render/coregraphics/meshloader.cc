@@ -106,22 +106,220 @@ ResourceLoader::ResourceInitOutput
 MeshLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     n_assert(stream.isvalid());
-    String resIdExt = job.name.GetFileExtension();
+    MeshResourceId id = meshResourceAllocator.Alloc();
+    ResourceLoader::ResourceInitOutput ret;
 
-    if (resIdExt == "nvx")
-    {
-        MeshResourceId id = meshResourceAllocator.Alloc();
-        ResourceLoader::ResourceInitOutput ret;
+    n_assert(stream.isvalid());
 
-        ret.loaderStreamData = this->SetupMeshFromNvx(stream, job, id);
-        ret.id = id;
-        return ret;
-    }
-    else
+    void* mapPtr = nullptr;
+    Util::FixedArray<MeshId> meshes;
+
+    Ptr<IO::StreamReader> reader = IO::StreamReader::Create();
+    reader->SetStream(stream);
+    if (reader->Open())
     {
-        n_error("StreamMeshCache::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
-        return ResourceLoader::ResourceInitOutput();
+        n_assert(stream->CanBeMapped());
+        n_assert(nullptr == mapPtr);
+
+        // map the stream to memory
+        mapPtr = stream->MemoryMap();
+        char* basePtr = (char*)mapPtr;
+
+        n_assert(nullptr != mapPtr);
+
+        auto header = (Nvx3Header*)mapPtr;
+        if (header->magic != NEBULA_NVX_MAGICNUMBER)
+        {
+            // not a nvx2 file, break hard
+            n_log_err(Mesh Loader, "%s is not a valid nvx file!", stream->GetURI().AsString().AsCharPtr());
+            return ret;
+        }
+
+        n_assert(header->numMeshes > 0);
+        auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
+        auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
+        auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
+        //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
+
+        meshes.Resize(header->numMeshes);
+
+        MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
+        streamData->mappedData = mapPtr;
+
+        ret.loaderStreamData.stream = stream;
+        ret.loaderStreamData.data = streamData;
+
+        CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
+        CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
+        CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
+
+        n_assert(header->vertexDataSize > 0);
+        n_assert(header->indexDataSize > 0);
+        // Upload vertex data
+        {
+            // Allocate vertices from global repository
+            vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
+            streamData->vertexAllocation = vertexAllocation;
+            meshResourceAllocator.Set<MeshResource_VertexData>(id.id, vertexAllocation);
+            if (job.immediate)
+            {
+                BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocation.offset, vertexData, header->vertexDataSize);
+            }
+        }
+
+        // Upload index data
+        {
+            // Allocate vertices from global repository
+            indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
+            streamData->indexAllocation = indexAllocation;
+            meshResourceAllocator.Set<MeshResource_IndexData>(id.id, indexAllocation);
+            if (job.immediate)
+            {
+                BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocation.offset, indexData, header->indexDataSize);
+            }
+        }
+
+        for (uint i = 0; i < header->numMeshes; i++)
+        {
+            Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
+            const Nvx3VertexRange& range = vertexRanges[i];
+
+            for (uint j = 0; j < range.numGroups; j++)
+            {
+                PrimitiveGroup group;
+                const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
+                group.SetBaseIndex(nvxGroup->firstIndex);
+                group.SetNumIndices(nvxGroup->numIndices);
+                primGroups.Append(group);
+            }
+            MeshCreateInfo mshInfo;
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset), 0 });
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocation.offset + (size_t)range.attributesVertexByteOffset), 1 });
+            mshInfo.indexBufferOffset = streamData->indexAllocation.offset + (size_t)range.indexByteOffset;
+            mshInfo.indexBuffer = ibo;
+            mshInfo.topology = PrimitiveTopology::TriangleList;
+            mshInfo.indexType = range.indexType;
+            mshInfo.primitiveGroups = primGroups;
+            mshInfo.vertexLayout = Layouts[(uint)range.layout];
+            mshInfo.name = job.name;
+            MeshId mesh = CreateMesh(mshInfo);
+            meshes[i] = mesh;
+        }
+
+        reader->Close();
     }
+
+    // Update mesh allocator
+    meshResourceAllocator.Set<MeshResource_Meshes>(id.id, meshes);
+    ret.id = id;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceLoader::ResourceInitOutput
+MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    n_assert(stream.isvalid());
+    MeshResourceId id = job.id.resource;
+    ResourceLoader::ResourceInitOutput ret;
+
+    n_assert(stream.isvalid());
+
+    void* mapPtr = nullptr;
+    Util::FixedArray<MeshId> meshes = meshResourceAllocator.Get<MeshResource_Meshes>(id.id);
+
+    Ptr<IO::StreamReader> reader = IO::StreamReader::Create();
+    reader->SetStream(stream);
+    if (reader->Open())
+    {
+        n_assert(stream->CanBeMapped());
+        n_assert(nullptr == mapPtr);
+
+        // map the stream to memory
+        mapPtr = stream->MemoryMap();
+        char* basePtr = (char*)mapPtr;
+
+        n_assert(nullptr != mapPtr);
+
+        auto header = (Nvx3Header*)mapPtr;
+        if (header->magic != NEBULA_NVX_MAGICNUMBER)
+        {
+            // not a nvx2 file, break hard
+            n_log_err(Mesh Loader, "%s is not a valid nvx file!", stream->GetURI().AsString().AsCharPtr());
+            return ret;
+        }
+
+        if (header->numMeshes != meshes.Size())
+        {
+            n_log_warn(Mesh Loader, "%s reloading will continue but not all new meshes will be loaded", stream->GetURI().AsString().AsCharPtr());
+        }
+
+        n_assert(header->numMeshes > 0);
+        auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
+        auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
+        auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
+        //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
+
+        MeshStreamData* streamData = (MeshStreamData*)ret.loaderStreamData.data;
+        streamData->mappedData = mapPtr;
+
+        CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
+        CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
+        CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
+
+        n_assert(header->vertexDataSize > 0);
+        n_assert(header->indexDataSize > 0);
+
+        CoreGraphics::DeallocateVertices(streamData->vertexAllocation);
+        CoreGraphics::DeallocateIndices(streamData->indexAllocation);
+        // Allocate vertices from global repository
+        vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
+        streamData->vertexAllocation = vertexAllocation;
+        meshResourceAllocator.Set<MeshResource_VertexData>(id.id, vertexAllocation);
+        if (job.immediate)
+        {
+            BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocation.offset, vertexData, header->vertexDataSize);
+        }
+
+        // Allocate vertices from global repository
+        indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
+        streamData->indexAllocation = indexAllocation;
+        meshResourceAllocator.Set<MeshResource_IndexData>(id.id, indexAllocation);
+        if (job.immediate)
+        {
+            BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocation.offset, indexData, header->indexDataSize);
+        }
+
+        for (uint i = 0; i < header->numMeshes; i++)
+        {
+            Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
+            const Nvx3VertexRange& range = vertexRanges[i];
+
+            for (uint j = 0; j < range.numGroups; j++)
+            {
+                PrimitiveGroup group;
+                const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
+                group.SetBaseIndex(nvxGroup->firstIndex);
+                group.SetNumIndices(nvxGroup->numIndices);
+                primGroups.Append(group);
+            }
+
+            // Update mesh offsets
+            CoreGraphics::MeshId mesh = meshes[i];
+            CoreGraphics::MeshSetVertexOffset(mesh, 0, streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset);
+            CoreGraphics::MeshSetVertexOffset(mesh, 1, streamData->vertexAllocation.offset + (size_t)range.attributesVertexByteOffset);
+            CoreGraphics::MeshSetIndexOffset(mesh, streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset);
+            CoreGraphics::MeshSetPrimitiveGroups(mesh, primGroups);
+        }
+
+        reader->Close();
+    }
+
+    // Update mesh allocator
+    ret.id = id;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -180,7 +378,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
             {
                 rangesToFlush.Append(alloc);
                 BufferIdAcquire(vbo);
-                size_t baseVertexOffset = streamData->vertexAllocationOffset.offset;
+                size_t baseVertexOffset = streamData->vertexAllocation.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
@@ -201,7 +399,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
             {
                 rangesToFlush.Append(alloc);
                 BufferIdAcquire(ibo);
-                size_t baseIndexOffset = streamData->indexAllocationOffset.offset;
+                size_t baseIndexOffset = streamData->indexAllocation.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
@@ -325,121 +523,6 @@ const CoreGraphics::VertexLayoutId
 MeshLoader::GetLayout(const CoreGraphics::VertexLayoutType type)
 {
     return Layouts[(uint)type];
-}
-
-//------------------------------------------------------------------------------
-/**
-    Setup the mesh resource from a nvx3 file (Nebula's
-    native binary mesh file format).
-*/
-ResourceLoader::_StreamData
-MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJob& job, const MeshResourceId meshResource)
-{
-    n_assert(stream.isvalid());
-
-    void* mapPtr = nullptr;
-    Util::FixedArray<MeshId> meshes;
-
-    ResourceLoader::_StreamData ret;
-
-    Ptr<IO::StreamReader> reader = IO::StreamReader::Create();
-    reader->SetStream(stream);
-    if (reader->Open())
-    {
-        n_assert(stream->CanBeMapped());
-        n_assert(nullptr == mapPtr);
-
-        // map the stream to memory
-        mapPtr = stream->MemoryMap();
-        char* basePtr = (char*)mapPtr;
-
-        n_assert(nullptr != mapPtr);
-
-        auto header = (Nvx3Header*)mapPtr;
-        if (header->magic != NEBULA_NVX_MAGICNUMBER)
-        {
-            // not a nvx2 file, break hard
-            n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
-        }
-
-        n_assert(header->numMeshes > 0);
-        auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
-        auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
-        auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
-        //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
-
-        meshes.Resize(header->numMeshes);
-
-        MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
-        streamData->mappedData = mapPtr;
-
-        ret.stream = stream;
-        ret.data = streamData;
-
-        CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
-        CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
-        CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
-
-        n_assert(header->vertexDataSize > 0);
-        n_assert(header->indexDataSize > 0);
-        // Upload vertex data
-        {
-            // Allocate vertices from global repository
-            vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
-            streamData->vertexAllocationOffset = vertexAllocation;
-            meshResourceAllocator.Set<MeshResource_VertexData>(meshResource.id, vertexAllocation);
-            if (job.immediate)
-            {
-                BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocationOffset.offset, vertexData, header->vertexDataSize);
-            }
-        }
-
-        // Upload index data
-        {
-            // Allocate vertices from global repository
-            indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
-            streamData->indexAllocationOffset = indexAllocation;
-            meshResourceAllocator.Set<MeshResource_IndexData>(meshResource.id, indexAllocation);
-            if (job.immediate)
-            {
-                BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocationOffset.offset, indexData, header->indexDataSize);
-            }
-        }
-
-        for (uint i = 0; i < header->numMeshes; i++)
-        {
-            Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
-            const Nvx3VertexRange& range = vertexRanges[i];
-
-            for (uint j = 0; j < range.numGroups; j++)
-            {
-                PrimitiveGroup group;
-                const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
-                group.SetBaseIndex(nvxGroup->firstIndex);
-                group.SetNumIndices(nvxGroup->numIndices);
-                primGroups.Append(group);
-            }
-            MeshCreateInfo mshInfo;
-            mshInfo.streams.Append({ vbo, (streamData->vertexAllocationOffset.offset + (size_t)range.baseVertexByteOffset), 0 });
-            mshInfo.streams.Append({ vbo, (streamData->vertexAllocationOffset.offset + (size_t)range.attributesVertexByteOffset), 1 });
-            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (size_t)range.indexByteOffset;
-            mshInfo.indexBuffer = ibo;
-            mshInfo.topology = PrimitiveTopology::TriangleList;
-            mshInfo.indexType = range.indexType;
-            mshInfo.primitiveGroups = primGroups;
-            mshInfo.vertexLayout = Layouts[(uint)range.layout];
-            mshInfo.name = job.name;
-            MeshId mesh = CreateMesh(mshInfo);
-            meshes[i] = mesh;
-        }
-
-        reader->Close();
-    }
-
-    // Update mesh allocator
-    meshResourceAllocator.Set<MeshResource_Meshes>(meshResource.id, meshes);
-
-    return ret;
 }
 
 } // namespace CoreGraphics

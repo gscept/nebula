@@ -148,11 +148,29 @@ ResourceLoader::RequestLOD(const Ids::Id32 entry, float lod) const
 /**
 */
 void
+ResourceLoader::AddReloadListener(const std::function<void(Resources::ResourceId)>& callback)
+{
+    this->reloadListeners.Append(callback);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput& output)
 {
     output.UpdateLoaderState(loader);
     if (output.state == Resource::Loaded || output.state == Resource::Failed)
+    {
         loader->RunCallbacks(output.state, output.id);
+        if (AllBits(output.flags, Resources::LoadFlags::Reload) && !loader->reloadListeners.IsEmpty())
+        {
+            for (const auto& callback : loader->reloadListeners)
+            {
+                callback(output.id);
+            }
+        }
+    }
     else
         loader->dependentJobs.Append(output.remainderJob);
 }
@@ -446,6 +464,7 @@ skip_stream:
     output.loadState = job.loadState;
     output.state = job.state;
     output.id = job.id;
+    output.flags = job.flags;
     output.remainderJob = job;
 
     return output;
@@ -817,12 +836,13 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
+        this->loadStates[ret.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
         this->pendingLoads.Append(ret.loaderInstanceId);
     }
     else
     {
-        n_warning("Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
+        n_log_warn(Resources, "Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
     }
 }
 
@@ -846,6 +866,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 
     this->loads[id.loaderInstanceId] = pending;
     this->states[id.loaderInstanceId] = Resource::Pending;
+    this->loadStates[id.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
     this->callbacks[id.loaderInstanceId].Append({ success, failed });
     this->pendingLoads.Append(id.loaderInstanceId);
 }
