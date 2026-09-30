@@ -165,7 +165,7 @@ FileExists(const IO::URI& uri)
 /**
 */
 inline Util::Array<Util::String>
-ListFiles(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+ListFiles(const IO::URI& dir, const Util::String& pattern = "*", bool asFullPath = false)
 {
     return IoServer::Instance()->ListFiles(dir, pattern, asFullPath);
 }
@@ -174,7 +174,7 @@ ListFiles(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFull
 /**
 */
 inline Util::Array<Util::String>
-ListDirectories(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+ListDirectories(const IO::URI& dir, const Util::String& pattern = "*", bool asFullPath = false)
 {
     return IoServer::Instance()->ListDirectories(dir, pattern, asFullPath);
 }

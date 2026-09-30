@@ -403,9 +403,9 @@ public:
     String StripSubstring(const String& substring) const;
     /// replace illegal filename characters
     void ReplaceIllegalFilenameChars(char replacement);
-    /// append a directory/file to the path (adds separator if necessary)
-    void AppendPath(const String& path);
-    /// append a directory/file to the path (adds separator if necessary)
+    /// Appends a directory or file to current string
+    String& AppendPath(const String& path);
+    /// Appends a directory or file and returns a new string
     static String AppendPath(const String& base, const String& path);
 
     /// helpers to interface with libraries that expect std::string like apis
@@ -1266,7 +1266,7 @@ String::AppendMat4(const Math::mat4& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
+inline String&
 String::AppendPath(const String& path)
 {
     if (!this->IsEmpty() && this->FindCharIndexReverse('/') != (this->strLen - 1))
@@ -1274,6 +1274,7 @@ String::AppendPath(const String& path)
         this->AppendChar('/');
     }
     this->Append(path);
+    return *this;
 }
 
 //------------------------------------------------------------------------------

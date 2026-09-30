@@ -13,11 +13,14 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-namespace
-{
 using namespace IO;
 using namespace Util;
+namespace IO
+{
 
+//------------------------------------------------------------------------------
+/**
+*/
 static uint32_t
 CreateNotifyMask(Util::BitField<8> flags)
 {
@@ -38,6 +41,9 @@ CreateNotifyMask(Util::BitField<8> flags)
     return mask;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 static void
 AddWatchRecursive(FileWatcherPlatform& p, const String& absolutePath, const String& relativePath, uint32_t mask)
 {
@@ -62,14 +68,13 @@ AddWatchRecursive(FileWatcherPlatform& p, const String& absolutePath, const Stri
         AddWatchRecursive(p, subAbsPath, subRelPath, mask);
     }
 }
-}
-
-namespace IO
-{
 
 int FileWatcherImpl::epollFd = -1;
 int FileWatcherImpl::wakeupFd = -1;
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FileWatcherImpl::Init()
 {
@@ -83,6 +88,9 @@ FileWatcherImpl::Init()
     epoll_ctl(epollFd, EPOLL_CTL_ADD, wakeupFd, &ev);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FileWatcherImpl::Shutdown()
 {
@@ -98,6 +106,9 @@ FileWatcherImpl::Shutdown()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FileWatcherImpl::WaitForEvents(double timeoutSecs)
 {
@@ -115,6 +126,9 @@ FileWatcherImpl::WaitForEvents(double timeoutSecs)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 FileWatcherImpl::WakeUp()
 {
@@ -125,28 +139,34 @@ FileWatcherImpl::WakeUp()
     }
 }
 
- void 
- FileWatcherImpl::CreateWatcher(EventHandlerData& data)
- {
-     FileWatcherPlatform& p = data.data;
-     p.rootPath = IO::AssignRegistry::Instance()->ResolveAssigns(data.folder.AsString()).LocalPath();
-     p.wdToRelativePath.Clear();
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FileWatcherImpl::CreateWatcher(EventHandlerData& data)
+{
+    FileWatcherPlatform& p = data.data;
+    p.rootPath = IO::AssignRegistry::Instance()->ResolveAssigns(data.folder.AsString()).LocalPath();
+    p.wdToRelativePath.Clear();
 
-     p.inotifyFd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-     n_assert(p.inotifyFd >= 0);
+    p.inotifyFd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+    n_assert(p.inotifyFd >= 0);
 
-     if (epollFd >= 0)
-     {
-         epoll_event epollEv = {};
-         epollEv.events = EPOLLIN;
-         epollEv.data.fd = p.inotifyFd;
-         epoll_ctl(epollFd, EPOLL_CTL_ADD, p.inotifyFd, &epollEv);
-     }
+    if (epollFd >= 0)
+    {
+        epoll_event epollEv = {};
+        epollEv.events = EPOLLIN;
+        epollEv.data.fd = p.inotifyFd;
+        epoll_ctl(epollFd, EPOLL_CTL_ADD, p.inotifyFd, &epollEv);
+    }
 
-     const uint32_t mask = CreateNotifyMask(data.flags);
-     AddWatchRecursive(p, p.rootPath, "", mask);
- }
+    const uint32_t mask = CreateNotifyMask(data.flags);
+    AddWatchRecursive(p, p.rootPath, "", mask);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 FileWatcherImpl::DestroyWatcher(EventHandlerData& data)
 {
@@ -167,6 +187,9 @@ FileWatcherImpl::DestroyWatcher(EventHandlerData& data)
     p.rootPath.Clear();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 FileWatcherImpl::Update(EventHandlerData& data)
 {
@@ -241,4 +264,5 @@ FileWatcherImpl::Update(EventHandlerData& data)
         offset += sizeof(inotify_event) + ev->len;
     }
 }
-}
+
+} // namespace IO

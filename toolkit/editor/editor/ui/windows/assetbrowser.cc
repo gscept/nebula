@@ -179,6 +179,17 @@ AssetBrowser::AssetBrowser()
     this->fileDB.GetFolderInfo(rootFolderId, rootFolder);
     this->folderInfoCache.Add(rootFolderId, rootFolder);
     this->folderInfoDict.Add(IO::Path(), rootFolderId);
+
+    Util::BitField<8> watchFlags;
+    watchFlags.SetBit(IO::WatchFlags::NameChanged);
+    watchFlags.SetBit(IO::WatchFlags::SizeChanged);
+    watchFlags.SetBit(IO::WatchFlags::Creation);
+
+    IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
+    {
+        this->pendingWatchEvents.Enqueue(event);
+    };
+    IO::FileWatcher::Instance()->Watch(IO::Path().WorkURI("assets").LocalPath(), true, watchFlags, callback);
     
     this->activeFileTree = rootFolderId;
     this->activeFile = 0;
@@ -299,83 +310,84 @@ AssetBrowser::Update()
         this->showProgress = false;
     }
     {
-        Util::Array<IO::WatchEvent> events;
-        this->pendingWatchEvents.DequeueAll(events);
-        if (!events.IsEmpty() && this->fileDB.IsOpen() && this->activeFolder != 0)
+        if (this->activeFolder != 0)
         {
-            IO::IoServer* ioServer = IO::IoServer::Instance();
-            bool cacheNeedsRefresh = false;
-            for (const IO::WatchEvent& event : events)
+            Util::Array<IO::WatchEvent> events;
+            this->pendingWatchEvents.DequeueAll(events);
+            if (!events.IsEmpty() && this->fileDB.IsOpen())
             {
-                Util::String fileName = event.file;
-                if (fileName.IsEmpty())
-                    continue;
-
-                IO::Path relFilePath = IO::Path::File(event.relativePath, fileName, ToolkitUtil::FileTypeURNMapping[DetermineFileType(fileName.GetFileExtension())]);
-                IO::Path folderPath = this->folderInfoCache[this->activeFolder].folderPath;
-                IO::Path filePath = folderPath / relFilePath;
-                IO::URI fileUri = filePath.WorkURI("assets");
-                bool fileExistsOnDisk = ioServer->FileExists(fileUri);
-
-                switch (event.type)
+                IO::IoServer* ioServer = IO::IoServer::Instance();
+                bool cacheNeedsRefresh = false;
+                for (const IO::WatchEvent& event : events)
                 {
-                    case IO::WatchEventType::Created:
-                    case IO::WatchEventType::NameChange:
+                    Util::String fileName = event.file;
+                    if (fileName.IsEmpty())
+                        continue;
+
+                    IO::Path path = IO::Path::File(event.relativePath, fileName, ToolkitUtil::FileTypeURNMapping[DetermineFileType(fileName.GetFileExtension())]);
+                    IO::URI fileUri = path.WorkURI("assets");
+                    bool fileExistsOnDisk = ioServer->FileExists(fileUri);
+
+                    switch (event.type)
                     {
-                        if (fileExistsOnDisk)
+                        case IO::WatchEventType::Created:
+                        case IO::WatchEventType::NameChange:
                         {
-                            IO::IOStat ioInfo;
-                            IO::Stream::Size fileSize = 0;
-                            IO::FileTime modifiedTime;
-                            if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                            if (fileExistsOnDisk)
                             {
-                                fileSize = ioInfo.size;
-                                modifiedTime = ioInfo.modifiedTime;
+                                IO::IOStat ioInfo;
+                                IO::Stream::Size fileSize = 0;
+                                IO::FileTime modifiedTime;
+                                if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                                {
+                                    fileSize = ioInfo.size;
+                                    modifiedTime = ioInfo.modifiedTime;
+                                }
+                                this->fileDB.AddFile(this->logger, fileName, this->activeFolder, fileSize, DetermineFileType(fileName.GetFileExtension()), modifiedTime);
                             }
-                            this->fileDB.AddFile(this->logger, fileName, this->activeFolder, fileSize, DetermineFileType(fileName.GetFileExtension()), modifiedTime);
-                        }
-                        else
-                        {
-                            if (this->fileInfoDict.Contains(filePath))
+                            else
                             {
-                                uint64_t fileId = this->fileInfoDict[filePath];
+                                if (this->fileInfoDict.Contains(path))
+                                {
+                                    uint64_t fileId = this->fileInfoDict[path];
+                                    this->fileDB.DeleteFile(this->logger, fileId);
+                                }
+                            }
+                            cacheNeedsRefresh = true;
+                        }
+                        break;
+                        case IO::WatchEventType::Deleted:
+                        {
+                            if (this->fileInfoDict.Contains(path))
+                            {
+                                uint64_t fileId = this->fileInfoDict[path];
                                 this->fileDB.DeleteFile(this->logger, fileId);
                             }
+                            cacheNeedsRefresh = true;
                         }
-                        cacheNeedsRefresh = true;
-                    }
-                    break;
-                    case IO::WatchEventType::Deleted:
-                    {
-                        if (this->fileInfoDict.Contains(filePath))
+                        break;
+                        case IO::WatchEventType::Modified:
                         {
-                            uint64_t fileId = this->fileInfoDict[filePath];
-                            this->fileDB.DeleteFile(this->logger, fileId);
-                        }
-                        cacheNeedsRefresh = true;
-                    }
-                    break;
-                    case IO::WatchEventType::Modified:
-                    {
-                        if (this->fileInfoDict.Contains(filePath))
-                        {
-                            uint64_t fileId = this->fileInfoDict[filePath];
-                            IO::IOStat ioInfo;
-                            if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                            if (this->fileInfoDict.Contains(path))
                             {
-                                this->fileDB.UpdateFileMetadata(this->logger, fileId, ioInfo.modifiedTime);
+                                uint64_t fileId = this->fileInfoDict[path];
+                                IO::IOStat ioInfo;
+                                if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                                {
+                                    this->fileDB.UpdateFileMetadata(this->logger, fileId, ioInfo.modifiedTime);
+                                }
+                                break;
                             }
-                            break;
+                            cacheNeedsRefresh = true;
                         }
-                        cacheNeedsRefresh = true;
+                        break;
                     }
-                    break;
                 }
-            }
-            if (cacheNeedsRefresh)
-            {
-                this->RefreshFileInfoCaches();
-                this->IndexFolderForSearch(this->activeFolder, this->fileInfoCache);
+                if (cacheNeedsRefresh)
+                {
+                    this->RefreshFileInfoCaches();
+                    this->IndexFolderForSearch(this->activeFolder, this->fileInfoCache);
+                }
             }
         }
     }
@@ -494,14 +506,14 @@ AssetBrowser::SetActiveFolder(uint64_t folderId)
         if (this->activeFolder != 0)
         {
             ToolkitUtil::FileDB::FolderInfo oldInfo = this->folderInfoCache[this->activeFolder];
-            if (!oldInfo.isArchive)
-            {
-                IO::Path oldFolder = oldInfo.folderPath;
-                if (IO::FileWatcher::Instance()->IsWatched(oldFolder.GetFolderAndFile()))
-                {
-                    IO::FileWatcher::Instance()->Unwatch(oldFolder.GetFolderAndFile());
-                }
-            }
+            //if (!oldInfo.isArchive)
+            //{
+            //    IO::Path oldFolder = oldInfo.folderPath;
+            //    if (IO::FileWatcher::Instance()->IsWatched(oldFolder.GetFolderAndFile()))
+            //    {
+            //        IO::FileWatcher::Instance()->Unwatch(oldFolder.GetFolderAndFile());
+            //    }
+            //}
         }
         ToolkitUtil::FileDB::FolderInfo info = this->folderInfoCache[folderId];
         IO::URI folderPath = info.folderPath.WorkURI("assets");
@@ -567,19 +579,19 @@ AssetBrowser::SetActiveFolder(uint64_t folderId)
                 this->scannedFolders.Add(folderId, true);
             }
         }
-        if (!info.isArchive)
-        {
-            Util::BitField<8> watchFlags;
-            watchFlags.SetBit(IO::WatchFlags::NameChanged);
-            watchFlags.SetBit(IO::WatchFlags::SizeChanged);
-            watchFlags.SetBit(IO::WatchFlags::Creation);
-            IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
-            {
-                this->pendingWatchEvents.Enqueue(event);
-            };
-
-            IO::FileWatcher::Instance()->Watch(folderPath.LocalPath(), true, watchFlags, callback);
-        }
+        //if (!info.isArchive)
+        //{
+        //    Util::BitField<8> watchFlags;
+        //    watchFlags.SetBit(IO::WatchFlags::NameChanged);
+        //    watchFlags.SetBit(IO::WatchFlags::SizeChanged);
+        //    watchFlags.SetBit(IO::WatchFlags::Creation);
+        //    IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
+        //    {
+        //        this->pendingWatchEvents.Enqueue(event);
+        //    };
+        //
+        //    IO::FileWatcher::Instance()->Watch(folderPath.LocalPath(), true, watchFlags, callback);
+        //}
         this->activeFolder = folderId;
         this->activeFile = 0;
         if (this->scannedFolders.Contains(folderId))
