@@ -511,22 +511,14 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
             }
             else
             {
-                MaterialSetBufferBinding(id, -1);
                 n_log_warn(Materials, "Material %s has no registered loader, material properties can't be applied so won't render correctly", materialTemplate->name);
+                MaterialSetBufferBinding(id, -1);
             }
         }
         else
         {
-            // Set invalid buffer binding
+            n_log_warn(Materials, "Material %s is of an old format and has been deprecated. Please run the surface_updater.py script locatged in fips_files", stream->GetURI().LocalPath().AsCharPtr());
             MaterialSetBufferBinding(id, -1);
-
-            // Legacy loading with legacy format where each param is a node called Param
-            if (reader->SetToFirstChild("Param")) do
-            {
-                Util::StringAtom paramName = reader->GetString("name");
-                LoadMaterialParameter(reader, paramName, materialTemplate, id, job.immediate);
-            }
-            while (reader->SetToNextChild("Param"));
         }
     }
     return ret;
