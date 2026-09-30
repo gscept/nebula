@@ -95,6 +95,7 @@ Path::FolderAndFile(const Util::String& type, const Util::String& folderAndFile)
     ret.folder = folderAndFile.ExtractToLastSlash();
     ret.folder.TrimRight("/\\");
     ret.file = folderAndFile.ExtractFileName();
+    ret.file.StripFileExtension(); // Make sure the file doesn't contain any extensions
     ret.type = type;
     ret.isFile = true;
     ret.Build();
@@ -111,6 +112,7 @@ Path::FolderAndFile(const char* type, const Util::String& folderAndFile)
     ret.folder = folderAndFile.ExtractToLastSlash();
     ret.folder.TrimRight("/\\");
     ret.file = folderAndFile.ExtractFileName();
+    ret.file.StripFileExtension(); // Make sure the file doesn't contain any extensions
     ret.type = type;
     ret.isFile = true;
     ret.Build();
@@ -127,6 +129,7 @@ Path::File(const Util::String& folder, const Util::String& file, const Util::Str
     ret.folder = folder;
     ret.folder.TrimRight("/\\");
     ret.file = file;
+    ret.file.StripFileExtension(); // Make sure the file doesn't contain any extensions
     ret.type = type;
     ret.isFile = true;
     ret.Build();
@@ -143,6 +146,7 @@ Path::File(const Util::String& folder, const Util::String& file, const char* typ
     ret.folder = folder;
     ret.folder.TrimRight("/\\");
     ret.file = file;
+    ret.file.StripFileExtension(); // Make sure the file doesn't contain any extensions
     ret.type = type;
     ret.isFile = true;
     ret.Build();
