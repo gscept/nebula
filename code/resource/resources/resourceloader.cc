@@ -389,7 +389,10 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
             // If new resource, initialize it
             ResourceLoader::ResourceInitOutput initResult;
             if (AllBits(job.flags, LoadFlags::Create))
+            {
                 initResult = loader->InitializeResource(job, stream);
+                job.flags = LoadFlags::None;
+            }         
             else if (AllBits(job.flags, LoadFlags::Reload))
                 initResult = loader->ReinitializeResource(job, stream);
             job.streamData = initResult.loaderStreamData;
@@ -398,7 +401,6 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
 
             // Get the requested load bits based on the stream data
             job.loadState.requestedBits = loader->LodMask(job.streamData, job.lod, !job.immediate);
-            job.flags = LoadFlags::None;
 
             if (job.immediate)
             {

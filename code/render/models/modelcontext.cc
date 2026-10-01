@@ -130,6 +130,7 @@ ModelContext::SetupModel(
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
     Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    modelContextAllocator.Set<Model_GraphicsEntity>(cid.id, gfxId);
     modelContextAllocator.Set<Model_StageMask>(cid.id, stageMask);
 
     Util::Array<Models::ModelNode*> transformNodes;
@@ -336,6 +337,7 @@ ModelContext::Setup(
     Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    modelContextAllocator.Set<Model_GraphicsEntity>(cid.id, id);
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
     // Setup transforms
