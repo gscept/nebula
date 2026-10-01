@@ -247,6 +247,14 @@ private:
     friend class Visibility::VisibilityContext;
     friend class Raytracing::RaytracingContext;
 
+    static void SetupModel(
+        Graphics::GraphicsEntityId gfxId,
+        const Util::StringAtom& tag,
+        const std::function<void()>& finishedCallback,
+        const Graphics::StageMask stageMask,
+        Resources::ResourceId mid
+    );
+
     static ModelInstance NodeInstances;
     static Memory::RangeAllocator TransformInstanceAllocator, RenderInstanceAllocator;
 
