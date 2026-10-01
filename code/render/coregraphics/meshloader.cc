@@ -225,7 +225,6 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
     MeshResourceId id = job.id.resource;
     ResourceLoader::ResourceInitOutput ret;
 
-    Memory::Free(Memory::ScratchHeap, job.streamData.data);
     n_assert(stream.isvalid());
 
     void* mapPtr = nullptr;
@@ -237,6 +236,12 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
     {
         n_assert(stream->CanBeMapped());
         n_assert(nullptr == mapPtr);
+
+        MeshStreamData* oldStreamData = (MeshStreamData*)job.streamData.data;
+        CoreGraphics::DeallocateVertices(oldStreamData->vertexAllocation);
+        CoreGraphics::DeallocateIndices(oldStreamData->indexAllocation);
+        Memory::Free(Memory::ScratchHeap, oldStreamData);
+
 
         // map the stream to memory
         mapPtr = stream->MemoryMap();
@@ -276,8 +281,7 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
         n_assert(header->vertexDataSize > 0);
         n_assert(header->indexDataSize > 0);
 
-        CoreGraphics::DeallocateVertices(streamData->vertexAllocation);
-        CoreGraphics::DeallocateIndices(streamData->indexAllocation);
+
         // Allocate vertices from global repository
         vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
         streamData->vertexAllocation = vertexAllocation;

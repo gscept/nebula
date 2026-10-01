@@ -163,7 +163,7 @@ ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput
     if (output.state == Resource::Loaded || output.state == Resource::Failed)
     {
         loader->RunCallbacks(output.state, output.id);
-        if (AllBits(output.flags, Resources::LoadFlags::Reload) && !loader->reloadListeners.IsEmpty())
+        if (AllBits(output.flags, LoadFlags::Reload)  && !loader->reloadListeners.IsEmpty())
         {
             for (const auto& callback : loader->reloadListeners)
             {
@@ -379,7 +379,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     streamResult.pendingBits = job.loadState.pendingBits;
     streamResult.loadedBits = job.loadState.loadedBits;
 
-    if (AnyBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
+    if (AllBits(job.flags, LoadFlags::Create))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
@@ -388,19 +388,18 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             // If new resource, initialize it
             ResourceLoader::ResourceInitOutput initResult;
-            if (AllBits(job.flags, LoadFlags::Create))
-            {
-                initResult = loader->InitializeResource(job, stream);
-                job.flags = LoadFlags::None;
-            }         
-            else if (AllBits(job.flags, LoadFlags::Reload))
+            if (AllBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
                 initResult = loader->ReinitializeResource(job, stream);
+            else if (AllBits(job.flags, LoadFlags::Create))
+                initResult = loader->InitializeResource(job, stream);
+                
             job.streamData = initResult.loaderStreamData;
             job.id.resourceId = initResult.id.resourceId;
             job.id.generation = initResult.id.generation;
 
             // Get the requested load bits based on the stream data
             job.loadState.requestedBits = loader->LodMask(job.streamData, job.lod, !job.immediate);
+            job.flags &= ~LoadFlags::Create;
 
             if (job.immediate)
             {
@@ -834,7 +833,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
-        pending.flags = LoadFlags::Reload;
+        pending.flags = LoadFlags::Create | LoadFlags::Reload;
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
