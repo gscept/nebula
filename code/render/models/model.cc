@@ -70,4 +70,52 @@ Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const 
 
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelSetBoundingBox(const ModelId id, const Math::bbox& box)
+{
+    modelAllocator.Set<Model_BoundingBox>(id.id, box);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelSetNodes(const ModelId id, Util::Array<Models::ModelNode*>& nodes)
+{
+    modelAllocator.Set<Model_Nodes>(id.id, nodes);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelSetJointMasks(const ModelId id, const Util::FixedArray<JointMask>& masks)
+{
+    modelAllocator.Set<Model_JointMasks>(id.id, masks);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelSetTakes(const ModelId id, const Util::FixedArray<Take>& takes)
+{
+    modelAllocator.Set<Model_Takes>(id.id, takes);
+}
+
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelSetLookup(const ModelId id, const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& lookup)
+{
+    modelAllocator.Set<Model_NodeLookup>(id.id, lookup);
+}
+
+#endif
+
 } // namespace Models

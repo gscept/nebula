@@ -225,6 +225,7 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
     MeshResourceId id = job.id.resource;
     ResourceLoader::ResourceInitOutput ret;
 
+    Memory::Free(Memory::ScratchHeap, job.streamData.data);
     n_assert(stream.isvalid());
 
     void* mapPtr = nullptr;
@@ -262,8 +263,11 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
         auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
         //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
-        MeshStreamData* streamData = (MeshStreamData*)ret.loaderStreamData.data;
+        MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
         streamData->mappedData = mapPtr;
+
+        ret.loaderStreamData.stream = stream;
+        ret.loaderStreamData.data = streamData;
 
         CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();

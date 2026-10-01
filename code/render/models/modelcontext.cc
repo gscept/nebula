@@ -86,12 +86,23 @@ ModelContext::Create()
         [](Resources::ResourceId id)
         {
             const Util::Array<Resources::ResourceId>& models = modelContextAllocator.GetArray<Model_Id>();
+            const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = modelContextAllocator.GetArray<Model_GraphicsEntity>();
+            const Util::Array<Graphics::StageMask>& masks = modelContextAllocator.GetArray<Model_StageMask>();
             
             for (SizeT i = 0; i < models.Size(); i++)
             {
                 if (models[i] == id)
                 {
-                    //ModelContext::ChangeModel()
+                    Graphics::GraphicsEntityId gfxId = graphicsEntities[i];
+                    Graphics::ContextEntityId cid = GetContextId(gfxId);
+                    
+                    // Reset the nodes
+                    modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id).Clear();
+                    modelContextAllocator.Get<Model_NodeLookup>(cid.id).Clear();
+                    TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id).allocation);
+                    RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id).allocation);
+
+                    SetupModel(gfxId, "editor", nullptr, masks[i], id);
                 }
             }
         }

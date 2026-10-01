@@ -116,6 +116,19 @@ const Math::bbox& ModelGetBoundingBox(const ModelId id);
 const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const ModelId id);
 #endif
 
+/// Set model bounding box
+void ModelSetBoundingBox(const ModelId id, const Math::bbox& box);
+/// Set model nodes
+void ModelSetNodes(const ModelId id, Util::Array<Models::ModelNode*>& nodes);
+/// Set model joint masks
+void ModelSetJointMasks(const ModelId id, const Util::FixedArray<JointMask>& masks);
+/// Set model takes
+void ModelSetTakes(const ModelId id, const Util::FixedArray<Take>& takes);
+
+#if WITH_NEBULA_EDITOR
+void ModelSetLookup(const ModelId id, const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& lookup);
+#endif
+
 enum
 {
     Model_BoundingBox,

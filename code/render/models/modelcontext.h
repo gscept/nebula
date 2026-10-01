@@ -260,6 +260,7 @@ private:
 
     enum
     {
+        Model_GraphicsEntity,
         Model_Id,
         Model_NodeInstanceRoots,
         Model_NodeInstanceTransform,
@@ -270,6 +271,7 @@ private:
         Model_Dirty
     };
     typedef Ids::IdAllocator<
+        Graphics::GraphicsEntityId,
         Resources::ResourceId,
         Util::Array<uint32_t>,
         NodeInstanceRange,
