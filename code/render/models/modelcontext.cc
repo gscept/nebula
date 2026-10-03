@@ -85,22 +85,37 @@ ModelContext::Create()
     loader->AddReloadListener(
         [](Resources::ResourceId id)
         {
-            const Util::Array<Resources::ResourceId>& models = modelContextAllocator.GetArray<Model_Id>();
-            const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = modelContextAllocator.GetArray<Model_GraphicsEntity>();
-            const Util::Array<Graphics::StageMask>& masks = modelContextAllocator.GetArray<Model_StageMask>();
+            const auto& models = modelContextAllocator.GetArray<Model_Id>();
+            const auto& graphicsEntities = modelContextAllocator.GetArray<Model_GraphicsEntity>();
+            const auto& masks = modelContextAllocator.GetArray<Model_StageMask>();
+            const auto& finishedCallbacks = modelContextAllocator.GetArray<Model_FinishedCallback>();
+            const auto& ranges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
+            const auto& roots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
+            const auto& lookups = modelContextAllocator.GetArray<Model_NodeLookup>();
+            const auto& transforms = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
             
             for (SizeT i = 0; i < models.Size(); i++)
             {
                 if (models[i] == id)
                 {
                     Graphics::GraphicsEntityId gfxId = graphicsEntities[i];
-                    Graphics::ContextEntityId cid = GetContextId(gfxId);
+
+                    // Deallocate material instances
+                    const auto& renderableRange = ranges[i].allocation;
+                    for (size_t i = renderableRange.offset; i < renderableRange.offset + renderableRange.size; i++)
+                    {
+                        Materials::DestroyMaterialInstance(NodeInstances.renderable.nodeStates[(uint)i].materialInstance);
+                    }
                     
                     // Reset the nodes
-                    modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id).Clear();
-                    modelContextAllocator.Get<Model_NodeLookup>(cid.id).Clear();
-                    TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id).allocation);
-                    RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id).allocation);
+                    roots[i].Clear();
+                    lookups[i].Clear();
+                    TransformInstanceAllocator.Dealloc(transforms[i].allocation);
+                    RenderInstanceAllocator.Dealloc(ranges[i].allocation);
+                    transforms[i].begin = transforms[i].end = 0;
+                    transforms[i].allocation = Memory::RangeAllocation{};
+                    ranges[i].begin = ranges[i].end = 0;
+                    ranges[i].allocation = Memory::RangeAllocation{};
 
                     SetupModel(gfxId, "editor", nullptr, masks[i], id);
                 }
@@ -271,6 +286,7 @@ ModelContext::SetupModel(
     }
 
     modelContextAllocator.Set<Model_Id>(cid.id, mid);
+    modelContextAllocator.Set<Model_FinishedCallback>(cid.id, finishedCallback);
 
     // add the callbacks to a lockfree queue, and dequeue and call them when it's safe
     if (finishedCallback != nullptr)

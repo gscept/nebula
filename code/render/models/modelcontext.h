@@ -268,7 +268,8 @@ private:
         Model_NodeLookup,
         Model_Transform,
         Model_StageMask,
-        Model_Dirty
+        Model_Dirty,
+        Model_FinishedCallback
     };
     typedef Ids::IdAllocator<
         Graphics::GraphicsEntityId,
@@ -279,7 +280,8 @@ private:
         Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
         Graphics::StageMask,           // stage
-        bool                // transform is dirty
+        bool,                // transform is dirty
+        std::function<void()> // load finished callback
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;
 
@@ -317,6 +319,13 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 
     modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
     modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
+
+    // Deallocate material instances
+    const auto renderableRange = modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation;
+    for (size_t i = renderableRange.offset; i < renderableRange.offset + renderableRange.size; i++)
+    {
+        Materials::DestroyMaterialInstance(NodeInstances.renderable.nodeStates[(uint)i].materialInstance);
+    }
     TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
     RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
 

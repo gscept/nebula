@@ -136,8 +136,6 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         stream->MemoryUnmap();
         stream->Close();
     }
-    IO::DeleteFile(outputAssetPath);
-
 
     if (mergedMeshes.Size() > 0)
     {

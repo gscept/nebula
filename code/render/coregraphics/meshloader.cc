@@ -155,28 +155,23 @@ MeshLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>
 
         n_assert(header->vertexDataSize > 0);
         n_assert(header->indexDataSize > 0);
-        // Upload vertex data
+
+        // Allocate vertices from global repository
+        vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
+        streamData->vertexAllocation = vertexAllocation;
+        meshResourceAllocator.Set<MeshResource_VertexData>(id.id, vertexAllocation);
+        if (job.immediate)
         {
-            // Allocate vertices from global repository
-            vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
-            streamData->vertexAllocation = vertexAllocation;
-            meshResourceAllocator.Set<MeshResource_VertexData>(id.id, vertexAllocation);
-            if (job.immediate)
-            {
-                BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocation.offset, vertexData, header->vertexDataSize);
-            }
+            BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocation.offset, vertexData, header->vertexDataSize);
         }
 
-        // Upload index data
+        // Allocate vertices from global repository
+        indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
+        streamData->indexAllocation = indexAllocation;
+        meshResourceAllocator.Set<MeshResource_IndexData>(id.id, indexAllocation);
+        if (job.immediate)
         {
-            // Allocate vertices from global repository
-            indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
-            streamData->indexAllocation = indexAllocation;
-            meshResourceAllocator.Set<MeshResource_IndexData>(id.id, indexAllocation);
-            if (job.immediate)
-            {
-                BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocation.offset, indexData, header->indexDataSize);
-            }
+            BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocation.offset, indexData, header->indexDataSize);
         }
 
         for (uint i = 0; i < header->numMeshes; i++)
@@ -266,6 +261,13 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
         auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
         auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
         auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
+        for (SizeT i = 0; i < meshes.Size(); i++)
+        {
+            CoreGraphics::DestroyMesh(meshes[i]);
+        }
+
+        meshes.Resize(header->numMeshes);
+
         //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
         MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
@@ -314,18 +316,25 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
                 primGroups.Append(group);
             }
 
-            // Update mesh offsets
-            CoreGraphics::MeshId mesh = meshes[i];
-            CoreGraphics::MeshSetVertexOffset(mesh, 0, streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset);
-            CoreGraphics::MeshSetVertexOffset(mesh, 1, streamData->vertexAllocation.offset + (size_t)range.attributesVertexByteOffset);
-            CoreGraphics::MeshSetIndexOffset(mesh, streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset);
-            CoreGraphics::MeshSetPrimitiveGroups(mesh, primGroups);
+            MeshCreateInfo mshInfo;
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocation.offset + (size_t)range.baseVertexByteOffset), 0 });
+            mshInfo.streams.Append({ vbo, (streamData->vertexAllocation.offset + (size_t)range.attributesVertexByteOffset), 1 });
+            mshInfo.indexBufferOffset = streamData->indexAllocation.offset + (size_t)range.indexByteOffset;
+            mshInfo.indexBuffer = ibo;
+            mshInfo.topology = PrimitiveTopology::TriangleList;
+            mshInfo.indexType = range.indexType;
+            mshInfo.primitiveGroups = primGroups;
+            mshInfo.vertexLayout = Layouts[(uint)range.layout];
+            mshInfo.name = job.name;
+            MeshId mesh = CreateMesh(mshInfo);
+            meshes[i] = mesh;
         }
 
         reader->Close();
     }
 
     // Update mesh allocator
+    meshResourceAllocator.Set<MeshResource_Meshes>(id.id, meshes);
     ret.id = id;
     return ret;
 }
