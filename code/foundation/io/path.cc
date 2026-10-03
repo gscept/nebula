@@ -364,6 +364,7 @@ void
 Path::SetFile(const Util::String& file, const Util::String& type)
 {
     this->file = file;
+    this->file.StripFileExtension();
     this->type = type;
     this->isFile = true;
     this->Build();
