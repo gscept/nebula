@@ -60,25 +60,6 @@ ComponentInspection::Destroy()
 /**
 */
 void
-ComponentInspection::Register(ComponentId component, DrawFunc func)
-{
-    ComponentInspection* reg = Instance();
-    while (reg->inspectors.Size() <= component.id)
-    {
-        IndexT first = reg->inspectors.Size();
-        reg->inspectors.Grow();
-        reg->inspectors.Resize(reg->inspectors.Capacity());
-        reg->inspectors.Fill(first, reg->inspectors.Size() - first, nullptr);
-    }
-
-    n_assert(reg->inspectors[component.id] == nullptr);
-    reg->inspectors[component.id] = func;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 ComponentInspection::DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ComponentInspection* reg = Instance();

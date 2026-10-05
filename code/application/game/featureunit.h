@@ -119,7 +119,7 @@ FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
     cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
     Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
     Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
-    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
+    Game::ComponentInspection::Register<COMPONENT_TYPE>(cid);
 
     return cid;
 }
