@@ -94,10 +94,42 @@ AssetImporterWindow::Run(SaveMode save)
 
                 stream->MemoryUnmap();
                 stream->Close();
+
+                return true;
             }
         }
+        return false;
     };
 
+    const auto loadTextureSettings = [](IO::Path& path, const Util::String& file, ToolkitUtil::TextureResourceT& settings)
+    {
+        // Load potential asset settings
+        IO::Path oldAssetPath = path;
+        oldAssetPath.SetFile(file.ExtractFileName(), "tex");
+        IO::URI oldAssetURI = oldAssetPath.WorkURI("assets");
+        if (IO::FileExists(oldAssetURI))
+        {
+            Ptr<IO::Stream> stream = IO::CreateStream(oldAssetURI);
+            if (stream->Open())
+            {
+                void* data = stream->MemoryMap();
+                SizeT size = stream->GetSize();
+
+                const ToolkitUtil::TextureResource* textureAsset = flatbuffers::GetRoot<ToolkitUtil::TextureResource>((const uint8_t*)data);
+                settings.target_format = textureAsset->target_format();
+                settings.compression_quality = textureAsset->compression_quality();
+                settings.generate_mipmaps = textureAsset->generate_mipmaps();
+                settings.invert_green = textureAsset->invert_green();
+                settings.color_space = textureAsset->color_space();
+
+                stream->MemoryUnmap();
+                stream->Close();
+
+                return true;
+            }
+        }
+        return false;
+    };
 
     auto console = (Presentation::Console*)Presentation::ConsoleWindow;
     static ToolkitUtil::Logger logger;
@@ -123,10 +155,15 @@ AssetImporterWindow::Run(SaveMode save)
         }
         else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
         {
+            ToolkitUtil::TextureResourceT textureSettings;
+
+            if (!loadTextureSettings(Destination, file, textureSettings))
+                textureSettings = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
+
             TextureResources.Append(
                 {
                     file,
-                    ToolkitUtil::SetupTextureImportSettingsFromPath(file),
+                    textureSettings,
                     CoreGraphics::InvalidTextureId,
                     Dynui::AllocateImguiTextureId({}),
                     Resources::InvalidResourceId
@@ -144,9 +181,10 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
+                assetBrowser->PickFolder(Destination, [file, &textureResource, &loadTextureSettings](const IO::Path& path)
                 {
                     Destination = path;
+                    loadTextureSettings(Destination, file, textureResource);
                 });
             }
             ImGui::SameLine();
