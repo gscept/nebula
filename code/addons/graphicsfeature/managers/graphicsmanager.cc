@@ -18,7 +18,6 @@
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 #include "lighting/lightcontext.h"
-#include "game/componentinspection.h"
 #include "decals/decalcontext.h"
 #include "gi/ddgicontext.h"
 #include "terrain/terraincontext.h"

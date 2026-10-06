@@ -239,8 +239,14 @@ PackageAnimation(
 )
 {
     IO::URI output = Util::String::Sprintf("%s/%s.nax", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
-    logger->Print("%s\n", Util::Format("Packaged animation: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-    return ToolkitUtil::AnimBuilderSaver::SaveBinary(output, anim, Platform::Win32);
+    output.SetScheme("safefile");
+    bool res = ToolkitUtil::AnimBuilderSaver::SaveBinary(output, anim, Platform::Win32);
+
+    if (res)
+        logger->Print("%s\n", Util::Format("Packaged animation: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    else
+        logger->Print("%s\n", Util::Format("Failed to package animation %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    return res;
 }
 
 //------------------------------------------------------------------------------
@@ -256,8 +262,13 @@ PackageSkeleton(
 )
 {
     IO::URI output = Util::String::Sprintf("%s/%s.nsk", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
-    logger->Print("%s\n", Util::Format("Packaged skeleton: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-    return ToolkitUtil::SkeletonBuilderSaver::SaveBinary(output, skel, Platform::Win32);
+    output.SetScheme("safefile");
+    bool res = ToolkitUtil::SkeletonBuilderSaver::SaveBinary(output, skel, Platform::Win32);
+    if (res)
+        logger->Print("%s\n", Util::Format("Packaged skeleton: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    else
+        logger->Print("%s\n", Util::Format("Failed to package skeleton %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    return res;
 }
 
 //------------------------------------------------------------------------------
@@ -273,8 +284,13 @@ PackageMesh(
 )
 {
     IO::URI output = Util::String::Sprintf("%s/%s.nvx", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
-    logger->Print("%s\n", Util::Format("Packaged mesh: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-    return ToolkitUtil::MeshBuilderSaver::SaveBinary(output, mesh, Platform::Win32);
+    output.SetScheme("safefile");
+    bool res = ToolkitUtil::MeshBuilderSaver::SaveBinary(output, mesh, Platform::Win32);
+    if (res)
+        logger->Print("%s\n", Util::Format("Packaged mesh: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    else
+        logger->Print("%s\n", Util::Format("Failed to package mesh %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    return res;
 }
 
 //------------------------------------------------------------------------------
@@ -343,9 +359,7 @@ PackageTexture(
             platformExtension = "dds";
         }
         IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr(), platformExtension.AsCharPtr());
-        logger->Print("%s\n",
-                        Util::Format("Packaged texture: %s",
-                                     Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        output.SetScheme("safefile");
 
         TextureConversionInfo info;
         info.cube = tex->container == ToolkitUtil::TextureContainer_CUBE;
@@ -354,7 +368,12 @@ PackageTexture(
         info.sourcePath = tmpFile;
         info.tmpDir = "temp:texturepackager";
         info.texture = tex;
-        return ConvertTexture(info);
+        bool res = ConvertTexture(info);
+        if (res)
+            logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        else
+            logger->Print("%s\n", Util::Format("Failed to package texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        return res;
     }
 }
 
@@ -415,10 +434,13 @@ PackageMaterial(
     Util::String fileNameNoExt = fileName;
     fileNameNoExt.StripFileExtension();
     IO::URI output = Util::String::Sprintf("%s/%s.mat", destinationFolder.LocalPath().AsCharPtr(), fileNameNoExt.AsCharPtr());
-    logger->Print("%s\n",
-                Util::Format("Packaged material: %s",
-                             Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-    return converter.ConvertStream(stream, output.LocalPath(), *logger);
+    output.SetScheme("safefile");
+    bool res = converter.ConvertStream(stream, output.LocalPath(), *logger);
+    if (res)
+        logger->Print("%s\n", Util::Format("Packaged material: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    else
+        logger->Print("%s\n", Util::Format("Failed to package material: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+    return res;
 }
 
 //------------------------------------------------------------------------------

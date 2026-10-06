@@ -100,5 +100,7 @@ private:
 void ImGuiCloseButton(bool& toggle, int id);
 /// Helper function for toggle buttons
 bool ImGuiToggleButton(const char* label, bool toggle);
+/// Helper function to produce a spinner
+void ImGuiSpinner(const char* label, float radius = 10.0f, float thickness = 3.0f);
 
 } // namespace Dynui

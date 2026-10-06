@@ -56,10 +56,12 @@ void DestroyMesh(const MeshId id);
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get primitive group
 const CoreGraphics::PrimitiveGroup MeshGetPrimitiveGroup(const MeshId id, const IndexT group);
+/// Set primitive groups
+void MeshSetPrimitiveGroups(const MeshId id, const Util::Array<CoreGraphics::PrimitiveGroup>& groups);
 /// get vertex buffer
 const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// Set vertex buffer
-const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
+void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
 const uint64_t MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// Set mesh vertex offset
@@ -68,6 +70,8 @@ void MeshSetVertexOffset(const MeshId id, const IndexT stream, uint64_t offset);
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset
 const uint64_t MeshGetIndexOffset(const MeshId id);
+/// Set the index buffer base offset
+void MeshSetIndexOffset(const MeshId id, uint64_t offset);
 /// Get index type
 const IndexType::Code MeshGetIndexType(const MeshId id);
 /// Get topology

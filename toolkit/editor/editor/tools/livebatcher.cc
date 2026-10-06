@@ -5,6 +5,10 @@
 #include "livebatcher.h"
 #include "system/process.h"
 #include "io/memorystream.h"
+#include "io/ioserver.h"
+#include "dynui/imguicontext.h"
+#include "dynui/nebula_icons.h"
+#include "editor/ui/windowserver.h"
 
 const char* batcherPath = NEBULA_BINARY_FOLDER "/assetbatcher.exe";
 const char* workPath = "proj:work/";
@@ -52,12 +56,14 @@ struct
     System::ProcessStartInfo startInfo;
     Ptr<IO::MemoryStream> outputStream;
     Ptr<LiveBatcherThread> batchThread;
+    Threading::SafeQueue<Util::String> filesToReload;
+
 
     bool autoScroll = true;
 } livebatcherState;
 
 
-
+Threading::Interlocked::AtomicCounter LiveBatcher::WorkCounter;
 //------------------------------------------------------------------------------
 /**
 */
@@ -92,8 +98,11 @@ LiveBatcher::Discard()
 void
 LiveBatcher::BatchAssets()
 {
+    Presentation::BatcherWindow->Open() = true;
+    Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
+    uint32_t jobMessage = windowServer->PushLoadingMessage("[Packaging] All assets");
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        []() -> bool
+        [windowServer, jobMessage]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -102,6 +111,8 @@ LiveBatcher::BatchAssets()
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
+
+                windowServer->RemoveLoadingMessage(jobMessage);
                 return true;
             }
             return false;
@@ -115,8 +126,13 @@ LiveBatcher::BatchAssets()
 void
 LiveBatcher::BatchAsset(const IO::Path& assetPath)
 {
+    Presentation::BatcherWindow->Open() = true;
+    IO::IoServer* ioServer = IO::IoServer::Instance();
+    WorkCounter.Increment();
+    Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
+    uint32_t jobMessage = windowServer->PushLoadingMessage(Util::Format("[Packaging] %s", assetPath.AsString().AsCharPtr()));
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        [assetPath]() -> bool
+        [assetPath, ioServer, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -127,8 +143,33 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
             {
                 System::WaitForProcess(process);
                 n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+
+                WorkCounter.Decrement();
+                windowServer->RemoveLoadingMessage(jobMessage);
+
+                /// Hmm, maybe it'd be better if the batcher could produce a list of files for us instead...
+                static const char* exportFolders[] =
+                {
+                    "mdl",
+                    "msh",
+                    "tex",
+                    "phys"
+                };
+
+                for (SizeT i = 0; i < lengthof(exportFolders); i++)
+                {
+                    const char* basePath = exportFolders[i];
+                    Util::Array<Util::String> files = ioServer->ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
+                    for (const auto& file : files)
+                    {
+                        livebatcherState.filesToReload.Enqueue(Util::Format("%s:%s/%s", basePath, assetPath.GetFolder().AsCharPtr(), file.AsCharPtr()));
+                    }
+                }
+                
+
                 return true;
             }
+
             return false;
         }
     });
@@ -140,8 +181,12 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
 void 
 LiveBatcher::BatchFile(const IO::Path& filePath)
 {
+    Presentation::BatcherWindow->Open() = true;
+    WorkCounter.Increment();
+    Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
+    uint32_t jobMessage = windowServer->PushLoadingMessage(Util::Format("[Packaging] %s", filePath.AsString().AsCharPtr()));
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        [filePath]() -> bool
+        [filePath, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -154,6 +199,12 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
             {
                 System::WaitForProcess(process);
                 n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+
+                WorkCounter.Decrement();
+                windowServer->RemoveLoadingMessage(jobMessage);
+
+                livebatcherState.filesToReload.Enqueue(filePath.GetExportFile());
+
                 return true;
             }
             return false;
@@ -167,6 +218,7 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
 void
 LiveBatcher::BatchModes(Editor::BatchModes modes)
 {
+    WorkCounter.Increment();
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
         [modes]() -> bool
         {
@@ -201,6 +253,8 @@ LiveBatcher::BatchModes(Editor::BatchModes modes)
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
+
+                WorkCounter.Decrement();
                 return true;
             }
             return false;
@@ -229,17 +283,27 @@ namespace Presentation
 void 
 LiveBatcherWindow::Run(SaveMode save)
 {
+
+    ImGui::Checkbox("Auto-scroll", &Editor::livebatcherState.autoScroll);
+    if (Editor::LiveBatcher::WorkCounter.counter > 0)
+    {
+        const char* message = "Running batcher...";
+        const float diameter = 20.0f;
+        const float groupWidth = ImGui::CalcTextSize(message).x + ImGui::GetStyle().ItemSpacing.x + diameter;
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - groupWidth);
+        ImGui::TextUnformatted(message);
+        ImGui::SameLine();
+        Dynui::ImGuiSpinner("Running batcher...");
+    }
+    ImGui::Separator();
+    if (ImGui::Button(ICON_ttf_TRASH))
+    {
+        Editor::livebatcherState.outputStream->SetSize(0);
+    }
+
     if (Editor::livebatcherState.outputStream->GetSize() > 0)
     {
-        ImGui::Checkbox("Auto-scroll", &Editor::livebatcherState.autoScroll);
-        ImGui::SameLine();
-        if (ImGui::Button("Clear"))
-        {
-            Editor::livebatcherState.outputStream->SetSize(0);
-        }
-
-        ImGui::Separator();
-
         if (ImGui::BeginChild("Log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar))
         {
             ImGui::TextUnformatted((const char*)Editor::livebatcherState.outputStream->GetRawPointer());
@@ -268,6 +332,7 @@ LiveBatcherWindow::Run(SaveMode save)
 
         ImGui::Text(EmptyString);
     }
+
 }
 
 //------------------------------------------------------------------------------
@@ -276,6 +341,11 @@ LiveBatcherWindow::Run(SaveMode save)
 void
 LiveBatcherWindow::Update()
 {
+    // Dequeue pending reloads and run them
+    Util::Array<Util::String> filesToReload;
+    Editor::livebatcherState.filesToReload.DequeueAll(filesToReload);
+    for (const auto& file : filesToReload)
+        Resources::ReloadResource(file);
 }
 
 } // namespace Presentation

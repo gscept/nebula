@@ -112,20 +112,12 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
             Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
             fileNameNoExt.StripFileExtension();
-            if (modelAsset.scene != nullptr)
-            {
-                Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
-                IO::CreateDirectory(dstFolder);
-                Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-            }
+
             if (modelAsset.mesh != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("msh:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nvx", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageMesh(modelAsset.mesh.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
             }
             if (modelAsset.animation != nullptr)
@@ -133,7 +125,6 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String dstFolder = Util::String::Sprintf("ani:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nax", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
             }
             if (modelAsset.skeleton != nullptr)
@@ -141,7 +132,6 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String dstFolder = Util::String::Sprintf("ske:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nsk", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageSkeleton(modelAsset.skeleton.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
             }
             if (modelAsset.physics != nullptr)
@@ -149,8 +139,14 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String dstFolder = Util::String::Sprintf("phys:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.actor", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackagePhysics(modelAsset.physics.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+            }
+            if (modelAsset.scene != nullptr)
+            {
+                Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
+                IO::CreateDirectory(dstFolder);
+                Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
+                ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
             }
 
             stream->MemoryUnmap();

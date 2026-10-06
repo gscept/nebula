@@ -40,7 +40,7 @@ Win32FSWrapper::OpenFile(const String& path, Stream::AccessMode accessMode, Stre
         case Stream::ReadAccess:
             access = GENERIC_READ;            
             disposition = OPEN_EXISTING;
-            shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+            shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             break;
 
         case Stream::WriteAccess:
@@ -53,7 +53,7 @@ Win32FSWrapper::OpenFile(const String& path, Stream::AccessMode accessMode, Stre
         case Stream::AppendAccess:
             access = GENERIC_READ | GENERIC_WRITE;
             disposition = OPEN_ALWAYS;
-            shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+            shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             break;
     }
     switch (accessPattern)

@@ -19,7 +19,9 @@ enum OptimizationFlags : uint
 	FlipUVs = 0x4,
 	CalculateTangentFrame = 0x8,
 	CalculateRigidSkinning = 0x10,
-	MergeNodesWithSharedMaterial = 0x20
+	MergeNodesWithSharedMaterial = 0x20,
+	ImportVertexColors = 0x40,
+	ImportSecondaryUVs = 0x80
 }
 
 table ModelAsset

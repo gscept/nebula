@@ -13,7 +13,6 @@
 #include "memory/arenaallocator.h"
 #include "ids/idallocator.h"
 #include "imgui.h"
-#include "game/componentinspection.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"

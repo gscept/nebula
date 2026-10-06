@@ -61,12 +61,12 @@ ModelLoader::Setup()
 Resources::ResourceLoader::ResourceInitOutput
 ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
+    Resources::ResourceLoader::ResourceInitOutput ret;
+
     // a model is a list of resources, a bounding box, and a dictionary of nodes
     Math::bbox boundingBox;
     boundingBox.set(Math::vec3(0), Math::vec3(0));
     Util::Array<Models::ModelNode*> nodes;
-    Ptr<BinaryReader> reader = BinaryReader::Create();
-    Resources::ResourceLoader::ResourceInitOutput ret;
 
     // setup stack for loading nodes
     Util::Stack<Models::ModelNode*> nodeStack;
@@ -77,6 +77,7 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     Util::Dictionary<Util::StringAtom, Models::ModelNode*> nodeLookup;
 #endif
 
+    Ptr<BinaryReader> reader = BinaryReader::Create();
     reader->SetStream(stream);
     if (reader->Open())
     {
@@ -229,6 +230,187 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     createInfo.nodeLookup = nodeLookup;
 #endif
     ModelId id = CreateModel(createInfo);
+    ret.id = id;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Resources::ResourceLoader::ResourceInitOutput
+ModelLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    Resources::ResourceLoader::ResourceInitOutput ret;
+    Memory::Free(Memory::ScratchHeap, job.streamData.data);
+
+    // a model is a list of resources, a bounding box, and a dictionary of nodes
+    Math::bbox boundingBox;
+    boundingBox.set(Math::vec3(0), Math::vec3(0));
+    Util::Array<Models::ModelNode*> nodes;
+
+    // setup stack for loading nodes
+    Util::Stack<Models::ModelNode*> nodeStack;
+    Util::FixedArray<Models::JointMask> jointMasks;
+    Util::FixedArray<Models::Take> takes;
+
+#if WITH_NEBULA_EDITOR
+    Util::Dictionary<Util::StringAtom, Models::ModelNode*> nodeLookup;
+#endif
+
+    Ptr<BinaryReader> reader = BinaryReader::Create();
+    reader->SetStream(stream);
+    if (reader->Open())
+    {
+        // make sure it really it's actually an n3 file and check the version
+        // also, we assume that the file has host-native endianess (that's
+        // ensured by the asset tools)
+
+        auto streamData = (ModelStreamingData*)Memory::Alloc(Memory::ScratchHeap, sizeof(ModelStreamingData));
+        memset(streamData, 0x0, sizeof(ModelStreamingData));
+        streamData->requiredBits = LoadBits::NoBits;
+        streamData->loadedBits = LoadBits::NoBits;
+
+        ret.loaderStreamData = _StreamData(stream, streamData);
+
+        FourCC magic = reader->ReadUInt();
+        uint version = reader->ReadUInt();
+        if (magic != FourCC('NEB3'))
+        {
+            n_error("StreamModelLoader: '%s' is not a .n3 binary file!", stream->GetURI().AsString().AsCharPtr());
+            return ret;
+        }
+        if (version != 1)
+        {
+            n_error("StreamModelLoader: '%s' has wrong version!", stream->GetURI().AsString().AsCharPtr());
+            return ret;
+        }
+
+        // start reading tags
+        bool done = false;
+        while ((!stream->Eof()) && (!done))
+        {
+            FourCC fourCC = reader->ReadUInt();
+            if (fourCC == FourCC('>MDL'))
+            {
+                // start of Model
+                UNUSED(FourCC) classFourCC = reader->ReadUInt();
+                UNUSED(String) name = reader->ReadString();
+            }
+            else if (fourCC == FourCC('JOMS'))
+            {
+                uint numJointMasks = reader->ReadUInt();
+                jointMasks.Resize(numJointMasks);
+                for (uint i = 0; i < numJointMasks; i++)
+                {
+                    jointMasks[i].name = reader->ReadString();
+                    uint numJointWeights = reader->ReadUInt();
+
+                    jointMasks[i].weights.Resize(numJointWeights);
+                    for (uint j = 0; j < numJointWeights; j++)
+                    {
+                        jointMasks[i].weights[j] = reader->ReadFloat();
+                    }
+                }
+            }
+            else if (fourCC == FourCC('TAKE'))
+            {
+                uint numTakes = reader->ReadUInt();
+                takes.Resize(numTakes);
+                for (uint i = 0; i < numTakes; i++)
+                {
+                    uint numClips = reader->ReadUInt();
+
+                    takes[i].clips.Resize(numClips);
+                    for (uint j = 0; j < numClips; j++)
+                    {
+                        takes[i].clips[j].name = reader->ReadString();
+                        takes[i].clips[j].start = reader->ReadFloat();
+                        takes[i].clips[j].end = reader->ReadFloat();
+                        takes[i].clips[j].preInfinity = (CoreAnimation::InfinityType::Code)reader->ReadInt();
+                        takes[i].clips[j].postInfinity = (CoreAnimation::InfinityType::Code)reader->ReadInt();
+
+                        uint numEvents = reader->ReadUInt();
+                        takes[i].clips[j].events.Resize(numEvents);
+
+                        for (uint k = 0; k < numEvents; k++)
+                        {
+                            String name = reader->ReadString();
+                            float time = reader->ReadFloat();
+                            takes[i].clips[j].events[k] = Models::Take::Clip::Event {.name = name, .time = time};
+                        }
+                    }
+                }
+            }
+            else if (fourCC == FourCC('<MDL'))
+            {
+                // end of Model, if we're reloading, we shouldn't load all resources again...
+                done = true;
+
+                // update model-global bounding box
+                Math::bbox box;
+                box.begin_extend();
+                IndexT i;
+                for (i = 0; i < nodes.Size(); i++)
+                {
+                    const ModelNode* node = nodes[i];
+                    box.extend(node->boundingBox);
+                }
+                box.end_extend();
+                boundingBox = box;
+            }
+            else if (fourCC == FourCC('>MND'))
+            {
+                // start of a ModelNode
+                FourCC classFourCC = reader->ReadUInt();
+                String name = reader->ReadString();
+                ModelNode* node = this->nodeConstructors[classFourCC]();
+                node->parent = nullptr;
+                node->boundingBox = Math::bbox();
+                node->name = name;
+                node->tag = job.tag;
+#if WITH_NEBULA_EDITOR
+                nodeLookup.Add(name, node);
+#endif
+                if (!nodeStack.IsEmpty())
+                {
+                    Models::ModelNode* parent = nodeStack.Peek();
+                    parent->children.Append(node);
+                    node->parent = parent;
+                }
+                nodeStack.Push(node);
+                nodes.Append(node);
+            }
+            else if (fourCC == FourCC('<MND'))
+            {
+                // end of current ModelNode
+                n_assert(!nodeStack.IsEmpty());
+                Models::ModelNode* node = nodeStack.Pop();
+                node->OnFinishedLoading(streamData);
+            }
+            else
+            {
+                // if not opening or closing a node, assume it's a data tag
+                ModelNode* node = nodeStack.Peek();
+                if (!node->Load(fourCC, job.tag, reader, job.immediate))
+                {
+                    break;
+                }
+            }
+        }
+        n_assert(nodeStack.IsEmpty());
+        reader->Close();
+    }
+
+    ModelId id = job.id.resource;
+    Models::ModelSetBoundingBox(id, boundingBox);
+    Models::ModelSetNodes(id, nodes);
+    Models::ModelSetJointMasks(id, jointMasks);
+    Models::ModelSetTakes(id, takes);
+
+#if WITH_NEBULA_EDITOR
+    Models::ModelSetLookup(id, nodeLookup);
+#endif
+
     ret.id = id;
     return ret;
 }

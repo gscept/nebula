@@ -136,8 +136,19 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         stream->MemoryUnmap();
         stream->Close();
     }
-    IO::DeleteFile(outputAssetPath);
 
+    // Set flags
+    uint flags = 0;
+    if (AllBits(importFlags, ToolkitUtil::ReplaceExistingMesh))
+    {
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcNormals) ? ToolkitUtil::OptimizationFlags_CalculateNormals : 0;
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcRigidSkin) ? ToolkitUtil::OptimizationFlags_CalculateRigidSkinning : 0;
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::RemoveRedundant) ? ToolkitUtil::OptimizationFlags_RemoveRedundantVertices : 0;
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::FlipUVs) ? ToolkitUtil::OptimizationFlags_FlipUVs : 0;
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportColors) ? ToolkitUtil::OptimizationFlags_ImportVertexColors : 0;
+        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportSecondaryUVs) ? ToolkitUtil::OptimizationFlags_ImportSecondaryUVs : 0;
+    }
+    modelAsset.flags = (ToolkitUtil::OptimizationFlags)flags;
 
     if (mergedMeshes.Size() > 0)
     {

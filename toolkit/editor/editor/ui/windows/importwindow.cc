@@ -16,6 +16,10 @@
 #include "editor/tools/livebatcher.h"
 #include "editor/ui/windows/assetbrowser.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
+
 #include "io/ioserver.h"
 #include "console.h"
 
@@ -64,6 +68,69 @@ AssetImporterWindow::Run(SaveMode save)
     static Util::Array<Util::String> Files;
     static IO::Path Destination;
 
+    const auto loadAssetFlags = [](IO::Path& path, const Util::String& file, Presentation::ModelImportSettings& settings)
+    {
+        // Load potential asset settings
+        IO::Path oldAssetPath = path;
+        oldAssetPath.SetFile(file.ExtractFileName(), "mdl");
+        IO::URI oldAssetURI = oldAssetPath.WorkURI("assets");
+        if (IO::FileExists(oldAssetURI))
+        {
+            Ptr<IO::Stream> stream = IO::CreateStream(oldAssetURI);
+            if (stream->Open())
+            {
+                void* data = stream->MemoryMap();
+                SizeT size = stream->GetSize();
+
+                // Do cheap reading, to avoid deserializing the whole mesh and packaged texture assets
+                const ToolkitUtil::ModelAsset* modelAsset = flatbuffers::GetRoot<ToolkitUtil::ModelAsset>((const uint8_t*)data);
+                settings.removeRedundantVertices = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_RemoveRedundantVertices);
+                settings.calculateNormals = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateNormals);
+                settings.flipUVs = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_FlipUVs);
+                settings.calculateTangents = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateTangentFrame);
+                settings.calculateRigidSkin = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateRigidSkinning);
+                settings.importColors = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_ImportVertexColors);
+                settings.importSecondaryUVs = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_ImportSecondaryUVs);
+
+                stream->MemoryUnmap();
+                stream->Close();
+
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const auto loadTextureSettings = [](IO::Path& path, const Util::String& file, ToolkitUtil::TextureResourceT& settings)
+    {
+        // Load potential asset settings
+        IO::Path oldAssetPath = path;
+        oldAssetPath.SetFile(file.ExtractFileName(), "tex");
+        IO::URI oldAssetURI = oldAssetPath.WorkURI("assets");
+        if (IO::FileExists(oldAssetURI))
+        {
+            Ptr<IO::Stream> stream = IO::CreateStream(oldAssetURI);
+            if (stream->Open())
+            {
+                void* data = stream->MemoryMap();
+                SizeT size = stream->GetSize();
+
+                const ToolkitUtil::TextureResource* textureAsset = flatbuffers::GetRoot<ToolkitUtil::TextureResource>((const uint8_t*)data);
+                settings.target_format = textureAsset->target_format();
+                settings.compression_quality = textureAsset->compression_quality();
+                settings.generate_mipmaps = textureAsset->generate_mipmaps();
+                settings.invert_green = textureAsset->invert_green();
+                settings.color_space = textureAsset->color_space();
+
+                stream->MemoryUnmap();
+                stream->Close();
+
+                return true;
+            }
+        }
+        return false;
+    };
+
     auto console = (Presentation::Console*)Presentation::ConsoleWindow;
     static ToolkitUtil::Logger logger;
 
@@ -74,20 +141,29 @@ AssetImporterWindow::Run(SaveMode save)
 
         if (ext == "fbx")
         {
-            FbxFiles.Append({ file, {} });
+            ModelImportSettings fbxSettings;
+            fbxSettings.replaceExistingMesh = true;
+            loadAssetFlags(Destination, file, fbxSettings);
+            FbxFiles.Append({ file, fbxSettings });
         }
         else if (ext == "gltf" || ext == "glb")
         {
             ModelImportSettings gltfSettings;
-            gltfSettings.flipUVs = true;
+            gltfSettings.replaceExistingMesh = true;
+            loadAssetFlags(Destination, file, gltfSettings);
             GltfFiles.Append({ file, gltfSettings });
         }
         else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
         {
+            ToolkitUtil::TextureResourceT textureSettings;
+
+            if (!loadTextureSettings(Destination, file, textureSettings))
+                textureSettings = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
+
             TextureResources.Append(
                 {
                     file,
-                    ToolkitUtil::SetupTextureImportSettingsFromPath(file),
+                    textureSettings,
                     CoreGraphics::InvalidTextureId,
                     Dynui::AllocateImguiTextureId({}),
                     Resources::InvalidResourceId
@@ -105,9 +181,10 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
+                assetBrowser->PickFolder(Destination, [file, &textureResource, &loadTextureSettings](const IO::Path& path)
                 {
                     Destination = path;
+                    loadTextureSettings(Destination, file, textureResource);
                 });
             }
             ImGui::SameLine();
@@ -291,6 +368,7 @@ AssetImporterWindow::Run(SaveMode save)
         }
     }
 
+
     IndexT fbxFileIndex = 0;
     for (auto& [file, settings] : FbxFiles)
     {
@@ -300,9 +378,11 @@ AssetImporterWindow::Run(SaveMode save)
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
+                assetBrowser->PickFolder(Destination, [file, &settings, &loadAssetFlags](const IO::Path& path)
                 {
                     Destination = path;
+
+                    loadAssetFlags(Destination, file, settings);
                 });
             }
             ImGui::SameLine();
@@ -349,8 +429,10 @@ AssetImporterWindow::Run(SaveMode save)
                     case 2: scale = 1000.0f; break; // km to m
                 }
                 ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                batcher->BatchAsset(Destination);
             }
 
             fbxFileIndex++;
@@ -364,13 +446,14 @@ AssetImporterWindow::Run(SaveMode save)
         Util::String title = Util::Format("Import GLTF: %s", file.ExtractFileName().AsCharPtr());
         if (ImGui::Begin(title.AsCharPtr()))
         {
-
             if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
             {
                 auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
-                assetBrowser->PickFolder(Destination, [](const IO::Path& path)
+                assetBrowser->PickFolder(Destination, [file, &settings, &loadAssetFlags](const IO::Path& path)
                 {
                     Destination = path;
+
+                    loadAssetFlags(Destination, file, settings);
                 });
             }
             ImGui::SameLine();
@@ -417,8 +500,10 @@ AssetImporterWindow::Run(SaveMode save)
                     case 2: scale = 1000.0f; break; // km to m
                 }
                 ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
                 GltfFiles.EraseIndex(gltfFileIndex);
-                batcher->BatchAsset(Destination);
             }
 
             gltfFileIndex++;

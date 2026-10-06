@@ -148,11 +148,29 @@ ResourceLoader::RequestLOD(const Ids::Id32 entry, float lod) const
 /**
 */
 void
+ResourceLoader::AddReloadListener(const std::function<void(Resources::ResourceId)>& callback)
+{
+    this->reloadListeners.Append(callback);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput& output)
 {
     output.UpdateLoaderState(loader);
     if (output.state == Resource::Loaded || output.state == Resource::Failed)
+    {
         loader->RunCallbacks(output.state, output.id);
+        if (AllBits(output.flags, LoadFlags::Reload)  && !loader->reloadListeners.IsEmpty())
+        {
+            for (const auto& callback : loader->reloadListeners)
+            {
+                callback(output.id);
+            }
+        }
+    }
     else
         loader->dependentJobs.Append(output.remainderJob);
 }
@@ -361,7 +379,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     streamResult.pendingBits = job.loadState.pendingBits;
     streamResult.loadedBits = job.loadState.loadedBits;
 
-    if (AnyBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
+    if (AllBits(job.flags, LoadFlags::Create))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
@@ -370,17 +388,18 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             // If new resource, initialize it
             ResourceLoader::ResourceInitOutput initResult;
-            if (AllBits(job.flags, LoadFlags::Create))
-                initResult = loader->InitializeResource(job, stream);
-            else if (AllBits(job.flags, LoadFlags::Reload))
+            if (AllBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
                 initResult = loader->ReinitializeResource(job, stream);
+            else if (AllBits(job.flags, LoadFlags::Create))
+                initResult = loader->InitializeResource(job, stream);
+                
             job.streamData = initResult.loaderStreamData;
             job.id.resourceId = initResult.id.resourceId;
             job.id.generation = initResult.id.generation;
 
             // Get the requested load bits based on the stream data
             job.loadState.requestedBits = loader->LodMask(job.streamData, job.lod, !job.immediate);
-            job.flags = LoadFlags::None;
+            job.flags &= ~LoadFlags::Create;
 
             if (job.immediate)
             {
@@ -446,6 +465,7 @@ skip_stream:
     output.loadState = job.loadState;
     output.state = job.state;
     output.id = job.id;
+    output.flags = job.flags;
     output.remainderJob = job;
 
     return output;
@@ -813,16 +833,17 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
-        pending.flags = LoadFlags::Reload;
+        pending.flags = LoadFlags::Create | LoadFlags::Reload;
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
+        this->loadStates[ret.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
         this->pendingLoads.Append(ret.loaderInstanceId);
     }
     else
     {
-        n_warning("Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
+        n_log_warn(Resources, "Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
     }
 }
 
@@ -846,6 +867,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 
     this->loads[id.loaderInstanceId] = pending;
     this->states[id.loaderInstanceId] = Resource::Pending;
+    this->loadStates[id.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
     this->callbacks[id.loaderInstanceId].Append({ success, failed });
     this->pendingLoads.Append(id.loaderInstanceId);
 }

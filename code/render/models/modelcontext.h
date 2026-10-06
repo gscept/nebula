@@ -247,11 +247,20 @@ private:
     friend class Visibility::VisibilityContext;
     friend class Raytracing::RaytracingContext;
 
+    static void SetupModel(
+        Graphics::GraphicsEntityId gfxId,
+        const Util::StringAtom& tag,
+        const std::function<void()>& finishedCallback,
+        const Graphics::StageMask stageMask,
+        Resources::ResourceId mid
+    );
+
     static ModelInstance NodeInstances;
     static Memory::RangeAllocator TransformInstanceAllocator, RenderInstanceAllocator;
 
     enum
     {
+        Model_GraphicsEntity,
         Model_Id,
         Model_NodeInstanceRoots,
         Model_NodeInstanceTransform,
@@ -259,9 +268,11 @@ private:
         Model_NodeLookup,
         Model_Transform,
         Model_StageMask,
-        Model_Dirty
+        Model_Dirty,
+        Model_FinishedCallback
     };
     typedef Ids::IdAllocator<
+        Graphics::GraphicsEntityId,
         Resources::ResourceId,
         Util::Array<uint32_t>,
         NodeInstanceRange,
@@ -269,7 +280,8 @@ private:
         Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
         Graphics::StageMask,           // stage
-        bool                // transform is dirty
+        bool,                // transform is dirty
+        std::function<void()> // load finished callback
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;
 
@@ -307,6 +319,13 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 
     modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
     modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
+
+    // Deallocate material instances
+    const auto renderableRange = modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation;
+    for (size_t i = renderableRange.offset; i < renderableRange.offset + renderableRange.size; i++)
+    {
+        Materials::DestroyMaterialInstance(NodeInstances.renderable.nodeStates[(uint)i].materialInstance);
+    }
     TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
     RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
 

@@ -61,11 +61,12 @@ Path::Parse(const Util::String& serialized)
 
     IndexT folderSeparatorIndex = serialized.FindCharIndex(':');
     IndexT fileSeparatorIndex = serialized.FindCharIndex(':', folderSeparatorIndex + 1);
-    n_assert_fmt(folderSeparatorIndex != InvalidIndex && fileSeparatorIndex != InvalidIndex, "String %s must be a valid path (folder:<file>:<type>", serialized.AsCharPtr());
-
-    ret.folder = serialized.ExtractRange(0, folderSeparatorIndex);
-    ret.file = serialized.ExtractRange(folderSeparatorIndex + 1, fileSeparatorIndex - folderSeparatorIndex - 1);
-    ret.type = serialized.ExtractToEnd(fileSeparatorIndex + 1);
+    if (folderSeparatorIndex != InvalidIndex && fileSeparatorIndex != InvalidIndex)
+    {
+        ret.folder = serialized.ExtractRange(0, folderSeparatorIndex);
+        ret.file = serialized.ExtractRange(folderSeparatorIndex + 1, fileSeparatorIndex - folderSeparatorIndex - 1);
+        ret.type = serialized.ExtractToEnd(fileSeparatorIndex + 1);
+    }
     ret.Build();
    
     return ret;
@@ -364,6 +365,7 @@ void
 Path::SetFile(const Util::String& file, const Util::String& type)
 {
     this->file = file;
+    this->file.StripFileExtension();
     this->type = type;
     this->isFile = true;
     this->Build();

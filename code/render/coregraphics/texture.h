@@ -178,9 +178,11 @@ struct TextureSparsePage
     CoreGraphics::Alloc alloc;
 };
 
-/// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
+/// Create a new texture
 const TextureId CreateTexture(const TextureCreateInfo& info);
-/// destroy vertex buffer
+/// Recreate the texture, reusing an existing ID
+void RecreateTexture(const TextureId& id, const TextureCreateInfo& info);
+/// Destroy texture
 void DestroyTexture(const TextureId id);
 
 /// Get name of texture

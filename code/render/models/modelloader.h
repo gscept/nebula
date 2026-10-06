@@ -43,8 +43,10 @@ private:
     friend class Models::ModelContext;
     friend class Visibility::VisibilityContext;
 
-    /// perform actual load, override in subclass
+    /// Parse the model tree
     ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+    /// Reinitialize the tree
+    ResourceLoader::ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// unload resource
     void Unload(const Resources::ResourceId id) override;
 
@@ -56,6 +58,7 @@ private:
     /// used for looking up constructors
     Util::Dictionary<Util::FourCC, std::function<Models::ModelNode* ()>> nodeConstructors;
 
+    /// TODO: We need to be able to deallocate too
 #define IMPLEMENT_NODE_ALLOCATOR(FourCC, Type) \
     nodeConstructors.Add(FourCC, []() -> Models::ModelNode* { \
         Models::ModelNode* node = (Models::ModelNode*)Memory::Alloc(Memory::ObjectHeap, sizeof(Models::Type)); \

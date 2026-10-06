@@ -9,6 +9,8 @@
 */
 //------------------------------------------------------------------------------
 #include "editor/ui/window.h"
+#include "threading/safequeue.h"
+#include "threading/interlocked.h"
 
 namespace Editor
 {
@@ -39,6 +41,9 @@ public:
     static void BatchModes(BatchModes modes);
     /// Wait for all batching to finish
     static void Wait();
+
+    static Threading::Interlocked::AtomicCounter WorkCounter;
+
 };
 
 } // namespace Editor
