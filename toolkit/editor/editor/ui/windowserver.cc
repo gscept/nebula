@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "windowserver.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "io/jsonwriter.h"
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
@@ -426,6 +427,8 @@ WindowServer::RunAll()
         }
     }
     this->save = BaseWindow::SaveMode::None;
+
+    this->DrawStatusBar();
 }
 
 //------------------------------------------------------------------------------
@@ -525,6 +528,83 @@ void
 WindowServer::BroadcastSave(BaseWindow::SaveMode mode)
 {
     this->save = mode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+WindowServer::PushLoadingMessage(const Util::String& message)
+{
+    StatusMessage entry;
+    entry.id = this->nextStatusMessageId++;
+    n_assert(entry.id != 0);
+    entry.message = message;
+    this->statusMessages.Append(entry);
+    return entry.id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowServer::RemoveLoadingMessage(uint32_t id)
+{
+    IndexT found = InvalidIndex;
+    for (IndexT i = 0; i < this->statusMessages.Size(); i++)
+    {
+        if (this->statusMessages[i].id == id)
+        {
+            found = i;
+            break;
+        }
+    }
+    n_assert(found != InvalidIndex);
+    this->statusMessages.EraseIndex(found);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowServer::DrawStatusBar()
+{
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float height = ImGui::GetFrameHeight();
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 0.0f));
+    bool open = ImGui::BeginViewportSideBar("##MainStatusBar", viewport, ImGuiDir_Down, height, flags);
+    if (open && !this->statusMessages.IsEmpty())
+    {
+        const float lineHeight = ImGui::GetTextLineHeight();
+        const float radius = lineHeight * 0.45f;
+        const float diameter = radius * 2.0f;
+        const float spacing = ImGui::GetStyle().ItemSpacing.x;
+        const char* message = this->statusMessages.Back().message.AsCharPtr();
+        const float messageWidth = ImGui::CalcTextSize(message).x;
+        Util::String countText;
+        float countWidth = 0.0f;
+        if (this->statusMessages.Size() > 1)
+        {
+            countText = Util::String::Sprintf("(+%d)", (int)(this->statusMessages.Size() - 1));
+            countWidth = ImGui::CalcTextSize(countText.AsCharPtr()).x + spacing;
+        }
+        const float groupWidth = messageWidth + countWidth + spacing + diameter;
+        const float textY = (height - lineHeight) * 0.5f;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - groupWidth);
+        ImGui::SetCursorPosY(textY);
+        ImGui::TextUnformatted(message);
+        if (!countText.IsEmpty())
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", countText.AsCharPtr());
+        }
+        ImGui::SameLine();
+        ImGui::SetCursorPosY((height - diameter) * 0.5f);
+        Dynui::ImGuiSpinner("##StatusSpinner", radius, 2.0f);
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 

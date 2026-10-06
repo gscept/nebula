@@ -429,8 +429,10 @@ AssetImporterWindow::Run(SaveMode save)
                     case 2: scale = 1000.0f; break; // km to m
                 }
                 ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
                 FbxFiles.EraseIndex(fbxFileIndex);
-                batcher->BatchAsset(Destination);
             }
 
             fbxFileIndex++;
@@ -498,8 +500,10 @@ AssetImporterWindow::Run(SaveMode save)
                     case 2: scale = 1000.0f; break; // km to m
                 }
                 ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
                 GltfFiles.EraseIndex(gltfFileIndex);
-                batcher->BatchAsset(Destination);
             }
 
             gltfFileIndex++;
