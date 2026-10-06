@@ -1337,7 +1337,6 @@ ImGuiCloseButton(bool& toggle, int id)
     ImGui::PopID();
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -1357,6 +1356,48 @@ ImGuiToggleButton(const char* label, bool toggle)
         ImGui::PopStyleColor(3);
 
     return pressed;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImGuiSpinner(const char* label, float radius, float thickness)
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    const ImGuiID id = window->GetID(label);
+
+    ImVec2 pos = window->DC.CursorPos;
+    ImVec2 size(radius * 2.0f, radius * 2.0f);
+    ImGui::ItemSize(size);
+    if (!ImGui::ItemAdd(ImRect(pos, pos + size), id))
+        return;
+
+    const ImVec2 center = pos + ImVec2(radius, radius);
+    ImDrawList* draw = window->DrawList;
+
+    const int segments = 48;
+    const float arc = IM_PI * 1.5f;
+    const float rotation = (float)ImGui::GetTime() * 5.0f;
+    const ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered);
+
+    ImVec2 previous = center + ImVec2(ImCos(rotation) * radius, ImSin(rotation) * radius);
+    for (int i = 1; i <= segments; ++i)
+    {
+        float t = (float)i / (float)segments;
+        float angle = rotation + arc * t;
+        ImVec2 point = center + ImVec2(ImCos(angle) * radius, ImSin(angle) * radius);
+        float fade = t * t;
+        draw->AddLine(previous, point, ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w * fade)), thickness);
+        previous = point;
+    }
+
+    float headAngle = rotation + arc;
+    ImVec2 head = center + ImVec2(ImCos(headAngle) * radius, ImSin(headAngle) * radius);
+    draw->AddCircleFilled(head, thickness * 0.5f, ImGui::ColorConvertFloat4ToU32(color), 12);
 }
 
 } // namespace Dynui
