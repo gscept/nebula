@@ -675,6 +675,66 @@ CreateTexture(const TextureCreateInfo& info)
 /**
 */
 void
+RecreateTexture(const TextureId& id, const TextureCreateInfo& info)
+{
+    TextureIdLock _0(id);
+
+    Vulkan::VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Vulkan::Texture_RuntimeInfo>(id.id);
+    Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id.id);
+
+    // create adjusted info
+    TextureCreateInfoAdjusted adjustedInfo = TextureGetAdjustedInfo(info);
+
+    VkDevice dev = Vulkan::GetCurrentDevice();
+
+    loadInfo.dev = dev;
+    loadInfo.name = adjustedInfo.name;
+    loadInfo.width = adjustedInfo.width;
+    loadInfo.height = adjustedInfo.height;
+    loadInfo.depth = adjustedInfo.depth;
+    loadInfo.relativeDims.width = adjustedInfo.widthScale;
+    loadInfo.relativeDims.height = adjustedInfo.heightScale;
+    loadInfo.relativeDims.depth = adjustedInfo.depthScale;
+    loadInfo.mips = adjustedInfo.mips;
+    loadInfo.minMip = adjustedInfo.minMip;
+    loadInfo.layers = adjustedInfo.layers;
+    loadInfo.format = adjustedInfo.format;
+    loadInfo.usage = adjustedInfo.usage;
+    loadInfo.alias = adjustedInfo.alias;
+    loadInfo.samples = adjustedInfo.samples;
+    loadInfo.clear = adjustedInfo.clear;
+    loadInfo.clearColorF4 = adjustedInfo.clearColorF4;
+    loadInfo.defaultLayout = adjustedInfo.defaultLayout;
+    loadInfo.bindless = adjustedInfo.bindless;
+    loadInfo.sparse = adjustedInfo.sparse;
+    loadInfo.swizzle = adjustedInfo.swizzle;
+    loadInfo.allowCast = info.allowCast;
+
+    // borrow buffer pointer
+    loadInfo.data = adjustedInfo.data;
+    loadInfo.dataSize = adjustedInfo.dataSize;
+    loadInfo.window = adjustedInfo.window;
+
+    runtimeInfo.bind = 0xFFFFFFFF;
+    runtimeInfo.type = adjustedInfo.type;
+
+    loadInfo.stencilExtension = Ids::InvalidId32;
+    loadInfo.swapExtension = Ids::InvalidId32;
+
+    // Before setting up texture, add the old one for delayed deletion
+    CoreGraphics::DelayedDeleteTexture(id);
+
+    SetupTexture(id);
+
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(id, loadInfo.name.Value());
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 DestroyTexture(const TextureId id)
 {
     __Lock(textureAllocator, id.id);

@@ -270,7 +270,96 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
 
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
         ret.id = texture;
-        return ret;
+    }
+
+    if (job.immediate)
+    {
+        // If we load the entire texture, it's safe to unmap the stream
+        stream->MemoryUnmap();
+    }
+
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceLoader::ResourceInitOutput
+TextureLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
+    n_assert(stream.isvalid());
+    n_assert(stream->CanBeMapped());
+
+    Memory::Free(Memory::ScratchHeap, job.streamData.data);
+
+    // Map memory, we will keep the memory mapping so we can stream in LODs later
+    void* srcData = stream->MemoryMap();
+    uint srcDataSize = stream->GetSize();
+
+    ResourceLoader::ResourceInitOutput ret;
+    ret.id = job.id.resource;
+    ret.loaderStreamData.stream = stream;
+    ret.loaderStreamData.data = nullptr;
+
+    // load using gliml
+    gliml::context ctx;
+    if (ctx.load_dds(srcData, srcDataSize))
+    {
+        // We have a total amount of mip maps, say 10
+        int numMips = ctx.num_mipmaps(0);
+        int depth = ctx.image_depth(0, 0);
+        int width = ctx.image_width(0, 0);
+        int height = ctx.image_height(0, 0);
+        int layers = ctx.num_faces();
+
+        auto streamData = (TextureStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(TextureStreamData));
+        memset(streamData, 0x0, sizeof(TextureStreamData));
+
+        streamData->mappedBuffer = srcData;
+        streamData->mappedBufferSize = srcDataSize;
+        streamData->ctx = ctx;
+        streamData->numMips = numMips;
+        streamData->numLayers = layers;
+        streamData->nextLayerToLoad = 0;
+        streamData->numLayersToLoad = layers;
+        memset(streamData->layers, 0x0, sizeof(streamData->layers));
+        for (uint i = 0; i < numMips; i++)
+        {
+            streamData->layers[i] = (1 << layers) - 1;
+        }
+
+        ret.loaderStreamData.data = streamData;
+
+        CoreGraphics::PixelFormat::Code format = CoreGraphics::Gliml::ToPixelFormat(ctx);
+        CoreGraphics::TextureType type =
+            ctx.is_3d() ? CoreGraphics::Texture3D : (layers == 6 ? CoreGraphics::TextureCube : CoreGraphics::Texture2D);
+
+        CoreGraphics::TextureCreateInfo textureInfo;
+        textureInfo.name = job.name.AsCharPtr();
+        textureInfo.width = width;
+        textureInfo.height = height;
+        textureInfo.depth = depth;
+        textureInfo.mips = numMips;
+        textureInfo.minMip = numMips - 1;
+        textureInfo.layers = layers;
+        textureInfo.type = type;
+        textureInfo.format = format;
+        if (job.immediate)
+        {
+            textureInfo.minMip = 0;
+            textureInfo.data = ctx.image_data(0, 0);
+            for (IndexT i = 0; i < ctx.num_faces(); i++)
+            {
+                for (IndexT j = 0; j < ctx.num_mipmaps(i); j++)
+                {
+                    textureInfo.dataSize += ctx.image_size(i, j);
+                }
+            }
+        }
+
+
+        CoreGraphics::RecreateTexture(job.id.resource, textureInfo);
     }
 
     if (job.immediate)
