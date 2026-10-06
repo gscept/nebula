@@ -132,6 +132,7 @@ template<> void ComponentDrawFuncT<uint64_t>(Game::Entity, ComponentId, void*, b
 template<> void ComponentDrawFuncT<uint16_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int16_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(Game::Entity, ComponentId, void*, bool*);
+extern void (*StringAtomComponentDrawOverride) (Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::StringAtom>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::mat4>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::vec3>(Game::Entity, ComponentId, void*, bool*);

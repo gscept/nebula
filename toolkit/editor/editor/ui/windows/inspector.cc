@@ -13,6 +13,10 @@
 #include "editor/cmds.h"
 #include "imgui_internal.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "game/componentinspection.h"
+#include "editor/ui/windowserver.h"
+#include "editor/ui/windows/assetbrowser.h"
+#include "dynui/nebula_icons.h"
 
 using namespace Editor;
 
@@ -51,6 +55,56 @@ Inspector::Update()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+InspectorResourceDrawFunc(Game::Entity owner, Game::ComponentId component, void* data, bool* commit)
+{
+    auto labelData = (Util::StringAtom*)data;
+    const char* label = "None";
+    if (labelData->IsValid())
+        label = labelData->Value();
+
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    if (ImGui::Button(label))
+    {
+        auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
+        
+        browser->PickFile(IO::Path::Parse(label), [data, commit](const IO::Path& path)
+        {
+            *(Util::StringAtom*)data = path.AsString();
+            *commit = true;
+        });
+    }
+    ImGui::PopID();
+    if (ImGui::BeginDragDropTarget())
+    {
+        auto payload = ImGui::AcceptDragDropPayload("resource");
+        if (payload)
+        {
+            Util::String resourceName = (const char*)payload->Data;
+            *(Util::StringAtom*)data = resourceName;
+            *commit = true;
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125733 + reinterpret_cast<intptr_t>(data));
+    if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+    {
+        auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
+
+        browser->PickFile(IO::Path::Parse(label), [data, commit](const IO::Path& path)
+        {
+            *(Util::StringAtom*)data = path.AsString();
+            *commit = true;
+        });
+    }
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Inspector::Run(SaveMode save)
 {
@@ -58,6 +112,8 @@ Inspector::Run(SaveMode save)
 
     if (selection.Size() != 1)
         return;
+
+    Game::StringAtomComponentDrawOverride = &InspectorResourceDrawFunc;
 
     Editor::Entity const entity = selection[0];
     static Game::EntityMapping lastEntityMapping;
@@ -100,6 +156,12 @@ Inspector::Run(SaveMode save)
     bool const entityChanged =
         (entityMapping.table != lastEntityMapping.table || entityMapping.instance != lastEntityMapping.instance);
     lastEntityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
+
+    if (entityChanged)
+    {
+        this->commitFlags.Resize(components.Size());
+        this->commitFlags.Fill(false);
+    }
 
     for (int i = 0; i < components.Size(); i++)
     {
@@ -177,7 +239,7 @@ Inspector::Run(SaveMode save)
             tempComponent.isDirty = true;
         }
 
-        bool commitChange = false;
+        bool* commitChange = &this->commitFlags[i];
 
         const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable |
                                       ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
@@ -188,14 +250,14 @@ Inspector::Run(SaveMode save)
 
             //ImGui::TableHeadersRow();
             ImGui::TableNextRow();
-            Game::ComponentInspection::DrawInspector(entity, component, tempComponent.buffer, &commitChange);
+            Game::ComponentInspection::DrawInspector(entity, component, tempComponent.buffer, commitChange);
             ImGui::EndTable();
             ImGui::Spacing();
             ImGui::Spacing();
             ImGui::Spacing();
         }
 
-        if (commitChange)
+        if (*commitChange)
         {
             if (component == Game::GetComponentId<Game::Position>())
             {
@@ -234,6 +296,7 @@ Inspector::Run(SaveMode save)
                 Edit::SetComponent(entity, component, tempComponent.buffer);
             }
             tempComponent.isDirty = false;
+            *commitChange = false;
         }
         ImGui::Separator();
         ImGui::PopID();

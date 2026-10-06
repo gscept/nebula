@@ -268,21 +268,22 @@ ComponentDrawFuncT<float>(Game::Entity owner, ComponentId component, void* data,
     ImGui::PopID();
 }
 
+void (*StringAtomComponentDrawOverride) (Game::Entity, ComponentId, void*, bool*) = nullptr;
 //------------------------------------------------------------------------------
 /**
 */
-void (*StringAtomComponentDrawOverride) (Game::Entity, ComponentId, void*, bool*) = nullptr;
 template<>
 void
 ComponentDrawFuncT<Util::StringAtom>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
-    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (StringAtomComponentDrawOverride)
     {
         StringAtomComponentDrawOverride(owner, component, data, commit);
     }
     else
     {
+        ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+
         if (((Util::StringAtom*)data)->IsValid())
         {
             ImGui::Text(((Util::StringAtom*)data)->Value());
@@ -302,9 +303,10 @@ ComponentDrawFuncT<Util::StringAtom>(Game::Entity owner, ComponentId component, 
             }
             ImGui::EndDragDropTarget();
         }
+        ImGui::PopID();
+
     }
     
-    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------

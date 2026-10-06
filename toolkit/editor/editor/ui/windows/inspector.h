@@ -35,6 +35,7 @@ private:
     Util::Array<IntermediateComponents> tempComponents;
     Editor::Entity latestInspectedEntity;
     uint64_t latestEntityVersion;
+    Util::FixedArray<bool> commitFlags;
 };
 
 } // namespace Presentation
