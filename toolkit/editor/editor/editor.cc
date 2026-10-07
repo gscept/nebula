@@ -28,7 +28,7 @@
 #include "game/editorstate.h"
 #include "game/component.h"
 
-#include "toolkit-common/projectinfo.h"
+#include "toolkitutil/projectinfo.h"
 
 namespace Editor
 {
@@ -90,7 +90,7 @@ Create()
     IO::IoServer::Instance()->CreateDirectory("int:");
 
     // Setup URN
-    IO::URN::SetWorkRoot("proj:work");
+    IO::Path::SetWorkRoot("proj:work");
 
     LiveBatcher::Setup();
 

@@ -4,7 +4,7 @@
     "Model": {
       "resource": {
         "type": "resource",
-        "default": "system/placeholder"
+        "default": "system:placeholder:mdl"
       },
       "graphicsEntityId": {
         "type": "uint",

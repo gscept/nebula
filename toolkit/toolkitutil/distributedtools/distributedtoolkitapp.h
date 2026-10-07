@@ -20,10 +20,10 @@
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/toolkitapp.h"
-#include "toolkit-common/distributedtools/shareddircontrol.h"
-#include "toolkit-common/distributedtools/shareddircreator.h"
-#include "toolkit-common/distributedtools/distributedjobs/distributedjob.h"
+#include "toolkitutil/toolkitapp.h"
+#include "toolkitutil/distributedtools/shareddircontrol.h"
+#include "toolkitutil/distributedtools/shareddircreator.h"
+#include "toolkitutil/distributedtools/distributedjobs/distributedjob.h"
 
 //------------------------------------------------------------------------------
 namespace DistributedTools

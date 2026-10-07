@@ -82,6 +82,8 @@ fips_dir(editor)
                 scene.h
                 history.cc
                 history.h
+				importwindow.cc
+				importwindow.h
                 outline.cc
                 outline.h
                 physics.cc
@@ -152,5 +154,5 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkit-common toolkitutil)
+fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkitutil)
 nebula_end_module()

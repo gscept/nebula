@@ -17,7 +17,7 @@
 #include "toolkitutil/model/modelutil/modelbuilder.h"
 #include "toolkitutil/model/modelutil/modeldatabase.h"
 #include "toolkitutil/surface/surfaceexporter.h"
-#include "toolkit-common/toolkitconsolehandler.h"
+#include "toolkitutil/toolkitconsolehandler.h"
 #include "toolkitutil/model/import/gltf/gltffileimporter.h"
 #include "toolkitutil/particle/particleexporter.h"
 

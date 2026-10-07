@@ -53,8 +53,8 @@ void
 StreamActorPool::Setup()
 {
     ResourceLoader::Setup();
-    this->placeholderResourceName = "sysphys:box.actor";
-    this->failResourceName = "sysphys:box.actor";
+    this->placeholderResourceName = IO::Path::File("system", "box", "actor");
+    this->failResourceName = IO::Path::File("system", "box", "actor");
 }
 
 //------------------------------------------------------------------------------

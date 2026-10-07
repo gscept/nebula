@@ -13,6 +13,7 @@
 #include "characters/skeletonresource.h"
 #include "particles/particleresource.h"
 #include "dynui/imguicontext.h"
+#include "io/path.h"
 
 #include "nflatbuffer/flatbufferinterface.h"
 #include "nflatbuffer/nebula_flat.h"
@@ -47,7 +48,7 @@ public:
     Modules::Viewport viewport;
 
     // Select material for previewing
-    void Open(const IO::URN& asset, const Util::String root, const AssetType type);
+    void Open(const IO::Path& asset, const Util::String root, const AssetType type);
 };
 
 struct ImageHolder
@@ -80,7 +81,7 @@ struct AssetEditorItem
     } asset;
 
     Resources::ResourceId res;
-    IO::URN path;
+    IO::Path path;
     Graphics::GraphicsEntityId previewObject;
 
 

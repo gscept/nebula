@@ -2206,7 +2206,7 @@ TerrainContext::UpdateLOD(const Graphics::FrameContext& ctx)
                 bool allBitsLoaded = AllBits(terrainInstance.biomeLoaded[j][i].value, BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
                 biomesLoaded &= allBitsLoaded;
             }
-            if (!terrainInstance.biomeLowresGenerated[j] && biomesLoaded || !runtime.lowresGenerated)
+            if (!terrainInstance.biomeLowresGenerated[j] && (biomesLoaded || !runtime.lowresGenerated))
             {
                 terrainInstance.updateLowres = true;
                 terrainInstance.biomeLowresGenerated[j] = true;
@@ -2723,7 +2723,7 @@ TerrainContext::SetBiomeMask(Graphics::GraphicsEntityId entity, TerrainBiomeId b
 /**
 */
 void
-TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::URN& albedo, const IO::URN& normal, const IO::URN& material)
+TerrainContext::SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const IO::Path& albedo, const IO::Path& normal, const IO::Path& material)
 {
     const Graphics::ContextEntityId cid = GetContextId(entity);
     TerrainInstanceInfo& instanceInfo = terrainAllocator.Get<Terrain_InstanceInfo>(cid.id);

@@ -68,6 +68,8 @@ void MaterialSetTextureBindless(const MaterialId mat, uint name, const uint hand
 void MaterialSetConstants(const MaterialId mat, const void* data, const uint size);
 /// Set a material constant
 void MaterialSetConstant(const MaterialId mat, const void* data, const uint size, const uint offset);
+/// Set the entire material buffer
+void MaterialSetData(const MaterialId mat, const void* data, const uint size);
 
 /// Set material GPU buffer binding
 void MaterialSetBufferBinding(const MaterialId id, IndexT index);

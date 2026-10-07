@@ -36,11 +36,13 @@ private:
     struct MeshStreamData
     {
         void* mappedData;
-        CoreGraphics::VertexAlloc indexAllocationOffset, vertexAllocationOffset;
+        CoreGraphics::VertexAlloc indexAllocation, vertexAllocation;
     };
     
     /// Initialize mesh
     ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+    /// Reinitialize mesh
+    ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// Stream texture
     ResourceStreamOutput StreamResource(const ResourceLoadJob& job) override;
     /// unload resource (overload to implement resource deallocation)
@@ -51,9 +53,6 @@ private:
     /// Update intermediate loaded state
     void UpdateLoaderSyncState() override;
     
-    /// setup mesh from nvx3 file in memory
-    ResourceLoader::_StreamData SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJob& job, const MeshResourceId meshResource);
-
     struct MeshesToSubmit
     {
         Resources::ResourceId id;

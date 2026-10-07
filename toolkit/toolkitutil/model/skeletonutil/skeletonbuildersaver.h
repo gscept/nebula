@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "skeletonbuilder.h"
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/stream.h"
 #include "system/byteorder.h"
 

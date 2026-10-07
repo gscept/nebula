@@ -6,13 +6,13 @@
 #include "resourceloader.h"
 #include "io/ioserver.h"
 #include "resourceserver.h"
-#include "util/bit.h"
 #include "profiling/profiling.h"
 
 using namespace IO;
 namespace Resources
 {
 
+int32_t ResourceLoader::UniquePoolCounter = 0;
 __ImplementAbstractClass(Resources::ResourceLoader, 'RSLO', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
@@ -44,6 +44,7 @@ ResourceLoader::Setup()
 {
     // implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
     this->uniqueResourceId = 0;
+    this->uniqueId = UniquePoolCounter++;
 
     // set the async flag in the constructor of your subclass implementation of the resource pool
     if (this->async)
@@ -78,14 +79,14 @@ ResourceLoader::LoadFallbackResources()
     }
 
     // load placeholder, don't load it async
-    if (this->placeholderResourceName.IsValid())
+    if (this->placeholderResourceName.IsFile())
     {
         this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
-    if (this->failResourceName.IsValid())
+    if (this->failResourceName.IsFile())
     {
         this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->failResourceId != Resources::InvalidResourceId);
@@ -147,11 +148,29 @@ ResourceLoader::RequestLOD(const Ids::Id32 entry, float lod) const
 /**
 */
 void
+ResourceLoader::AddReloadListener(const std::function<void(Resources::ResourceId)>& callback)
+{
+    this->reloadListeners.Append(callback);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput& output)
 {
     output.UpdateLoaderState(loader);
     if (output.state == Resource::Loaded || output.state == Resource::Failed)
+    {
         loader->RunCallbacks(output.state, output.id);
+        if (AllBits(output.flags, LoadFlags::Reload)  && !loader->reloadListeners.IsEmpty())
+        {
+            for (const auto& callback : loader->reloadListeners)
+            {
+                callback(output.id);
+            }
+        }
+    }
     else
         loader->dependentJobs.Append(output.remainderJob);
 }
@@ -360,7 +379,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     streamResult.pendingBits = job.loadState.pendingBits;
     streamResult.loadedBits = job.loadState.loadedBits;
 
-    if (AnyBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
+    if (AllBits(job.flags, LoadFlags::Create))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
@@ -369,17 +388,18 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             // If new resource, initialize it
             ResourceLoader::ResourceInitOutput initResult;
-            if (AllBits(job.flags, LoadFlags::Create))
-                initResult = loader->InitializeResource(job, stream);
-            else if (AllBits(job.flags, LoadFlags::Reload))
+            if (AllBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
                 initResult = loader->ReinitializeResource(job, stream);
+            else if (AllBits(job.flags, LoadFlags::Create))
+                initResult = loader->InitializeResource(job, stream);
+                
             job.streamData = initResult.loaderStreamData;
             job.id.resourceId = initResult.id.resourceId;
             job.id.generation = initResult.id.generation;
 
             // Get the requested load bits based on the stream data
             job.loadState.requestedBits = loader->LodMask(job.streamData, job.lod, !job.immediate);
-            job.flags = LoadFlags::None;
+            job.flags &= ~LoadFlags::Create;
 
             if (job.immediate)
             {
@@ -402,7 +422,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
                 job.state = Resource::Failed;
                 job.id.resourceId = loader->failResourceId.resourceId;
                 job.id.generation = loader->failResourceId.generation;
-                n_printf("[Resource loader] Failed to load resource %s\n", job.name.AsCharPtr());
+                n_log(Resource Loader, "Failed to load resource %s", job.name.AsCharPtr());
                 goto skip_stream;
             }
         }
@@ -410,7 +430,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             job.id.resourceId = loader->failResourceId.resourceId;
             job.id.generation = loader->failResourceId.generation;
-            n_printf("[Resource loader] Failed to open resource %s\n", job.name.AsCharPtr());
+            n_log(Resource Loader, "Failed to load resource %s", job.name.AsCharPtr());
             job.state = Resource::Failed;
             goto skip_stream;
         }
@@ -445,6 +465,7 @@ skip_stream:
     output.loadState = job.loadState;
     output.state = job.state;
     output.id = job.id;
+    output.flags = job.flags;
     output.remainderJob = job;
 
     return output;
@@ -577,11 +598,8 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
                 this->streamerThread->Wait();
 
                 // If the job is inflight, we request it immediately but it's inflight as async, there is not much we can do
-                n_printf(
-                    "[%s] Attempting to load %s synchronously when it's already inflight as async will stall the loader thread\n",
-                    this->RTTI.GetName().AsCharPtr(),
-                    path.GetHostAndLocalPath().AsCharPtr()
-                );
+                n_log(Resource Loader, "Attempting to load %s synchronously when it's already inflight as async will stall the loader thread",
+                    path.GetHostAndLocalPath().AsCharPtr());
 
                 // Loaded already
                 loadImmediate = false;
@@ -689,14 +707,15 @@ Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadI
 */
 Resources::ResourceId
 ResourceLoader::CreateResource(
-    const IO::URN& res,
+    const IO::Path& res,
     const void* loadInfo,
     SizeT loadInfoSize,
     const Util::StringAtom& tag,
     std::function<void(const Resources::ResourceId)> success,
     std::function<void(const Resources::ResourceId)> failed,
     bool immediate,
-    bool stream)
+    bool stream
+)
 {
     return CreateResource(res.ExportURI(), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
 }
@@ -721,7 +740,8 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 
                 if (this->streamDatas[id.loaderInstanceId].stream.isvalid())
                 {
-                    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+                    if (this->streamDatas[id.loaderInstanceId].stream->IsMapped())
+                        this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
                     this->streamDatas[id.loaderInstanceId].stream->Close();
                 }
                 
@@ -813,16 +833,17 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
-        pending.flags = LoadFlags::Reload;
+        pending.flags = LoadFlags::Create | LoadFlags::Reload;
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
+        this->loadStates[ret.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
         this->pendingLoads.Append(ret.loaderInstanceId);
     }
     else
     {
-        n_warning("Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
+        n_log_warn(Resources, "Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
     }
 }
 
@@ -846,6 +867,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 
     this->loads[id.loaderInstanceId] = pending;
     this->states[id.loaderInstanceId] = Resource::Pending;
+    this->loadStates[id.loaderInstanceId] = LoadState{ .requestedBits = 0xFFFFFFFF, .pendingBits = 0x0, .loadedBits = 0x0 };
     this->callbacks[id.loaderInstanceId].Append({ success, failed });
     this->pendingLoads.Append(id.loaderInstanceId);
 }

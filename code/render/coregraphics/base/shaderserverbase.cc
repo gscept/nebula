@@ -12,7 +12,6 @@
 #include "io/filewatcher.h"
 #include "io/memorystream.h"
 #include "system/process.h"
-#include "system/nebulasettings.h"
 
 namespace Base
 {
@@ -79,129 +78,174 @@ ShaderServerBase::Open()
     RecursiveLoadShaders(this, "shd:");
 
 #ifndef __linux__
-    auto reloadFileFunc = [this](IO::WatchEvent const& event)
-    {
-        if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
-            !event.file.EndsWithString("TMP") &&
-            !event.file.EndsWithString("~"))
-        {
-            // remove file extension
-            Util::String out = event.file;
-            out.StripFileExtension();
-
-            // find argument in export folder
-            Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
-            if (file->Open())
-            {
-                void* buf = file->Map();
-                SizeT size = file->GetSize();
-
-                // run process
-                Util::String cmd;
-                cmd.Set((const char*)buf, size);
-
-                Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
-
-                System::ProcessStartInfo processInfo;
-                processInfo.workingDir = file->GetURI().LocalPath().ExtractDirName();
-                processInfo.exePath = cmd;
-                processInfo.consoleWindow = false;
-                processInfo.outputStream = stream;
-
-                // launch process
-                System::ProcessId process = System::StartProcess(processInfo);
-                uint exitCode = System::WaitForProcess(process);
-
-                Ptr<TextReader> reader = TextReader::Create();
-                reader->SetStream(stream);
-                reader->Open();
-
-                if (exitCode != 0)
-                {
-                    n_printf("Process %s ended with exit code %d\n", cmd.AsCharPtr(), exitCode);
-                }
-
-                // write output from compilation
-                while (!reader->Eof())
-                {
-                    Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
-                }
-
-                // close reader
-                reader->Close();
-
-                // Get exported file name, this is what we need to reload.
-                IndexT oIndex = cmd.FindStringIndex("-o");
-                if (oIndex != InvalidIndex)
-                {
-                    Util::String exportedFilePath;
-                    char const* c = cmd.AsCharPtr() + oIndex + 3; // skip "-o "
-                    while (*c != ' ')
-                    {
-                        exportedFilePath.AppendChar(*c);
-                        c += 1;
-                    }
-
-                    // reload shader
-                    this->pendingShaderReloads.Enqueue(exportedFilePath);
-                }
-            }
-        }
-    };
-
-    // Traverse shader dependencies folder
     if (!IO::DirectoryExists(NEBULA_BUILD_FOLDER"/shader_dependencies"))
     {
         n_printf("Can't find shader dependencies folder. To use shader hot reloading, you need to have Nebula built from source.");
     }
-
-    Util::Dictionary<const char*, Util::Set<Util::String>> shaderReloadMap;
-
-    // Function to recursively traverse folders and build the shader assocation map
-    const auto traverseFolder = [&shaderReloadMap](const IO::URI& folder)
+    else
     {
-        const Util::Array<Util::String> dirs = IO::ListDirectories(folder);
-        const Util::Array<Util::String> files = IO::ListFiles(folder);
-        for (const Util::String& file : files)
+        Util::Set<Util::String> watchDirs;
+        Util::Array<Util::String> folders;
+        folders.Append(NEBULA_BUILD_FOLDER"/shader_dependencies");
+        while (folders.Size() > 0)
         {
-            Util::Set<Util::String>& files = shaderReloadMap.Emplace(file.AsCharPtr());
+            Util::String current = folders.PopFront();
+            folders.AppendArray(IO::ListDirectories(current, "*", true));
 
-            // Read .dep file and split on ;
-            const Ptr<IO::Stream>& depFile = IO::CreateStream(file);
-            if (depFile->Open())
+            const Util::Array<Util::String> depFiles = IO::ListFiles(current, "*.dep", true);
+            for (IndexT i = 0; i < depFiles.Size(); i++)
             {
-                void* data = depFile->MemoryMap();
-                SizeT size = depFile->GetSize();
+                Util::String contents;
+                n_assert2(IoServer::ReadFile(depFiles[i], contents), depFiles[i].AsCharPtr());
 
-                Util::String file((char*)data, size);
-                Util::Array<Util::String> dependencies = file.Tokenize(";");
+                Util::Array<Util::String> dependencies = contents.Tokenize(";");
+                n_assert(dependencies.Size() > 0);
 
-                for (const Util::String& depPath : dependencies)
+                Util::String source = dependencies[0];
+                source.Trim(" \r\n\t");
+                n_assert(source.IsValid());
+                source = IoServer::NativePath(source);
+                source.ConvertBackslashes();
+#if __WIN32__
+                source.ToLower();
+#endif
+
+                for (IndexT j = 0; j < dependencies.Size(); j++)
                 {
-                    files.Add(depPath);
+                    Util::String dep = dependencies[j];
+                    dep.Trim(" \r\n\t");
+                    n_assert(dep.IsValid());
+
+                    dep = IoServer::NativePath(dep);
+                    dep.ConvertBackslashes();
+#if __WIN32__
+                    dep.ToLower();
+#endif
+
+                    Util::String watchDir = dep.ExtractDirName();
+                    watchDir.TrimRight("/");
+                    n_assert(watchDir.IsValid());
+                    watchDirs.Add(watchDir);
+
+                    this->shaderReloadMap.Emplace(dep).Add(source);
                 }
-                depFile->Close();
             }
         }
-    };
 
-    // create file watcher
-    if (IO::IoServer::Instance()->DirectoryExists("proj:work/shaders/gpulang"))
-    {
-        FileWatcher::Instance()->Watch("proj:work/shaders/gpulang", true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
-    }
-
-#ifndef PUBLIC_BUILD
-    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
-    {
-        IO::URI shaderPath = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path");
-        shaderPath.AppendLocalPath("syswork/shaders/gpulang");
-        if (IO::IoServer::Instance()->DirectoryExists(shaderPath))
+        const Util::Array<Util::String>& dirs = watchDirs.KeysAsArray();
+        for (IndexT i = 0; i < dirs.Size(); i++)
         {
-            FileWatcher::Instance()->Watch(shaderPath.AsString(), true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
+            bool nested = false;
+            for (IndexT j = 0; j < dirs.Size(); j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+                Util::String prefix = dirs[j];
+                prefix.Append("/");
+                if (dirs[i].BeginsWithString(prefix))
+                {
+                    nested = true;
+                    break;
+                }
+            }
+            if (!nested)
+            {
+                this->shaderWatchFolders.Append(dirs[i]);
+            }
+        }
+
+        auto reloadFileFunc = [this](IO::WatchEvent const& event)
+        {
+            if ((event.type != WatchEventType::Modified && event.type != WatchEventType::NameChange) ||
+                event.file.EndsWithString("TMP") ||
+                event.file.EndsWithString("~"))
+            {
+                return;
+            }
+
+            Util::String changed = event.folder.AsString();
+            if (!event.relativePath.IsEmpty())
+            {
+                changed.AppendPath(event.relativePath);
+            }
+            changed.AppendPath(event.file);
+            changed.ConvertBackslashes();
+#if __WIN32__
+            changed.ToLower();
+#endif
+
+            IndexT mapIndex = this->shaderReloadMap.FindIndex(changed);
+            if (mapIndex == InvalidIndex)
+            {
+                return;
+            }
+
+            const Util::Array<Util::String>& sources = this->shaderReloadMap.ValueAtIndex(mapIndex).KeysAsArray();
+            for (IndexT i = 0; i < sources.Size(); i++)
+            {
+                Util::String out = sources[i].ExtractFileName();
+                out.StripFileExtension();
+
+                Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+                if (file->Open())
+                {
+                    void* buf = file->Map();
+                    SizeT size = file->GetSize();
+
+                    Util::String cmd;
+                    cmd.Set((const char*)buf, size);
+
+                    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+
+                    System::ProcessStartInfo processInfo;
+                    processInfo.workingDir = file->GetURI().LocalPath().ExtractDirName();
+                    processInfo.exePath = cmd;
+                    processInfo.consoleWindow = false;
+                    processInfo.outputStream = stream;
+
+                    System::ProcessId process = System::StartProcess(processInfo);
+                    uint exitCode = System::WaitForProcess(process);
+
+                    Ptr<TextReader> reader = TextReader::Create();
+                    reader->SetStream(stream);
+                    reader->Open();
+
+                    if (exitCode != 0)
+                    {
+                        n_printf("Process %s ended with exit code %d\n", cmd.AsCharPtr(), exitCode);
+                    }
+
+                    while (!reader->Eof())
+                    {
+                        Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
+                    }
+
+                    reader->Close();
+
+                    IndexT oIndex = cmd.FindStringIndex("-o");
+                    if (oIndex != InvalidIndex)
+                    {
+                        Util::String exportedFilePath;
+                        char const* c = cmd.AsCharPtr() + oIndex + 3;
+                        while (*c != ' ' && *c != '\0')
+                        {
+                            exportedFilePath.AppendChar(*c);
+                            c += 1;
+                        }
+
+                        this->pendingShaderReloads.Enqueue(exportedFilePath);
+                    }
+                }
+            }
+        };
+
+        for (IndexT i = 0; i < this->shaderWatchFolders.Size(); i++)
+        {
+            FileWatcher::Instance()->Watch(this->shaderWatchFolders[i], true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
         }
     }
-#endif
 #endif
 
     this->isOpen = true;
@@ -215,13 +259,14 @@ void
 ShaderServerBase::Close()
 {
     n_assert(this->isOpen);
-    #ifndef __linux__
-    // unwatch 
-    //if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
-    //{
-    //    IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
-    //}
-    #endif
+#ifndef __linux__
+    for (IndexT i = 0; i < this->shaderWatchFolders.Size(); i++)
+    {
+        FileWatcher::Instance()->Unwatch(this->shaderWatchFolders[i]);
+    }
+    this->shaderWatchFolders.Clear();
+    this->shaderReloadMap.Clear();
+#endif
 
     // unload all currently loaded shaders
     IndexT i;

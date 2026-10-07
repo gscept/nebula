@@ -10,7 +10,7 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/distributedtools/distributedtoolkitapp.h"
+#include "toolkitutil/distributedtools/distributedtoolkitapp.h"
 #include "toolkitutil/texutil/textureconverter.h"
 
 //------------------------------------------------------------------------------

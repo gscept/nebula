@@ -9,16 +9,19 @@
 */
 #include "core/types.h"
 #include "core/refcounted.h"
+#include "util/pinnedarray.h"
+#include "util/fixedarray.h"
 
 namespace IO
 {
 struct EventHandlerData;
 struct FileWatcherPlatform
 {
-    HANDLE dirHandle;
-    OVERLAPPED overlapped;
+    Util::Array<HANDLE> handles;
+    Util::Array<OVERLAPPED> overlaps;
+    Util::PinnedArray<0xFFF, Util::FixedArray<BYTE>> buffers;
     DWORD notifyFilter;
-    BYTE buffer[16 * 1024];
+    Util::Dictionary<HANDLE, Util::String> relativePathLookup;
     bool recursive;        
 };
 

@@ -8,7 +8,7 @@
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/uri.h"
 #include "util/string.h"
 

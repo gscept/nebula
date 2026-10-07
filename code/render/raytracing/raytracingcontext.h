@@ -10,6 +10,7 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
+#include "coregraphics/shader.h"
 #include "materials/gpulang/materialtemplatesgpulang.h"
 #include "materials/shaderconfig.h"
 
@@ -26,7 +27,18 @@ enum ObjectType
     BRDFObject,
     BSDFObject,
     GLTFObject,
-    ParticleObject
+    TerrainObject,
+    ParticleObject,
+    NumObjectTypes
+};
+
+static constexpr const char* HitShaderPaths[NumObjectTypes] =
+{
+    "shd:raytracing/shaders/brdfhit.gplb",
+    "shd:raytracing/shaders/bsdfhit.gplb",
+    "shd:raytracing/shaders/gltfhit.gplb",
+    "shd:raytracing/shaders/terrainhit.gplb",
+    "shd:raytracing/shaders/particlehit.gplb"
 };
 
 enum UpdateType
@@ -48,6 +60,8 @@ public:
     static void Create(const RaytracingSetupSettings& settings);
     ///
     static void Discard();
+    /// Hit programs in ObjectType order. Shared by raytracing and DDGI pipelines.
+    static const CoreGraphics::ShaderProgramId* GetHitPrograms();
 
     /// Setup a model entity for ray tracing, assumes model context registration
     static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
@@ -72,6 +86,8 @@ public:
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);
+    /// Render IMGUI
+    static void RenderUI(const Graphics::FrameContext& ctx);
     /// Update transforms
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
     /// Wait for jobs to finish
@@ -81,8 +97,8 @@ public:
 
     /// Get light grid resources
     static CoreGraphics::ResourceTableId GetLightGridResourceTable(IndexT bufferIndex);
-    /// Get TLAS
-    static CoreGraphics::TlasId GetTLAS();
+    /// Get TLAS for a buffered frame
+    static CoreGraphics::TlasId GetTLAS(const IndexT bufferIndex);
     /// Get object binding buffer
     static CoreGraphics::BufferId GetObjectBindingBuffer();
     /// Get raytracing table

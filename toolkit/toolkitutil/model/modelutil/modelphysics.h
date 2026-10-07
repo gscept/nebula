@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 
 #include "core/refcounted.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "io/stream.h"
 #include "flat/physics/material.h"
 

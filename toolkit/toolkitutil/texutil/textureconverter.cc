@@ -11,7 +11,7 @@
 #include "util/guid.h"
 #include "flat/texture.h"
 #include "system/process.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 
 #if !(__WIN32__)
@@ -19,7 +19,7 @@
 #endif
 #include "timing/timer.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 namespace ToolkitUtil
 {

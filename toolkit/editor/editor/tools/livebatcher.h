@@ -9,6 +9,8 @@
 */
 //------------------------------------------------------------------------------
 #include "editor/ui/window.h"
+#include "threading/safequeue.h"
+#include "threading/interlocked.h"
 
 namespace Editor
 {
@@ -32,13 +34,16 @@ public:
     /// Batches all assets
     static void BatchAssets();
     /// Batch a single asset
-    static void BatchAsset(const IO::URI& assetPath);
+    static void BatchAsset(const IO::Path& assetPath);
     /// Batch a single file
-    static void BatchFile(const IO::URI& filePath);
+    static void BatchFile(const IO::Path& filePath);
     /// Batch a set of modes
     static void BatchModes(BatchModes modes);
     /// Wait for all batching to finish
     static void Wait();
+
+    static Threading::Interlocked::AtomicCounter WorkCounter;
+
 };
 
 } // namespace Editor

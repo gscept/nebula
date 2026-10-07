@@ -46,6 +46,7 @@ struct ImguiTextureId
     uint blue : 1 = 1;
     uint alpha : 1 = 1;
     uint splat : 1 = 0;
+    uint pointFilter : 1 = 0;
 };
 
 extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;
@@ -99,5 +100,7 @@ private:
 void ImGuiCloseButton(bool& toggle, int id);
 /// Helper function for toggle buttons
 bool ImGuiToggleButton(const char* label, bool toggle);
+/// Helper function to produce a spinner
+void ImGuiSpinner(const char* label, float radius = 10.0f, float thickness = 3.0f);
 
 } // namespace Dynui

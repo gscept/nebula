@@ -12,7 +12,7 @@
 #include "ngltfmesh.h"
 #include "ngltfnode.h"
 #include "model/meshutil/meshbuilder.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "model/import/gltf/gltfdata.h"
 #include "meshprimitive.h"
 

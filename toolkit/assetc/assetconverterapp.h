@@ -7,7 +7,7 @@
     
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/toolkitapp.h"
+#include "toolkitutil/toolkitapp.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil

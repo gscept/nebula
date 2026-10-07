@@ -15,6 +15,7 @@
 #include "util/stringatom.h"
 #include "util/dictionary.h"
 #include "io/uri.h"
+#include "io/path.h"
 #include "io/ioserver.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"

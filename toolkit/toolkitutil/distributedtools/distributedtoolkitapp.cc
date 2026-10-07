@@ -127,13 +127,6 @@ DistributedToolkitApp::ParseCmdLineArgs()
         this->ShowHelp();
         return false;
     }
-    // if a file arg is given, a dir arg have to exist
-    if(this->fileArg.IsValid() && !this->dirArg.IsValid())
-    {
-        n_printf("missing dir argument\n\n");
-        this->ShowHelp();
-        return false;
-    }
     // if the distributed arg is set, we need a shared directory
     if(this->args.HasArg("-distributed") && !this->args.HasArg("-shareddir"))
     {

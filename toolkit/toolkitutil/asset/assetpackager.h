@@ -10,7 +10,7 @@
 */
 //------------------------------------------------------------------------------
 #include "io/uri.h"
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 
 namespace ToolkitUtil
 {

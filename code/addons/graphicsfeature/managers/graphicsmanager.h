@@ -15,7 +15,6 @@
 #include "game/manager.h"
 #include "game/category.h"
 #include "graphics/graphicsentity.h"
-#include "game/componentinspection.h"
 #include "components/camera.h"
 #include "components/decal.h"
 #include "components/lighting.h"

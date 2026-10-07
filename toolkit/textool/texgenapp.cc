@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "texgenapp.h"
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "io/console.h"

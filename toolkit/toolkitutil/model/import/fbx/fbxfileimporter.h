@@ -9,7 +9,7 @@
 */
 #include "model/import/base/modelimporter.h"
 #include "node/nfbxscene.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "model/modelutil/modelphysics.h"
 
 //------------------------------------------------------------------------------

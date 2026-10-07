@@ -8,7 +8,7 @@
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/uri.h"
-#include "toolkit-common/applauncher.h"
+#include "toolkitutil/applauncher.h"
 #include "io/memorystream.h"
 #include "system/process.h"
 

@@ -11,7 +11,7 @@
 #include "math/bbox.h"
 #include "model/import/base/scenenode.h"
 #include "model/meshutil/meshbuilder.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "meshprimitive.h"
 
 //------------------------------------------------------------------------------

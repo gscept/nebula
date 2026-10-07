@@ -14,7 +14,7 @@
 #include "io/memorystream.h"
 #include "io/xmlwriter.h"
 #include "io/xmlreader.h"
-#include "toolkit-common/applauncher.h"
+#include "toolkitutil/applauncher.h"
 #include "util/guid.h"
 
 //------------------------------------------------------------------------------

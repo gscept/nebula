@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "util/string.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 namespace ToolkitUtil
 {

@@ -15,7 +15,7 @@
 #include "flat/physics/material.h"
 #include "jobs2/jobs2.h"
 #include "system/nebulasettings.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"
@@ -330,10 +330,11 @@ AssetBatcherApp::DoWork()
             {
                 exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All);
                 exporter->UpdateSource();
-                IO::URI basePath("src:");
-                exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
+                IO::URI basePath("work:");
+                Util::String relativePath = dir.StripSubstring(basePath.LocalPath());
+                exporter->SetFolder(relativePath);
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ProcessFile("src:" + file);
+                exporter->ProcessFile("work:" + relativePath + "/" + file);
 
                 break;
             }
@@ -341,7 +342,7 @@ AssetBatcherApp::DoWork()
     }
     
     exporter->Close();
-
+    this->logger.Flush();
     Jobs2::JobSystemUninit();
 
 #if 0
@@ -400,7 +401,7 @@ void
 AssetBatcherApp::ShowHelp()
 {
     n_printf("Nebula asset batcher.\n"
-        "(C) 2012-2024 Individual contributors, see AUTHORS file.\n");
+        "(C) 2012-2026 Individual contributors, see AUTHORS file.\n");
     n_printf("-force       -- ignores time stamps\n"
              "-asset       -- asset name, implies source argument\n"
              "-source      -- select asset source from projectinfo, default all\n"

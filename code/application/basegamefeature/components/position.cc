@@ -3,7 +3,6 @@
 #include "util/stringatom.h"
 #include "memdb/attributeregistry.h"
 #include "game/componentserialization.h"
-#include "game/componentinspection.h"
 #include "pjson/pjson.h"
 //------------------------------------------------------------------------------
 namespace IO

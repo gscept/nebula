@@ -75,6 +75,16 @@ MeshGetPrimitiveGroup(const MeshId id, const IndexT group)
 //------------------------------------------------------------------------------
 /**
 */
+void
+MeshSetPrimitiveGroups(const MeshId id, const Util::Array<CoreGraphics::PrimitiveGroup>& groups)
+{
+    MeshIdLock _0(id);
+    return meshAllocator.Get<Mesh_Internals>(id.id).primitiveGroups = groups;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
@@ -84,10 +94,11 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 //------------------------------------------------------------------------------
 /**
 */
-const void
+void
 MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 {
-    meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].vertexBuffer = buffer;
+    MeshIdLock _0(id);
+    meshAllocator.Get<Mesh_Internals>(id.id).streams[stream].vertexBuffer = buffer;
 }
 
 //------------------------------------------------------------------------------
@@ -105,6 +116,7 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 void
 MeshSetVertexOffset(const MeshId id, const IndexT stream, uint64_t offset)
 {
+    MeshIdLock _0(id);
     meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].offset = offset;
 }
 
@@ -124,6 +136,16 @@ const uint64_t
 MeshGetIndexOffset(const MeshId id)
 {
     return meshAllocator.ConstGet<Mesh_Internals>(id.id).indexBufferOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshSetIndexOffset(const MeshId id, uint64_t offset)
+{
+    MeshIdLock _0(id);
+    meshAllocator.Get<Mesh_Internals>(id.id).indexBufferOffset = offset;
 }
 
 //------------------------------------------------------------------------------

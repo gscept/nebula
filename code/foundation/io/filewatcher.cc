@@ -73,7 +73,7 @@ FileWatcher::Update()
 void
 FileWatcher::Watch(Util::StringAtom const& folder, bool recursive, Util::BitField<8> flags, WatchDelegate const& callback)
 {
-    EventHandlerData data = { callback, folder,flags };
+    EventHandlerData data = { callback, folder, flags };
     data.data.recursive = recursive;
     this->watcherQueue.Enqueue(data);
     FileWatcherImpl::WakeUp();
@@ -112,10 +112,12 @@ FileWatcher::CheckQueue()
     {
         if (e.callback)
         {
-            n_assert(!this->watchers.Contains(e.folder));
-            this->watchers.Add(e.folder, e);
-            EventHandlerData& eventData = this->watchers[e.folder];
-            FileWatcherImpl::CreateWatcher(eventData);
+            if (!this->watchers.Contains(e.folder))
+            {
+                this->watchers.Add(e.folder, e);
+                EventHandlerData& eventData = this->watchers[e.folder];
+                FileWatcherImpl::CreateWatcher(eventData);
+            }
         }
         else
         {

@@ -60,25 +60,6 @@ ComponentInspection::Destroy()
 /**
 */
 void
-ComponentInspection::Register(ComponentId component, DrawFunc func)
-{
-    ComponentInspection* reg = Instance();
-    while (reg->inspectors.Size() <= component.id)
-    {
-        IndexT first = reg->inspectors.Size();
-        reg->inspectors.Grow();
-        reg->inspectors.Resize(reg->inspectors.Capacity());
-        reg->inspectors.Fill(first, reg->inspectors.Size() - first, nullptr);
-    }
-
-    n_assert(reg->inspectors[component.id] == nullptr);
-    reg->inspectors[component.id] = func;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 ComponentInspection::DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ComponentInspection* reg = Instance();
@@ -287,6 +268,7 @@ ComponentDrawFuncT<float>(Game::Entity owner, ComponentId component, void* data,
     ImGui::PopID();
 }
 
+void (*StringAtomComponentDrawOverride) (Game::Entity, ComponentId, void*, bool*) = nullptr;
 //------------------------------------------------------------------------------
 /**
 */
@@ -294,27 +276,37 @@ template<>
 void
 ComponentDrawFuncT<Util::StringAtom>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
-    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (((Util::StringAtom*)data)->IsValid())
+    if (StringAtomComponentDrawOverride)
     {
-        ImGui::Text(((Util::StringAtom*)data)->Value());
+        StringAtomComponentDrawOverride(owner, component, data, commit);
     }
     else
     {
-        ImGui::Text("None");
-    }
-    if (ImGui::BeginDragDropTarget())
-    {
-        auto payload = ImGui::AcceptDragDropPayload("resource");
-        if (payload)
+        ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+
+        if (((Util::StringAtom*)data)->IsValid())
         {
-            Util::String resourceName = (const char*)payload->Data;
-            *(Util::StringAtom*)data = resourceName;
-			*commit = true;
+            ImGui::Text(((Util::StringAtom*)data)->Value());
         }
-        ImGui::EndDragDropTarget();
+        else
+        {
+            ImGui::Text("None");
+        }
+        if (ImGui::BeginDragDropTarget())
+        {
+            auto payload = ImGui::AcceptDragDropPayload("resource");
+            if (payload)
+            {
+                Util::String resourceName = (const char*)payload->Data;
+                *(Util::StringAtom*)data = resourceName;
+                *commit = true;
+            }
+            ImGui::EndDragDropTarget();
+        }
+        ImGui::PopID();
+
     }
-    ImGui::PopID();
+    
 }
 
 //------------------------------------------------------------------------------

@@ -26,6 +26,15 @@ inline ImGUI : *ImGuiData;
 group(BATCH_GROUP) sampler_state TextureSampler
 {
     Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+group(BATCH_GROUP) sampler_state PointTextureSampler
+{
+    Filter = FilterMode.Nearest;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
 };
 
 render_state TextState
@@ -42,7 +51,7 @@ render_state TextState
 //------------------------------------------------------------------------------
 /**
 */ 
-UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer : u32, out useRange : u32, out useAlpha : u32, out splat : u32) void
+UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer : u32, out useRange : u32, out useAlpha : u32, out splat : u32, out pointFilter : u32) void
 {
     const TEXTURE_TYPE_MASK = 0xFu;
     const TEXTURE_LAYER_MASK = 0xFFu;
@@ -51,6 +60,7 @@ UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer 
     const TEXTURE_USE_ALPHA_MASK = 0x1u;
     const TEXTURE_SINGLE_CHANNEL = 0x1u;
     const TEXTURE_ID_MASK = 0x7FFu;
+    const TEXTURE_POINT_FILTER_MASK = 0x1u;
 
     type = val & TEXTURE_TYPE_MASK;
     layer = (val >> 4u) & TEXTURE_LAYER_MASK;
@@ -59,6 +69,7 @@ UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer 
     useAlpha = (val >> 17u) & TEXTURE_USE_ALPHA_MASK;
     splat = (val >> 18u) & TEXTURE_SINGLE_CHANNEL;
     id = (val >> 19u) & TEXTURE_ID_MASK;
+    pointFilter = (val >> 30u) & TEXTURE_POINT_FILTER_MASK;
 }
 
 //------------------------------------------------------------------------------
@@ -96,14 +107,27 @@ psMain(
     in Color : f32x4) void
 {
     var texColor : f32x4;
-    var id, type, layer, mip, useAlpha, useRange, splat : u32;
-    UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useRange, useAlpha, splat);
-    if type == 0 { texColor = sample2DLod(id, TextureSampler, UV, mip); }
-    else if type == 1 { texColor = sample2DArrayLod(id, TextureSampler, f32x3(UV, layer), mip); }
-    else if type == 2
+    var id, type, layer, mip, useAlpha, useRange, splat, pointFilter : u32;
+    UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useRange, useAlpha, splat, pointFilter);
+    if (pointFilter != 0)
     {
-        const size = textureGetSizeMip(Textures3D[id], mip);
-        texColor = sample3DLod(id, TextureSampler, f32x3(UV, layer / f32(size.z)), mip);
+        if type == 0 { texColor = sample2DLod(id, PointTextureSampler, UV, mip); }
+        else if type == 1 { texColor = sample2DArrayLod(id, PointTextureSampler, f32x3(UV, layer), mip); }
+        else if type == 2
+        {
+            const size = textureGetSizeMip(Textures3D[id], mip);
+            texColor = sample3DLod(id, PointTextureSampler, f32x3(UV, layer / f32(size.z)), mip);
+        }
+    }
+    else
+    {
+        if type == 0 { texColor = sample2DLod(id, TextureSampler, UV, mip); }
+        else if type == 1 { texColor = sample2DArrayLod(id, TextureSampler, f32x3(UV, layer), mip); }
+        else if type == 2
+        {
+            const size = textureGetSizeMip(Textures3D[id], mip);
+            texColor = sample3DLod(id, TextureSampler, f32x3(UV, layer / f32(size.z)), mip);
+        }
     }
     
     if (useRange != 0)

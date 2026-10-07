@@ -7,7 +7,7 @@
     (C) 2022 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "model/import/base/scene.h"
 
 #include "nflatbuffer/flatbufferinterface.h"

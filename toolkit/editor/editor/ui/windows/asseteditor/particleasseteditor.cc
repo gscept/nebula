@@ -17,7 +17,7 @@
 #include "tinyfiledialogs.h"
 #include "editor/tools/pathconverter.h"
 #include "materialasseteditor.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 
 #include "dynui/imguicontext.h"
 

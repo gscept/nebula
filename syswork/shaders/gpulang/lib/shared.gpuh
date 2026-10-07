@@ -217,7 +217,7 @@ struct ShadowViewParams
     ShadowViewProjection : [SHADOW_CASTER_COUNT] f32x4x4;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform ShadowViewConstants : *ShadowViewParams;
 
 group(FRAME_GROUP) sampler_state ShadowSampler
@@ -266,7 +266,7 @@ struct ClusterAABB
     featureFlags : u32;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform ClusterAABBs : *[] mutable ClusterAABB;
 
 // this is used to keep track of how many lights we have active
@@ -282,7 +282,7 @@ struct ClusterParams
     ZDistribution : f32;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform ClusterUniforms : *ClusterParams;
 
 //------------------------------------------------------------------------------
@@ -396,7 +396,7 @@ struct LightParams
     NumLightClusters : u32;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform LightUniforms : *LightParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -410,7 +410,7 @@ struct LightIndexData
     AreaLightIndexList : [NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER] u32;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform LightIndexLists : *mutable LightIndexData;
 
 const MAX_DIRECTIONAL_LIGHTS = 8u;
@@ -430,7 +430,7 @@ struct LightListData
     AreaLightShadow : [16]AreaLightShadowExtension;
 };
 
-@Visibility("VS|CS|PS|RCS")
+@Visibility("VS|CS|PS|RGS|RCS")
 group(FRAME_GROUP) uniform LightLists : *mutable LightListData;
 
 //------------------------------------------------------------------------------

@@ -15,7 +15,7 @@ namespace ToolkitUtil
 typedef ToolkitUtil::Win32AppLauncher AppLauncher;
 }
 #elif __LINUX__
-#include "toolkit-common/posix/posixapplauncher.h"
+#include "toolkitutil/posix/posixapplauncher.h"
 namespace ToolkitUtil
 {
 typedef ToolkitUtil::PosixAppLauncher AppLauncher;

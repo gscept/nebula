@@ -49,7 +49,7 @@ public:
     static Util::FixedArray<CoreGraphics::ResourceTableId> CreateResourceTables();
 
 #if WITH_NEBULA_EDITOR
-    void SetMaterial(const IO::URN& res);
+    void SetMaterial(const IO::Path& res);
 #endif
 
 protected:
@@ -65,7 +65,7 @@ protected:
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;
-    IO::URN materialName;
+    IO::Path materialName;
 
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };

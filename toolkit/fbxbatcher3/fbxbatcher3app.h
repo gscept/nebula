@@ -7,7 +7,7 @@
     
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/distributedtools/distributedtoolkitapp.h"
+#include "toolkitutil/distributedtools/distributedtoolkitapp.h"
 #include "modelutil/modeldatabase.h"
 
 //------------------------------------------------------------------------------

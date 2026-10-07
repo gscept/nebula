@@ -34,6 +34,8 @@ private:
 
     /// load texture
     ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+    /// load texture
+    ResourceLoader::ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// Stream texture
     ResourceLoader::ResourceStreamOutput StreamResource(const ResourceLoadJob& job) override;
     /// unload texture

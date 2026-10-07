@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "asset/assetprocessorbase.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "toolkitutil/texutil/textureconverter.h"
 #include "model/import/base/scene.h"
 namespace ToolkitUtil

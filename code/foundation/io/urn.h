@@ -45,12 +45,14 @@ public:
     /// set complete URI string
     void Set(const Util::String& s);
     /// return as concatenated string
-    const Util::String& AsString() const;
+    const Util::String& AsString();
 
     /// return true if the URN is empty
     bool IsEmpty() const;
     /// return true if the URN is not empty
     bool IsValid() const;
+    /// Returns true if the URN is a folder
+    bool IsFolder() const;
     /// clear the URN
     void Clear();
     /// set Namespace component
@@ -69,34 +71,22 @@ public:
     void SetFragment(const Util::String& s);
     /// get fragment component (can be empty)
     const Util::String& GetFragment() const;
-
-    /// Convert to an export URI using file extension, mappings are setup with AddExportMapping
-    const IO::URI ExportURI() const;
-    /// Convert to a work URI using project folder and extension, mappings are setup with AddWorkMapping
-    const IO::URI WorkURI(const Util::StringAtom& root);
-
-    /// Add an export binding using namespace -> file extension to use with ExportURI
-    static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
-    /// Add a work binding using namespace -> file extension to use with WorkURI
-    static void AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
-    /// Set the work folder
-    static void SetWorkRoot(const Util::StringAtom& root);
-
+    /// build string from components
+    void Build();
 private:
     /// split string into components
     bool Split(const Util::String& s);
-    /// build string from components
-    Util::String Build() const;
 
+    bool isFolder;
     bool isEmpty;
+    bool isDirty;
     Util::String nid;
     Util::String nss;
     Util::String query;
     Util::String fragment;
     Util::String string;
 
-    static Util::Dictionary<Util::StringAtom, Util::StringAtom> ExportExtensions, WorkExtensions;
-    static Util::StringAtom WorkRoot;
+    
 };
 
 //------------------------------------------------------------------------------
@@ -104,7 +94,8 @@ private:
 */
 inline
 URN::URN() :
-    isEmpty(true)
+    isEmpty(true),
+    isFolder(false)
 {
     // empty
 }
@@ -114,10 +105,10 @@ URN::URN() :
 */
 inline
 URN::URN(const Util::String& s) :
-    isEmpty(true)
+    isEmpty(true),
+    isFolder(false)
 {
     bool validUrn = this->Split(s);
-    n_assert2(validUrn, s.AsCharPtr());
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +116,8 @@ URN::URN(const Util::String& s) :
 */
 inline
 URN::URN(const char* s) :
-    isEmpty(true)
+    isEmpty(true),
+    isFolder(false)
 {
     bool validUrn = this->Split(s);
     n_assert2(validUrn, s);
@@ -137,11 +129,11 @@ URN::URN(const char* s) :
 inline 
 URN::URN(const char* nid, const Util::String& nss)
 {
-    this->isEmpty = strlen(nid) == 0 || nss.Length() == 0;
+    this->isFolder = strlen(nid) == 0;
+    this->isEmpty = this->isFolder && nss.Length() == 0;
     this->nid = nid;
     this->nss = nss;
-    this->string = this->Build();
-    n_assert(this->IsValid());
+    this->Build();
 }
 
 //------------------------------------------------------------------------------
@@ -150,11 +142,11 @@ URN::URN(const char* nid, const Util::String& nss)
 inline 
 URN::URN(const char* nid, const char* nss)
 {
-    this->isEmpty = strlen(nid) == 0 || strlen(nss) == 0;
+    this->isFolder = strlen(nid) == 0;
+    this->isEmpty = this->isFolder && strlen(nss) == 0;
     this->nid = nid;
     this->nss = nss;
-    this->string = this->Build();
-    n_assert(this->IsValid());
+    this->Build();
 }
 
 //------------------------------------------------------------------------------
@@ -163,6 +155,7 @@ URN::URN(const char* nid, const char* nss)
 inline
 URN::URN(const URN& rhs) :
     isEmpty(rhs.isEmpty),
+    isFolder(rhs.isFolder),
     nid(rhs.nid),
     nss(rhs.nss),
     query(rhs.query),
@@ -175,11 +168,11 @@ URN::URN(const URN& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-void
+inline void
 URN::operator=(const URN& rhs)
 {
     this->isEmpty = rhs.isEmpty;
+    this->isFolder = rhs.isFolder;
     this->nid = rhs.nid;
     this->nss = rhs.nss;
     this->query = rhs.query;
@@ -190,8 +183,7 @@ URN::operator=(const URN& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-bool
+inline bool
 URN::operator==(const URN& rhs) const
 {
     if (this->isEmpty && rhs.isEmpty)
@@ -207,8 +199,7 @@ URN::operator==(const URN& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-bool
+inline bool
 URN::operator!=(const URN& rhs) const
 {
     return !(*this == rhs);
@@ -217,8 +208,7 @@ URN::operator!=(const URN& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-bool
+inline bool
 URN::IsEmpty() const
 {
     return this->isEmpty;
@@ -227,8 +217,7 @@ URN::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-bool
+inline bool
 URN::IsValid() const
 {
     return !this->isEmpty;
@@ -237,8 +226,16 @@ URN::IsValid() const
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-void
+inline bool 
+URN::IsFolder() const
+{
+    return this->isFolder;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
 URN::Clear()
 {
     this->isEmpty = true;
@@ -252,19 +249,20 @@ URN::Clear()
 //------------------------------------------------------------------------------
 /**
 */
-inline 
-const Util::String&
-URN::AsString() const
+inline const Util::String&
+URN::AsString()
 {
+    if (this->isDirty)
+        this->Build();
+    this->isDirty = false;
     return this->string;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::Set(const Util::String& s)
+inline void
+URN::Set(const Util::String& s)
 {
     this->Split(s);
 }
@@ -272,20 +270,19 @@ IO::URN::Set(const Util::String& s)
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetNamespace(const Util::String& s)
+inline void
+URN::SetNamespace(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->nid = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetNamespace() const
+inline const Util::String&
+URN::GetNamespace() const
 {
     return this->nid;
 }
@@ -293,20 +290,19 @@ IO::URN::GetNamespace() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetSpecific(const Util::String& s)
+inline void
+URN::SetSpecific(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->nss = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetSpecific() const
+inline const Util::String&
+URN::GetSpecific() const
 {
     return this->nss;
 }
@@ -314,20 +310,19 @@ IO::URN::GetSpecific() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetQuery(const Util::String& s)
+inline void
+URN::SetQuery(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->query = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetQuery() const
+inline const Util::String&
+URN::GetQuery() const
 {
     return this->query;
 }
@@ -335,77 +330,25 @@ IO::URN::GetQuery() const
 //------------------------------------------------------------------------------
 /**
 */
-inline
-void
-IO::URN::SetFragment(const Util::String& s)
+inline void
+URN::SetFragment(const Util::String& s)
 {
     this->isEmpty = false;
+    this->isDirty = true;
     this->fragment = s;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-const Util::String&
-IO::URN::GetFragment() const
+inline const Util::String&
+URN::GetFragment() const
 {
     return this->fragment;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline const IO::URI 
-URN::ExportURI() const
-{
-    IndexT i = URN::ExportExtensions.FindIndex(this->nid);
-    n_assert(i != InvalidIndex);
-    return IO::URI(Util::Format("%s:%s.%s", this->nid.AsCharPtr(), this->nss.AsCharPtr(), URN::ExportExtensions.ValueAtIndex(i).Value()));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const IO::URI
-URN::WorkURI(const Util::StringAtom& root)
-{
-    n_assert(URN::WorkRoot.IsValid());
-    IndexT i = URN::ExportExtensions.FindIndex(this->nid);
-    n_assert(i != InvalidIndex);
-    return IO::URI(Util::Format("%s:%s.%s", URN::WorkRoot.Value(), (this->nss + "/" + root.AsString()).AsCharPtr(), URN::WorkExtensions.ValueAtIndex(i).Value()));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
-{
-    n_assert(URN::ExportExtensions.FindIndex(ns) == InvalidIndex);
-    URN::ExportExtensions.Add(ns, extension);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
-{
-    n_assert(URN::WorkExtensions.FindIndex(ns) == InvalidIndex);
-    URN::WorkExtensions.Add(ns, extension);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-URN::SetWorkRoot(const Util::StringAtom& root)
-{
-    URN::WorkRoot = root;
-}
-
 } // namespace IO
+
 //------------------------------------------------------------------------------
 /**
 */

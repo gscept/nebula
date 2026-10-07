@@ -13,7 +13,7 @@
 */
 #include "core/types.h"
 #include "toolkitutil/assetfile.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 #include "util/dictionary.h"
 #include "timing/timer.h"
 #include "io/uri.h"

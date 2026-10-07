@@ -7,7 +7,7 @@
 */
 #include "math/bbox.h"
 #include "model/meshutil/meshbuilder.h"
-#include "toolkit-common/base/exporttypes.h"
+#include "toolkitutil/base/exporttypes.h"
 #include "model/meshutil/meshbuildergroup.h"
 #include "jobs/jobs.h"
 #include "model/import/gltf/gltfdata.h"

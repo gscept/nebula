@@ -11,8 +11,8 @@
 #include "core/singleton.h"
 #include "model/import/base/scene.h"
 #include "model/meshutil/meshbuilder.h"
-#include "toolkit-common/base/exporttypes.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/base/exporttypes.h"
+#include "toolkitutil/logger.h"
 #include "ufbx/ufbx.h"
 
 namespace ToolkitUtil

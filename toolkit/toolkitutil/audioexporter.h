@@ -8,7 +8,7 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "util/string.h"
 
 //------------------------------------------------------------------------------

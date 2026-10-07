@@ -1,0 +1,525 @@
+//------------------------------------------------------------------------------
+//  @file importwindow.cc
+//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "foundation/stdneb.h"
+#include "importwindow.h"
+#include "dynui/imguicontext.h"
+
+#include "coregraphics/texture.h"
+#include "graphics/view.h"
+
+#include "toolkitutil/asset/assetimporter.h"
+#include "toolkitutil/asset/assetpackager.h"
+#include "dynui/imguifiledialog/ImGuiFileDialog.h"
+#include "editor/ui/windowserver.h"
+#include "editor/tools/livebatcher.h"
+#include "editor/ui/windows/assetbrowser.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
+
+#include "io/ioserver.h"
+#include "console.h"
+
+#include "dynui/nebula_icons.h"
+
+namespace Presentation
+{
+
+//------------------------------------------------------------------------------
+/**
+*/
+AssetImporterWindow::AssetImporterWindow()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+AssetImporterWindow::~AssetImporterWindow()
+{
+}
+
+struct ModelImportSettings
+{
+    bool removeRedundantVertices = 1;
+    bool calculateNormals = 0;
+    bool flipUVs = 0;
+    bool importColors = 1;
+    bool importSecondaryUVs = 1;
+    bool calculateTangents = 0;
+    bool calculateRigidSkin = 0;
+    bool replaceExistingMesh = 0;
+    int scale = 1; // 0 means cm, 1 means m, 2 means km
+};
+
+static Util::Array<Util::Tuple<Util::String, ToolkitUtil::TextureResourceT, CoreGraphics::TextureId, Ids::Id32, Resources::ResourceId>> TextureResources;
+static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> FbxFiles;
+static Util::Array<Util::Tuple<Util::String, ModelImportSettings>> GltfFiles;
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+AssetImporterWindow::Run(SaveMode save)
+{
+    static Util::Array<Util::String> Files;
+    static IO::Path Destination;
+
+    const auto loadAssetFlags = [](IO::Path& path, const Util::String& file, Presentation::ModelImportSettings& settings)
+    {
+        // Load potential asset settings
+        IO::Path oldAssetPath = path;
+        oldAssetPath.SetFile(file.ExtractFileName(), "mdl");
+        IO::URI oldAssetURI = oldAssetPath.WorkURI("assets");
+        if (IO::FileExists(oldAssetURI))
+        {
+            Ptr<IO::Stream> stream = IO::CreateStream(oldAssetURI);
+            if (stream->Open())
+            {
+                void* data = stream->MemoryMap();
+                SizeT size = stream->GetSize();
+
+                // Do cheap reading, to avoid deserializing the whole mesh and packaged texture assets
+                const ToolkitUtil::ModelAsset* modelAsset = flatbuffers::GetRoot<ToolkitUtil::ModelAsset>((const uint8_t*)data);
+                settings.removeRedundantVertices = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_RemoveRedundantVertices);
+                settings.calculateNormals = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateNormals);
+                settings.flipUVs = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_FlipUVs);
+                settings.calculateTangents = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateTangentFrame);
+                settings.calculateRigidSkin = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_CalculateRigidSkinning);
+                settings.importColors = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_ImportVertexColors);
+                settings.importSecondaryUVs = AllBits(modelAsset->flags(), ToolkitUtil::OptimizationFlags::OptimizationFlags_ImportSecondaryUVs);
+
+                stream->MemoryUnmap();
+                stream->Close();
+
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const auto loadTextureSettings = [](IO::Path& path, const Util::String& file, ToolkitUtil::TextureResourceT& settings)
+    {
+        // Load potential asset settings
+        IO::Path oldAssetPath = path;
+        oldAssetPath.SetFile(file.ExtractFileName(), "tex");
+        IO::URI oldAssetURI = oldAssetPath.WorkURI("assets");
+        if (IO::FileExists(oldAssetURI))
+        {
+            Ptr<IO::Stream> stream = IO::CreateStream(oldAssetURI);
+            if (stream->Open())
+            {
+                void* data = stream->MemoryMap();
+                SizeT size = stream->GetSize();
+
+                const ToolkitUtil::TextureResource* textureAsset = flatbuffers::GetRoot<ToolkitUtil::TextureResource>((const uint8_t*)data);
+                settings.target_format = textureAsset->target_format();
+                settings.compression_quality = textureAsset->compression_quality();
+                settings.generate_mipmaps = textureAsset->generate_mipmaps();
+                settings.invert_green = textureAsset->invert_green();
+                settings.color_space = textureAsset->color_space();
+
+                stream->MemoryUnmap();
+                stream->Close();
+
+                return true;
+            }
+        }
+        return false;
+    };
+
+    auto console = (Presentation::Console*)Presentation::ConsoleWindow;
+    static ToolkitUtil::Logger logger;
+
+    for (const auto& file : Dynui::ImguiDragAndDropFiles)
+    {
+        static Util::String ext;
+        ext = file.GetFileExtension();
+
+        if (ext == "fbx")
+        {
+            ModelImportSettings fbxSettings;
+            fbxSettings.replaceExistingMesh = true;
+            loadAssetFlags(Destination, file, fbxSettings);
+            FbxFiles.Append({ file, fbxSettings });
+        }
+        else if (ext == "gltf" || ext == "glb")
+        {
+            ModelImportSettings gltfSettings;
+            gltfSettings.replaceExistingMesh = true;
+            loadAssetFlags(Destination, file, gltfSettings);
+            GltfFiles.Append({ file, gltfSettings });
+        }
+        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
+        {
+            ToolkitUtil::TextureResourceT textureSettings;
+
+            if (!loadTextureSettings(Destination, file, textureSettings))
+                textureSettings = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
+
+            TextureResources.Append(
+                {
+                    file,
+                    textureSettings,
+                    CoreGraphics::InvalidTextureId,
+                    Dynui::AllocateImguiTextureId({}),
+                    Resources::InvalidResourceId
+                }
+            );
+        }
+    }
+    auto batcher = (Editor::LiveBatcher*)Presentation::BatcherWindow;
+    IndexT textureResourceIndex = 0;
+    for (auto& [file, textureResource, texture, imguiId, resId] : TextureResources)
+    {
+        Util::String title = Util::Format("Import Texture: %s", file.ExtractFileName().AsCharPtr());
+        if (ImGui::Begin(title.AsCharPtr()))
+        {
+            if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+            {
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [file, &textureResource, &loadTextureSettings](const IO::Path& path)
+                {
+                    Destination = path;
+                    loadTextureSettings(Destination, file, textureResource);
+                });
+            }
+            ImGui::SameLine();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
+            static char buf[256];
+            memcpy(buf, shortenedPath.data(), shortenedPath.Length());
+            buf[shortenedPath.Length()] = '\0';
+            float width = ImGui::CalcTextSize(buf).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            ImGui::SetNextItemWidth(width);
+            Util::String fileNameNoExt = file.ExtractFileName();
+            fileNameNoExt.StripFileExtension();
+            Util::String label = Util::Format("/%s.natex##destination", fileNameNoExt.AsCharPtr());
+            ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
+
+            if (ImGui::BeginTable("TextureImportTable", 2))
+            {
+                ImGui::TableSetupScrollFreeze(1, 1);
+                ImGui::TableNextColumn();
+                ImTextureRef ref;
+                ref._TexID = imguiId;
+                ImGui::Image(ref, ImVec2(300, 300));
+                ImGui::TableNextColumn();
+                ImGui::Spacing();
+
+                bool changed = false;
+
+                changed |= ImGui::Checkbox("Generate Mipmaps", &textureResource.generate_mipmaps);
+                changed |= ImGui::Checkbox("Invert Green (Y) Channel", &textureResource.invert_green);
+                ImGui::SetItemTooltip("Some formats (like BC5) expect the green channel to be inverted. Enable this if your normal "
+                                      "maps look wrong after importing.");
+                static const char* pixelFormatOptions[] = {
+                    "R8G8B8A8",
+                    "R8G8B8",
+                    "R16",
+                    "BC1",
+                    "BC2",
+                    "BC3",
+                    "BC5",
+                    "BC6H",
+                    "BC7",
+                };
+                static const char* formatHints[] = {
+                    "Import as a typical 8 bit per channel RGBA texture. This is the most widely supported format, but also the "
+                    "largest on disk and in memory.",
+                    "Import as a typical 8 bit per channel RGB texture. This is widely supported and smaller than RGBA, but doesn't "
+                    "support transparency.",
+                    "Import as a single channel 16 bit texture. This is useful for height maps or other data that doesn't require "
+                    "color information.",
+                    "Import using BC1 compression. This is a common compressed format that is widely supported, but doesn't support "
+                    "alpha or has limited alpha support.",
+                    "Import using BC2 compression. This is a common compressed format that supports alpha, but has limited alpha "
+                    "quality.",
+                    "Import using BC3 compression. This is a common compressed format that supports alpha with better quality than "
+                    "BC2, but is larger on disk.",
+                    "Import using BC5 compression. This is a common compressed format for normal maps, but doesn't support color "
+                    "information.",
+                    "Import using BC6H compression. This is a common compressed format for HDR textures, but doesn't support alpha "
+                    "or color information.",
+                    "Import using BC7 compression. This is a modern compressed format that supports high quality alpha and color, "
+                    "but isn't supported on older hardware.",
+                };
+                if (ImGui::BeginCombo("Format", pixelFormatOptions[textureResource.target_format]))
+                {
+                    for (int i = 0; i < ToolkitUtil::TexturePixelFormat_MAX + 1; i++)
+                    {
+                        bool isSelected = (textureResource.target_format == i);
+                        if (ImGui::Selectable(pixelFormatOptions[i], isSelected))
+                        {
+                            textureResource.target_format = static_cast<ToolkitUtil::TexturePixelFormat>(i);
+                            changed = true;
+                        }
+                        ImGui::SetItemTooltip(formatHints[i]);
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                static const char* colorSpaceOptions[] = {
+                    "Linear",
+                    "sRGB",
+                };
+                if (ImGui::BeginCombo("Color space", colorSpaceOptions[textureResource.color_space]))
+                {
+                    for (int i = 0; i < ToolkitUtil::TextureColorSpace_MAX + 1; i++)
+                    {
+                        bool isSelected = (textureResource.color_space == i);
+                        if (ImGui::Selectable(colorSpaceOptions[i], isSelected))
+                        {
+                            textureResource.color_space = static_cast<ToolkitUtil::TextureColorSpace>(i);
+                            changed = true;
+                        }
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                static const char* compressionQualityOptions[] = {
+                    "Low",
+                    "High",
+                };
+                if (ImGui::BeginCombo("Compression quality", compressionQualityOptions[textureResource.compression_quality]))
+                {
+                    for (int i = 0; i < ToolkitUtil::TextureCompressionQuality_MAX + 1; i++)
+                    {
+                        bool isSelected = (textureResource.compression_quality == i);
+                        if (ImGui::Selectable(compressionQualityOptions[i], isSelected))
+                        {
+                            textureResource.compression_quality = static_cast<ToolkitUtil::TextureCompressionQuality>(i);
+                            changed = true;
+                        }
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                if (changed || resId == Resources::InvalidResourceId)
+                {
+                    int hashCode = file.ExtractFileName().HashCode();
+                    Util::String outputFileName = Util::Format("temp:importer/%d.dds", hashCode);
+                    if (resId != Resources::InvalidResourceId)
+                    {
+                        Resources::DiscardResource(resId);
+                        resId = Resources::InvalidResourceId;
+                    }
+                    Ptr<IO::Stream> sourceStream = IO::CreateStream(file);
+                    if (sourceStream->Open())
+                    {
+                        std::vector<uint8_t> data;
+                        data.resize(sourceStream->GetSize());
+                        memcpy(data.data(), sourceStream->MemoryMap(), sourceStream->GetSize());
+                        textureResource.data = data;
+
+                        if (ToolkitUtil::PackageTexture(
+                            &textureResource,
+                            Util::Format("%d", hashCode),
+                            "temp:importer/",
+                            ToolkitUtil::Platform::Code::Win32,
+                            &logger
+                        ))
+                        {
+                            resId = Resources::CreateResource(
+                                outputFileName,
+                                "editor",
+                                [&resId, &texture, imguiId](Resources::ResourceId id)
+                            {
+                                resId = id;
+                                texture = id.resourceId;
+                                Dynui::ImguiTextureId tex;
+                                tex.nebulaHandle = texture;
+                                Dynui::SetImguiTextureIdData(imguiId, tex);
+                            });
+                            texture = resId.resourceId;
+                        }
+
+                        sourceStream->Close();
+                    }
+                }
+
+                static Util::String saveButton =
+                    Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, fileNameNoExt.ExtractFileName().AsCharPtr());
+                if (ImGui::Button(saveButton.AsCharPtr()))
+                {
+                    ToolkitUtil::ImportTexture(file, Destination.WorkURI("assets"), textureResource, &logger);
+                    TextureResources.EraseIndex(textureResourceIndex);
+                    auto workAsset = IO::Path::File(Destination.GetFolderAndFile(), fileNameNoExt, "tex");
+                    batcher->BatchFile(workAsset);
+                }
+
+                ImGui::EndTable();
+            } // End of table
+            textureResourceIndex++;
+            ImGui::End();
+        }
+    }
+
+
+    IndexT fbxFileIndex = 0;
+    for (auto& [file, settings] : FbxFiles)
+    {
+        Util::String title = Util::Format("Import FBX: %s", file.ExtractFileName().AsCharPtr());
+        if (ImGui::Begin(title.AsCharPtr()))
+        {
+            if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+            {
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [file, &settings, &loadAssetFlags](const IO::Path& path)
+                {
+                    Destination = path;
+
+                    loadAssetFlags(Destination, file, settings);
+                });
+            }
+            ImGui::SameLine();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
+            static char buf[256];
+            memcpy(buf, shortenedPath.data(), shortenedPath.Length());
+            buf[shortenedPath.Length()] = '\0';
+            float width = ImGui::CalcTextSize(buf).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            ImGui::SetNextItemWidth(width);
+            Util::String fileNameNoExt = file.ExtractFileName();
+            fileNameNoExt.StripFileExtension();
+            Util::String label = Util::Format("##destination %s", fileNameNoExt.AsCharPtr());
+            ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
+
+            ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
+            ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
+            ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
+            ImGui::Checkbox("Flip UVs", &settings.flipUVs);
+            ImGui::Checkbox("Import vertex colors", &settings.importColors);
+            ImGui::Checkbox("Import secondary UVs", &settings.importSecondaryUVs);
+            ImGui::Checkbox("Calculate tangents", &settings.calculateTangents);
+            ImGui::Checkbox("Calculate rigid skinning", &settings.calculateRigidSkin);
+            ImGui::Combo("Scale", &settings.scale, "centimeters\000meters\000kilometers\000");
+
+            Util::String saveButton =
+                Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, file.ExtractFileName().AsCharPtr());
+
+            if (ImGui::Button(saveButton.AsCharPtr()))
+            {
+                uint flags = 0x0;
+                flags |= settings.replaceExistingMesh ? ToolkitUtil::ImportFlags::ReplaceExistingMesh : ToolkitUtil::ImportFlags::None;
+                flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
+                flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;
+                flags |= settings.importColors ? ToolkitUtil::ImportFlags::ImportColors : ToolkitUtil::ImportFlags::None;
+                flags |= settings.importSecondaryUVs ? ToolkitUtil::ImportFlags::ImportSecondaryUVs : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateTangents ? ToolkitUtil::ImportFlags::CalcTangents : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateRigidSkin ? ToolkitUtil::ImportFlags::CalcRigidSkin : ToolkitUtil::ImportFlags::None;
+                float scale = 1.0f;
+                switch (settings.scale)
+                {
+                    case 0: scale = 0.01f; break; // cm to m
+                    case 1: scale = 1.0f; break; // m to m
+                    case 2: scale = 1000.0f; break; // km to m
+                }
+                ToolkitUtil::ImportFBX(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
+                FbxFiles.EraseIndex(fbxFileIndex);
+            }
+
+            fbxFileIndex++;
+            ImGui::End();
+        }
+    }
+
+    IndexT gltfFileIndex = 0;
+    for (auto& [file, settings] : GltfFiles)
+    {
+        Util::String title = Util::Format("Import GLTF: %s", file.ExtractFileName().AsCharPtr());
+        if (ImGui::Begin(title.AsCharPtr()))
+        {
+            if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
+            {
+                auto assetBrowser = (AssetBrowser*)AssetBrowserPickerWindow;
+                assetBrowser->PickFolder(Destination, [file, &settings, &loadAssetFlags](const IO::Path& path)
+                {
+                    Destination = path;
+
+                    loadAssetFlags(Destination, file, settings);
+                });
+            }
+            ImGui::SameLine();
+            Util::String shortenedPath = "assets/" + Destination.GetFolderAndFile();
+            static char buf[256];
+            memcpy(buf, shortenedPath.data(), shortenedPath.Length());
+            buf[shortenedPath.Length()] = '\0';
+            float width = ImGui::CalcTextSize(buf).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            ImGui::SetNextItemWidth(width);
+            Util::String fileNameNoExt = file.ExtractFileName();
+            fileNameNoExt.StripFileExtension();
+            Util::String label = Util::Format("##destination %s", fileNameNoExt.AsCharPtr());
+            ImGui::InputText(label.AsCharPtr(), buf, sizeof(buf), ImGuiInputTextFlags_NoHorizontalScroll);
+
+            ImGui::Checkbox("Replace existing mesh", &settings.replaceExistingMesh);
+            ImGui::Checkbox("Remove redundant vertices", &settings.removeRedundantVertices);
+            ImGui::Checkbox("Calculate normals", &settings.calculateNormals);
+            ImGui::Checkbox("Flip UVs", &settings.flipUVs);
+            ImGui::Checkbox("Import vertex colors", &settings.importColors);
+            ImGui::Checkbox("Import secondary UVs", &settings.importSecondaryUVs);
+            ImGui::Checkbox("Calculate tangents", &settings.calculateTangents);
+            ImGui::Checkbox("Calculate rigid skinning", &settings.calculateRigidSkin);
+            ImGui::Combo("Scale", &settings.scale, "centimeters\000meters\000kilometers\000");
+
+            Util::String saveButton =
+                Util::String::Sprintf("%s Import %s.nasset", ICON_ttf_SAVE, fileNameNoExt.AsCharPtr());
+
+            if (ImGui::Button(saveButton.AsCharPtr()))
+            {
+                uint flags = 0x0;
+                flags |= settings.replaceExistingMesh ? ToolkitUtil::ImportFlags::ReplaceExistingMesh : ToolkitUtil::ImportFlags::None;
+                flags |= settings.removeRedundantVertices ? ToolkitUtil::ImportFlags::RemoveRedundant : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateNormals ? ToolkitUtil::ImportFlags::CalcNormals : ToolkitUtil::ImportFlags::None;
+                flags |= settings.flipUVs ? ToolkitUtil::ImportFlags::FlipUVs : ToolkitUtil::ImportFlags::None;
+                flags |= settings.importColors ? ToolkitUtil::ImportFlags::ImportColors : ToolkitUtil::ImportFlags::None;
+                flags |= settings.importSecondaryUVs ? ToolkitUtil::ImportFlags::ImportSecondaryUVs : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateTangents ? ToolkitUtil::ImportFlags::CalcTangents : ToolkitUtil::ImportFlags::None;
+                flags |= settings.calculateRigidSkin ? ToolkitUtil::ImportFlags::CalcRigidSkin : ToolkitUtil::ImportFlags::None;
+                float scale = 1.0f;
+                switch (settings.scale)
+                {
+                    case 0: scale = 0.01f; break; // cm to m
+                    case 1: scale = 1.0f; break; // m to m
+                    case 2: scale = 1000.0f; break; // km to m
+                }
+                ToolkitUtil::ImportGLTF(file, Destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
+                IO::Path asset = Destination;
+                asset.SetFile(fileNameNoExt, "mdl");
+                batcher->BatchAsset(asset);
+                GltfFiles.EraseIndex(gltfFileIndex);
+            }
+
+            gltfFileIndex++;
+            ImGui::End();
+        }
+    }
+    logger.Flush();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+AssetImporterWindow::ShouldRun() const
+{
+    return !TextureResources.IsEmpty() || !GltfFiles.IsEmpty() || !FbxFiles.IsEmpty() || !Dynui::ImguiDragAndDropFiles.IsEmpty();
+}
+
+} // namespace Presentation

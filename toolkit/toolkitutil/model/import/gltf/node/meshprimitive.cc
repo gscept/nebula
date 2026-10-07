@@ -145,7 +145,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
 
         if (primitive->material == -1)
         {
-            node->mesh.material = "syssur:gltf_default.sur";
+            node->mesh.material = "system:gltf_default:mat";
         }
         else
         {
@@ -347,7 +347,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             }
         }
 
-        if (!AllBits(context->flags, ToolkitUtil::FlipUVs))
+        if (AllBits(context->flags, ToolkitUtil::FlipUVs))
         {
             meshBuilder->FlipUvs();
         }

@@ -26,6 +26,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
     //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
     materialAllocator.Set<Material_MinLOD>(id, 1.0f);
     materialAllocator.Set<Material_Name>(id, name);
+    materialAllocator.Set<Material_BufferOffset>(id, -1);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
@@ -44,12 +45,13 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
     bufInfo.name = entry->bufferName;
     buffer = CoreGraphics::CreateBuffer(bufInfo);
 
+    // Setup default textures
     for (IndexT i = 0; i < entry->textures.Size(); i++)
     {
         auto& value = entry->textures.ValueAtIndex(i);
         if (value->bindlessOffset != -1)
         {
-            Resources::ResourceId id = Resources::CreateResource(value->resource, "materials",
+            Resources::ResourceId id = Resources::CreateResource(IO::Path::Parse(value->resource), "materials",
                 [buffer, value](Resources::ResourceId id)
             {
                 CoreGraphics::TextureIdLock _0(id);
@@ -61,9 +63,10 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
             CoreGraphics::TextureIdLock _0(id);
             uint handle = CoreGraphics::TextureGetBindlessHandle(id);
             CoreGraphics::BufferUpdate(buffer, &handle, sizeof(handle), value->bindlessOffset);
-            break;
         }
     }
+
+    // Setup default scalars
     for (IndexT i = 0; i < entry->values.Size(); i++)
     {
         auto& value = entry->values.ValueAtIndex(i);
@@ -79,16 +82,15 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
     for (IndexT i = 0; i < entry->textures.Size(); i++)
     {
         auto& kvp = entry->textures.KeyValuePairAtIndex(i);
-        Resources::ResourceId res = Resources::CreateResource(kvp.Value()->resource, "materials", [i, textures](Resources::ResourceId id)
+        Resources::ResourceId res = Resources::CreateResource(IO::Path::Parse(kvp.Value()->resource), "materials", [i, textures](Resources::ResourceId id)
         {
             textures[i] = id;
         });
         textures[i] = res;
-        break;
     }
 #endif
 
-    // Go through passes
+    // Go through passes and setup binding tables
     for (auto pass : entry->passes)
     {
         const CoreGraphics::ShaderId shader = pass.Value()->shader;
@@ -254,6 +256,17 @@ MaterialSetConstant(const MaterialId mat, const void* data, const uint size, con
 {
     const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferUpdate(buf, data, size, offset);
+    CoreGraphics::BufferFlush(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetData(const MaterialId mat, const void* data, const uint size)
+{
+    const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
+    CoreGraphics::BufferUpdate(buf, data, size);
     CoreGraphics::BufferFlush(buf);
 }
 

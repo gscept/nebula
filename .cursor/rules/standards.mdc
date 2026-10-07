@@ -1,0 +1,103 @@
+---
+description: Nebula frame loop, system order, and concurrency — do not invent races or assume same-phase execution
+alwaysApply: true
+---
+
+# Frame loop and concurrency
+
+Everything below is the **main thread** unless noted. `Jobs2` workers run only what was `JobDispatch`ed; they do not implicitly wait for each other or for the GPU. Feature units run in `AttachGameFeature` order (`BaseGameFeature` is always first). World ECS processors are a **different** timeline from `FeatureUnit` virtuals — do not treat `OnBeginFrame` as one phase.
+
+## `GameApplication::StepFrame` (one CPU frame)
+
+```
+Jobs2::JobNewFrame()                    // rotate job scratch; in-flight jobs from last frame must already be waited
+coreServer->Trigger()
+resourceServer->Update(FrameIndex)      // MAIN: dequeue finished loads, RunCallbacks
+gameServer->OnBeginFrame()
+gameServer->OnFrame()
+Application::Run()
+gameServer->OnEndFrame()
+FrameIndex++
+```
+
+## `GameServer` vs world pipeline
+
+`OnBeginFrame` / `OnFrame` / `OnEndFrame` on the server do **not** only run world processors.
+
+**OnBeginFrame**
+
+1. Each feature `OnBeginFrame()` (managers first via `FeatureUnit`)
+2. Each feature `OnBeforeViews()`
+3. Worlds `PrefilterProcessors()`
+4. Worlds `BeginFrame()` → pipeline `RunThru("OnBeginFrame")` then add-component commands
+
+**OnFrame**
+
+1. Each feature `OnFrame()`
+2. Worlds `SimFrame()` → `RunThru("OnFrame")`
+
+**OnEndFrame**
+
+1. Each feature `OnEndFrame()`
+2. Worlds `EndFrame()` → `RunThru("OnEndFrame")`, then remove/add components, `RunRemaining`, `Reset`
+3. `ManageEntities`
+4. Feature `OnDecay()`
+5. Worlds `ClearDecayBuffers`
+
+`ProcessorBuilder` defaults to `.On("OnBeginFrame")` (the **world** event, step 4 above). `.Async()` batches `JobDispatch` and **block the main thread** with `Event::Wait` before the next batch. Same-order async processors that write the same component are split into separate batches.
+
+World events: `OnBeginFrame` order 10, `OnFrame` 100, `OnEndFrame` 200. Extra events (e.g. multiplayer 250) run in `RunRemaining`.
+
+## GraphicsFeature (typical attach after BaseGame)
+
+Inside **feature** `OnBeginFrame` (before world `BeginFrame`):
+
+1. `WindowNewFrame` (resize)
+2. Input begin + poll + `OnFrame`
+3. `GraphicsServer::RunPreLogic`
+
+Inside **feature** `OnBeforeViews`: `RunPostLogic`.
+
+Inside **feature** `OnFrame`: `GraphicsServer::Render` (views → frame script, GPU record/submit).
+
+Inside **feature** `OnEndFrame`: `EndFrame` → `FinishFrame` (queue submit + wait display/render semaphores) → `WindowPresent` → `NewFrame` (advance buffered frame index) → input end.
+
+`frameContext.bufferIndex = GetBufferedFrameIndex()` is captured in `RunPreLogic`. Host `BufferSet` slots follow that index. `NewFrame` happens **after** this frame’s GPU submit/present.
+
+## PreLogic / PostLogic call order (graphicsfeatureunit.cc)
+
+**PreLogic (view-independent, then per enabled view):**
+
+`Imgui NewFrame` → cameras → **`ModelContext::UpdateTransforms`** → characters → env/fog UI → **`RaytracingContext::ReconstructTopLevelAcceleration`** → decals/fog → particles → **`RaytracingContext::UpdateResources`** → terrain UI → visibility tests + draw lists.
+
+Per view: particles prepare, Im3d, SSAO/histogram, **`DDGIContext::UpdateActiveVolumes`**, lights prepare, terrain cull.
+
+**PostLogic:** imgui end → cluster resources → **`RaytracingContext::UpdateTransforms`** → terrain LOD → **`ModelContext::WaitForWork`** → lights → **`RaytracingContext::WaitForJobs`** → character/particle/visibility waits.
+
+PreLogic **dispatches** jobs (model node transforms, characters, particles, visibility). PostLogic **waits** them. RT transform jobs are dispatched **and** waited in PostLogic. Do not read job outputs before the matching wait.
+
+## Resource callbacks — when they actually run
+
+`ResourceServer::Update` is **before** feature `OnBeginFrame`. Finished async loads `RunCallbacks` on the **main** thread there.
+
+`CreateResourceListener`: already `Loaded` → `success()` immediately on the caller (must be the loader creator / main thread). Otherwise the callback runs on the next `Update` after load completes.
+
+`ModelContext::Setup` does **not** run the game finished lambda in the resource callback. It enqueues it; **`ModelContext::UpdateTransforms` (PreLogic) drains `setupCompleteQueue`**. That is when `GraphicsManager` does `ObservableContext` / `RaytracingContext::RegisterEntity`+`SetupModel`.
+
+Consequence: **`ReconstructTopLevelAcceleration` runs before `UpdateTransforms`.** A model that becomes ready this frame is set up in PreLogic *after* Reconstruct. Mesh listeners inside `SetupModel` may then fire immediately (mesh already loaded) on the main thread — still after Reconstruct. GPU TLAS build is later, in `OnFrame` Render (`Raytracing Structures Update` subgraph, before DDGI Probe Update).
+
+## Game → graphics latency
+
+`GraphicsManager.UpdateModelTransforms` is a **world** `OnBeginFrame` processor (no `.On()`, so default). It runs **after** PreLogic and PostLogic. It `ModelContext::SetTransform`s for next PreLogic’s `UpdateTransforms`. Light/decal/DDGI volume processors are world `OnEndFrame` — after this frame’s Render/Present.
+
+Hierarchy resolve is a BaseGame **manager** `OnBeginFrame`/`OnEndFrame` (feature phase, before graphics PreLogic on begin).
+
+## Physics overlap
+
+If not `USE_SYNC_UPDATE`, `BeginSimulating` is feature `OnDecay` (end of frame) and `EndSimulating` is PhysicsFeature `OnBeginFrame` (next frame). The sim can still be running when the next frame’s features start.
+
+## GPU vs CPU
+
+CPU writes (RT instance/object host buffers, resource tables) happen in PreLogic/PostLogic on the current `bufferIndex`. GPU consumes them in `OnFrame` `ViewRender` / `FrameScript_default`. A `vkAcquireNextImageKHR` / present failure is from **previous** GPU work going `DEVICE_LOST`, not from the acquire itself.
+
+Do not invent a CPU race between `SetupModel` and draw: both are main-thread, and draw is `OnFrame`. Real hazards are: Reconstruct before setup-complete drain; host buffer not written for the `bufferIndex` the GPU will read; job output read before the PostLogic wait; world processor data that is one phase (or one frame) later than graphics already used.

@@ -23,8 +23,6 @@ namespace IO
 {
 using namespace Util;
 
-Util::Dictionary<Util::StringAtom, Util::StringAtom> URN::ExportExtensions, URN::WorkExtensions;
-Util::StringAtom URN::WorkRoot;
 
 //------------------------------------------------------------------------------
 /**
@@ -87,7 +85,7 @@ URN::Split(const String& s)
     nid.ToLower();
     this->SetNamespace(nid);
     this->SetSpecific(nss);
-    this->string = this->Build();
+    this->Build();
     return true;
 }
 
@@ -95,13 +93,9 @@ URN::Split(const String& s)
 /**
     This builds an URI string from its components.
 */
-String
-URN::Build() const
+void
+URN::Build()
 {
-    n_assert(!this->IsEmpty());
-    n_assert(this->nid.IsValid());
-    n_assert(this->nss.IsValid());
-
     String str;
     str.Reserve(256);
     str.Append("urn:");
@@ -118,7 +112,7 @@ URN::Build() const
         str.Append("#");
         str.Append(this->fragment);
     }
-    return str;
+    this->string = str;
 }
 
 } // namespace IO

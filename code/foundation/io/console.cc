@@ -201,16 +201,10 @@ Console::Print(const char* fmt, ...)
 void
 Console::Print(const char* fmt, va_list argList)
 {
-    this->critSect.Enter();
     n_assert(this->IsOpen());
     String str;
     str.FormatArgList(fmt, argList);
-    IndexT i;
-    for (i = 0; i < this->consoleHandlers.Size(); i++)
-    {
-        this->consoleHandlers[i]->Print(str);
-    }
-    this->critSect.Leave();
+    this->Print(str);
 }
 
 //------------------------------------------------------------------------------
@@ -248,10 +242,19 @@ Console::Error(const char* fmt, ...)
 void
 Console::Error(const char* fmt, va_list argList)
 {
-    this->critSect.Enter();
     n_assert(this->IsOpen());
     String str;
     str.FormatArgList(fmt, argList);
+    this->Error(str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Console::Error(const Util::String& str)
+{
+    this->critSect.Enter();
     IndexT i;
     for (i = 0; i < this->consoleHandlers.Size(); i++)
     {
@@ -310,10 +313,19 @@ Console::Warning(const char* fmt, ...)
 void
 Console::Warning(const char* fmt, va_list argList)
 {
-    this->critSect.Enter();
     n_assert(this->IsOpen());
     String str;
     str.FormatArgList(fmt, argList);
+    this->Warning(str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Console::Warning(const Util::String& str)
+{
+    this->critSect.Enter();
     IndexT i;
     for (i = 0; i < this->consoleHandlers.Size(); i++)
     {

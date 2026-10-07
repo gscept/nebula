@@ -34,6 +34,7 @@
 
 Core::CVar* g_debug_ddgi = Core::CVarCreate(Core::CVar_Int, "g_debug_ddgi", "0", "Draw DDGI probes");
 Core::CVar* g_debug_ddgi_probe_size = Core::CVarCreate(Core::CVar_Float, "g_debug_ddgi_probe_size", "0.01f", "Set size of DDGI probes");
+Core::CVar* r_RaytracingDDGI = Core::CVarCreate(Core::CVar_Int, "r_RaytracingDDGI", "1", "DDGI probe rays [0,1]. Independent of r_RaytracingDispatch.");
 
 using namespace Graphics;
 
@@ -143,19 +144,12 @@ DDGIContext::Create()
     state.probeUpdateShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_update.gplb");
     state.probeUpdateProgram = CoreGraphics::ShaderGetProgram(state.probeUpdateShader, CoreGraphics::ShaderFeatureMask("ProbeRayGen"));
 
-    auto brdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/brdfhit.gplb");
-    auto brdfHitProgram = CoreGraphics::ShaderGetProgram(brdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto bsdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/bsdfhit.gplb");
-    auto bsdfHitProgram = CoreGraphics::ShaderGetProgram(bsdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto gltfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/gltfhit.gplb");
-    auto gltfHitProgram = CoreGraphics::ShaderGetProgram(gltfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-    auto particleHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/particlehit.gplb");
-    auto particleHitProgram = CoreGraphics::ShaderGetProgram(particleHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
-
     state.raytracingTable = CoreGraphics::ShaderCreateResourceTableSet(state.probeUpdateShader, NEBULA_BATCH_GROUP, 1);
 
-    // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
-    state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
+    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings;
+    shaderMappings.Append(state.probeUpdateProgram);
+    shaderMappings.AppendArray(Raytracing::RaytracingContext::GetHitPrograms(), Raytracing::NumObjectTypes);
+    state.pipeline = CoreGraphics::CreateRaytracingPipeline(shaderMappings, CoreGraphics::ComputeQueueType);
 
     state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_finalize.gplb");
     state.probeBlendRadianceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeRadiance"));
@@ -239,7 +233,8 @@ DDGIContext::Create()
                     auto bar = CoreGraphics::TextureBarrierInfo{ .tex = volumeToUpdate.probeUpdateOutputs.radianceDistanceTexture, .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() };
                     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, {bar});
                     CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.updateProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
-                    CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.numRays, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 1);
+                    if (Core::CVarReadInt(r_RaytracingDDGI) != 0)
+                        CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.numRays, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 1);
                 }
             }
             CoreGraphics::CmdEndMarker(cmdBuf);
@@ -821,7 +816,7 @@ DDGIContext::UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::Fr
     }
 
     CoreGraphics::ResourceTableSetRWBuffer(state.raytracingTable.tables[ctx.bufferIndex], CoreGraphics::ResourceTableBuffer(Raytracing::RaytracingContext::GetObjectBindingBuffer(), ProbeUpdate::TlasInstanceBuffer::BINDING));
-    CoreGraphics::ResourceTableSetAccelerationStructure(state.raytracingTable.tables[ctx.bufferIndex], CoreGraphics::ResourceTableTlas(Raytracing::RaytracingContext::GetTLAS(), ProbeUpdate::TLAS::BINDING));
+    CoreGraphics::ResourceTableSetAccelerationStructure(state.raytracingTable.tables[ctx.bufferIndex], CoreGraphics::ResourceTableTlas(Raytracing::RaytracingContext::GetTLAS(ctx.bufferIndex), ProbeUpdate::TLAS::BINDING));
     CoreGraphics::ResourceTableCommitChanges(state.raytracingTable.tables[ctx.bufferIndex]);
 }
 

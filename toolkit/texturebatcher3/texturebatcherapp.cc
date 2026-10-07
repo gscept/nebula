@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "texturebatcherapp.h"
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "io/console.h"

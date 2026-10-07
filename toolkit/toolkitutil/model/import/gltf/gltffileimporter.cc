@@ -19,7 +19,7 @@
 #include "gltffilematerialextractor.h"
 #include "jobs2/jobs2.h"
 
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 #include "flat/texture.h"
 #include "nflatbuffer/flatbufferinterface.h"
@@ -170,6 +170,15 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_Linear;
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
+        }
+        if (material.emissiveTexture.index != -1)
+        {
+            ToolkitUtil::TextureResourceT tex;
+            tex.target_format = ToolkitUtil::TexturePixelFormat_R8G8B8A8;
+            tex.color_space = ToolkitUtil::TextureColorSpace_sRGB;
+
+            int32_t imageIndex = gltfScene.textures[material.emissiveTexture.index].source;
             textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
         }
     }

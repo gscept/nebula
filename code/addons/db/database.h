@@ -77,6 +77,8 @@ public:
     virtual void BeginTransaction();
     /// end a transaction on the database
     virtual void EndTransaction();
+    /// return true if a transaction is currently open
+    virtual bool IsInTransaction() const;
     /// create a new table in the database
     virtual void AddTable(const Ptr<Table>& table);
     /// delete a table from the database

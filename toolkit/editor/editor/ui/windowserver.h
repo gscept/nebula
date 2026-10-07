@@ -13,7 +13,7 @@
 #include "io/uri.h"
 #include "util/delegate.h"
 #include "input/key.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/logger.h"
 
 //------------------------------------------------------------------------------
 namespace Presentation
@@ -37,6 +37,7 @@ extern BaseWindow* NavigationWindow;
 extern BaseWindow* SettingsWindow;
 extern BaseWindow* TerrainEditorWindow;
 extern BaseWindow* BatcherWindow;
+extern BaseWindow* ImporterWindow;
 class WindowServer : public Core::RefCounted
 {   
     __DeclareClass(WindowServer);
@@ -67,7 +68,13 @@ public:
     /// shortcut is a single, or combination of keys, ex. "Ctrl+S", "A", "Left" "Ctrl+Shift+F10", etc.
     void RegisterCommand(Util::Delegate<void()> func, Util::String const& label, Util::String const& shortcut, const char* menu = NULL, const char* category = NULL);
 
+    /// Push a loading message onto the status bar. The returned id removes it.
+    uint32_t PushLoadingMessage(const Util::String& message);
+    /// Remove a loading message previously returned by PushLoadingMessage.
+    void RemoveLoadingMessage(uint32_t id);
+
 private:
+    void DrawStatusBar();
     void AddCategory(const Util::String& category);
 
     Util::HashTable<Util::String, BaseWindow*> windowByName;
@@ -87,6 +94,14 @@ private:
 
     ToolkitUtil::Logger logger;
     Util::Dictionary<Util::String, CommandInfo> commands;
+
+    struct StatusMessage
+    {
+        uint32_t id;
+        Util::String message;
+    };
+    Util::Array<StatusMessage> statusMessages;
+    uint32_t nextStatusMessageId = 1;
 };
 
 } // namespace Interface

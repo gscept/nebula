@@ -154,6 +154,18 @@ CreateBlas(const BlasCreateInfo& info)
     vkGetPhysicalDeviceFormatProperties2(Vulkan::GetCurrentPhysicalDevice(), positionsFormat, &formatProps);
     n_assert(formatProps.formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR);
 
+    n_assert(info.stride > 0);
+    const uint64_t vboBytes = BufferGetByteSize(info.vbo);
+    n_assert(info.vertexOffset < vboBytes);
+    const uint64_t remainingVerts = (vboBytes - info.vertexOffset) / info.stride;
+    n_assert(remainingVerts > 0);
+    uint maxVertex = (uint)(remainingVerts - 1);
+    if (info.primGroup.GetNumVertices() > 0)
+    {
+        n_assert((uint64_t)info.primGroup.GetBaseVertex() + info.primGroup.GetNumVertices() <= remainingVerts);
+        maxVertex = (uint)info.primGroup.GetBaseVertex() + (uint)info.primGroup.GetNumVertices() - 1;
+    }
+
     VkAccelerationStructureGeometryTrianglesDataKHR triangleData =
     {
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
@@ -161,7 +173,7 @@ CreateBlas(const BlasCreateInfo& info)
         .vertexFormat = positionsFormat,
         .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + info.vertexOffset},
         .vertexStride = (uint64_t)info.stride,
-        .maxVertex = info.indexType == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
+        .maxVertex = maxVertex,
         .indexType = info.indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
         .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + info.indexOffset},
         .transformData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr } // TODO: Support transforms
@@ -194,9 +206,10 @@ CreateBlas(const BlasCreateInfo& info)
     setup.primitiveGroup = {
         .primitiveCount = (uint)info.primGroup.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList),
         .primitiveOffset = (uint)info.primGroup.GetBaseIndex() * CoreGraphics::IndexType::SizeOf(info.indexType), // Primitive offset is defined in the mesh
-        .firstVertex = 0,
+        .firstVertex = (uint)info.primGroup.GetBaseVertex(),
         .transformOffset = 0
     };
+    n_assert(setup.primitiveGroup.primitiveCount > 0);
     uint maxPrimitiveCount = setup.primitiveGroup.primitiveCount;
 
     // Get build sizes
@@ -357,6 +370,22 @@ BlasInstanceSetMask(const BlasInstanceId id, uint mask)
 //------------------------------------------------------------------------------
 /**
 */
+const BlasInstanceInfo
+BlasInstanceGetInfo(const BlasInstanceId id)
+{
+    const VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.ConstGet<BlasInstance_Instance>(id.id);
+    return BlasInstanceInfo
+    {
+        .customIndex = setup.instanceCustomIndex,
+        .mask = setup.mask,
+        .shaderOffset = setup.instanceShaderBindingTableRecordOffset,
+        .blasDeviceAddress = setup.accelerationStructureReference
+    };
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const SizeT
 BlasInstanceGetSize()
 {
@@ -413,9 +442,11 @@ CreateTlas(const TlasCreateInfo& info)
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
     };
 
+    n_assert(info.numInstances > 0);
+    scene.maxInstances = (uint)info.numInstances;
     scene.rangeInfos = {
         {
-            .primitiveCount = (uint)info.numInstances,
+            .primitiveCount = 0,
             .primitiveOffset = 0, // Primitive offset is defined in the mesh
             .firstVertex = 0,
             .transformOffset = 0
@@ -429,7 +460,10 @@ CreateTlas(const TlasCreateInfo& info)
         nullptr,
         0, 0, 0
     };
-    vkGetAccelerationStructureBuildSizesKHR(dev, type, &scene.geometryInfo, (uint*)&info.numInstances, &scene.buildSizes);
+    uint maxPrimitiveCount = scene.maxInstances;
+    vkGetAccelerationStructureBuildSizesKHR(dev, type, &scene.geometryInfo, &maxPrimitiveCount, &scene.buildSizes);
+    n_assert(scene.buildSizes.accelerationStructureSize > 0);
+    n_assert(scene.buildSizes.buildScratchSize > 0);
 
     CoreGraphics::BufferId tlasBuf, buildScratchBuf, updateScratchBuf;
     VkDeviceAddress buildScratchBufAddr, updateScratchBufAddr;
@@ -528,9 +562,11 @@ DestroyTlas(const TlasId tlas)
 /**
 */
 void
-TlasInitBuild(const TlasId tlas)
+TlasInitBuild(const TlasId tlas, uint instanceCount)
 {
     SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id);
+    n_assert(instanceCount <= scene.maxInstances);
+    scene.rangeInfos[0].primitiveCount = instanceCount;
     scene.geometryInfo.mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
     scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_BuildScratchAddr>(tlas.id) };
 }
@@ -539,10 +575,13 @@ TlasInitBuild(const TlasId tlas)
 /**
 */
 void
-TlasInitUpdate(const TlasId tlas)
+TlasInitUpdate(const TlasId tlas, uint instanceCount)
 {
     SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id);
-    scene.geometryInfo.mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    n_assert(instanceCount <= scene.maxInstances);
+    scene.rangeInfos[0].primitiveCount = instanceCount;
+    scene.geometryInfo.mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+    scene.geometryInfo.srcAccelerationStructure = scene.geometryInfo.dstAccelerationStructure;
     scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_UpdateScratchAddr>(tlas.id) };
 }
 

@@ -21,7 +21,8 @@ public:
 
     void Run(SaveMode save) override;
 
-    bool ShouldRun() override;
+    /// Determine if terrain editor should run
+    bool ShouldRun() const override;
 
 private:
 };

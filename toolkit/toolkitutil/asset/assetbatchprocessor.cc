@@ -6,9 +6,9 @@
 #include "assetbatchprocessor.h"
 #include "io/ioserver.h"
 #include "io/assignregistry.h"
-#include "toolkit-common/toolkitconsolehandler.h"
+#include "toolkitutil/toolkitconsolehandler.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 #include "io/jsonreader.h"
 #include "db/dataset.h"
 #include "db/sqlite3/sqlite3factory.h"
@@ -112,70 +112,41 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
             Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
             fileNameNoExt.StripFileExtension();
-            if (modelAsset.scene != nullptr)
-            {
-                Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
-                IO::CreateDirectory(dstFolder);
-                Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
 
-                Util::String srcFileNoExt = srcFile;
-                srcFileNoExt.StripFileExtension();
-                Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
-                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
-            }
             if (modelAsset.mesh != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("msh:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nvx", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageMesh(modelAsset.mesh.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-                
-                Util::String srcFileNoExt = srcFile;
-                srcFileNoExt.StripFileExtension();
-                Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
-                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
             if (modelAsset.animation != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ani:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nax", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-                                
-                Util::String srcFileNoExt = srcFile;
-                srcFileNoExt.StripFileExtension();
-                Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
-                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
             if (modelAsset.skeleton != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ske:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nsk", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackageSkeleton(modelAsset.skeleton.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-                                
-                Util::String srcFileNoExt = srcFile;
-                srcFileNoExt.StripFileExtension();
-                Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
-                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
             }
             if (modelAsset.physics != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("phys:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.actor", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                Util::String srcFile = Util::String::Sprintf("%s%s.nasset", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
                 ToolkitUtil::PackagePhysics(modelAsset.physics.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-                                
-                Util::String srcFileNoExt = srcFile;
-                srcFileNoExt.StripFileExtension();
-                Util::String urn = Util::String::Sprintf("urn:%s", srcFileNoExt.AsCharPtr());
-                this->UpdateResourceMapping(urn, file.AsString(), dstFile);
+            }
+            if (modelAsset.scene != nullptr)
+            {
+                Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
+                IO::CreateDirectory(dstFolder);
+                Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
+                ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
             }
 
             stream->MemoryUnmap();
@@ -187,32 +158,24 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         Util::String dstFolder = Util::String::Sprintf("tex:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageTextureFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-        Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
-        this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Materials) && ext == "namat")
     {
         Util::String dstFolder = Util::String::Sprintf("mat:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageMaterialFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-        Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
-        this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "napar")
     {
         Util::String dstFolder = Util::String::Sprintf("par:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageParticleFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-        Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
-        this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
     else if ((this->packageMode & PackageModes::Audio) && ext == "naaud")
     {
         Util::String dstFolder = Util::String::Sprintf("audio:%s", relativeFolderPathForWork.AsCharPtr());
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
-        Util::String urn = Util::String::Sprintf("urn:%s", dstFile.AsCharPtr());
-        this->UpdateResourceMapping(urn, file.AsString(), dstFile);
     }
 }
 

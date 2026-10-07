@@ -1023,6 +1023,7 @@ String::GetLastSlash() const
     const char* lastSlash = strrchr(s, '/');
     if (0 == lastSlash) lastSlash = strrchr(s, '\\');
     if (0 == lastSlash) lastSlash = strrchr(s, ':');
+    if (0 == lastSlash) lastSlash = s + this->strLen;
     return const_cast<char*>(lastSlash);
 }
 

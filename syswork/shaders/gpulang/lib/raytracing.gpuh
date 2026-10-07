@@ -2,14 +2,13 @@
 //  raytracing.gpuh
 //  (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-
 #include <lib/std.gpuh>
 #include <lib/shared.gpuh>
 #include <material_interfaces.gpul>
 #include <lib/pbr.gpuh>
 #include <lib/lighting_functions.gpuh>
 
+@Visibility("RGS|RCS")
 group(BATCH_GROUP) uniform TLAS : *accelerationStructure;
 
 const MESH_BINDING = 50;
@@ -43,48 +42,27 @@ struct HitResult
     bits : u32;
 };
 
-// Declare type for vertex positions and uv
+packed
 struct VertexPosUv
 {
     position : f32x3;
     uv : i32;
 };
 
-alignas(8)
-struct VertexAttributeNormals
+packed
+struct NormalVertex
 {
-    normal_tangent : i32x2;
+    normal : i32;
+    tangent : i32;
 };
 
-alignas(16)
-struct VertexAttributeSecondaryUv
-{
-    normal_tangent : i32x2;
-    uv : u32;
-};
-
-alignas(16)
-struct VertexAttributeColor
-{
-    normal_tangent : i32x2;
-    color : u32;
-};
-
-alignas(16)
-struct VertexAttributeSkin
-{
-    normal_tangent : i32x2;
-    weights : f32x4;
-    indices : u32;
-};
-
-alignas(4)
+packed
 struct Indexes32
 {
     index : u32;
 };
 
-alignas(2)
+packed
 struct Indexes16
 {
     index : u16;
@@ -95,12 +73,13 @@ struct TlasInstance
     PositionsPtr : address void;
     AttrPtr : address void;
     IndexPtr : address void;
-	MaterialOffset : u32;
+    MaterialOffset : u32;
     AttributeStride : u32;
     Use16BitIndex : u32;
     VertexLayout : u32;
 };
-binding(OBJECT_BINDING) uniform TlasInstanceBuffer : *[] mutable TlasInstance;
+@Visibility("RGS|RCS")
+group(BATCH_GROUP) binding(OBJECT_BINDING) uniform TlasInstanceBuffer : *[] mutable TlasInstance;
 
 //------------------------------------------------------------------------------
 /**
@@ -217,36 +196,19 @@ SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, out indices :
     
     var n1, n2, n3 : f32x3;
     var t1, t2, t3 : f32x3;
-    switch (obj.VertexLayout)
+    // Normal, Colors, SecondUV, Skin all start with NormalVertex; stride is the full NVX record.
+    if (obj.VertexLayout >= 1 && obj.VertexLayout <= 4)
     {
-        case 1: // Normal
-        {
-            const attrs1 = cast_VertexAttributeNormals(attribPtr + readIndices.x * obj.AttributeStride);
-            const attrs2 = cast_VertexAttributeNormals(attribPtr + readIndices.y * obj.AttributeStride);
-            const attrs3 = cast_VertexAttributeNormals(attribPtr + readIndices.z * obj.AttributeStride);
-            n1 = UnpackNormal32(attrs1.normal_tangent.x);
-            n2 = UnpackNormal32(attrs2.normal_tangent.x);
-            n3 = UnpackNormal32(attrs3.normal_tangent.x);
-            t1 = UnpackNormal32(attrs1.normal_tangent.y);
-            t2 = UnpackNormal32(attrs2.normal_tangent.y);
-            t3 = UnpackNormal32(attrs3.normal_tangent.y);
-            sign = UnpackSign(attrs1.normal_tangent.y);
-            break;
-        }
-        case 4: // Skin
-        {
-            const attrs1 = cast_VertexAttributeSkin(attribPtr + readIndices.x * obj.AttributeStride);
-            const attrs2 = cast_VertexAttributeSkin(attribPtr + readIndices.y * obj.AttributeStride);
-            const attrs3 = cast_VertexAttributeSkin(attribPtr + readIndices.z * obj.AttributeStride);
-            n1 = UnpackNormal32(attrs1.normal_tangent.x);
-            n2 = UnpackNormal32(attrs2.normal_tangent.x);
-            n3 = UnpackNormal32(attrs3.normal_tangent.x);
-            t1 = UnpackNormal32(attrs1.normal_tangent.y);
-            t2 = UnpackNormal32(attrs2.normal_tangent.y);
-            t3 = UnpackNormal32(attrs3.normal_tangent.y);
-            sign = UnpackSign(attrs1.normal_tangent.y);
-            break;
-        }
+        const attrs1 = cast_NormalVertex(attribPtr + readIndices.x * obj.AttributeStride);
+        const attrs2 = cast_NormalVertex(attribPtr + readIndices.y * obj.AttributeStride);
+        const attrs3 = cast_NormalVertex(attribPtr + readIndices.z * obj.AttributeStride);
+        n1 = UnpackNormal32(attrs1.normal);
+        n2 = UnpackNormal32(attrs2.normal);
+        n3 = UnpackNormal32(attrs3.normal);
+        t1 = UnpackNormal32(attrs1.tangent);
+        t2 = UnpackNormal32(attrs2.tangent);
+        t3 = UnpackNormal32(attrs3.tangent);
+        sign = UnpackSign(attrs1.tangent);
     }
     
     normal = BaryCentricVec3(n1, n2, n3, baryCoords);
@@ -273,8 +235,7 @@ CalculateClusterIndexRT(screenPos : f32x2, depth : f32, scale : f32, bias : f32)
 CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f32x3, material : f32x4, normal : f32x3) f32x3
 {
     const clusterCenter = worldSpacePos - ViewConstants.EyePos.xyz;
-    const index3D = u32x3((clusterCenter / ClusterUniforms.BlockSize.yyy) + ClusterUniforms.NumCells * 0.5f);
-    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+    const grid = (clusterCenter / ClusterUniforms.BlockSize.yyy) + ClusterUniforms.NumCells * 0.5f;
 
     var light = f32x3(0, 0, 0);
     const viewVec = normalize(origin.xyz - worldSpacePos.xyz);
@@ -335,7 +296,11 @@ CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f3
 //        }
 //    }
 //#else
-    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
+    if (grid.x >= 0.0f && grid.y >= 0.0f && grid.z >= 0.0f && grid.x < ClusterUniforms.NumCells.x && grid.y < ClusterUniforms.NumCells.y && grid.z < ClusterUniforms.NumCells.z)
+    {
+        const idx = Pack3DTo1D(u32x3(grid), ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+        light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
+    }
 //#endif
     return light;
 }

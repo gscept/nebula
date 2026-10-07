@@ -8,9 +8,9 @@
     (C) 2012-2015 Individual contributors, see AUTHORS file
 */
 #include "asset/assetprocessorbase.h"
-#include "toolkit-common/platform.h"
+#include "toolkitutil/platform.h"
 #include "io/jsonreader.h"
-#include "toolkit-common/toolkitconsolehandler.h"
+#include "toolkitutil/toolkitconsolehandler.h"
 #include "memdb/database.h"
 
 namespace Game

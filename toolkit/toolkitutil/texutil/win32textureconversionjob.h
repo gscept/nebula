@@ -10,7 +10,7 @@
     (C) 2013-2014 Individual contributors, see AUTHORS file
 */
 #include "toolkitutil/texutil/textureconversionjob.h"
-#include "toolkit-common/applauncher.h"
+#include "toolkitutil/applauncher.h"
 #include "io/uri.h"
 
 namespace ToolkitUtil

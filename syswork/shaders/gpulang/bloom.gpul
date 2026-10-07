@@ -9,8 +9,8 @@ const KernelSize = 16;
 sampler_state InputSampler
 {
     Filter = FilterMode.Linear;
-    AddressU = AddressMode.Clamp;
-    AddressV = AddressMode.Clamp;
+    AddressU = AddressMode.Mirror;
+    AddressV = AddressMode.Mirror;
 };
 
 struct BloomData
@@ -19,13 +19,6 @@ struct BloomData
     Resolutions : [14]f32x4;
 };
 uniform BloomUniforms : *BloomData;
-
-render_state PostEffectState
-{
-    Cull = CullFace.Back;
-    DepthTestEnabled = false;
-    DepthWriteEnabled = false;
-};
 
 uniform Input : *texture2D;
 uniform BloomOutput : *mutable rgba16f texture2D;
@@ -44,6 +37,7 @@ LoadLDS(pixel : i32x2) f32x3
 
 //------------------------------------------------------------------------------
 /**
+    3x3 tent (1-2-1 / 2-4-2 / 1-2-1) in mip-pixel space.
 */
 SampleTentUpscale(center : i32x2) f32x3
 {
@@ -76,39 +70,71 @@ csUpscale() void
 {
     const threadIndex = computeGetLocalThreadIndices().xy;
     const groupIndex = computeGetWorkgroupIndices();
-    
-    // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
+    const mip = i32(computeGetNumWorkgroups().z) - 1;
+    if (groupIndex.z != 0)
+    {
+        return;
+    }
+
     const tileStart = groupIndex.xy * (KernelSize - 2);
     const tileEnd = tileStart + u32x2(KernelSize - 2);
 
-    // The apron defines which pixels we will sample and load into LDS
-    const apronStart = tileStart - u32x2(1);
-    const apronEnd = tileEnd + u32x2(1);
-    const sampleCoord = apronStart + threadIndex;
-
     const outputPixel = tileStart + threadIndex;
+    const sampleCoord = i32x2(tileStart) + i32x2(threadIndex) - i32x2(1);
 
-    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[groupIndex.z].xy));
+    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[mip].xy));
 
-    // Only run waves on pixels within the target resolution
     const pixelOutputMask = all(outputPixel < tileEndClamped);
-    const mippedDimensions = BloomUniforms.Resolutions[groupIndex.z].xy;
-    const sampleUV = (f32x2(sampleCoord) + f32x2(0.5f)) / mippedDimensions;
+    const vp = i32x2(BloomUniforms.Resolutions[mip].xy);
+    var samp = f32x3(0);
+    if (all(sampleCoord >= i32x2(0)) && all(sampleCoord < vp))
+    {
+        const sampleUV = (f32x2(sampleCoord) + f32x2(0.5f)) * BloomUniforms.Resolutions[mip].zw;
+        samp = textureSampleLod(Input, InputSampler, sampleUV, f32(mip)).rgb;
+    }
 
-    // All waves load into LDS
-    SampleLookup[threadIndex.x][threadIndex.y] = SampleCubic(Input, InputSampler, BloomUniforms.Resolutions[groupIndex.z], sampleUV, groupIndex.z);
-    executionBarrierWorkgroup();
-    
     const weights : [14] f32 = [ 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 ];
 
-    // Only the 14x14 kernel inside the padded one runs the tent filter
+    SampleLookup[threadIndex.x][threadIndex.y] = samp;
+    executionBarrierWorkgroup();
+
     if (pixelOutputMask)
     {
-        const sum = SampleTentUpscale(i32x2(threadIndex) + i32x2(1)) * weights[groupIndex.z];
-        textureStore(BloomIntermediate[groupIndex.z], i32x2(outputPixel.x, outputPixel.y), f32x4(sum, 0));
+        var sum = SampleTentUpscale(i32x2(threadIndex) + i32x2(1)) * weights[mip];
+        if (mip < BloomUniforms.Mips - 1)
+        {
+            const uv = (f32x2(outputPixel) + f32x2(0.5f)) * BloomUniforms.Resolutions[mip].zw;
+            const halfpixel = BloomUniforms.Resolutions[mip].zw * 0.5f;
+            const lod = f32(mip + 1);
+            const uvMin = BloomUniforms.Resolutions[mip + 1].zw * 0.5f;
+            const uvMax = BloomUniforms.Resolutions[mip + 1].xy * BloomUniforms.Resolutions[mip + 1].zw - uvMin;
+
+            const tapOffsets : [8]f32x2 = [
+                f32x2(-halfpixel.x * 2.0f, 0),
+                f32x2(-halfpixel.x, halfpixel.y),
+                f32x2(0, halfpixel.y * 2.0f),
+                f32x2(halfpixel.x, halfpixel.y),
+                f32x2(halfpixel.x * 2.0f, 0),
+                f32x2(halfpixel.x, -halfpixel.y),
+                f32x2(0, -halfpixel.y * 2.0f),
+                f32x2(-halfpixel.x, -halfpixel.y)
+            ];
+            const tapWeights : [8]f32 = [ 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f ];
+
+            var up = f32x3(0);
+            for (var t : i32 = 0; t < 8; t++)
+            {
+                const tap = uv + tapOffsets[t];
+                if (all(tap >= uvMin) && all(tap <= uvMax))
+                {
+                    up += textureSampleLod(Intermediate, InputSampler, tap, lod).rgb * tapWeights[t];
+                }
+            }
+            sum += up / 12.0f;
+        }
+        textureStore(BloomIntermediate[mip], i32x2(outputPixel.x, outputPixel.y), f32x4(sum, 0));
     }
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -119,8 +145,7 @@ csMerge() void
 {
     const threadIndex = computeGetLocalThreadIndices().xy;
     const groupIndex = computeGetWorkgroupIndices();
-    
-    // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
+
     const tileStart = u32x2(groupIndex.x * 256, groupIndex.y);
     const tileEnd = tileStart + u32x2(256, 1);
 
@@ -128,20 +153,13 @@ csMerge() void
 
     const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[0].xy));
 
-    // Only run waves on pixels within the target resolution
-    var sum = f32x3(0);
     const pixelOutputMask = all(outputPixel < tileEndClamped);
-    const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0].xy;
-    for (var i : i32 = 0; i < BloomUniforms.Mips; i++)
-    {
-        const inputPixel = i32x2(outputPixel) >> i;
-        sum += textureSampleLod(Intermediate, InputSampler, uv, i).rgb;
-        //sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
-    }
-    
+    const uv = (f32x2(outputPixel) + f32x2(0.5f)) * BloomUniforms.Resolutions[0].zw;
+    const sum = textureSampleLod(Intermediate, InputSampler, uv, 0).rgb;
+
     if (pixelOutputMask)
     {
-        const weight = sum / BloomUniforms.Mips;
+        const weight = sum / f32(BloomUniforms.Mips);
         textureStore(BloomOutput, i32x2(outputPixel.x, outputPixel.y), f32x4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
     }
 }

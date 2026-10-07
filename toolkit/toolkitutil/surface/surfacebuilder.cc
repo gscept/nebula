@@ -5,10 +5,10 @@
 #include "foundation/stdneb.h"
 #include "surfacebuilder.h"
 #include "io/ioserver.h"
-#include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkitutil/converters/binaryxmlconverter.h"
 #include "io/xmlwriter.h"
 #include "io/memorystream.h"
-#include "toolkit-common/text.h"
+#include "toolkitutil/text.h"
 
 using namespace IO;
 using namespace Util;

@@ -34,7 +34,8 @@ public:
     static ComponentInspection* Instance();
     static void Destroy();
 
-    static void Register(ComponentId component, DrawFunc);
+    template<typename COMPONENT_TYPE>
+    static void Register(ComponentId component);
 
     static void DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit);
 
@@ -50,10 +51,16 @@ private:
     Util::Array<DrawFunc> inspectors;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<typename TYPE>
 inline void
 ComponentDrawFuncT(Game::Entity owner, ComponentId component, void* data, bool* commit);
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<typename TYPE, std::size_t i = 0>
 inline void
 InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* commit)
@@ -125,6 +132,7 @@ template<> void ComponentDrawFuncT<uint64_t>(Game::Entity, ComponentId, void*, b
 template<> void ComponentDrawFuncT<uint16_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int16_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(Game::Entity, ComponentId, void*, bool*);
+extern void (*StringAtomComponentDrawOverride) (Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::StringAtom>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::mat4>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::vec3>(Game::Entity, ComponentId, void*, bool*);
@@ -137,5 +145,25 @@ template<> void ComponentDrawFuncT<Util::Color>(Game::Entity, ComponentId, void*
 template<> void ComponentDrawFuncT<Util::BitField<16>>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::BitField<32>>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::BitField<64>>(Game::Entity, ComponentId, void*, bool*);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename COMPONENT_TYPE>
+void
+ComponentInspection::Register(ComponentId component)
+{
+    ComponentInspection* reg = Instance();
+    while (reg->inspectors.Size() <= component.id)
+    {
+        IndexT first = reg->inspectors.Size();
+        reg->inspectors.Grow();
+        reg->inspectors.Resize(reg->inspectors.Capacity());
+        reg->inspectors.Fill(first, reg->inspectors.Size() - first, nullptr);
+    }
+
+    n_assert(reg->inspectors[component.id] == nullptr);
+    reg->inspectors[component.id] = &Game::ComponentDrawFuncT<COMPONENT_TYPE>;
+}
 
 } // namespace Game

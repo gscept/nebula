@@ -281,7 +281,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
     // Get upload buffer
-    auto [alloc, buffer] = CoreGraphics::Upload(this->vertexDataPtr, this->vertexDataSize);
+    auto [alloc, buffer] = CoreGraphics::UploadArray(this->vertexDataPtr, this->vertexDataSize);
 
     // Get main vertex buffer
     this->vbo = CoreGraphics::GetVertexBuffer();
@@ -314,7 +314,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     n_assert(this->numIndices > 0);
 
     // Get upload buffer
-    auto [alloc, buffer] = CoreGraphics::Upload(this->indexDataPtr, this->indexDataSize);
+    auto [alloc, buffer] = CoreGraphics::UploadArray(this->indexDataPtr, this->indexDataSize);
 
     // Get main index buffer
     this->ibo = CoreGraphics::GetIndexBuffer();

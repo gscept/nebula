@@ -9,8 +9,8 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "scenenode.h"
-#include "toolkit-common/base/exporttypes.h"
-#include "toolkit-common/logger.h"
+#include "toolkitutil/base/exporttypes.h"
+#include "toolkitutil/logger.h"
 
 namespace ToolkitUtil
 {

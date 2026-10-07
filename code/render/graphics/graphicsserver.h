@@ -24,6 +24,38 @@
 #include "graphics/view.h"
 #include "debug/debughandler.h"
 
+namespace CoreGraphics
+{
+class MeshLoader;
+class GPULangShaderLoader;
+class TextureLoader;
+}
+
+namespace Models
+{
+class ModelLoader;
+}
+
+namespace Materials
+{
+class MaterialLoader;
+}
+
+namespace CoreAnimation
+{
+class AnimationLoader;
+}
+
+namespace Characters
+{
+class SkeletonLoader;
+}
+
+namespace Particles
+{
+class ParticleLoader;
+}
+
 namespace Graphics
 {
 
@@ -163,6 +195,15 @@ private:
     Ptr<CoreGraphics::ShaderServer> shaderServer;
     Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
     Ptr<CoreGraphics::TextRenderer> textRenderer;
+
+    Ptr<CoreGraphics::GPULangShaderLoader> shaderLoader;
+    Ptr<Models::ModelLoader> modelLoader;
+    Ptr<CoreGraphics::MeshLoader> meshLoader;
+    Ptr<CoreGraphics::TextureLoader> textureLoader;
+    Ptr<Materials::MaterialLoader> materialLoader;
+    Ptr<CoreAnimation::AnimationLoader> animationLoader;
+    Ptr<Characters::SkeletonLoader> skeletonLoader;
+    Ptr<Particles::ParticleLoader> particleLoader;
 
     Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;

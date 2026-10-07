@@ -265,7 +265,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                         if (requiredExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
                         {
                             CoreGraphics::DynamicVertexInputSupported = true;
-                            n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
+                            n_log(Graphics Device, "Dynamic Vertex Input is enabled");
                         }
 
                         state.deviceFeatureStrings[i][newNumCaps++] = requiredExtensions[j].AsCharPtr();
@@ -285,7 +285,10 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                     VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 #if NEBULA_GRAPHICS_DEBUG
                     VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
-                    VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME
+                    VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME,
+                    VK_EXT_DEVICE_FAULT_EXTENSION_NAME,
+                    VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_EXTENSION_NAME,
+                    VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
 #endif
                 };
 
@@ -298,7 +301,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                             if (wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
                             {
                                 CoreGraphics::RayTracingSupported = true;
-                                n_printf("[Graphics Device] Ray Tracing is enabled\n");
+                                n_log(Graphics Device, "Ray Tracing is enabled");
                             }
                         }
                         if (features.enableMeshShaders)
@@ -306,7 +309,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                             if (wantedExtensions[j] == VK_EXT_MESH_SHADER_EXTENSION_NAME)
                             {
                                 CoreGraphics::MeshShadersSupported = true;
-                                n_printf("[Graphics Device] Mesh Shaders are enabled\n");
+                                n_log(Graphics Device, "Mesh Shaders are enabled");
                             }
                         }
 
@@ -315,7 +318,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                             if (wantedExtensions[j] == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME)
                             {
                                 CoreGraphics::VariableRateShadingSupported = true;
-                                n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
+                                n_log(Graphics Device, "Variable Rate Shading is enabled");
                             }
                         }
                         if (features.enableGPUCrashAnalytics)
@@ -325,7 +328,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                                 CoreGraphics::NvidiaCheckpointsSupported = true;
                                 _IMP_VK_DYN(vkCmdSetCheckpointNV, state.instance);
                                 _IMP_VK_DYN(vkGetQueueCheckpointDataNV, state.instance);
-                                n_printf("[Graphics Device] Nvidia Checkpoints are enabled\n");
+                                n_log(Graphics Device, "Nvidia Checkpoints are enabled");
                             }
                         }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
@@ -333,19 +336,19 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                 }
 
                 if (!CoreGraphics::RayTracingSupported)
-                    n_printf("[Graphics Device] Ray Tracing is disabled\n");
+                    n_log(Graphics Device, "Ray Tracing is disabled");
                 if (!CoreGraphics::DynamicVertexInputSupported)
-                    n_printf("[Graphics Device] Dynamic Vertex Input is disabled\n");
+                    n_log(Graphics Device, "Dynamic Vertex Input is disabled");
                 if (!CoreGraphics::MeshShadersSupported)
-                    n_printf("[Graphics Device] Mesh Shaders are disabled\n");
+                    n_log(Graphics Device, "Mesh Shaders are disabled");
                 if (!CoreGraphics::VariableRateShadingSupported)
-                    n_printf("[Graphics Device] Variable Rate Shading is disabled\n");
+                    n_log(Graphics Device, "Variable Rate Shading is disabled");
 
                 state.numCaps[i] = newNumCaps;
 
                 if (validDevice)
                 {
-                    n_printf("[Graphics Device] Using '%s' as primary graphics adapter\n", state.deviceProps[i].properties.deviceName);
+                    n_log(Graphics Device, "Using '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
                     state.currentDevice = i;
                     CoreGraphics::ReadWriteBufferAlignment = state.deviceProps[i].properties.limits.minStorageBufferOffsetAlignment;
                     CoreGraphics::ConstantBufferAlignment = state.deviceProps[i].properties.limits.minUniformBufferOffsetAlignment;
@@ -747,8 +750,18 @@ DeviceLost()
             }
         }
         n_printf("******** END OF CRASH REPORT ********\n");
-
     }
+
+    VkDeviceFaultCountsEXT faults{ VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT };
+
+    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, nullptr);
+    Util::FixedArray<VkDeviceFaultInfoEXT> errors(faults.vendorInfoCount + faults.addressInfoCount);
+    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, errors.Begin());
+    for (const auto& deviceLostError : errors)
+    {
+        n_log_err(Vulkan, "Device lost: %s", deviceLostError.description);
+    }
+
     #endif
 }
 
@@ -1315,8 +1328,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
     setupResourcePoolInfo.resetable = true;
     setupResourcePoolInfo.shortlived = true;
+    setupResourcePoolInfo.name = "Graphics Setup Cmd Pool";
     state.setupGraphicsCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
+    setupResourcePoolInfo.name = "Transfer Setup Cmd Pool";
     state.setupTransferCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
 
     state.pendingDeletes.Resize(info.numBufferedFrames);
