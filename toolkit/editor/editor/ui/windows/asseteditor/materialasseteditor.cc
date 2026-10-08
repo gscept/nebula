@@ -380,7 +380,6 @@ MaterialSetup(AssetEditorItem* item)
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
-        Math::bbox(),
         item->asset.material,
         CoreGraphics::MeshResourceGetMesh(MaterialSphere, 0),
         0,
