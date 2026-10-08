@@ -373,14 +373,13 @@ MaterialSetup(AssetEditorItem* item)
 
     if (MaterialSphere == CoreGraphics::InvalidMeshResourceId)
     {
-        MaterialSphere = Resources::CreateResource("sysmsh:material_knob.nvx", "preview", nullptr, nullptr, true, false).resourceId;
+        MaterialSphere = Resources::CreateResource(":material_knob:msh"_path, "preview", nullptr, nullptr, true, false).resourceId;
     }
 
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
-        Math::bbox(),
         item->asset.material,
         CoreGraphics::MeshResourceGetMesh(MaterialSphere, 0),
         0,

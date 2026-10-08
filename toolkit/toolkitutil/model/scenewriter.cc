@@ -38,18 +38,6 @@ SceneWriter::GenerateGraphicsModel(
     // extract file path from export path
     String file = scene->GetName();
     String category = basePath.ExtractFileName();
-
-    // Loop through bounding boxes and get our scene bounding box
-    Math::bbox globalBox;
-    IndexT meshIndex;
-    globalBox.begin_extend();
-    for (meshIndex = 0; meshIndex < graphicsNodes.Size(); meshIndex++)
-    {
-        const SceneNode* mesh = graphicsNodes[meshIndex];
-        globalBox.extend(mesh->base.boundingBox);
-    }
-    globalBox.end_extend();
-
     String resourcePath = Util::Format("%s/%s", category.AsCharPtr(), file.AsCharPtr());
 
     // create mesh name
@@ -82,8 +70,6 @@ SceneWriter::GenerateGraphicsModel(
                 shape->use_lod = mesh->mesh.lodIndex != InvalidIndex;
                 shape->lod_min = mesh->mesh.minLodDistance;
                 shape->lod_max = mesh->mesh.maxLodDistance;
-                shape->bbox_min = xyz(mesh->base.boundingBox.pmin);
-                shape->bbox_max = xyz(mesh->base.boundingBox.pmax);
                 shape->prim_group = mesh->skin.skinFragments[j];
                 shape->mesh_resource = meshResource;
                 shape->mesh_index = mesh->mesh.meshIndex;
@@ -109,8 +95,6 @@ SceneWriter::GenerateGraphicsModel(
             shape->use_lod = mesh->mesh.lodIndex != InvalidIndex;
             shape->lod_min = mesh->mesh.minLodDistance;
             shape->lod_max = mesh->mesh.maxLodDistance;
-            shape->bbox_min = xyz(mesh->base.boundingBox.pmin);
-            shape->bbox_max = xyz(mesh->base.boundingBox.pmax);
             shape->prim_group = mesh->mesh.groupId;
             shape->mesh_resource = meshResource;
             shape->mesh_index = mesh->mesh.meshIndex;

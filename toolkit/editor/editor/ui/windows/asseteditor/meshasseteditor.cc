@@ -80,7 +80,6 @@ MeshSetup(AssetEditorItem* item)
     Models::ModelContext::Setup(
         item->previewObject,
         Math::mat4(),
-        Math::bbox(),
         SolidMaterial,
         CoreGraphics::MeshResourceGetMesh(item->asset.mesh, 0),
         0,
