@@ -313,6 +313,7 @@ MeshLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Strea
                 const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
                 group.SetBaseIndex(nvxGroup->firstIndex);
                 group.SetNumIndices(nvxGroup->numIndices);
+                group.SetBoundingBox(nvxGroup->boundingBox);
                 primGroups.Append(group);
             }
 

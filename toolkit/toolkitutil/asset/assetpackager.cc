@@ -77,12 +77,6 @@ PackageModel(
         writer->BeginTag("Material", 'MATE');
         writer->WriteString(shape->material);
         writer->EndTag();
-
-        // write bounding box
-        writer->BeginTag("Bounding Box", 'LBOX');
-        writer->WriteVec4(Math::vec4(shape->bbox_min, 1));
-        writer->WriteVec4(Math::vec4(shape->bbox_max, 1));
-        writer->EndTag();
     };
 
     IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
@@ -146,13 +140,6 @@ PackageModel(
         writer->EndTag();
 
         writer->BeginModelNode("TransformNode", 'TRFN', "root");
-
-            writer->BeginTag("Scene Bounding Box", 'LBOX');
-
-            writer->WriteVec4(Math::vec4(model->bbox_min, 1));
-            writer->WriteVec4(Math::vec4(model->bbox_max, 1));
-
-            writer->EndTag();
 
             if (model->skins.size() > 0)
             {

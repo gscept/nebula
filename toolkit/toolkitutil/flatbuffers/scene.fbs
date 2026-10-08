@@ -9,8 +9,8 @@ namespace ToolkitUtil;
 table SceneResource
 {
 	name : string;
-	bbox_min : Flat.Vec3 (native_inline);
-	bbox_max : Flat.Vec3 (native_inline);
+	bbox_min : Flat.Vec3 (native_inline, deprecated);
+	bbox_max : Flat.Vec3 (native_inline, deprecated);
 	shapes : [ShapeNode];
 	skins : [SkinFragmentNode];
 	takes : [TakeInfo];
