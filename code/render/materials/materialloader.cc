@@ -137,6 +137,9 @@ struct
         int bits;
     } dirtySet;
 
+    Threading::CriticalSection pendingMaterialUpdatesSection;
+    Util::Dictionary<Materials::MaterialId, Util::Pair<void*, uint>> pendingMaterialUpdates;
+
 } materialLoaderState;
 
 __ImplementClass(Materials::MaterialLoader, 'MALO', Resources::ResourceLoader);
@@ -155,7 +158,9 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
-            Materials::MaterialSetData(mat, data, (SizeT)dataSize);
+            materialLoaderState.pendingMaterialUpdatesSection.Enter();
+            materialLoaderState.pendingMaterialUpdates.Emplace(mat) = Util::MakePair(data, (uint)dataSize);
+            materialLoaderState.pendingMaterialUpdatesSection.Leave();
             MaterialAddLODTexture(mat, rid);
             dirtyFlag = true;
         },
@@ -164,7 +169,9 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
-            Materials::MaterialSetData(mat, data, (SizeT)dataSize);
+            materialLoaderState.pendingMaterialUpdatesSection.Enter();
+            materialLoaderState.pendingMaterialUpdates.Emplace(mat) = Util::MakePair(data, (uint)dataSize);
+            materialLoaderState.pendingMaterialUpdatesSection.Leave();
             MaterialAddLODTexture(mat, rid);
             dirtyFlag = true;
         });
@@ -566,6 +573,16 @@ MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId cmdBuf, con
 
     if (anyDirty)
     {
+
+        // Update all bound materials
+        materialLoaderState.pendingMaterialUpdatesSection.Enter();
+        for (const auto& binding : materialLoaderState.pendingMaterialUpdates)
+        {
+            Materials::MaterialSetData(binding.Key(), binding.Value().first, binding.Value().second);
+        }
+        materialLoaderState.pendingMaterialUpdates.Clear();
+        materialLoaderState.pendingMaterialUpdatesSection.Leave();
+
         CoreGraphics::BarrierPush(
             cmdBuf
             , CoreGraphics::PipelineStage::HostWrite
