@@ -70,7 +70,7 @@ Environment::Run(SaveMode save)
     {
         LightContext::SetColor(globalLight, color);
     }
-    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1000.0f))
+    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 60000.0f))
     {
         LightContext::SetIntensity(globalLight, intensity);
     }
