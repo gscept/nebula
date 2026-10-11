@@ -1,11 +1,4 @@
-using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
-
-using System.Reflection;
-using System.Linq;
 
 namespace Nebula
 {
@@ -13,10 +6,10 @@ namespace Nebula
     {
         public sealed class PropertyManager
         {
-            private List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
+            private readonly List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
 
             private static readonly PropertyManager instance = new PropertyManager();
-            
+
             // Explicit static constructor to tell C# compiler
             // not to mark type as beforefieldinit
             static PropertyManager()
@@ -27,20 +20,14 @@ namespace Nebula
             {
                 for (int i = 0; i < this.eventListeners.Length; i++)
                 {
-                    this.eventListeners[i] = new List<Property>();
+                    this.eventListeners[i] = [];
                 }
             }
 
             /// <summary>
             /// Returns the property manager singleton instance.
             /// </summary>
-            public static PropertyManager Instance
-            {
-                get
-                {
-                    return instance;
-                }
-            }
+            public static PropertyManager Instance => instance;
 
             /// <summary>
             /// Registers a property to the manager.
@@ -71,7 +58,7 @@ namespace Nebula
 
                 for (int i = 0; i < acceptedEvents.Length; i++)
                 {
-                    this.eventListeners[(int)acceptedEvents[i]].Remove(property);
+                    _ = this.eventListeners[(int)acceptedEvents[i]].Remove(property);
                 }
             }
 

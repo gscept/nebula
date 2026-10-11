@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -25,7 +24,7 @@ namespace Nebula
         /// </summary>
         public class Entity
         {
-            private World world = null;
+            private readonly World world;
             private UInt64 id = 0xFFFFFFFFFFFFFFFF;
             private List<Property> properties;
             private MsgDispatcher dispatcher;
@@ -33,11 +32,11 @@ namespace Nebula
             /// <summary>
             /// The world that this entity belongs to
             /// </summary>
-            public World World { get { return this.world; } }
+            public World World => this.world;
             /// <summary>
             /// Unique identifier for the entity
             /// </summary>
-            public UInt64 Id { get { return this.id; } }
+            public UInt64 Id => this.id;
 
             /// <remarks>
             /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
@@ -103,7 +102,9 @@ namespace Nebula
             public bool HasProperty<T>() where T : Property
             {
                 if (this.properties == null)
+                {
                     return false;
+                }
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {
@@ -121,10 +122,7 @@ namespace Nebula
             public void AddProperty(Property property, bool active = true)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
-                if (this.properties == null)
-                {
-                    this.properties = new List<Property>();
-                }
+                this.properties ??= [];
 
                 property.Entity = this;
                 this.properties.Add(property);
@@ -145,7 +143,9 @@ namespace Nebula
             public T GetProperty<T>() where T : Property
             {
                 if (this.properties == null)
+                {
                     return null;
+                }
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {
@@ -213,20 +213,23 @@ namespace Nebula
             public void Send<T>(in T msg) where T : Msg
             {
                 if (this.dispatcher != null)
+                {
                     this.dispatcher.Dispatch(in msg);
+                }
             }
 
             internal void RegisterMessage<T>(IMessageHandler<T> handler) where T : Msg
             {
-                if (this.dispatcher == null)
-                    this.dispatcher = new MsgDispatcher();
+                this.dispatcher ??= new MsgDispatcher();
                 this.dispatcher.Register(handler);
             }
 
             internal void UnregisterMessages(Property property)
             {
                 if (this.dispatcher != null)
+                {
                     this.dispatcher.Unregister(property);
+                }
             }
 
             internal List<Property> GetProperties()
@@ -237,7 +240,9 @@ namespace Nebula
             internal void ClearProperties()
             {
                 if (this.properties == null)
+                {
                     return;
+                }
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {
@@ -259,13 +264,17 @@ namespace Nebula
                 entity.world.DeregisterEntity(entity);
 
                 if (entity.id == 0xFFFFFFFFFFFFFFFF)
+                {
                     return; // Already destroyed
+                }
 
                 Api.DeleteEntity(entity.id);
                 entity.id = 0xFFFFFFFFFFFFFFFF;
 
                 if (entity.properties == null)
+                {
                     return;
+                }
 
                 for (int i = 0; i < entity.properties.Count; i++)
                 {
@@ -283,7 +292,7 @@ namespace Nebula
             /// </summary>
             public override string ToString()
             {
-                return id.ToString();
+                return this.id.ToString();
             }
         }
 
@@ -299,13 +308,12 @@ namespace Nebula
                 This is safe to call even if the entity == null.
                 </summary>
             */
-            #nullable enable
+#nullable enable
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsValid([NotNullWhen(true)] this Entity? entity)
             {
                 return entity != null && Api.IsValid(entity.Id);
             }
-            #nullable restore
         }
     }
 }

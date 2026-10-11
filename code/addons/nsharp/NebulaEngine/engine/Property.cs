@@ -1,11 +1,6 @@
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Nebula;
-using Nebula.Game;
 
 namespace Nebula
 {
@@ -25,21 +20,21 @@ namespace Nebula
 
         public class Property
         {
-            private bool active = false;
-            private Entity entity = null;
+            private bool active;
+            private Entity entity;
             private FrameEvent[] acceptedEvents;
             private bool acceptedEventsCached;
-            
+
             /// <summary>
             /// Activate or deactivate property
             /// This is not trivial and can potentially be costly
             /// </summary>
             public bool Active
             {
-                get { return active; }
+                get { return this.active; }
                 set
                 {
-                    if (active == value)
+                    if (this.active == value)
                     {
                         return;
                     }
@@ -52,7 +47,7 @@ namespace Nebula
                     {
                         this.OnDeactivate();
                     }
-                    active = value;
+                    this.active = value;
                 }
             }
 
@@ -66,13 +61,18 @@ namespace Nebula
             {
                 get
                 {
-                    return entity;
+                    return this.entity;
                 }
                 set
                 {
-                    if (entity == null)
+                    if (Object.ReferenceEquals(this.entity, value))
                     {
-                        entity = value;
+                        return;
+                    }
+
+                    if (this.entity == null)
+                    {
+                        this.entity = value;
                     }
                     else
                     {
@@ -109,13 +109,17 @@ namespace Nebula
             protected void RegisterMessage<T>() where T : Msg
             {
                 if (this.entity != null)
+                {
                     this.entity.RegisterMessage<T>((IMessageHandler<T>)this);
+                }
             }
 
             internal void DetachMessages()
             {
                 if (this.entity != null)
+                {
                     this.entity.UnregisterMessages(this);
+                }
             }
 
             /// <summary>
@@ -131,12 +135,7 @@ namespace Nebula
             /// </summary>
             public override string ToString()
             {
-                if (entity != null)
-                {
-                    return GetType().ToString() + " -> Entity: " + entity.ToString();
-                }
-
-                return GetType().ToString();
+                return this.entity != null ? this.GetType().ToString() + " -> Entity: " + this.entity.ToString() : this.GetType().ToString();
             }
 
             /// <summary>
@@ -214,13 +213,12 @@ namespace Nebula
                 This is safe to call even if the property == null.
                 </summary>
             */
-            #nullable enable
+#nullable enable
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsValid([NotNullWhen(true)] this Property? prop)
             {
                 return prop != null && prop.Entity.IsValid();
             }
-            #nullable restore
         }
     }
 }

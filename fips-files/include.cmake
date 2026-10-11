@@ -532,14 +532,19 @@ function(nebula_dotnet_project)
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>\n\
     <LangVersion>latestMajor</LangVersion>\n\
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n\
+    <EnableRoslynAnalyzers>true</EnableRoslynAnalyzers>\n\
   </PropertyGroup>\n\
   <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">\n\
     <DebugSymbols>true</DebugSymbols>\n\
     <DebugType>portable</DebugType>\n\
   </PropertyGroup>\n\
   <ItemGroup>\n\
-${compile_items}  </ItemGroup>\n\
+${compile_items} </ItemGroup>\n\
+<ItemGroup>\n\
+    <Compile Remove=\"obj/**/*.cs\" />\n\
+</ItemGroup>\n\
   <ItemGroup>\n\
+  
 ${project_references}  </ItemGroup>\n\
 </Project>\n")
 

@@ -1,18 +1,26 @@
+#define NEBULA_HOTRELOAD
+
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ConsoleHook;
 using Nebula;
 using Nebula.Game;
-using NebulaEngine;
 
 using Api = Nebula.Game.NebulaApiV1;
 
 namespace Nebula
 {
+    public static class HotReload
+    {
+        public static void Request()
+        {
+            NebulaEngine.AppEntry.RequestManagedReload();
+        }
+    }
+
     public class Runtime
     {
-        #region Singleton data and functions
         private class RuntimeData
         {
             public NebulaApp App = new NebulaApp();
@@ -23,9 +31,6 @@ namespace Nebula
         // not to mark type as beforefieldinit
         static Runtime() { }
         private Runtime() { }
-        #endregion
-
-        #region Runtime management methods
 
         /// <summary>
         /// Overrides the default nebula app. Call this if you have inherited from NebulaApp to create your own App.
@@ -105,7 +110,7 @@ namespace Nebula
             runtimeData.App.OnShutdown();
         }
 
-        static public void OnBeginFrame()
+        public static void OnBeginFrame()
         {
             if (runtimeData.App.IsRunning)
             {
@@ -113,7 +118,7 @@ namespace Nebula
             }
         }
 
-        static public void OnFrame()
+        public static void OnFrame()
         {
             if (runtimeData.App.IsRunning)
             {
@@ -121,17 +126,13 @@ namespace Nebula
             }
         }
 
-        static public void OnEndFrame()
+        public static void OnEndFrame()
         {
             if (runtimeData.App.IsRunning)
             {
                 runtimeData.App.OnEndFrame();
             }
         }
-
-        #endregion
-
-        #region Private methods
 
         // When using DLLImport, we normally cannot hardcode the application name since we don't have the name of the final binary.
         // This should solve the problem by checking what the current process name is, and then just resolving __Internal to that.
@@ -144,8 +145,6 @@ namespace Nebula
             }
             return libHandle;
         }
-
-        #endregion
     }
 }
 
@@ -153,10 +152,12 @@ namespace NebulaEngine
 {
     public class AppEntry
     {
+#if NEBULA_HOTRELOAD
         private static HotReloadManager hotReloadManager;
+#endif
 
         [UnmanagedCallersOnly]
-        static public int Main(IntPtr pluginPath, int pluginPathLength)
+        public static int Main(IntPtr pluginPath, int pluginPathLength)
         {
             try
             {
@@ -168,9 +169,11 @@ namespace NebulaEngine
                 consoleWriter.WriteLineEvent += ConsoleEvents.WriteLineFunc;
                 Console.SetOut(consoleWriter);
 
+#if NEBULA_HOTRELOAD
                 string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
                 hotReloadManager = new HotReloadManager();
                 hotReloadManager.Load(path);
+#endif
 
                 return 0;
             }
@@ -182,42 +185,63 @@ namespace NebulaEngine
         }
 
         [UnmanagedCallersOnly]
-        static public void Exit()
+        public static void Exit()
         {
+#if NEBULA_HOTRELOAD
             if (hotReloadManager != null)
             {
                 hotReloadManager.Unload();
                 hotReloadManager = null;
             }
+#endif
         }
 
         [UnmanagedCallersOnly]
-        static public void RequestReload(IntPtr pluginPath, int pluginPathLength)
+        public static int RequestReload(IntPtr pluginPath, int pluginPathLength)
         {
+#if NEBULA_HOTRELOAD
             if (hotReloadManager == null)
-                return;
+            {
+                return 0;
+            }
             string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
             hotReloadManager.RequestReload(path);
+#endif
+            return 0;
+        }
+
+        internal static void RequestManagedReload()
+        {
+#if NEBULA_HOTRELOAD
+            if (hotReloadManager != null)
+            {
+                hotReloadManager.RequestReload(true);
+            }
+#endif
         }
 
         [UnmanagedCallersOnly]
-        static public void OnBeginFrame()
+        public static void OnBeginFrame()
         {
             Nebula.Runtime.OnBeginFrame();
         }
 
         [UnmanagedCallersOnly]
-        static public void OnFrame()
+        public static void OnFrame()
         {
             Nebula.Runtime.OnFrame();
         }
 
         [UnmanagedCallersOnly]
-        static public void OnEndFrame()
+        public static void OnEndFrame()
         {
             Nebula.Runtime.OnEndFrame();
+#if NEBULA_HOTRELOAD
             if (hotReloadManager != null)
+            {
                 hotReloadManager.ProcessPendingReload();
+            }
+#endif
         }
     }
 }

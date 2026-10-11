@@ -15,43 +15,12 @@ nebula_idl_generate_cs_target(
 )
 
 SET(NEBULAENGINE_CS_FILES
-    ${NROOT}/code/addons/nsharp/NebulaEngine/Main.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/HotReloadState.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/HotReloadManager.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/util/String.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/util/ListExtensions.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Api.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/GamePlugin.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Entity.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Component.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Property.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/PropertyManager.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/World.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/Msg.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/MsgDispatcher.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/engine/ConsoleHook.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/BoundingBox.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/BoundingFrustum.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/BoundingSphere.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Color.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/ContainmentType.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Mathf.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/PQuatFeedbackLoop.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Matrix.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Plane.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/PlaneIntersectionType.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Point.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Quaternion.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Ray.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Rectangle.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Vector2.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Vector3.cs
-    ${NROOT}/code/addons/nsharp/NebulaEngine/mathf/Vector4.cs
+    **/*.cs
 )
 
 nebula_dotnet_project(
     NAME NebulaEngine
-    PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/dotnet/NebulaEngine
+    PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/NebulaEngine/
     OUTPUT_DIR ${FIPS_PROJECT_DEPLOY_DIR}
     RUNTIME_TEMPLATE ${NROOT}/code/addons/nsharp/NebulaEngine/runtimeconfig.template.json
     SOURCES ${NEBULAENGINE_CS_FILES}

@@ -107,7 +107,7 @@ namespace Nebula
         {
             private bool isRunning = false;
 
-            public bool IsRunning { get { return isRunning; } }
+            public bool IsRunning => this.isRunning;
 
             public virtual void OnStart()
             {

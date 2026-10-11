@@ -1,7 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
 
 using Api = Nebula.Game.NebulaApiV1;
@@ -14,14 +11,14 @@ namespace Nebula
         {
             public static readonly uint DEFAULT_WORLD = Api.GetDefaultWorldId();
 
-            private uint id;
-            public uint Id { get { return id; } }
+            private readonly uint id;
+            public uint Id => this.id;
 
-            private List<Entity> entities;
-            private Dictionary<UInt64, Entity> entityMap;
+            private readonly List<Entity> entities;
+            private readonly Dictionary<UInt64, Entity> entityMap;
 
             static World() { }
-            
+
             public Entity CreateEntity()
             {
                 UInt64 id = Api.CreateEntity(this.id);
@@ -47,7 +44,7 @@ namespace Nebula
 
                 return null;
             }
-            
+
             private void RegisterEntity(Entity entity)
             {
                 this.entities.Add(entity);
@@ -70,25 +67,22 @@ namespace Nebula
             public void DeregisterEntity(Entity entity)
             {
                 this.entities.EraseSwap(entity);
-                this.entityMap.Remove(entity.Id);
+                _ = this.entityMap.Remove(entity.Id);
             }
 
             private World(uint id)
             {
                 this.id = id;
-                this.entities = new List<Entity>();
-                this.entityMap = new Dictionary<ulong, Entity>();
+                this.entities = [];
+                this.entityMap = [];
             }
 
             private static readonly World tempDefaultWorld = new World(DEFAULT_WORLD);
-            
+
             public static World Get(uint id)
             {
                 // TODO: Get from native
-                if (tempDefaultWorld.id == id)
-                    return tempDefaultWorld;
-                else
-                    return null;
+                return tempDefaultWorld.id == id ? tempDefaultWorld : null;
             }
 
             public void CollectGarbage()
@@ -99,7 +93,7 @@ namespace Nebula
                     if (!entity.IsValid())
                     {
                         this.entities.EraseSwap(i);
-                        this.entityMap.Remove(entity.Id);
+                        _ = this.entityMap.Remove(entity.Id);
                         Entity.Destroy(entity);
                         i--; // rerun same index, since we've swapped and erased.
                         continue;

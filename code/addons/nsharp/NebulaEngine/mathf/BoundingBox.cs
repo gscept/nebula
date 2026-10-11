@@ -46,7 +46,7 @@ namespace Nebula
 
         #region Public Methods
 
-        public ContainmentType Contains(BoundingBox box)
+        public readonly ContainmentType Contains(BoundingBox box)
         {
             //test if all corner is in the same side of a face by just checking min and max
             if (box.Max.X < Min.X
@@ -113,7 +113,7 @@ namespace Nebula
             return ContainmentType.Contains;
         }
 
-        public ContainmentType Contains(BoundingSphere sphere)
+        public readonly ContainmentType Contains(BoundingSphere sphere)
         {
             if (sphere.Center.X - Min.X >= sphere.Radius
                 && sphere.Center.Y - Min.Y >= sphere.Radius
@@ -204,12 +204,11 @@ namespace Nebula
 
         public ContainmentType Contains(Vector3 point)
         {
-            ContainmentType result;
-            this.Contains(ref point, out result);
+            this.Contains(ref point, out ContainmentType result);
             return result;
         }
 
-        public void Contains(ref Vector3 point, out ContainmentType result)
+        public readonly void Contains(ref Vector3 point, out ContainmentType result)
         {
             //first we get if point is out of box
             if (point.X < this.Min.X
@@ -240,8 +239,7 @@ namespace Nebula
         */
         public static BoundingBox CreateFromPoints(IEnumerable<Vector3> points)
         {
-            if (points == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(points);
 
             var empty = true;
             var minVec = MaxVector3;
@@ -266,8 +264,7 @@ namespace Nebula
 
         public static BoundingBox CreateFromSphere(BoundingSphere sphere)
         {
-            BoundingBox result;
-            CreateFromSphere(ref sphere, out result);
+            CreateFromSphere(ref sphere, out BoundingBox result);
             return result;
         }
 
@@ -280,8 +277,7 @@ namespace Nebula
 
         public static BoundingBox CreateMerged(BoundingBox original, BoundingBox additional)
         {
-            BoundingBox result;
-            CreateMerged(ref original, ref additional, out result);
+            CreateMerged(ref original, ref additional, out BoundingBox result);
             return result;
         }
 
@@ -295,19 +291,19 @@ namespace Nebula
             result.Max.Z = Math.Max(original.Max.Z, additional.Max.Z);
         }
 
-        public bool Equals(BoundingBox other)
+        public readonly bool Equals(BoundingBox other)
         {
             return (this.Min == other.Min) && (this.Max == other.Max);
         }
 
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
-            return (obj is BoundingBox) ? this.Equals((BoundingBox)obj) : false;
+            return (obj is BoundingBox box) && this.Equals(box);
         }
 
-        public Vector3[] GetCorners()
+        public readonly Vector3[] GetCorners()
         {
-            return new Vector3[] {
+            return [
                 new Vector3(this.Min.X, this.Max.Y, this.Max.Z), 
                 new Vector3(this.Max.X, this.Max.Y, this.Max.Z),
                 new Vector3(this.Max.X, this.Min.Y, this.Max.Z), 
@@ -316,18 +312,15 @@ namespace Nebula
                 new Vector3(this.Max.X, this.Max.Y, this.Min.Z),
                 new Vector3(this.Max.X, this.Min.Y, this.Min.Z),
                 new Vector3(this.Min.X, this.Min.Y, this.Min.Z)
-            };
+            ];
         }
 
-        public void GetCorners(Vector3[] corners)
+        public readonly void GetCorners(Vector3[] corners)
         {
-            if (corners == null)
-            {
-                throw new ArgumentNullException("corners");
-            }
+            ArgumentNullException.ThrowIfNull(corners);
             if (corners.Length < 8)
             {
-                throw new ArgumentOutOfRangeException("corners", "Not Enought Corners");
+                throw new ArgumentOutOfRangeException(nameof(corners), "Not Enought Corners");
             }
             corners[0].X = this.Min.X;
             corners[0].Y = this.Max.Y;
@@ -362,12 +355,11 @@ namespace Nebula
 
         public bool Intersects(BoundingBox box)
         {
-            bool result;
-            Intersects(ref box, out result);
+            this.Intersects(ref box, out bool result);
             return result;
         }
 
-        public void Intersects(ref BoundingBox box, out bool result)
+        public readonly void Intersects(ref BoundingBox box, out bool result)
         {
             if ((this.Max.X >= box.Min.X) && (this.Min.X <= box.Max.X))
             {
@@ -385,12 +377,12 @@ namespace Nebula
             return;
         }
 
-        public bool Intersects(BoundingFrustum frustum)
+        public readonly bool Intersects(BoundingFrustum frustum)
         {
             return frustum.Intersects(this);
         }
 
-        public bool Intersects(BoundingSphere sphere)
+        public readonly bool Intersects(BoundingSphere sphere)
         {
             if (sphere.Center.X - Min.X > sphere.Radius
                 && sphere.Center.Y - Min.Y > sphere.Radius
@@ -423,19 +415,18 @@ namespace Nebula
             return false;
         }
 
-        public void Intersects(ref BoundingSphere sphere, out bool result)
+        public readonly void Intersects(ref BoundingSphere sphere, out bool result)
         {
-            result = Intersects(sphere);
+            result = this.Intersects(sphere);
         }
 
         public PlaneIntersectionType Intersects(Plane plane)
         {
-            PlaneIntersectionType result;
-            Intersects(ref plane, out result);
+            this.Intersects(ref plane, out PlaneIntersectionType result);
             return result;
         }
 
-        public void Intersects(ref Plane plane, out PlaneIntersectionType result)
+        public readonly void Intersects(ref Plane plane, out PlaneIntersectionType result)
         {
             // See http://zach.in.tu-clausthal.de/teaching/cg_literatur/lighthouse3d_view_frustum_culling/index.html
 
@@ -494,25 +485,19 @@ namespace Nebula
             result = PlaneIntersectionType.Intersecting;
         }
 
-        public Nullable<float> Intersects(Ray ray)
+        public readonly Nullable<float> Intersects(Ray ray)
         {
             return ray.Intersects(this);
         }
 
-        public void Intersects(ref Ray ray, out Nullable<float> result)
+        public readonly void Intersects(ref Ray ray, out Nullable<float> result)
         {
-            result = Intersects(ray);
+            result = this.Intersects(ray);
         }
 
-        public static bool operator ==(BoundingBox a, BoundingBox b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(BoundingBox a, BoundingBox b) => a.Equals(b);
 
-        public static bool operator !=(BoundingBox a, BoundingBox b)
-        {
-            return !a.Equals(b);
-        }
+        public static bool operator !=(BoundingBox a, BoundingBox b) => !a.Equals(b);
 
         internal string DebugDisplayString
         {
@@ -537,7 +522,7 @@ namespace Nebula
             <param name="min"></param>
             <param name="max"></param>
         */
-        public void Deconstruct(out Vector3 min, out Vector3 max)
+        public readonly void Deconstruct(out Vector3 min, out Vector3 max)
         {
             min = Min;
             max = Max;

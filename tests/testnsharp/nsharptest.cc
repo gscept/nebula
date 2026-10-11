@@ -158,10 +158,8 @@ NSharpTest::Run()
     VERIFY(testArrayOfVec3Result);
     VERIFY(testArrayOfVec4Result);
 
-    while(false)
+    for (IndexT i = 0; i < 6; i++)
         StepFrame();
-    StepFrame();
-    StepFrame();
     StepFrame();
     StepFrame();
 }

@@ -6,52 +6,42 @@ using Nebula;
 namespace ConsoleHook
 {
 
-public class ConsoleEvents
-{
-    public static void WriteLineFunc(object sender, ConsoleWriterEventArgs e)
+    public class ConsoleEvents
     {
-        //Debug.Log($"{e.Value}\n");
-    }
-
-    public static void WriteFunc(object sender, ConsoleWriterEventArgs e)
-    {
-        Debug.Log(e.Value);
-    }
-}
-
-public class ConsoleWriterEventArgs : EventArgs
-{
-    public string Value { get; private set; }
-    public ConsoleWriterEventArgs(string value)
-    {
-        Value = value;
-    }
-}
-
-public class ConsoleWriter : TextWriter
-{
-    public override Encoding Encoding
-    {
-        get
+        public static void WriteLineFunc(object sender, ConsoleWriterEventArgs e)
         {
-            return Encoding.UTF8;
+            //Debug.Log($"{e.Value}\n");
+        }
+
+        public static void WriteFunc(object sender, ConsoleWriterEventArgs e)
+        {
+            Debug.Log(e.Value);
         }
     }
 
-    public override void Write(string value)
+    public class ConsoleWriterEventArgs(string value) : EventArgs
     {
-        WriteEvent?.Invoke(this, new ConsoleWriterEventArgs(value));
-        base.Write(value);
+        public string Value { get; private set; } = value;
     }
 
-    public override void WriteLine(string value)
+    public class ConsoleWriter : TextWriter
     {
-        WriteLineEvent?.Invoke(this, new ConsoleWriterEventArgs(value));
-        base.WriteLine(value);
-    }
+        public override Encoding Encoding => Encoding.UTF8;
 
-    public event EventHandler<ConsoleWriterEventArgs> WriteEvent;
-    public event EventHandler<ConsoleWriterEventArgs> WriteLineEvent;
-}
+        public override void Write(string value)
+        {
+            WriteEvent?.Invoke(this, new ConsoleWriterEventArgs(value));
+            base.Write(value);
+        }
+
+        public override void WriteLine(string value)
+        {
+            WriteLineEvent?.Invoke(this, new ConsoleWriterEventArgs(value));
+            base.WriteLine(value);
+        }
+
+        public event EventHandler<ConsoleWriterEventArgs> WriteEvent;
+        public event EventHandler<ConsoleWriterEventArgs> WriteLineEvent;
+    }
 
 }

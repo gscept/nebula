@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Collections.Generic;
+using System.Reflection;
 using ConsoleHook;
 using Nebula;
 using Nebula.Game;
@@ -13,6 +15,21 @@ using NST;
 
 namespace NST
 {
+    [ExportType]
+    public enum ReloadMode
+    {
+        First,
+        Second
+    }
+
+    [ExportType]
+    public struct ExportedStruct
+    {
+        public ExportedState State;
+        public int Count;
+    }
+
+    [ExportType]
     public sealed class TestPlugin : IGamePlugin
     {
         public void OnLoad(GamePluginContext context)
@@ -35,17 +52,101 @@ namespace NST
         public float f;
     }
 
+    [ExportType]
     public class TestProperty : Property, IMessageHandler<TestMsg>
     {
         public int i = 0;
         public float f;
         public string s;
         public Vector3 v;
+        public ExportedState state = new ExportedState();
+        public List<Vector3> vectors = new List<Vector3>();
+        public Dictionary<string, ExportedState> states = new Dictionary<string, ExportedState>();
+        public ExportedState[] stateArray;
+        public ExportedState[,] stateGrid;
+        public HashSet<ExportedState> stateSet = new HashSet<ExportedState>();
+        public Queue<ExportedState> stateQueue = new Queue<ExportedState>();
+        public WeakReference<ExportedState> weakState;
+        public WeakReference weakCycle = new WeakReference(null);
+        public WeakReference<object> genericWeakCycle = new WeakReference<object>(null);
+        public ConditionalWeakTable<ExportedState, ExportedState> weakStates = new ConditionalWeakTable<ExportedState, ExportedState>();
+        public Func<int> readPrivateValue;
+        public Type exportedType = typeof(ExportedState);
+        public MethodInfo exportedMethod = typeof(TestProperty).GetMethod(nameof(PrepareReloadState));
+        public Entity entityReference;
+        public ReloadMode mode = ReloadMode.Second;
+        public ValueTuple<ExportedState, int> stateTuple;
+        public ExportedStruct? optionalState;
+        [Export]
+        private int privateValue = 42;
+        [NoHotReload]
+        public int resetValue = 42;
+
+        public TestProperty()
+        {
+            this.state.Position = new Vector3(1, 2, 3);
+            this.state.Shared = this.state;
+            this.vectors.Add(this.state.Position);
+            this.states.Add("main", this.state);
+            this.stateArray = new[] { this.state, this.state };
+            this.stateGrid = new ExportedState[1, 1];
+            this.stateGrid[0, 0] = this.state;
+            this.stateSet.Add(this.state);
+            this.stateQueue.Enqueue(this.state);
+            this.weakState = new WeakReference<ExportedState>(this.state);
+            this.weakCycle.Target = this.weakCycle;
+            this.genericWeakCycle.SetTarget(this.genericWeakCycle);
+            this.weakStates.Add(this.state, this.state);
+            this.readPrivateValue = () => this.privateValue;
+            this.stateTuple = new ValueTuple<ExportedState, int>(this.state, 12);
+            this.optionalState = new ExportedStruct { State = this.state, Count = 13 };
+        }
+
+        public void PrepareReloadState()
+        {
+            this.privateValue = 99;
+            this.resetValue = 99;
+            this.entityReference = this.Entity;
+        }
+
+        public void VerifyReloadState()
+        {
+            Tests.Verify(this.i > 0);
+            Tests.Verify(this.privateValue == 99);
+            Tests.Verify(this.resetValue == 42);
+            Tests.Verify(Object.ReferenceEquals(this.state, this.state.Shared));
+            Tests.Verify(this.state.CreatedCalled);
+            Tests.Verify(Object.ReferenceEquals(this.state, this.states["main"]));
+            Tests.Verify(Object.ReferenceEquals(this.state, this.stateArray[0]));
+            Tests.Verify(Object.ReferenceEquals(this.state, this.stateArray[1]));
+            Tests.Verify(Object.ReferenceEquals(this.state, this.stateGrid[0, 0]));
+            Tests.Verify(this.stateSet.Contains(this.state));
+            Tests.Verify(Object.ReferenceEquals(this.state, this.stateQueue.Peek()));
+            ExportedState weakTarget;
+            Tests.Verify(this.weakState.TryGetTarget(out weakTarget) && Object.ReferenceEquals(this.state, weakTarget));
+            Tests.Verify(Object.ReferenceEquals(this.weakCycle, this.weakCycle.Target));
+            Tests.Verify(this.genericWeakCycle.TryGetTarget(out object cycleTarget) && Object.ReferenceEquals(this.genericWeakCycle, cycleTarget));
+            ExportedState weakTableValue;
+            Tests.Verify(this.weakStates.TryGetValue(this.state, out weakTableValue) && Object.ReferenceEquals(this.state, weakTableValue));
+            Tests.Verify(this.readPrivateValue() == 99);
+            Tests.Verify(this.exportedType == typeof(ExportedState));
+            Tests.Verify(this.exportedMethod.DeclaringType == typeof(TestProperty));
+            Tests.Verify(this.mode == ReloadMode.Second);
+            Tests.Verify(Object.ReferenceEquals(this.state, this.stateTuple.Item1) && this.stateTuple.Item2 == 12);
+            Tests.Verify(this.optionalState.HasValue && Object.ReferenceEquals(this.state, this.optionalState.Value.State) && this.optionalState.Value.Count == 13);
+            Tests.Verify(this.vectors.Count == 1 && this.vectors[0].X == 1);
+            Tests.Verify(this.Entity != null && this.Entity.IsValid() && Object.ReferenceEquals(this.Entity, this.entityReference));
+        }
 
         public override void OnBeginFrame()
         {
             i++;
             Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", i));
+
+            Console.WriteLine(this.state.Position);
+            Console.WriteLine(this.state.Shared);
+            Console.WriteLine(this.vectors[0]);
+            Console.WriteLine(this.states["main"].Position);
         }
 
         public void OnMessage(in TestMsg msg)
@@ -64,6 +165,44 @@ namespace NST
             {
                 FrameEvent.OnBeginFrame
             };
+        }
+    }
+
+    [ExportType]
+    public class ExportedState : IHotReloadManaged
+    {
+        public Vector3 Position;
+        public ExportedState Shared;
+        public bool CreatedCalled;
+
+        public void Destroyed(IDictionary<string, object> state)
+        {
+            state["position"] = this.Position;
+            // These callbacks are discovered while draining a callback-owned collection.
+            state["nested"] = new List<CallbackState> { new CallbackState() };
+        }
+
+        public void Created(IReadOnlyDictionary<string, object> state)
+        {
+            Vector3 position = (Vector3)state["position"];
+            if (position != this.Position)
+                throw new InvalidOperationException("Hot reload callback state was not migrated.");
+            this.CreatedCalled = true;
+        }
+    }
+
+    [ExportType]
+    public class CallbackState : IHotReloadManaged
+    {
+        public void Destroyed(IDictionary<string, object> state)
+        {
+            state["mode"] = ReloadMode.Second;
+        }
+
+        public void Created(IReadOnlyDictionary<string, object> state)
+        {
+            if (state["mode"] is not ReloadMode mode || mode != ReloadMode.Second)
+                throw new InvalidOperationException("Nested callback state retained its old assembly type.");
         }
     }
 
@@ -127,7 +266,7 @@ namespace NST
             VERIFY(test, filePath, lineNumber);
         }
 
-        static public void PerformTests()
+        static public TestProperty PerformTests()
         {
             World world = World.Get(World.DEFAULT_WORLD);
 
@@ -172,6 +311,7 @@ namespace NST
                 f = 100.0f
             };
             entity3.Send(testmsg);
+            p1.PrepareReloadState();
 
             TestMsg2 testmsg2 = new TestMsg2
             {
@@ -180,6 +320,7 @@ namespace NST
             entity3.Send(testmsg2);
 
             Verify(1 == 1);
+            return p1;
         }
 
         public class VariablePassing
@@ -260,9 +401,16 @@ namespace NST
         }
     }
 
+    [ExportType]
     public class TestApp : NebulaApp
     {
+        public static ExportedState StaticState = new ExportedState();
+        public static readonly List<ExportedState> StaticStates = new List<ExportedState>();
+        [Export]
         private bool testsRun;
+        private int reloadCount;
+        private bool reloadVerified;
+        private TestProperty property;
 
         public override void OnBeginFrame()
         {
@@ -281,9 +429,30 @@ namespace NST
                 this.testsRun = true;
                 Tests.VariablePassing.RunTests();
                 Tests.DLLImportCalls.RunTests();
-                Tests.PerformTests();
+                this.property = Tests.PerformTests();
+                StaticState.Position = new Vector3(9, 8, 7);
+                StaticStates.Clear();
+                StaticStates.Add(this.property.state);
+            }
+            else if (this.reloadCount < 2)
+            {
+                this.reloadCount++;
+                HotReload.Request();
+            }
+            else if (!this.reloadVerified)
+            {
+                this.VerifyReload();
+                this.reloadVerified = true;
             }
             base.OnFrame();
+        }
+
+        private void VerifyReload()
+        {
+            Tests.Verify(this.property != null);
+            this.property.VerifyReloadState();
+            Tests.Verify(StaticState.Position == new Vector3(9, 8, 7));
+            Tests.Verify(StaticStates.Count == 1 && Object.ReferenceEquals(StaticStates[0], this.property.state));
         }
 
         public override void OnShutdown()

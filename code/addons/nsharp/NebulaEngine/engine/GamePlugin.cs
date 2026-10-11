@@ -6,14 +6,9 @@ using System.Runtime.Loader;
 namespace Nebula
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
-    public sealed class NebulaGamePluginAttribute : Attribute
+    public sealed class NebulaGamePluginAttribute(Type entryPointType) : Attribute
     {
-        public Type EntryPointType { get; }
-
-        public NebulaGamePluginAttribute(Type entryPointType)
-        {
-            this.EntryPointType = entryPointType;
-        }
+        public Type EntryPointType { get; } = entryPointType;
     }
 
     public interface IGamePlugin
@@ -24,17 +19,10 @@ namespace Nebula
 
     public sealed class GamePluginContext
     {
-        private sealed class PluginLoadContext : AssemblyLoadContext
+        private sealed class PluginLoadContext(string pluginPath) : AssemblyLoadContext(Path.GetFileNameWithoutExtension(pluginPath), true)
         {
-            private readonly AssemblyDependencyResolver resolver;
-            private readonly Assembly engineAssembly;
-
-            public PluginLoadContext(string pluginPath)
-                : base(Path.GetFileNameWithoutExtension(pluginPath), true)
-            {
-                this.resolver = new AssemblyDependencyResolver(pluginPath);
-                this.engineAssembly = typeof(IGamePlugin).Assembly;
-            }
+            private readonly AssemblyDependencyResolver resolver = new AssemblyDependencyResolver(pluginPath);
+            private readonly Assembly engineAssembly = typeof(IGamePlugin).Assembly;
 
             protected override Assembly Load(AssemblyName assemblyName)
             {
@@ -59,22 +47,18 @@ namespace Nebula
         private IGamePlugin plugin;
         private Nebula.Game.NebulaApp application;
 
-        public Assembly Assembly { get { return this.assembly; } }
+        public Assembly Assembly => this.assembly;
         private GamePluginContext()
         {
         }
 
         public void SetApplication(Nebula.Game.NebulaApp application)
         {
-            if (application == null)
-            {
-                throw new ArgumentNullException(nameof(application));
-            }
             if (this.application != null)
             {
                 throw new InvalidOperationException("The game plugin has already configured an application.");
             }
-            this.application = application;
+            this.application = application ?? throw new ArgumentNullException(nameof(application));
         }
 
         internal static GamePluginContext Load(string pluginPath, bool start = true)
@@ -86,76 +70,141 @@ namespace Nebula
             }
 
             GamePluginContext context = new GamePluginContext();
-            context.loadContext = new PluginLoadContext(fullPath);
-            context.assembly = context.loadContext.LoadFromAssemblyPath(fullPath);
-
-            NebulaGamePluginAttribute attribute = context.assembly.GetCustomAttribute<NebulaGamePluginAttribute>();
-            if (attribute == null)
+            try
             {
-                throw new InvalidOperationException("The game plugin assembly is missing NebulaGamePluginAttribute.");
-            }
-            if (!typeof(IGamePlugin).IsAssignableFrom(attribute.EntryPointType) || attribute.EntryPointType.IsAbstract)
-            {
-                throw new InvalidOperationException("The configured game plugin entrypoint must be a non-abstract IGamePlugin type.");
-            }
+                context.loadContext = new PluginLoadContext(fullPath);
+                context.assembly = context.loadContext.LoadFromAssemblyPath(fullPath);
 
-            context.plugin = (IGamePlugin)Activator.CreateInstance(attribute.EntryPointType);
-            Nebula.Runtime.Setup(context.assembly);
-            context.plugin.OnLoad(context);
+                NebulaGamePluginAttribute attribute = context.assembly.GetCustomAttribute<NebulaGamePluginAttribute>() ?? throw new InvalidOperationException("The game plugin assembly is missing NebulaGamePluginAttribute.");
+                if (!typeof(IGamePlugin).IsAssignableFrom(attribute.EntryPointType) || attribute.EntryPointType.IsAbstract)
+                {
+                    throw new InvalidOperationException("The configured game plugin entrypoint must be a non-abstract IGamePlugin type.");
+                }
 
-            if (context.application == null)
-            {
-                throw new InvalidOperationException("The game plugin did not configure a NebulaApp.");
-            }
+                context.plugin = (IGamePlugin)Activator.CreateInstance(attribute.EntryPointType);
+                Nebula.Runtime.Setup(context.assembly);
+                context.plugin.OnLoad(context);
 
-            if (start)
-            {
-                context.Start();
+                if (context.application == null)
+                {
+                    throw new InvalidOperationException("The game plugin did not configure a NebulaApp.");
+                }
+
+                if (start)
+                {
+                    context.Start();
+                }
+
+                return context;
             }
-            return context;
+            catch
+            {
+                context.Discard();
+                throw;
+            }
         }
 
-        internal HotReloadState CaptureState()
+        internal HotReloadState PrepareMigration(GamePluginContext replacement)
         {
-            HotReloadState state = new HotReloadState();
-            state.Capture("plugin", this.plugin);
-            state.Capture("application", this.application);
-            state.CaptureProperties(Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+            HotReloadState state = new HotReloadState(this.assembly, replacement.assembly);
+            state.PrepareProperties(Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+            state.Migrate(this.plugin, replacement.plugin, this.application, replacement.application);
             return state;
         }
 
-        internal void RestoreState(HotReloadState state)
+        internal static void AttachMigratedProperties(HotReloadState state)
         {
-            state.Restore("plugin", this.plugin);
-            state.Restore("application", this.application);
-            state.RestoreProperties(this.assembly, Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+            for (int i = 0; i < state.Properties.Count; i++)
+            {
+                HotReloadState.PropertyReplacement replacement = state.Properties[i];
+                replacement.NewProperty.Entity = replacement.Entity;
+            }
+            state.Complete();
+            for (int i = 0; i < state.Properties.Count; i++)
+            {
+                HotReloadState.PropertyReplacement replacement = state.Properties[i];
+                replacement.Entity.AddProperty(replacement.NewProperty, replacement.Active);
+            }
         }
 
         internal void Start(bool resume = false)
         {
             Nebula.Runtime.OverrideNebulaApp(this.application);
             if (resume)
+            {
                 this.application.Resume();
+            }
             else
+            {
                 Nebula.Runtime.Start();
+            }
         }
 
-        internal void Unload()
+        internal WeakReference Unload()
         {
-            Nebula.Runtime.Close();
-            this.plugin.OnUnload();
-            Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD).ClearProperties();
-            Nebula.Game.PropertyManager.Instance.Clear();
-            Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly);
-            Nebula.Runtime.ResetNebulaApp();
-
-            this.application = null;
-            this.plugin = null;
-            this.assembly = null;
-
             PluginLoadContext oldLoadContext = this.loadContext;
-            this.loadContext = null;
-            oldLoadContext.Unload();
+            WeakReference weakReference = new WeakReference(oldLoadContext);
+            try
+            {
+                TryCleanup(Runtime.Close, "application shutdown");
+                TryCleanup(() => this.plugin.OnUnload(), "plugin unload");
+                TryCleanup(() => Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD).ClearProperties(), "property detach");
+                TryCleanup(Game.PropertyManager.Instance.Clear, "property manager cleanup");
+                TryCleanup(() => Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly), "component cleanup");
+                TryCleanup(Runtime.ResetNebulaApp, "application reset");
+            }
+            finally
+            {
+                this.application = null;
+                this.plugin = null;
+                this.assembly = null;
+                this.loadContext = null;
+                if (oldLoadContext != null)
+                {
+                    oldLoadContext.Unload();
+                }
+            }
+            return weakReference;
+        }
+
+        internal void Discard()
+        {
+            PluginLoadContext oldLoadContext = this.loadContext;
+            try
+            {
+                if (this.plugin != null)
+                {
+                    TryCleanup(() => this.plugin.OnUnload(), "cleanup");
+                }
+
+                if (this.assembly != null)
+                {
+                    TryCleanup(() => Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly), "component cleanup");
+                }
+            }
+            finally
+            {
+                this.application = null;
+                this.plugin = null;
+                this.assembly = null;
+                this.loadContext = null;
+                if (oldLoadContext != null)
+                {
+                    oldLoadContext.Unload();
+                }
+            }
+        }
+
+        private static void TryCleanup(Action action, string operation)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("[NSharp] Plugin " + operation + " failed: " + exception);
+            }
         }
     }
 }
