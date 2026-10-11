@@ -37,6 +37,12 @@ struct Nvx3Header
     uint indexDataSize;     // The total byte size of the index data for all meshes
 };
 
+struct Nvx3BBox
+{
+    float min[3];
+    float max[3];
+};
+
 struct Nvx3VertexRange
 {
     uint indexByteOffset;
@@ -44,7 +50,7 @@ struct Nvx3VertexRange
     uint attributesVertexByteOffset;
     uint firstGroupOffset;
     uint numGroups;
-    // Math::bbox boundingBox; TODO: ADD THIS
+    // Nvx3BBox boundingBox; TODO: ADD THIS
     CoreGraphics::IndexType::Code indexType;
     CoreGraphics::VertexLayoutType layout;
 };
@@ -54,7 +60,7 @@ struct Nvx3Group
     uint primType;
     uint firstIndex;
     uint numIndices;
-    Math::bbox boundingBox;
+    Nvx3BBox boundingBox;
 
     uint firstMeshlet;              // Offset to first meshlet (optional)
     uint numMeshlets;               // Number of meshlets for this primitive group

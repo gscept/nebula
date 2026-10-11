@@ -246,7 +246,7 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::
             nvx3Group.firstIndex = byteOrder.Convert<uint>(firstTriangle * 3);
             nvx3Group.numIndices = byteOrder.Convert<uint>(numTriangles * 3);
             nvx3Group.primType = PrimitiveTopology::TriangleList;
-            nvx3Group.boundingBox = box;
+            Memory::Copy(&box, &nvx3Group.boundingBox, sizeof(Nvx3BBox));
             
             // TODO: Add support for meshlets
             nvx3Group.firstMeshlet = 0;

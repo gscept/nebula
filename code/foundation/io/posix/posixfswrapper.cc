@@ -441,9 +441,15 @@ PosixFSWrapper::CreateTemporaryFilename(const Util::String& path)
 {
     n_assert(path.IsValid());
     char buf[1024];
-    snprintf(buf, 1024, "NEB%s.XXXXXX", path.AsCharPtr());
-    String res(mkdtemp(buf));
-    return res;
+    snprintf(buf, 1024, "%s/NEBXXXXXX", path.AsCharPtr());
+    int fd = mkstemp(buf);
+    if (-1 == fd)
+    {
+        n_error("PosixFSWrapper: CreateTemporaryFilename() failed for '%s' (errno %d)\n", path.AsCharPtr(), errno);
+        return String();
+    }
+    close(fd);
+    return String(buf);
 }
 
 //------------------------------------------------------------------------------

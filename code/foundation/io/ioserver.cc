@@ -692,7 +692,12 @@ IoServer::CreateTemporaryFilename(const URI& uri) const
     n_assert(uri.Scheme() == "file");   
     const String path = uri.GetHostAndLocalPath();
     n_assert(path.IsValid());   
-    return URI(FSWrapper::CreateTemporaryFilename(path));
+    const String tmpName = FSWrapper::CreateTemporaryFilename(path);
+    if (!tmpName.IsValid())
+    {
+        return URI();
+    }
+    return URI(tmpName);
 }
 
 //------------------------------------------------------------------------------

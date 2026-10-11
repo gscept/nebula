@@ -525,7 +525,11 @@ Win32FSWrapper::CreateTemporaryFilename(const Util::String& path)
     Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
     const wchar_t* prefix = L"NEB";
     wchar_t name[MAX_PATH];
-    n_assert(GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name));
+    if (!GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name))
+    {
+        n_error("Win32FSWrapper: CreateTemporaryFilename() failed for '%s' (error %d)\n", path.AsCharPtr(), (int)GetLastError());
+        return String();
+    }
     return Win32::Win32StringConverter::WideToUTF8((ushort*)name);
 }
 
