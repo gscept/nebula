@@ -17,7 +17,6 @@ const ModelId
 CreateModel(const ModelCreateInfo& info)
 {
     Ids::Id32 id = modelAllocator.Alloc();
-    modelAllocator.Set<Model_BoundingBox>(id, info.boundingBox);
     modelAllocator.Set<Model_Nodes>(id, info.nodes);
     modelAllocator.Set<Model_JointMasks>(id, info.jointMasks);
     modelAllocator.Set<Model_Takes>(id, info.takes);
@@ -49,15 +48,6 @@ ModelGetNodes(const ModelId id)
     return modelAllocator.Get<Model_Nodes>(id.id);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-const Math::bbox&
-ModelGetBoundingBox(const ModelId id)
-{
-    return modelAllocator.Get<Model_BoundingBox>(id.id);
-}
-
 #if WITH_NEBULA_EDITOR
 //------------------------------------------------------------------------------
 /**
@@ -69,15 +59,6 @@ Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const 
 }
 
 #endif
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelSetBoundingBox(const ModelId id, const Math::bbox& box)
-{
-    modelAllocator.Set<Model_BoundingBox>(id.id, box);
-}
 
 //------------------------------------------------------------------------------
 /**

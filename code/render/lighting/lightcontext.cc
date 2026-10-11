@@ -630,11 +630,9 @@ LightContext::SetupAreaLight(const Graphics::GraphicsEntityId id, const AreaLigh
         }
 
         Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
-        Math::bbox box;
         Models::ModelContext::Setup(
             id
             , Math::mat4()
-            , box
             , material
             , mesh
             , 0

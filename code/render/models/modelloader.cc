@@ -64,8 +64,6 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     Resources::ResourceLoader::ResourceInitOutput ret;
 
     // a model is a list of resources, a bounding box, and a dictionary of nodes
-    Math::bbox boundingBox;
-    boundingBox.set(Math::vec3(0), Math::vec3(0));
     Util::Array<Models::ModelNode*> nodes;
 
     // setup stack for loading nodes
@@ -165,18 +163,6 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
             {
                 // end of Model, if we're reloading, we shouldn't load all resources again...
                 done = true;
-
-                // update model-global bounding box
-                Math::bbox box;
-                box.begin_extend();
-                IndexT i;
-                for (i = 0; i < nodes.Size(); i++)
-                {
-                    const ModelNode* node = nodes[i];
-                    box.extend(node->boundingBox);
-                }
-                box.end_extend();
-                boundingBox = box;
             }
             else if (fourCC == FourCC('>MND'))
             {
@@ -185,7 +171,6 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
                 String name = reader->ReadString();
                 ModelNode* node = this->nodeConstructors[classFourCC]();
                 node->parent = nullptr;
-                node->boundingBox = Math::bbox();
                 node->name = name;
                 node->tag = job.tag;
 #if WITH_NEBULA_EDITOR
@@ -222,7 +207,6 @@ ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream
     }
 
     ModelCreateInfo createInfo;
-    createInfo.boundingBox = boundingBox;
     createInfo.nodes = nodes;
     createInfo.jointMasks = jointMasks;
     createInfo.takes = takes;
@@ -345,18 +329,6 @@ ModelLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
             {
                 // end of Model, if we're reloading, we shouldn't load all resources again...
                 done = true;
-
-                // update model-global bounding box
-                Math::bbox box;
-                box.begin_extend();
-                IndexT i;
-                for (i = 0; i < nodes.Size(); i++)
-                {
-                    const ModelNode* node = nodes[i];
-                    box.extend(node->boundingBox);
-                }
-                box.end_extend();
-                boundingBox = box;
             }
             else if (fourCC == FourCC('>MND'))
             {
@@ -365,7 +337,6 @@ ModelLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
                 String name = reader->ReadString();
                 ModelNode* node = this->nodeConstructors[classFourCC]();
                 node->parent = nullptr;
-                node->boundingBox = Math::bbox();
                 node->name = name;
                 node->tag = job.tag;
 #if WITH_NEBULA_EDITOR
@@ -402,7 +373,6 @@ ModelLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
     }
 
     ModelId id = job.id.resource;
-    Models::ModelSetBoundingBox(id, boundingBox);
     Models::ModelSetNodes(id, nodes);
     Models::ModelSetJointMasks(id, jointMasks);
     Models::ModelSetTakes(id, takes);

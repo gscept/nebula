@@ -92,9 +92,6 @@ ParticleSystemNode::OnFinishedLoading(ModelStreamingData* streamingData)
 
     float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 
-    // calculate bounding box using activity distance
-    this->boundingBox.set(this->boundingBox.center(), Math::vector(activityDist, activityDist, activityDist));
-
     // setup sample buffer and emitter mesh
     this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
     this->emitterMesh.Setup(this->mesh, this->primGroupIndex);

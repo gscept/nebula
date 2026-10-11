@@ -211,7 +211,6 @@ ModelContext::SetupModel(
         NodeInstances.renderable.nodeStates.Extend(stateRange.end);
         NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
         NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
-        NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
         NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
         NodeInstances.renderable.nodeLods.Extend(stateRange.end);
         NodeInstances.renderable.textureLods.Extend(stateRange.end);
@@ -256,7 +255,6 @@ ModelContext::SetupModel(
         NodeInstances.renderable.nodeStates[index] = state;
         NodeInstances.renderable.nodeTransformIndex[index] = nodeLookup[renderNodes[i]];
         NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
-        NodeInstances.renderable.origBoundingBoxes[index] = sNode->boundingBox;
         NodeInstances.renderable.nodeLodDistances[index] =
             sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX);
         NodeInstances.renderable.nodeLods[index] = 0.0f;
@@ -339,7 +337,6 @@ void
 ModelContext::Setup(
     const Graphics::GraphicsEntityId id
     , const Math::mat4 transform
-    , const Math::bbox& boundingBox
     , const Materials::MaterialId material
     , const CoreGraphics::MeshId mesh
     , const IndexT primitiveGroup
@@ -402,7 +399,6 @@ ModelContext::Setup(
         NodeInstances.renderable.nodeStates.Extend(stateRange.end);
         NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
         NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
-        NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
         NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
         NodeInstances.renderable.nodeLods.Extend(stateRange.end);
         NodeInstances.renderable.textureLods.Extend(stateRange.end);
@@ -428,7 +424,6 @@ ModelContext::Setup(
         NodeInstances.renderable.nodeStates[index] = state;
         NodeInstances.renderable.nodeTransformIndex[index] = i;
         NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
-        NodeInstances.renderable.origBoundingBoxes[index] = boundingBox;
         NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
         NodeInstances.renderable.nodeLods[index] = 0.0f;
         NodeInstances.renderable.textureLods[index] = 1.0f;
@@ -466,7 +461,6 @@ ModelContext::Setup(
     , const Util::Array<Math::mat4>& transforms
     , const Util::Array<CoreGraphics::MeshId>& meshes
     , const Util::Array<Materials::MaterialId>& materials
-    , const Util::Array<Math::bbox>& boundingBoxes
     , const Util::Array<IndexT>& primitiveGroups
     , const Graphics::StageMask stageMask
     , const Util::String debugName
@@ -525,7 +519,6 @@ ModelContext::Setup(
             NodeInstances.renderable.nodeStates.Extend(stateRange.end);
             NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
             NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
-            NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
             NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
             NodeInstances.renderable.nodeLods.Extend(stateRange.end);
             NodeInstances.renderable.textureLods.Extend(stateRange.end);
@@ -551,7 +544,6 @@ ModelContext::Setup(
             NodeInstances.renderable.nodeStates[index] = state;
             NodeInstances.renderable.nodeTransformIndex[index] = i;
             NodeInstances.renderable.nodeBoundingBoxes[index] = Math::bbox();
-            NodeInstances.renderable.origBoundingBoxes[index] = boundingBoxes[i];
             NodeInstances.renderable.nodeLodDistances[index] = Util::MakeTuple(FLT_MAX, FLT_MAX);
             NodeInstances.renderable.nodeLods[index] = 0.0f;
             NodeInstances.renderable.textureLods[index] = 1.0f;
@@ -1062,7 +1054,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
                 Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
-                Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
+                Math::bbox box = NodeInstances.renderable.nodePrimitiveGroup[j].GetBoundingBox();
                 float radius = box.diagonal_size() / 2;
                 box.affine_transform(transform);
                 instanceBoxes[j] = box;

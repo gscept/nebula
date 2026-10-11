@@ -210,16 +210,13 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
     Particles::ParticleResourceId particleRes = Resources::CreateResource(particleResource, "particle", [stageMask, id, cid](Resources::ResourceId res)
         {
             const Particles::ParticleEmitters& emitters = Particles::ParticleResourceGetEmitters(res);
-            Util::Array<Math::bbox> boundingBoxes;
             Util::Array<IndexT> primitiveGroups;
             Util::Array<CoreGraphics::MeshId> meshes;
             Util::Array<Materials::MaterialId> materials;
-            boundingBoxes.Reserve(emitters.meshes.Size());
             for (IndexT i = 0; i < emitters.meshes.Size(); i++)
             {
                 float activityDist = emitters.attrs[i].GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
                 Math::bbox box(emitters.transform[i].position, Math::vec3(activityDist));
-                boundingBoxes.Append(box);
                 primitiveGroups.Append(0);
                 if (emitters.meshes[i] == Resources::InvalidResourceId)
                 {
@@ -239,7 +236,6 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
                 emitters.transform,
                 meshes,
                 materials,
-                boundingBoxes,
                 primitiveGroups,
                 stageMask
             );
@@ -507,6 +503,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                     system.boundingBox = system.outputData.bbox;
                     if (system.outputData.numParticlesToRender > 0)
                     {
+                        // Set the bounding box from the particle output data
                         renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
                         renderables.nodeDrawModifiers[stateRange.begin + system.renderableIndex] = Util::MakeTuple(system.outputData.numParticlesToRender, 0);
 
@@ -533,7 +530,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                 }
             }
 
-        }, allSystems.Size(), 128, { &allSystemsCompleteCounter }, &ParticleContext::ConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
+        }, allSystems.Size(), 128, { &allSystemsCompleteCounter, &ModelContext::TransformsUpdateCounter }, &ParticleContext::ConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
     }
 
     if (ParticleContext::ConstantUpdateCounter == 0)

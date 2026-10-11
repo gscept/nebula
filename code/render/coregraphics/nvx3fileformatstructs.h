@@ -54,7 +54,7 @@ struct Nvx3Group
     uint primType;
     uint firstIndex;
     uint numIndices;
-    // Math::bbox boundingBox; TODO: ADD THIS
+    Math::bbox boundingBox;
 
     uint firstMeshlet;              // Offset to first meshlet (optional)
     uint numMeshlets;               // Number of meshlets for this primitive group

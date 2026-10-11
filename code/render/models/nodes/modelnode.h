@@ -106,7 +106,6 @@ protected:
 
     Models::ModelNode* parent;
     Util::Array<Models::ModelNode*> children;
-    Math::bbox boundingBox;
     Util::StringAtom tag;
 
     IndexT uniqueId;

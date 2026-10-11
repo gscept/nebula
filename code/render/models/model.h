@@ -92,7 +92,6 @@ struct Take
 
 struct ModelCreateInfo
 {
-    Math::bbox boundingBox;
     Util::Array<Models::ModelNode*> nodes;
     Util::FixedArray<JointMask> jointMasks;
     Util::FixedArray<Take> takes;
@@ -116,8 +115,6 @@ const Math::bbox& ModelGetBoundingBox(const ModelId id);
 const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const ModelId id);
 #endif
 
-/// Set model bounding box
-void ModelSetBoundingBox(const ModelId id, const Math::bbox& box);
 /// Set model nodes
 void ModelSetNodes(const ModelId id, Util::Array<Models::ModelNode*>& nodes);
 /// Set model joint masks
@@ -131,7 +128,6 @@ void ModelSetLookup(const ModelId id, const Util::Dictionary<Util::StringAtom, M
 
 enum
 {
-    Model_BoundingBox,
     Model_Nodes,
     Model_JointMasks,
     Model_Takes,
@@ -141,7 +137,6 @@ enum
 };
 
 typedef Ids::IdAllocator<
-    Math::bbox,
     Util::Array<Models::ModelNode*>,
     Util::FixedArray<JointMask>,
     Util::FixedArray<Take>

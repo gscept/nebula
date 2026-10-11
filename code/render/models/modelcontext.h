@@ -89,7 +89,6 @@ public:
     static void Setup(
         const Graphics::GraphicsEntityId id
         , const Math::mat4 transform
-        , const Math::bbox& boundingBox
         , const Materials::MaterialId material
         , const CoreGraphics::MeshId mesh
         , const IndexT primitiveGroup
@@ -104,7 +103,6 @@ public:
         , const Util::Array<Math::mat4>& transforms
         , const Util::Array<CoreGraphics::MeshId>& meshes
         , const Util::Array<Materials::MaterialId>& materials
-        , const Util::Array<Math::bbox>& boundingBoxes
         , const Util::Array<IndexT>& primitiveGroups
         , const Graphics::StageMask stageMask = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
 #if NEBULA_GRAPHICS_DEBUG
@@ -189,7 +187,6 @@ public:
         /// The bounding boxes are used by visibility and the states by rendering
         struct Renderable
         {
-            Util::PinnedArray<0xFFFF, Math::bbox> origBoundingBoxes;
             Util::PinnedArray<0xFFFF, Math::bbox> nodeBoundingBoxes;
             Util::PinnedArray<0xFFFF, Util::Tuple<float, float>> nodeLodDistances;
             Util::PinnedArray<0xFFFF, float> nodeLods;

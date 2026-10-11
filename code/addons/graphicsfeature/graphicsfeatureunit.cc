@@ -206,7 +206,7 @@ GraphicsFeatureUnit::OnActivate()
         {
             .view = this->defaultView,
             .color = Math::vec3(1),
-            .intensity = 50.000f,
+            .intensity = 1000.000f,
             .zenith = (float)70.0_rad,
             .azimuth = (float)0_rad,
             .stageMask = Graphics::PRIMARY_STAGE_MASK,

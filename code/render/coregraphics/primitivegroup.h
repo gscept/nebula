@@ -40,12 +40,17 @@ public:
     SizeT GetNumIndices() const;
     /// get computed number of primitives
     SizeT GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& topo) const;
+    /// Set the bounding box
+    void SetBoundingBox(const Math::bbox& bbox);
+    /// Get the bounding box for this primitive
+    const Math::bbox& GetBoundingBox() const;
 
 private:
     IndexT baseVertex;
     SizeT numVertices;
     IndexT baseIndex;
     SizeT numIndices;
+    Math::bbox boundingBox;
 };
 
 //------------------------------------------------------------------------------
@@ -147,6 +152,24 @@ PrimitiveGroup::GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& to
     {
         return PrimitiveTopology::NumberOfPrimitives(topo, this->numVertices);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+PrimitiveGroup::SetBoundingBox(const Math::bbox& bbox)
+{
+    this->boundingBox = bbox;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Math::bbox& 
+PrimitiveGroup::GetBoundingBox() const
+{
+    return this->boundingBox;
 }
 
 } // namespace PrimitiveGroup

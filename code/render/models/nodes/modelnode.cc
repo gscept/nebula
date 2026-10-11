@@ -33,14 +33,7 @@ ModelNode::~ModelNode()
 bool
 ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
-    if (FourCC('LBOX') == fourcc)
-    {
-        // bounding box
-        vec3 center = xyz(reader->ReadVec4());
-        vec3 extents = xyz(reader->ReadVec4());
-        this->boundingBox.set(center, extents);
-    }
-    else if (FourCC('MNTP') == fourcc)
+    if (FourCC('MNTP') == fourcc)
     {
         // model node type, deprecated
         reader->ReadString();
