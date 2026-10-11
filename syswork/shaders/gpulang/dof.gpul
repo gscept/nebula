@@ -56,7 +56,7 @@
 //        y  rotation, radians.
 //        z  roundness in [0, 1]. 0 = straight blades, 1 = disk. The blades open
 //           toward the circle of confusion and are clipped by it.
-//        w  0 skips DirtMask. Nonzero weights each aperture sample by bokehWeight.
+//        w  0 skips DirtMask. Nonzero multiplies bright samples by DirtMask.r.
 //
 //  Images
 //    ColorSource      full-res HDR color, mip 0. Alpha is ignored. DofSetup fetches it.
@@ -68,14 +68,14 @@
 //                     DofGather writes it. finalize.gpul samples it with LinearSampler
 //                     in ColorSource UV space, (pixel + 0.5) / ColorSize. The half-res
 //                     grid is ColorSize >> 1.
-//    DirtMask         Aperture intensity. r is the weight of that point in the bokeh.
-//                     The disk maps onto the texture the same way for every shape:
+//    DirtMask         Aperture intensity. r multiplies a sample that is many times
+//                     the camera-adapted luminance. Dim samples stay at 1, so the
+//                     blur keeps the untextured average. The disk maps onto the
+//                     texture the same way for every shape:
 //                     uv = 0.5 + 0.5 * offset / radius, offset in half-res pixels from
 //                     the aperture center. No per-shape offset. g and b are ignored.
-//                     White leaves the average unchanged. A sample keeps weight 1 until
-//                     its luminance is a strong multiple of the camera-adapted luminance
-//                     (ViewConstants.Time_Random_Luminance_X.z, scaled by
-//                     PerTickParams.MaxLuminance). DofGather uses it when Aperture.w != 0.
+//                     The gather still divides by coverage. DofGather uses it when
+//                     Aperture.w != 0.
 //    BokehMask        rgba16f, 31 by 1, sampled. Shader-read except during DofMask.
 //    BokehMaskWrite   the same image, storage. DofMask writes it.
 //                     Texel x is the aperture row at height (x - 15), for a circle of
@@ -91,7 +91,7 @@
 //  Far layer: a pixel behind the plane averages its own aperture. Each mask row is one
 //  span, scaled by that pixel's radius. Aperture.w == 0 reads the fully covered texels
 //  with two prefix lookups and adds the rim texels by coverage. Otherwise each texel
-//  is weighted by bokehWeight at its aperture offset, times that coverage.
+//  scales a bright sample by DirtMask.r at its aperture offset. Coverage is unchanged.
 //  In-focus and foreground texels are holes in that prefix.
 //  Near layer: a foreground texel splats the same scaled span. Tiles whose apron is
 //  entirely behind the plane skip that loop.
@@ -108,9 +108,8 @@ const ROWS_PER_PASS = 8;
 // Half-res circle of confusion, in half-res pixels, before a sample joins the gather.
 // finalize.gpul applies the far blend from the full-res circle of confusion.
 const FOCUS_EPS = 0.5f;
-// How many times the camera-adapted luminance a sample must be before it takes DirtMask,
-// and where that take is complete. Below the start the weight is 1. At the end the
-// weight is DirtMask.r times that ratio.
+// How many times the camera-adapted luminance a sample must be before DirtMask
+// scales it, and where that scale is complete. Below the start the color is unchanged.
 const BOKEH_RATIO_START = 8.0f;
 const BOKEH_RATIO_FULL = 32.0f;
 const MAX_BLADES = 8;
@@ -141,22 +140,25 @@ workgroup tileMaxCoc : f32;
 
 //------------------------------------------------------------------------------
 /**
-    Gather weight of one aperture sample.
+    Color scale for one aperture sample.
     Offset is half-res pixels from the aperture center. The same offset lands on
     the same DirtMask texel for every bokeh.
     Samples near the camera-adapted luminance return 1. Samples many times brighter
-    return DirtMask.r times how far they sit above that level.
+    return DirtMask.r. Coverage does not use this.
 */
-bokehWeight(offset : f32x2, radius : f32, rgb : f32x3) f32
+bokehScale(offset : f32x2, radius : f32, rgb : f32x3) f32
 {
-    const uv = saturate(f32x2(0.5f) + f32x2(0.5f) * offset / radius);
-    const amp = textureSampleLod(DirtMask, LinearSampler, uv, 0).r;
     const lum = max(dot(rgb, Luminance), 0.0f);
-    // Same exposure finalize uses: histogram luminance, then MaxLuminance.
     const adapted = max(ViewConstants.Time_Random_Luminance_X.z, 1e-4f) * max(PerTickParams.MaxLuminance, 0.01f);
     const ratio = lum / adapted;
     const hot = smoothstep(BOKEH_RATIO_START, BOKEH_RATIO_FULL, ratio);
-    return lerp(1.0f, amp * ratio, hot);
+    if (hot <= 0.0f)
+    {
+        return 1.0f;
+    }
+    const uv = saturate(f32x2(0.5f) + f32x2(0.5f) * offset / radius);
+    const amp = textureSampleLod(DirtMask, LinearSampler, uv, 0).r;
+    return lerp(1.0f, amp, hot);
 }
 
 //------------------------------------------------------------------------------
@@ -517,9 +519,9 @@ csGather() void
                     {
                         continue;
                     }
-                    const weight = bokehWeight(f32x2(f32(i), dy), radius, s.rgb) * cover;
-                    farSum += s.rgb * weight;
-                    farW += weight;
+                    const scale = bokehScale(f32x2(f32(i), dy), radius, s.rgb);
+                    farSum += s.rgb * scale * cover;
+                    farW += cover;
                 }
             }
         }
@@ -558,12 +560,13 @@ csGather() void
                 {
                     continue;
                 }
-                var weight = cover / span.z;
+                const weight = cover / span.z;
+                var scale = 1.0f;
                 if (DofUniforms.Aperture.w != 0.0f)
                 {
-                    weight = bokehWeight(f32x2(f32(dx), f32(dy)), srcRadius, s.rgb) * cover / span.z;
+                    scale = bokehScale(f32x2(f32(dx), f32(dy)), srcRadius, s.rgb);
                 }
-                nearSum += s.rgb * weight;
+                nearSum += s.rgb * scale * weight;
                 nearW += weight;
             }
         }
