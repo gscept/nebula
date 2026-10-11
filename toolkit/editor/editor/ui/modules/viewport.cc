@@ -11,6 +11,10 @@
 #include "lighting/lightcontext.h"
 #include "im3d/im3dcontext.h"
 #include "graphics/cameracontext.h"
+#include "coregraphics/texture.h"
+#include "resources/resourceserver.h"
+#include "editor/ui/windowserver.h"
+#include "editor/ui/windows/assetbrowser.h"
 
 #include "frame/default.h"
 #include "frame/preview.h"
@@ -195,6 +199,73 @@ Viewport::Render()
             if (ImGui::MenuItem("Back"))
             {
             }
+            ImGui::Separator();
+            Graphics::GraphicsEntityId cameraEntity = this->camera.GetGraphicsEntity();
+            Graphics::DepthOfField dof = Graphics::CameraContext::GetDepthOfField(cameraEntity);
+            static const float focusMin = 0.01f;
+            static const float focusMax = 500.0f;
+            static const float rangeMin = 0.01f;
+            static const float rangeMax = 200.0f;
+            static const float radiusMin = 0.0f;
+            static const float radiusMax = 30.0f;
+            bool dofChanged = false;
+            dofChanged |= ImGui::SliderScalar("Focus distance", ImGuiDataType_Float, &dof.focusDistance, &focusMin, &focusMax, "%.2f");
+            dofChanged |= ImGui::SliderScalar("Focus range", ImGuiDataType_Float, &dof.focusRange, &rangeMin, &rangeMax, "%.2f");
+            dofChanged |= ImGui::SliderScalar("Max radius", ImGuiDataType_Float, &dof.maxRadius, &radiusMin, &radiusMax, "%.1f");
+            int blades = (int)dof.blades;
+            static const int bladesMin = 0;
+            static const int bladesMax = 8;
+            if (ImGui::SliderInt("Blades", &blades, bladesMin, bladesMax))
+            {
+                dof.blades = (float)blades;
+                dofChanged = true;
+            }
+            float rotationDeg = Math::rad2deg(dof.rotation);
+            static const float rotationMin = -180.0f;
+            static const float rotationMax = 180.0f;
+            if (ImGui::SliderScalar("Rotation", ImGuiDataType_Float, &rotationDeg, &rotationMin, &rotationMax, "%.1f"))
+            {
+                dof.rotation = Math::deg2rad(rotationDeg);
+                dofChanged = true;
+            }
+            static const float roundMin = 0.0f;
+            static const float roundMax = 1.0f;
+            dofChanged |= ImGui::SliderScalar("Roundness", ImGuiDataType_Float, &dof.roundness, &roundMin, &roundMax, "%.2f");
+            if (dof.dirtMask == Resources::InvalidResourceId)
+                ImGui::Text("Dirt mask: none");
+            else
+                ImGui::Text("Dirt mask: %s", CoreGraphics::TextureGetName(CoreGraphics::TextureId(dof.dirtMask.resource)).Value());
+            if (ImGui::Button("Set dirt mask"))
+            {
+                auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
+                browser->PickFile(IO::Path(), [cameraEntity](const IO::Path& filePath)
+                {
+                    n_assert(filePath.IsFile());
+                    if (filePath.GetType() != "tex")
+                    {
+                        n_warning("Dirt mask must be a texture\n");
+                        return;
+                    }
+                    Resources::CreateResource(filePath, "editor", [cameraEntity](Resources::ResourceId id)
+                    {
+                        Graphics::DepthOfField current = Graphics::CameraContext::GetDepthOfField(cameraEntity);
+                        if (current.dirtMask != Resources::InvalidResourceId)
+                            Resources::DiscardResource(current.dirtMask);
+                        current.dirtMask = id;
+                        Graphics::CameraContext::SetDepthOfField(cameraEntity, current);
+                    }, nullptr);
+                });
+            }
+            if (dof.dirtMask != Resources::InvalidResourceId && ImGui::Button("Clear dirt mask"))
+            {
+                Resources::DiscardResource(dof.dirtMask);
+                dof.dirtMask = Resources::InvalidResourceId;
+                dofChanged = true;
+            }
+            if (dofChanged)
+            {
+                Graphics::CameraContext::SetDepthOfField(cameraEntity, dof);
+            }
 
             ImGui::EndMenu();
         }
@@ -243,7 +314,11 @@ Viewport::Render()
 
     using namespace CoreGraphics;
 
+    // WindowPadding.x insets the menu bar. The image still covers the inner width.
+    const float padX = ImGui::GetStyle().WindowPadding.x;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() - padX);
     ImVec2 space = ImGui::GetContentRegionAvail();
+    space.x += padX;
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 viewportPos = ImGui::GetWindowViewport()->Pos;
@@ -276,7 +351,12 @@ Viewport::Render()
 
     Dynui::SetImguiTextureIdData(this->imguiTextureId, textureData);
     ImTextureRef ref {this->imguiTextureId};
+    ImVec2 clipMin = ImGui::GetCursorScreenPos();
+    clipMin.x = ImGui::GetWindowPos().x;
+    ImVec2 clipMax = ImGui::GetWindowPos() + ImGui::GetWindowSize();
+    ImGui::PushClipRect(clipMin, clipMax, false);
     ImGui::Image(ref, imageSize, ImVec2(0, 0), uv);
+    ImGui::PopClipRect();
 
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };

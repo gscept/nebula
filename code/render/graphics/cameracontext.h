@@ -11,9 +11,28 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "camerasettings.h"
+#include "resources/resourceid.h"
 #include "math/scalar.h"
 namespace Graphics
 {
+
+struct DepthOfField
+{
+    // Linear view depth. At focusDistance +/- focusRange the radius is maxRadius.
+    float focusDistance = 0.01f;
+    float focusRange = 10.0f;
+    // Full-resolution pixels. The shader caps this at 30.
+    float maxRadius = 15.0f;
+    // Aperture. Blade count 3..8 is a regular iris. Any other count is a disk.
+    float blades = 0.0f;
+    // Radians. 0 puts a vertex on +X.
+    float rotation = 0.0f;
+    // 0 = straight blades, 1 = disk.
+    float roundness = 0.0f;
+    // Aperture intensity, sampled the same way on every bokeh. r is the weight.
+    // InvalidResourceId uses CoreGraphics::White2D.
+    Resources::ResourceId dirtMask;
+};
 
 class CameraContext : public Graphics::GraphicsContext
 {
@@ -49,6 +68,10 @@ public:
     static const Math::mat4& GetViewProjection(const Graphics::GraphicsEntityId id);
     /// get settings
     static const CameraSettings& GetSettings(const Graphics::GraphicsEntityId id);
+    /// focus, circle of confusion, and aperture
+    static void SetDepthOfField(const Graphics::GraphicsEntityId id, const DepthOfField& dof);
+    /// focus, circle of confusion, and aperture
+    static const DepthOfField& GetDepthOfField(const Graphics::GraphicsEntityId id);
     /// Get stage mask
     static Graphics::StageMask GetStageMask(const Graphics::GraphicsEntityId id);
 
@@ -72,14 +95,16 @@ private:
         Camera_Projection,
         Camera_View,
         Camera_ViewProjection,
-        Camera_StageMask
+        Camera_StageMask,
+        Camera_DepthOfField
     };
     typedef Ids::IdAllocator<
         Graphics::CameraSettings,
         Math::mat4,             // projection
         Math::mat4,             // view-transform
         Math::mat4,             // view-projection
-        Graphics::StageMask     // Mask indicating the stages this camera exists in
+        Graphics::StageMask,    // Mask indicating the stages this camera exists in
+        Graphics::DepthOfField
     > CameraAllocator;
     static CameraAllocator cameraAllocator;
 

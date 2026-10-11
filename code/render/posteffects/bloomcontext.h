@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
+#include "coregraphics/texture.h"
 namespace PostEffects
 {
 
@@ -27,6 +28,10 @@ public:
 
     /// setup bloom context
     static void Setup();
+
+    /// Screen-space lens dirt multiplied onto the bloom. White leaves it unchanged.
+    /// DirtMask is a texture2D. The initial texture is CoreGraphics::White2D.
+    static void SetDirtMask(const CoreGraphics::TextureId texture);
 
     /// Handle window resize
     static void Resize(const uint framescriptHash, SizeT width, SizeT height);

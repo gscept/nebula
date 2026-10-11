@@ -147,6 +147,29 @@ CameraContext::GetSettings(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+CameraContext::SetDepthOfField(const Graphics::GraphicsEntityId id, const DepthOfField& dof)
+{
+    n_assert(dof.focusRange > 0.0f);
+    n_assert(dof.maxRadius >= 0.0f);
+    n_assert(dof.roundness >= 0.0f && dof.roundness <= 1.0f);
+    const ContextEntityId cid = GetContextId(id);
+    cameraAllocator.Set<Camera_DepthOfField>(cid.id, dof);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const DepthOfField&
+CameraContext::GetDepthOfField(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return cameraAllocator.Get<Camera_DepthOfField>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Graphics::StageMask
 CameraContext::GetStageMask(const Graphics::GraphicsEntityId id)
 {

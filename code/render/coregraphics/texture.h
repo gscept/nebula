@@ -186,7 +186,7 @@ void RecreateTexture(const TextureId& id, const TextureCreateInfo& info);
 void DestroyTexture(const TextureId id);
 
 /// Get name of texture
-Util::StringAtom TextureGetName(const TextureId id);
+const Util::StringAtom& TextureGetName(const TextureId id);
 /// get texture dimensions
 TextureDimensions TextureGetDimensions(const TextureId id);
 /// get texture relative dimensions
