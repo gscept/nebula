@@ -34,8 +34,12 @@ public:
     static void SetFogDistances(const float nearFog, const float farFog);
     /// set the bloom color filter
     static void SetBloomColor(const Math::vec4& bloomColor);
+    /// current bloom color filter
+    static Math::vec4 GetBloomColor();
     /// Set intensity of bloom effect
     static void SetBloomIntensity(const float intensity);
+    /// current bloom intensity
+    static float GetBloomIntensity();
     /// set the maximum allowed luminance by the eye adaptation
     static void SetMaxLuminance(const float maxLuminance);
     /// set the number of global environment mips

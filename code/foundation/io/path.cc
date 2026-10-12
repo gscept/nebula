@@ -67,6 +67,7 @@ Path::Parse(const Util::String& serialized)
         ret.file = serialized.ExtractRange(folderSeparatorIndex + 1, fileSeparatorIndex - folderSeparatorIndex - 1);
         ret.type = serialized.ExtractToEnd(fileSeparatorIndex + 1);
     }
+    ret.isFile = !ret.file.IsEmpty();
     ret.Build();
    
     return ret;

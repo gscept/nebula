@@ -19,6 +19,7 @@
 #include "clustering/clustercontext.h"
 #include "fog/volumetricfogcontext.h"
 #include "posteffects/bloomcontext.h"
+#include "posteffects/dofcontext.h"
 #include "posteffects/ssaocontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
@@ -185,11 +186,13 @@ GraphicsFeatureUnit::OnActivate()
     GI::DDGIContext::Create();
     ::Terrain::TerrainContext::Create();
     PostEffects::BloomContext::Create();
+    PostEffects::DofContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
     PostEffects::DownsamplingContext::Create();
 
     PostEffects::BloomContext::Setup();
+    PostEffects::DofContext::Setup();
     PostEffects::SSAOContext::Setup();
     PostEffects::HistogramContext::Setup();
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);

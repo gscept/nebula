@@ -57,6 +57,8 @@ public:
 
     const Graphics::CameraSettings& GetCameraSettings() const;
 
+    Graphics::GraphicsEntityId GetGraphicsEntity() const { return this->cameraEntityId; }
+
 
 public:
     // Perspective settings

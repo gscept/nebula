@@ -7,6 +7,7 @@
 #include "frame/framecode.h"
 #include "coregraphics/resourcetable.h"
 #include "coregraphics/barrier.h"
+#include "coregraphics/texture.h"
 #include "graphics/graphicsserver.h"
 #include "bloomcontext.h"
 
@@ -27,11 +28,29 @@ struct
     CoreGraphics::BufferId constants;
 
     CoreGraphics::TextureId intermediateBloomTexture;
+    CoreGraphics::TextureId dirtMask;
     Util::FixedArray<CoreGraphics::TextureViewId> intermediateBloomBufferViews;
     uint numMips;
     Bloom::BloomUniforms::STRUCT uniforms;
 
 } bloomState;
+
+//------------------------------------------------------------------------------
+/**
+    Dirt.x is 0 for the white placeholder.
+    Dirt.yz is the reciprocal of DirtMask mip 0.
+*/
+static void
+WriteDirtUniform(const CoreGraphics::TextureId texture)
+{
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
+    n_assert(dims.width > 0);
+    n_assert(dims.height > 0);
+    bloomState.uniforms.Dirt[0] = texture == CoreGraphics::White2D ? 0.0f : 1.0f;
+    bloomState.uniforms.Dirt[1] = 1.0f / float(dims.width);
+    bloomState.uniforms.Dirt[2] = 1.0f / float(dims.height);
+    bloomState.uniforms.Dirt[3] = 0.0f;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -100,9 +119,13 @@ BloomContext::Setup()
         bloomState.uniforms.Resolutions[i][2] = 1.0f / mipWidth;
         bloomState.uniforms.Resolutions[i][3] = 1.0f / mipHeight;
     }
+    if (bloomState.dirtMask == InvalidTextureId)
+        bloomState.dirtMask = White2D;
+    WriteDirtUniform(bloomState.dirtMask);
     BufferUpdate(bloomState.constants, bloomState.uniforms);
 
     ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.dirtMask, Bloom::DirtMask::BINDING });
     ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
     ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
     for (IndexT i = 0; i < mips; i++)
@@ -224,10 +247,29 @@ BloomContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
             );
         }
         ResourceTableSetTexture(bloomState.resourceTable, {bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING});
+        ResourceTableSetTexture(bloomState.resourceTable, {bloomState.dirtMask, Bloom::DirtMask::BINDING});
         ResourceTableSetConstantBuffer(bloomState.resourceTable, {bloomState.constants, Bloom::BloomUniforms::BINDING});
         ResourceTableCommitChanges(bloomState.resourceTable);
 
         FrameScript_default::Bind_BloomIntermediate(Frame::TextureImport(bloomState.intermediateBloomTexture));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BloomContext::SetDirtMask(const CoreGraphics::TextureId texture)
+{
+    n_assert(texture != CoreGraphics::InvalidTextureId);
+    if (bloomState.dirtMask == texture)
+        return;
+    bloomState.dirtMask = texture;
+    WriteDirtUniform(texture);
+    if (bloomState.resourceTable != CoreGraphics::InvalidResourceTableId)
+    {
+        CoreGraphics::ResourceTableSetTexture(bloomState.resourceTable, { texture, Bloom::DirtMask::BINDING });
+        CoreGraphics::ResourceTableCommitChanges(bloomState.resourceTable);
     }
 }
 

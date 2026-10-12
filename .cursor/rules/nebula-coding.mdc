@@ -62,3 +62,35 @@ n_assert(i != InvalidIndex);
 ```
 
 Same in shaders: do not remap out-of-bounds work into valid data. No `ValidTexel` skips, no `min(lastTexel, coord)` clamps, no dummy 0 and continue. If the dispatch or indexing produces OOB, fix that. If OOB is inherent to the algorithm (e.g. SPD's 64×64 tiles), leave the coordinate alone — do not clamp it onto the last valid texel.
+
+## Do not edit generated files
+
+If a file header says `DO NOT EDIT` (idlc, material compiler, GPULang reflection, and similar), do not change it. Edit the generator or the source it is generated from.
+
+## Comments describe the code
+
+A comment is for the next reader of the file. Write what the code is and what a binding means. Do not write the conversation into the source: "new", "already bound", "do not allocate another copy", "leave this alone", "as discussed", or a heading that only makes sense against an earlier message.
+
+```cpp
+// BAD — talks to the chat, not to the file
+// Already bound. Do not allocate another copy.
+// New images:
+
+// GOOD — the binding, and what the fields are
+// PerTickParams.DoFDistances.xyz
+//     x  focus distance, linear view depth
+```
+
+## CVar names
+
+CVars are `category_variable` in lowercase. Do not use Unreal’s `r_` prefix or PascalCase names.
+
+```cpp
+// BAD
+Core::CVarCreate(Core::CVar_Int, "r_RaytracingDebug", "0", "...");
+Core::CVarCreate(Core::CVar_Int, "r_debug", "0", "...");
+
+// GOOD
+Core::CVarCreate(Core::CVar_Int, "raytracing_debug", "0", "...");
+Core::CVarCreate(Core::CVar_Int, "net_debug", "0", "...");
+```
