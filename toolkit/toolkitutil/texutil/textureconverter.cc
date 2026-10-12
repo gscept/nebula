@@ -15,9 +15,8 @@
 
 
 #if !(__WIN32__)
-#include "Compressonator.h"
+#include "system/environment.h"
 #endif
-#include "timing/timer.h"
 
 #include "toolkitutil/text.h"
 
@@ -51,23 +50,40 @@ GetConverterFormatString(ToolkitUtil::TextureResourceT const* texture)
 #else
 //------------------------------------------------------------------------------
 /**
+    Returns the compressonatorcli destination format (-fd). The cli has no
+    single channel or 24 bit targets, so those are widened.
 */
-static CMP_FORMAT
+static const char*
 GetConverterFormatString(ToolkitUtil::TextureResourceT const* texture)
 {
     switch (texture->target_format)
     {
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return CMP_FORMAT_BC1;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC2: return CMP_FORMAT_BC2;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC3: return CMP_FORMAT_BC3;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC5: return CMP_FORMAT_BC5;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC6H: return CMP_FORMAT_BC6H;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC7: CMP_FORMAT_BC7;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8A8: CMP_FORMAT_RGBA_8888;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: CMP_FORMAT_RGB_888;
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R16: return CMP_FORMAT_R_16;
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return "BC1";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC2: return "BC2";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC3: return "BC3";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC5: return "BC5";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC6H: return "BC6H";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC7: return "BC7";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8A8: return "ARGB_8888";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: return "ARGB_8888";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R16: return "ARGB_16F";
     }
-    return CMP_FORMAT_BC7;
+    return "BC7";
+}
+
+//------------------------------------------------------------------------------
+/**
+    Path to the compressonatorcli launcher script, can be overridden with
+    the NEBULA_COMPRESSONATORCLI environment variable
+*/
+static IO::URI
+GetConverterToolPath()
+{
+    if (System::Environment::Exists("NEBULA_COMPRESSONATORCLI"))
+    {
+        return System::Environment::Read("NEBULA_COMPRESSONATORCLI");
+    }
+    return Util::Format("toolkit:bin/%s/compressonatorcli/compressonatorcli", System::PlatformTypeAsString(System::Platform));
 }
 #endif
 
@@ -140,127 +156,71 @@ ConvertTexture(const TextureConversionInfo& info)
 #else
     IO::IoServer::Instance()->CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
-    URI dstPathUri(info.destPath);
-    URI tmpDirUri(info.tmpDir);
 
-    String src = srcPathUri.LocalPath();
-
-    Timing::Timer timer;
-    timer.Start();
-
-    info.logger->Print("Processing: %s\n", src.AsCharPtr());
-
-    CMP_MipSet MipSetIn;
-    Memory::Clear(&MipSetIn, sizeof(CMP_MipSet));
-
-    auto cmp_status = CMP_LoadTexture(src.AsCharPtr(), &MipSetIn);
-
-    if (cmp_status != CMP_OK)
+    if (info.cube)
     {
-        info.logger->Error("Failed to load %s, error code: %d\n", src.AsCharPtr(), cmp_status);
+        info.logger->Warning("compressonatorcli can't assemble cube maps, converting '%s' as a 2D texture\n", srcPathUri.LocalPath().AsCharPtr());
+    }
+
+    String args = " -noprogress -silent ";
+    args.Append(" -fd ");
+    args.Append(GetConverterFormatString(info.texture));
+
+    if (info.texture->generate_mipmaps)
+    {
+        // clamped to the number of levels the image supports
+        args.Append(" -miplevels 20 ");
+    }
+    else
+    {
+        args.Append(" -nomipmap ");
+    }
+
+    if (info.texture->compression_quality == ToolkitUtil::TextureCompressionQuality::TextureCompressionQuality_High)
+    {
+        args.Append(" -Quality 0.7 ");
+    }
+    else
+    {
+        args.Append(" -Quality 0.1 ");
+    }
+    args.Append(" -NumThreads 0 ");
+    // the linux build has no gpu encoders, HPC is the fastest available
+    args.Append(" -EncodeWith HPC ");
+
+    String dstName = srcPathUri.LocalPath().ExtractFileName();
+    dstName.StripFileExtension();
+    String dstFile = Util::Format("%s/%s.dds", URI(info.destPath).LocalPath().AsCharPtr(), dstName.AsCharPtr());
+    args.Append(" \"");
+    args.Append(srcPathUri.LocalPath());
+    args.Append("\" \"");
+    args.Append(dstFile);
+    args.Append("\"");
+
+    System::ProcessStartInfo startInfo;
+    startInfo.args = args;
+    startInfo.workingDir = info.sourcePath.ExtractDirName();
+    startInfo.exePath = GetConverterToolPath();
+    startInfo.consoleWindow = false;
+
+    if (!IO::IoServer::Instance()->FileExists(startInfo.exePath))
+    {
+        info.logger->Error("Converter tool '%s' not found, place compressonatorcli there or set NEBULA_COMPRESSONATORCLI\n", startInfo.exePath.LocalPath().AsCharPtr());
         return false;
     }
 
-
-    if (MipSetIn.m_format != CMP_FORMAT_RGBA_8888)
+    System::ProcessId process = System::StartProcess(startInfo);
+    if (process == System::InvalidProcessId)
     {
-        info.logger->Print("Non-rgb(a) texture, saving raw\n");
-
-        cmp_status = CMP_SaveTexture(dstPathUri.LocalPath().AsCharPtr(), &MipSetIn);
-        if (cmp_status != CMP_OK)
-        {
-            info.logger->Error("Failed to load %s, CMP_SaveTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
-            return false;
-        }
-
-        CMP_FreeMipSet(&MipSetIn);
-
-        Timing::Time after = timer.GetTime();
-        info.logger->Print("Done after: %f\n", after);
-        return true;
-    }
-
-
-    if (MipSetIn.m_nMipLevels <= 1)
-    {
-        CMP_INT requestLevel = 10; // Request 10 miplevels for the source image
-
-        //------------------------------------------------------------------------
-        // Checks what the minimum image size will be for the requested mip levels
-        // if the request is too large, a adjusted minimum size will be returned
-        //------------------------------------------------------------------------
-        CMP_INT nMinSize = CMP_CalcMinMipSize(MipSetIn.m_nHeight, MipSetIn.m_nWidth, 10);
-
-        //--------------------------------------------------------------
-        // now that the minimum size is known, generate the miplevels
-        // users can set any requested minumum size to use. The correct
-        // miplevels will be set acordingly.
-        //--------------------------------------------------------------
-        CMP_GenerateMIPLevels(&MipSetIn, nMinSize);
-    }
-
-    //==========================
-    // Set Compression Options
-    //==========================
-    KernelOptions   kernel_options;
-    memset(&kernel_options, 0, sizeof(KernelOptions));
-
-    float quality = 0.5f;
-    switch (info.texture->compression_quality)
-    {
-        case ToolkitUtil::TextureCompressionQuality_High:
-            quality = 0.7f;
-            break;
-        case ToolkitUtil::TextureCompressionQuality_Low:
-            quality = 0.1f;
-            break;
-    }
-
-    kernel_options.format = GetConverterFormatString(info.texture);
-    kernel_options.useSRGBFrames = (info.texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB) ? true : false;
-
-    kernel_options.fquality = quality;     // Set the quality of the result
-    kernel_options.threads = 0;             // Auto setting
-    kernel_options.encodeWith = CMP_CPU;
-
-    //--------------------------------------------------------------
-    // Setup a results buffer for the processed file,
-    // the content will be set after the source texture is processed
-    // in the call to CMP_ProcessTexture()
-    //--------------------------------------------------------------
-    CMP_MipSet MipSetCmp;
-    memset(&MipSetCmp, 0, sizeof(CMP_MipSet));
-
-    CMP_Feedback_Proc CompressionCallback = [](CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)->bool
-    {
-        return 0;
-    };
-
-    //===============================================
-    // Compress the texture using Framework Lib
-    //===============================================
-    cmp_status = CMP_ProcessTexture(&MipSetIn, &MipSetCmp, kernel_options, CompressionCallback);
-    if (cmp_status != CMP_OK)
-    {
-        info.logger->Error("Failed to load %s, CMP_ProcessTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
+        info.logger->Warning("Failed to launch converter tool '%s'!\n", startInfo.exePath.LocalPath().AsCharPtr());
         return false;
     }
-
-    //----------------------------------------------------------------
-    // Save the result into a DDS file
-    //----------------------------------------------------------------
-    cmp_status = CMP_SaveTexture(dstPathUri.LocalPath().AsCharPtr(), &MipSetCmp);
-    if (cmp_status != CMP_OK)
+    uint exitCode = System::WaitForProcess(process);
+    if (exitCode != 0)
     {
-        info.logger->Error("Failed to load %s, CMP_SaveTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
+        info.logger->Error("Converter tool failed on '%s', exit code: %d\n", srcPathUri.LocalPath().AsCharPtr(), exitCode);
         return false;
     }
-
-    CMP_FreeMipSet(&MipSetIn);
-    CMP_FreeMipSet(&MipSetCmp);
-
-    Timing::Time after = timer.GetTime();
-    info.logger->Print("Done after: %f\n", after);
 #endif
 
     return true;

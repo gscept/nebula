@@ -21,9 +21,9 @@ namespace ToolkitUtil
 class Logger;
 
 /// Import an FBX
-bool ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
+bool ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force = true);
 // Import a GLTF or GLB
-bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
+bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force = true);
 /// Setup a texture resource based on file name
 ToolkitUtil::TextureResourceT SetupTextureImportSettingsFromPath(const IO::URI& file);
 /// Import a texture

@@ -232,7 +232,7 @@ PackageAnimation(
     if (res)
         logger->Print("%s\n", Util::Format("Packaged animation: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     else
-        logger->Print("%s\n", Util::Format("Failed to package animation %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package animation").Color(TextColor::Red).AsCharPtr(), Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     return res;
 }
 
@@ -254,7 +254,7 @@ PackageSkeleton(
     if (res)
         logger->Print("%s\n", Util::Format("Packaged skeleton: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     else
-        logger->Print("%s\n", Util::Format("Failed to package skeleton %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package skeleton").Color(TextColor::Red).AsCharPtr(), Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     return res;
 }
 
@@ -276,7 +276,7 @@ PackageMesh(
     if (res)
         logger->Print("%s\n", Util::Format("Packaged mesh: %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     else
-        logger->Print("%s\n", Util::Format("Failed to package mesh %s", Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package mesh").Color(TextColor::Red).AsCharPtr(), Text(output.LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     return res;
 }
 
@@ -326,7 +326,19 @@ PackageTexture(
     else
     {
         IO::CreateDirectory("temp:texturepackager");
-        const Util::String tmpFile = Util::Format("temp:texturepackager/%s", fileName.AsCharPtr());
+        // converters pick the image loader from the file extension
+        static const char* ContainerExtension[] = {
+            "",    // Unknown
+            "jpg", // JPG
+            "tga", // TGA
+            "bmp", // BMP
+            "dds", // DDS
+            "png", // PNG
+            "exr", // EXR
+            "tif", // TIF
+            "dds"  // CUBE
+        };
+        const Util::String tmpFile = Util::Format("temp:texturepackager/%s.%s", fileName.AsCharPtr(), ContainerExtension[tex->container]);
 
         // Create intermediate file for texture conversion
         Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
@@ -356,10 +368,11 @@ PackageTexture(
         info.tmpDir = "temp:texturepackager";
         info.texture = tex;
         bool res = ConvertTexture(info);
+        IO::IoServer::Instance()->DeleteFile(tmpFile);
         if (res)
             logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         else
-            logger->Print("%s\n", Util::Format("Failed to package texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+            logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package texture:").Color(TextColor::Red).AsCharPtr(), Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         return res;
     }
 }
@@ -426,7 +439,7 @@ PackageMaterial(
     if (res)
         logger->Print("%s\n", Util::Format("Packaged material: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     else
-        logger->Print("%s\n", Util::Format("Failed to package material: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
+        logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package material:").Color(TextColor::Red).AsCharPtr(), Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
     return res;
 }
 

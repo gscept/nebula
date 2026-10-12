@@ -19,14 +19,14 @@ namespace ToolkitUtil
 /**
 */
 bool
-ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger)
+ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force)
 {
     Util::String fileName = file.AsString().ExtractFileName();
     Util::String fileNameNoExt = fileName;
     fileNameNoExt.StripFileExtension();
     Ptr<ToolkitUtil::FbxFileImporter> fbxImporter = ToolkitUtil::FbxFileImporter::Create();
     fbxImporter->Open();
-    fbxImporter->SetForce(true);
+    fbxImporter->SetForce(force);
     fbxImporter->SetFolder(destinationFolder.LocalPath());
     fbxImporter->SetFile(fileName);
     fbxImporter->SetLogger(logger);
@@ -39,14 +39,14 @@ ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Im
 /**
 */
 bool
-ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger)
+ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force)
 {
     Util::String fileName = file.AsString().ExtractFileName();
     Util::String fileNameNoExt = fileName;
     fileNameNoExt.StripFileExtension();
     Ptr<ToolkitUtil::GltfFileImporter> gltfImporter = ToolkitUtil::GltfFileImporter::Create();
     gltfImporter->Open();
-    gltfImporter->SetForce(true);
+    gltfImporter->SetForce(force);
     gltfImporter->SetFolder(destinationFolder.LocalPath());
     gltfImporter->SetFile(fileName);
     gltfImporter->SetLogger(logger);

@@ -268,7 +268,8 @@ AssetBatcherApp::DoWork()
     exporter->SetLogger(&this->logger);
     if (force && importMode == AssetBatchProcessor::ImportModes::None)
     {
-        exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All | AssetBatchProcessor::PackageModes::ForceAll);
+        // keep the selected package modes, only ignore time stamps
+        exporter->SetPackageMode((uint)packageMode | AssetBatchProcessor::PackageModes::ForceAll);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
