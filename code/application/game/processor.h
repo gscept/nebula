@@ -19,6 +19,14 @@ class World;
 
 class ProcessorBuilder;
 
+/// which world mode a processor is allowed to run in
+enum ProcessorPhase : uint8_t
+{
+    EditorPhase = 1 << 0,   // runs when the world is not simulating
+    PlayPhase = 1 << 1,     // runs when the world is simulating
+    BothPhases = EditorPhase | PlayPhase,
+};
+
 class Processor
 {
 public:
@@ -42,10 +50,8 @@ public:
     /// Profiling timer, handled by the frame pipeline.
     Timing::Timer timer;
 #endif
-#ifdef WITH_NEBULA_EDITOR
-    /// set to true if you want this processor to always run in editor
-    bool runInEditor = false;
-#endif
+    /// which world modes this processor is allowed to run in
+    ProcessorPhase phase = PlayPhase;
 
 private:
     friend ProcessorBuilder;
@@ -170,6 +176,12 @@ public:
     /// Set the sorting order for the processor
     ProcessorBuilder& Order(int order);
 
+    /// Processor only runs when the world is not simulating
+    ProcessorBuilder& EditorOnly();
+
+    /// Processor only runs when the world is simulating
+    ProcessorBuilder& PlayOnly();
+
     /// Processor should always run, even in editor; when the game is paused.
     ProcessorBuilder& RunInEditor();
 
@@ -186,9 +198,7 @@ private:
     bool async = false;
     bool onlyModified = false;
     int order = 100;
-#ifdef WITH_NEBULA_EDITOR
-    bool runInEditor = false;
-#endif
+    ProcessorPhase phase = PlayPhase;
 };
 
 //------------------------------------------------------------------------------

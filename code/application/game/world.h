@@ -39,6 +39,21 @@ World* GetWorld(WorldHash worldHash);
 /// returns a world by id
 World* GetWorld(WorldId worldId);
 
+// which mode a world is currently running in. A processor only runs if its phase
+// allows the mode the world is in.
+enum WorldMode : uint8_t
+{
+    EditorMode = 0,   // world is not simulating
+    PlayMode = 1,     // world is running gameplay
+};
+
+// returns the phase bit that corresponds to a world mode
+inline ProcessorPhase
+PhaseForMode(WorldMode mode)
+{
+    return mode == PlayMode ? PlayPhase : EditorPhase;
+}
+
 //------------------------------------------------------------------------------
 /**
     @class Game::World
@@ -188,6 +203,9 @@ public:
     void ExecuteRemoveComponentCommands();
     /// Disable if initialization of components is not required (ex. when running as editor db)
     bool componentInitializationEnabled = true;
+
+    /// the mode this world is currently running in, which decides which processors execute
+    WorldMode mode = PlayMode;
 
     void RenderDebug();
 

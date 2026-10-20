@@ -81,11 +81,29 @@ ProcessorBuilder::Order(int order)
 /**
 */
 ProcessorBuilder&
+ProcessorBuilder::EditorOnly()
+{
+    this->phase = EditorPhase;
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ProcessorBuilder&
+ProcessorBuilder::PlayOnly()
+{
+    this->phase = PlayPhase;
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ProcessorBuilder&
 ProcessorBuilder::RunInEditor()
 {
-#ifdef WITH_NEBULA_EDITOR
-    this->runInEditor = true;
-#endif
+    this->phase = BothPhases;
     return *this;
 }
 
@@ -101,9 +119,7 @@ ProcessorBuilder::Build()
     processor->order = this->order;
     processor->filter = this->filterBuilder.Build();
 
-#ifdef WITH_NEBULA_EDITOR
-    processor->runInEditor = this->runInEditor;
-#endif
+    processor->phase = this->phase;
 
     if (this->onlyModified)
         processor->callback = this->funcModified;

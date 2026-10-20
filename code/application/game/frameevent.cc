@@ -7,7 +7,6 @@
 #include "world.h"
 #include "memdb/database.h"
 #include "jobs2/jobs2.h"
-#include "editorstate.h"
 
 namespace Game
 {
@@ -313,20 +312,15 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         if (!processor->active)
             continue;
 
+        if (!(processor->phase & PhaseForMode(world->mode)))
+            continue;
+
 #ifdef NEBULA_ENABLE_PROFILING
         // TODO: Async batch processors will have the same timings for now. We should figure out some good way of measuring their elapsed time.
         processor->timer.Reset();
         processor->timer.Start();
 #endif
 
-#ifdef WITH_NEBULA_EDITOR
-        if (Game::EditorState::HasInstance())
-        {
-            Game::EditorState* editor = Game::EditorState::Instance();
-            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-                continue;
-        }
-#endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
     }
@@ -391,14 +385,8 @@ FrameEvent::Batch::ExecuteSequential(World* world)
         if (!processor->active)
             continue;
 
-#ifdef WITH_NEBULA_EDITOR
-        if (Game::EditorState::HasInstance())
-        {
-            Game::EditorState* editor = Game::EditorState::Instance();
-            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-                continue;
-        }
-#endif
+        if (!(processor->phase & PhaseForMode(world->mode)))
+            continue;
 
 #ifdef NEBULA_ENABLE_PROFILING
         processor->timer.Reset();
