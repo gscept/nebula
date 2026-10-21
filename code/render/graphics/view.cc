@@ -81,6 +81,15 @@ ViewApply(const ViewId id)
         viewConstants.FocalLengthNearFar[1] = settings.GetFocalLength().y;
         viewConstants.FocalLengthNearFar[2] = settings.GetZNear();
         viewConstants.FocalLengthNearFar[3] = settings.GetZFar();
+
+        // PerTickParams.DoFDistances.xyz
+        // x focus distance, y focus range, z max circle of confusion in full-res pixels
+        const DepthOfField& dof = CameraContext::GetDepthOfField(cam);
+        Shared::PerTickParams::STRUCT tickParams = GetTickParams();
+        tickParams.DoFDistances[0] = dof.focusDistance;
+        tickParams.DoFDistances[1] = dof.focusRange;
+        tickParams.DoFDistances[2] = dof.maxRadius;
+        UpdateTickParams(tickParams);
         viewConstants.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
         viewConstants.Time_Random_Luminance_X[1] = Math::rand(0, 1);
         viewConstants.StageMask = stageMask;

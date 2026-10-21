@@ -44,6 +44,7 @@
 #include "windows/resourcebrowser.h"
 #include "windows/profiler.h"
 #include "windows/physics.h"
+#include "windows/posteffects.h"
 #include "windows/navigation.h"
 #include "windows/settings.h"
 #include "windows/importwindow.h"
@@ -71,6 +72,7 @@ BaseWindow* AssetEditorWindow;
 BaseWindow* ResourceBrowserWindow;
 BaseWindow* ProfilerWindow;
 BaseWindow* PhysicsWindow;
+BaseWindow* PostEffectsWindow;
 BaseWindow* NavigationWindow;
 BaseWindow* SettingsWindow;
 BaseWindow* TerrainEditorWindow;
@@ -107,6 +109,7 @@ WindowServer::WindowServer()
     SETUP_WINDOW(ResourceBrowserWindow, ResourceBrowser, Resource Browser, );
     SETUP_WINDOW(ProfilerWindow, Profiler, Profiler, );
     SETUP_WINDOW(PhysicsWindow, Physics, Physics, );
+    SETUP_WINDOW(PostEffectsWindow, PostEffectSettings, Post Effects, );
     SETUP_WINDOW(NavigationWindow, Navigation, Navigation, );
     SETUP_WINDOW(SettingsWindow, Settings, Settings, );
     SETUP_WINDOW(TerrainEditorWindow, TerrainEditor, Terrain Editor, );
