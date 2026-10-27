@@ -886,7 +886,14 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Image>>(Util::Array<Gltf::Image>& items
                 {
                     item.embedded = false;
                     Util::String fullPath = this->stream->GetURI().AsString().ExtractDirName() + item.uri;
-                    item.data.SetFromFile(fullPath);
+                    if (IO::IoServer::Instance()->FileExists(fullPath))
+                    {
+                        item.data.SetFromFile(fullPath);
+                    }
+                    else
+                    {
+                        n_warning("[GltfReader]: External image '%s' referenced in '%s' could not be found!\n", item.uri.AsCharPtr(), this->stream->GetURI().LocalPath().AsCharPtr());
+                    }
                 }
             }
             ReadExtensionsAndExtras(item, this->curNode);
@@ -1148,6 +1155,12 @@ Document::Deserialize(Ptr<IO::Stream> const& stream, bool binary)
         Memory::Free(Memory::HeapType::StreamDataHeap, buf);
 
         Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+        
+        // Set the uri of the memory stream to be the same as
+        // the gltf, since otherwise we have no way of extracting
+        // relative image file paths.
+        memStream->SetURI(stream->GetURI());
+        
         reader->SetStream(memStream);
         bool ret = false;
         if (reader->Open())

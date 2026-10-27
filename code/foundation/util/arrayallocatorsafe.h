@@ -22,7 +22,7 @@
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "types.h"
+#include "core/types.h"
 #include "util/pinnedarray.h"
 #include "threading/readwritelock.h"
 #include "threading/spinlock.h"
