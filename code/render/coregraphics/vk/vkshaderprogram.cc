@@ -110,7 +110,7 @@ VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned
 
         // create shader
         VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
-        assert(res == VK_SUCCESS);
+        n_assert(res == VK_SUCCESS);
     }
 }
 
@@ -133,7 +133,7 @@ VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, GPULang:
 
         // create shader
         VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
-        assert(res == VK_SUCCESS);
+        n_assert(res == VK_SUCCESS);
     }
 }
 
