@@ -273,8 +273,8 @@ ModelContext::SetupModel(
 
         // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
         auto sortCode = MaterialGetSortCode(sNode->material);
-        assert(sortCode < 0xFFF0000000000000);
-        //assert(sNode->HashCode() < 0x000FFFFF00000000);
+        n_assert(sortCode < 0xFFF0000000000000);
+        //n_assert(sNode->HashCode() < 0x000FFFFF00000000);
         uint64_t sortId = ((uint64_t)sortCode << 52) | ((uint64_t)sNode->HashCode() << 32);
         NodeInstances.renderable.nodeSortId[index] = sortId;
 
@@ -444,7 +444,7 @@ ModelContext::Setup(
 
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
         auto sortCode = Materials::MaterialGetSortCode(material);
-        assert(sortCode < 0xFFF0000000000000);
+        n_assert(sortCode < 0xFFF0000000000000);
         uint64_t sortId = ((uint64_t)sortCode << 52);
         NodeInstances.renderable.nodeSortId[index] = sortId;
     }
@@ -564,7 +564,7 @@ ModelContext::Setup(
 
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
             auto sortCode = Materials::MaterialGetSortCode(materials[i]);
-            assert(sortCode < 0xFFF0000000000000);
+            n_assert(sortCode < 0xFFF0000000000000);
             uint64_t sortId = ((uint64_t)sortCode << 52);
             NodeInstances.renderable.nodeSortId[index] = sortId;
         }
@@ -620,7 +620,7 @@ ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, const Material
     NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
 
     auto sortCode = Materials::MaterialGetSortCode(material);
-    assert(sortCode < 0xFFF0000000000000);
+    n_assert(sortCode < 0xFFF0000000000000);
     uint64_t sortId = ((uint64_t)sortCode << 52);
     NodeInstances.renderable.nodeSortId[index] = sortId;
 }
@@ -642,7 +642,7 @@ ModelContext::ChangeMaterial(const Graphics::GraphicsEntityId id, IndexT node, c
     NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
 
     auto sortCode = Materials::MaterialGetSortCode(material);
-    assert(sortCode < 0xFFF0000000000000);
+    n_assert(sortCode < 0xFFF0000000000000);
     uint64_t sortId = ((uint64_t)sortCode << 52);
     NodeInstances.renderable.nodeSortId[index] = sortId;
 }
@@ -670,7 +670,7 @@ ModelContext::ChangeMaterialOnModels(const Models::ModelId mdlId, IndexT node, c
             NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(material);
 
             auto sortCode = Materials::MaterialGetSortCode(material);
-            assert(sortCode < 0xFFF0000000000000);
+            n_assert(sortCode < 0xFFF0000000000000);
             uint64_t sortId = ((uint64_t)sortCode << 52);
             NodeInstances.renderable.nodeSortId[index] = sortId;
         }
