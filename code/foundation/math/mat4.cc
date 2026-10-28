@@ -151,7 +151,7 @@ mat4
 affine(const vec3& scale, const vec3& rotation, const vec3& translation)
 {
     // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
-    mat4 m = rotationyawpitchroll(rotation.y, rotation.x, rotation.z);
+    mat4 m = rotationpitchyawroll(rotation.x, rotation.y, rotation.z);
     m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
     m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
     m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);

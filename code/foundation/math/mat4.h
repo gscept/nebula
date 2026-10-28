@@ -1120,9 +1120,9 @@ rotationz(scalar angle)
 /**
 */
 __forceinline mat4
-rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
+rotationpitchyawroll(scalar pitch, scalar yaw, scalar roll)
 {
-    quat q = quatyawpitchroll(yaw, pitch, roll);
+    quat q = quatpitchyawroll(pitch, yaw, roll);
     return rotationquat(q);
 }
 

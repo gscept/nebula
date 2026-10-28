@@ -60,7 +60,7 @@ rotationmatrix(const mat4& m)
 /**
 */
 quat
-quatyawpitchroll(scalar y, scalar x, scalar z)
+quatpitchyawroll(scalar x, scalar y, scalar z)
 {
     float cx = cos(x * 0.5f);
     float sx = sin(x * 0.5f);
@@ -110,7 +110,7 @@ to_euler(const quat& q)
 quat
 from_euler(const vec3& v)
 {
-    return quatyawpitchroll(v.y, v.x, v.z);
+    return quatpitchyawroll(v.x, v.y, v.z);
 }
 
 } // namespace Math

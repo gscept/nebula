@@ -106,7 +106,7 @@ Transform::GetTransform44() const
 {
     Math::transform44 t;
     t.setposition(position);
-    t.setrotate(Math::quatyawpitchroll(rotation.y, rotation.x, rotation.z));
+    t.setrotate(Math::quatpitchyawroll(rotation.x, rotation.y, rotation.z));
     t.setscale(scale);
     t.setrotatepivot(rotatePivot.vec);
     t.setscalepivot(scalePivot.vec);

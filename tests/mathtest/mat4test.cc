@@ -345,14 +345,14 @@ Mat4Test::Run()
                                   vec4(1.078125f, 0.707031f, -1.001001f, -1.0f),
                                   vec4(     0.0f,      0.0f, -1.001001f,  0.0f))));
 
-    // rotationyawpitchroll
-    tmp = rotationyawpitchroll(1.0f, -0.462f, 3.036f);
+    // rotationpitchyawroll
+    tmp = rotationpitchyawroll(-0.462f, 1.0f, 3.036f);
     VERIFY(matnearequal(tmp, mat4(vec4(-0.537292838, 0.0569459870, -0.841470957, 0.0f),
                                   vec4(0.278640598, -0.929708600, -0.240833968, 0.0f),
                                   vec4(-0.796037436, -0.363866359, 0.483658552, 0.0f),
                                   vec4(      0.0f,       0.0f,      0.0f, 1.0f))));
 
-    tmp = rotationyawpitchroll(-7.0f, 3.0f, -2.0f);
+    tmp = rotationpitchyawroll(3.0f, -7.0f, -2.0f);
     VERIFY(matnearequal(tmp, mat4(vec4(-0.313734174, -0.685521364, 0.656986594, 0.000000f),
                                   vec4(-0.861614943, 0.496286869, 0.106390685, 0.000000f),
                                   vec4(-0.398986936, -0.532691121, -0.746357560, 0.000000f),

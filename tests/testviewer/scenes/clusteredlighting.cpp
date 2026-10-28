@@ -111,7 +111,7 @@ void OpenScene()
                     .castShadows = true
                 }
             );
-            Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
+            Lighting::LightContext::SetRotation(id, Math::quatpitchyawroll(0, 0, 0));
             Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
             spotLights.Append(id);
         }
@@ -150,7 +150,7 @@ void OpenScene()
                 }
             );
             Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
-            Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
+            Lighting::LightContext::SetRotation(id, Math::quatpitchyawroll(0, 0, 0));
             Lighting::LightContext::SetScale(id, Math::vector(shape == Lighting::LightContext::AreaLightShape::Disk ? 3.0f : 2.0f, 3.0f, 1.0f));
             areaLights.Append(id);
         }
@@ -166,7 +166,7 @@ void OpenScene()
             int index = (j + NumDecals) + (i + NumDecals) * NumDecals * 2;
             entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
-            transform = Math::rotationyawpitchroll(0, Math::deg2rad(90), Math::deg2rad(Math::rand() * 90.0f)) * transform;
+            transform = Math::rotationpitchyawroll(Math::deg2rad(90), 0, Math::deg2rad(Math::rand() * 90.0f)) * transform;
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
@@ -195,7 +195,7 @@ void OpenScene()
             int index = (j + NumFogVolumes) + (i + NumFogVolumes) * NumFogVolumes * 2;
             entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
-            transform = Math::rotationyawpitchroll(Math::deg2rad(Math::rand() * 90.0f), 0, 0) * transform;
+            transform = Math::rotationpitchyawroll(0, Math::deg2rad(Math::rand() * 90.0f), 0) * transform;
             transform.position = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
 
             const float red = Math::rand();
@@ -312,7 +312,7 @@ void StepFrame()
     for (i = 0; i < spotLights.Size(); i++)
     {
         Math::mat4 spotLightTransform;
-        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
+        spotLightTransform = Math::rotationpitchyawroll(Math::deg2rad(-55), Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, 0);
         spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
@@ -320,7 +320,7 @@ void StepFrame()
     for (i = 0; i < decals.Size(); i++)
     {
         Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
-        decalTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::deg2rad(90), 0) * decalTransform;
+        decalTransform = Math::rotationpitchyawroll(Math::deg2rad(90), Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, 0) * decalTransform;
         decalTransform.position = Decals::DecalContext::GetTransform(decals[i]).position;
         //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
