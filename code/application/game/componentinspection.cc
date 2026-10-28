@@ -396,8 +396,34 @@ ComponentDrawFuncT<Game::Orientation>(Game::Entity owner, ComponentId component,
     ImGui::Text("Orientation");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::DragFloat4("##orient", (float*)data, 0.01f))
-        *commit = true;
+
+    static bool showQuaternion = false;
+
+    if (showQuaternion)
+    {
+        if (ImGui::DragFloat4("##orient", (float*)data, 0.01f))
+            *commit = true;
+    }
+    else
+    {
+        // The component holds a quaternion, so the angles are converted on the way in and back on the way out.
+        // They are shown in degrees, because that is what an editor shows
+        Math::quat q;
+        q.loadu((float*)data);
+        Math::vec3 euler = Math::to_euler(q);
+        float angles[3] = { Math::rad2deg(euler.x), Math::rad2deg(euler.y), Math::rad2deg(euler.z) };
+
+        if (ImGui::DragFloat3("##euler", angles, 1.0f))
+        {
+            Math::vec3 rad(Math::deg2rad(angles[0]), Math::deg2rad(angles[1]), Math::deg2rad(angles[2]));
+            *(Math::quat*)data = Math::from_euler(rad);
+            *commit = true;
+        }
+    }
+
+    ImGui::SameLine();
+    ImGui::Checkbox("Quaternion", &showQuaternion);
+
     ImGui::PopID();
 }
 

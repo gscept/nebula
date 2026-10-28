@@ -79,27 +79,38 @@ quatyawpitchroll(scalar y, scalar x, scalar z)
 
 //------------------------------------------------------------------------------
 /**
+    The angles around the X, Y and Z axes that the quaternion represents. The inverse of from_euler().
 */
 vec3
 to_euler(const quat& q)
 {
-    float q0 = q.x;
-    float q1 = q.y;
-    float q2 = q.z;
-    float q3 = q.w;
-    float x = atan2f(2.0f * (q0 * q1 + q2 * q3), 1.0f - 2.0f * (q1 * q1 + q2 * q2));
-    float y = asinf(2.0f * (q0 * q2 - q3 * q1));
-    float z = atanf((2.0f * (q0 * q3 + q1 * q2)) / (1.0f - 2.0f * (q2 * q2 + q3 * q3)));
-    return vec3(x, y, z);
+    float w = q.w;
+    float x = q.x;
+    float y = q.y;
+    float z = q.z;
+
+    // asinf() only answers for an argument inside [-1, 1], and a quaternion can round just outside of it
+    float yArg = 2.0f * (w * y - z * x);
+    if (yArg > 1.0f)
+        yArg = 1.0f;
+    else if (yArg < -1.0f)
+        yArg = -1.0f;
+
+    float xAngle = atan2f(2.0f * (w * x + y * z), 1.0f - 2.0f * (x * x + y * y));
+    float yAngle = asinf(yArg);
+    float zAngle = atan2f(2.0f * (w * z + x * y), 1.0f - 2.0f * (y * y + z * z));
+
+    return vec3(xAngle, yAngle, zAngle);
 }
 
 //------------------------------------------------------------------------------
 /**
+    The quaternion for the angles around the X, Y and Z axes. The inverse of to_euler().
 */
 quat
 from_euler(const vec3& v)
 {
-    return quatyawpitchroll(v.x,v.y,v.z);
+    return quatyawpitchroll(v.y, v.x, v.z);
 }
 
 } // namespace Math
