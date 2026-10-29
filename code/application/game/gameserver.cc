@@ -40,7 +40,7 @@ GameServer::~GameServer()
     _discard_timer(GameServerOnEndFrame);
     _discard_timer(GameServerManageEntities);
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -70,7 +70,7 @@ GameServer::Open()
         this->gameFeatures[i]->OnActivate();
     }
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -143,7 +143,7 @@ GameServer::Start()
     n_assert(!this->isStarted);
 
     // prefilter all worlds
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -156,7 +156,7 @@ GameServer::Start()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -192,7 +192,7 @@ GameServer::Stop()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -239,7 +239,7 @@ GameServer::OnBeginFrame()
 
     N_MARKER_BEGIN(WorldPrefilterProcessors, Game)
     // check if caches are valid
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -249,7 +249,7 @@ GameServer::OnBeginFrame()
     N_MARKER_END()
 
     N_MARKER_BEGIN(WorldBeginFrame, Game)
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -289,7 +289,7 @@ GameServer::OnFrame()
         N_MARKER_END();
     }
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -324,7 +324,7 @@ GameServer::OnEndFrame()
         N_MARKER_END();
     }
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -339,7 +339,7 @@ GameServer::OnEndFrame()
 
     n_assert(GameServer::HasInstance());
     N_MARKER_BEGIN(ManageEntities, Game);
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -360,7 +360,7 @@ GameServer::OnEndFrame()
     N_MARKER_END();
 
     N_MARKER_BEGIN(DecayWorlds, Game);
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -384,7 +384,7 @@ GameServer::NotifyBeforeLoad()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -405,7 +405,7 @@ GameServer::NotifyBeforeCleanup()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -426,7 +426,7 @@ GameServer::NotifyGameLoad()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -435,7 +435,7 @@ GameServer::NotifyGameLoad()
         }
     }
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -458,7 +458,7 @@ GameServer::NotifyGameSave()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
         {
             if (this->state.worlds[worldIndex] != nullptr)
             {
@@ -467,7 +467,7 @@ GameServer::NotifyGameSave()
         }
     }
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
@@ -549,14 +549,26 @@ GameServer::CleanupWorld(World* world)
 World*
 GameServer::CreateWorld(WorldHash hash)
 {
-    WorldId newWorldId = (WorldId)this->state.numWorlds;
-    this->state.worldTable.Add(hash, this->state.numWorlds);
+    n_assert(this->state.numWorlds < MaxWorlds);
 
-    // The hardcoded max is actually 256 worlds (entity.world is 8 bit), so this could be upped a bit if needed.
-    n_assert(this->state.numWorlds < 32);
+    // A world id is the slot the world lives in, so a slot that has been emptied can be taken again.
+    // Without this, opening and closing a world would cost a slot for the rest of the session
+    IndexT slot = InvalidIndex;
+    for (IndexT i = 0; i < (IndexT) MaxWorlds; i++)
+    {
+        if (this->state.worlds[i] == nullptr)
+        {
+            slot = i;
+            break;
+        }
+    }
+    n_assert(slot != InvalidIndex);
 
-    World*& world = this->state.worlds[this->state.numWorlds++];
-    world = new World(hash, newWorldId);
+    this->state.worldTable.Add(hash, (WorldId) slot);
+
+    World*& world = this->state.worlds[slot];
+    world = new World(hash, (WorldId) slot);
+    this->state.numWorlds++;
     return world;
 }
 
@@ -580,8 +592,7 @@ GameServer::GetWorld(WorldId worldId)
 
 //------------------------------------------------------------------------------
 /**
-    @note   The world index does not get recycled.
-    @todo   The world index should probably be recycled.
+    The slot the world was in becomes free, which is what CreateWorld picks up on the next call.
 */
 void
 GameServer::DestroyWorld(WorldHash worldHash)
@@ -590,6 +601,7 @@ GameServer::DestroyWorld(WorldHash worldHash)
     delete this->state.worlds[index];
     this->state.worlds[index] = nullptr;
     this->state.worldTable.Erase(worldHash);
+    this->state.numWorlds--;
 }
 
 } // namespace Game
