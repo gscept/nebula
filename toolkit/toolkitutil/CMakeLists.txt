@@ -115,6 +115,11 @@ fips_begin_lib(toolkitutil)
                 assetprocessorbase.cc
                 assetprocessorbase.h
             )
+        fips_dir(assetdb)
+            fips_files(
+                assetdb.h
+                assetdb.cc
+            )
         fips_dir(filedb)
             fips_files(
                 filedbattrs.cc
