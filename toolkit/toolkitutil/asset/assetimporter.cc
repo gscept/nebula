@@ -77,6 +77,8 @@ SetupTextureImportSettingsFromPath(const IO::URI& file)
         texture.container = ToolkitUtil::TextureContainer_PNG;
     else if (ext == "exr")
         texture.container = ToolkitUtil::TextureContainer_EXR;
+    else if (ext == "tif" || ext == "tiff")
+        texture.container = ToolkitUtil::TextureContainer_TIF;
     else if (ext == "cube")
         texture.container = ToolkitUtil::TextureContainer_CUBE;
 

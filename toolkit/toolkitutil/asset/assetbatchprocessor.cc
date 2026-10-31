@@ -82,7 +82,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         ToolkitUtil::ImportGLTF(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger, force);
     }
 
-    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds"))
+    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds" || ext == "tif" || ext == "tiff"))
     {
         ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
         ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture, this->logger);
@@ -271,8 +271,10 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
             file.GetFileExtension() == "jpeg" || 
             file.GetFileExtension() == "tga" || 
             file.GetFileExtension() == "dds" || 
-            file.GetFileExtension() == "exr" || 
-            file.GetFileExtension() == "bmp")
+            file.GetFileExtension() == "exr" ||
+            file.GetFileExtension() == "bmp" ||
+            file.GetFileExtension() == "tif" ||
+            file.GetFileExtension() == "tiff")
         {
             imageFiles.Append(file);
         }

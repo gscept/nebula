@@ -153,7 +153,7 @@ AssetImporterWindow::Run(SaveMode save)
             loadAssetFlags(Destination, file, gltfSettings);
             GltfFiles.Append({ file, gltfSettings });
         }
-        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "cube")
+        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" || ext == "dds" || ext == "exr" || ext == "tif" || ext == "tiff" || ext == "cube")
         {
             ToolkitUtil::TextureResourceT textureSettings;
 

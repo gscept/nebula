@@ -1,0 +1,166 @@
+From e57a7b1249251141d82f187dcd54e3e2c4a6e152 Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:34:04 +0100
+Subject: [PATCH 6/8] Add -OutputSRGB to write sRGB DDS formats
+
+There was no way to get sRGB DXGI formats out of the CLI: CMP_FORMAT has
+no sRGB BC variants and the DDS writer only produced *_UNORM formats, so
+sRGB textures lost their color space (BC7 was written as BC7_UNORM, BC1-3
+with legacy FourCC headers that can't express sRGB at all).
+
+-OutputSRGB (CMP_CompressOptions::outputSRGB) marks the output mip set
+with the new MS_FLAG_sRGB. The DDS writer then uses a DX10 header with
+BC1/BC2/BC3/BC7_UNORM_SRGB or R8G8B8A8_UNORM_SRGB. Formats without an
+sRGB variant are written as before.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ applications/_plugins/cimage/dds/dds_dx10.cpp | 36 +++++++++++++++++++
+ .../_plugins/cimage/dds/dds_helpers.cpp       |  4 +--
+ .../_plugins/cimage/dds/dds_helpers.h         |  1 +
+ applications/_plugins/common/cmdline.cpp      |  5 +++
+ applications/_plugins/common/textureio.cpp    |  4 +++
+ .../source/compressonatorcli.cpp              |  2 ++
+ cmp_compressonatorlib/compressonator.h        |  2 ++
+ 7 files changed, 52 insertions(+), 2 deletions(-)
+
+diff --git a/applications/_plugins/cimage/dds/dds_dx10.cpp b/applications/_plugins/cimage/dds/dds_dx10.cpp
+index 76fb7f4..3a947fd 100644
+--- a/applications/_plugins/cimage/dds/dds_dx10.cpp
++++ b/applications/_plugins/cimage/dds/dds_dx10.cpp
+@@ -387,8 +387,44 @@ TC_PluginError LoadDDS_DX10_FourCC(FILE* pFile, DDSD2* pDDSD, MipSet* pMipSet, C
+     return GenericLoadFunction(pFile, pDDSD, pMipSet, extra, CF_Compressed, TDT_XRGB, PreLoopFourCC, LoopFourCC, PostLoopFourCC);
+ }
+ 
++static DXGI_FORMAT GetSRGBDXGIFormat(const MipSet* pMipSet)
++{
++    if (!(pMipSet->m_Flags & MS_FLAG_sRGB))
++        return DXGI_FORMAT_UNKNOWN;
++
++    switch (pMipSet->m_format)
++    {
++    case CMP_FORMAT_BC1:
++    case CMP_FORMAT_DXT1:
++        return DXGI_FORMAT_BC1_UNORM_SRGB;
++    case CMP_FORMAT_BC2:
++    case CMP_FORMAT_DXT3:
++        return DXGI_FORMAT_BC2_UNORM_SRGB;
++    case CMP_FORMAT_BC3:
++    case CMP_FORMAT_DXT5:
++        return DXGI_FORMAT_BC3_UNORM_SRGB;
++    case CMP_FORMAT_BC7:
++        return DXGI_FORMAT_BC7_UNORM_SRGB;
++    case CMP_FORMAT_RGBA_8888:
++    case CMP_FORMAT_ARGB_8888:
++        // 8-bit RGBA is stored as R, G, B, A in memory
++        return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
++    default:
++        return DXGI_FORMAT_UNKNOWN;
++    }
++}
++
++bool IsSRGBDX10Format(const MipSet* pMipSet)
++{
++    return GetSRGBDXGIFormat(pMipSet) != DXGI_FORMAT_UNKNOWN;
++}
++
+ DXGI_FORMAT GetDXGIFormat(const MipSet* pMipSet)
+ {
++    DXGI_FORMAT srgbFormat = GetSRGBDXGIFormat(pMipSet);
++    if (srgbFormat != DXGI_FORMAT_UNKNOWN)
++        return srgbFormat;
++
+     if (pMipSet->m_dwFourCC == CMP_FOURCC_DX10)
+     {
+         switch (pMipSet->m_format)
+diff --git a/applications/_plugins/cimage/dds/dds_helpers.cpp b/applications/_plugins/cimage/dds/dds_helpers.cpp
+index 0d7a26d..22a3bb9 100644
+--- a/applications/_plugins/cimage/dds/dds_helpers.cpp
++++ b/applications/_plugins/cimage/dds/dds_helpers.cpp
+@@ -65,8 +65,8 @@ bool IsD3D10Format(const MipSet* pMipSet)
+ 
+     if (pMipSet->m_dwFourCC == CMP_FOURCC_DX10)
+         return true;
+-    else
+-        return false;
++    // sRGB can only be expressed with a DX10 header
++    return IsSRGBDX10Format(pMipSet);
+ }
+ 
+ void DetermineTextureType(const DDSD2* pDDSD, MipSet* pMipSet)
+diff --git a/applications/_plugins/cimage/dds/dds_helpers.h b/applications/_plugins/cimage/dds/dds_helpers.h
+index da9375f..b25f4c3 100644
+--- a/applications/_plugins/cimage/dds/dds_helpers.h
++++ b/applications/_plugins/cimage/dds/dds_helpers.h
+@@ -64,6 +64,7 @@ TC_PluginError GenericLoadFunction(FILE*&           pFile,
+                                    PostLoopFunction fnPostLoop);
+ 
+ bool           IsD3D10Format(const MipSet* pMipSet);
++bool           IsSRGBDX10Format(const MipSet* pMipSet);
+ void           DetermineTextureType(const DDSD2* pDDSD, MipSet* pMipSet);
+ TC_PluginError GenericLoadFunction(FILE*&           pFile,
+                                    DDSD2*&          pDDSD,
+diff --git a/applications/_plugins/common/cmdline.cpp b/applications/_plugins/common/cmdline.cpp
+index 4470484..74930e0 100644
+--- a/applications/_plugins/common/cmdline.cpp
++++ b/applications/_plugins/common/cmdline.cpp
+@@ -358,6 +358,11 @@ static bool ProcessSingleFlags(const char* strCommand)
+         isSet                                    = true;
+     }
+ #endif
++    else if ((strcmp(strCommand, "-OutputSRGB") == 0))
++    {
++        g_CmdPrams.CompressOptions.outputSRGB = true;
++        isSet                                 = true;
++    }
+     else if (strcmp(strCommand, "-UseMangledFileNames") == 0)
+     {
+         g_CmdPrams.mangleFileNames = true;
+diff --git a/applications/_plugins/common/textureio.cpp b/applications/_plugins/common/textureio.cpp
+index 1ff6d30..f9e0987 100644
+--- a/applications/_plugins/common/textureio.cpp
++++ b/applications/_plugins/common/textureio.cpp
+@@ -755,6 +755,10 @@ int AMDSaveMIPSTextureImage(const char* DestFile, MipSet* MipSetIn, bool use_OCV
+     {
+         plugin_Image->TC_PluginSetSharedIO(&m_CMIPS);
+ 
++        // image plugins that can express sRGB (DDS) write it to the file
++        if (option.outputSRGB)
++            MipSetIn->m_Flags |= MS_FLAG_sRGB;
++
+         bool holdswizzle = MipSetIn->m_swizzle;
+ 
+         if (destExtension.compare("TGA") == 0)
+diff --git a/applications/compressonatorcli/source/compressonatorcli.cpp b/applications/compressonatorcli/source/compressonatorcli.cpp
+index 8b72f5b..6560c99 100644
+--- a/applications/compressonatorcli/source/compressonatorcli.cpp
++++ b/applications/compressonatorcli/source/compressonatorcli.cpp
+@@ -144,6 +144,8 @@ void PrintUsage()
+     printf("-miplevels  <Level>       Sets Mips Level for output, range is 1 to 20\n");
+     printf("                          (mipSize overides this option): default is 1\n");
+     printf("-FilterGamma <value>      A gamma correction level to apply after mipmap generation, in the range 1.0 to 2.6\n");
++    printf("-OutputSRGB               Mark the output as sRGB: DDS files are written with a DX10 header and the\n");
++    printf("                          _SRGB format for BC1, BC2, BC3, BC7 and 8-bit RGBA\n");
+ #ifdef _WIN32
+     printf("-GenGPUMipMaps            When encoding with GPU this flag will enable mipmap level generation\n");
+     printf("                          using GPU HW. Default level is 1 unless miplevels is set\n");
+diff --git a/cmp_compressonatorlib/compressonator.h b/cmp_compressonatorlib/compressonator.h
+index b78cdd9..69584ae 100644
+--- a/cmp_compressonatorlib/compressonator.h
++++ b/cmp_compressonatorlib/compressonator.h
+@@ -344,6 +344,7 @@ struct KernelOptions
+ #define MS_FLAG_Default 0x0000
+ #define MS_FLAG_AlphaPremult 0x0001
+ #define MS_FLAG_DisableMipMapping 0x0002
++#define MS_FLAG_sRGB 0x0004  // the color data is sRGB encoded, written to formats that can express it (DDS DX10)
+ #define AMD_MAX_CMDS 20
+ #define AMD_MAX_CMD_STR 32
+ #define AMD_MAX_CMD_PARAM 16
+@@ -491,6 +492,7 @@ typedef struct
+     CMP_BOOL genGPUMipMaps;  // When ecoding with GPU HW use it to generate MipMap images, valid only when miplevels is set else default is toplevel 1
+     CMP_BOOL useSRGBFrames;  // when using GPU HW for encoding and mipmap generation use SRGB frames, default is RGB
+     CMP_INT  miplevels;      // miplevels to use when GPU is used to generate them
++    CMP_BOOL outputSRGB;     // mark the output as sRGB, DDS files are written with *_SRGB DX10 formats where one exists
+ } CMP_CompressOptions;
+ 
+ //===================================

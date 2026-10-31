@@ -35,7 +35,7 @@ GetConverterFormatString(ToolkitUtil::TextureResourceT const* texture)
 {
     switch (texture->target_format)
     {
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return "DXT1";
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC1: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC1_UNORM_SRGB" : "BC1_UNORM";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC2: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC2_UNORM_SRGB" : "BC2_UNORM";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC3: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC3_UNORM_SRGB" : "BC3_UNORM";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC5: return "BC5_UNORM";
@@ -73,8 +73,8 @@ GetConverterFormatString(ToolkitUtil::TextureResourceT const* texture)
 
 //------------------------------------------------------------------------------
 /**
-    Path to the compressonatorcli launcher script, can be overridden with
-    the NEBULA_COMPRESSONATORCLI environment variable
+    Path to the compressonatorcli executable (built by toolkit/scripts/compressonator),
+    can be overridden with the NEBULA_COMPRESSONATORCLI environment variable
 */
 static IO::URI
 GetConverterToolPath()
@@ -83,7 +83,7 @@ GetConverterToolPath()
     {
         return System::Environment::Read("NEBULA_COMPRESSONATORCLI");
     }
-    return Util::Format("toolkit:bin/%s/compressonatorcli/compressonatorcli", System::PlatformTypeAsString(System::Platform));
+    return Util::Format("toolkit:bin/%s/compressonatorcli", System::PlatformTypeAsString(System::Platform));
 }
 #endif
 
@@ -187,6 +187,12 @@ ConvertTexture(const TextureConversionInfo& info)
     args.Append(" -NumThreads 0 ");
     // the linux build has no gpu encoders, HPC is the fastest available
     args.Append(" -EncodeWith HPC ");
+
+    if (info.texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB)
+    {
+        // writes BC1/BC2/BC3/BC7 and RGBA8 as *_SRGB DX10 formats (Nebula patch, see toolkit/scripts/compressonator)
+        args.Append(" -OutputSRGB ");
+    }
 
     String dstName = srcPathUri.LocalPath().ExtractFileName();
     dstName.StripFileExtension();
