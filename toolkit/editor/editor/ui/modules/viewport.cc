@@ -124,6 +124,9 @@ Viewport::Render()
 {
     if (ImGui::BeginMenuBar())
     {
+        ImVec2 padding = ImGui::GetStyle().WindowPadding;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding + ImVec2(4, 4));
+
         if (ImGui::BeginMenu("    Camera    "))
         {
             if (ImGui::MenuItem(
@@ -306,6 +309,7 @@ Viewport::Render()
         ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - textSize.x - fpsTextSize.x - 100, 0));
         ImGui::Text(cameraPosStr.AsCharPtr());
 
+        ImGui::PopStyleVar();
         ImGui::EndMenuBar();
     }
 
