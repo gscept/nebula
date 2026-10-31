@@ -42,7 +42,8 @@ GetConverterFormatString(ToolkitUtil::TextureResourceT const* texture)
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC6H: return "BC6H_UF16";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_BC7: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "BC7_UNORM_SRGB" : "BC7_UNORM";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8A8: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "R8G8B8A8_UNORM_SRGB" : "R8G8B8A8_UNORM";
-        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "R8G8B8_UNORM_SRGB" : "R8G8B8_UNORM";
+        // DXGI has no 24 bit format, widen to RGBA
+        case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R8G8B8: return texture->color_space == ToolkitUtil::TextureColorSpace::TextureColorSpace_sRGB ? "R8G8B8A8_UNORM_SRGB" : "R8G8B8A8_UNORM";
         case ToolkitUtil::TexturePixelFormat::TexturePixelFormat_R16: return "R16_UNORM";
     }
     return "BC7_UNORM";
@@ -99,12 +100,7 @@ ConvertTexture(const TextureConversionInfo& info)
     URI dstPathUri(info.destPath);
     URI tmpDirUri(info.tmpDir);
 
-    String args = "";
-    if (info.cube)
-    {
-        args.Append("cube ");
-    }
-    args.Append(" -y -sepalpha -dx10 -nologo -timing ");
+    String args = " -y -sepalpha -dx10 -nologo -timing ";
     if (info.texture->compression_quality == ToolkitUtil::TextureCompressionQuality::TextureCompressionQuality_High)
     {
         args.Append(" -bc x ");
@@ -156,11 +152,6 @@ ConvertTexture(const TextureConversionInfo& info)
 #else
     IO::IoServer::Instance()->CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
-
-    if (info.cube)
-    {
-        info.logger->Warning("compressonatorcli can't assemble cube maps, converting '%s' as a 2D texture\n", srcPathUri.LocalPath().AsCharPtr());
-    }
 
     String args = " -noprogress -silent ";
     args.Append(" -fd ");

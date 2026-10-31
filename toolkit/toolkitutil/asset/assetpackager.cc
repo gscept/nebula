@@ -360,8 +360,8 @@ PackageTexture(
         IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr(), platformExtension.AsCharPtr());
         output.SetScheme("safefile");
 
+        // cube maps (CUBE) are DDS cube textures, both converters keep them as cubes
         TextureConversionInfo info;
-        info.cube = tex->container == ToolkitUtil::TextureContainer_CUBE;
         info.logger = logger;
         info.destPath = destinationFolder.LocalPath();
         info.sourcePath = tmpFile;
