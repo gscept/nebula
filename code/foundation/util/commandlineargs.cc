@@ -51,6 +51,12 @@ CommandLineArgs::ParseIntoGroups(const Array<String>& tokenized)
 	Array<String> pair;
 	for (const String& arg : tokenized)
 	{
+		// keep empty arguments (-dir ""), Tokenize drops them and the next argument would become the value
+		if (arg.IsEmpty())
+		{
+			this->args.Append(arg);
+			continue;
+		}
 		arg.Tokenize("=", '"', pair);
 		if (pair.Size() == 2)
 		{

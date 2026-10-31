@@ -26,7 +26,6 @@ struct TextureConversionInfo
     Util::String tmpDir;
     Util::String sourcePath;
     Util::String destPath;
-    bool cube;
     Logger* logger;
 };
 bool ConvertTexture(const TextureConversionInfo& info);

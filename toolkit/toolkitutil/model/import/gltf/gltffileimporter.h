@@ -27,6 +27,10 @@ public:
     /// Parse the FBX scene data
     bool ParseScene(ToolkitUtil::ImportFlags importFlags, float scale) override;
 
+protected:
+    /// also checks the external buffers and images referenced by the gltf
+    bool NeedsConversion(const Util::String& path) override;
+
 private:
 
     Gltf::Document gltfScene;

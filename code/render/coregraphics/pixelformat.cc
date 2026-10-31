@@ -34,6 +34,7 @@ PixelFormat::FromString(const Util::String& str)
     else if (str == "DXT5 sRGB") return DXT5sRGB;
     else if (str == "BC4") return BC4;
     else if (str == "BC6H") return BC6H;
+    else if (str == "BC6H unsigned") return BC6HU;
     else if (str == "BC7") return BC7;
     else if (str == "BC7 sRGB") return BC7sRGB;
     else if (str == "R8") return R8;
@@ -96,6 +97,7 @@ PixelFormat::ToString(PixelFormat::Code code)
         case BC4:           return "BC4";
         case BC5:           return "BC5";
         case BC6H:          return "BC6H";
+        case BC6HU:         return "BC6H unsigned";
         case BC7:           return "BC7";
         case BC7sRGB:       return "BC7 sRGB";
         case R8:            return "R8";
@@ -182,6 +184,7 @@ PixelFormat::ToSize(Code code)
     case BC5:
         return 2;
     case BC6H:
+    case BC6HU:
         return 8;
     case BC7:
     case BC7sRGB:
@@ -227,6 +230,7 @@ PixelFormat::ToChannels(Code code)
     case BC4:           return 1;
     case BC5:           return 2;
     case BC6H:          return 3;
+    case BC6HU:         return 3;
     case BC7:           return 4;
     case BC7sRGB:       return 4;
     case R8:            return 1;
@@ -276,6 +280,7 @@ PixelFormat::ToCompressed(Code code)
     case BC4:
     case BC5:
     case BC6H:
+    case BC6HU:
     case BC7:
     case BC7sRGB:       
         return true;
@@ -310,6 +315,7 @@ PixelFormat::ToTexelSize(Code code)
         case PixelFormat::BC4:              return 8;
         case PixelFormat::BC5:              return 16;
         case PixelFormat::BC6H:             return 16;
+        case PixelFormat::BC6HU:            return 16;
         case PixelFormat::BC7:              return 16;
         case PixelFormat::BC7sRGB:          return 16;
         case PixelFormat::R8:               return 1;
@@ -359,6 +365,7 @@ PixelFormat::ToBlockSize(Code code)
         case PixelFormat::DXT5sRGB: 
         case PixelFormat::BC4:
         case PixelFormat::BC6H:      
+        case PixelFormat::BC6HU:
         case PixelFormat::BC5:      
         case PixelFormat::BC7:      
         case PixelFormat::BC7sRGB:
@@ -427,6 +434,31 @@ PixelFormat::IsDepthStencilFormat(Code code)
             return false;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PixelFormat::IsHighDynamicRange(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::BC6H:
+        case PixelFormat::BC6HU:
+        case PixelFormat::R16F:
+        case PixelFormat::R16G16F:
+        case PixelFormat::R16G16B16A16F:
+        case PixelFormat::R32F:
+        case PixelFormat::R32G32F:
+        case PixelFormat::R32G32B32F:
+        case PixelFormat::R32G32B32A32F:
+        case PixelFormat::R11G11B10F:
+        case PixelFormat::R9G9B9E5F:
+            return true;
+        default:
+            return false;
+    }
 }
 
 

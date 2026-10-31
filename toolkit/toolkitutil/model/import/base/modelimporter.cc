@@ -252,28 +252,19 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
 bool
 ModelImporter::NeedsConversion(const Util::String& path)
 {
-    Util::String category = path.ExtractLastDirName();
+    // the import writes a single .nasset, along with the materials and textures extracted at the same time
+    return AssetProcessorBase::NeedsConversion(path, this->GetOutputAssetPath(path));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+ModelImporter::GetOutputAssetPath(const Util::String& path) const
+{
     Util::String file = path.ExtractFileName();
     file.StripFileExtension();
-
-    // Check if any of the output files are old
-    Util::String model = "src:assets/" + category + "/" + file + ".namdl";
-    Util::String physModel = "src:assets/" + category + "/" + file + ".actor";
-    Util::String mesh = "src:assets/" + category + "/" + file + ".namsh";
-    Util::String physMesh = "src:assets/" + category + "/" + file + "_ph.namsh";
-    Util::String animation = "src:assets/" + category + "/" + file + ".naani";    
-
-    // check if fbx is newer than model
-    bool sourceNewer = AssetProcessorBase::NeedsConversion(path, model);
-
-    // ...if the mesh is newer
-    bool meshNewer = AssetProcessorBase::NeedsConversion(path, mesh);
-
-    // check if physics settings were changed. no way to tell if we have a new physics mesh in it, so we just export it anyway
-    bool physicsMeshNewer = AssetProcessorBase::NeedsConversion(path, physMesh);
-
-    // return true if either is true
-    return sourceNewer || meshNewer || physicsMeshNewer;
+    return Util::String::Sprintf("%s/%s.nasset", this->sourceDir.AsCharPtr(), file.AsCharPtr());
 }
 
 } // namespace ToolkitUtil

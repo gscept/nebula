@@ -252,12 +252,9 @@ PosixFSWrapper::GetIOInfo(const IO::URI& path, IO::IOStat& outInfo)
         return false;
     }
     outInfo.size = s.st_size;
-    outInfo.accessTime.time.tv_sec = s.st_atime;
-    outInfo.accessTime.time.tv_nsec = 0;
-    outInfo.modifiedTime.time.tv_sec = s.st_mtime;
-    outInfo.modifiedTime.time.tv_nsec = 0;
-    outInfo.creationTime.time.tv_sec = s.st_ctime;
-    outInfo.creationTime.time.tv_nsec = 0;
+    outInfo.accessTime.time = s.st_atim;
+    outInfo.modifiedTime.time = s.st_mtim;
+    outInfo.creationTime.time = s.st_ctim;
     return true;
 }
 
@@ -416,8 +413,7 @@ PosixFSWrapper::GetFileWriteTime(const String& path)
     int r = stat(path.AsCharPtr(), &s);
     if (0 == r)
     {
-        fileTime.time.tv_sec = s.st_mtime;
-        fileTime.time.tv_nsec = 0;
+        fileTime.time = s.st_mtim;
     }
     return fileTime;
 }
@@ -560,7 +556,7 @@ PosixFSWrapper::GetUserDirectory()
 String
 PosixFSWrapper::GetTempDirectory()
 {
-    return String("file:///tmp/");
+    return String("file:////tmp/");
 }
 
 //------------------------------------------------------------------------------

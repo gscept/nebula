@@ -195,6 +195,7 @@ struct ImguiState
     IndexT packedTextureInfo;
     IndexT rangeMinConstant;
     IndexT rangeMaxConstant;
+    IndexT exposureConstant;
     IndexT colorMaskConstant;
     CoreGraphics::ResourceTableId resourceTable;
     //Ptr<CoreGraphics::BufferLock> vboBufferLock;
@@ -362,6 +363,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint splat : 1;
         uint id : 11;
         uint pointFilter : 1;
+        uint tonemap : 1;
     };
 
     union ColorMask
@@ -432,6 +434,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 Util::StringAtom name = CoreGraphics::TextureGetName(tex.nebulaHandle);
                 CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(tex.nebulaHandle);
                 texInfo.splat |= CoreGraphics::PixelFormat::ToChannels(format) == 1 ? 1 : 0;
+                texInfo.tonemap = tex.tonemap && CoreGraphics::PixelFormat::IsHighDynamicRange(format);
                 auto usage = CoreGraphics::TextureGetUsage(tex.nebulaHandle);
                 if (HasFlags(usage, CoreGraphics::TextureUsage::Render) || HasFlags(usage, CoreGraphics::TextureUsage::ReadWrite))
                 {
@@ -445,6 +448,11 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 if (dims.depth > 1)
                 {
                     texInfo.type = 2;
+                }
+                // cubes are bound as cubes, the layer picks the face
+                if (CoreGraphics::TextureGetType(tex.nebulaHandle) == CoreGraphics::TextureCube)
+                {
+                    texInfo.type = 3;
                 }
                 texInfo.layer = tex.layer;
                 texInfo.mip = tex.mip;
@@ -462,6 +470,10 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 {
                     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.rangeMinConstant, sizeof(float), &tex.rangeMin);
                     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.rangeMaxConstant, sizeof(float), &tex.rangeMax);
+                }
+                if (texInfo.tonemap)
+                {
+                    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.exposureConstant, sizeof(float), &tex.exposure);
                 }
 
                 // setup primitive
@@ -619,6 +631,7 @@ ImguiContext::Create()
     state.packedTextureInfo = offsetof(Imgui::ImGuiData, PackedTextureInfo);
     state.rangeMinConstant = offsetof(Imgui::ImGuiData, RangeMin);
     state.rangeMaxConstant = offsetof(Imgui::ImGuiData, RangeMax);
+    state.exposureConstant = offsetof(Imgui::ImGuiData, Exposure);
     state.colorMaskConstant = offsetof(Imgui::ImGuiData, ColorMask);
 
     state.inputHandler = ImguiInputHandler::Create();

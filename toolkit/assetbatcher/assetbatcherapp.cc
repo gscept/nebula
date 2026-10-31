@@ -268,7 +268,8 @@ AssetBatcherApp::DoWork()
     exporter->SetLogger(&this->logger);
     if (force && importMode == AssetBatchProcessor::ImportModes::None)
     {
-        exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All | AssetBatchProcessor::PackageModes::ForceAll);
+        // keep the selected package modes, only ignore time stamps
+        exporter->SetPackageMode((uint)packageMode | AssetBatchProcessor::PackageModes::ForceAll);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
@@ -334,6 +335,11 @@ AssetBatcherApp::DoWork()
                 Util::String relativePath = dir.StripSubstring(basePath.LocalPath());
                 exporter->SetFolder(relativePath);
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
+                if (!IO::IoServer::Instance()->FileExists("work:" + relativePath + "/" + file))
+                {
+                    this->logger.Error("File '%s' not found in work folder '%s'\n", file.AsCharPtr(), relativePath.AsCharPtr());
+                    break;
+                }
                 exporter->ProcessFile("work:" + relativePath + "/" + file);
 
                 break;
