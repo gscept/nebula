@@ -72,15 +72,17 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
     if ((this->importMode & ImportModes::FBX) && ext == "fbx")
     {
-        ToolkitUtil::ImportFBX(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger);
+        bool force = this->force || (this->importMode & ImportModes::ForceFBX);
+        ToolkitUtil::ImportFBX(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger, force);
     }
 
     if ((this->importMode & ImportModes::GLTF) && (ext == "gltf" || ext == "glb"))
     {
-        ToolkitUtil::ImportGLTF(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger);
+        bool force = this->force || (this->importMode & ImportModes::ForceGLTF);
+        ToolkitUtil::ImportGLTF(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), ToolkitUtil::ImportFlags(), 1.0f, this->logger, force);
     }
 
-    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds"))
+    if ((this->importMode & ImportModes::Images) && (ext == "tga" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "dds" || ext == "tif" || ext == "tiff"))
     {
         ToolkitUtil::TextureResourceT texture = ToolkitUtil::SetupTextureImportSettingsFromPath(file);
         ToolkitUtil::ImportTexture(file, Util::Format("work:%s", relativeFolderPathForSource.AsCharPtr()), texture, this->logger);
@@ -98,7 +100,17 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     //------------------------------------------------------------------------------
     Util::String relativeFolderPathForWork = file.LocalPath().StripSubstring(IO::URI("work:").LocalPath());
     relativeFolderPathForWork = relativeFolderPathForWork.ExtractDirName();
-    
+
+    // returns true if the exported file is missing or older than the work file
+    auto needsPackaging = [&](PackageModes forceMode, const Util::String& dstFile) -> bool
+    {
+        return (this->packageMode & forceMode) || this->NeedsConversion(file.LocalPath(), dstFile);
+    };
+    auto logSkipped = [&]()
+    {
+        this->logger->Print("Skipping %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr());
+    };
+
     if (this->packageMode & PackageModes::Assets && ext == "nasset")
     {
         Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
@@ -113,26 +125,39 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
             Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
             fileNameNoExt.StripFileExtension();
 
+            bool packaged = false;
             if (modelAsset.mesh != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("msh:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nvx", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageMesh(modelAsset.mesh.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                if (needsPackaging(PackageModes::ForceAssets, dstFile))
+                {
+                    packaged = true;
+                    ToolkitUtil::PackageMesh(modelAsset.mesh.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                }
             }
             if (modelAsset.animation != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ani:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nax", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                if (needsPackaging(PackageModes::ForceAssets, dstFile))
+                {
+                    packaged = true;
+                    ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                }
             }
             if (modelAsset.skeleton != nullptr)
             {
                 Util::String dstFolder = Util::String::Sprintf("ske:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.nsk", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageSkeleton(modelAsset.skeleton.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                if (needsPackaging(PackageModes::ForceAssets, dstFile))
+                {
+                    packaged = true;
+                    ToolkitUtil::PackageSkeleton(modelAsset.skeleton.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                }
             }
             if (modelAsset.physics != nullptr)
             {
@@ -146,7 +171,16 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 Util::String dstFolder = Util::String::Sprintf("mdl:%s", relativeFolderPathForWork.AsCharPtr());
                 IO::CreateDirectory(dstFolder);
                 Util::String dstFile = Util::String::Sprintf("%s%s.n3", dstFolder.AsCharPtr(), fileNameNoExt.AsCharPtr());
-                ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                if (needsPackaging(PackageModes::ForceAssets, dstFile))
+                {
+                    packaged = true;
+                    ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+                }
+            }
+
+            if (!packaged)
+            {
+                logSkipped();
             }
 
             stream->MemoryUnmap();
@@ -156,14 +190,28 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
     if ((this->packageMode & PackageModes::Textures) && ext == "natex")
     {
         Util::String dstFolder = Util::String::Sprintf("tex:%s", relativeFolderPathForWork.AsCharPtr());
-        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageTextureFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFile = Util::String::Sprintf("%s%s.dds", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        if (needsPackaging(PackageModes::ForceTextures, dstFile))
+        {
+            ToolkitUtil::PackageTextureFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        }
+        else
+        {
+            logSkipped();
+        }
     }
     else if ((this->packageMode & PackageModes::Materials) && ext == "namat")
     {
         Util::String dstFolder = Util::String::Sprintf("mat:%s", relativeFolderPathForWork.AsCharPtr());
-        Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
-        ToolkitUtil::PackageMaterialFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        Util::String dstFile = Util::String::Sprintf("%s%s.mat", dstFolder.AsCharPtr(), fileName.AsCharPtr());
+        if (needsPackaging(PackageModes::ForceMaterials, dstFile))
+        {
+            ToolkitUtil::PackageMaterialFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
+        }
+        else
+        {
+            logSkipped();
+        }
     }
     else if ((this->packageMode & PackageModes::Particles) && ext == "napar")
     {
@@ -177,6 +225,9 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
     }
+
+    // print progress per file instead of collecting everything until the end
+    this->logger->Flush();
 }
 
 //------------------------------------------------------------------------------
@@ -220,8 +271,10 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
             file.GetFileExtension() == "jpeg" || 
             file.GetFileExtension() == "tga" || 
             file.GetFileExtension() == "dds" || 
-            file.GetFileExtension() == "exr" || 
-            file.GetFileExtension() == "bmp")
+            file.GetFileExtension() == "exr" ||
+            file.GetFileExtension() == "bmp" ||
+            file.GetFileExtension() == "tif" ||
+            file.GetFileExtension() == "tiff")
         {
             imageFiles.Append(file);
         }
@@ -402,6 +455,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
 
     this->messages.Append(log);
     this->sourceDir = "";
+    this->logger->Flush();
 }
 
 //------------------------------------------------------------------------------

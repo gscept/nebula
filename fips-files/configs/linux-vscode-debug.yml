@@ -13,7 +13,6 @@ vscode_exclude_from_workspace:
     [
         #nebula-toolkit,
         fips-curl,
-        fips-compressonator,
         fips-sqlite3,
         gliml,
         fips-flatbuffers,

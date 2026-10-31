@@ -32,7 +32,9 @@ public:
 
 protected:
     /// checks whether or not a file needs to be updated 
-    bool NeedsConversion(const Util::String& path);
+    virtual bool NeedsConversion(const Util::String& path);
+    /// path of the .nasset written for the source file
+    Util::String GetOutputAssetPath(const Util::String& path) const;
 
     Util::String file;
     IO::URI path;

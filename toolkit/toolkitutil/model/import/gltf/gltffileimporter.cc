@@ -15,6 +15,7 @@
 #include "timing/timer.h"
 #include "io/binarywriter.h"
 #include "io/filestream.h"
+#include "io/jsonreader.h"
 #include "surface/surfacebuilder.h"
 #include "gltffilematerialextractor.h"
 #include "jobs2/jobs2.h"
@@ -46,6 +47,59 @@ GltfFileImporter::GltfFileImporter()
 GltfFileImporter::~GltfFileImporter()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GltfFileImporter::NeedsConversion(const Util::String& path)
+{
+    if (ModelImporter::NeedsConversion(path))
+    {
+        return true;
+    }
+
+    // glb files embed all their data
+    if (path.GetFileExtension() != "gltf")
+    {
+        return false;
+    }
+
+    // external buffers and images are resolved relative to the gltf file
+    Util::String asset = this->GetOutputAssetPath(path);
+    Util::String folder = path.ExtractDirName();
+    bool needsConversion = false;
+    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    if (reader->Open())
+    {
+        for (const char* key : { "buffers", "images" })
+        {
+            if (!reader->SetToFirstChild(key))
+            {
+                continue;
+            }
+            if (reader->SetToFirstChild())
+            {
+                do
+                {
+                    if (reader->HasAttr("uri"))
+                    {
+                        Util::String uri = reader->GetString("uri");
+                        if (!uri.BeginsWithString("data:") && AssetProcessorBase::NeedsConversion(folder + "/" + uri, asset))
+                        {
+                            needsConversion = true;
+                        }
+                    }
+                } while (!needsConversion && reader->SetToNextChild());
+                reader->SetToParent();
+            }
+            reader->SetToParent();
+        }
+        reader->Close();
+    }
+    return needsConversion;
 }
 
 //------------------------------------------------------------------------------
