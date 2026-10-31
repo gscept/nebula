@@ -56,11 +56,13 @@ Blob::SetFromBase64(const void* ptr, size_t size)
 {
     n_assert((ptr != nullptr) || (size == 0));
     n_assert(size < INT_MAX);
-    size_t allocsize = BASE64_DECODE_OUT_SIZE(size);
+    // round up, base64_decode() writes one byte past the decoded data for inputs
+    // whose length isn't a multiple of 4
+    size_t allocsize = BASE64_DECODE_OUT_SIZE(size + 3);
     this->SetSize(allocsize);
     int ret = base64_decode((char*)ptr, (SizeT)size, (unsigned char*)this->ptr);
     n_assert(ret >= 0);
-    this->size = ret;
+    this->size = ret >= 0 ? ret : 0;
 }
 
 //------------------------------------------------------------------------------

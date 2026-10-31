@@ -446,7 +446,7 @@ public:
 private:
     /// delete contents
     void Delete();
-    /// get pointer to last directory separator
+    /// get pointer to last directory separator, or nullptr if there is none
     char* GetLastSlash() const;
     /// allocate the string buffer (discards old content)
     void Alloc(SizeT size);
@@ -816,12 +816,12 @@ String::ExtractToLastSlash() const
     if (lastSlash)
     {
         lastSlash[1] = 0;
+        pathString.strLen = SizeT(lastSlash - pathString.AsCharPtr()) + 1;
     }
     else
     {
         pathString = "";
     }
-    pathString.strLen = lastSlash - &pathString[0] + 1;
     return pathString;
 }
 

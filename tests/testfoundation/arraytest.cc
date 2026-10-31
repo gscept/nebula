@@ -400,6 +400,95 @@ ArrayTest::Run()
         auto cit = constArr.ConstBegin();
         VERIFY(*cit == 1);
     }
+
+    // ------------------------------------------------------------------------
+    // Adding an element of the array to itself while it has to grow used to
+    // read from the freed buffer
+    // ------------------------------------------------------------------------
+    {
+        const Util::String value = "a string long enough to live on the heap";
+
+        Array<Util::String> appendCopy;
+        while (appendCopy.Size() < appendCopy.Capacity() || appendCopy.Size() == 0)
+            appendCopy.Append(value);
+        VERIFY(appendCopy.Size() == appendCopy.Capacity());
+        appendCopy.Append(appendCopy[0]);
+        VERIFY(appendCopy.Back() == value);
+
+        Array<Util::String> appendMove;
+        while (appendMove.Size() < appendMove.Capacity() || appendMove.Size() == 0)
+            appendMove.Append(value);
+        appendMove.Append(std::move(appendMove[0]));
+        VERIFY(appendMove.Back() == value);
+
+        Array<Util::String> appendMany;
+        while (appendMany.Size() < appendMany.Capacity() || appendMany.Size() == 0)
+            appendMany.Append(value);
+        appendMany.Append(appendMany[0], appendMany[1]);
+        VERIFY(appendMany[appendMany.Size() - 2] == value);
+        VERIFY(appendMany.Back() == value);
+
+        Array<Util::String> appendRange;
+        while (appendRange.Size() < appendRange.Capacity() || appendRange.Size() == 0)
+            appendRange.Append(value);
+        const SizeT oldSize = appendRange.Size();
+        appendRange.AppendArray(appendRange.Begin(), 2);
+        VERIFY(appendRange.Size() == oldSize + 2);
+        VERIFY(appendRange[oldSize] == value && appendRange[oldSize + 1] == value);
+
+        // inserting must use the value before the elements are shifted
+        Array<int> insertShift;
+        insertShift.Append(1); insertShift.Append(2); insertShift.Append(3);
+        insertShift.Insert(0, insertShift[1]);
+        VERIFY(insertShift[0] == 2 && insertShift[1] == 1 && insertShift[2] == 2 && insertShift[3] == 3);
+
+        Array<Util::String> insertGrow;
+        while (insertGrow.Size() < insertGrow.Capacity() || insertGrow.Size() == 0)
+            insertGrow.Append(value);
+        insertGrow[1] = "second";
+        insertGrow.Insert(0, insertGrow[1]);
+        VERIFY(insertGrow[0] == "second");
+
+        Array<Util::String> fill;
+        fill.Append(value);
+        fill.Fill(0, 64, fill[0]);
+        VERIFY(fill.Size() == 64 && fill[63] == value);
+    }
+
+    // ------------------------------------------------------------------------
+    // Fit() on a small vector must return to the inline storage, otherwise a
+    // later move treats the heap buffer as inline storage
+    // ------------------------------------------------------------------------
+    {
+        Array<Util::String, 4> small;
+        small.Append("a string long enough to live on the heap");
+        small.Fit();
+        VERIFY(small.Capacity() == 4);
+        Array<Util::String, 4> moved(std::move(small));
+        VERIFY(moved.Size() == 1 && moved[0] == "a string long enough to live on the heap");
+        small.Append("b");
+        VERIFY(small.Size() == 1 && small[0] == "b");
+
+        // spilled to the heap, then shrunk back into the inline storage
+        Array<int, 4> spilled;
+        for (int i = 0; i < 10; i++) spilled.Append(i);
+        spilled.Resize(2);
+        spilled.Fit();
+        VERIFY(spilled.Capacity() == 4 && spilled[0] == 0 && spilled[1] == 1);
+        Array<int, 4> spilledMoved(std::move(spilled));
+        VERIFY(spilledMoved.Size() == 2 && spilledMoved[1] == 1);
+
+        // heap only arrays
+        Array<int> heapOnly;
+        for (int i = 0; i < 40; i++) heapOnly.Append(i);
+        heapOnly.Fit();
+        VERIFY(heapOnly.Capacity() == 40 && heapOnly[39] == 39);
+        heapOnly.Clear();
+        heapOnly.Fit();
+        VERIFY(heapOnly.Capacity() == 0);
+        heapOnly.Append(7);
+        VERIFY(heapOnly.Size() == 1 && heapOnly[0] == 7);
+    }
 }
 
 }; // namespace Test

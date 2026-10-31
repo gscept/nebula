@@ -393,7 +393,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Array(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) noex
     elements(this->stackElements.data())
 {
     // If data is on the stack, copy data over
-    if (rhs.capacity <= SMALL_VECTOR_SIZE)
+    if (rhs.elements == rhs.stackElements.data())
     {
         for (IndexT i = 0; i < rhs.count; i++)
         {
@@ -767,7 +767,14 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Append(const TYPE& elm)
     // grow allocated space if exhausted
     if (this->count == this->capacity)
     {
+        // elm may be an element of this array, so copy it before growing frees it
+        TYPE copy(elm);
         this->Grow();
+        #if NEBULA_BOUNDSCHECKS
+        n_assert(this->elements);
+        #endif
+        this->elements[this->count++] = std::move(copy);
+        return;
     }
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
@@ -785,7 +792,14 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Append(TYPE&& elm)
     // grow allocated space if exhausted
     if (this->count == this->capacity)
     {
+        // elm may be an element of this array, so take it before growing frees it
+        TYPE moved(std::move(elm));
         this->Grow();
+#if NEBULA_BOUNDSCHECKS
+        n_assert(this->elements);
+#endif
+        this->elements[this->count++] = std::move(moved);
+        return;
     }
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
@@ -825,7 +839,14 @@ Array<TYPE, SMALL_VECTOR_SIZE>::AppendArray(const TYPE* arr, const SizeT count)
     SizeT neededCapacity = this->count + count;
     if (neededCapacity > this->capacity)
     {
+        // arr may point into this array, rebase it since growing frees the old buffer
+        const bool isAliased = (arr >= this->elements) && (arr < this->elements + this->count);
+        const PtrDiff aliasOffset = arr - this->elements;
         this->GrowTo(neededCapacity);
+        if (isAliased)
+        {
+            arr = this->elements + aliasOffset;
+        }
     }
 
     // forward elements from array
@@ -1250,8 +1271,10 @@ Array<TYPE, SMALL_VECTOR_SIZE>::InsertInternal(IndexT index, ELEM&& elm)
     }
     else
     {
+        // elm may be an element of this array, which Move() shifts or frees
+        TYPE value(std::forward<ELEM>(elm));
         this->Move(index, index + 1);
-        this->elements[index] = std::forward<ELEM>(elm);
+        this->elements[index] = std::move(value);
     }
 }
 
@@ -1393,8 +1416,9 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Append(const TYPE& first, const ELEM_TYPE&... el
 {
     // The plus one is for the first element
     const int size = sizeof...(elements) + 1;
-    this->Reserve(size);
+    // copy the arguments before reserving, as they may be elements of this array
     TYPE res[size] = { first, elements... };
+    this->Reserve(size);
     for (IndexT i = 0; i < size; i++)
     {
         this->elements[this->count++] = res[i];
@@ -1446,16 +1470,21 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 void
 Array<TYPE, SMALL_VECTOR_SIZE>::Fill(IndexT first, SizeT num, const TYPE& elm)
 {
+    // elm may be an element of this array, so copy it before growing frees it
+    const TYPE value(elm);
     if ((first + num) > this->count)
     {
-        this->GrowTo(first + num);
+        if ((first + num) > this->capacity)
+        {
+            this->GrowTo(first + num);
+        }
         this->count = first + num;
     }
- 
+
     IndexT i;
     for (i = first; i < (first + num); i++)
     {
-        this->elements[i] = elm;
+        this->elements[i] = value;
     }
 }
 
@@ -1749,16 +1778,28 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
 Array<TYPE, SMALL_VECTOR_SIZE>::Fit()
 {
-    TYPE* newArray = ArrayAlloc<TYPE>(this->count);
-    if (this->elements)
+    if (this->count <= SMALL_VECTOR_SIZE)
     {
-        this->MoveRange(newArray, this->elements, this->count);
-        if (this->elements != this->stackElements.data())
+        // contents fit into the small vector storage, which must be used
+        // whenever capacity <= SMALL_VECTOR_SIZE
+        TYPE* stackArray = this->stackElements.data();
+        if (this->elements != stackArray)
+        {
+            this->MoveRange(stackArray, this->elements, this->count);
             ArrayFree(this->capacity, this->elements);
+            this->elements = stackArray;
+        }
+        this->capacity = SMALL_VECTOR_SIZE;
     }
-    this->elements = newArray;
-
-    this->capacity = this->count;
+    else if (this->count < this->capacity)
+    {
+        // count > SMALL_VECTOR_SIZE means the elements are on the heap
+        TYPE* newArray = ArrayAlloc<TYPE>(this->count);
+        this->MoveRange(newArray, this->elements, this->count);
+        ArrayFree(this->capacity, this->elements);
+        this->elements = newArray;
+        this->capacity = this->count;
+    }
 }
 
 //------------------------------------------------------------------------------

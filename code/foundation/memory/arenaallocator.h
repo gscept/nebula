@@ -186,7 +186,9 @@ inline T*
 ArenaAllocator<ChunkSize>::Alloc()
 {
     T* ret = nullptr;
-    if constexpr (sizeof(T) > ChunkSize)
+    // pad up to next multiple of 16 to avoid alignment issues
+    constexpr size_t alignedSize = (sizeof(T) + 15) & ~size_t(15);
+    if constexpr (alignedSize > ChunkSize)
     {
         // allocate block and retire it directly
         byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, sizeof(T));
@@ -195,8 +197,6 @@ ArenaAllocator<ChunkSize>::Alloc()
     }
     else
     {
-        // pad up to next multiple of 16 to avoid alignment issues
-        size_t alignedSize = Memory::align(sizeof(T), 16ull);
         if (this->iterator == nullptr)
         {
             this->NewChunk();
@@ -224,17 +224,17 @@ inline T*
 ArenaAllocator<ChunkSize>::Alloc(SizeT num)
 {
     T* ret = nullptr;
-    if constexpr (sizeof(T) > ChunkSize)
+    // pad up to next multiple of 16 to avoid alignment issues
+    size_t alignedSize = Memory::align(sizeof(T) * num, 16ull);
+    if (alignedSize > ChunkSize)
     {
-        // allocate block and retire it directly
+        // the whole range doesn't fit into a chunk, allocate block and retire it directly
         byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, sizeof(T) * num);
         this->retiredChunks.Append(block);
         ret = new (block) T[num];
     }
     else
     {
-        // pad up to next multiple of 16 to avoid alignment issues
-        size_t alignedSize = Memory::align(sizeof(T) * num, 16ull);
         if (this->iterator == nullptr)
         {
             this->NewChunk();
@@ -262,7 +262,9 @@ ArenaAllocator<ChunkSize>::Alloc(SizeT size)
 {
     n_assert(size != 0);
     void* ret = nullptr;
-    if (size > ChunkSize)
+    // pad to next alignment.
+    SizeT alignedSize = Memory::align(size, 16);
+    if (alignedSize > ChunkSize)
     {
         // allocate block and retire it directly
         byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, size);
@@ -271,8 +273,7 @@ ArenaAllocator<ChunkSize>::Alloc(SizeT size)
     }
     else
     {
-        // pad to next alignment.
-        size = Memory::align(size, 16);
+        size = alignedSize;
         if (this->iterator == nullptr)
         {
             this->NewChunk();

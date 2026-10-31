@@ -173,8 +173,16 @@ String::AppendRange(const char* append, SizeT length)
         }
         else
         {
-            // need to re-allocate
+            // need to re-allocate, if the appended range lives inside our own
+            // buffer, rebase it since Realloc() frees the old buffer
+            const char* oldBuffer = this->AsCharPtr();
+            const bool isAliased = (append >= oldBuffer) && (append <= oldBuffer + this->strLen);
+            const PtrDiff aliasOffset = append - oldBuffer;
             this->Realloc(newLength + newLength / 2);
+            if (isAliased)
+            {
+                append = this->heapBuffer + aliasOffset;
+            }
             Memory::Copy(append, this->heapBuffer + this->strLen, length);
             this->heapBuffer[newLength] = 0;
         }
@@ -1014,7 +1022,8 @@ String::GetFileExtension() const
 
 //------------------------------------------------------------------------------
 /**
-    Get a pointer to the last directory separator.
+    Get a pointer to the last directory separator. Returns nullptr if the
+    string contains no separator, which the Extract*() methods rely on.
 */
 char*
 String::GetLastSlash() const
@@ -1023,7 +1032,6 @@ String::GetLastSlash() const
     const char* lastSlash = strrchr(s, '/');
     if (0 == lastSlash) lastSlash = strrchr(s, '\\');
     if (0 == lastSlash) lastSlash = strrchr(s, ':');
-    if (0 == lastSlash) lastSlash = s + this->strLen;
     return const_cast<char*>(lastSlash);
 }
 
@@ -1375,16 +1383,20 @@ Util::String
 String::FromBase64(const String& in)
 {
     Util::String ret;
-    int allocsize = BASE64_DECODE_OUT_SIZE(in.strLen);
+    // round up, base64_decode() writes one byte past the decoded data for inputs
+    // whose length isn't a multiple of 4
+    int allocsize = BASE64_DECODE_OUT_SIZE(in.strLen + 3);
     if (allocsize <= 0)
     {
         return ret;
     }
     unsigned char * buffer = (unsigned char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
-    
-    base64_decode((char*)in.AsCharPtr(), in.strLen, buffer);
-    buffer[allocsize - 1] = '\0';
-    ret.SetCharPtr((const char*)buffer);
+
+    int decodedSize = base64_decode((char*)in.AsCharPtr(), in.strLen, buffer);
+    if (decodedSize > 0)
+    {
+        ret.Set((const char*)buffer, decodedSize);
+    }
     Memory::Free(Memory::ScratchHeap, buffer);
     return ret;
 }
