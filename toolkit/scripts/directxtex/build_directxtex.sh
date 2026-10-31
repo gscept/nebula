@@ -4,7 +4,8 @@
 #
 # The tools come from Texconv-Custom-DLL (Unix ports of DirectXTex's texconv
 # and texassemble), built against the DirectXTex release the Windows binaries
-# in bin/win32 are from, with patches/*.patch applied. libjpeg-turbo, libpng,
+# in bin/win32 are from, with patches/*.patch applied to Texconv-Custom-DLL and
+# patches/directxtex/*.patch to DirectXTex. libjpeg-turbo, libpng,
 # zlib and OpenEXR are built and linked statically by Texconv-Custom-DLL's CMake
 # (fetched from GitHub during the build), libstdc++, libgcc and libgomp are
 # linked statically here. Only glibc stays dynamic.
@@ -37,6 +38,11 @@ cp -a "$SRC_ROOT/directxtex" "$SRC/DirectXTex"
 for p in "$HERE"/patches/*.patch; do
     echo "applying $(basename "$p")"
     patch -d "$SRC" -p1 --forward --batch --quiet -i "$p"
+done
+# git apply follows DirectXTex's .gitattributes, its sources are checked out with CRLF
+for p in "$HERE"/patches/directxtex/*.patch; do
+    echo "applying directxtex/$(basename "$p")"
+    git -C "$SRC/DirectXTex" apply "$p"
 done
 
 # DirectXTex uses OpenMP for the CPU BC6H/BC7 codecs, link GCC's runtime statically

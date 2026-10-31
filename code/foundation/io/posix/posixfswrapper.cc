@@ -556,7 +556,7 @@ PosixFSWrapper::GetUserDirectory()
 String
 PosixFSWrapper::GetTempDirectory()
 {
-    return String("file:///tmp/");
+    return String("file:////tmp/");
 }
 
 //------------------------------------------------------------------------------

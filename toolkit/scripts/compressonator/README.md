@@ -100,3 +100,9 @@ edit and commit, then regenerate with
   is inaccurate across exponent ranges. Unchanged from upstream.
 - Uncompressed float output (`-fd ARGB_32F`) from 16-bit integer sources is broken
   upstream. Block compressed output is correct.
+- BC6H from DDS files with 32-bit float pixels (`R32G32B32A32_FLOAT`, e.g. cubes assembled
+  by texassemble from HDR faces) decodes to wrong colors, 16-bit float DDS and EXR sources
+  are correct. The asset batcher converts these and `.hdr` files (8-bit through stb_image)
+  to `R16G16B16A16_FLOAT` DDS with texconv first.
+- Cube maps can only be block compressed ("Transcoding Cube Maps is not supported"), the
+  asset batcher converts the uncompressed targets (RGBA8, R16) with texconv instead.

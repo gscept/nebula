@@ -27,6 +27,7 @@
 
 #include "toolkitutil/text.h"
 #include "toolkitutil/logger.h"
+#include "system/process.h"
 
 namespace ToolkitUtil
 {
@@ -280,6 +281,177 @@ PackageMesh(
     return res;
 }
 
+// converters and texassemble pick the image loader from the file extension
+static const char* ContainerExtension[] = {
+    "",    // Unknown
+    "jpg", // JPG
+    "tga", // TGA
+    "bmp", // BMP
+    "dds", // DDS
+    "png", // PNG
+    "exr", // EXR
+    "tif", // TIF
+    "dds", // CUBE
+    "hdr"  // HDR
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+WriteTextureFile(const IO::URI& path, const std::vector<uint8_t>& data)
+{
+    Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
+    writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    if (writer->Open())
+    {
+        writer->WriteRawData(data.data(), (uint)data.size());
+        writer->Close();
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    texassemble loads PNG and JPG faces with sRGB formats on Linux (and on Windows when the
+    file says so), which makes the converters linearize textures with a linear color space.
+    Relabels the assembled DDS as UNORM, the texture's color space decides like for every
+    other texture.
+*/
+static bool
+StripSRGBFormat(const IO::URI& dds)
+{
+    static const uint32_t SRGBFormats[][2] = {
+        { 29, 28 }, // R8G8B8A8_UNORM_SRGB
+        { 72, 71 }, // BC1_UNORM_SRGB
+        { 75, 74 }, // BC2_UNORM_SRGB
+        { 78, 77 }, // BC3_UNORM_SRGB
+        { 91, 87 }, // B8G8R8A8_UNORM_SRGB
+        { 93, 88 }, // B8G8R8X8_UNORM_SRGB
+        { 99, 98 }, // BC7_UNORM_SRGB
+    };
+    // magic and DDS_HEADER, followed by DDS_HEADER_DXT10 if the pixel format's fourcc is DX10
+    const SizeT FourCCOffset = 84, DXGIFormatOffset = 128;
+
+    std::vector<uint8_t> data;
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(dds);
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (!stream->Open())
+    {
+        return false;
+    }
+    data.resize(stream->GetSize());
+    memcpy(data.data(), stream->MemoryMap(), stream->GetSize());
+    stream->MemoryUnmap();
+    stream->Close();
+
+    if (data.size() < DXGIFormatOffset + 4 || memcmp(&data[FourCCOffset], "DX10", 4) != 0)
+    {
+        return true;
+    }
+    uint32_t format;
+    memcpy(&format, &data[DXGIFormatOffset], 4);
+    for (const auto& [srgb, unorm] : SRGBFormats)
+    {
+        if (format == srgb)
+        {
+            memcpy(&data[DXGIFormatOffset], &unorm, 4);
+            return WriteTextureFile(dds, data);
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Assembles the source images of a cube texture into an uncompressed DDS cube
+    with texassemble, which the converters then compress like any other DDS cube.
+    The face images have to be readable by texassemble on the batching platform,
+    PNG, JPG, TGA, HDR and DDS work everywhere, EXR only on Linux, BMP and TIF only on Windows.
+*/
+static bool
+AssembleCubeTexture(
+    const ToolkitUtil::TextureResourceT* tex,
+    const Util::String& fileName,
+    const Util::String& output,
+    ToolkitUtil::Logger* logger
+)
+{
+    static const char* LayoutCommand[] = {
+        "",                 // None
+        "cube",             // Faces
+        "cube-from-hc",     // HorizontalCross
+        "cube-from-vc",     // VerticalCross
+        "cube-from-vc-fnz", // VerticalCrossFlipNegZ
+        "cube-from-ht",     // HorizontalTee
+        "cube-from-hs",     // HorizontalStrip
+        "cube-from-vs"      // VerticalStrip
+    };
+
+    Util::Array<Util::String> inputs;
+    bool written = true;
+    if (tex->cube_layout == ToolkitUtil::TextureCubeLayout_Faces)
+    {
+        if (tex->faces.size() != 6)
+        {
+            logger->Error("Cube texture '%s' needs 6 faces, but has %d\n", fileName.AsCharPtr(), (int)tex->faces.size());
+            return false;
+        }
+        for (IndexT i = 0; i < 6; i++)
+        {
+            inputs.Append(Util::Format("temp:texturepackager/%s_face%d.%s", fileName.AsCharPtr(), i, ContainerExtension[tex->faces[i]->container]));
+            written &= WriteTextureFile(inputs.Back(), tex->faces[i]->data);
+        }
+    }
+    else
+    {
+        // single cross, tee or strip image
+        inputs.Append(Util::Format("temp:texturepackager/%s_cube.%s", fileName.AsCharPtr(), ContainerExtension[tex->container]));
+        written &= WriteTextureFile(inputs.Back(), tex->data);
+    }
+
+    bool res = false;
+    if (written)
+    {
+        // '--' ends the options, texassemble would take absolute linux paths for options otherwise
+        Util::String args = Util::Format(" %s -y -nologo -o \"%s\" --", LayoutCommand[tex->cube_layout], IO::IoServer::NativePath(IO::URI(output).LocalPath()).AsCharPtr());
+        for (const Util::String& input : inputs)
+        {
+            args.Append(" \"");
+            args.Append(IO::IoServer::NativePath(IO::URI(input).LocalPath()));
+            args.Append("\"");
+        }
+
+        System::ProcessStartInfo startInfo;
+        startInfo.args = args;
+        startInfo.workingDir = "temp:texturepackager";
+        startInfo.exePath = Util::Format("toolkit:bin/%s/texassemble", System::PlatformTypeAsString(System::Platform));
+        startInfo.consoleWindow = false;
+
+        System::ProcessId process = System::StartProcess(startInfo);
+        if (process == System::InvalidProcessId)
+        {
+            logger->Warning("Failed to launch texassemble '%s'!\n", startInfo.exePath.LocalPath().AsCharPtr());
+        }
+        else
+        {
+            uint exitCode = System::WaitForProcess(process);
+            res = exitCode == 0;
+            if (!res)
+                logger->Error("texassemble failed to assemble cube texture '%s', exit code: %d\n", fileName.AsCharPtr(), exitCode);
+            else
+                res = StripSRGBFormat(output);
+        }
+    }
+
+    for (const Util::String& input : inputs)
+    {
+        IO::IoServer::Instance()->DeleteFile(input);
+    }
+    return res;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -301,57 +473,41 @@ PackageTexture(
         false, // PNG
         false, // EXR
         false, // TIF
-        false   // CUBE (assumed to be in DDS format)
+        false, // CUBE (assumed to be in DDS format)
+        false  // HDR
     };
+    const bool assembleCube = tex->cube_layout != ToolkitUtil::TextureCubeLayout_None;
 
     // If already in an 'exported' format, just copy over
-    if (IsExportedFormat[tex->container])
+    if (IsExportedFormat[tex->container] && !assembleCube)
     {
         IO::CreateDirectory(destinationFolder);
         IO::URI destFile = Util::Format("%s/%s.dds", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
         logger->Print("%s", destFile.LocalPath().AsCharPtr());
-        Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-        writer->SetStream(IO::IoServer::Instance()->CreateStream(destFile));
-        if (writer->Open())
-        {
-            writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
-            writer->Close();
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return WriteTextureFile(destFile, tex->data);
     }
     else
     {
         IO::CreateDirectory("temp:texturepackager");
-        // converters pick the image loader from the file extension
-        static const char* ContainerExtension[] = {
-            "",    // Unknown
-            "jpg", // JPG
-            "tga", // TGA
-            "bmp", // BMP
-            "dds", // DDS
-            "png", // PNG
-            "exr", // EXR
-            "tif", // TIF
-            "dds"  // CUBE
-        };
-        const Util::String tmpFile = Util::Format("temp:texturepackager/%s.%s", fileName.AsCharPtr(), ContainerExtension[tex->container]);
+        const Util::String tmpFile = Util::Format("temp:texturepackager/%s.%s", fileName.AsCharPtr(), assembleCube ? "dds" : ContainerExtension[tex->container]);
 
         // Create intermediate file for texture conversion
-        Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-        writer->SetStream(IO::IoServer::Instance()->CreateStream(tmpFile));
-        if (writer->Open())
+        bool written = false;
+        if (assembleCube)
         {
-            writer->WriteRawData(tex->data.data(), (uint)tex->data.size());
-            writer->Close();
+            written = AssembleCubeTexture(tex, fileName, tmpFile, logger);
         }
         else
         {
+            written = WriteTextureFile(tmpFile, tex->data);
+        }
+        if (!written)
+        {
+            IO::IoServer::Instance()->DeleteFile(tmpFile);
+            logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package texture:").Color(TextColor::Red).AsCharPtr(), Text(fileName).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
             return false;
         }
+
         Util::String platformExtension;
         if (platform == ToolkitUtil::Platform::Win32 || platform == ToolkitUtil::Platform::Linux)
         {
@@ -360,7 +516,7 @@ PackageTexture(
         IO::URI output = Util::String::Sprintf("%s/%s.%s", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr(), platformExtension.AsCharPtr());
         output.SetScheme("safefile");
 
-        // cube maps (CUBE) are DDS cube textures, both converters keep them as cubes
+        // cube maps (CUBE and assembled ones) are DDS cube textures, both converters keep them as cubes
         TextureConversionInfo info;
         info.logger = logger;
         info.destPath = destinationFolder.LocalPath();

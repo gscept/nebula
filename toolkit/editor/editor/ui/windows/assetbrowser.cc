@@ -1225,7 +1225,9 @@ AssetBrowser::DisplayFileTree()
     {
         if (ImGui::Button("Select folder"))
         {
-            auto info = this->folderInfoCache[this->activeFileTree];
+            // pick the folder selected in the tree, the file tree is always the root folder
+            uint64_t folderId = this->activeFolder != 0 ? this->activeFolder : this->activeFileTree;
+            auto info = this->folderInfoCache[folderId];
             this->pickFolderFunction(info.folderPath);
             this->pickFolderFunction = nullptr;
             this->open = false;

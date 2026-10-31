@@ -47,18 +47,30 @@ Both are candidates for upstreaming to Texconv-Custom-DLL. To change them, apply
 series to a clone at `40b28a0` with `git am`, edit and commit, then regenerate with
 `git format-patch --no-signature -o <this folder>/patches 40b28a0..HEAD`.
 
+`patches/directxtex/` holds changes to DirectXTex itself, applied with `git apply` (its
+sources are checked out with CRLF line endings):
+
+| Patch | Change |
+| --- | --- |
+| 0001 | libpng reader (`Auxiliary/DirectXTexPNG.cpp`): keep straight alpha and the stored values. It premultiplied alpha and linearized every PNG with an sRGB or gAMA chunk, unlike WIC |
+
+This one is a candidate for upstreaming to DirectXTex, regenerate it from a DirectXTex
+clone at `4feb3e1` with `git format-patch --no-signature -o <this folder>/patches/directxtex 4feb3e1..HEAD`.
+
 ## Differences to the Windows tools
 
 Verified against the Windows 2026.5.8.1 binaries (run under Wine with `-nogpu`): the
 command lines are identical apart from the file types, texconv's BC1/BC3/BC7 output is
 byte-identical and BC5 decodes to identical values, texassemble's `cube`, `from-mips`
-and `cube-from-mips` produce identical pixels.
+and `cube-from-mips` produce identical pixels. RGBA8 output from PNGs with alpha or an
+sRGB chunk is byte-identical with `--ignore-srgb` (needs the DirectXTex patch).
 
 - File types come from the platform: Linux reads and writes DDS, TGA, HDR, PNG, JPEG and
   EXR. Windows uses WIC instead (BMP, PNG, JPEG, TIFF, GIF, JPEG XR, HEIF, ...) and has
   no EXR.
 - PNG/JPEG are loaded as `R8G8B8A8_UNORM_SRGB` on Linux and `B8G8R8A8_UNORM` by WIC, so
-  e.g. a cube assembled from PNGs has a different format. Pass `-srgbi`/`-srgbo`
-  explicitly when converting to get the same result on both.
+  e.g. a cube assembled from PNGs has a different format. Pass `--ignore-srgb` and
+  `-srgbi`/`-srgbo` explicitly when converting to get the same result on both (the asset
+  batcher does, and relabels assembled cubes as UNORM).
 - No GPU codecs, BC6H/BC7 are compressed on the CPU (with OpenMP).
 - No `texdiag` (Texconv-Custom-DLL doesn't port it).

@@ -335,6 +335,11 @@ AssetBatcherApp::DoWork()
                 Util::String relativePath = dir.StripSubstring(basePath.LocalPath());
                 exporter->SetFolder(relativePath);
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
+                if (!IO::IoServer::Instance()->FileExists("work:" + relativePath + "/" + file))
+                {
+                    this->logger.Error("File '%s' not found in work folder '%s'\n", file.AsCharPtr(), relativePath.AsCharPtr());
+                    break;
+                }
                 exporter->ProcessFile("work:" + relativePath + "/" + file);
 
                 break;

@@ -47,6 +47,8 @@ struct ImguiTextureId
     uint alpha : 1 = 1;
     uint splat : 1 = 0;
     uint pointFilter : 1 = 0;
+    uint tonemap : 1 = 0;       // tonemap HDR (float and BC6H) textures instead of clipping them, LDR textures are unaffected
+    float exposure = 1.0f;      // linear exposure scale used when tonemapping
 };
 
 extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;

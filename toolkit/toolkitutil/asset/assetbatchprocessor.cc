@@ -67,8 +67,12 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         BATCH IMPORTING
     */
     //------------------------------------------------------------------------------
-    Util::String relativeFolderPathForSource = file.LocalPath().StripSubstring(IO::URI("src:").LocalPath());
-    relativeFolderPathForSource = relativeFolderPathForSource.ExtractDirName();
+    // ExtractDirName returns the whole string if there is no slash, which is the case for files in the root folder
+    const auto relativeFolder = [](const Util::String& path) -> Util::String
+    {
+        return path.FindCharIndex('/') != InvalidIndex ? path.ExtractDirName() : Util::String();
+    };
+    Util::String relativeFolderPathForSource = relativeFolder(file.LocalPath().StripSubstring(IO::URI("src:").LocalPath()));
 
     if ((this->importMode & ImportModes::FBX) && ext == "fbx")
     {
@@ -98,8 +102,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         BATCH PACKAGING
     */
     //------------------------------------------------------------------------------
-    Util::String relativeFolderPathForWork = file.LocalPath().StripSubstring(IO::URI("work:").LocalPath());
-    relativeFolderPathForWork = relativeFolderPathForWork.ExtractDirName();
+    Util::String relativeFolderPathForWork = relativeFolder(file.LocalPath().StripSubstring(IO::URI("work:").LocalPath()));
 
     // returns true if the exported file is missing or older than the work file
     auto needsPackaging = [&](PackageModes forceMode, const Util::String& dstFile) -> bool

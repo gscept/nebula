@@ -17,7 +17,8 @@ enum TextureContainer : byte
 	PNG = 5,
 	EXR = 6,
 	TIF = 7,
-	CUBE = 8
+	CUBE = 8,
+	HDR = 9
 }
 
 enum TexturePixelFormat : byte
@@ -45,6 +46,25 @@ enum TextureCompressionQuality : byte
 	High = 1
 }
 
+// how the source images of a cube texture are laid out, assembled with texassemble when batching
+enum TextureCubeLayout : byte
+{
+	None = 0,
+	Faces = 1,					// six images in faces, +X -X +Y -Y +Z -Z
+	HorizontalCross = 2,		// single image in data
+	VerticalCross = 3,
+	VerticalCrossFlipNegZ = 4,	// vertical cross with the -Z face upside down
+	HorizontalTee = 5,
+	HorizontalStrip = 6,
+	VerticalStrip = 7
+}
+
+table TextureFace
+{
+	container : TextureContainer = Unknown;
+	data : [ubyte];
+}
+
 table TextureResource
 {
 	container : TextureContainer = Unknown;
@@ -54,6 +74,8 @@ table TextureResource
 	generate_mipmaps : bool = true;
 	invert_green : bool;
 	data : [ubyte];
+	cube_layout : TextureCubeLayout = None;
+	faces : [TextureFace];
 }
 
 root_type TextureResource;
