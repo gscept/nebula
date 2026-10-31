@@ -149,6 +149,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportSecondaryUVs) ? ToolkitUtil::OptimizationFlags_ImportSecondaryUVs : 0;
     }
     modelAsset.flags = (ToolkitUtil::OptimizationFlags)flags;
+    modelAsset.source = file.LocalPath();
 
     if (mergedMeshes.Size() > 0)
     {

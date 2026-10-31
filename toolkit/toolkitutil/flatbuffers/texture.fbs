@@ -74,6 +74,7 @@ table TextureResource
 	generate_mipmaps : bool = true;
 	invert_green : bool;
 	data : [ubyte];
+	source : string;
 	cube_layout : TextureCubeLayout = None;
 	faces : [TextureFace];
 }
