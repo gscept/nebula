@@ -61,6 +61,8 @@ public:
     static bool DeleteFile(const Util::String& path);
     /// rename a file
     static bool ReplaceFile(const Util::String& source, const Util::String& target);
+    /// Move a file
+    static bool MoveFile(const Util::String& source, const Util::String& target);
     /// delete an empty directory
     static bool DeleteDirectory(const Util::String& path);
     /// return true if a file exists

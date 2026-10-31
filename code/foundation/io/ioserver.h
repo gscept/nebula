@@ -81,6 +81,8 @@ public:
     bool CopyFile(const URI& from, const URI& to) const;
     /// delete a file
     bool DeleteFile(const URI& path) const;
+    /// rename a directory
+    bool MoveFile(const URI& oldPath, const URI& newPath) const;
     /// return true if file exists
     bool FileExists(const URI& path) const;
     /// return if file is locked
@@ -204,6 +206,16 @@ inline bool
 CopyFile(const IO::URI& from, const IO::URI& to)
 {
     return IoServer::Instance()->CopyFile(from, to);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Moves (or renames) both files and directories
+*/
+inline bool
+MoveFile(const IO::URI& from, const IO::URI& to)
+{
+    return IoServer::Instance()->MoveFile(from, to);
 }
 
 //------------------------------------------------------------------------------

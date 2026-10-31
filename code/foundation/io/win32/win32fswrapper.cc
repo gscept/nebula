@@ -398,6 +398,19 @@ Win32FSWrapper::ReplaceFile(const Util::String& source, const Util::String& targ
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+Win32FSWrapper::MoveFile(const Util::String& source, const Util::String& target)
+{
+    ushort wideSourcePath[1024];
+    ushort wideTargetPath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(source, wideSourcePath, sizeof(wideSourcePath));
+    Win32::Win32StringConverter::UTF8ToWide(target, wideTargetPath, sizeof(wideTargetPath));
+    return (0 != ::MoveFileW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTargetPath));
+}
+
+//------------------------------------------------------------------------------
+/**
     Delete an empty directory. Returns true if the operation was successful.
 */
 bool

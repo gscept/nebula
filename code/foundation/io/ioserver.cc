@@ -471,6 +471,16 @@ IoServer::DirectoryExists(const URI& uri) const
 //------------------------------------------------------------------------------
 /**
 */
+bool
+IoServer::MoveFile(const URI& oldPath, const URI& newPath) const
+{
+    n_assert(oldPath.Scheme() == "file" && newPath.Scheme() == "file");
+    return FSWrapper::MoveFile(oldPath.GetHostAndLocalPath(), newPath.GetHostAndLocalPath());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 IoServer::SetReadOnly(const URI& uri, bool readOnly) const
 {

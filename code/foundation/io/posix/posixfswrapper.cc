@@ -347,6 +347,15 @@ PosixFSWrapper::ReplaceFile(const Util::String& source, const Util::String& targ
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+PosixFSWrapper::MoveFile(const Util::String& source, const Util::String& target)
+{
+    return (0 == rename(source.AsCharPtr(), target.AsCharPtr()));
+}
+
+//------------------------------------------------------------------------------
+/**
     Delete an empty directory. Returns true if the operation was successful.
 */
 bool
