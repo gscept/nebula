@@ -74,6 +74,26 @@ ComponentInspection::DrawInspector(Game::Entity owner, ComponentId component, vo
 //------------------------------------------------------------------------------
 /**
 */
+void
+ComponentInspection::OverrideInspector(ComponentId component, DrawFunc func)
+{
+    ComponentInspection* reg = Instance();
+
+    // The inspectors are indexed by the component id, so the array has to reach the slot before it can hold the function
+    while (reg->inspectors.Size() <= component.id)
+    {
+        IndexT first = reg->inspectors.Size();
+        reg->inspectors.Grow();
+        reg->inspectors.Resize(reg->inspectors.Capacity());
+        reg->inspectors.Fill(first, reg->inspectors.Size() - first, nullptr);
+    }
+
+    reg->inspectors[component.id] = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ComponentInspection::ComponentInspection()
 {
     // empty

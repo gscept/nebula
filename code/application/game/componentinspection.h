@@ -39,6 +39,9 @@ public:
 
     static void DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit);
 
+    /// Set a custom component inspector draw function
+    static void OverrideInspector(ComponentId component, DrawFunc func);
+
     // set to true if you want full information to be displayed in the inspector
     bool debug = false;
 
