@@ -156,6 +156,26 @@ TransformTest::Run()
         point fromMatrix = m * p;
         VERIFY(NearPoint(fromTransform, fromMatrix, 0.001f));
     }
+
+    // FromMat4 decompose roundtrip for affine transform (non-uniform scale).
+    // The scale must be interpreted along the local axes, so the roundtrip
+    // only works if affine() builds a true TRS matrix
+    {
+        const vec3 s(2.0f, 0.5f, 3.0f);
+        const quat r = rotationquataxis(vec3(0.0f, 1.0f, 0.0f), 0.6f);
+        const vec3 t(5.0f, 6.0f, 7.0f);
+
+        mat4 m = affine(s, r, t);
+        transform tr = transform::FromMat4(m);
+
+        VERIFY(NearVec3(tr.position, t, 0.001f));
+        VERIFY(NearVec3(tr.scale, s, 0.001f));
+
+        point p(1.0f, 2.0f, 3.0f);
+        point fromTransform = tr * p;
+        point fromMatrix = m * p;
+        VERIFY(NearPoint(fromTransform, fromMatrix, 0.001f));
+    }
 }
 
 } // namespace Test

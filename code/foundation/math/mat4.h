@@ -1195,7 +1195,8 @@ translation(const vec3& t)
 //------------------------------------------------------------------------------
 /**
     A short hand for creating a TRS (translation, rotation, scale) matrix from
-    pos, rot and scale
+    pos, rot and scale. The resulting matrix is a local-to-world transformation:
+    points are first scaled along the local axes, then rotated, then translated.
 */
 __forceinline mat4
 trs(const vec3& position, const quat& rotation, const vec3& scale)

@@ -116,16 +116,21 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
 mat4
 affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
 {
-    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
-    mat4 scalem = scaling(scale);
-    mat4 rot = rotationquat(rotation);
+    // The matrix scales along the local axes, rotates around the rotation center and translates
+    mat4 m = rotationquat(rotation);
+    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
+    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
+    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
+
     vec4 rotc = vec4(rotationCenter, 0.0f);
     vec4 trans = vec4(translation, 0.0f);
 
-    mat4 m = scalem;
-    m.r[3] = _mm_sub_ps(m.r[3].vec, rotc.vec);
-    m = rot * m;
-    m.r[3] = _mm_add_ps(_mm_add_ps(m.r[3].vec, rotc.vec), trans.vec);
+    // row3 = identity - center * (S * R) + center + translation
+    __m128 offset = _mm_mul_ps(_mm_set1_ps(rotc.x), m.r[0].vec);
+    offset = _mm_add_ps(offset, _mm_mul_ps(_mm_set1_ps(rotc.y), m.r[1].vec));
+    offset = _mm_add_ps(offset, _mm_mul_ps(_mm_set1_ps(rotc.z), m.r[2].vec));
+    m.r[3] = _id_w;
+    m.r[3].vec = _mm_add_ps(_mm_add_ps(_mm_sub_ps(m.r[3].vec, offset), rotc.vec), trans.vec);
     return m;
 }
 
@@ -135,11 +140,12 @@ affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, cons
 mat4
 affine(const vec3& scale, const quat& rotation, const vec3& translation)
 {
-    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    // m = translation * rotation * scale
+    // The matrix scales along the local axes, rotates, then translates
     mat4 m = rotationquat(rotation);
-    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
-    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
-    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
+    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
+    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
     m.position = vec4(translation, 1);
     return m;
 }
@@ -148,13 +154,14 @@ affine(const vec3& scale, const quat& rotation, const vec3& translation)
 /**
 */
 mat4
-affine(const vec3& scale, const vec3& rotation, const vec3& translation)
+affine(const vec3& scale, const vec3& eulerRadians, const vec3& translation)
 {
-    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
-    mat4 m = rotationpitchyawroll(rotation.x, rotation.y, rotation.z);
-    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
-    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
-    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    // m = translation * eulerRadians * scale
+    // The matrix scales along the local axes, rotates, then translates
+    mat4 m = rotationpitchyawroll(eulerRadians.x, eulerRadians.y, eulerRadians.z);
+    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
+    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
+    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
     m.position = vec4(translation, 1);
     return m;
 }
@@ -165,7 +172,6 @@ affine(const vec3& scale, const vec3& rotation, const vec3& translation)
 mat4
 affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
 {
-    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
     vec3 scalev(scale);
     return affine(scalev, rotationCenter, rotation, translation);
 }

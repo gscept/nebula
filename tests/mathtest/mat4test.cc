@@ -231,10 +231,15 @@ Mat4Test::Run()
                                              outRotation, 
                                              vec3(-20.0f, 17.0f, 9.0f));
 
-    VERIFY(matnearequal(affinemat, mat4(vec4(  0.1f,       0.0f,      0.0f, 0.0f),
-                                     vec4(  0.0f,  0.054030f, 0.084147f, 0.0f),
-                                     vec4(  0.0f, -0.084147f, 0.054030f, 0.0f),
-                                     vec4(-20.0f, 16.948593f, 5.694101f, 1.0f))));
+    // the rotation center is the object pivot, so scaling must be centered there as well.
+    // this makes it equivalent to transformation() called with the same center for
+    // scaling and rotation
+    VERIFY(matnearequal(affinemat, transformation(vec3(0.5f, 3.0f, -1.7f),
+                                                  quat(),
+                                                  vec3(0.1f),
+                                                  vec3(0.5f, 3.0f, -1.7f),
+                                                  outRotation,
+                                                  vec3(-20.0f, 17.0f, 9.0f))));
 
     // transformation
     const quat qRotOneX = rotationmatrix(rotOneX);
@@ -376,6 +381,24 @@ Mat4Test::Run()
     vec4 extractedScale;
     mAffine.get_scale(extractedScale);
     VERIFY(nearequal(extractedScale, vec4(trsScale, 1.0f), E4));
+
+    // TRS order: the scale must be applied along the local axes, not the global axes
+    const scalar halfPi = 1.5707963267948966f;
+    const quat rot90Z = rotationquataxis(vec3(0.0f, 0.0f, 1.0f), halfPi);
+    const mat4 mLocalScale = trs(vec3(0.0f, 0.0f, 0.0f), rot90Z, vec3(2.0f, 1.0f, 1.0f));
+    VERIFY(nearequal(mLocalScale * vec4(1.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 2.0f, 0.0f, 0.0f), E4));
+    VERIFY(nearequal(mLocalScale * vec4(0.0f, 1.0f, 0.0f, 0.0f), vec4(-1.0f, 0.0f, 0.0f, 0.0f), E4));
+
+    // trs() must match hand-composed translation * rotation * scale
+    VERIFY(matnearequal(mTrs, translation(trsPos) * (rotationquat(trsRot) * scaling(trsScale))));
+
+    // a non-uniform trs matrix must decompose back into its parts
+    vec3 decompScale; quat decompRotation; vec3 decompTranslation;
+    const mat4 mNonUniformTrs = trs(trsPos, trsRot, vec3(2.0f, 0.5f, 3.0f));
+    decompose(mNonUniformTrs, decompScale, decompRotation, decompTranslation);
+    VERIFY(nearequal(decompScale, vec3(2.0f, 0.5f, 3.0f), E3));
+    VERIFY(matnearequal(rotationquat(decompRotation), rotationquat(trsRot)));
+    VERIFY(nearequal(decompTranslation, trsPos, E3));
 
     // point receives translation, vector does not
     const mat4 translationOnly = translation(5.0f, -3.0f, 2.0f);
