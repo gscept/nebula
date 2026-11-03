@@ -460,14 +460,14 @@ ArrayTest::Run()
     // later move treats the heap buffer as inline storage
     // ------------------------------------------------------------------------
     {
-        Array<Util::String, 4> small;
-        small.Append("a string long enough to live on the heap");
-        small.Fit();
-        VERIFY(small.Capacity() == 4);
-        Array<Util::String, 4> moved(std::move(small));
+        Array<Util::String, 4> smallarr;
+        smallarr.Append("a string long enough to live on the heap");
+        smallarr.Fit();
+        VERIFY(smallarr.Capacity() == 4);
+        Array<Util::String, 4> moved(std::move(smallarr));
         VERIFY(moved.Size() == 1 && moved[0] == "a string long enough to live on the heap");
-        small.Append("b");
-        VERIFY(small.Size() == 1 && small[0] == "b");
+        smallarr.Append("b");
+        VERIFY(smallarr.Size() == 1 && smallarr[0] == "b");
 
         // spilled to the heap, then shrunk back into the inline storage
         Array<int, 4> spilled;
