@@ -304,6 +304,21 @@ psDepthOnlyAlphaMask(in UV : f32x2) void
 /**
 */
 entry_point
+psDepthAlphaMaskBindlessMaterial(in UV : f32x2, in no_interpolate MaterialIndex : u32) void
+{
+    const mat = MaterialPointers.BRDFMaterials[MaterialIndex];
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
+    const dither = hash12(seed);
+    if (dither < ObjectUniforms.DitherFactor) { discard; }
+
+    const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
 vsStatic(
     binding(0) in position : f32x3,
     binding(2) in uv : i32x2,
