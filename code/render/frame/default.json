@@ -23,8 +23,6 @@
             "RayTracingObjectBindings",
             "HistogramCounters",
             "VegetationDrawCountBuffer",
-            "VegetationGrassDrawsBuffer",
-            "VegetationGrassArgumentsBuffer",
             "VegetationMeshDrawsBuffer",
             "VegetationMeshArgumentsBuffer"
         ],

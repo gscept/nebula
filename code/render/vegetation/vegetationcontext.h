@@ -35,8 +35,6 @@ struct VegetationGrassSetup
 struct VegetationMeshSetup
 {
     Resources::ResourceName mask;           // expects a 1 channel texture
-    Resources::ResourceName albedo;
-    Resources::ResourceName normals;
     Resources::ResourceName material;
     Resources::ResourceName mesh;
     float slopeThreshold;                   // slope threshold in percentage
@@ -59,10 +57,8 @@ public:
     static void Discard();
 
     /// Setup vegetation context
-    static void Setup(Resources::ResourceName heightMap, SizeT numGrassPlanesPerTuft, float grassPatchRadius);
+    static void Setup(Resources::ResourceName heightMap);
 
-    /// setup as grass
-    static void SetupGrass(const Graphics::GraphicsEntityId id, const VegetationGrassSetup& setup);
     /// setup as mesh
     static void SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
 
@@ -84,9 +80,7 @@ private:
     enum
     {
         Vegetation_Mask,
-        Vegetation_Albedos,
-        Vegetation_Normals,
-        Vegetation_Materials,
+        Vegetation_Material,
         Vegetation_Meshes,
         Vegetation_GPUInfo,
         Vegetation_TextureIndex,
@@ -96,9 +90,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        CoreGraphics::TextureId,
-        CoreGraphics::TextureId,
-        CoreGraphics::TextureId,
+        Materials::MaterialId,
         CoreGraphics::TextureId,
         CoreGraphics::MeshId,
         uint,
