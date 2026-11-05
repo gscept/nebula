@@ -14,6 +14,8 @@
 #include "graphicsfeature/components/lighting.h"
 #include "graphicsfeature/components/gi.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "editor/editoraudio.h"
+#include "audio/audioserver.h"
 
 // TEMP: Move this to editor game manager
 #include "game/world.h"
@@ -75,6 +77,19 @@ EditorFeatureUnit::OnActivate()
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
         Editor::Start();
+
+        if (!Audio::AudioServer::HasInstance())
+        {
+            this->audioServer = Audio::AudioServer::Create();
+            bool opened = this->audioServer->Open();
+            n_assert(opened);
+            this->ownsAudioServer = true;
+        }
+        else
+        {
+            this->audioServer = Audio::AudioServer::Instance();
+        }
+        Editor::LoadEditorAudioClips();
 
         // TODO: move this to a game manager that is created by the editor
 
@@ -188,6 +203,13 @@ EditorFeatureUnit::OnDeactivate()
     FeatureUnit::OnDeactivate();
     if (this->args.GetBoolFlag("-editor"))
     {
+        Editor::UnloadEditorAudioClips();
+        if (this->ownsAudioServer)
+        {
+            this->audioServer->Close();
+            this->ownsAudioServer = false;
+        }
+        this->audioServer = nullptr;
         Editor::Destroy();
     }
 }
@@ -217,6 +239,8 @@ void
 EditorFeatureUnit::OnFrame()
 {
     FeatureUnit::OnFrame();
+    if (this->ownsAudioServer)
+        this->audioServer->OnFrame();
 }
 
 } // namespace EditorFeature

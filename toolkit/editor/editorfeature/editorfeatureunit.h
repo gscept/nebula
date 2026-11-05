@@ -8,7 +8,13 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
+#include "core/ptr.h"
 #include "game/featureunit.h"
+
+namespace Audio
+{
+class AudioServer;
+}
 
 namespace EditorFeature
 {
@@ -35,6 +41,8 @@ public:
     virtual void OnFrame();
 
 private:
+    Ptr<Audio::AudioServer> audioServer;
+    bool ownsAudioServer = false;
 };
 
 } // namespace Editor
