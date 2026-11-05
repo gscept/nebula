@@ -41,6 +41,8 @@ fips_dir(editor)
     fips_files(
         editor.cc
         editor.h
+        editoraudio.cc
+        editoraudio.h
         cmds.cc
         cmds.h
         command.h
