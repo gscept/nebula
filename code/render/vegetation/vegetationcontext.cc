@@ -59,10 +59,9 @@ struct
     Util::FixedArray<CoreGraphics::BufferId> indirectDrawCountBuffer;
 
     IndexT meshMaskCount = 0;
-    Ids::IdPool texturePool;
 
-    SizeT grassDrawsThisFrame = 0;
     SizeT meshDrawsThisFrame[MAX_MESH_INFOS] = { 0 };
+    CoreGraphics::VertexLayoutId meshVertexLayouts[MAX_MESH_INFOS];
     SizeT meshVertexOffsets[MAX_MESH_INFOS];
     SizeT meshIndexOffsets[MAX_MESH_INFOS];
     CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
@@ -313,7 +312,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         CmdDispatch(cmdBuf, 1, 1, 1);
     }, {
         { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
-        , { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
     FrameScript_default::RegisterSubgraph_VegetationGenerateDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -324,9 +322,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 
         CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
     }, {
-        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
-        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
-        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
@@ -375,7 +371,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
-                CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
+                CmdSetVertexLayout(cmdBuf, vegetationState.meshVertexLayouts[i]);
                 CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
                 CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
 
@@ -391,9 +387,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             }
         }
     }, {
-        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
-        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
-        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+        { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
     });
 
@@ -407,7 +401,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
-                CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
+                CmdSetVertexLayout(cmdBuf, vegetationState.meshVertexLayouts[i]);
                 CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
                 CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
 
@@ -423,9 +417,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             }
         }
     }, {
-        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
-        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
-        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+        { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
         , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
     });
 
@@ -468,46 +460,77 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     CoreGraphics::TextureId mask = Resources::CreateResource(setup.mask, "Vegetation", nullptr, nullptr, true);
     vegetationAllocator.Set<Vegetation_Mask>(cid.id, mask);
 
-    CoreGraphics::TextureId& material = vegetationAllocator.Get<Vegetation_Material>(cid.id);
-    CoreGraphics::MeshId& mesh = vegetationAllocator.Get<Vegetation_Meshes>(cid.id);
+    Materials::MaterialId& material = vegetationAllocator.Get<Vegetation_Material>(cid.id);
+    CoreGraphics::MeshId& mesh = vegetationAllocator.Get<Vegetation_Mesh>(cid.id);
     uint& infoIndex = vegetationAllocator.Get<Vegetation_GPUInfo>(cid.id);
+    uint& loadedBits = vegetationAllocator.Get<Vegetation_LoadedBits>(cid.id);
+    loadedBits = 0;
     float& slopeThreshold = vegetationAllocator.Get<Vegetation_SlopeThreshold>(cid.id);
     float& heightThreshold = vegetationAllocator.Get<Vegetation_HeightThreshold>(cid.id);
-    IndexT& textureIndex = vegetationAllocator.Get<Vegetation_TextureIndex>(cid.id);
-    VegetationType& type = vegetationAllocator.Get<Vegetation_Type>(cid.id);
-
-    material = Resources::CreateResource(setup.material, "Vegetation", nullptr, nullptr, true);
 
     CoreGraphics::MeshLoader::StreamMeshLoadMetaData metaData;
     metaData.copySource = true;
     mesh = CoreGraphics::InvalidMeshId;
-
-    Models::ModelId model = Resources::CreateResource(setup.mesh, metaData, "Vegetation", nullptr, nullptr, true);
-    const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(model);
-    Util::Array<float> lodDistances;
-    for (auto node : nodes)
-    {
-        if (node->GetType() == Models::NodeType::PrimitiveNodeType)
-        {
-            auto pnode = static_cast<Models::PrimitiveNode*>(node);
-            if (mesh == CoreGraphics::InvalidMeshId)
-                mesh = pnode->GetMesh();
-
-            float minDist, maxDist;
-            pnode->GetLODDistances(minDist, maxDist);
-            lodDistances.Append(maxDist);
-        }
-    }
-
+    
     infoIndex = vegetationState.meshInfoPool.Alloc();
     n_assert(infoIndex < Vegetation::MAX_MESH_INFOS);
     MeshInfo& info = vegetationState.meshInfos[infoIndex];
-    info.used = true;
+    info.used = false;
 
-    // get primitive groups so we can update the mesh info
-    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
-    uint baseVertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
-    uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
+    Models::ModelId model = Resources::CreateResource(setup.mesh, metaData, "Vegetation", [&mesh, &info, &loadedBits, infoIndex](Resources::ResourceId model)
+        {
+            const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(model);
+            Util::Array<float> lodDistances;
+            for (auto node : nodes)
+            {
+                if (node->GetType() == Models::NodeType::PrimitiveNodeType)
+                {
+                    auto pnode = static_cast<Models::PrimitiveNode*>(node);
+                    if (mesh == CoreGraphics::InvalidMeshId)
+                        mesh = pnode->GetMesh();
+
+                    float minDist, maxDist;
+                    pnode->GetLODDistances(minDist, maxDist);
+                    lodDistances.Append(maxDist);
+                }
+            }
+
+            // get primitive groups so we can update the mesh info
+            const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
+            uint baseVertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
+
+            info.indexCount = 0;
+            info.vertexCount = 0;
+            info.numLods = groups.Size();
+
+            vegetationState.meshVertexOffsets[infoIndex] = baseVertexOffset;
+            vegetationState.meshIndexOffsets[infoIndex] = baseIndexOffset;
+
+            float distances[] = {10, 25, 50, 100, 500, 1000};
+
+            //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
+            for (IndexT i = 0; i < groups.Size(); i++)
+            {
+                if (lodDistances[i] == FLT_MAX)
+                    info.lodDistances[i] = distances[i] * distances[i];
+                else
+                    info.lodDistances[i] = lodDistances[i] * lodDistances[i];
+                info.lodIndexOffsets[i] = groups[i].GetBaseIndex();
+                info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
+                info.lodIndexCount[i] = groups[i].GetNumIndices();
+                info.lodVertexCount[i] = groups[i].GetNumVertices();
+                info.indexCount += groups[i].GetNumIndices();
+                info.vertexCount += groups[i].GetNumVertices();
+            }
+
+            loadedBits |= LoadedBits::Model;
+            if (loadedBits == (LoadedBits::Model | LoadedBits::Material))
+                info.used = true;
+
+        }, nullptr);
+
+
 
     // make sure the mesh is valid for vegetation rendering
     const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
@@ -522,6 +545,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         n_assert(components[5].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
         vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshVColorZShader;
         vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshVColorShader;
+        vegetationState.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
     }
     else // without
     {
@@ -532,52 +556,35 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
         vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshZShader;
         vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshShader;
+        vegetationState.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
     }
 
-    info.indexCount = 0;
-    info.vertexCount = 0;
-    info.numLods = groups.Size();
-
-    vegetationState.meshVertexOffsets[infoIndex] = baseVertexOffset;
-    vegetationState.meshIndexOffsets[infoIndex] = baseIndexOffset;
-
-    float distances[] =
-    {
-        10,
-        25,
-        50,
-        100,
-        500,
-        1000
-    };
-    //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
-    for (IndexT i = 0; i < groups.Size(); i++)
-    {
-        if (lodDistances[i] == FLT_MAX)
-            info.lodDistances[i] = distances[i] * distances[i];
-        else
-            info.lodDistances[i] = lodDistances[i] * lodDistances[i];
-        info.lodIndexOffsets[i] = groups[i].GetBaseIndex();
-        info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
-        info.lodIndexCount[i] = groups[i].GetNumIndices();
-        info.lodVertexCount[i] = groups[i].GetNumVertices();
-        info.indexCount += groups[i].GetNumIndices();
-        info.vertexCount += groups[i].GetNumVertices();
-    }
+   
     slopeThreshold = setup.slopeThreshold;
     heightThreshold = setup.heightThreshold;
-    textureIndex = vegetationState.texturePool.Alloc();
-    type = VegetationType::MeshType;
 
     info.slopeThreshold = slopeThreshold;
     info.heightThreshold = heightThreshold;
-    info.textureIndex = textureIndex;
+    info.materialIndex = -1;
+
+    material = Resources::CreateResource(
+        setup.material,
+        "Vegetation",
+        [&info, &loadedBits](Resources::ResourceId material)
+        {
+            info.materialIndex = Materials::MaterialGetBufferBinding(material);
+
+            loadedBits |= LoadedBits::Material;
+            if (loadedBits == (LoadedBits::Model | LoadedBits::Material))
+                info.used = true;
+        },
+        nullptr
+    );
+
     info.distribution = 0.0f;
 
-    vegetationState.materialUniforms.VegetationAlbedo[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(albedo);
-    vegetationState.materialUniforms.VegetationNormal[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(normal);
-    vegetationState.materialUniforms.VegetationMaterial[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(material);
-    vegetationState.materialUniforms.VegetationMasks[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(mask);
+    vegetationState.materialUniforms.VegetationMasks[info.materialIndex / 4][info.materialIndex % 4] =
+        CoreGraphics::TextureGetBindlessHandle(mask);
 
     CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
 }
@@ -608,31 +615,11 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     uniforms.DensityFactor = 1.0f;
     uniforms.MinHeight = vegetationState.minHeight;
     uniforms.MaxHeight = vegetationState.maxHeight;
-    uniforms.NumGrassBlades = vegetationState.numGrassBlades;
     uniforms.HeightMapSize[0] = CoreGraphics::TextureGetDimensions(vegetationState.heightMap).width;
     uniforms.HeightMapSize[1] = CoreGraphics::TextureGetDimensions(vegetationState.heightMap).height;
     uniforms.MaxRange = 100.0f * 100.0f;
     uniforms.Fov = Math::cos(settings.GetFov() + 5.0_rad);
-
-    uniforms.NumGrassTypes = 0;
-    uniforms.NumMeshTypes = 0;
-    const Util::Array<VegetationType>& types = vegetationAllocator.GetArray<Vegetation_Type>();
-    for (IndexT i = 0; i < types.Size(); i++)
-    {
-        switch (types[i])
-        {
-        case VegetationType::GrassType:
-        {
-            uniforms.NumGrassTypes++;
-            break;
-        }
-        case VegetationType::MeshType:
-        {
-            uniforms.NumMeshTypes++;
-            break;
-        }
-        }
-    }
+    uniforms.NumMeshInfos = vegetationAllocator.Size();
 
     // update uniform buffer
     CoreGraphics::BufferUpdate(vegetationState.systemUniforms, uniforms);
@@ -641,14 +628,11 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     CoreGraphics::BufferUpdateArray(vegetationState.meshInfoBuffer, vegetationState.meshInfos, Vegetation::MAX_MESH_INFOS);
     CoreGraphics::BufferFlush(vegetationState.meshInfoBuffer);
 
-    CoreGraphics::BufferUpdateArray(vegetationState.grassInfoBuffer, vegetationState.grassInfos, Vegetation::MAX_GRASS_INFOS);
-    CoreGraphics::BufferFlush(vegetationState.grassInfoBuffer);
-
     CoreGraphics::BufferInvalidate(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
     auto counts = (Vegetation::DrawCount::STRUCT*)CoreGraphics::BufferMap(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
 
+
     // update draw counts
-    vegetationState.grassDrawsThisFrame = counts->NumGrassDraws;
     for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
         vegetationState.meshDrawsThisFrame[i] = counts->NumMeshDraws[i/4][i%4];
 
@@ -670,20 +654,10 @@ VegetationContext::Alloc()
 void
 VegetationContext::Dealloc(Graphics::ContextEntityId id)
 {
-    const VegetationType& type = vegetationAllocator.Get<Vegetation_Type>(id.id);
-
     // if mesh type, dealloc mesh info struct
     uint& gpuInfo = vegetationAllocator.Get<Vegetation_GPUInfo>(id.id);
 
-    if (type == VegetationType::MeshType)
-        vegetationState.meshInfoPool.Dealloc(gpuInfo);
-    else if (type == VegetationType::GrassType)
-        vegetationState.grassInfoPool.Dealloc(gpuInfo);
-
-
-    // dealloc texture
-    IndexT& textureIndex = vegetationAllocator.Get<Vegetation_TextureIndex>(id.id);
-    vegetationState.texturePool.Dealloc(textureIndex);
+    vegetationState.meshInfoPool.Dealloc(gpuInfo);
 
     vegetationAllocator.Dealloc(id.id);
 }
