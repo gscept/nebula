@@ -30,7 +30,7 @@ struct VegetationGenerationData
 
     MaxRange : f32;
     Fov : f32;
-    NumMeshTypes : i32; 
+    NumMeshInfos : u32;
 };
 
 @Visibility("CS")
@@ -62,29 +62,11 @@ const MAX_VEGETATION_LAYERS = 8;
 
 struct VegetationMaterial
 {
-    VegetationAlbedo : [MAX_VEGETATION_LAYERS / 4]i32x4;
-    VegetationNormal : [MAX_VEGETATION_LAYERS / 4]i32x4;
-    VegetationMaterial : [MAX_VEGETATION_LAYERS / 4]i32x4;
     VegetationMasks: [MAX_VEGETATION_LAYERS / 4]i32x4;
 };
 
 @Visibility("CS|PS")
 group(SYSTEM_GROUP) uniform VegetationMaterialUniforms : *VegetationMaterial;
-
-sampleAlbedo(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
-{
-    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationAlbedo[index / 4][index % 4]], samp, uv);
-}
-
-sampleNormal(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
-{
-    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationNormal[index / 4][index % 4]], samp, uv);
-}
-
-sampleMaterial(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
-{
-    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationMaterial[index / 4][index % 4]], samp, uv);
-}
 
 sampleMask(type: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
@@ -212,7 +194,7 @@ csGenerateDraws() void
         const normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
 
         // go through mesh types and generate uniforms and draws
-        for (var i = 0; i < VegetationGenerateUniforms.NumMeshTypes; i++)
+        for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
         {
             const meshInfo = bufferLoad(MeshInfos, i);
 

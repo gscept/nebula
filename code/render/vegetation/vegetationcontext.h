@@ -71,32 +71,31 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    enum class VegetationType : uint8_t
+    enum LoadedBits
     {
-        GrassType,      // use for grass and undergrowth
-        MeshType        // use for rocks or other objects which might need meshes
+        Model,
+        Material
     };
 
     enum
     {
         Vegetation_Mask,
         Vegetation_Material,
-        Vegetation_Meshes,
+        Vegetation_Mesh,
         Vegetation_GPUInfo,
-        Vegetation_TextureIndex,
         Vegetation_SlopeThreshold,
         Vegetation_HeightThreshold,
-        Vegetation_Type
+        Vegetation_LoadedBits
     };
 
     typedef Ids::IdAllocator<
-        Materials::MaterialId,
         CoreGraphics::TextureId,
+        Materials::MaterialId,
         CoreGraphics::MeshId,
         uint,
-        IndexT,
-        float, float,
-        VegetationType
+        float, 
+        float,
+        uint
     > VegetationAllocator;
     static VegetationAllocator vegetationAllocator;
 };
