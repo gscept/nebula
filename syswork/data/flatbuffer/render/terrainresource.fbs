@@ -22,10 +22,12 @@ table TerrainResource
 	decision_map : string = "system:white:tex";
 	enable_ray_tracing : bool = false;
 	biomes : [Biome];
+	vegetation : [VegetationMesh];
 }
 
 table Biome
 {
+	name : string = "New Biome";
 	mask : string = "system:white:tex";
 	slope_threshold : float = 0.5;
 	height_threshold : float = 0.5;
@@ -38,6 +40,15 @@ table BiomeMaterial
 	albedo : string = "system:white:tex";
 	normals : string = "system:nobump:tex";
 	material : string = "system:default_material:tex";
+}
+
+table VegetationMesh
+{
+	name : string = "New Mesh";
+	mask : string = "system:black:tex";
+	model : string = "system:box:mdl";
+	slope_threshold : float = 0.5;
+	height_threshold : float = 1.0;
 }
 
 root_type TerrainResource;

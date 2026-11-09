@@ -21,6 +21,7 @@
 #include "decals/decalcontext.h"
 #include "gi/ddgicontext.h"
 #include "terrain/terraincontext.h"
+#include "vegetation/vegetationcontext.h"
 
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
@@ -569,6 +570,17 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
         settings.biomeParameters.slopeThreshold = biome->slope_threshold;
         settings.biomeParameters.uvScaleFactor = biome->uv_scale_factor;
         ::Terrain::TerrainContext::CreateBiome(terrain->graphicsEntityId, settings);
+    }
+
+    Vegetation::VegetationContext::RegisterEntity(terrain->graphicsEntityId);
+    for (auto const& vegetation : resource.vegetation)
+    {
+        Vegetation::VegetationMeshSetup mesh;
+        mesh.mask = IO::Path::Parse(vegetation->mask);
+        mesh.model = IO::Path::Parse(vegetation->model);
+        mesh.heightThreshold = vegetation->height_threshold;
+        mesh.slopeThreshold = vegetation->slope_threshold;
+        Vegetation::VegetationContext::SetupMesh(terrain->graphicsEntityId, mesh);
     }
 }
 
