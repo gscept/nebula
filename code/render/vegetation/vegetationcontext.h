@@ -22,24 +22,14 @@ struct VegetationSetupSettings
     Math::vec2 worldSize;
 };
 
-struct VegetationGrassSetup
-{
-    Resources::ResourceName mask;           // expects a 1 channel texture
-    Resources::ResourceName albedo;
-    Resources::ResourceName normals;
-    Resources::ResourceName material;
-    float slopeThreshold;                   // slope threshold in percentage
-    float heightThreshold;                  // height threshold in percentage
-};
-
 struct VegetationMeshSetup
 {
-    Resources::ResourceName mask;           // expects a 1 channel texture
-    Resources::ResourceName material;
-    Resources::ResourceName mesh;
-    float slopeThreshold;                   // slope threshold in percentage
-    float heightThreshold;                  // height threshold in percentage
+    IO::Path mask = IO::Path::FolderAndFile("tex", "system/black");             // expects a 1 channel texture
+    IO::Path model = IO::Path::FolderAndFile("mdl", "system/box");
+    float slopeThreshold;                                                       // slope threshold in percentage
+    float heightThreshold;                                                      // height threshold in percentage
 };
+
 
 class VegetationContext : public Graphics::GraphicsContext
 {
@@ -60,7 +50,12 @@ public:
     static void Setup(Resources::ResourceName heightMap);
 
     /// setup as mesh
-    static void SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
+    static uint SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
+
+#if WITH_NEBULA_EDITOR
+    /// Set the model
+    static void SetModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& model);
+#endif
 
     /// update resources
     static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
@@ -81,21 +76,19 @@ private:
     {
         Vegetation_Mask,
         Vegetation_Material,
-        Vegetation_Mesh,
+        Vegetation_Model,
         Vegetation_GPUInfo,
         Vegetation_SlopeThreshold,
-        Vegetation_HeightThreshold,
-        Vegetation_LoadedBits
+        Vegetation_HeightThreshold
     };
 
     typedef Ids::IdAllocator<
         CoreGraphics::TextureId,
         Materials::MaterialId,
-        CoreGraphics::MeshId,
+        Models::ModelId,
         uint,
         float, 
-        float,
-        uint
+        float
     > VegetationAllocator;
     static VegetationAllocator vegetationAllocator;
 };

@@ -661,8 +661,6 @@ ReadImportFile(const IO::URI& file, std::vector<uint8_t>& data)
     {
         data.resize(stream->GetSize());
         memcpy(data.data(), stream->MemoryMap(), stream->GetSize());
-        texture.data = data;
-        texture.source = file.LocalPath();
 
         stream->MemoryUnmap();
         stream->Close();
@@ -707,6 +705,8 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil
         return false;
     }
     texture.source = GetSourceReference(file);
+
+    texture.source = file.LocalPath();
 
     // Save nebula texture 
     Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
