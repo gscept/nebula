@@ -3,15 +3,13 @@
 //  @copyright (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "system/appentry.h"
 #include "core/coreserver.h"
+#include "core/sysfunc.h"
 #include "testbase/testrunner.h"
 #include "testbase/stackdebug.h"
 
 // tests
 #include "cookingtest.h"
-
-ImplementNebulaApplication();
 
 using namespace Core;
 using namespace Test;
@@ -21,10 +19,10 @@ using namespace Test;
     Headless test which runs the physics cooking layer without a renderer and
     without reading any asset files.
 */
-void
-NebulaMain(const Util::CommandLineArgs& args)
+int
+main(int argc, char** argv)
 {
-    STACK_CHECKPOINT("NebulaMain");
+    STACK_CHECKPOINT("main");
 
     // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
@@ -46,4 +44,5 @@ NebulaMain(const Util::CommandLineArgs& args)
     coreServer = nullptr;
 
     Core::SysFunc::Exit(result ? 0 : -1);
+    return result ? 0 : -1;
 }
