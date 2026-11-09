@@ -482,7 +482,36 @@ TerrainEditor::Run(SaveMode save)
             Terrain::BiomeSettings biomeSettings;
 
             biomeSettings.biomeMask = IO::Path::FolderAndFile("tex", biomeComp->mask);
-            biomeTextures.maskTex = Resources::CreateResource(biomeSettings.biomeMask, "editor", nullptr, nullptr, true, false);
+            // Create new mask
+            CoreGraphics::TextureCreateInfo maskTexInfo;
+            maskTexInfo.name = "Biome Mask Texture";
+            maskTexInfo.width = selectedTerrainResource.world_size_x;
+            maskTexInfo.height = selectedTerrainResource.world_size_z;
+            maskTexInfo.format = CoreGraphics::PixelFormat::R8;
+            maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
+            biomeTextures.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
+
+            // Create original resource, and copy to the editable version we're using
+            Resources::CreateResource(biomeSettings.biomeMask, "editor", nullptr, [
+                mask = biomeTextures.maskTex, 
+                width = selectedTerrainResource.world_size_x, 
+                height = selectedTerrainResource.world_size_z](const Resources::ResourceId tex)
+            {
+                CoreGraphics::CmdBufferId copyCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+                CoreGraphics::TextureCopy cpy;
+                cpy.region = Math::rectangle<SizeT>(0, 0, width, height);
+                CoreGraphics::BarrierPush(copyCmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::BarrierDomain::Global,
+                    {
+                        CoreGraphics::TextureBarrierInfo {.tex = tex.resource, .subres = CoreGraphics::TextureSubresourceInfo::Color() }
+                    });
+                CoreGraphics::BarrierPush(copyCmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+                    {
+                        CoreGraphics::TextureBarrierInfo {.tex = mask, .subres = CoreGraphics::TextureSubresourceInfo::Color() }
+                    });
+                CoreGraphics::CmdCopy(copyCmdBuf, tex.resource, { cpy }, mask, { cpy });
+                CoreGraphics::BarrierPop(copyCmdBuf);
+                CoreGraphics::BarrierPop(copyCmdBuf);
+            }, false);
             Dynui::ImguiTextureId imguiHandle{ .nebulaHandle = biomeTextures.maskTex, .splat = true };
             biomeTextures.imguiMaskId = Dynui::AllocateImguiTextureId(imguiHandle);
 
