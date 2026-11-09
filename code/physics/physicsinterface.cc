@@ -14,6 +14,7 @@
 #include "timing/time.h"
 #include "physics/physxstate.h"
 #include "physics/streamactorpool.h"
+#include "physics/formats/formats.h"
 #include "resources/resourceserver.h"
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
@@ -65,6 +66,7 @@ Ptr<Physics::StreamActorPool> actorLoader;
 void
 Setup()
 {
+    Physics::RegisterDefaultGeometryLoader();
     state.Setup();
     actorLoader = Physics::StreamActorPool::Create(); actorLoader->Setup();
     Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", actorLoader);

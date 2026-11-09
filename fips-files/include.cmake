@@ -28,6 +28,15 @@ option(N_SHADER_DEBUG "Output textual version of shader binary code to binary ou
 option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 option(N_SANITIZERS "Build with sanitizers (only supported on linux)" OFF)
 option(N_ENABLE_TBUI "Build the tbui addon and its test app" OFF)
+option(N_ENABLE_PHYSICS_FORMAT_NVX "Compile the nvx mesh reader into the physics cooking layer" ON)
+option(N_ENABLE_PHYSICS_FORMAT_DDS "Compile the DDS heightfield reader into the physics cooking layer" ON)
+
+if (N_ENABLE_PHYSICS_FORMAT_NVX)
+    add_compile_definitions(WITH_NEBULA_PHYSICS_FORMAT_NVX)
+endif()
+if (N_ENABLE_PHYSICS_FORMAT_DDS)
+    add_compile_definitions(WITH_NEBULA_PHYSICS_FORMAT_DDS)
+endif()
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
     if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")

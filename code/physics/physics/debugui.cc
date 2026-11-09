@@ -8,8 +8,6 @@
 #include "physics/debugui.h"
 #include "physicsinterface.h"
 #include "physics/physxstate.h"
-#include "dynui/imguicontext.h"
-#include "dynui/im3d/im3dcontext.h"
 #include "physics/utils.h"
 #include "imgui.h"
 #include "flat/physics/material.h"

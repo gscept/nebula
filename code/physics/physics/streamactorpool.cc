@@ -8,16 +8,13 @@
 #include "physics/physxstate.h"
 #include "physics/actorcontext.h"
 #include "physics/utils.h"
+#include "physics/geometry.h"
+#include "physics/cooking.h"
 #include "resources/resourceserver.h"
-#include "io/streamreader.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/physics/material.h"
 #include "flat/physics/actor.h"
-#include "coregraphics/nvx3fileformatstructs.h"
-#include "coregraphics/primitivegroup.h"
-#include "coregraphics/load/glimltypes.h"
-#include "coregraphics/indextype.h"
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceLoader);
 
@@ -170,106 +167,6 @@ StreamActorPool::GetResourceType(PhysicsResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-static physx::PxGeometryHolder
-CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGroup)
-{
-    physx::PxGeometryHolder holder;
-
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
-
-    nvx3Reader->SetStream(stream);
-
-    if (!nvx3Reader->Open())
-    {
-        return holder;
-    }
-
-    n_assert(stream->CanBeMapped());
-
-    void* mapPtr = nullptr;
-    n_assert(nullptr == mapPtr);
-    // map the stream to memory
-    mapPtr = stream->MemoryMap();
-    n_assert(nullptr != mapPtr);
-
-    auto header = (CoreGraphics::Nvx3Header*)mapPtr;
-
-    n_assert(header != nullptr);
-
-    if (header->magic != NEBULA_NVX_MAGICNUMBER)
-    {
-        // not a nvx3 file, break hard
-        n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
-    }
-
-    n_assert(header->numMeshes > 0);
-
-    CoreGraphics::Nvx3Elements elements;
-    CoreGraphics::Nvx3::FillNvx3Elements((char*)mapPtr, header, elements);
-
-    const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
-    const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
-    const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
-    const CoreGraphics::Nvx3Group* group = (CoreGraphics::Nvx3Group*)((char*)mapPtr + elements.ranges[0].firstGroupOffset + sizeof(CoreGraphics::Nvx3Group) * primGroup);
-
-    switch (type)
-    {
-        // FIXME, cooking doesnt seem to like our meshes,
-        // always create convex hull, even if already convex
-        case MeshTopology_Convex:
-        case MeshTopology_ConvexHull:
-        {
-            PxConvexMeshDesc convexDesc;
-            convexDesc.points.count = vertexCount;
-            convexDesc.points.stride = vertexStride;
-            convexDesc.points.data = groupVertexBase;
-            convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-
-            PxTolerancesScale scale;
-            PxCookingParams params(scale);
-            PxDefaultMemoryOutputStream buf;
-            PxConvexMeshCookingResult::Enum result;
-            PxCookConvexMesh(params, convexDesc, buf, &result);
-            PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-            holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
-        }
-        break;
-        case MeshTopology_Triangles:
-        {
-            PxTolerancesScale scale;
-            PxCookingParams params(scale);
-            // disable mesh cleaning - perform mesh validation on development configurations
-            //params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
-            // disable edge precompute, edges are set for each triangle, slows contact generation
-            params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
-
-            PxTriangleMeshDesc meshDesc;
-            meshDesc.points.count = vertexCount;
-            meshDesc.points.stride = vertexStride;
-            meshDesc.points.data = groupVertexBase;
-
-            meshDesc.triangles.count = group->numIndices / 3;
-            if (elements.ranges[0].indexType == CoreGraphics::IndexType::Index16)
-            {
-                meshDesc.flags |= PxMeshFlag::e16_BIT_INDICES;
-            }
-            meshDesc.triangles.stride = CoreGraphics::IndexType::SizeOf(elements.ranges[0].indexType) * 3 ;
-            meshDesc.triangles.data = elements.indexData + elements.ranges[0].indexByteOffset;
-#if NEBULA_DEBUG
-            PxValidateTriangleMesh(params, meshDesc);
-#endif
-            PxTriangleMesh* aTriangleMesh = PxCreateTriangleMesh(params, meshDesc, state.physics->getPhysicsInsertionCallback());
-            holder = PxTriangleMeshGeometry(aTriangleMesh);
-        }
-        break;
-    }
-    nvx3Reader->Close();
-    return holder;
-}
-
-
 static PxShape* CreateColliderShape(physx::PxGeometryHolder geometry, physx::PxMaterial* material, physx::PxTransform const& trans, const Util::String& colliderName, bool exclusive)
 {
     physx::PxShape* newShape = state.physics->createShape(geometry.any(), *material, exclusive);
@@ -304,114 +201,35 @@ static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const
 static void
 AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, BodyInfo& targetBody)
 {
-    MeshTopology type = colliderNode->type;
-    int primGroup = colliderNode->prim_group;
+    const GeometryLoader& loader = GetGeometryLoader();
+    if (!loader.LoadMesh)
+    {
+        n_error("AddMeshColliders: no geometry loader registered, cannot read '%s'", colliderNode->file.AsCharPtr());
+        return;
+    }
 
     Util::StringAtom resource = colliderNode->file;
-    if (type != MeshTopology_ApproxSkin)
-    {
-        physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primGroup);
-        AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetBody, tag, entry);
-        return;
-    }
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
 
-    nvx3Reader->SetStream(stream);
-
-    if (!nvx3Reader->Open())
+    MeshGeometryInput input;
+    input.topology = colliderNode->type;
+    if (!loader.LoadMesh(resource, colliderNode->prim_group, input))
     {
         return;
     }
 
-    n_assert(stream->CanBeMapped());
-
-    void* mapPtr = nullptr;
-    n_assert(nullptr == mapPtr);
-    // map the stream to memory
-    mapPtr = stream->MemoryMap();
-    char* basePtr = (char*)mapPtr;
-    n_assert(nullptr != mapPtr);
-
-    auto header = (CoreGraphics::Nvx3Header*)mapPtr;
-
-    n_assert(header != nullptr);
-
-    if (header->magic != NEBULA_NVX_MAGICNUMBER)
+    if (colliderNode->type == MeshTopology_ApproxSkin)
     {
-        // not a nvx3 file, break hard
-        n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
+        Util::Array<CookedConvex> cooked = CookApproxSkin(input);
+        for (SizeT i = 0; i < cooked.Size(); i++)
+        {
+            Util::String boneName = Util::String::Sprintf("%s_%d", nodeName.AsCharPtr(), cooked[i].bone);
+            AddCollider(cooked[i].geometry, materialIdx, nodeTransform, resource.Value(), boneName, targetBody, tag, entry);
+        }
+        return;
     }
 
-    n_assert(header->numMeshes > 0);
-
-    CoreGraphics::Nvx3Elements elements;
-    CoreGraphics::Nvx3::FillNvx3Elements(basePtr, header, elements);
-
-    const CoreGraphics::Nvx3Group* group = (CoreGraphics::Nvx3Group*)(basePtr + elements.ranges[0].firstGroupOffset + sizeof(CoreGraphics::Nvx3Group) * primGroup);
-
-    const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
-    const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
-    const ubyte* attributeVertexBase = elements.vertexData + elements.ranges[0].attributesVertexByteOffset;
-
-    const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
-    n_assert(elements.ranges[0].layout == CoreGraphics::VertexLayoutType::Skin);
-
-    Util::Array<PxVec3> targetVertexBuffer(vertexCount, 10);
-    // this is super inefficient, but also pointless, so who cares :D
-    CoreGraphics::SkinVertex* skinBuffer = (CoreGraphics::SkinVertex*)attributeVertexBase;
-    CoreGraphics::BaseVertex* vertexBuffer = (CoreGraphics::BaseVertex*)groupVertexBase;
-    ubyte maxIndex = 1;
-    ubyte currBone = 0;
-    while (currBone < maxIndex)
-    {
-        targetVertexBuffer.Reset();
-        for (int i = 0; i < vertexCount; ++i)
-        {
-            CoreGraphics::SkinVertex const& vertex = skinBuffer[i];
-            CoreGraphics::BaseVertex const& pos = vertexBuffer[i];
-
-            if (vertex.skinWeights[0] > 0.0f)
-            {
-                if (currBone == vertex.skinIndices.x)
-                {
-                    targetVertexBuffer.Append({ pos.position[0], pos.position[1], pos.position[2] });
-                }
-                else
-                {
-                    maxIndex = Math::max(vertex.skinIndices.x, maxIndex);
-                }
-            }
-        }
-        if (targetVertexBuffer.Size() > 0)
-        {
-            PxConvexMeshDesc convexDesc;
-            convexDesc.points.count = targetVertexBuffer.Size();
-            convexDesc.points.stride = sizeof (PxVec3);
-            convexDesc.points.data = &targetVertexBuffer[0];
-            convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-
-            PxDefaultMemoryOutputStream buf;
-            PxConvexMeshCookingResult::Enum result;
-            PxTolerancesScale scale;
-            PxCookingParams params(scale);
-            PxCookConvexMesh(params, convexDesc, buf, &result);
-            if (result == PxConvexMeshCookingResult::eSUCCESS)
-            {
-                PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-                physx::PxGeometryHolder holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
-                Util::String BoneName = Util::String::Sprintf("%s_%d", nodeName.AsCharPtr(), currBone);
-                AddCollider(holder, materialIdx, nodeTransform, resource.Value(), BoneName, targetBody, tag, entry);
-            }
-            else
-            {
-                n_printf("Convex mesh failed: %d\n", result);
-            }
-        }
-        currBone++;
-    }
-    nvx3Reader->Close();
+    physx::PxGeometryHolder geometry = CookMesh(input);
+    AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetBody, tag, entry);
 }
 
 //------------------------------------------------------------------------------
@@ -420,61 +238,26 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform c
 static void
 AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::transform const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, BodyInfo& targetBody)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(colliderNode->file));
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
+    const GeometryLoader& loader = GetGeometryLoader();
+    if (!loader.LoadHeightField)
     {
-        void* heightData = stream->MemoryMap();
-        uint heightSize = stream->GetSize();
-        n_assert(heightData != nullptr);
-
-        gliml::context ctx;
-        if (ctx.load_dds(heightData, heightSize))
-        {
-            int depth = ctx.image_depth(0, 0);
-            int width = ctx.image_width(0, 0);
-            int height = ctx.image_height(0, 0);
-
-            CoreGraphics::PixelFormat::Code format = CoreGraphics::Gliml::ToPixelFormat(ctx);
-            n_assert(format == CoreGraphics::PixelFormat::R16);
-
-            PxHeightFieldSample* heightSamples = (PxHeightFieldSample*)Memory::Alloc(Memory::PhysicsHeap, width * height * sizeof(PxHeightFieldSample));
-            n_assert(heightSamples != nullptr);
-            Memory::Clear(heightSamples, width * height * sizeof(PxHeightFieldSample));
-
-            uint16_t* heightBuffer = (uint16_t*)ctx.image_data(0, 0);
-
-            // need to flip to be in same orientation with rendering
-            for (int i = 0; i < width; i++)
-            {
-                for (int j = 0; j < height; j++)
-                {
-                    heightSamples[i * width + j].height = heightBuffer[j * width + i];
-                }
-            }
-
-            PxHeightFieldDesc hfDesc;
-            hfDesc.format = PxHeightFieldFormat::eS16_TM;
-            hfDesc.nbColumns = width;
-            hfDesc.nbRows = height;
-            hfDesc.samples.data = heightSamples;
-            hfDesc.samples.stride = sizeof(PxHeightFieldSample);
-
-            PxHeightField* physxHeightField = PxCreateHeightField(hfDesc);
-
-            float sh = colliderNode->height_range / 65536.0f;
-            float sx = colliderNode->target_size_x / (float)width;
-            float sy = colliderNode->target_size_y / (float)height;
-            PxHeightFieldGeometry hfGeom(physxHeightField, PxMeshGeometryFlags(), sh, sx, sy);
-            Math::transform offsetTransform;
-            offsetTransform.position = Math::vec3(-0.5f * colliderNode->target_size_x, 0.0f, -0.5f * colliderNode->target_size_y);
-            physx::PxGeometryHolder holder = hfGeom;
-            AddCollider(holder, materialIdx, offsetTransform, colliderNode->file.AsCharPtr(), nodeName, targetBody, tag, entry);
-            Memory::Free(Memory::HeapType::PhysicsHeap, heightSamples);
-        }
-        stream->MemoryUnmap();
-        stream->Close();
+        n_error("AddHeightField: no geometry loader registered, cannot read '%s'", colliderNode->file.AsCharPtr());
+        return;
     }
+
+    HeightFieldInput input;
+    if (!loader.LoadHeightField(colliderNode->file, input))
+    {
+        return;
+    }
+
+    physx::PxGeometryHolder geometry =
+        CookHeightField(input, colliderNode->height_range, colliderNode->target_size_x, colliderNode->target_size_y);
+
+    // the heightfield origin is at the corner of the field, move it to the center
+    Math::transform offsetTransform;
+    offsetTransform.position = Math::vec3(-0.5f * colliderNode->target_size_x, 0.0f, -0.5f * colliderNode->target_size_y);
+    AddCollider(geometry, materialIdx, offsetTransform, colliderNode->file.AsCharPtr(), nodeName, targetBody, tag, entry);
 }
 
 //------------------------------------------------------------------------------
@@ -536,15 +319,6 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
                 case ColliderType_Mesh:
                 {
                     AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
-                    /*
-                                    auto mesh = collider->data.AsMeshCollider();
-                                    MeshTopology type = mesh->type;
-                                    int primgroup = mesh->prim_group;
-
-                                    Util::StringAtom resource = mesh->file;
-                                    physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primgroup);
-                                    AddCollider(geometry, material, shape->transform, resource.Value(), collider->name);
-                                    */
                 }
                 break;
                 case ColliderType_HeightField:
