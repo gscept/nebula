@@ -7,7 +7,7 @@ enum BrushMode
     Lower,
     Flatten,
     Smooth,
-    Biome
+    Mask
 };
 struct BrushData
 {
