@@ -434,8 +434,6 @@ uint
 VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup)
 {
     Graphics::ContextEntityId cid = GetContextId(id.id);
-    CoreGraphics::TextureId mask = Resources::CreateResource(setup.mask, "Vegetation", nullptr, nullptr, true);
-    vegetationAllocator.Set<Vegetation_Mask>(cid.id, mask);
 
     Materials::MaterialId& material = vegetationAllocator.Get<Vegetation_Material>(cid.id);
     Models::ModelId& vmodel = vegetationAllocator.Get<Vegetation_Model>(cid.id);
@@ -450,7 +448,18 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     MeshInfo& info = vegetationState.meshInfos[infoIndex];
     info.used = false;
 
-    Models::ModelId model = Resources::CreateResource(setup.model, "Vegetation", [&vmodel, &info, infoIndex](Resources::ResourceId res)
+    // Load mask, update uniforms when ready
+    Resources::CreateResource(setup.mask, "Vegetation", [infoIndex](Resources::ResourceId res)
+    {
+        vegetationState.materialUniforms.VegetationMasks[infoIndex / 4][infoIndex % 4] =
+            CoreGraphics::TextureGetBindlessHandle(res.resource);
+    }, nullptr, true);
+
+    // Set the mask to black initially
+    vegetationState.materialUniforms.VegetationMasks[infoIndex / 4][infoIndex % 4] =
+        CoreGraphics::TextureGetBindlessHandle(CoreGraphics::Black2D);
+
+    Resources::CreateResource(setup.model, "Vegetation", [&vmodel, &info, infoIndex](Resources::ResourceId res)
     {
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(res);
         CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
@@ -541,8 +550,6 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
     info.distribution = 0.0f;
 
-    vegetationState.materialUniforms.VegetationMasks[info.materialIndex / 4][info.materialIndex % 4] =
-        CoreGraphics::TextureGetBindlessHandle(mask);
 
     CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
     return infoIndex;
@@ -552,16 +559,15 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 /**
 */
 void
-VegetationContext::SetModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& model)
+VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, const IO::Path& model)
 {
     Graphics::ContextEntityId cid = GetContextId(id.id);
 
     Materials::MaterialId& material = vegetationAllocator.Get<Vegetation_Material>(cid.id);
     Models::ModelId& vmodel = vegetationAllocator.Get<Vegetation_Model>(cid.id);
-    uint& infoIndex = vegetationAllocator.Get<Vegetation_GPUInfo>(cid.id);
-    MeshInfo& info = vegetationState.meshInfos[infoIndex];
+    MeshInfo& info = vegetationState.meshInfos[index];
     info.used = false;
-    Models::ModelId model = Resources::CreateResource(model, "Vegetation", [&vmodel, &info, infoIndex](Resources::ResourceId res)
+    Resources::CreateResource(model, "Vegetation", [&vmodel, &info, index](Resources::ResourceId res)
     {
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(res);
         CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
@@ -593,8 +599,8 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, const Resources
         info.vertexCount = 0;
         info.numLods = groups.Size();
 
-        vegetationState.meshVertexOffsets[infoIndex] = baseVertexOffset;
-        vegetationState.meshIndexOffsets[infoIndex] = baseIndexOffset;
+        vegetationState.meshVertexOffsets[index] = baseVertexOffset;
+        vegetationState.meshIndexOffsets[index] = baseIndexOffset;
 
         float distances[] = { 10, 25, 50, 100, 500, 1000 };
 
@@ -624,9 +630,9 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, const Resources
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[5].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
-            vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshVColorZShader;
-            vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshVColorShader;
-            vegetationState.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
+            vegetationState.meshZPrograms[index] = vegetationState.vegetationMeshVColorZShader;
+            vegetationState.meshPrograms[index] = vegetationState.vegetationMeshVColorShader;
+            vegetationState.meshVertexLayouts[index] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
         }
         else // without
         {
@@ -635,14 +641,24 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, const Resources
             n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshZShader;
-            vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshShader;
-            vegetationState.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
+            vegetationState.meshZPrograms[index] = vegetationState.vegetationMeshZShader;
+            vegetationState.meshPrograms[index] = vegetationState.vegetationMeshShader;
+            vegetationState.meshVertexLayouts[index] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
         }
 
         info.used = true;
 
     }, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VegetationContext::SetMask(const Graphics::GraphicsEntityId id, uint index, CoreGraphics::TextureId mask)
+{
+    // Set the mask in the uniforms
+    vegetationState.materialUniforms.VegetationMasks[index / 4][index % 4] = CoreGraphics::TextureGetBindlessHandle(mask);
 }
 
 //------------------------------------------------------------------------------
@@ -675,7 +691,7 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     uniforms.HeightMapSize[1] = CoreGraphics::TextureGetDimensions(vegetationState.heightMap).height;
     uniforms.MaxRange = 100.0f * 100.0f;
     uniforms.Fov = Math::cos(settings.GetFov() + 5.0_rad);
-    uniforms.NumMeshInfos = vegetationAllocator.Size();
+    uniforms.NumMeshInfos = vegetationState.meshInfoPool.GetNumUsed();
 
     // update uniform buffer
     CoreGraphics::BufferUpdate(vegetationState.systemUniforms, uniforms);

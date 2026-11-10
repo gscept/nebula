@@ -20,8 +20,8 @@
 
 namespace ToolkitUtil
 {
-class ModelAssetT;
-class TextureResourceT;
+struct ModelAssetT;
+struct TextureResourceT;
 }
 namespace Presentation
 {
