@@ -54,7 +54,9 @@ public:
 
 #if WITH_NEBULA_EDITOR
     /// Set the model
-    static void SetModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& model);
+    static void SetModel(const Graphics::GraphicsEntityId id, uint index, const IO::Path& model);
+    /// Set the mask to use for the vegetation
+    static void SetMask(const Graphics::GraphicsEntityId id, uint index, CoreGraphics::TextureId mask);
 #endif
 
     /// update resources
@@ -74,7 +76,6 @@ private:
 
     enum
     {
-        Vegetation_Mask,
         Vegetation_Material,
         Vegetation_Model,
         Vegetation_GPUInfo,
@@ -83,7 +84,6 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        CoreGraphics::TextureId,
         Materials::MaterialId,
         Models::ModelId,
         uint,
