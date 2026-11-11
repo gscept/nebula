@@ -25,14 +25,14 @@ struct CookedConvex
 };
 
 /// Cook geometry into a triangle mesh or a convex mesh, depending on the topology
-physx::PxGeometryHolder CookMesh(const MeshGeometryInput& input);
+bool CookMesh(const MeshGeometryInput& input, physx::PxGeometryHolder& out);
 
 /// Cook one convex hull per bone from skinned geometry
 Util::Array<CookedConvex> CookApproxSkin(const MeshGeometryInput& input);
 
 /// Cook height field samples into a physx height field. heightRange is the vertical span
 /// in meters and targetSizeX / targetSizeZ the world extent of the field
-physx::PxGeometryHolder CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ);
+bool CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ, physx::PxGeometryHolder& out);
 
 } // namespace Physics
 //------------------------------------------------------------------------------

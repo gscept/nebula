@@ -188,7 +188,7 @@ public:
     void InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
     void FinalizeAllocate(Entity entity);
     /// Deallocate an entity instance. Use this with caution!
-    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
+    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance, Entity entity);
     /// Deallocate an entity instance. Use this with caution!
     void DeallocateInstance(Entity entity);
     /// Defragment an entity table
@@ -263,8 +263,9 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
-    /// Copies the component to the decay table
-    void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance);
+    /// Copies the component to the decay table and runs its decay callback. The entity is the owner
+    /// of the component, which is what allows the callback to touch anything related to it
+    void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity);
 
     ///  Move a instance/row within a partition
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);

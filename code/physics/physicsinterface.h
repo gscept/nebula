@@ -87,11 +87,40 @@ struct AggregateId
     AggregateId(uint32_t i) : id(i) {}
 };
 
+struct ShapeId
+{
+    Ids::Id32 id;
+    ShapeId() : id(Ids::InvalidId32) {}
+    ShapeId(uint32_t i) : id(i) {}
+    const bool operator==(const ShapeId& rhs) const { return id == rhs.id; }
+};
+
 struct Actor
 {
     physx::PxActor* actor;
     ActorId id;
     ActorResourceId res;
+
+    Util::Array<ShapeId> shapes;
+    float mass;
+    uint32_t collisionGroup;
+    uint32_t feedback;
+    uint64_t userData;
+#ifdef NEBULA_DEBUG
+    Util::String debugName;
+#endif
+};
+
+
+struct Shape
+{
+    physx::PxShape* shape;
+    ShapeId id;
+    ActorId actor;
+    IndexT materialId;
+    bool isTrigger;
+    /// hash of the description the current geometry was built from, used to detect changes
+    uint64_t geometryHash;
     uint64_t userData;
 #ifdef NEBULA_DEBUG
     Util::String debugName;
@@ -194,6 +223,62 @@ struct CharacterCreateInfo
     uint64_t userData = 0;
 };
 
+//------------------------------------------------------------------------------
+/**
+    A collider description / create info. Mesh and heightfield colliders read their geometry
+    through the registered Physics::GeometryLoader.
+
+    @see    Physics::GeometryLoader
+*/
+struct ColliderDescription
+{
+    Physics::ColliderType type = Physics::ColliderType_Box;
+    IndexT materialId = InvalidIndex;
+    bool isTrigger = false;
+
+    /// local transform of the shape, relative to the actor it belongs to
+    Math::transform transform;
+
+    /// shape parameters. Only the ones matching the collider type are read
+    Math::vec3 boxExtents = Math::vec3(0.5f, 0.5f, 0.5f);   // half extents
+    float sphereRadius = 0.5f;
+    float capsuleRadius = 0.5f;
+    float capsuleHalfHeight = 0.5f;
+
+    /// mesh and heightfield geometry is read through the geometry loader
+    Util::StringAtom resource;
+    IndexT primGroup = 0;
+    Physics::MeshTopology topology = Physics::MeshTopology_Triangles;
+    float heightRange = 1.0f;
+    float targetSizeX = 1.0f;
+    float targetSizeY = 1.0f;
+
+    uint64_t userData = 0;
+};
+
+//------------------------------------------------------------------------------
+/**
+    A physics body description.
+*/
+struct BodyDescription
+{
+    Physics::ActorType type = Physics::Dynamic;
+    IndexT scene = 0;
+    Math::transform transform;
+
+    /// 0 means the mass is derived from the shape volumes and the material densities
+    float mass = 0.0f;
+    float linearDamping = 0.0f;
+    float angularDamping = 0.0f;
+    bool useGravity = true;
+    bool ccd = false;
+
+    uint32_t collisionGroup = 0;
+    Physics::CollisionFeedback feedback = Physics::CollisionFeedback_Full;
+
+    uint64_t userData = 0;
+};
+
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
 struct Scene
@@ -218,6 +303,8 @@ void ShutDown();
 
 /// perform sync simulation step(s)
 void Update(Timing::Time delta);
+/// perform sync simulation step(s) of a single scene
+void Update(Timing::Time delta, IndexT scene);
 
 /// explicit calls to simulate and fetch results. Do not mix with Update!
 void BeginSimulating(Timing::Time delta, IndexT scene);

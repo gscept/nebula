@@ -332,6 +332,8 @@ macro(nebula_add_script_library target)
 endmacro()
 
 macro(nebula_idl_compile)
+    file(GLOB NIDL_GENERATOR_DEPS "${NROOT}/fips-files/generators/IDLC/*.py")
+    list(APPEND NIDL_GENERATOR_DEPS "${NROOT}/fips-files/generators/NIDL.py")
     SOURCE_GROUP("NIDL Files" FILES ${ARGN})
     set(target_has_nidl 1)
     foreach(nidl ${ARGN})
@@ -346,7 +348,7 @@ macro(nebula_idl_compile)
             COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
             WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
-            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            DEPENDS ${NIDL_GENERATOR_DEPS}
             VERBATIM)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
@@ -462,6 +464,8 @@ macro(nebula_register_nidl_cs)
 endmacro()
 
 macro(nebula_idl_generate_cs_target)
+    file(GLOB NIDL_CS_GENERATOR_DEPS "${NROOT}/fips-files/generators/IDLC/*.py")
+    list(APPEND NIDL_CS_GENERATOR_DEPS "${NROOT}/fips-files/generators/NIDL.py")
     set(NIDL_Cs_Deps "")
     set(NIDL_Cs_Files "")
     foreach(nidl ${ARGN})
@@ -488,7 +492,7 @@ macro(nebula_idl_generate_cs_target)
             COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_cs}" "--csharp"
             BYPRODUCTS "${abs_output_folder}${out_cs}"
             COMMENT "IDLC: Generating ${out_cs}..."
-            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            DEPENDS ${NIDL_CS_GENERATOR_DEPS}
             WORKING_DIRECTORY "${NROOT}"
             VERBATIM
             SOURCES "${f_abs}"

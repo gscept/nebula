@@ -7,9 +7,11 @@
 #include "core/sysfunc.h"
 #include "testbase/testrunner.h"
 #include "testbase/stackdebug.h"
+#include "profiling/profiling.h"
 
 // tests
 #include "cookingtest.h"
+#include "actorbuildtest.h"
 
 using namespace Core;
 using namespace Test;
@@ -29,12 +31,16 @@ main(int argc, char** argv)
     coreServer->SetAppName(Util::StringAtom("Nebula Physics Tests"));
     coreServer->Open();
 
+    // the physics state uses profiling scopes, which need a profiling context
+    Profiling::ProfilingRegisterThread();
+
     n_printf("NEBULA PHYSICS TESTS\n");
     n_printf("====================\n");
 
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(CookingTest::Create());
+    testRunner->AttachTestCase(ActorBuildTest::Create());
     testRunner->SetVerbose(true);
 
     bool result = testRunner->Run();

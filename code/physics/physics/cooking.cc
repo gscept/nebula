@@ -15,11 +15,14 @@ namespace Physics
 //------------------------------------------------------------------------------
 /**
 */
-PxGeometryHolder
-CookMesh(const MeshGeometryInput& input)
+bool
+CookMesh(const MeshGeometryInput& input, PxGeometryHolder& out)
 {
-    n_assert(input.vertexCount > 0);
-    physx::PxGeometryHolder holder;
+    if (input.vertexCount == 0)
+    {
+        n_warning("CookMesh: empty mesh\n");
+        return false;
+    }
 
     switch (input.topology)
     {
@@ -38,15 +41,23 @@ CookMesh(const MeshGeometryInput& input)
             PxCookingParams params(scale);
             PxDefaultMemoryOutputStream buf;
             PxConvexMeshCookingResult::Enum result;
-            PxCookConvexMesh(params, convexDesc, buf, &result);
+            if (!PxCookConvexMesh(params, convexDesc, buf, &result) || result != PxConvexMeshCookingResult::eSUCCESS)
+            {
+                n_warning("CookMesh: convex mesh cook failed: %d\n", (int)result);
+                return false;
+            }
 
             PxDefaultMemoryInputData data(buf.getData(), buf.getSize());
-            holder = PxConvexMeshGeometry(state.physics->createConvexMesh(data));
+            out = PxConvexMeshGeometry(state.physics->createConvexMesh(data));
         }
         break;
         case MeshTopology_Triangles:
         {
-            n_assert(input.indexCount % 3 == 0);
+            if (input.indexCount == 0 || input.indexCount % 3 != 0 || IndexSize(input.indexType) == 0)
+            {
+                n_warning("CookMesh: invalid triangle mesh indices\n");
+                return false;
+            }
 
             PxTolerancesScale scale;
             PxCookingParams params(scale);
@@ -71,14 +82,21 @@ CookMesh(const MeshGeometryInput& input)
 #if NEBULA_DEBUG
             PxValidateTriangleMesh(params, meshDesc);
 #endif
-            holder = PxTriangleMeshGeometry(PxCreateTriangleMesh(params, meshDesc, state.physics->getPhysicsInsertionCallback()));
+            PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(params, meshDesc, state.physics->getPhysicsInsertionCallback());
+            if (triangleMesh == nullptr)
+            {
+                n_warning("CookMesh: triangle mesh cook failed\n");
+                return false;
+            }
+            out = PxTriangleMeshGeometry(triangleMesh);
         }
         break;
         default:
             n_error("CookMesh: unsupported mesh topology %d", input.topology);
+            return false;
     }
 
-    return holder;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -150,11 +168,14 @@ CookApproxSkin(const MeshGeometryInput& input)
 //------------------------------------------------------------------------------
 /**
 */
-PxGeometryHolder
-CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ)
+bool
+CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ, PxGeometryHolder& out)
 {
-    n_assert(input.width > 0 && input.height > 0);
-    n_assert(input.samples.Size() == input.width * input.height);
+    if (input.width == 0 || input.height == 0 || input.samples.Size() != input.width * input.height)
+    {
+        n_warning("CookHeightField: invalid height field dimensions\n");
+        return false;
+    }
 
     Util::Array<physx::PxHeightFieldSample> heightSamples(input.width * input.height, 10);
     heightSamples.Resize(input.width * input.height);
@@ -173,12 +194,18 @@ CookHeightField(const HeightFieldInput& input, float heightRange, float targetSi
     hfDesc.samples.stride = (PxU32)sizeof(PxHeightFieldSample);
 
     PxHeightField* physxHeightField = PxCreateHeightField(hfDesc);
+    if (physxHeightField == nullptr)
+    {
+        n_warning("CookHeightField: height field creation failed\n");
+        return false;
+    }
 
     float sh = heightRange / 65536.0f;
     float sx = targetSizeX / (float)input.width;
     float sz = targetSizeZ / (float)input.height;
 
-    return PxHeightFieldGeometry(physxHeightField, PxMeshGeometryFlags(), sh, sx, sz);
+    out = PxHeightFieldGeometry(physxHeightField, PxMeshGeometryFlags(), sh, sx, sz);
+    return true;
 }
 
 } // namespace Physics

@@ -171,7 +171,6 @@ PhysxState::onContact(const physx::PxContactPairHeader& pairHeader, const physx:
         {
             return;
         }
-        n_printf("first touch");
         PxScene* pxScene = baseDynamic->getScene();
         n_assert(pxScene != nullptr);
         SizeT sceneIdx = (SizeT)(uint64_t)pxScene->userData;
@@ -309,34 +308,45 @@ PostSceneUpdates(Physics::Scene& scene)
 void
 PhysxState::Update(Timing::Time delta)
 {
-    N_MARKER_BEGIN(Update, Physics);
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
+    if (Input::InputServer::HasInstance() && Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
     {
         if (!this->pvd->isConnected()) this->ConnectPVD();
         else this->DisconnectPVD();
     }
 
-    Util::Set<Ids::Id32> modifiedActors;
     for (IndexT Id : this->activeSceneIds)
     {
-        Physics::Scene& scene = this->activeScenes[Id];
-        PreSceneUpdates(scene);
-        scene.time -= delta;
-        // we limit the simulation to 5 frames
-        scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
-        scene.eventBuffer.Reset();
-        while (scene.time < 0.0)
-        {
-            scene.scene->simulate(PHYSICS_RATE);
-            scene.scene->fetchResults(true);
-            scene.time += PHYSICS_RATE;
-            if (scene.updateFunction != nullptr)
-            {
-                CollectModified(scene);
-            }
-        }
-        PostSceneUpdates(scene);
+        Update(delta, Id);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::Update(Timing::Time delta, IndexT sceneId)
+{
+    N_MARKER_BEGIN(Update, Physics);
+
+    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    Physics::Scene& scene = this->activeScenes[sceneId];
+
+    PreSceneUpdates(scene);
+    scene.time -= delta;
+    // we limit the simulation to 5 frames
+    scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
+    scene.eventBuffer.Reset();
+    while (scene.time < 0.0)
+    {
+        scene.scene->simulate(PHYSICS_RATE);
+        scene.scene->fetchResults(true);
+        scene.time += PHYSICS_RATE;
+        if (scene.updateFunction != nullptr)
+        {
+            CollectModified(scene);
+        }
+    }
+    PostSceneUpdates(scene);
     N_MARKER_END();
 }
 
@@ -348,7 +358,7 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 {
     N_MARKER_BEGIN(BeginSimulation, Physics);
 #if NEBULA_DEBUG
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
+    if (Input::InputServer::HasInstance() && Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
     {
         if (!this->pvd->isConnected()) this->ConnectPVD();
         else this->DisconnectPVD();

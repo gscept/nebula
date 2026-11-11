@@ -45,9 +45,11 @@ public:
     /// called when game debug visualization is on
     virtual void OnRenderDebug();
 
+    /// returns the physics scene belonging to a game world
+    IndexT SceneForWorld(Game::World* world);
+
 private:
     Util::Dictionary<Game::World*, IndexT> physicsWorlds;
-    bool simulating;
     int debugDrawPhysicsLastValue = 0;
 
     Core::CVar* cl_debug_draw_physics;

@@ -85,6 +85,23 @@ public:
     static void SetShapeTransform(const ShapeHandle& shape, const Math::transform& transform);
 
 
+    /// Create a body from plain data. Shapes are added separately with AddShape.
+    static ActorId CreateActor(const BodyDescription& desc);
+    /// apply the body properties of the description onto an existing actor
+    static void UpdateBody(ActorId id, const BodyDescription& desc);
+
+    /// add a shape to an actor
+    static ShapeId AddShape(ActorId actor, const ColliderDescription& desc);
+    /// apply a description onto an existing shape. The geometry is rebuilt if the shape parameters changed
+    static bool UpdateShape(ShapeId shape, const ColliderDescription& desc);
+    /// detach and release a shape from its actor
+    static void RemoveShape(ShapeId shape);
+
+    ///
+    static Shape& GetShape(ShapeId id);
+    ///
+    static bool IsValidShape(ShapeId id);
+
     /// shortcut for getting the pxactor object
     static physx::PxRigidActor* GetPxActor(ActorId id);
     /// shortcut for getting the pxactor object
@@ -92,17 +109,22 @@ public:
 
     static bool IsValid(ActorId id);
 
+    /// destroy an actor and the shapes it owns
+    static void DiscardActor(ActorId id);
+
     friend class PhysxState;
     friend class StreamActorPool;
 private:
     static Util::Array<Actor> actors;
     static Ids::IdGenerationPool actorPool;
+    static Util::Array<Shape> shapes;
+    static Ids::IdGenerationPool shapePool;
     ///
     static ActorId AllocateActorId(physx::PxRigidActor* pxActor);
     ///
     static ActorId AllocateActorId(physx::PxRigidActor* pxActor, ActorResourceId res);
     ///
-    static void DiscardActor(ActorId id);
+    static ShapeId AllocateShapeId(physx::PxShape* pxShape, ActorId actor, uint64_t geometryHash, uint64_t userData);
 };
 
 class AggregateContext
@@ -128,6 +150,15 @@ inline bool
 ActorContext::IsValid(ActorId id)
 {
     return ActorContext::actorPool.IsValid(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+ActorContext::IsValidShape(ShapeId id)
+{
+    return ActorContext::shapePool.IsValid(id.id);
 }
 
 }

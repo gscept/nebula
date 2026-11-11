@@ -131,7 +131,8 @@ CookingTest::Run()
     VERIFY(Physics::GetGeometryLoader().LoadMesh("test:unknown", 0, mesh) == false);
 
     // cook the geometry as a triangle mesh
-    physx::PxGeometryHolder triangles = Physics::CookMesh(mesh);
+    physx::PxGeometryHolder triangles;
+    VERIFY(Physics::CookMesh(mesh, triangles));
     VERIFY(triangles.getType() == PxGeometryType::eTRIANGLEMESH);
     PxTriangleMesh* cookedTriangles = triangles.triangleMesh().triangleMesh;
     VERIFY(cookedTriangles != nullptr);
@@ -145,7 +146,8 @@ CookingTest::Run()
     Physics::MeshGeometryInput wideMesh = BuildTetrahedron(Physics::IndexType::Index32);
     VERIFY(wideMesh.indexCount == 12);
     VERIFY(wideMesh.indices.Size() == 48);
-    physx::PxGeometryHolder wideTriangles = Physics::CookMesh(wideMesh);
+    physx::PxGeometryHolder wideTriangles;
+    VERIFY(Physics::CookMesh(wideMesh, wideTriangles));
     VERIFY(wideTriangles.getType() == PxGeometryType::eTRIANGLEMESH);
     PxTriangleMesh* cookedWideTriangles = wideTriangles.triangleMesh().triangleMesh;
     VERIFY(cookedWideTriangles != nullptr);
@@ -167,7 +169,8 @@ CookingTest::Run()
     AppendVertex(cube, 1.0f, 1.0f, 1.0f);
     AppendVertex(cube, 0.0f, 1.0f, 1.0f);
 
-    physx::PxGeometryHolder convex = Physics::CookMesh(cube);
+    physx::PxGeometryHolder convex;
+    VERIFY(Physics::CookMesh(cube, convex));
     VERIFY(convex.getType() == PxGeometryType::eCONVEXMESH);
     PxConvexMesh* cookedConvex = convex.convexMesh().convexMesh;
     VERIFY(cookedConvex != nullptr);
@@ -208,7 +211,8 @@ CookingTest::Run()
     VERIFY(Physics::GetGeometryLoader().LoadHeightField("test:heightfield", field));
     VERIFY(field.width == 2 && field.height == 2);
 
-    physx::PxGeometryHolder heightField = Physics::CookHeightField(field, 65536.0f, 10.0f, 20.0f);
+    physx::PxGeometryHolder heightField;
+    VERIFY(Physics::CookHeightField(field, 65536.0f, 10.0f, 20.0f, heightField));
     VERIFY(heightField.getType() == PxGeometryType::eHEIGHTFIELD);
     const PxHeightFieldGeometry& hfGeom = heightField.heightField();
     VERIFY(hfGeom.heightField != nullptr);

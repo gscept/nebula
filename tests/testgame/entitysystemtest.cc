@@ -525,6 +525,38 @@ EntitySystemTest::Run()
     }
     IO::IoServer::Instance()->DeleteFile(packedLevelPath);
 
+    // The decay callback of a component runs both when the component is removed from a live entity
+    // and when it goes away with its entity, and it runs while the component is still reachable,
+    // which is what lets a manager release anything that hangs off the component
+    {
+        Test::componentDecay = Test::ComponentDecayRecord();
+
+        Game::Entity keepEntity = CreateEnemyEntity(world);
+        world->AddComponent<DecayTestComponent>(keepEntity);
+        StepFrame();
+
+        world->RemoveComponent<DecayTestComponent>(keepEntity);
+        StepFrame();
+
+        VERIFY(Test::componentDecay.calls == 1);
+        VERIFY(Test::componentDecay.liveReads == 1);
+        VERIFY(Test::componentDecay.lastEntity == keepEntity);
+
+        Game::Entity goneEntity = CreateEnemyEntity(world);
+        world->AddComponent<DecayTestComponent>(goneEntity);
+        StepFrame();
+
+        world->DeleteEntity(goneEntity);
+        StepFrame();
+
+        VERIFY(Test::componentDecay.calls == 2);
+        VERIFY(Test::componentDecay.liveReads == 2);
+        VERIFY(Test::componentDecay.lastEntity == goneEntity);
+
+        world->DeleteEntity(keepEntity);
+        StepFrame();
+    }
+
     t->StopTime();
 }
 

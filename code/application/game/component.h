@@ -60,11 +60,17 @@ template <typename COMPONENT_TYPE>
 struct ComponentRegisterInfo
 {
     using OnInitFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
+    using OnDecayFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
 
     /// Set to true if the component should end up in the decay buffer before being completely destroyed.
     bool decay = false;
     /// initialization function to run for the component, or nullptr if not needed.
     OnInitFunc OnInit = nullptr;
+    /// function to run when the component is removed from a live entity, or when the entity is
+    /// deleted. Runs outside the frame pipeline while the component is still readable from its
+    /// table, which allows cleaning up or marking up anything related to the component.
+    /// Independent of the decay buffer. nullptr if not needed.
+    OnDecayFunc OnDecay = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -88,7 +94,9 @@ public:
     }
 
     using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
+    using ComponentDecayFunc = void (*)(Game::World*, Game::Entity, void*);
     ComponentInitFunc Init = nullptr;
+    ComponentDecayFunc Decay = nullptr;
 
     const char* GetName() const { return componentName; }
     const char* GetFullyQualifiedName() const { return fullyQualifiedName; }

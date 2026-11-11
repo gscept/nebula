@@ -10,6 +10,7 @@
 #include "physicsfeature/managers/physicsmanager.h"
 #include "physics/actorcontext.h"
 #include "game/api.h"
+#include "game/world.h"
 #include "components/physicsfeature.h"
 #include "managers/charactermanager.h"
 
@@ -23,7 +24,7 @@ __ImplementSingleton(PhysicsFeatureUnit);
 //------------------------------------------------------------------------------
 /**
 */
-PhysicsFeatureUnit::PhysicsFeatureUnit() : simulating(false)
+PhysicsFeatureUnit::PhysicsFeatureUnit()
 {
     __ConstructSingleton;
 }
@@ -42,9 +43,22 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
-    this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
+    // the handle component owns a physx actor and queues its setup on init. The body and collider
+    // components ensure a handle on init and release their actor and shapes on decay, everything in
+    // between setup and teardown is a change, and changes are pinged by whoever made them
+    this->RegisterComponentType<PhysicsActorId>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActorId });
     this->RegisterComponentType<IsKinematic>();
     this->RegisterComponentType<Character>({ .decay = true });
+
+    this->RegisterComponentType<PhysicsActor>({ .OnInit = &PhysicsManager::InitPhysicsActor, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::PhysicsActor> });
+    this->RegisterComponentType<Rigidbody>({ .OnInit = &PhysicsManager::InitRigidbody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::Rigidbody> });
+    this->RegisterComponentType<StaticBody>({ .OnInit = &PhysicsManager::InitStaticBody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::StaticBody> });
+    this->RegisterComponentType<BoxCollider>({ .OnInit = &PhysicsManager::InitBoxCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::BoxCollider> });
+    this->RegisterComponentType<SphereCollider>({ .OnInit = &PhysicsManager::InitSphereCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::SphereCollider> });
+    this->RegisterComponentType<CapsuleCollider>({ .OnInit = &PhysicsManager::InitCapsuleCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::CapsuleCollider> });
+    this->RegisterComponentType<PlaneCollider>({ .OnInit = &PhysicsManager::InitPlaneCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::PlaneCollider> });
+    this->RegisterComponentType<MeshCollider>({ .OnInit = &PhysicsManager::InitMeshCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::MeshCollider> });
+    this->RegisterComponentType<HeightFieldCollider>({ .OnInit = &PhysicsManager::InitHeightFieldCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::HeightFieldCollider> });
 }
 
 //------------------------------------------------------------------------------
@@ -153,8 +167,27 @@ PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
     {
         IndexT scene = this->physicsWorlds[world];
         Physics::FlushSimulation(scene);
+
+        // this is where managers destroy their actors, which has to happen before the scene goes away
         FeatureUnit::OnBeforeCleanup(world);
+
+        // destroy the scene with the world
+        Physics::DestroyScene(scene);
+        this->physicsWorlds.Erase(world);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+PhysicsFeatureUnit::SceneForWorld(Game::World* world)
+{
+    if (!this->physicsWorlds.Contains(world))
+    {
+        this->physicsWorlds.Add(world, Physics::CreateScene());
+    }
+    return this->physicsWorlds[world];
 }
 
 //------------------------------------------------------------------------------
@@ -165,15 +198,18 @@ PhysicsFeatureUnit::OnBeginFrame()
 {
 #if USE_SYNC_UPDATE > 0
     Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
-    Physics::Update(time->frameTime);
-#else
-    if (!simulating) return;
+    for (auto const& scene : this->physicsWorlds)
+    {
+        if (Game::PhaseForMode(scene.Key()->mode) != Game::PlayPhase)
+            continue;
 
+        Physics::Update(time->frameTime, scene.Value());
+    }
+#else
     for (auto const& scene : this->physicsWorlds)
     {
         Physics::EndSimulating(scene.Value());
     }
-    simulating = false;
 #endif
 }
 
@@ -188,9 +224,11 @@ PhysicsFeatureUnit::OnDecay()
     Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
     for (auto const& scene : this->physicsWorlds)
     {
+        if (Game::PhaseForMode(scene.Key()->mode) != Game::PlayPhase)
+            continue;
+
         Physics::BeginSimulating(time->frameTime, scene.Value());
     }
-    simulating = true;
 #endif
 }
 

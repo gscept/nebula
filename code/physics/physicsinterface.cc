@@ -356,6 +356,18 @@ Update(Timing::Time delta)
     state.Update(delta);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Update(Timing::Time delta, IndexT scene)
+{
+#if NEBULA_DEBUG
+    updateCalled = true;
+#endif
+    state.Update(delta, scene);
+}
+
 
 //------------------------------------------------------------------------------
 /**

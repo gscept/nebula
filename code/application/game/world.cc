@@ -609,7 +609,7 @@ World::ManageEntities()
         {
             MemDb::TableId const table = this->entityMap[cmd.entity.index].table;
             MemDb::RowId const row = this->entityMap[cmd.entity.index].instance;
-            this->DeallocateInstance(table, row);
+            this->DeallocateInstance(table, row, cmd.entity);
             this->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
             this->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
             this->DeallocateEntityId(cmd.entity);
@@ -706,7 +706,7 @@ World::DeleteEntity(Game::Entity entity)
 /**
 */
 void
-World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance)
+World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity)
 {
     if (MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
     {
@@ -737,6 +737,14 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
         void* dst = ((byte*)decayBuffer.buffer) + (typeSize * (uint64_t)decayBuffer.size);
         decayBuffer.size++;
         Memory::Copy(this->db->GetTable(tableId).GetValuePointer(column, instance), dst, typeSize);
+    }
+
+    // run the decay callback if one is registered, independent of the decay buffer flag. The
+    // component is still readable from its table while the callback runs
+    ComponentInterface* cInterface = static_cast<ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(component));
+    if (cInterface->Decay != nullptr)
+    {
+        cInterface->Decay(this, entity, this->db->GetTable(tableId).GetValuePointer(column, instance));
     }
 }
 
@@ -1082,7 +1090,7 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
-        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance);
+        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance, entity);
     }
 
     this->Migrate(entity, newCategoryId);
@@ -1286,7 +1294,7 @@ World::FinalizeAllocate(Entity entity)
 /**
 */
 void
-World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
+World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance, Entity entity)
 {
     n_assert(instance != MemDb::InvalidRow);
 
@@ -1297,7 +1305,7 @@ World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
         Game::ComponentId component = componentIds[column.id];
-        this->DecayComponent(component, table, column, instance);
+        this->DecayComponent(component, table, column, instance, entity);
     }
 
     this->db->GetTable(table).RemoveRow(instance);
@@ -1314,7 +1322,7 @@ World::DeallocateInstance(Entity entity)
     MemDb::TableId& table = this->entityMap[entity.index].table;
     MemDb::RowId& instance = this->entityMap[entity.index].instance;
 
-    this->DeallocateInstance(table, instance);
+    this->DeallocateInstance(table, instance, entity);
 
     table = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
@@ -1471,7 +1479,7 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
     MemDb::ColumnIndex const columnIndex = this->db->GetTable(mapping.table).GetAttributeIndex(component);
 
     // Decay the old component, this will allow managers to clean up any resources used before reinitializing
-    this->DecayComponent(component, mapping.table, columnIndex, mapping.instance);
+    this->DecayComponent(component, mapping.table, columnIndex, mapping.instance, entity);
 
     byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
     byte* valuePtr = ptr + (mapping.instance.index * size);

@@ -27,6 +27,11 @@ GameServer::GameServer()
     _setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
+
+    for (int i = 0; i < MaxWorlds; i++)
+    {
+        state.worlds[i] = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------

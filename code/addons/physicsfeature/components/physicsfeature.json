@@ -17,10 +17,38 @@
 			"Plane": 3,
 			"Mesh": 4,
 			"HeightField": 5
+		},
+		"MeshTopology": {
+			"Convex": 0,
+			"ConvexHull": 1,
+			"Triangles": 2
+		},
+		"CollisionFeedback": {
+			"None": 0,
+			"Full": 1,
+			"Single": 2
 		}
 	},
 	
 	"components": {
+		"PhysicsActorId": {
+			"actorId": {
+				"type": "uint",
+				"default": -1,
+				"hideInInspector": true
+			},
+			"pending": {
+				"type": "uint",
+				"default": 1,
+				"hideInInspector": true,
+				"description": "What the physics manager has queued for this entity, a mix of PhysicsFeature::PhysicsPending. Anything but a zero means the entity is in the managers rebuild queue."
+			},
+			"body": {
+				"type": "entity",
+				"hideInInspector": true,
+				"description": "Entity whose physx actor owns the shapes of this entity, which is the entity itself for a body. Cached so a collider which was moved to another parent can detach its shape from the old actor without walking the hierarchy."
+			}
+		},
 		"Character": {
 			"characterId": {
 				"type": "Physics::CharacterId",
@@ -39,11 +67,6 @@
 			}
 		},
 		"PhysicsActor": {
-			"actorId": {
-				"type": "uint",
-				"default": -1,
-				"hideInInspector": true
-			},
 			"resource": {
 				"type": "resource",
 				"default": "sysphys:box.actor"
@@ -53,7 +76,249 @@
 				"default": 0
 			}
 		},
-		"IsKinematic": {}
+		"IsKinematic": {},
+
+		"Rigidbody": {
+			"actorType": {
+				"type": "PhysicsFeature::ActorType",
+				"default": 2,
+				"description": "The physx actor type of the body."
+			},
+			"mass": {
+				"type": "float",
+				"default": 0.0,
+				"description": "Mass in kilograms. 0 means the mass is derived from the shape volumes and the material densities."
+			},
+			"linearDamping": {
+				"type": "float",
+				"default": 0.0,
+				"description": "Linear damping of the body."
+			},
+			"angularDamping": {
+				"type": "float",
+				"default": 0.0,
+				"description": "Angular damping of the body."
+			},
+			"useGravity": {
+				"type": "bool",
+				"default": true,
+				"description": "If the body is affected by gravity."
+			},
+			"ccd": {
+				"type": "bool",
+				"default": false,
+				"description": "Continuous collision detection for the body."
+			},
+			"collisionGroup": {
+				"type": "uint",
+				"default": 0,
+				"description": "Simulation filter data word0, read by the simulation filter shader."
+			},
+			"collisionFeedback": {
+				"type": "PhysicsFeature::CollisionFeedback",
+				"default": 1,
+				"description": "Simulation filter data word1, controls which contact callbacks are sent."
+			}
+		},
+		"StaticBody": {
+			"collisionGroup": {
+				"type": "uint",
+				"default": 0,
+				"description": "Simulation filter data word0, read by the simulation filter shader."
+			},
+			"collisionFeedback": {
+				"type": "PhysicsFeature::CollisionFeedback",
+				"default": 1,
+				"description": "Simulation filter data word1, controls which contact callbacks are sent."
+			}
+		},
+		"BoxCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			},
+			"extents": {
+				"type": "vec3",
+				"default": [0.5, 0.5, 0.5],
+				"description": "Half extents of the box."
+			}
+		},
+		"SphereCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			},
+			"radius": {
+				"type": "float",
+				"default": 0.5,
+				"description": "Radius of the sphere."
+			}
+		},
+		"CapsuleCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			},
+			"radius": {
+				"type": "float",
+				"default": 0.5,
+				"description": "Radius of the capsule."
+			},
+			"halfHeight": {
+				"type": "float",
+				"default": 0.5,
+				"description": "Half the distance between the capsule end spheres."
+			}
+		},
+		"PlaneCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			}
+		},
+		"MeshCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			},
+			"resource": {
+				"type": "Util::StringAtom",
+				"default": "",
+				"description": "Resource read by the registered Physics::GeometryLoader."
+			},
+			"primGroup": {
+				"type": "uint",
+				"default": 0,
+				"description": "Primitive group of the resource to read."
+			},
+			"topology": {
+				"type": "PhysicsFeature::MeshTopology",
+				"default": 2,
+				"description": "Cooked as a convex mesh or a triangle mesh. ApproxSkin is not supported per collider."
+			}
+		},
+		"HeightFieldCollider": {
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"localPosition": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "Position of the shape relative to the body entity, added on top of the entity local transform. The origin of a height field is the corner of the field, not its center."
+			},
+			"localOrientation": {
+				"type": "quat",
+				"default": [0, 0, 0, 1],
+				"description": "Orientation of the shape relative to the body entity, added on top of the entity local transform."
+			},
+			"isTrigger": {
+				"type": "bool",
+				"default": false,
+				"description": "A trigger shape does not participate in the simulation. Note that the engine does not report trigger events yet."
+			},
+			"resource": {
+				"type": "Util::StringAtom",
+				"default": "",
+				"description": "Resource read by the registered Physics::GeometryLoader."
+			},
+			"heightRange": {
+				"type": "float",
+				"default": 1.0,
+				"description": "Vertical span of the field in meters."
+			},
+			"targetSizeX": {
+				"type": "float",
+				"default": 1.0,
+				"description": "World extent of the field along X."
+			},
+			"targetSizeY": {
+				"type": "float",
+				"default": 1.0,
+				"description": "World extent of the field along Z."
+			}
+		}
 	},
 	"messages": {
 		"ContactEventMessage": {

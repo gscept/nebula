@@ -8,6 +8,8 @@ fips_files(databasetest.cc
     hierarchytransformtest.h
     idtest.cc
     idtest.h
+    physicstest.cc
+    physicstest.h
     main.cc
     )
 
@@ -16,6 +18,6 @@ set(abs_output_folder "${FIPS_PROJECT_DEPLOY_DIR}")
 
 nebula_idl_compile(testcomponents.json)
 
-fips_deps(foundation application testbase nflatbuffer)
+fips_deps(foundation application testbase nflatbuffer physicsfeature)
 target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]])
 nebula_end_app()

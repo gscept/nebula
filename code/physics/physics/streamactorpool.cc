@@ -228,7 +228,12 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform c
         return;
     }
 
-    physx::PxGeometryHolder geometry = CookMesh(input);
+    physx::PxGeometryHolder geometry;
+    if (!CookMesh(input, geometry))
+    {
+        n_warning("AddMeshColliders: failed to cook '%s'\n", resource.Value());
+        return;
+    }
     AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetBody, tag, entry);
 }
 
@@ -251,8 +256,12 @@ AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::transf
         return;
     }
 
-    physx::PxGeometryHolder geometry =
-        CookHeightField(input, colliderNode->height_range, colliderNode->target_size_x, colliderNode->target_size_y);
+    physx::PxGeometryHolder geometry;
+    if (!CookHeightField(input, colliderNode->height_range, colliderNode->target_size_x, colliderNode->target_size_y, geometry))
+    {
+        n_warning("AddHeightField: failed to cook '%s'\n", colliderNode->file.AsCharPtr());
+        return;
+    }
 
     // the heightfield origin is at the corner of the field, move it to the center
     Math::transform offsetTransform;

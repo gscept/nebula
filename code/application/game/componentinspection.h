@@ -98,7 +98,52 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
                 }
             }
             ImGui::TableSetColumnIndex(1);
-            ComponentDrawFuncT<field_type>(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+            if constexpr (std::is_enum<field_type>())
+            {
+                ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+                void* fieldData = (byte*)data + TYPE::Traits::field_byte_offsets[i];
+                const char* const* names = TYPE::Traits::field_enum_names[i];
+                int count = (int)TYPE::Traits::field_enum_counts[i];
+
+                if (names != nullptr && count > 0)
+                {
+                    const int* const values = TYPE::Traits::field_enum_values[i];
+                    const int current = (int)*(field_type*)fieldData;
+
+                    // the field holds the enum value, the combo works on indices into the sorted
+                    // name and value arrays, which only match for enums that are contiguous from zero
+                    int currentIdx = 0;
+                    for (int k = 1; k < count; k++)
+                    {
+                        if (values[k] == current)
+                        {
+                            currentIdx = k;
+                            break;
+                        }
+                    }
+
+                    if (ImGui::Combo("##enum_input", &currentIdx, names, count))
+                    {
+                        *commit = true;
+                        *(field_type*)fieldData = (field_type)values[currentIdx];
+                    }
+                }
+                else
+                {
+                    // an enum we have no value names for
+                    int value = (int)*(field_type*)fieldData;
+                    if (ImGui::DragInt("##enum_input", &value))
+                    {
+                        *commit = true;
+                        *(field_type*)fieldData = (field_type)value;
+                    }
+                }
+                ImGui::PopID();
+            }
+            else
+            {
+                ComponentDrawFuncT<field_type>(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+            }
 
             if constexpr (i < TYPE::Traits::num_fields - 1)
             {

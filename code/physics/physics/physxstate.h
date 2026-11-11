@@ -54,6 +54,8 @@ public:
 
     /// convenience function to do a sync full simulation step. Do not mix Update and Begin/EndFrame!
     void Update(Timing::Time delta);
+    /// sync full simulation step of a single scene. Do not mix Update and Begin/EndFrame!
+    void Update(Timing::Time delta, IndexT scene);
 
     /// explicit call to simulate, will process async in the background
     void BeginSimulating(Timing::Time delta, IndexT scene);
