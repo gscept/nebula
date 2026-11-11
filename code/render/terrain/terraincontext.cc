@@ -2677,6 +2677,41 @@ TerrainContext::ClearCache()
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::TextureId
+TerrainContext::GetHeightMap(const Graphics::GraphicsEntityId entity)
+{
+    Graphics::ContextEntityId cid = GetContextId(entity);
+    TerrainRuntimeInfo& instance = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
+    return instance.heightMap;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::GetHeightBounds(const Graphics::GraphicsEntityId entity, float& min, float& max)
+{
+    Graphics::ContextEntityId cid = GetContextId(entity);
+    TerrainRuntimeInfo& instance = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
+    min = instance.minHeight;
+    max = instance.maxHeight;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::GetWorldSize(const Graphics::GraphicsEntityId entity, float& sizeX, float& sizeZ)
+{
+    Graphics::ContextEntityId cid = GetContextId(entity);
+    TerrainRuntimeInfo& instance = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
+    sizeX = instance.worldWidth;
+    sizeZ = instance.worldHeight;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 TerrainContext::OnRenderDebug(uint32_t flags)
 {
