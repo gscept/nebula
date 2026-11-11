@@ -289,6 +289,13 @@ public:
     /// clear the tile cache (use when we need to force update the terrain)
     static void ClearCache();
 
+    /// Get height map 
+    static CoreGraphics::TextureId GetHeightMap(const Graphics::GraphicsEntityId entity);
+    /// Get the min-max height values
+    static void GetHeightBounds(const Graphics::GraphicsEntityId entity, float& min, float& max);
+    /// Get the world size
+    static void GetWorldSize(const Graphics::GraphicsEntityId entity, float& sizeX, float& sizeZ);
+
     /// 
     static void SetVisible(bool visible);
     /// 

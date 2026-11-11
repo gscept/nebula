@@ -94,7 +94,6 @@ group(BATCH_GROUP) uniform InstanceMeshArguments : *[] mutable InstanceUniforms;
 struct DrawCountData
 {
     NumMeshDraws : [MAX_MESH_INFOS/4]u32x4;
-    NumGrassDraws : u32;
 };
 
 @Visibility("CS")
@@ -227,7 +226,6 @@ csGenerateDraws() void
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.materialIndex = meshInfo.materialIndex;
                 instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
-
                 bufferStore(InstanceMeshArguments, entry, instanceUniform);
 
                 var command : DrawIndexedCommand;

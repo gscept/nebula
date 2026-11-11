@@ -11,15 +11,14 @@
 #include "resources/resource.h"
 #include "ids/idallocator.h"
 
+#include "gpulang/render/system_shaders/vegetation.h"
+
 namespace Vegetation
 {
 
 ID_32_TYPE(VegetationBiomeId);
 struct VegetationSetupSettings
 {
-    float minHeight, maxHeight;
-
-    Math::vec2 worldSize;
 };
 
 struct VegetationMeshSetup
@@ -47,9 +46,9 @@ public:
     static void Discard();
 
     /// Setup vegetation context
-    static void Setup(Resources::ResourceName heightMap);
+    static void Setup(const Graphics::GraphicsEntityId id);
 
-    /// setup as mesh
+    /// Setup a new mesh
     static uint SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
 
 #if WITH_NEBULA_EDITOR
@@ -74,19 +73,46 @@ private:
         Material
     };
 
+    struct VegetationInstanceInfo
+    {
+        CoreGraphics::TextureId heightMap;
+        float minHeight, maxHeight;
+        float worldSizeX, worldSizeZ;
+
+        Vegetation::MeshInfo meshInfos[Vegetation::MAX_MESH_INFOS];
+        Ids::IdPool meshInfoPool;
+        CoreGraphics::BufferId meshInfoBuffer;
+
+        CoreGraphics::ResourceTableId systemResourceTable;
+        CoreGraphics::BufferId systemUniforms;
+
+        Util::FixedArray<CoreGraphics::BufferId> meshDrawCallsBuffer;
+        Util::FixedArray<CoreGraphics::BufferId> meshArgumentsBuffer;
+        Util::FixedArray<CoreGraphics::ResourceTableId> argumentsTable;
+
+        Util::FixedArray<CoreGraphics::BufferId> drawCountBuffer;
+
+        IndexT meshMaskCount = 0;
+
+        CoreGraphics::VertexLayoutId meshVertexLayouts[MAX_MESH_INFOS];
+        SizeT meshVertexOffsets[MAX_MESH_INFOS];
+        SizeT meshIndexOffsets[MAX_MESH_INFOS];
+        CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
+        CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
+
+        Vegetation::VegetationMaterialUniforms::STRUCT materialUniforms;
+        CoreGraphics::BufferId materialUniformsBuffer;
+    };
+
     enum
     {
-        Vegetation_Material,
-        Vegetation_Model,
-        Vegetation_GPUInfo,
+        Vegetation_InstanceInfo,
         Vegetation_SlopeThreshold,
         Vegetation_HeightThreshold
     };
 
     typedef Ids::IdAllocator<
-        Materials::MaterialId,
-        Models::ModelId,
-        uint,
+        VegetationInstanceInfo,
         float, 
         float
     > VegetationAllocator;
