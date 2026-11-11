@@ -108,7 +108,9 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkCmdDraw);
     _IMP_VK(vkCmdDrawIndexed);
     _IMP_VK(vkCmdDrawIndirect);
+    _IMP_VK(vkCmdDrawIndirectCount);
     _IMP_VK(vkCmdDrawIndexedIndirect);
+    _IMP_VK(vkCmdDrawIndexedIndirectCount);
     _IMP_VK(vkCmdDispatch);
     _IMP_VK(vkCmdResolveImage);
 
@@ -296,7 +298,9 @@ _DEF_VK(vkGetImageSparseMemoryRequirements);
 _DEF_VK(vkCmdDraw);
 _DEF_VK(vkCmdDrawIndexed);
 _DEF_VK(vkCmdDrawIndirect);
+_DEF_VK(vkCmdDrawIndirectCount);
 _DEF_VK(vkCmdDrawIndexedIndirect);
+_DEF_VK(vkCmdDrawIndexedIndirectCount);
 _DEF_VK(vkCmdDispatch);
 _DEF_VK(vkCmdResolveImage);
 
