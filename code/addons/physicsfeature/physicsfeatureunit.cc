@@ -43,14 +43,14 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
-    // the handle component owns a physx actor and queues its setup on init. The body and collider
-    // components ensure a handle on init and release their actor and shapes on decay, everything in
-    // between setup and teardown is a change, and changes are pinged by whoever made them
-    this->RegisterComponentType<PhysicsActorId>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActorId });
+    // the PhysicsActor component is the handle which owns the physx actor of an entity. The body and
+    // collider components ensure a handle on init and release their actor and shapes on decay,
+    // everything in between setup and teardown is a change, and changes are pinged by whoever made them
+    this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
     this->RegisterComponentType<IsKinematic>();
     this->RegisterComponentType<Character>({ .decay = true });
 
-    this->RegisterComponentType<PhysicsActor>({ .OnInit = &PhysicsManager::InitPhysicsActor, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::PhysicsActor> });
+    this->RegisterComponentType<PhysicsResource>({ .OnInit = &PhysicsManager::InitPhysicsResource, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::PhysicsResource> });
     this->RegisterComponentType<Rigidbody>({ .OnInit = &PhysicsManager::InitRigidbody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::Rigidbody> });
     this->RegisterComponentType<StaticBody>({ .OnInit = &PhysicsManager::InitStaticBody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::StaticBody> });
     this->RegisterComponentType<BoxCollider>({ .OnInit = &PhysicsManager::InitBoxCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::BoxCollider> });

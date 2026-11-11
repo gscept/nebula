@@ -70,7 +70,7 @@ ResolveBodyEntity(Game::World* world, Game::Entity entity)
     and returns a valid or invalid actor id based on the check.
 */
 static Physics::ActorId
-GetValidateActorId(Game::Entity entity, PhysicsFeature::PhysicsActorId const& actor)
+GetValidateActorId(Game::Entity entity, PhysicsFeature::PhysicsActor const& actor)
 {
     Physics::ActorId const handle(actor.actorId);
     if (handle.id == Ids::InvalidId32 || !Physics::ActorContext::IsValid(handle))
@@ -89,10 +89,10 @@ GetValidateActorId(Game::Entity entity, PhysicsFeature::PhysicsActorId const& ac
 static Physics::ActorId
 ResolveActorHandle(Game::World* world, Game::Entity entity)
 {
-    if (!world->HasComponent<PhysicsFeature::PhysicsActorId>(entity))
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
         return Physics::ActorId(Ids::InvalidId32);
 
-    PhysicsFeature::PhysicsActorId actorId = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+    PhysicsFeature::PhysicsActor actorId = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
     return GetValidateActorId(entity, actorId);
 }
 
@@ -108,7 +108,7 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
     if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
         return;
 
-    if (!world->HasComponent<PhysicsFeature::PhysicsActorId>(entity))
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
     {
         // the entity has no handle yet, which means its body or collider components were added this
         // frame and are not in the tables yet. Their inits ensure a handle, and a fresh handle
@@ -118,7 +118,7 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
 
     n_assert(PhysicsManager::HasInstance());
 
-    PhysicsFeature::PhysicsActorId self = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+    PhysicsFeature::PhysicsActor self = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
     if (self.pending == 0)
         PhysicsManager::Instance()->rebuildQueue.Append(entity);
 
@@ -134,10 +134,10 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
 void
 PhysicsManager::MarkShapeChanged(Game::World* world, Game::Entity entity)
 {
-    if (entity == Game::Entity::Invalid() || !world->HasComponent<PhysicsFeature::PhysicsActorId>(entity))
+    if (entity == Game::Entity::Invalid() || !world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
         return;
 
-    PhysicsFeature::PhysicsActorId const self = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+    PhysicsFeature::PhysicsActor const self = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
 
     PhysicsManager::Mark(world, entity, PendingShape | PendingStructural);
 
@@ -315,7 +315,7 @@ MarkOwnedShapes(Game::World* world, Physics::ActorId actorId)
 /**
 */
 static void
-BuildActorFromActorResource(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& self)
+BuildActorFromPhysicsResource(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& self)
 {
     Physics::ActorId const current = GetValidateActorId(entity, self);
     if (current.id != Ids::InvalidId32 && Physics::ActorContext::GetActor(current).res != Physics::ActorResourceId::Invalid())
@@ -328,7 +328,7 @@ BuildActorFromActorResource(Game::World* world, Game::Entity entity, PhysicsFeat
         Physics::DestroyActorInstance(current);
     }
 
-    PhysicsFeature::PhysicsActor const actor = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
+    PhysicsFeature::PhysicsResource const actor = world->GetComponent<PhysicsFeature::PhysicsResource>(entity);
 
     Math::transform const worldTransform(
         world->GetComponent<Game::Position>(entity),
@@ -366,7 +366,7 @@ BuildActorFromActorResource(Game::World* world, Game::Entity entity, PhysicsFeat
 /**
 */
 static void
-BuildRigidbody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildRigidbody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::Rigidbody const body = world->GetComponent<PhysicsFeature::Rigidbody>(entity);
 
@@ -425,7 +425,7 @@ BuildRigidbody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsA
 /**
 */
 static void
-BuildStaticBody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildStaticBody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::StaticBody const body = world->GetComponent<PhysicsFeature::StaticBody>(entity);
 
@@ -476,7 +476,7 @@ BuildStaticBody(Game::World* world, Game::Entity entity, PhysicsFeature::Physics
     until something asks for the shape again.
 */
 static bool
-BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor, Physics::ColliderDescription& desc)
+BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor, Physics::ColliderDescription& desc)
 {
     Game::Entity const bodyEntity = ResolveBodyEntity(world, entity);
     if (bodyEntity == Game::Entity::Invalid())
@@ -553,7 +553,7 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
 /**
 */
 static bool
-BuildBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::BoxCollider const collider = world->GetComponent<PhysicsFeature::BoxCollider>(entity);
 
@@ -571,7 +571,7 @@ BuildBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Physic
 /**
 */
 static bool
-BuildSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::SphereCollider const collider = world->GetComponent<PhysicsFeature::SphereCollider>(entity);
 
@@ -589,7 +589,7 @@ BuildSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Phy
 /**
 */
 static bool
-BuildCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::CapsuleCollider const collider = world->GetComponent<PhysicsFeature::CapsuleCollider>(entity);
 
@@ -608,7 +608,7 @@ BuildCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Ph
 /**
 */
 static bool
-BuildPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::PlaneCollider const collider = world->GetComponent<PhysicsFeature::PlaneCollider>(entity);
 
@@ -625,7 +625,7 @@ BuildPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Phys
 /**
 */
 static bool
-BuildMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::MeshCollider const collider = world->GetComponent<PhysicsFeature::MeshCollider>(entity);
 
@@ -645,7 +645,7 @@ BuildMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Physi
 /**
 */
 static bool
-BuildHeightFieldCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor)
+BuildHeightFieldCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
     PhysicsFeature::HeightFieldCollider const collider = world->GetComponent<PhysicsFeature::HeightFieldCollider>(entity);
 
@@ -680,9 +680,9 @@ PushActorPose(Game::World* world, Game::Entity entity, Physics::ActorId actorId)
     for it. Returns true if a shape build needs another pass.
 */
 static bool
-RebuildPhysicsEntity(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActorId& actor, uint32_t const pending)
+RebuildPhysicsEntity(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor, uint32_t const pending)
 {
-    bool const isBody = world->HasComponent<PhysicsFeature::PhysicsActor>(entity)
+    bool const isBody = world->HasComponent<PhysicsFeature::PhysicsResource>(entity)
         || world->HasComponent<PhysicsFeature::Rigidbody>(entity)
         || world->HasComponent<PhysicsFeature::StaticBody>(entity);
 
@@ -690,9 +690,9 @@ RebuildPhysicsEntity(Game::World* world, Game::Entity entity, PhysicsFeature::Ph
 
     if (pending & (PendingBody | PendingShape | PendingStructural))
     {
-        if (world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+        if (world->HasComponent<PhysicsFeature::PhysicsResource>(entity))
         {
-            BuildActorFromActorResource(world, entity, actor);
+            BuildActorFromPhysicsResource(world, entity, actor);
         }
         else if (world->HasComponent<PhysicsFeature::Rigidbody>(entity))
         {
@@ -776,10 +776,10 @@ PhysicsManager::RebuildQueued()
 
     for (Game::Entity const entity : queue)
     {
-        if (!world->IsValid(entity) || !world->HasComponent<PhysicsFeature::PhysicsActorId>(entity))
+        if (!world->IsValid(entity) || !world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
             continue;
 
-        PhysicsFeature::PhysicsActorId actor = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+        PhysicsFeature::PhysicsActor actor = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
         if (actor.pending == 0)
             continue;
 
@@ -795,7 +795,7 @@ PhysicsManager::RebuildQueued()
 
         // merge what the rebuild changed in the handle with what was marked while it ran, and keep the
         // entity queued as long as anything is left to do
-        PhysicsFeature::PhysicsActorId after = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+        PhysicsFeature::PhysicsActor after = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
         actor.pending = after.pending | (retry ? PendingShape : 0);
         if (actor.pending != 0 && after.pending == 0)
             this->rebuildQueue.Append(entity);
@@ -808,7 +808,7 @@ PhysicsManager::RebuildQueued()
 /**
 */
 void
-PhysicsManager::InitPhysicsActorId(Game::World*, Game::Entity entity, PhysicsFeature::PhysicsActorId* actor)
+PhysicsManager::InitPhysicsActor(Game::World*, Game::Entity entity, PhysicsFeature::PhysicsActor* actor)
 {
     // a handle also starts living when an entity is copied rather than built, which is what happens
     // when the editor world is transferred to the game world. The actor and the body it points at
@@ -832,15 +832,15 @@ PhysicsManager::InitPhysicsActorId(Game::World*, Game::Entity entity, PhysicsFea
 static void
 EnsureHandle(Game::World* world, Game::Entity entity)
 {
-    if (!world->HasComponent<PhysicsFeature::PhysicsActorId>(entity))
-        world->AddComponent<PhysicsFeature::PhysicsActorId>(entity);
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+        world->AddComponent<PhysicsFeature::PhysicsActor>(entity);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor*)
+PhysicsManager::InitPhysicsResource(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsResource*)
 {
     EnsureHandle(world, entity);
 }
@@ -928,13 +928,13 @@ PhysicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<PhysicsFeature::PhysicsActorId>());
+    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<PhysicsFeature::PhysicsActor>());
 
     // the decay buffer holds a copy of the whole component of every instance which decayed
-    PhysicsFeature::PhysicsActorId const* handles = (PhysicsFeature::PhysicsActorId const*)decayBuffer.buffer;
+    PhysicsFeature::PhysicsActor const* handles = (PhysicsFeature::PhysicsActor const*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
-        PhysicsFeature::PhysicsActorId const& handle = handles[i];
+        PhysicsFeature::PhysicsActor const& handle = handles[i];
 
         Physics::ActorId const actorId(handle.actorId);
         if (Physics::ActorContext::IsValid(actorId))
@@ -950,7 +950,7 @@ PhysicsManager::OnDecay()
 */
 void
 PollRigidbodyTransforms(
-    Game::World* world, Game::Entity entity, Game::Position& position, Game::Orientation& orientation, PhysicsFeature::PhysicsActor const&, PhysicsFeature::PhysicsActorId const& handle)
+    Game::World* world, Game::Entity entity, Game::Position& position, Game::Orientation& orientation, PhysicsFeature::PhysicsResource const&, PhysicsFeature::PhysicsActor const& handle)
 {
     Physics::ActorId const actorId = GetValidateActorId(entity, handle);
     if (actorId.id != Ids::InvalidId32)
@@ -964,8 +964,8 @@ PollRigidbodyTransforms(
 */
 void
 PassKinematicTransforms(
-    Game::World* world, Game::Entity entity, Game::Position const& position, Game::Orientation const& orientation, PhysicsFeature::PhysicsActor const&,
-    PhysicsFeature::IsKinematic, PhysicsFeature::PhysicsActorId const& handle)
+    Game::World* world, Game::Entity entity, Game::Position const& position, Game::Orientation const& orientation, PhysicsFeature::PhysicsResource const&,
+    PhysicsFeature::IsKinematic, PhysicsFeature::PhysicsActor const& handle)
 {
     Physics::ActorId const actorId = GetValidateActorId(entity, handle);
     if (actorId.id != Ids::InvalidId32)
@@ -980,7 +980,7 @@ PassKinematicTransforms(
 void
 PollRigidbodyTransform(
     Game::World* world, Game::Entity entity, PhysicsFeature::Rigidbody const& body, Game::Position& position, Game::Orientation& orientation,
-    PhysicsFeature::PhysicsActorId const& handle)
+    PhysicsFeature::PhysicsActor const& handle)
 {
     Physics::ActorId const actorId = GetValidateActorId(entity, handle);
     if (actorId.id == Ids::InvalidId32)
@@ -1079,7 +1079,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     n_assert(PhysicsManager::HasInstance());
 
     Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId<PhysicsFeature::PhysicsActorId>();
+    filterInfo.inclusive[0] = Game::GetComponentId<PhysicsFeature::PhysicsActor>();
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.numInclusive = 1;
 
@@ -1088,7 +1088,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     for (int v = 0; v < data.numViews; v++)
     {
         Game::Dataset::View const& view = data.views[v];
-        PhysicsFeature::PhysicsActorId const* handles = (PhysicsFeature::PhysicsActorId const*)view.buffers[0];
+        PhysicsFeature::PhysicsActor const* handles = (PhysicsFeature::PhysicsActor const*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)
         {

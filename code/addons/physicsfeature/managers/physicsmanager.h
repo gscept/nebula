@@ -24,7 +24,7 @@ namespace PhysicsFeature
 {
 
 /// what the physics manager has queued for an entity, mixed together in the pending field of the
-/// PhysicsActorId component. Adding and removing components is picked up by the component inits and
+/// PhysicsActor component. Adding and removing components is picked up by the component inits and
 /// decay callbacks, everything else is pinged by whoever changed the entity
 enum PhysicsPending : uint32_t
 {
@@ -49,14 +49,15 @@ public:
     void OnDecay() override;
     void OnCleanup(Game::World* world) override;
 
-    // the handle component owns the physx actor of an entity. Its init resets the handle and queues a
-    // full build, and it is the only place the actor and its shapes are built from nothing
-    static void InitPhysicsActorId(Game::World*, Game::Entity, PhysicsFeature::PhysicsActorId*);
+    // the PhysicsActor component is the handle which owns the physx actor of an entity. Its init
+    // resets the handle and queues a full build, and it is the only place the actor and its shapes
+    // are built from nothing
+    static void InitPhysicsActor(Game::World*, Game::Entity, PhysicsFeature::PhysicsActor*);
 
     // the body and collider components hold no physx handles. Their init ensures the entity has a
     // handle, which queues its setup. Adding one of them to an entity which already has a handle is a
     // change, and changes are pinged by whoever made them, see the Mark functions below
-    static void InitPhysicsActor(Game::World*, Game::Entity, PhysicsFeature::PhysicsActor*);
+    static void InitPhysicsResource(Game::World*, Game::Entity, PhysicsFeature::PhysicsResource*);
     static void InitRigidbody(Game::World*, Game::Entity, PhysicsFeature::Rigidbody*);
     static void InitStaticBody(Game::World*, Game::Entity, PhysicsFeature::StaticBody*);
     static void InitBoxCollider(Game::World*, Game::Entity, PhysicsFeature::BoxCollider*);

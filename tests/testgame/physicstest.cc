@@ -24,7 +24,7 @@ __ImplementClass(Test::PhysicsManagerTest, 'PMTs', Test::TestCase);
 static Physics::ActorId
 BodyActorOf(Game::World* world, Game::Entity entity)
 {
-    PhysicsFeature::PhysicsActorId const handle = world->GetComponent<PhysicsFeature::PhysicsActorId>(entity);
+    PhysicsFeature::PhysicsActor const handle = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
     return Physics::ActorId(handle.actorId);
 }
 
@@ -70,13 +70,13 @@ PhysicsManagerTest::Run()
 
     StepPhysicsFrames(3);
 
-    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActorId>(body));
-    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActorId>(collider));
+    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActor>(body));
+    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActor>(collider));
 
     Physics::ActorId const bodyActor = BodyActorOf(world, body);
     VERIFY(Physics::ActorContext::IsValid(bodyActor));
 
-    PhysicsFeature::PhysicsActorId const colliderHandle = world->GetComponent<PhysicsFeature::PhysicsActorId>(collider);
+    PhysicsFeature::PhysicsActor const colliderHandle = world->GetComponent<PhysicsFeature::PhysicsActor>(collider);
     VERIFY(colliderHandle.actorId == Ids::InvalidId32);
     VERIFY(colliderHandle.body == body);
 
@@ -119,7 +119,7 @@ PhysicsManagerTest::Run()
     VERIFY(Physics::ActorContext::IsValid(otherActor));
     VERIFY(Physics::ActorContext::GetActor(otherActor).shapes.Size() == 1);
 
-    PhysicsFeature::PhysicsActorId const movedHandle = world->GetComponent<PhysicsFeature::PhysicsActorId>(collider);
+    PhysicsFeature::PhysicsActor const movedHandle = world->GetComponent<PhysicsFeature::PhysicsActor>(collider);
     VERIFY(movedHandle.body == otherBody);
 
     Math::transform const movedShapePose = Physics::ActorContext::GetShapeTransform(
@@ -165,7 +165,7 @@ PhysicsManagerTest::Run()
 
     StepPhysicsFrames(3);
 
-    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActorId>(late));
+    VERIFY(world->HasComponent<PhysicsFeature::PhysicsActor>(late));
     Physics::ActorId const lateActor = BodyActorOf(world, late);
     VERIFY(Physics::ActorContext::IsValid(lateActor));
     VERIFY(Physics::ActorContext::GetActor(lateActor).shapes.Size() == 0);
