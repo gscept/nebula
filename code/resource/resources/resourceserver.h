@@ -200,6 +200,49 @@ ResourceServer::CreateResource(
     return id;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class METADATA>
+inline Resources::ResourceId
+ResourceServer::CreateResource(
+    const IO::Path& res, 
+    const METADATA& metaData, 
+    std::function<void(const Resources::ResourceId)> success, 
+    std::function<void(const Resources::ResourceId)> failed, 
+    bool immediate, 
+    bool stream
+)
+{
+    return this->CreateResource(res, metaData, "", success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class METADATA>
+inline Resources::ResourceId
+ResourceServer::CreateResource(
+    const IO::Path& res, 
+    const METADATA& metaData, 
+    const Util::StringAtom& tag, 
+    std::function<void(const Resources::ResourceId)> success, 
+    std::function<void(const Resources::ResourceId)> failed, 
+    bool immediate, 
+    bool stream
+)
+{
+    // get resource loader by extension
+    IndexT i = this->extensionMap.FindIndex(res.GetType());
+    n_assert_fmt(i != InvalidIndex, "No resource loader is associated with URN namespace '%s'", res.GetType().AsCharPtr());
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+
+    // create container and cast to actual resource type
+    Resources::ResourceId id = loader->CreateResource(res, metaData, 0, tag, success, failed, immediate, stream);
+    return id;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
