@@ -21,10 +21,7 @@
             "GridFogList",
             "GridFogIndexLists",
             "RayTracingObjectBindings",
-            "HistogramCounters",
-            "VegetationDrawCountBuffer",
-            "VegetationMeshDrawsBuffer",
-            "VegetationMeshArgumentsBuffer"
+            "HistogramCounters"
         ],
         "ImportTextures": [
             "HBAOInternal0",
@@ -348,11 +345,6 @@
                     {
                         "subgraph": {
                             "name": "Vegetation Generate Draws"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Vegetation Draw CPU Readback"
                         }
                     },
 
