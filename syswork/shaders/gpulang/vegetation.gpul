@@ -74,7 +74,7 @@ sampleMask(type: u32, uniform samp: *sampler, uv: f32x2) f32x4
 }
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform IndirectMeshDrawBuffer : *[] mutable DrawIndexedCommand;
+group(BATCH_GROUP) uniform IndirectMeshDrawBuffer : *[] mutable DrawIndexedCommand;
 
 struct InstanceUniforms
 {
@@ -97,7 +97,7 @@ struct DrawCountData
 };
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform DrawCount : *mutable DrawCountData;
+group(BATCH_GROUP) uniform DrawCount : *mutable DrawCountData;
 
 group(SYSTEM_GROUP) sampler_state TextureSampler
 {
@@ -130,7 +130,6 @@ threads_x(1)
 entry_point
 csClearDraws() void
 {
-    DrawCount.NumGrassDraws = 0u;
     for (var i = 0u; i < MAX_MESH_INFOS; i++)
         DrawCount.NumMeshDraws[i] = u32x4(0,0,0,0);
 }
