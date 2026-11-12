@@ -91,7 +91,8 @@ private:
         IndexT meshMaskCount = 0;
 
         CoreGraphics::VertexLayoutId meshVertexLayouts[MAX_MESH_INFOS];
-        SizeT meshVertexOffsets[MAX_MESH_INFOS];
+        SizeT meshVertexPositionOffsets[MAX_MESH_INFOS];
+        SizeT meshVertexAttributeOffsets[MAX_MESH_INFOS];
         SizeT meshIndexOffsets[MAX_MESH_INFOS];
         CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
         CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];

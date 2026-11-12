@@ -140,7 +140,8 @@ VegetationContext::Create()
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
                 CmdSetVertexLayout(cmdBuf, instance.meshVertexLayouts[i]);
-                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), instance.meshVertexOffsets[i]);
+                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), instance.meshVertexPositionOffsets[i]);
+                CmdSetVertexBuffer(cmdBuf, 1, CoreGraphics::GetVertexBuffer(), instance.meshVertexAttributeOffsets[i]);
                 CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), instance.meshIndexOffsets[i]);
 
                 // set graphics pipeline
@@ -172,7 +173,8 @@ VegetationContext::Create()
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
                 CmdSetVertexLayout(cmdBuf, instance.meshVertexLayouts[i]);
-                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), instance.meshVertexOffsets[i]);
+                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), instance.meshVertexPositionOffsets[i]);
+                CmdSetVertexBuffer(cmdBuf, 1, CoreGraphics::GetVertexBuffer(), instance.meshVertexAttributeOffsets[i]);
                 CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), instance.meshIndexOffsets[i]);
 
                 // set graphics pipeline
@@ -399,15 +401,14 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
         // get primitive groups so we can update the mesh info
         const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
-        uint baseVertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
-        uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
 
         info.indexCount = 0;
         info.vertexCount = 0;
         info.numLods = groups.Size();
 
-        instanceInfo.meshVertexOffsets[infoIndex] = baseVertexOffset;
-        instanceInfo.meshIndexOffsets[infoIndex] = baseIndexOffset;
+        instanceInfo.meshVertexPositionOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+        instanceInfo.meshVertexAttributeOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
+        instanceInfo.meshIndexOffsets[infoIndex] = CoreGraphics::MeshGetIndexOffset(mesh);
 
         float distances[] = {10, 25, 50, 100, 500, 1000};
 
@@ -506,15 +507,14 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, con
 
         // get primitive groups so we can update the mesh info
         const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
-        uint baseVertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
-        uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
 
         info.indexCount = 0;
         info.vertexCount = 0;
         info.numLods = groups.Size();
 
-        instanceInfo.meshVertexOffsets[index] = baseVertexOffset;
-        instanceInfo.meshIndexOffsets[index] = baseIndexOffset;
+        instanceInfo.meshVertexPositionOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+        instanceInfo.meshVertexAttributeOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
+        instanceInfo.meshIndexOffsets[index] = CoreGraphics::MeshGetIndexOffset(mesh);
 
         float distances[] = { 10, 25, 50, 100, 500, 1000 };
 

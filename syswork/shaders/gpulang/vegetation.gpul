@@ -246,7 +246,7 @@ entry_point
 vsDrawMeshVColor(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
-    , binding(2) in uv : f32x2
+    , binding(2) in uv : i32x2
     , binding(3) in tangent : f32x4
     , binding(5) in color : f32x4
     , out Tangent : f32x3
@@ -265,10 +265,8 @@ vsDrawMeshVColor(
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
     const rotatedPos = rotation * (position + displacement * 0.1f);
-    
 
-    UV = uv;
-    UV.y = 1.0f - UV.y;
+    UV = UnpackUV(uv);
     Normal = rotation * normal;
     Tangent = rotation * tangent.xyz;
     Sign = tangent.w;
@@ -293,7 +291,7 @@ entry_point
 vsDrawDepthVColor(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
-    , binding(2) in uv : f32x2
+    , binding(2) in uv : i32x2
     , binding(3) in tangent : f32x4
     , binding(5) in color : f32x4
     , out UV : f32x2
@@ -310,8 +308,7 @@ vsDrawDepthVColor(
     const rotatedPos = rotation * (position + displacement * 0.1f);
     
 
-    UV = uv;
-    UV.y = 1.0f - UV.y;
+    UV = UnpackUV(uv);
 
     MaterialIndex = instanceUniforms.materialIndex;
     const worldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
@@ -333,7 +330,7 @@ entry_point
 vsDrawDepth(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
-    , binding(2) in uv : f32x2
+    , binding(2) in uv : i32x2
     , binding(3) in tangent : f32x4
     , out UV : f32x2
     , out MaterialIndex : u32
@@ -348,8 +345,7 @@ vsDrawDepth(
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
     const rotatedPos = rotation * (position + displacement * 0.1f);
 
-    UV = uv;
-    UV.y = 1.0f - UV.y;
+    UV = UnpackUV(uv);
 
     MaterialIndex = instanceUniforms.materialIndex;
     const worldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
@@ -370,7 +366,7 @@ vsDrawDepth(
 entry_point
 vsDrawMesh(
     binding(0) in position : f32x3
-    , binding(2) in uv : f32x2
+    , binding(2) in uv : i32x2
     , binding(1) in normal : f32x3
     , binding(3) in tangent : f32x4
     , out Tangent : f32x3
@@ -389,8 +385,7 @@ vsDrawMesh(
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
     const rotatedPos = rotation * (position + displacement * 0.1f);
 
-    UV = uv;
-    UV.y = 1.0f - UV.y;
+    UV = UnpackUV(uv);
     Normal = rotation * normal;
     Tangent = rotation * tangent.xyz;
     Sign = tangent.w;
