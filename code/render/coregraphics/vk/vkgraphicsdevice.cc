@@ -1120,6 +1120,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
         .pNext = &vk13Features,
+        .drawIndirectCount = true,
         .shaderFloat16 = true,
         .descriptorBindingUniformBufferUpdateAfterBind = true,
         .descriptorBindingSampledImageUpdateAfterBind = true,

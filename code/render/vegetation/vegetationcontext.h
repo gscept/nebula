@@ -11,7 +11,7 @@
 #include "resources/resource.h"
 #include "ids/idallocator.h"
 
-#include "gpulang/render/system_shaders/vegetation.h"
+#include "gpulang/render/vegetation/shaders/vegetation.h"
 
 namespace Vegetation
 {
@@ -43,7 +43,7 @@ public:
 
     /// Setup vegetation context
     static void Setup(const Graphics::GraphicsEntityId id);
-
+    
     /// Setup a new mesh
     static uint SetupMesh(const Graphics::GraphicsEntityId id, const VegetationMeshSetup& setup);
 

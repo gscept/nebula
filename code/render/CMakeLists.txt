@@ -638,6 +638,8 @@ ENDIF()
                 vegetationcontext.h
                 vegetationcontext.cc
             )
+		fips_dir(vegetation/shaders)
+			compile_gpulang(vegetation.gpul)
                 
         fips_dir(visibility)
             fips_files(
