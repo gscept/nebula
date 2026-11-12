@@ -980,6 +980,7 @@ TerrainEditor::Run(SaveMode save)
         if (ImGui::Button("New Plant"))
         {
             selectedTerrainResource.vegetation.push_back(std::make_unique<Render::VegetationMeshT>());
+            selectedTerrainResource.vegetation.back()->name = Util::Format("New Plant %d", selectedTerrainResource.vegetation.size());
 
             uint index = Vegetation::VegetationContext::SetupMesh(terrainComponent.graphicsEntityId, {});
             selectedVegetationMesh = index;
