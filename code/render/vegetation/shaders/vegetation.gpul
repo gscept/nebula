@@ -405,6 +405,19 @@ vsDrawMesh(
 //------------------------------------------------------------------------------
 /**
 */
+entry_point
+psDepth(in UV : f32x2, in no_interpolate MaterialIndex : u32) void
+{
+    const mat = MaterialPointers.BRDFMaterials[MaterialIndex];
+
+    const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
 render_state MeshState
 {
     Cull = CullFace.None;
@@ -422,7 +435,7 @@ render_state MeshZState
 program VegetationMeshDrawVColorZ
 {
     VertexShader = vsDrawDepthVColor;
-    PixelShader = psDepthAlphaMaskBindlessMaterial;
+    PixelShader = psDepth;
     RenderState = MeshZState;
 };
 
@@ -438,7 +451,7 @@ program VegetationMeshDrawVColor
 program VegetationMeshDrawZ
 {
     VertexShader = vsDrawDepth;
-    PixelShader = psDepthAlphaMaskBindlessMaterial;
+    PixelShader = psDepth;
     RenderState = MeshZState;
 };
 
@@ -446,7 +459,7 @@ program VegetationMeshDrawZ
 program VegetationMeshDraw
 {
     VertexShader = vsDrawMesh;
-    PixelShader = psStandard;
+    PixelShader = psStandardBindlessMaterial;
     RenderState = MeshState;
 };
 

@@ -66,7 +66,7 @@ VegetationContext::Create()
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:system_shaders/vegetation.gplb");
+    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation/shaders/vegetation.gplb");
     vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
     vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
     vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawZ"));
@@ -258,7 +258,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
 
     CoreGraphics::BufferCreateInfo indirectCountBufferInfo;
     indirectCountBufferInfo.name = "Vegetation Draw Count Buffer";
-    indirectCountBufferInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
+    indirectCountBufferInfo.usageFlags = CoreGraphics::BufferUsage::IndirectDraw | CoreGraphics::BufferUsage::ReadWrite;
     indirectCountBufferInfo.elementSize = sizeof(Vegetation::DrawCount::STRUCT);
     indirectCountBufferInfo.size = MAX_MESH_INFOS;
     indirectCountBufferInfo.mode = CoreGraphics::DeviceLocal;
@@ -587,7 +587,6 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     VegetationGenerateUniforms::STRUCT uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
     cameraTransform.z_axis.store(uniforms.CameraForward);
-
 
     const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
     for (auto instance : instances)
