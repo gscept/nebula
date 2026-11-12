@@ -185,6 +185,7 @@ GraphicsFeatureUnit::OnActivate()
     Fog::VolumetricFogContext::Create();
     GI::DDGIContext::Create();
     ::Terrain::TerrainContext::Create();
+    Vegetation::VegetationContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::DofContext::Create();
     PostEffects::SSAOContext::Create();

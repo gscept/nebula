@@ -59,12 +59,20 @@ VegetationContext::~VegetationContext()
 /**
 */
 void
-VegetationContext::Create(const VegetationSetupSettings& settings)
+VegetationContext::Create()
 {
     __CreateContext();
     using namespace CoreGraphics;
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
+
+    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:system_shaders/vegetation.gplb");
+    vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
+    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
+    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawZ"));
+    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDraw"));
+    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColorZ"));
+    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColor"));
 
     FrameScript_default::RegisterSubgraph_VegetationClearDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -78,6 +86,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 BufferBarrierInfo{ .buf = instance.drawCountBuffer[bufferIndex], .subres = BufferSubresourceInfo() }
             });
             CmdSetResourceTable(cmdBuf, instance.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
             CmdDispatch(cmdBuf, 1, 1, 1);
             BarrierPop(cmdBuf);
@@ -103,14 +112,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
             CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
-        }
-    });
 
-    FrameScript_default::RegisterSubgraph_VegetationPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
-        const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
-        for (const auto instance : instances)
-        {
             CmdBarrier(cmdBuf, PipelineStage::ComputeShaderWrite, PipelineStage::Indirect, BarrierDomain::Global,
             {
                 BufferBarrierInfo{ .buf = instance.meshDrawCallsBuffer[bufferIndex], .subres = BufferSubresourceInfo() }
@@ -120,8 +122,19 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             {
                 BufferBarrierInfo{ .buf = instance.meshArgumentsBuffer[bufferIndex], .subres = BufferSubresourceInfo() }
             });
+        }
+    });
+
+    FrameScript_default::RegisterSubgraph_VegetationPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+        const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
+        for (const auto instance : instances)
+        {
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
+                if (!instance.meshInfos[i].used)
+                    continue;
+
                 CmdSetShaderProgram(cmdBuf, instance.meshZPrograms[i], queue);
 
                 // setup mesh
@@ -138,7 +151,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
                 // draw
-                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], 0, instance.drawCountBuffer[bufferIndex], 0, sizeof(Vegetation::DrawIndexedCommand));
+                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], 0, instance.drawCountBuffer[bufferIndex], 0, MaxNumIndirectDraws, sizeof(Vegetation::DrawIndexedCommand));
             }
         }
     });
@@ -151,6 +164,9 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         {
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
+                if (!instance.meshInfos[i].used)
+                    continue;
+
                 CmdSetShaderProgram(cmdBuf, instance.meshPrograms[i], queue);
 
                 // setup mesh
@@ -167,13 +183,10 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
                 // draw
-                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], i * MaxNumIndirectDraws, instance.drawCountBuffer[bufferIndex], 0, sizeof(Vegetation::DrawIndexedCommand));
+                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], i * MaxNumIndirectDraws, instance.drawCountBuffer[bufferIndex], 0, MaxNumIndirectDraws, sizeof(Vegetation::DrawIndexedCommand));
             }
         }
     });
-
-
-
 }
 
 //------------------------------------------------------------------------------
@@ -200,8 +213,8 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
 
     CoreGraphics::BufferCreateInfo meshInfo;
     meshInfo.name = "Vegetation Mesh Info";
-    meshInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
-    meshInfo.mode = CoreGraphics::HostCached;
+    meshInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
+    meshInfo.mode = CoreGraphics::DeviceLocal;
     meshInfo.elementSize = sizeof(Vegetation::MeshInfo);
     meshInfo.size = Vegetation::MAX_MESH_INFOS;
     meshInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
@@ -262,13 +275,6 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     instanceInfo.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
     memset(&instanceInfo.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms::STRUCT));
 
-    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.gplb");
-    vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
-    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
-    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawZ"));
-    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDraw"));
-    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColorZ"));
-    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColor"));
     instanceInfo.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
 
     ResourceTableSetConstantBuffer(instanceInfo.systemResourceTable,
@@ -290,7 +296,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
         });
 
 
-    ResourceTableSetConstantBuffer(instanceInfo.systemResourceTable,
+    ResourceTableSetRWBuffer(instanceInfo.systemResourceTable,
         {
             instanceInfo.meshInfoBuffer,
             Vegetation::MeshInfos::BINDING,
@@ -421,15 +427,14 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
         // make sure the mesh is valid for vegetation rendering
         const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
-        n_assert(components.Size() >= 5);
-        if (components.Size() == 6) // with vertex colors
+        n_assert(components.Size() >= 4);
+        if (components.Size() == 5) // with vertex colors
         {
             n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
-            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
+            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Short2);
+            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[5].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
+            n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
             instanceInfo.meshZPrograms[infoIndex] = vegetationState.vegetationMeshVColorZShader;
             instanceInfo.meshPrograms[infoIndex] = vegetationState.vegetationMeshVColorShader;
             instanceInfo.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
@@ -437,14 +442,16 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         else // without
         {
             n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
-            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
+            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Short2);
+            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             instanceInfo.meshZPrograms[infoIndex] = vegetationState.vegetationMeshZShader;
             instanceInfo.meshPrograms[infoIndex] = vegetationState.vegetationMeshShader;
             instanceInfo.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
         }
+        n_assert(instanceInfo.meshZPrograms[infoIndex] != CoreGraphics::InvalidShaderProgramId);
+        n_assert(instanceInfo.meshPrograms[infoIndex] != CoreGraphics::InvalidShaderProgramId);
+        n_assert(instanceInfo.meshVertexLayouts[infoIndex] != CoreGraphics::InvalidVertexLayoutId);
 
         info.used = true;
 

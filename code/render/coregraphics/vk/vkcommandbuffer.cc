@@ -1143,10 +1143,10 @@ CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, Index
 /**
 */
 void
-CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT stride)
+CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
-    vkCmdDrawIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, stride);
+    vkCmdDrawIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, maxDrawCount, stride);
 }
 
 //------------------------------------------------------------------------------
@@ -1163,10 +1163,10 @@ CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer
 /**
 */
 void
-CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT stride)
+CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
-    vkCmdDrawIndexedIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, stride);
+    vkCmdDrawIndexedIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, maxDrawCount, stride);
 }
 
 //------------------------------------------------------------------------------

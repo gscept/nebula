@@ -319,11 +319,11 @@ void CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, cons
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
 void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
-void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT stride);
+void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride);
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
 void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);
 /// Draw indirect using draw count buffer, draws is the amount of draws in the buffer, and stride is the byte offset between each call
-void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT stride);
+void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride);
 /// Perform computation
 void CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ);
 /// Resolve MSAA source to non-MSAA target

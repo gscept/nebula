@@ -573,6 +573,7 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     }
 
     Vegetation::VegetationContext::RegisterEntity(terrain->graphicsEntityId);
+    Vegetation::VegetationContext::Setup(terrain->graphicsEntityId);
     for (auto const& vegetation : resource.vegetation)
     {
         Vegetation::VegetationMeshSetup mesh;

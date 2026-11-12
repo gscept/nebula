@@ -17,10 +17,6 @@ namespace Vegetation
 {
 
 ID_32_TYPE(VegetationBiomeId);
-struct VegetationSetupSettings
-{
-};
-
 struct VegetationMeshSetup
 {
     IO::Path mask = IO::Path::FolderAndFile("tex", "system/black");             // expects a 1 channel texture
@@ -41,7 +37,7 @@ public:
     ~VegetationContext();
 
     /// create vegetation context
-    static void Create(const VegetationSetupSettings& settings);
+    static void Create();
     /// discard vegetation context
     static void Discard();
 
