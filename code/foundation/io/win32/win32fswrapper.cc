@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "io/win32/win32fswrapper.h"
-#include "system/nebulasettings.h"
+#include "io/projectlocator.h"
 #if __WIN32__
 #include "util/win32/win32stringconverter.h"
 #endif
@@ -668,7 +668,8 @@ Win32FSWrapper::GetCurrentDirectory()
     n_assert(_getcwd(buffer, NEBULA_MAXPATH));
     String result = buffer;
     result.ConvertBackslashes();
-    return String("file:///") + result;    
+    result.TrimRight("/");
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -739,11 +740,7 @@ Win32FSWrapper::GetHomeDirectory()
         return String("file:///") + homePath;
     }            
 #else
-    Util::String root;
-    if( System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
-    {
-        root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");    
-    }    
+    Util::String root = ProjectLocator::GetProjectRoot();
     if (root.IsEmpty())
     {
         String homePath = pathToExe.ExtractDirName();

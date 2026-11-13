@@ -5,11 +5,13 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/posix/posixfswrapper.h"
+#include "io/projectlocator.h"
 #include "core/sysfunc.h"
 
 #include <errno.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include <unistd.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -389,6 +391,23 @@ PosixFSWrapper::DirectoryExists(const String& path)
     }
     return false;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+String
+PosixFSWrapper::GetCurrentDirectory()
+{
+    char buffer[NEBULA_MAXPATH] = { 0 };
+    if (0 == getcwd(buffer, NEBULA_MAXPATH))
+    {
+        return String();
+    }
+    String result = buffer;
+    result.ConvertBackslashes();
+    result.TrimRight("/");
+    return result;
+}
  
  //------------------------------------------------------------------------------
 /**
@@ -601,10 +620,11 @@ PosixFSWrapper::GetHomeDirectory()
 {
     char buf[MAXPATHLEN];
 #if NEBULA_DEBUG
-#ifdef NEBULA_PROJECT_ROOT
-    String EmbeddedHome = NEBULA_PROJECT_ROOT;
-    return String("file:///") + EmbeddedHome;
-#endif
+    String projectRoot = ProjectLocator::GetProjectRoot();
+    if (!projectRoot.IsEmpty())
+    {
+        return String("file:///") + projectRoot;
+    }
 #endif
 #ifdef __APPLE__
     CoreFoundation::CFBundleRef mainBundle = CoreFoundation::CFBundleGetMainBundle();

@@ -10,7 +10,7 @@
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "io/textwriter.h"
-#include "system/nebulasettings.h"
+#include "io/projectlocator.h"
 
 
 using namespace Util;
@@ -52,7 +52,8 @@ DistributedJob::~DistributedJob()
 }
 //------------------------------------------------------------------------------
 /**
-    Validates the current project path in the registry
+    Validates that the resolved project path matches the project this job was
+    created for
 */
 void
 DistributedJob::ValidateProjectPath()
@@ -60,24 +61,20 @@ DistributedJob::ValidateProjectPath()
     n_assert(Ready == this->jobState);
     n_assert(JobError != this->jobState);
 
-    String projDirectory;
-    if (NebulaSettings::Exists("gscept","ToolkitShared", "workdir"))
+    // The toolkit never writes project state anywhere: the project path is
+    // derived from where the project info file is, so a job can only be
+    // validated against the project it was created for.
+    String projDirectory = ProjectLocator::GetProjectRoot();
+    if (projDirectory.IsEmpty())
     {
-        projDirectory = NebulaSettings::ReadString("gscept","ToolkitShared", "workdir");
-        if(projDirectory != this->projectDirectory)
-        {
-            if(!NebulaSettings::WriteString("gscept","ToolkitShared", "workdir",this->projectDirectory))
-            {
-                this->jobState = JobError;
-                return;
-            }
-        }
-        this->jobState = ValidProjectPath;
+        projDirectory = this->projectDirectory;
     }
-    else
+    if (projDirectory != this->projectDirectory)
     {
         this->jobState = JobError;
+        return;
     }
+    this->jobState = ValidProjectPath;
 }
 //------------------------------------------------------------------------------
 /**

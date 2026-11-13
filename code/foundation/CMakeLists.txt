@@ -207,6 +207,8 @@ nebula_begin_module(foundation)
                 memorystream.h
                 path.cc
                 path.h
+                projectlocator.cc
+                projectlocator.h
                 schemeregistry.cc
                 schemeregistry.h
                 stream.cc

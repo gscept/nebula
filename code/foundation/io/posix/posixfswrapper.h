@@ -87,6 +87,8 @@ public:
     static Util::String GetHomeDirectory();
     /// get path to the current bin directory (for bin: standard assign)
     static Util::String GetBinDirectory();
+    /// get the absolute path of the current working directory
+    static Util::String GetCurrentDirectory();
     /// return true when the string is a device name (e.g. "C:")
     static bool IsDeviceName(const Util::String& str);
 };

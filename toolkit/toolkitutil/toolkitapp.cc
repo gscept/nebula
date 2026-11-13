@@ -5,8 +5,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/assignregistry.h"
+#include "io/projectlocator.h"
+#include "core/coreserver.h"
 #include "toolkitapp.h"
-#include "system/nebulasettings.h"
 
 namespace ToolkitUtil
 {
@@ -39,11 +40,11 @@ ToolkitApp::Open()
         // need to disable ZIP file system in tools!
         IoServer::Instance()->SetArchiveFileSystemEnabled(false);
 
-        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+        Util::String toolDir = ProjectLocator::GetToolkitRoot();
+        if (!toolDir.IsEmpty())
         {
-            Util::String toolDir = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path");
             Core::CoreServer::Instance()->SetToolDirectory(toolDir);
-            AssignRegistry::Instance()->SetAssign(Assign("tool", toolDir.AsCharPtr()));
+            AssignRegistry::Instance()->SetAssign(Assign("tool", toolDir));
         }
 
         // add toolkit handler for structured logging

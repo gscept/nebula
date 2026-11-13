@@ -20,7 +20,7 @@ option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
-option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
+option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the project and toolkit directories into binaries for development builds" ON)
 option(N_SHADER_PROFILE_BUILDS "Profile shader compilation, slows down compilation time" OFF)
 option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
 option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation time" ON)
@@ -39,10 +39,12 @@ if (N_ENABLE_PHYSICS_FORMAT_DDS)
 endif()
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
-    if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
-        FILE(READ "${CMAKE_BINARY_DIR}/project_root.txt" PRJ_ROOT)
-        add_definitions(-DNEBULA_PROJECT_ROOT=\"${PRJ_ROOT}\")
-    endif()
+    # The project root is the directory fips was invoked from, and the toolkit
+    # root is the nebula checkout this project imports. Both are known at
+    # configure time, so nothing has to be read from a settings file.
+    get_filename_component(nebula_toolkit_root "${NROOT}" ABSOLUTE)
+    add_definitions(-DNEBULA_PROJECT_ROOT=\"${FIPS_PROJECT_DIR}\")
+    add_definitions(-DNEBULA_TOOLKIT_ROOT=\"${nebula_toolkit_root}\")
 endif()
 
 if (N_SHADER_PROFILE_BUILDS)
@@ -647,21 +649,9 @@ endfunction()
 include(JSONParser)
 
 macro(set_nebula_export_dir)
-    if(FIPS_WINDOWS)
-        get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
-        # get_filename_component returns /registry when a key is not found...
-        if(${workdir} STREQUAL "/registry")
-            MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
-            return()
-        endif()
-    elseif(EXISTS $ENV{HOME}/.config/nebula/gscept.cfg)
-        FILE(READ "$ENV{HOME}/.config/nebula/gscept.cfg" SettingsJson)
-        sbeParseJson(Settings SettingsJson)
-        set(workdir ${Settings.ToolkitShared.workdir})
-    else()
-        # use environment
-        set(workdir $ENV{NEBULA_WORK})
-    endif()
+    # The project root is the directory fips was invoked from, which is also the
+    # directory projectinfo.json lives in. No out-of-band state is consulted.
+    set(workdir ${FIPS_PROJECT_DIR})
     if(EXISTS ${workdir}/projectinfo.json)
         file(READ "${workdir}/projectinfo.json" projectJson)
         sbeParseJson(projectInfo projectJson)

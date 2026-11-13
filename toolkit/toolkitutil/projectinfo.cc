@@ -9,6 +9,7 @@
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "io/jsonreader.h"
+#include "io/projectlocator.h"
 #include "system/nebulasettings.h"
 #include "system/environment.h"
 #include "app/application.h"
@@ -103,48 +104,43 @@ ProjectInfo::Setup()
 {
     n_assert(!this->IsValid());
 
-    String projPath;
-
     // check for cmdline overrides for project
     const Util::CommandLineArgs & args = App::Application::Instance()->GetCmdLineArgs();
 
-    if (args.HasArg("-workdir"))
-    {
-        projPath = args.GetString("-workdir");
-    }
-    else
-    {
-        // grab from registry instead (default)
-        projPath = this->QueryProjectPathFromRegistry();
-    }           
+    // the project info file always lives in the project root, so the project
+    // root has to be resolved before the file can be read
+    String projPath = args.HasArg("-workdir") ? args.GetString("-workdir") : ProjectLocator::GetProjectRoot();
     if (projPath.IsEmpty())
     {
-        return NoProjPathInRegistry;
+        return NoProjectRoot;
     }
     AssignRegistry::Instance()->SetAssign(Assign("proj", projPath));
 
-    // same for toolkit, first overrides, then registry
-    String toolkitPath;
-    if (args.HasArg("-toolkit"))
+    // same for the toolkit, first overrides, then the build system value
+    String toolkitPath = args.HasArg("-toolkit") ? args.GetString("-toolkit") : ProjectLocator::GetToolkitRoot();
+    if (toolkitPath.IsEmpty())
     {
-        toolkitPath = args.GetString("-toolkit");
+        toolkitPath = "home:";
     }
-    else
-    {
-        toolkitPath = this->QueryToolkitPathFromRegistry();
-    }    
-    n_assert(toolkitPath.IsValid());    
     AssignRegistry::Instance()->SetAssign(Assign("toolkit", toolkitPath));
 
-    // parse project info XML file
-    Util::String projectPath = "proj:projectinfo.json";
+    // parse the project info file
+    Util::String projectPath = String("proj:") + String(ProjectLocator::ProjectInfoFileName);
     if (args.HasArg("-project"))
     {
-        projectPath = args.GetString("-project");
-        if (IoServer::Instance()->FileExists(projectPath))
+        // the argument is normally the project directory, but a path directly
+        // to the project info file is also accepted
+        String projectArg = args.GetString("-project");
+        if (IoServer::Instance()->FileExists(projectArg))
         {
+            projectPath = projectArg;
             projPath = projectPath.ExtractToLastSlash();
             AssignRegistry::Instance()->SetAssign(Assign("proj", projPath));
+        }
+        else
+        {
+            projectPath = String::AppendPath(projectArg, String(ProjectLocator::ProjectInfoFileName));
+            AssignRegistry::Instance()->SetAssign(Assign("proj", projectArg));
         }
     }
 
@@ -229,63 +225,20 @@ ProjectInfo::ParseProjectInfoFile(const IO::URI & path)
 
 //------------------------------------------------------------------------------
 /**
-    Query the project path from the registry, the registry key is set
-    by the "Nebula2 Toolkit For Maya". If no key is found, the method
-    will return "home:".
-*/
-String
-ProjectInfo::QueryProjectPathFromRegistry()
-{
-    String projDirectory;
-    if (NebulaSettings::Exists("gscept","ToolkitShared", "workdir"))
-    {
-        projDirectory = NebulaSettings::ReadString("gscept","ToolkitShared", "workdir");
-    }
-    else
-    {
-        projDirectory = "home:";
-    }
-    return projDirectory;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Query the toolkit path from the registry, the registry key is set
-    by the "Nebula2 Toolkit For Maya". If no key is found, the method
-    will return "home:".
-*/
-String
-ProjectInfo::QueryToolkitPathFromRegistry()
-{
-    String toolkitDirectory;
-
-    if (NebulaSettings::Exists("gscept","ToolkitShared", "path"))
-    {
-        toolkitDirectory = NebulaSettings::ReadString("gscept","ToolkitShared", "path");
-    }
-    else
-    {
-        toolkitDirectory = "home:";
-    }
-    return toolkitDirectory;
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 String
 ProjectInfo::GetErrorString(Result res) const
 {
     switch (res)
     {
-        case ProjectInfo::NoProjPathInRegistry:
-            return String("ERROR: no Nebula toolkit entries found in registry!");
+        case ProjectInfo::NoProjectRoot:
+            return String("ERROR: could not determine the project root! Set NEBULA_PROJECT, pass -workdir, or run from inside a project directory!");
         case ProjectInfo::CouldNotOpenProjectInfoFile:
-            return String("ERROR: could not open projectinfo.xml file in project directory!");
+            return String("ERROR: could not open projectinfo.json file in project directory!");
         case ProjectInfo::ProjectFileContentInvalid:
-            return String("ERROR: content of projectinfo.xml is invalid!");
+            return String("ERROR: content of projectinfo.json is invalid!");
         case ProjectInfo::NoProjectInfoFile:
-            return String("ERROR: No projectinfo.xml file found in current project!");
+            return String("ERROR: No projectinfo.json file found in current project!");
         default:
             return String("ERROR: unknown error from ProjectInfo object!\n");
     }

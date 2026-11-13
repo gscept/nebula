@@ -6,6 +6,7 @@
 #include "stdneb.h"
 #include "render_classregistry.h"
 #include "apprender/renderapplication.h"
+#include "io/projectlocator.h"
 #include "io/logfileconsolehandler.h"
 #include "memory/debug/memorypagehandler.h"
 #include "core/debug/corepagehandler.h"
@@ -71,11 +72,11 @@ RenderApplication::~RenderApplication()
 String
 RenderApplication::LookupProjectDirectory()
 {
-    String projectDir = "home:";
-    if(System::NebulaSettings::Exists("gscept","ToolkitShared","workdir"))
-    {    
-        projectDir = System::NebulaSettings::ReadString("gscept","ToolkitShared","workdir");
-    }    
+    String projectDir = IO::ProjectLocator::GetProjectRoot();
+    if (projectDir.IsEmpty())
+    {
+        projectDir = "home:";
+    }
     return projectDir;
 }
 

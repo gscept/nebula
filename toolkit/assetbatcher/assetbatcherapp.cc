@@ -8,13 +8,14 @@
 #include "io/assignregistry.h"
 #include "core/coreserver.h"
 #include "io/textreader.h"
+#include "io/textwriter.h"
 #include "asset/assetbatchprocessor.h"
 #include "io/console.h"
 #include "profiling/profiling.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/physics/material.h"
 #include "jobs2/jobs2.h"
-#include "system/nebulasettings.h"
+#include "system/cpu.h"
 #include "toolkitutil/text.h"
 
 #ifdef WIN32
@@ -244,20 +245,44 @@ AssetBatcherApp::DoWork()
 
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
 
-    // check to see if the assetbatcher has been updated, in that case, force all assets to be rebuilt.
+    // Check whether the batcher binary has been updated since the last run, in
+    // which case all assets have to be rebuilt. The stamp is kept per project,
+    // so a batcher run in one project cannot invalidate another project's
+    // assets.
     IO::FileTime cmdBinModifiedTime = IO::IoServer::Instance()->GetFileWriteTime(this->args.GetCmdName());
-    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "AssetBatcherTimeStamp"))
+    IO::URI intermediateDir = IO::AssignRegistry::Instance()->ResolveAssigns(IO::URI("intermediate:"));
+    IO::URI stampFile = IO::URI(Util::String::AppendPath(intermediateDir.LocalPath(), "assetbatcher.stamp"));
+
+    bool stampChanged = true;
+    if (IO::IoServer::Instance()->FileExists(stampFile))
     {
-        Util::String oldFileTime = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "AssetBatcherTimeStamp");
-        if (IO::FileTime(oldFileTime) < cmdBinModifiedTime)
+        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(stampFile);
+        if (stream.isvalid())
         {
-            System::NebulaSettings::WriteString("gscept", "ToolkitShared", "AssetBatcherTimeStamp", cmdBinModifiedTime.AsString());
-            force = true;
+            Ptr<IO::TextReader> reader = IO::TextReader::Create();
+            reader->SetStream(stream);
+            reader->Open();
+            Util::String oldFileTime = reader->ReadLine();
+            reader->Close();
+            stampChanged = IO::FileTime(oldFileTime) < cmdBinModifiedTime;
         }
     }
-    else
+
+    if (stampChanged)
     {
-        System::NebulaSettings::WriteString("gscept", "ToolkitShared", "AssetBatcherTimeStamp", cmdBinModifiedTime.AsString());
+        if (!IO::IoServer::Instance()->DirectoryExists(intermediateDir))
+        {
+            IO::IoServer::Instance()->CreateDirectory(intermediateDir);
+        }
+        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(stampFile);
+        if (stream.isvalid())
+        {
+            Ptr<IO::TextWriter> writer = IO::TextWriter::Create();
+            writer->SetStream(stream);
+            writer->Open();
+            writer->WriteLine(cmdBinModifiedTime.AsString());
+            writer->Close();
+        }
         force = true;
     }
 

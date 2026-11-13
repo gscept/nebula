@@ -4,9 +4,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "setupapplication.h"
-#include "system/nebulasettings.h"
+#include "io/projectlocator.h"
 
-using namespace System;
 using namespace ToolkitUtil;
 
 namespace Tools
@@ -44,16 +43,15 @@ SetupApplication::Open()
 void 
 SetupApplication::DoWork()
 {
-    switch (this->platform)
-    {
-    case Platform::Win32:
-    case Platform::Linux:
-        {
-            NebulaSettings::WriteString("gscept","ToolkitShared", "path", IO::URI("root:").GetHostAndLocalPath());
-            NebulaSettings::WriteString("gscept","ToolkitShared", "workdir", IO::URI("root:").GetHostAndLocalPath());           
-            break;
-        }
-    }
+    // Nothing is stored here any more. The project root is wherever the project
+    // info file is, and the toolkit root comes from the build system or the
+    // environment, so this tool only reports what the current project resolves
+    // to.
+    Util::String projectRoot = IO::ProjectLocator::GetProjectRoot();
+    Util::String toolkitRoot = IO::ProjectLocator::GetToolkitRoot();
+
+    n_printf("Project root : %s\n", projectRoot.IsEmpty() ? "(not resolved)" : projectRoot.AsCharPtr());
+    n_printf("Toolkit root   : %s\n", toolkitRoot.IsEmpty() ? "(not resolved)" : toolkitRoot.AsCharPtr());
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +83,7 @@ SetupApplication::ShowHelp()
     n_printf("-help         --display this help\n"
         "-nody      --nody path override"
         "-working   --nebula working folder (where bins are located)\n"
-        "-project   --nebula project trunk (if empty, attempts to use registry)\n"
+        "-project   --nebula project trunk (defaults to the directory the project info file is in)\n"
         "-platform     --export platform");
 }
 } // namespace Tools

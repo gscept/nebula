@@ -7,8 +7,8 @@
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
 #include "io/ioserver.h"
+#include "io/projectlocator.h"
 #include "core/coreserver.h"
-#include "system/nebulasettings.h"
 #include "db/sqlite3/sqlite3factory.h"
 #include "db/dataset.h"
 
@@ -186,11 +186,21 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("config", "data:config"));
 
     // tools assigns
-    this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    
-    // project assign from registry
-    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+    String toolkitRoot = ProjectLocator::GetToolkitRoot();
+    if (!toolkitRoot.IsEmpty())
     {
-        this->SetAssign(Assign("proj", System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir")));
+        this->SetAssign(Assign("tool", toolkitRoot));
+    }
+    else
+    {
+        this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));
+    }
+
+    // the project assign is the directory the project info file lives in
+    String projectRoot = ProjectLocator::GetProjectRoot();
+    if (!projectRoot.IsEmpty())
+    {
+        this->SetAssign(Assign("proj", projectRoot));
     }
     else
     {
