@@ -398,6 +398,8 @@ ln(const quat& q)
 
 //------------------------------------------------------------------------------
 /**
+    The Hamilton product. The right operand is the one applied first, which is the same order as
+    Math::mat4::operator*, so q0 * q1 is the rotation that turns a vector by q1 and then by q0.
 */
 __forceinline quat
 operator*(const quat& q0, const quat& q1)
@@ -405,27 +407,27 @@ operator*(const quat& q0, const quat& q1)
     static const __m128 controlWZYX = _mm_setr_ps(1, -1, 1, -1);
     static const __m128 controlZWXY = _mm_setr_ps(1, 1, -1, -1);
     static const __m128 controlYXWZ = _mm_setr_ps(-1, 1, 1, -1);
-    __m128 res = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(3, 3, 3, 3));
-    __m128 q1x = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(0, 0, 0, 0));
-    __m128 q1y = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(1, 1, 1, 1));
-    __m128 q1z = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 res = _mm_shuffle_ps(q0.vec, q0.vec, _MM_SHUFFLE(3, 3, 3, 3));
+    __m128 q0x = _mm_shuffle_ps(q0.vec, q0.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    __m128 q0y = _mm_shuffle_ps(q0.vec, q0.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 q0z = _mm_shuffle_ps(q0.vec, q0.vec, _MM_SHUFFLE(2, 2, 2, 2));
 
-    res = _mm_mul_ps(res, q0.vec);
-    __m128 q0shuffle = q0.vec;
-    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(0, 1, 2, 3));
+    res = _mm_mul_ps(res, q1.vec);
+    __m128 q1shuffle = q1.vec;
+    q1shuffle = _mm_shuffle_ps(q1shuffle, q1shuffle, _MM_SHUFFLE(0, 1, 2, 3));
 
-    q1x = _mm_mul_ps(q1x, q0shuffle);
-    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(2, 3, 0, 1));
-    res = fmadd(q1x, controlWZYX, res);
+    q0x = _mm_mul_ps(q0x, q1shuffle);
+    q1shuffle = _mm_shuffle_ps(q1shuffle, q1shuffle, _MM_SHUFFLE(2, 3, 0, 1));
+    res = fmadd(q0x, controlWZYX, res);
 
-    q1y = _mm_mul_ps(q1y, q0shuffle);
-    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(0, 1, 2, 3));
-    q1y = _mm_mul_ps(q1y, controlZWXY);
+    q0y = _mm_mul_ps(q0y, q1shuffle);
+    q1shuffle = _mm_shuffle_ps(q1shuffle, q1shuffle, _MM_SHUFFLE(0, 1, 2, 3));
+    q0y = _mm_mul_ps(q0y, controlZWXY);
 
-    q1z = _mm_mul_ps(q1z, q0shuffle);
+    q0z = _mm_mul_ps(q0z, q1shuffle);
 
-    q1y = fmadd(q1z, controlYXWZ, q1y);
-    return _mm_add_ps(res, q1y);
+    q0y = fmadd(q0z, controlYXWZ, q0y);
+    return _mm_add_ps(res, q0y);
 }
 
 //------------------------------------------------------------------------------

@@ -100,24 +100,34 @@ TransformTest::Run()
         VERIFY(NearVector(out, vector(2.0f, 6.0f, 12.0f)));
     }
 
-    // composition order: (a * b) applies a first, then b
+    // composition order: (a * b) applies b first, then a, which is the same order as mat4
     {
         transform a(vec3(1.0f, 0.0f, 0.0f), rotationquataxis(vec3(0.0f, 0.0f, 1.0f), 0.0f), vec3(2.0f, 2.0f, 2.0f));
         transform b(vec3(0.0f, 5.0f, 0.0f), rotationquataxis(vec3(0.0f, 0.0f, 1.0f), 0.0f), vec3(1.0f, 1.0f, 1.0f));
         point p(1.0f, 1.0f, 1.0f);
 
-        point sequential = b * (a * p);
+        point sequential = a * (b * p);
         point combined = (a * b) * p;
         VERIFY(NearPoint(combined, sequential));
     }
 
-    // GetRelative contract in header: relative = this * inverse(child)
-    // therefore relative * child should reconstruct this
+    // the composition has to be the same transform as the product of the matrices the two build
+    {
+        transform a(vec3(1.0f, 2.0f, 3.0f), rotationquataxis(normalize(vec3(1.0f, 2.0f, 3.0f)), 0.4f), vec3(2.0f, 2.0f, 2.0f));
+        transform b(vec3(4.0f, 5.0f, 6.0f), rotationquataxis(vec3(0.0f, 1.0f, 0.0f), 0.3f), vec3(1.5f, 1.5f, 1.5f));
+        point p(1.0f, 2.0f, 3.0f);
+
+        mat4 m = trs(a.position, a.rotation, a.scale) * trs(b.position, b.rotation, b.scale);
+        VERIFY(NearPoint((a * b) * p, m * p, 0.001f));
+    }
+
+    // GetRelative contract in header: relative = inverse(child) * this, which takes a point in this' frame into
+    // the child's frame. Composing the child with the relative reconstructs this
     {
         transform parent(vec3(10.0f, 6.0f, 4.0f), rotationquataxis(vec3(0.0f, 1.0f, 0.0f), 0.3f), vec3(2.0f, 2.0f, 2.0f));
         transform child(vec3(3.0f, 1.0f, 2.0f), rotationquataxis(vec3(0.0f, 1.0f, 0.0f), 0.1f), vec3(1.5f, 1.5f, 1.5f));
         transform rel = parent.GetRelative(child);
-        transform reconstructed = rel * child;
+        transform reconstructed = child * rel;
 
         point testPoint(0.5f, 1.0f, -2.0f);
         point p0 = parent * testPoint;

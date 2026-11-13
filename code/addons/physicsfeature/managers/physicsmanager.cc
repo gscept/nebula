@@ -661,7 +661,7 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
 
             Game::HTransform const& ht = world->GetComponent<Game::HTransform>(current);
             Math::transform const entityLocal(ht.localPosition, ht.localOrientation);
-            desc.transform = desc.transform * entityLocal;
+            desc.transform = entityLocal * desc.transform;
             current = ht.parent;
         }
     }

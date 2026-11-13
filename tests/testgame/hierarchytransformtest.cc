@@ -303,11 +303,10 @@ HierarchyTransformTest::Run()
     VERIFY(hierarchy->NumPending() == 0);
     VERIFY(Near(world.GetComponent<Game::Position>(lateChild), 103.0f, 0.0f, 0.0f));
 
-    // The order the composition is in. Math::quat::operator* applies the left operand first, which is the opposite
-    // of how mat4 multiplies, so composing a child with its parent is local * parent here. This is the order the
+    // The order the composition is in: the child is applied first and the parent after it, which is the order the
     // point above agrees with, the order trs(parent) * trs(local) gives, the order the editor reads a local
-    // transform through a parent, and the order the old resolve used. In the other order the orientation is a
-    // different rotation and it does not match its own translation
+    // transform through a parent, and the order the old resolve used. Math::quat::operator* applies the right
+    // operand first, the same order as mat4, so the composition reads parent * local
     {
         Game::Entity const rotatedRoot = world.CreateEntity(true);
         Game::Entity const rotatedChild = world.CreateEntity(true);
@@ -326,8 +325,8 @@ HierarchyTransformTest::Run()
         VERIFY(Near(world.GetComponent<Game::Position>(rotatedChild), 0.0f, 1.0f, 0.0f));
         VERIFY(Near(Math::rotate(world.GetComponent<Game::Orientation>(rotatedChild), x), 0.0f, 1.0f, 0.0f));
 
-        // The same rotation as a quaternion. Written in the other order it is (0.5, -0.5, 0.5, 0.5), which turns x
-        // into z, and that is what the composition and the translation disagree about
+        // The same rotation as a quaternion, in the order the product of the matrices above is. Written the other
+        // way round it is (0.5, -0.5, 0.5, 0.5), which turns x into z
         Math::vec3 outScale;
         Math::quat outRotation;
         Math::vec3 outTranslation;
@@ -336,6 +335,12 @@ HierarchyTransformTest::Run()
             outScale, outRotation, outTranslation);
         VERIFY(Near(world.GetComponent<Game::Orientation>(rotatedChild), outRotation.x, outRotation.y, outRotation.z, outRotation.w));
         VERIFY(Near(world.GetComponent<Game::Position>(rotatedChild), outTranslation.x, outTranslation.y, outTranslation.z));
+
+        // The quaternion product is the same rotation as the matrix product, which is the order the hierarchy
+        // composes in and the order its translation agrees with
+        Math::quat const composed = parentRotation * childRotation;
+        VERIFY(Near(world.GetComponent<Game::Orientation>(rotatedChild), composed.x, composed.y, composed.z, composed.w));
+        VERIFY(Near(Math::rotate(composed, x), 0.0f, 1.0f, 0.0f));
 
         // A world transform written on a hierarchy member is derived back through the parent, so the local it
         // derives has to compose to the value that was written

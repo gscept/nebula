@@ -448,10 +448,8 @@ PhysicsManagerTest::Run()
         StepPhysicsFrames(1);
 
         Physics::ActorId const pingActor = BodyActorOf(world, pingBody);
-        // Nothing holding a shape id is kept across the frames here. A plain local in this function does not
-        // survive a game frame: it comes back with a different value after StepPhysicsFrames while the shape
-        // itself keeps its id (see ISSUES.md), so the ids are read at the point where they are checked
-        static uint64_t hashBefore;
+
+        uint64_t hashBefore;
         hashBefore = Physics::ActorContext::GetShape(Physics::ActorContext::GetActor(pingActor).shapes[0]).geometryHash;
 
         const Game::ComponentId boxId = Game::GetComponentId<PhysicsFeature::BoxCollider>();

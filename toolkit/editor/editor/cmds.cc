@@ -1174,7 +1174,7 @@ SetParent(Editor::Entity child, Editor::Entity parent)
     cmd->newHasTransform = true;
     cmd->newTransform.parent = parent;
     cmd->newTransform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(childPosition));
-    cmd->newTransform.localOrientation = childOrientation * Math::inverse(parentOrientation);
+    cmd->newTransform.localOrientation = Math::inverse(parentOrientation) * childOrientation;
     cmd->newTransform.localScale = Math::vec3(
         childScale.x / parentScale.x,
         childScale.y / parentScale.y,
@@ -1262,7 +1262,7 @@ SetWorldOrientation(Editor::Entity entity, const Game::Orientation& orientation)
         return true;
     }
     Game::Orientation const parentOrientation = editorWorld->GetComponent<Game::Orientation>(transform.parent);
-    transform.localOrientation = orientation * Math::inverse(parentOrientation);
+    transform.localOrientation = Math::inverse(parentOrientation) * orientation;
     SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
     return true;
 }
@@ -1340,7 +1340,7 @@ PreviewWorldTransform(Editor::Entity entity, const Game::Position& position, con
     );
     transform.parent = Editor::ToGameEntity(transform.parent);
     transform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(position));
-    transform.localOrientation = orientation * Math::inverse(parentOrientation);
+    transform.localOrientation = Math::inverse(parentOrientation) * orientation;
     transform.localScale = Math::vec3(scale.x / parentScale.x, scale.y / parentScale.y, scale.z / parentScale.z);
     // The write through the world propagates to the entities below this one, which is what the resolve used to do
     // on the whole world

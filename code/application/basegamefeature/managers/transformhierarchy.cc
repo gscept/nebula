@@ -372,10 +372,8 @@ TransformHierarchy::DeriveLocal(uint32_t instance, ComponentPointers const& comp
     }
 
     components.local->localPosition = localPosition;
-    // Math::quat::operator* applies the left operand first, so the world rotation read back through the parent is
-    // the world rotation followed by the inverse parent. This is the same as inverse(parent) * world in the usual
-    // convention, and it is the inverse of the composition in Compute
-    components.local->localOrientation = *components.orientation * inverseParentRotation;
+
+    components.local->localOrientation = inverseParentRotation * *components.orientation;
     components.local->localScale = localScale;
     this->world->MarkAsModified(this->data.ConstGet<OwnerEntity>(instance));
 }
@@ -492,11 +490,7 @@ TransformHierarchy::Compute(uint32_t instance)
 
             position = Math::vec3(parent.position->x + rotatedPoint.x, parent.position->y + rotatedPoint.y, parent.position->z + rotatedPoint.z);
 
-            // Math::quat::operator* applies the left operand first, which is the opposite of how mat4 multiplies,
-            // so composing a child with its parent here is local * parent. Written the other way round the
-            // orientation is a different rotation than the one trs(parent) * trs(local) gives, and it is not the
-            // rotation the position above is consistent with
-            orientation = components.local->localOrientation * *parent.orientation;
+            orientation = *parent.orientation * components.local->localOrientation;
             scale = Math::vec3(
                 parent.scale->x * components.local->localScale.x,
                 parent.scale->y * components.local->localScale.y,

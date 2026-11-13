@@ -448,7 +448,8 @@ EntitySystemTest::Run()
         world->InitializeInstance(prefetchedEntity, table, prefetchedInstance);
         VERIFY(world->GetComponent<TestVec4>(prefetchedEntity).v4 == Math::vec4(123, 123, 123, 123));
     }
-    bool hasExecutedUpdateFunc = false;
+
+    static bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
     {
         hasExecutedUpdateFunc = true;

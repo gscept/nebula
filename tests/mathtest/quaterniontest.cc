@@ -144,11 +144,25 @@ QuaternionTest::Run()
 	q0 = quat();
 	VERIFY(q0 == quat(0.0f, 0.0f, 0.0f, 1.0f));
 
-	// multiply
+	// multiply. The right operand is the one applied first, which is the same order as mat4 multiplies
 	q0 = normalize(quat(2.0f, 3.0f, 4.0f, 5.0f));
 	q1 = normalize(quat(-1.0f, -223.0f, 0.0f, 9.0f));
 	q2 = q0 * q1;
-	VERIFY(quaternionequal(q2, quat(-0.535956f, -0.660952f, 0.292063f, 0.436570f)));
+	VERIFY(quaternionequal(q2, quat(0.551809f, -0.665830f, -0.248162f, 0.436570f)));
+
+	// The product has to be the same rotation as the product of the matrices the two quaternions build, and it
+	// has to turn a vector by the right operand first and the left one after it
+	{
+		const mat4 mProd = rotationquat(q0) * rotationquat(q1);
+		const mat4 qProd = rotationquat(q2);
+		VERIFY(nearequal(mProd.row0, qProd.row0, TEST_EPSILON));
+		VERIFY(nearequal(mProd.row1, qProd.row1, TEST_EPSILON));
+		VERIFY(nearequal(mProd.row2, qProd.row2, TEST_EPSILON));
+		VERIFY(nearequal(mProd.row3, qProd.row3, TEST_EPSILON));
+
+		const vec3 turned(1.0f, 0.0f, 0.0f);
+		VERIFY(nearequal(rotate(q2, turned), rotate(q0, rotate(q1, turned)), TEST_EPSILON));
+	}
 
 	// rotationaxis
 	const vec3 rotaxis = normalize(vec3(1.0f, 3.0f, 5.0f));
