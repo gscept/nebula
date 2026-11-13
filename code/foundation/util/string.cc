@@ -1213,6 +1213,31 @@ String::StrCmp(const char* str0, const char* str1)
 
 //------------------------------------------------------------------------------
 /**
+    Case-insensitive compare. Returns 0 when the strings are equal, a negative
+    value when str0 sorts before str1, and a positive value otherwise.
+*/
+int
+String::StrICmp(const char* str0, const char* str1)
+{
+    n_assert(str0 && str1);
+    while (0 != *str0 && 0 != *str1)
+    {
+        const char c0 = ToLower(*str0);
+        const char c1 = ToLower(*str1);
+        if (c0 != c1)
+            return (c0 < c1) ? -1 : 1;
+        str0++;
+        str1++;
+    }
+    if (0 != *str0)
+        return 1;
+    if (0 != *str1)
+        return -1;
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 int
 String::StrLen(const char* str)

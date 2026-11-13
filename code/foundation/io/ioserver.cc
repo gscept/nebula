@@ -399,6 +399,42 @@ IoServer::ComputeFileCrc(const URI& uri) const
 
 //------------------------------------------------------------------------------
 /**
+    Renames a file or a directory on the conventional filesystem. The target must not exist as the
+    exact name, so a rename never replaces anything. The name is looked up in the directory listing
+    rather than through FileExists(), which is case-insensitive on Windows, so a name that differs
+    only in case counts as a new name on both platforms.
+*/
+bool
+IoServer::RenameFile(const URI& fromUri, const URI& toUri) const
+{
+    n_assert(fromUri.Scheme() == "file");
+    n_assert(toUri.Scheme() == "file");
+    const String fromPath = fromUri.GetHostAndLocalPath();
+    const String toPath = toUri.GetHostAndLocalPath();
+    n_assert(fromPath.IsValid());
+    n_assert(toPath.IsValid());
+
+    String toDir = toPath.ExtractToLastSlash();
+    if (toDir.IsEmpty())
+        toDir = ".";
+    const String toName = toPath.ExtractFileName();
+
+    for (const String& name : FSWrapper::ListFiles(toDir, "*"))
+    {
+        if (name == toName)
+            return false;
+    }
+    for (const String& name : FSWrapper::ListDirectories(toDir, "*"))
+    {
+        if (name == toName)
+            return false;
+    }
+
+    return FSWrapper::RenameFile(fromPath, toPath);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 IoServer::DeleteFile(const URI& uri) const

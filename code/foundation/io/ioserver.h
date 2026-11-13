@@ -79,6 +79,8 @@ public:
 
     /// copy a file
     bool CopyFile(const URI& from, const URI& to) const;
+    /// rename a file or a directory. The target must not exist as the exact name, so a rename never replaces
+    bool RenameFile(const URI& from, const URI& to) const;
     /// delete a file
     bool DeleteFile(const URI& path) const;
     /// return true if file exists
@@ -204,6 +206,15 @@ inline bool
 CopyFile(const IO::URI& from, const IO::URI& to)
 {
     return IoServer::Instance()->CopyFile(from, to);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+RenameFile(const IO::URI& from, const IO::URI& to)
+{
+    return IoServer::Instance()->RenameFile(from, to);
 }
 
 //------------------------------------------------------------------------------

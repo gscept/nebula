@@ -435,6 +435,8 @@ public:
 
     /// lowlevel string compare wrapper function
     static int StrCmp(const char* str0, const char* str1);
+    /// lowlevel case-insensitive string compare function
+    static int StrICmp(const char* str0, const char* str1);
     /// lowlevel string length function
     static int StrLen(const char* str);
     /// find character in string

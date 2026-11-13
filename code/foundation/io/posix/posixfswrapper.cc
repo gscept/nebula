@@ -340,6 +340,19 @@ PosixFSWrapper::DeleteFile(const String& path)
 
 //------------------------------------------------------------------------------
 /**
+    Renames a file or a directory. The target must not exist, which is what makes rename() a
+    move here rather than a replace. Cross-device moves fail, like they do on Windows.
+*/
+bool
+PosixFSWrapper::RenameFile(const Util::String& source, const Util::String& target)
+{
+    n_assert(source.IsValid());
+    n_assert(target.IsValid());
+    return (0 == rename(source.AsCharPtr(), target.AsCharPtr()));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 PosixFSWrapper::ReplaceFile(const Util::String& source, const Util::String& target)

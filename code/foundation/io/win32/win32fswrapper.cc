@@ -8,6 +8,7 @@
 #include "io/projectlocator.h"
 #if __WIN32__
 #include "util/win32/win32stringconverter.h"
+#include "util/guid.h"
 #endif
 #include <direct.h>
 #include <sys/types.h>
@@ -381,6 +382,41 @@ Win32FSWrapper::DeleteFile(const String& path)
     ushort widePath[1024];
     Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
     return (0 != ::DeleteFileW((LPCWSTR)widePath));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Rename a file or a directory. The target must not exist. NTFS is case-insensitive,
+    so a rename that only changes the case has to go through a temp name to actually
+    change it, which matches POSIX.
+*/
+bool
+Win32FSWrapper::RenameFile(const Util::String& source, const Util::String& target)
+{
+    n_assert(source.IsValid());
+    n_assert(target.IsValid());
+
+    ushort wideSourcePath[1024];
+    ushort wideTargetPath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(source, wideSourcePath, sizeof(wideSourcePath));
+    Win32::Win32StringConverter::UTF8ToWide(target, wideTargetPath, sizeof(wideTargetPath));
+
+    if (0 == String::StrICmp(source.AsCharPtr(), target.AsCharPtr()))
+    {
+        // Only the case differs, MoveFileExW would see the same entry and leave the name as is
+        Guid guid;
+        guid.Generate(); // temp name, guaranteed unique
+        const String tmpPath = source.ExtractToLastSlash() + guid.AsString();
+        ushort wideTmpPath[1024];
+        Win32::Win32StringConverter::UTF8ToWide(tmpPath, wideTmpPath, sizeof(wideTmpPath));
+        if (0 == ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTmpPath, 0))
+        {
+            return (0 != ::MoveFileExW((LPCWSTR)wideTmpPath, (LPCWSTR)wideTargetPath, 0));
+        }
+        return false;
+    }
+
+    return (0 != ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTargetPath, 0));
 }
 
 //------------------------------------------------------------------------------
