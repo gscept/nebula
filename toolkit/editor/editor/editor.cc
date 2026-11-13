@@ -102,6 +102,9 @@ Create()
 
     Game::GameServer::Instance()->SetupEmptyWorld(state.editorWorld);
 
+    Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
+    gameWorld->mode = Game::EditorMode;
+
     // Create a command manager with a 20MB buffer
     Edit::CommandManager::Create(20_MB);
     CreatePathConverter({});
@@ -138,6 +141,8 @@ PlayGame()
     Game::EditorState::Instance()->isPlaying = true;
     Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 1.0f;
+    Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
+    gameWorld->mode = Game::PlayMode;
 }
 
 //------------------------------------------------------------------------------
@@ -160,6 +165,7 @@ StopGame()
     Game::EditorState::Instance()->isPlaying = false;
 
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
+    gameWorld->mode = Game::EditorMode;
     Game::GameServer::Instance()->CleanupWorld(gameWorld);
     Game::GameServer::Instance()->SetupEmptyWorld(gameWorld);
     
