@@ -209,8 +209,23 @@ Time::AdvanceTimeSource(TimeSource* timeSource, Timing::Time delta)
 {
     TimeSourceState& timesource = *reinterpret_cast<TimeSourceState*>(timeSource);
     n_assert(timesource.fixedFrameTime > 0.0);
+
+#if NEBULA_DEBUG
+    IndexT const before = timesource.availableSteps;
+    IndexT const requested = IndexT(delta / timesource.fixedFrameTime);
+#endif
+
     timesource.accumulator += delta;
     RefreshSteps(timesource);
+
+#if NEBULA_DEBUG
+    if (timesource.availableSteps - before < requested)
+    {
+        // RefreshSteps clamps the accumulator and the step count
+        n_warning("AdvanceTimeSource asked for %d steps on a time source with maxStepsPerFrame %d, got %d\n",
+            requested, timesource.maxStepsPerFrame, timesource.availableSteps - before);
+    }
+#endif
 }
 
 } // namespace Game

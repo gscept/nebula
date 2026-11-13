@@ -74,7 +74,8 @@ SetDebugDrawInterface(DebugDrawInterface const& drawInterface)
 void
 UpdateDebugDrawingParameters()
 {
-    for (int sceneIndex = 0; sceneIndex < state.activeScenes.Size(); sceneIndex++)
+    // Only the scenes which are live. A slot in activeScenes can be a scene which was released
+    for (IndexT sceneIndex : state.activeSceneIds)
     {
         PxScene* scene = state.activeScenes[sceneIndex].scene;
 
@@ -129,9 +130,13 @@ EnableDebugDrawing(bool enabled)
 void
 ApplyBounds(PxBounds3 const& box)
 {
-    for (auto& scene : Physics::state.activeScenes)
+    for (IndexT sceneIndex : Physics::state.activeSceneIds)
     {
-        scene.scene->setVisualizationCullingBox(box);
+        PxScene* scene = Physics::state.activeScenes[sceneIndex].scene;
+        if (scene == nullptr)
+            continue;
+
+        scene->setVisualizationCullingBox(box);
     }
 }
 
@@ -228,9 +233,9 @@ DrawPhysicsDebug()
         UpdateDebugDrawingParameters();
     }
 
-    for (auto& scene : Physics::state.activeScenes)
+    for (IndexT sceneIndex : Physics::state.activeSceneIds)
     {
-        DebugVisualizeScene(scene.scene);
+        DebugVisualizeScene(Physics::state.activeScenes[sceneIndex].scene);
     }
 }
 

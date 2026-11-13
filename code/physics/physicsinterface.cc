@@ -113,7 +113,12 @@ CreateScene()
         idx = state.activeScenes.Size();
     }
     state.activeSceneIds.Append(idx);
-    state.activeScenes.Append(Scene());
+
+    if (idx < state.activeScenes.Size())
+        state.activeScenes[idx] = Scene();
+    else
+        state.activeScenes.Append(Scene());
+
     Scene & scene = state.activeScenes[idx];
     //scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
     scene.dispatcher = PxDefaultCpuDispatcherCreate(0);
@@ -172,6 +177,17 @@ DestroyScene(IndexT sceneId)
     scene.controllerManager->release();
     scene.scene->release();
     scene.dispatcher->release();
+
+    scene.foundation = nullptr;
+    scene.physics = nullptr;
+    scene.scene = nullptr;
+    scene.controllerManager = nullptr;
+    scene.dispatcher = nullptr;
+    scene.updateFunction = nullptr;
+    scene.eventCallback = nullptr;
+    scene.eventBuffer.Clear();
+    scene.activeActors.Clear();
+
     state.deadSceneIds.Append(sceneId);
     state.activeSceneIds.EraseIndex(activeIndex);
 }

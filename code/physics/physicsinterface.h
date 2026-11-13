@@ -283,15 +283,15 @@ struct BodyDescription
 /// instead of static getters, might be removed later on
 struct Scene
 {    
-    physx::PxFoundation *foundation;
-    physx::PxPhysics *physics;
-    physx::PxScene *scene;
-    physx::PxControllerManager *controllerManager;
-    physx::PxDefaultCpuDispatcher *dispatcher;
+    physx::PxFoundation *foundation = nullptr;
+    physx::PxPhysics *physics = nullptr;
+    physx::PxScene *scene = nullptr;
+    physx::PxControllerManager *controllerManager = nullptr;
+    physx::PxDefaultCpuDispatcher *dispatcher = nullptr;
     UpdateFunctionType updateFunction = nullptr;
     EventCallbackType eventCallback = nullptr;
     Util::Array<Physics::ContactEvent> eventBuffer;
-    Util::Set<Ids::Id32> modifiedActors;
+    Util::Set<Ids::Id32> activeActors;
 };
 
 /// initialize the physics subsystem and create a default scene
@@ -312,7 +312,7 @@ void DestroyScene(IndexT scene);
 ///
 Physics::Scene& GetScene(IndexT idx = 0);
 
-///
+/// called once per step for every actor PhysX reported active on that step
 void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId = 0);
 ///
 void SetEventCallback(EventCallbackType callback, IndexT sceneId = 0);

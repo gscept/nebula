@@ -258,17 +258,18 @@ PhysxState::DiscardActor(ActorId id)
 
 //------------------------------------------------------------------------------
 /**
+    Fills the scene with the actors PhysX reports active
 */
 static void 
-CollectModified(Physics::Scene& scene)
+CollectActiveActors(Physics::Scene& scene)
 {
     uint32_t activeActorCount = 0;
     PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
-    scene.modifiedActors.Clear();
+    scene.activeActors.Clear();
     for (uint32_t i = 0; i < activeActorCount; i++)
     {
         Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
-        scene.modifiedActors.Add(id);
+        scene.activeActors.Add(id);
     }
 }
 
@@ -278,7 +279,7 @@ CollectModified(Physics::Scene& scene)
 static void
 PreSceneUpdates(Physics::Scene& scene)
 {
-    scene.modifiedActors.Clear();
+    scene.activeActors.Clear();
     scene.eventBuffer.Reset();
 }
 
@@ -290,7 +291,7 @@ PostSceneUpdates(Physics::Scene& scene)
 {
     if (scene.updateFunction != nullptr)
     {
-        for (Ids::Id32 id : scene.modifiedActors.KeysAsArray())
+        for (Ids::Id32 id : scene.activeActors.KeysAsArray())
         {
             Actor& actor = ActorContext::GetActor(id);
             (*scene.updateFunction)(actor);
@@ -337,7 +338,7 @@ PhysxState::Step(Timing::Time delta, IndexT sceneId)
     scene.scene->fetchResults(true);
     if (scene.updateFunction != nullptr)
     {
-        CollectModified(scene);
+        CollectActiveActors(scene);
     }
     PostSceneUpdates(scene);
     N_MARKER_END();

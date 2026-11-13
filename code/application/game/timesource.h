@@ -112,7 +112,8 @@ namespace Time
     /// consume one fixed step from a fixed time source. Returns false when no steps are left
     bool ConsumeFixedStep(TimeSource* timeSource);
 
-    /// add time to the accumulator of a fixed time source. For tests and tools which drive the rate explicitly
+    /// add time to the accumulator of a fixed time source. For tests and tools which drive the rate explicitly.
+    /// Warns in debug when the source's maxStepsPerFrame clamps away part of what was asked for
     void AdvanceTimeSource(TimeSource* timeSource, Timing::Time delta);
 };
 
