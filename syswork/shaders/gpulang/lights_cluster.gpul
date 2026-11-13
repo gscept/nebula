@@ -20,7 +20,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if index1D > LightUniforms.NumLightClusters { return; }
+    if index1D >= LightUniforms.NumLightClusters { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D); 
 
@@ -96,7 +96,7 @@ csDebug() void
     // convert screen coord to view-space position
     const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
 
-    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, worldPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, worldPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     const flag = bufferLoad(ClusterAABBs, idx).featureFlags;

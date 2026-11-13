@@ -285,7 +285,7 @@ psLit(in WorldSpacePos : f32x4,
 
     // calculate cluster index
 	const ViewSpacePos = ViewConstants.View * WorldSpacePos;
-    const index3D = CalculateClusterIndex(pixelCoord.xy / ClusterUniforms.BlockSize, ViewSpacePos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(pixelCoord.xy / ClusterUniforms.BlockSize, ViewSpacePos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var light = f32x3(0, 0, 0);

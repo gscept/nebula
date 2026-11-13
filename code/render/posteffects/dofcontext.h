@@ -3,8 +3,8 @@
 /**
     Full-resolution circle of confusion, half-resolution bokeh gather, before tonemap.
 
-    DofMask runs on the compute queue and writes the context-owned BokehMask from Aperture.
-    DofSetup, DofGather, and DofComposite run on the graphics queue.
+    DofMask writes the context-owned BokehMask from Aperture. It runs first in Prepass.
+    DofSetup, DofGather, and DofComposite run later in the frame. All four run on the graphics queue.
     DofComposite writes the mix into LightBuffer. Color Downsample and bloom run on that.
     finalize.gpul adds bloom.
 
@@ -44,9 +44,6 @@ public:
     /// Aperture intensity for every bokeh disk. r is the weight. White leaves the gather unchanged.
     /// The initial texture is CoreGraphics::White2D.
     static void SetDirtMask(const CoreGraphics::TextureId texture);
-
-    /// Handle window resize
-    static void Resize(const uint framescriptHash, SizeT width, SizeT height);
 
 private:
 

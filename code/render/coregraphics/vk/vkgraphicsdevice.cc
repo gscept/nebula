@@ -1234,8 +1234,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         0,
         (uint32_t)queueInfos.Size(),
         queueInfos.Begin(),
-        (uint32_t)numLayers,
-        layers,
+        0,                                          // device layers are deprecated, layers are enabled on the instance
+        nullptr,
         state.numCaps[state.currentDevice],
         state.deviceFeatureStrings[state.currentDevice].Begin(),
         &features2.features
