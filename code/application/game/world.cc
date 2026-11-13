@@ -1565,6 +1565,12 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
             cInterface->Init(this, entity, valuePtr);
         }
     }
+
+    if (component == Game::GetComponentId<Game::HTransform>())
+    {
+        Game::Entity parent = reinterpret_cast<Game::HTransform*>(valuePtr)->parent;
+        this->hierarchy->Add(entity, parent);
+    }
 }
 
 //------------------------------------------------------------------------------
