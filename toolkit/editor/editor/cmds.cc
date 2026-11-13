@@ -9,7 +9,6 @@
 #include "editor/tools/selectioncontext.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "basegamefeature/components/basegamefeature.h"
-#include "basegamefeature/managers/hierarchymanager.h"
 #include "editor/components/editorcomponents.h"
 
 namespace Edit
@@ -1323,8 +1322,9 @@ PreviewWorldTransform(Editor::Entity entity, const Game::Position& position, con
         transform.localPosition = position;
         transform.localOrientation = orientation;
         transform.localScale = scale;
+        // The write through the world propagates to the entities below this one, which is what the resolve used to
+        // do on the whole world
         gameWorld->SetComponent<Game::HTransform>(gameEntity, transform);
-        Game::HierarchyManager::Resolve(gameWorld);
         return;
     }
     Game::Scale const parentScale = editorWorld->GetComponent<Game::Scale>(transform.parent);
@@ -1342,8 +1342,9 @@ PreviewWorldTransform(Editor::Entity entity, const Game::Position& position, con
     transform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(position));
     transform.localOrientation = orientation * Math::inverse(parentOrientation);
     transform.localScale = Math::vec3(scale.x / parentScale.x, scale.y / parentScale.y, scale.z / parentScale.z);
+    // The write through the world propagates to the entities below this one, which is what the resolve used to do
+    // on the whole world
     gameWorld->SetComponent<Game::HTransform>(gameEntity, transform);
-    Game::HierarchyManager::Resolve(gameWorld);
 }
 
 } // namespace Edit

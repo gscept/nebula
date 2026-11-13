@@ -67,8 +67,8 @@ nebula_begin_module(application)
             fips_files(
                 timemanager.h
                 timemanager.cc
-                hierarchymanager.h
-                hierarchymanager.cc
+                transformhierarchy.h
+                transformhierarchy.cc
             )
         fips_dir(basegamefeature/components)
 			fips_files (

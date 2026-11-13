@@ -15,6 +15,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
+#include "basegamefeature/managers/transformhierarchy.h"
 #include "physicsfeature/physicsfeatureunit.h"
 
 namespace PhysicsFeature
@@ -49,6 +50,11 @@ ResolveBodyEntity(Game::World* world, Game::Entity entity)
 {
     for (int i = 0; i < 16 && entity != Game::Entity::Invalid(); i++)
     {
+        // an entity which is being deallocated is walked through by its component decay callbacks, and the
+        // parent it names can already be gone with it
+        if (!world->IsValid(entity))
+            break;
+
         if (world->HasComponent<PhysicsFeature::Rigidbody>(entity) || world->HasComponent<PhysicsFeature::StaticBody>(entity))
             return entity;
 
@@ -98,9 +104,6 @@ ResolveActorHandle(Game::World* world, Game::Entity entity)
 
 //------------------------------------------------------------------------------
 /**
-    Queues an entity up for the rebuild pass of the manager. The mark is kept in the handle component
-    instead of the modified bit of the components, because the modified bit does not survive the
-    component migrations which happen when anything is added to or removed from an entity.
 */
 void
 PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
@@ -128,8 +131,6 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
 
 //------------------------------------------------------------------------------
 /**
-    A changed collider means that the shapes of the actor of the entity have to be rebuilt, and that
-    the actor may have to let go of a shape whose entity moved away.
 */
 void
 PhysicsManager::MarkShapeChanged(Game::World* world, Game::Entity entity)
@@ -137,14 +138,7 @@ PhysicsManager::MarkShapeChanged(Game::World* world, Game::Entity entity)
     if (entity == Game::Entity::Invalid() || !world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
         return;
 
-    PhysicsFeature::PhysicsActor const self = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
-
-    PhysicsManager::Mark(world, entity, PendingShape | PendingStructural);
-
-    // the entity may have been moved to another body since the shape was built, in which case the
-    // body it used to belong to is the one holding the shape that has to go
-    if (self.body != Game::Entity::Invalid() && self.body != entity)
-        PhysicsManager::Mark(world, self.body, PendingStructural);
+    PhysicsManager::Mark(world, entity, PendingShape);
 }
 
 //------------------------------------------------------------------------------
@@ -163,6 +157,40 @@ void
 PhysicsManager::MarkPoseChanged(Game::World* world, Game::Entity entity)
 {
     PhysicsManager::Mark(world, entity, PendingPose);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsManager::MarkComponentChange(Game::World* world, Game::Entity entity, Game::ComponentId component)
+{
+    if (component == Game::GetComponentId<PhysicsFeature::PhysicsResource>() ||
+        component == Game::GetComponentId<PhysicsFeature::Rigidbody>() ||
+        component == Game::GetComponentId<PhysicsFeature::StaticBody>())
+    {
+        PhysicsManager::MarkBodyChanged(world, entity);
+        return;
+    }
+
+    if (component == Game::GetComponentId<PhysicsFeature::BoxCollider>() ||
+        component == Game::GetComponentId<PhysicsFeature::SphereCollider>() ||
+        component == Game::GetComponentId<PhysicsFeature::CapsuleCollider>() ||
+        component == Game::GetComponentId<PhysicsFeature::PlaneCollider>() ||
+        component == Game::GetComponentId<PhysicsFeature::MeshCollider>() ||
+        component == Game::GetComponentId<PhysicsFeature::HeightFieldCollider>())
+    {
+        PhysicsManager::MarkShapeChanged(world, entity);
+        return;
+    }
+
+    if (component == Game::GetComponentId<Game::Position>() ||
+        component == Game::GetComponentId<Game::Orientation>() ||
+        component == Game::GetComponentId<Game::Scale>() ||
+        component == Game::GetComponentId<Game::HTransform>())
+    {
+        PhysicsManager::MarkPoseChanged(world, entity);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -234,23 +262,33 @@ HasColliderOfType(Game::World* world, Game::Entity entity, int colliderClass)
 
 //------------------------------------------------------------------------------
 /**
-    Finds the shape of an actor that belongs to a collider component.
+    True when a shape name held by a handle still names the shape its entity built. 
+*/
+static bool
+ShapeBelongsTo(Physics::ShapeId id, Game::Entity entity)
+{
+    if (!Physics::ActorContext::IsValidShape(id))
+        return false;
+
+    return Physics::ActorContext::GetShape(id).userData == (uint64_t)Ids::Id64(entity);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 static Physics::ShapeId
-FindColliderShape(Physics::ActorId actorId, uint64_t userData, int colliderClass)
+FindShapeForEntity(Physics::ActorId actorId, Game::Entity entity)
 {
     Physics::Actor const& actor = Physics::ActorContext::GetActor(actorId);
+    uint64_t const userData = (uint64_t)Ids::Id64(entity);
 
     for (Physics::ShapeId const shapeId : actor.shapes)
     {
         if (!Physics::ActorContext::IsValidShape(shapeId))
             continue;
 
-        Physics::Shape const& shape = Physics::ActorContext::GetShape(shapeId);
-        if (shape.userData != userData || ShapeColliderType(shape.shape) != colliderClass)
-            continue;
-
-        return shapeId;
+        if (Physics::ActorContext::GetShape(shapeId).userData == userData)
+            return shapeId;
     }
 
     return Physics::ShapeId(Ids::InvalidId32);
@@ -258,9 +296,119 @@ FindColliderShape(Physics::ActorId actorId, uint64_t userData, int colliderClass
 
 //------------------------------------------------------------------------------
 /**
+    True when the entity has a collider component other than this one. An entity is only allowed to have one shape.
+*/
+static bool
+HasOtherCollider(Game::World* world, Game::Entity entity, Game::ComponentId component)
+{
+    static const Game::ComponentId colliders[] = {
+        Game::GetComponentId<PhysicsFeature::BoxCollider>(),
+        Game::GetComponentId<PhysicsFeature::SphereCollider>(),
+        Game::GetComponentId<PhysicsFeature::CapsuleCollider>(),
+        Game::GetComponentId<PhysicsFeature::PlaneCollider>(),
+        Game::GetComponentId<PhysicsFeature::MeshCollider>(),
+        Game::GetComponentId<PhysicsFeature::HeightFieldCollider>()
+    };
+
+    for (Game::ComponentId const collider : colliders)
+    {
+        if (collider != component && world->HasComponent(entity, collider))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Physics::ShapeId
+PhysicsManager::GetShapeForEntity(Game::World* world, Game::Entity entity)
+{
+    if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
+        return Physics::ShapeId(Ids::InvalidId32);
+
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+        return Physics::ShapeId(Ids::InvalidId32);
+
+    PhysicsFeature::PhysicsActor handle = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
+    Physics::ShapeId const shape(handle.shapeId);
+    if (ShapeBelongsTo(shape, entity))
+        return shape;
+
+    Physics::ActorId actor = ResolveActorHandle(world, entity);
+    if (actor.id == Ids::InvalidId32)
+    {
+        Game::Entity const body = ResolveBodyEntity(world, entity);
+        if (body != Game::Entity::Invalid() && world->IsValid(body))
+            actor = ResolveActorHandle(world, body);
+    }
+
+    if (actor.id == Ids::InvalidId32)
+        return Physics::ShapeId(Ids::InvalidId32);
+
+    Physics::ShapeId const found = FindShapeForEntity(actor, entity);
+    if (!Physics::ActorContext::IsValidShape(found))
+        return found;
+
+    handle.shapeId = found.id;
+    world->SetComponent(entity, handle);
+    return found;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+ClearShapeField(Game::World* world, Game::Entity entity)
+{
+    if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
+        return;
+
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+        return;
+
+    PhysicsFeature::PhysicsActor handle = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
+    handle.shapeId = Ids::InvalidId32;
+    world->SetComponent(entity, handle);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsManager::ReleaseShapeForEntity(Game::World* world, Game::Entity entity)
+{
+    if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
+        return;
+
+    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+    {
+        // the handle is gone with the entity, which is the case when the entity is deleted. Its decay queues the
+        // walk for the body the shape was attached to, so the shape is not lost
+        PhysicsManager::Mark(world, entity, PendingShape | PendingStructural);
+        return;
+    }
+
+    PhysicsFeature::PhysicsActor handle = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
+    Physics::ShapeId const shape(handle.shapeId);
+    if (ShapeBelongsTo(shape, entity))
+    {
+        Physics::ActorContext::RemoveShape(shape);
+        handle.shapeId = Ids::InvalidId32;
+        world->SetComponent(entity, handle);
+        return;
+    }
+
+    PhysicsManager::Mark(world, entity, PendingShape | PendingStructural);
+}
+
+//------------------------------------------------------------------------------
+/**
     Releases the shapes of an actor whose collider component is gone, or whose collider entity has
     been moved to another body. Shapes that came along with an actor resource are not tracked by the
-    actor and are left alone.
+    actor and are left alone. This is the fallback for an entity whose handle cannot name the shape it
+    built; an entity whose handle can name it releases that shape by itself, on the decay of its component.
 */
 static void
 GarbageCollectShapes(Game::World* world, Game::Entity bodyEntity, Physics::ActorId actorId)
@@ -286,6 +434,7 @@ GarbageCollectShapes(Game::World* world, Game::Entity bodyEntity, Physics::Actor
             || ResolveBodyEntity(world, owner) != bodyEntity)
         {
             Physics::ActorContext::RemoveShape(shapeId);
+            ClearShapeField(world, owner);
             --i;
         }
     }
@@ -469,11 +618,6 @@ BuildStaticBody(Game::World* world, Game::Entity entity, PhysicsFeature::Physics
 
 //------------------------------------------------------------------------------
 /**
-    Builds or updates the shape of a collider component. The geometry is only rebuilt when the shape
-    parameters changed, the rest of the description is applied onto the existing shape. Returns true
-    only while the actor of the body this collider hangs off is not built yet, which resolves itself
-    when that actor is built. Geometry which cannot be loaded is a warned failure: nothing retries it
-    until something asks for the shape again.
 */
 static bool
 BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor, Physics::ColliderDescription& desc)
@@ -482,25 +626,23 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
     if (bodyEntity == Game::Entity::Invalid())
         return false;
 
-    // the shape of this entity is built on the actor of the body it belongs to. If the entity was moved
-    // to another parent since the shape was built, the shape is still hanging off the actor of the old
-    // body, and the only trace of where it is is the body the handle remembers
+    uint64_t const userData = (uint64_t)Ids::Id64(entity);
+
     if (actor.body != bodyEntity)
     {
-        if (actor.body != Game::Entity::Invalid())
+        Physics::ShapeId stale(actor.shapeId);
+        if (ShapeBelongsTo(stale, entity))
         {
-            Physics::ActorId const oldActor = ResolveActorHandle(world, actor.body);
-            if (oldActor.id != Ids::InvalidId32)
-            {
-                Physics::ShapeId const stale = FindColliderShape(oldActor, (uint64_t)Ids::Id64(entity), (int)desc.type);
-                if (Physics::ActorContext::IsValidShape(stale))
-                    Physics::ActorContext::RemoveShape(stale);
-            }
+            Physics::ActorContext::RemoveShape(stale);
+            // the shape is gone, so the handle names nothing until the shape is built on the new actor
+            actor.shapeId = Ids::InvalidId32;
         }
         actor.body = bodyEntity;
     }
 
-    Physics::ActorId const actorId = ResolveActorHandle(world, bodyEntity);
+    Physics::ActorId const actorId = (bodyEntity == entity)
+        ? GetValidateActorId(entity, actor)
+        : ResolveActorHandle(world, bodyEntity);
     if (actorId.id == Ids::InvalidId32)
     {
         // the body of this entity is rebuilt by its own pass in the same queue, which may not have run
@@ -519,14 +661,16 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
 
             Game::HTransform const& ht = world->GetComponent<Game::HTransform>(current);
             Math::transform const entityLocal(ht.localPosition, ht.localOrientation);
-            desc.transform = entityLocal * desc.transform;
+            desc.transform = desc.transform * entityLocal;
             current = ht.parent;
         }
     }
 
-    desc.userData = (uint64_t)Ids::Id64(entity);
+    desc.userData = userData;
 
-    Physics::ShapeId const shape = FindColliderShape(actorId, desc.userData, (int)desc.type);
+    Physics::ShapeId shape(actor.shapeId);
+    if (!ShapeBelongsTo(shape, entity))
+        shape = FindShapeForEntity(actorId, entity);
 
     if (!Physics::ActorContext::IsValidShape(shape))
     {
@@ -539,11 +683,18 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
             n_warning("PhysicsManager: collider geometry '%s' could not be built, it is either still streaming or the path is wrong\n", desc.resource.Value());
             return false;
         }
+        shape = id;
     }
     else if (!Physics::ActorContext::UpdateShape(shape, desc))
     {
         n_warning("PhysicsManager: collider geometry '%s' could not be rebuilt, it is either still streaming or the path is wrong\n", desc.resource.Value());
         return false;
+    }
+
+    if (shape.id != actor.shapeId)
+    {
+        actor.shapeId = shape.id;
+        world->SetComponent(entity, actor);
     }
 
     return false;
@@ -555,7 +706,7 @@ BuildCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsAc
 static bool
 BuildBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::BoxCollider const collider = world->GetComponent<PhysicsFeature::BoxCollider>(entity);
+    PhysicsFeature::BoxCollider collider = world->GetComponent<PhysicsFeature::BoxCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_Box;
@@ -573,7 +724,7 @@ BuildBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Physic
 static bool
 BuildSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::SphereCollider const collider = world->GetComponent<PhysicsFeature::SphereCollider>(entity);
+    PhysicsFeature::SphereCollider collider = world->GetComponent<PhysicsFeature::SphereCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_Sphere;
@@ -591,7 +742,7 @@ BuildSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Phy
 static bool
 BuildCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::CapsuleCollider const collider = world->GetComponent<PhysicsFeature::CapsuleCollider>(entity);
+    PhysicsFeature::CapsuleCollider collider = world->GetComponent<PhysicsFeature::CapsuleCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_Capsule;
@@ -610,7 +761,7 @@ BuildCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Ph
 static bool
 BuildPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::PlaneCollider const collider = world->GetComponent<PhysicsFeature::PlaneCollider>(entity);
+    PhysicsFeature::PlaneCollider collider = world->GetComponent<PhysicsFeature::PlaneCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_Plane;
@@ -627,7 +778,7 @@ BuildPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Phys
 static bool
 BuildMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::MeshCollider const collider = world->GetComponent<PhysicsFeature::MeshCollider>(entity);
+    PhysicsFeature::MeshCollider collider = world->GetComponent<PhysicsFeature::MeshCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_Mesh;
@@ -647,7 +798,7 @@ BuildMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::Physi
 static bool
 BuildHeightFieldCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
 {
-    PhysicsFeature::HeightFieldCollider const collider = world->GetComponent<PhysicsFeature::HeightFieldCollider>(entity);
+    PhysicsFeature::HeightFieldCollider collider = world->GetComponent<PhysicsFeature::HeightFieldCollider>(entity);
 
     Physics::ColliderDescription desc;
     desc.type = Physics::ColliderType_HeightField;
@@ -718,8 +869,6 @@ RebuildPhysicsEntity(Game::World* world, Game::Entity entity, PhysicsFeature::Ph
         }
     }
 
-    // a body which moved is pushed, the shapes hanging off it keep their local poses. A collider
-    // entity which moved is handled by rebuilding its shapes below, which recomputes their local pose
     if ((pending & PendingPose) && isBody)
     {
         Physics::ActorId const ownActor = GetValidateActorId(entity, actor);
@@ -816,6 +965,7 @@ PhysicsManager::InitPhysicsActor(Game::World*, Game::Entity entity, PhysicsFeatu
     // queued for a build from the components it arrives with
     actor->actorId = Ids::InvalidId32;
     actor->body = Game::Entity::Invalid();
+    actor->shapeId = Ids::InvalidId32;
     actor->pending = PendingAll;
 
     n_assert(PhysicsManager::HasInstance());
@@ -824,10 +974,6 @@ PhysicsManager::InitPhysicsActor(Game::World*, Game::Entity entity, PhysicsFeatu
 
 //------------------------------------------------------------------------------
 /**
-    A body or collider component which appears makes sure the entity has the handle component, which
-    is what queues its setup. An entity which already has a handle is left alone: adding a physics
-    component to an entity which was already set up is a change, and changes are pinged by whoever
-    made them.
 */
 static void
 EnsureHandle(Game::World* world, Game::Entity entity)
@@ -869,6 +1015,7 @@ PhysicsManager::InitStaticBody(Game::World* world, Game::Entity entity, PhysicsF
 void
 PhysicsManager::InitBoxCollider(Game::World* world, Game::Entity entity, PhysicsFeature::BoxCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::BoxCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -878,6 +1025,7 @@ PhysicsManager::InitBoxCollider(Game::World* world, Game::Entity entity, Physics
 void
 PhysicsManager::InitSphereCollider(Game::World* world, Game::Entity entity, PhysicsFeature::SphereCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::SphereCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -887,6 +1035,7 @@ PhysicsManager::InitSphereCollider(Game::World* world, Game::Entity entity, Phys
 void
 PhysicsManager::InitCapsuleCollider(Game::World* world, Game::Entity entity, PhysicsFeature::CapsuleCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::CapsuleCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -896,6 +1045,7 @@ PhysicsManager::InitCapsuleCollider(Game::World* world, Game::Entity entity, Phy
 void
 PhysicsManager::InitPlaneCollider(Game::World* world, Game::Entity entity, PhysicsFeature::PlaneCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::PlaneCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -905,6 +1055,7 @@ PhysicsManager::InitPlaneCollider(Game::World* world, Game::Entity entity, Physi
 void
 PhysicsManager::InitMeshCollider(Game::World* world, Game::Entity entity, PhysicsFeature::MeshCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::MeshCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -914,6 +1065,7 @@ PhysicsManager::InitMeshCollider(Game::World* world, Game::Entity entity, Physic
 void
 PhysicsManager::InitHeightFieldCollider(Game::World* world, Game::Entity entity, PhysicsFeature::HeightFieldCollider*)
 {
+    n_assert(!HasOtherCollider(world, entity, Game::GetComponentId<PhysicsFeature::HeightFieldCollider>()));
     EnsureHandle(world, entity);
 }
 
@@ -938,7 +1090,9 @@ PhysicsManager::OnDecay()
 
         Physics::ActorId const actorId(handle.actorId);
         if (Physics::ActorContext::IsValid(actorId))
+        {
             Physics::DestroyActorInstance(actorId);
+        }
 
         if (handle.body != Game::Entity::Invalid())
             PhysicsManager::Mark(world, handle.body, PendingStructural);
@@ -949,13 +1103,19 @@ PhysicsManager::OnDecay()
 /**
 */
 void
-PollRigidbodyTransforms(
+PollPhysicsResourceTransforms(
     Game::World* world, Game::Entity entity, Game::Position& position, Game::Orientation& orientation, PhysicsFeature::PhysicsResource const&, PhysicsFeature::PhysicsActor const& handle)
 {
     Physics::ActorId const actorId = GetValidateActorId(entity, handle);
     if (actorId.id != Ids::InvalidId32)
     {
         Physics::ActorContext::GetPositionOrientation(actorId, position, orientation);
+
+        Game::TransformHierarchy* hierarchy = world->GetHierarchy();
+        if (hierarchy->IsInHierarchy(entity))
+        {
+            hierarchy->SetWorldTransform(entity);
+        }
     }
 }
 
@@ -993,19 +1153,17 @@ PollRigidbodyTransform(
     else if (!world->HasComponent<Game::Static>(entity))
     {
         Physics::ActorContext::GetPositionOrientation(actorId, position, orientation);
+
+        Game::TransformHierarchy* hierarchy = world->GetHierarchy();
+        if (hierarchy->IsInHierarchy(entity))
+        {
+            hierarchy->SetWorldTransform(entity);
+        }
     }
 }
 
 //------------------------------------------------------------------------------
 /**
-    Drains the rebuild queue.
-
-    This runs from the manager instead of from a processor, so that only the entities which were touched
-    are looked at. Managers run before the frame pipeline of the world, which means an entity rebuilt
-    here reads the transforms it had at the end of the previous frame, not the ones written by this
-    frames systems. The poll processors correct kinematic and dynamic bodies later in the same frame, so
-    what is left is the pose a static body or a shape is built with. Moving the drain into the pipeline,
-    after the transforms are updated, is the fix if that ever matters.
 */
 void
 PhysicsManager::OnFrame()
@@ -1017,29 +1175,20 @@ PhysicsManager::OnFrame()
 /**
 */
 void
-PhysicsManager::InitBuildProcessors()
+PhysicsManager::InitPollTransformProcessor()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    // polls the pose of rigid bodies: kinematic ones are pushed, dynamic ones are pulled
+    Game::ProcessorBuilder(world, "PhysicsManager.PollPhysicsResourceTransforms"_atm)
+        .Excluding<Game::Static, PhysicsFeature::IsKinematic>()
+        .On("OnFrame")
+        .Func(&PollPhysicsResourceTransforms)
+        .Build();
+
     Game::ProcessorBuilder(world, "PhysicsManager.PollRigidbodyTransform"_atm)
         .Order(120)
         .On("OnFrame")
         .Func(&PollRigidbodyTransform)
-        .Build();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysicsManager::InitPollTransformProcessor()
-{
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ProcessorBuilder(world, "PhysicsManager.PollRigidbodyTransforms"_atm)
-        .Excluding<Game::Static, PhysicsFeature::IsKinematic>()
-        .On("OnFrame")
-        .Func(&PollRigidbodyTransforms)
         .Build();
 
     Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
@@ -1058,7 +1207,6 @@ PhysicsManager::OnActivate()
     Game::Manager::OnActivate();
 
     this->InitPollTransformProcessor();
-    this->InitBuildProcessors();
 }
 
 //------------------------------------------------------------------------------

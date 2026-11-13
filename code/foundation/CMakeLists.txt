@@ -96,6 +96,7 @@ nebula_begin_module(foundation)
                 arrayqueue.h
                 bit.h
                 bitfield.h
+                bitarray.h
                 blob.cc
                 blob.h
                 bvh.h

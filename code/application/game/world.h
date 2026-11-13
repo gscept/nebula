@@ -19,6 +19,8 @@
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
 #include "util/fourcc.h"
+#include "basegamefeature/components/basegamefeature.h"
+
 
 namespace MemDb
 {
@@ -32,6 +34,7 @@ class Blob;
 namespace Game
 {
 
+class TransformHierarchy;
 class PackedLevel;
 
 /// returns a world by hash
@@ -92,6 +95,10 @@ public:
     WorldHash GetWorldHash() const;
     /// Returns the world ID for this world. This corresponds to Game::Entity::world.
     WorldId GetWorldId() const;
+
+    /// The transform hierarchy of this world. The world owns it, which is what lets the hierarchy read the
+    /// component tables through it without knowing which world it was called from.
+    Ptr<TransformHierarchy> GetHierarchy() const;
 
     /// Create a new empty entity
     Entity CreateEntity(bool immediate = true);
@@ -297,6 +304,8 @@ private:
     Util::Array<RemoveComponentCommand> removeComponentQueue;
     /// Allocator for staged components
     Memory::ArenaAllocator<4096_KB> componentStageAllocator;
+    /// The transform hierarchy of the entities in this world
+    Ptr<TransformHierarchy> hierarchy;
     /// Set to true if the caches for the frame pipeline are valid
     bool cacheValid = false;
     /// The frame pipeline for this world
@@ -505,5 +514,10 @@ template <>
 void World::SetComponent(Entity entity, Game::Orientation const&);
 template <>
 void World::SetComponent(Entity entity, Game::Scale const&);
+
+/// The local transform is the component which puts an entity in the transform hierarchy, which is why a write of it
+/// has to reach the instances below it
+template <>
+void World::SetComponent(Entity entity, Game::HTransform const&);
 
 } // namespace Game

@@ -26,9 +26,9 @@ Core::CVar* cl_debug_draw_physics               = Core::CVarCreate(Core::CVarTyp
 
 // visualization parameters
 Core::CVar* cl_physics_draw_scale               = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale", "1.0", "Visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_points        = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_points", "1.0", "Point visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_lines         = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_lines", "1.0", "Line visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_triangles     = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_triangles", "1.0", "Triangle visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_points        = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_points", "2.0", "Point visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_lines         = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_lines", "2.0", "Line visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_triangles     = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_triangles", "2.0", "Triangle visualization drawing scale.");
 Core::CVar* cl_physics_draw_world_axes          = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_world_axes", "0", "Visualize the world axes. Needs cl_debug_draw_physics set to 1.");
 Core::CVar* cl_physics_draw_body_axes           = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_axes", "0", "Visualize a bodies axes. Needs cl_debug_draw_physics set to 1.");
 Core::CVar* cl_physics_draw_body_mass_axes      = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_mass_axes", "0", "Visualize a body's mass axes. Needs cl_debug_draw_physics set to 1.");
@@ -77,6 +77,12 @@ UpdateDebugDrawingParameters()
     for (int sceneIndex = 0; sceneIndex < state.activeScenes.Size(); sceneIndex++)
     {
         PxScene* scene = state.activeScenes[sceneIndex].scene;
+
+        if (scene == nullptr)
+        {
+            continue;
+        }
+
         float drawingScale = Core::CVarReadFloat(cl_physics_draw_scale);
         scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, dstate.enabled ? drawingScale : 0.0f);
 

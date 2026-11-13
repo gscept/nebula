@@ -334,6 +334,9 @@ FrameEvent::Batch::ExecuteAsync(World* world)
             if (!processor->active)
                 continue;
 
+            if (!(processor->phase & PhaseForMode(world->mode)))
+                continue;
+
             processor->timer.Stop();
         }
 #endif
@@ -363,6 +366,9 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     {
         Processor* processor = this->processors[i];
         if (!processor->active)
+            continue;
+
+        if (!(processor->phase & PhaseForMode(world->mode)))
             continue;
 
         processor->timer.Stop();

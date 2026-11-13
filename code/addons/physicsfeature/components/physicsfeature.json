@@ -47,6 +47,11 @@
 				"type": "entity",
 				"hideInInspector": true,
 				"description": "Entity whose physx actor owns the shapes of this entity, which is the entity itself for a body. Cached so a collider which was moved to another parent can detach its shape from the old actor without walking the hierarchy."
+			},
+			"shapeId": {
+				"type": "uint",
+				"default": -1,
+				"hideInInspector": true
 			}
 		},
 		"Character": {
