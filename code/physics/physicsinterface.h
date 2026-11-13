@@ -290,8 +290,6 @@ struct Scene
     physx::PxDefaultCpuDispatcher *dispatcher;
     UpdateFunctionType updateFunction = nullptr;
     EventCallbackType eventCallback = nullptr;
-    Timing::Time time;
-    bool isSimulating = false;
     Util::Array<Physics::ContactEvent> eventBuffer;
     Util::Set<Ids::Id32> modifiedActors;
 };
@@ -301,17 +299,10 @@ void Setup();
 /// close the physics subsystem
 void ShutDown();
 
-/// perform sync simulation step(s)
-void Update(Timing::Time delta);
-/// perform sync simulation step(s) of a single scene
-void Update(Timing::Time delta, IndexT scene);
-
-/// explicit calls to simulate and fetch results. Do not mix with Update!
-void BeginSimulating(Timing::Time delta, IndexT scene);
-void EndSimulating(IndexT scene);
-
-/// this will block until simulation has ended for cleanups e.g.
-void FlushSimulation(IndexT scene);
+/// perform a sync simulation step on every scene
+void Step(Timing::Time delta);
+/// one sync simulation step of a single scene. Actor reads and writes have to happen outside of this
+void Step(Timing::Time delta, IndexT scene);
 
 ///
 IndexT CreateScene();

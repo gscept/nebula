@@ -15,9 +15,6 @@
 
 #define MAX_SHAPE_OVERLAPS 256
 
-// we aim for 60hz physics
-#define PHYSICS_RATE 0.016
-
 namespace Physics
 {
 
@@ -52,18 +49,10 @@ public:
     ///
     void Shutdown();
 
-    /// convenience function to do a sync full simulation step. Do not mix Update and Begin/EndFrame!
-    void Update(Timing::Time delta);
-    /// sync full simulation step of a single scene. Do not mix Update and Begin/EndFrame!
-    void Update(Timing::Time delta, IndexT scene);
-
-    /// explicit call to simulate, will process async in the background
-    void BeginSimulating(Timing::Time delta, IndexT scene);
-    /// explicit call to fetch the results of the simulation
-    void EndSimulating(IndexT scene);
-
-    /// will block until a potential simulation step is done
-    void FlushSimulation(IndexT scene);
+    /// convenience function to do a sync simulation step on every scene
+    void Step(Timing::Time delta);
+    /// one sync simulation step of a single scene. Actor reads and writes have to happen outside of this
+    void Step(Timing::Time delta, IndexT scene);
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(ActorType type, Math::mat4 const & transform);

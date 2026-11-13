@@ -1142,23 +1142,22 @@ PollRigidbodyTransform(
     Game::World* world, Game::Entity entity, PhysicsFeature::Rigidbody const& body, Game::Position& position, Game::Orientation& orientation,
     PhysicsFeature::PhysicsActor const& handle)
 {
+    if (body.actorType == PhysicsFeature::ActorType::Kinematic)
+        return;
+
+    if (world->HasComponent<Game::Static>(entity))
+        return;
+
     Physics::ActorId const actorId = GetValidateActorId(entity, handle);
     if (actorId.id == Ids::InvalidId32)
         return;
 
-    if (body.actorType == PhysicsFeature::ActorType::Kinematic)
-    {
-        Physics::ActorContext::SetPositionOrientation(actorId, position, orientation);
-    }
-    else if (!world->HasComponent<Game::Static>(entity))
-    {
-        Physics::ActorContext::GetPositionOrientation(actorId, position, orientation);
+    Physics::ActorContext::GetPositionOrientation(actorId, position, orientation);
 
-        Game::TransformHierarchy* hierarchy = world->GetHierarchy();
-        if (hierarchy->IsInHierarchy(entity))
-        {
-            hierarchy->SetWorldTransform(entity);
-        }
+    Game::TransformHierarchy* hierarchy = world->GetHierarchy();
+    if (hierarchy->IsInHierarchy(entity))
+    {
+        hierarchy->SetWorldTransform(entity);
     }
 }
 
@@ -1166,35 +1165,57 @@ PollRigidbodyTransform(
 /**
 */
 void
-PhysicsManager::OnFrame()
+WriteKinematicRigidbody(
+    Game::World* world, Game::Entity entity, PhysicsFeature::Rigidbody const& body, Game::Position const& position,
+    Game::Orientation const& orientation, PhysicsFeature::PhysicsActor const& handle)
 {
-    this->RebuildQueued();
+    if (body.actorType != PhysicsFeature::ActorType::Kinematic)
+        return;
+
+    Physics::ActorId const actorId = GetValidateActorId(entity, handle);
+    if (actorId.id == Ids::InvalidId32)
+        return;
+
+    Physics::ActorContext::SetPositionOrientation(actorId, position, orientation);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PhysicsManager::InitPollTransformProcessor()
+PhysicsManager::InitPhysicsFrameEvent()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::FrameEvent* event = world->GetFramePipeline().GetFrameEvent("OnPhysicsFrame");
+
+    // PhysX only allows reads and writes to the actors before simulate() and after fetchResults(), so the order
+    // inside the physics frame is: drain the queue, write the kinematic poses, step, poll the dynamic poses
+    event->AddCallback(100, Game::BothPhases, [this](Game::World* world) { this->RebuildQueued(); });
+
+    Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
+        .Excluding<Game::Static>()
+        .On("OnPhysicsFrame")
+        .Order(110)
+        .Func(&PassKinematicTransforms)
+        .Build();
+
+    Game::ProcessorBuilder(world, "PhysicsManager.WriteKinematicRigidbody"_atm)
+        .On("OnPhysicsFrame")
+        .Order(115)
+        .Func(&WriteKinematicRigidbody)
+        .Build();
 
     Game::ProcessorBuilder(world, "PhysicsManager.PollPhysicsResourceTransforms"_atm)
         .Excluding<Game::Static, PhysicsFeature::IsKinematic>()
-        .On("OnFrame")
+        .On("OnPhysicsFrame")
+        .Order(200)
         .Func(&PollPhysicsResourceTransforms)
         .Build();
 
     Game::ProcessorBuilder(world, "PhysicsManager.PollRigidbodyTransform"_atm)
-        .Order(120)
-        .On("OnFrame")
+        .On("OnPhysicsFrame")
+        .Order(210)
         .Func(&PollRigidbodyTransform)
-        .Build();
-
-    Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
-        .Excluding<Game::Static>()
-        .On("OnFrame")
-        .Func(&PassKinematicTransforms)
         .Build();
 }
 
@@ -1206,7 +1227,7 @@ PhysicsManager::OnActivate()
 {
     Game::Manager::OnActivate();
 
-    this->InitPollTransformProcessor();
+    this->InitPhysicsFrameEvent();
 }
 
 //------------------------------------------------------------------------------

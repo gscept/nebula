@@ -306,17 +306,11 @@ PostSceneUpdates(Physics::Scene& scene)
 /**
 */
 void
-PhysxState::Update(Timing::Time delta)
+PhysxState::Step(Timing::Time delta)
 {
-    if (Input::InputServer::HasInstance() && Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
-    {
-        if (!this->pvd->isConnected()) this->ConnectPVD();
-        else this->DisconnectPVD();
-    }
-
     for (IndexT Id : this->activeSceneIds)
     {
-        Update(delta, Id);
+        Step(delta, Id);
     }
 }
 
@@ -324,39 +318,9 @@ PhysxState::Update(Timing::Time delta)
 /**
 */
 void
-PhysxState::Update(Timing::Time delta, IndexT sceneId)
+PhysxState::Step(Timing::Time delta, IndexT sceneId)
 {
-    N_MARKER_BEGIN(Update, Physics);
-
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
-    Physics::Scene& scene = this->activeScenes[sceneId];
-
-    PreSceneUpdates(scene);
-    scene.time -= delta;
-    // we limit the simulation to 5 frames
-    scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
-    scene.eventBuffer.Reset();
-    while (scene.time < 0.0)
-    {
-        scene.scene->simulate(PHYSICS_RATE);
-        scene.scene->fetchResults(true);
-        scene.time += PHYSICS_RATE;
-        if (scene.updateFunction != nullptr)
-        {
-            CollectModified(scene);
-        }
-    }
-    PostSceneUpdates(scene);
-    N_MARKER_END();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
-{
-    N_MARKER_BEGIN(BeginSimulation, Physics);
+    N_MARKER_BEGIN(PhysicsStep, Physics);
 #if NEBULA_DEBUG
     if (Input::InputServer::HasInstance() && Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
     {
@@ -367,69 +331,16 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 
     n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
     Physics::Scene& scene = this->activeScenes[sceneId];
-    n_assert(scene.isSimulating == false);
-    scene.time -= delta;
 
-    if (scene.time < -PHYSICS_RATE)
-    {
-        PreSceneUpdates(scene);
-        scene.isSimulating = scene.scene->simulate(PHYSICS_RATE);
-    }
-    
-    N_MARKER_END();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysxState::EndSimulating(IndexT sceneId)
-{
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
-    Physics::Scene& scene = this->activeScenes[sceneId];
-
-    if (!scene.isSimulating)
-    {
-        return;
-    }
-
-    N_MARKER_BEGIN(EndSimulating, Physics);
+    PreSceneUpdates(scene);
+    scene.scene->simulate(delta);
     scene.scene->fetchResults(true);
-    scene.time += PHYSICS_RATE;
-
     if (scene.updateFunction != nullptr)
     {
         CollectModified(scene);
     }
-
-    // we limit the simulation to 5 frames
-    scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
-    while (scene.time < 0.0f)
-    {
-        // simulate synchronously until we are in sync again
-        scene.scene->simulate(PHYSICS_RATE);
-        scene.scene->fetchResults(true);
-        CollectModified(scene);
-        scene.time += PHYSICS_RATE;
-    }
-    PostSceneUpdates(scene);    
-    scene.isSimulating = false;
+    PostSceneUpdates(scene);
     N_MARKER_END();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysxState::FlushSimulation(IndexT sceneId)
-{
-    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
-    Physics::Scene& scene = this->activeScenes[sceneId];
-    if (scene.isSimulating)
-    {
-        scene.scene->fetchResults(true);
-        scene.isSimulating = false;
-    }
 }
 
 PhysxState state;

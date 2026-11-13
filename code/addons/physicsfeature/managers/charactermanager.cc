@@ -99,7 +99,13 @@ CharacterManager::OnActivate()
     time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Game::ProcessorBuilder(world, "CharacterManager.MoveCharacters").Func(MoveCharacters).Excluding<Game::Static, PhysicsFeature::IsKinematic>().Build();
+    // The character controller move is a write to the actor, so it has to run before the step of the physics frame
+    Game::ProcessorBuilder(world, "CharacterManager.MoveCharacters"_atm)
+        .On("OnPhysicsFrame")
+        .Order(120)
+        .Func(MoveCharacters)
+        .Excluding<Game::Static, PhysicsFeature::IsKinematic>()
+        .Build();
 }
 
 //------------------------------------------------------------------------------

@@ -9,9 +9,14 @@
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
+#include "game/frameevent.h"
+#include "game/timesource.h"
 #include "core/cvar.h"
 
-#define TIMESOURCE_PHYSICS 'PHTS'
+#define TIMESOURCE_PHYSICS uint32_t('PHTS')
+
+// we aim for 60hz physics
+#define PHYSICS_RATE 0.016
 
 //------------------------------------------------------------------------------
 namespace PhysicsFeature
@@ -38,10 +43,6 @@ public:
     /// called from within GameServer::NotifyBeforeCleanup()
     void OnBeforeCleanup(Game::World* world);
 
-    /// called on begin of frame
-    virtual void OnBeginFrame();
-    /// called at the end of the feature trigger cycle
-    virtual void OnDecay();
     /// called when game debug visualization is on
     virtual void OnRenderDebug();
 
@@ -49,6 +50,9 @@ public:
     IndexT SceneForWorld(Game::World* world);
 
 private:
+    /// the fixed frame event the physics step runs on
+    Game::FrameEvent* physicsEvent;
+
     Util::Dictionary<Game::World*, IndexT> physicsWorlds;
     int debugDrawPhysicsLastValue = 0;
 

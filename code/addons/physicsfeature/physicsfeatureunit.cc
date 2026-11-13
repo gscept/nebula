@@ -14,8 +14,6 @@
 #include "components/physicsfeature.h"
 #include "managers/charactermanager.h"
 
-#define USE_SYNC_UPDATE 0
-
 namespace PhysicsFeature
 {
 __ImplementClass(PhysicsFeature::PhysicsFeatureUnit, 'PXFU' , Game::FeatureUnit);
@@ -71,18 +69,39 @@ PhysicsFeatureUnit::OnActivate()
 
     this->cl_debug_draw_physics = Core::CVarGet("cl_debug_draw_physics");
 
-    Game::TimeSourceCreateInfo timeSourceInfo;
-    timeSourceInfo.hash = TIMESOURCE_PHYSICS;
-    Game::Time::CreateTimeSource(timeSourceInfo);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    this->AttachManager(PhysicsManager::Create());
-    this->AttachManager(CharacterManager::Create());
+    Game::TimeSourceCreateInfo timeSourceInfo;
+    timeSourceInfo.hash = TIMESOURCE_PHYSICS;
+    timeSourceInfo.fixedFrameTime = PHYSICS_RATE;
+    Game::Time::CreateTimeSource(timeSourceInfo);
+
+    // The physics frame is a fixed event, which runs once for every step the physics time source has available.
+    // Everything which reads or writes the actors has to be inside the event, because PhysX only allows that
+    // before simulate() and after fetchResults(). The event sits between OnFrame and OnEndFrame, so the gameplay
+    // processors of the frame write the poses the step uses. It has to be registered before the managers build
+    // their processors on it
+    Game::FrameEventCreateInfo eventInfo;
+    eventInfo.order = 150;
+    eventInfo.name = "OnPhysicsFrame"_atm;
+    eventInfo.fixedStep = PHYSICS_RATE;
+    eventInfo.timeSourceHash = TIMESOURCE_PHYSICS;
+    this->physicsEvent = world->GetFramePipeline().RegisterFrameEvent(eventInfo);
+
+    // The step only runs for a world which is simulating, which is what keeps a world in editor mode from
+    // simulating while the ones running gameplay do
+    this->physicsEvent->AddCallback(150, Game::PlayPhase, [this](Game::World* world)
+    {
+        Physics::Step(Game::Time::GetTimeSource(TIMESOURCE_PHYSICS)->frameTime, this->SceneForWorld(world));
+    });
 
     Physics::Setup();
 
     IndexT defaultScene = Physics::CreateScene();
     this->physicsWorlds.Add(world, defaultScene);
+
+    this->AttachManager(PhysicsManager::Create());
+    this->AttachManager(CharacterManager::Create());
 
     Physics::SetOnSleepCallback([](Physics::ActorId* actors, SizeT num)
     {
@@ -166,7 +185,6 @@ PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
     if (this->physicsWorlds.Contains(world))
     {
         IndexT scene = this->physicsWorlds[world];
-        Physics::FlushSimulation(scene);
 
         // this is where managers destroy their actors, which has to happen before the scene goes away
         FeatureUnit::OnBeforeCleanup(world);
@@ -194,48 +212,6 @@ PhysicsFeatureUnit::SceneForWorld(Game::World* world)
 /**
 */
 void 
-PhysicsFeatureUnit::OnBeginFrame()
-{
-#if USE_SYNC_UPDATE > 0
-    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
-    for (auto const& scene : this->physicsWorlds)
-    {
-        if (Game::PhaseForMode(scene.Key()->mode) != Game::PlayPhase)
-            continue;
-
-        Physics::Update(time->frameTime, scene.Value());
-    }
-#else
-    for (auto const& scene : this->physicsWorlds)
-    {
-        Physics::EndSimulating(scene.Value());
-    }
-#endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysicsFeatureUnit::OnDecay()
-{
-    FeatureUnit::OnDecay();
-#if USE_SYNC_UPDATE == 0
-    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
-    for (auto const& scene : this->physicsWorlds)
-    {
-        if (Game::PhaseForMode(scene.Key()->mode) != Game::PlayPhase)
-            continue;
-
-        Physics::BeginSimulating(time->frameTime, scene.Value());
-    }
-#endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 PhysicsFeatureUnit::OnRenderDebug()
 {
     int drawPhysics = Core::CVarReadInt(this->cl_debug_draw_physics);
@@ -252,4 +228,4 @@ PhysicsFeatureUnit::OnRenderDebug()
     Physics::RenderDebug();
 }
 
-} // namespace Game
+} // namespace PhysicsFeature

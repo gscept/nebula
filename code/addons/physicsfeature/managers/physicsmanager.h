@@ -46,7 +46,6 @@ public:
 
     void OnActivate() override;
     void OnDeactivate() override;
-    void OnFrame() override;
     void OnDecay() override;
     void OnCleanup(Game::World* world) override;
 
@@ -101,7 +100,9 @@ public:
     static void OnBodyComponentDecay(Game::World*, Game::Entity, COMPONENT_TYPE*);
 
 private:
-    void InitPollTransformProcessor();
+    /// builds the processors and callbacks of the physics frame event. The order inside the event is what keeps
+    /// the actor writes before the step and the polls after it
+    void InitPhysicsFrameEvent();
 
     // rebuilds everything which was queued since the last frame. An entity stays queued while the
     // actor of the body its shape hangs off is not built yet. Geometry which cannot be loaded is a

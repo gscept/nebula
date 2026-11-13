@@ -28,6 +28,8 @@ nebula_begin_module(application)
 			processorid.h
 			dataset.cc
 			dataset.h
+			timesource.h
+			timesource.cc
             category.h
             category.cc
             entity.h

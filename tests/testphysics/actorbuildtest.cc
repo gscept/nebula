@@ -330,18 +330,12 @@ ActorBuildTest::Run()
 
     VERIFY(NearlyEqual(Physics::ActorContext::GetPxActor(pausedActor)->getGlobalPose().p.y, 10.0f));
 
-    // the sync step is limited to 5 physics frames per call, so step the running scene a few times
+    // one call is one step, which is what the fixed physics frame in the pipeline runs
     for (int i = 0; i < 10; i++)
-        Physics::state.Update(0.016f, scene);
+        Physics::state.Step(0.016f, scene);
 
     // the actor in the stepped scene moved, the one in the scene that was left alone did not
     VERIFY(Physics::ActorContext::GetPxActor(runningActor)->getGlobalPose().p.y < 9.99f);
-    VERIFY(NearlyEqual(Physics::ActorContext::GetPxActor(pausedActor)->getGlobalPose().p.y, 10.0f));
-
-    // a scene that is not simulating can still be ended and flushed, which is what makes it safe to call
-    // those for every world each frame regardless of mode
-    Physics::state.EndSimulating(pausedScene);
-    Physics::state.FlushSimulation(pausedScene);
     VERIFY(NearlyEqual(Physics::ActorContext::GetPxActor(pausedActor)->getGlobalPose().p.y, 10.0f));
 
     Physics::ActorContext::DiscardActor(runningActor);

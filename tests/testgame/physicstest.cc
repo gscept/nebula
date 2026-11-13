@@ -11,6 +11,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "physicsfeature/components/physicsfeature.h"
 #include "physicsfeature/managers/physicsmanager.h"
+#include "physicsfeature/physicsfeatureunit.h"
 #include "memdb/attributeregistry.h"
 #include "physics/actorcontext.h"
 
@@ -77,16 +78,31 @@ ShapeFieldOf(Game::World* world, Game::Entity entity)
 
 //------------------------------------------------------------------------------
 /**
-    The physics manager drains its rebuild queue from its OnFrame, which runs through the game
-    server, so the test drives the game server itself. The adds of a frame are executed at the begin
-    frame, and the drain which builds what they queued runs in the same frame, so a physics entity is
-    built by one frame when nothing about it has to wait for something else.
+    The physics frame is a fixed frame event in the pipeline, which runs once for every step the physics time
+    source has available. The test drives that source explicitly with its time factor at 0, so one advance is
+    exactly one physics frame and the number of steps per frame is not whatever the wall clock says. The event
+    sits between OnFrame and OnEndFrame, so the step happens during OnEndFrame.
+
+    The physics manager drains its rebuild queue on the physics frame, which runs through the game server, so the
+    test drives the game server itself. The adds of a frame are executed at the begin frame, and the drain which
+    builds what they queued runs in the same frame, so a physics entity is built by one frame when nothing about
+    it has to wait for something else.
 */
+static void
+AdvancePhysicsFrame()
+{
+    Game::TimeSource* physicsTime = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
+    physicsTime->timeFactor = 0.0f;
+    Game::Time::AdvanceTimeSource(physicsTime, PHYSICS_RATE);
+}
+
 static void
 StepPhysicsFrames(int numFrames)
 {
     for (int i = 0; i < numFrames; i++)
     {
+        AdvancePhysicsFrame();
+
         Game::GameServer::Instance()->OnBeginFrame();
         Game::GameServer::Instance()->OnFrame();
         Game::GameServer::Instance()->OnEndFrame();
@@ -549,26 +565,24 @@ PhysicsManagerTest::Run()
     VERIFY(PendingOf(world, pollBody) == 0);
     VERIFY(Math::nearequal(world->GetComponent<Game::Position>(pollNode).x, 2.0f, 0.0001f));
 
-    // The pose is put on the actor directly here, which is what a simulate step does to it. Nothing is queued for
-    // the body, so the frame which runs the poll keeps this pose, and the node below is computed from it. The
-    // instance has to be marked, because a simulate step marks the entities whose pose it writes and putting a pose
-    // on an actor from the test does not, and a pose put on an actor is applied at the flush, which is not always
-    // the frame the poll reads it in. The body is stepped until the transform the poll wrote is the transform the
-    // actor holds, and what is being tested is that the poll reaches the tree: the node below has no source for
-    // its transform except the tree, so it has to follow the pose the poll wrote
-    Physics::ActorContext::SetPositionOrientation(pollActor, Math::vec3(10.0f, 0.0f, 0.0f), Math::quat());
-    world->MarkAsModified(pollBody);
+    // PhysX only allows reads and writes to the actors before simulate() and after fetchResults(), so the pose is
+    // put on the actor inside the window of the physics frame: after the poll of the previous frame and before the
+    // step. The step applies it and the poll of the same frame reads it back. The poll writes through the query
+    // buffers, which are the column buffers GetComponent reads, and nothing has to be marked for that, because the
+    // poll processors are not built with OnlyModified() and run for every valid instance. What is being tested is
+    // that the poll reaches the tree: the node below has no source for its transform except the tree, so it has to
+    // follow the pose the poll wrote
+    AdvancePhysicsFrame();
 
-    bool polled = false;
-    for (int frame = 0; frame < 6 && !polled; frame++)
-    {
-        StepPhysicsFrames(1);
-        Math::vec3 actorPosition;
-        Math::quat actorOrientation;
-        Physics::ActorContext::GetPositionOrientation(pollActor, actorPosition, actorOrientation);
-        polled = Math::nearequal(world->GetComponent<Game::Position>(pollBody).x, actorPosition.x, 0.0001f);
-    }
-    VERIFY(polled);
+    Game::GameServer::Instance()->OnBeginFrame();
+    Game::GameServer::Instance()->OnFrame();
+    Physics::ActorContext::SetPositionOrientation(pollActor, Math::vec3(10.0f, 0.0f, 0.0f), Math::quat());
+    Game::GameServer::Instance()->OnEndFrame();
+
+    Math::vec3 polledActorPosition;
+    Math::quat polledActorOrientation;
+    Physics::ActorContext::GetPositionOrientation(pollActor, polledActorPosition, polledActorOrientation);
+    VERIFY(Math::nearequal(world->GetComponent<Game::Position>(pollBody).x, polledActorPosition.x, 0.0001f));
 
     Game::Position const polledBody = world->GetComponent<Game::Position>(pollBody);
     Game::Position const polledNode = world->GetComponent<Game::Position>(pollNode);

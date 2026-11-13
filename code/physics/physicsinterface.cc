@@ -139,7 +139,6 @@ CreateScene()
 #endif
     scene.physics = state.physics;
     scene.foundation = state.foundation;
-    scene.time = 0.0;
     scene.eventBuffer.Reserve(256);
     return idx;
 }
@@ -339,65 +338,22 @@ GetNrMaterials()
 }
 
 
-#if NEBULA_DEBUG
-// used for detecting wrong api usage
-static bool updateCalled = false;
-#endif
-
 //------------------------------------------------------------------------------
 /**
 */
 void
-Update(Timing::Time delta)
+Step(Timing::Time delta)
 {
-#if NEBULA_DEBUG
-    updateCalled = true;
-#endif
-    state.Update(delta);
+    state.Step(delta);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Update(Timing::Time delta, IndexT scene)
+Step(Timing::Time delta, IndexT scene)
 {
-#if NEBULA_DEBUG
-    updateCalled = true;
-#endif
-    state.Update(delta, scene);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BeginSimulating(Timing::Time delta, IndexT scene)
-{
-#if NEBULA_DEBUG
-    n_assert2(updateCalled == false, "Mixed sync Update in PhysicsInterface with Split Begin/EndSimulating, this is most definitely wrong");
-#endif
-
-    state.BeginSimulating(delta, scene);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-EndSimulating(IndexT scene)
-{
-    state.EndSimulating(scene);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FlushSimulation(IndexT scene)
-{
-    state.FlushSimulation(scene);
+    state.Step(delta, scene);
 }
 
 //------------------------------------------------------------------------------
