@@ -28,7 +28,10 @@ struct
     CoreGraphics::BufferId clusterBuffer;
 
     ClusterGenerate::ClusterUniforms::STRUCT uniforms;
-    CoreGraphics::BufferId constantBuffer;
+    // One per buffered frame, the CPU writes the next frame's grid while the GPU may still read the previous one
+    Util::FixedArray<CoreGraphics::BufferId> constantBuffers;
+    // Number of clusters in the grid uploaded for each buffered frame
+    Util::FixedArray<SizeT> uploadedNumClusters;
 
     CoreGraphics::WindowId window;
 
@@ -94,24 +97,27 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.invXResolution = 1.0f / dims.width;
     state.invYResolution = 1.0f / dims.height;
 
+    // Allocate for the maximum amount of clusters, so the buffer never has to be recreated (and rebound while frames are in flight) on resize
     BufferCreateInfo rwb3Info;
     rwb3Info.name = "ClusterAABBBuffer";
-    rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
+    rwb3Info.size = ClusterGenerate::NUM_CLUSTER_ENTRIES;
     rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
     rwb3Info.mode = BufferAccessMode::DeviceLocal;
     rwb3Info.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.clusterBuffer = CreateBuffer(rwb3Info);
-    state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms", CoreGraphics::DeviceAndHost);
-
+    state.constantBuffers.Resize(CoreGraphics::GetNumBufferedFrames());
+    state.uploadedNumClusters.Resize(CoreGraphics::GetNumBufferedFrames());
+    state.uploadedNumClusters.Fill(0);
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
+        state.constantBuffers[i] = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms", CoreGraphics::DeviceAndHost);
         auto resourceTables = Graphics::GetFrameResourceTables(i);
 
         for (auto& table : resourceTables)
         {
             ResourceTableSetRWBuffer(table, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-            ResourceTableSetConstantBuffer(table, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
+            ResourceTableSetConstantBuffer(table, { state.constantBuffers[i], ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
         }
     }
 
@@ -123,6 +129,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
         state.clusterDimensions[0] = Math::divandroundup(viewport.width(), ClusterBlockSizeX);
         state.clusterDimensions[1] = Math::divandroundup(viewport.height(), ClusterBlockSizeY);
         state.clusterDimensions[2] = ClusterBlockSizeZ;
+        n_assert(state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] <= ClusterGenerate::NUM_CLUSTER_ENTRIES);
 
         state.xResolution = viewport.width();
         state.yResolution = viewport.height();
@@ -131,8 +138,9 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
         state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
         state.zInvBias = -(float(state.clusterDimensions[2]) * Math::log2(state.zNear) / Math::log2(state.zDistribution));
 
-        // Run the job as series of 1024 clusters at a time
-        CmdDispatch(cmdBuf, Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1);
+        // Generate every cluster of the grid this frame's uniforms describe, which is what culling and shading index into.
+        // The dimensions computed above are only uploaded for the next frame.
+        CmdDispatch(cmdBuf, Math::divandroundup(state.uploadedNumClusters[bufferIndex], 64), 1, 1);
     }, {
         { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
@@ -177,9 +185,10 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
     state.uniforms.BlockSize[0] = ClusterBlockSizeX;
     state.uniforms.BlockSize[1] = ClusterBlockSizeY;
 
-    // update constant buffer, probably super unnecessary since these values never change
-    BufferUpdate(state.constantBuffer, state.uniforms);
-    BufferFlush(state.constantBuffer);
+    // The grid changes whenever the viewport is resized, so only write the buffer of the frame being prepared
+    BufferUpdate(state.constantBuffers[ctx.bufferIndex], state.uniforms);
+    BufferFlush(state.constantBuffers[ctx.bufferIndex]);
+    state.uploadedNumClusters[ctx.bufferIndex] = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
 }
 
 //------------------------------------------------------------------------------
@@ -212,30 +221,6 @@ ClusterContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
         state.yResolution = dims.height;
         state.invXResolution = 1.0f / dims.width;
         state.invYResolution = 1.0f / dims.height;
-
-        CoreGraphics::DestroyBuffer(state.clusterBuffer);
-
-        CoreGraphics::BufferCreateInfo rwb3Info;
-        rwb3Info.name = "ClusterAABBBuffer";
-        rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-        rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
-        rwb3Info.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        rwb3Info.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
-        rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        state.clusterBuffer = CreateBuffer(rwb3Info);
-        FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
-
-        for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-        {
-            auto frameResourceTables = Graphics::GetFrameResourceTables(i);
-
-            for (auto& table : frameResourceTables)
-            {
-                ResourceTableSetRWBuffer(table, {state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0});
-                ResourceTableSetConstantBuffer(table, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
-                ResourceTableCommitChanges(table);
-            }
-        }
     }
 }
 

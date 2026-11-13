@@ -12,12 +12,15 @@ CheckFlags(bits : u32, bit : u32) b8
 //------------------------------------------------------------------------------
 /**
     Calculate 3D index from screen position and depth
+
+    The index is clamped to the cluster grid. Samples in front of the near plane, behind the far plane
+    or on the right and bottom screen edges would otherwise index past the cluster lists.
 */ 
-CalculateClusterIndex(screenPos : f32x2, depth : f32, scale : f32, bias : f32) u32x3
+CalculateClusterIndex(screenPos : f32x2, depth : f32, scale : f32, bias : f32, numCells : u32x3) u32x3
 {
-    const i = u32(screenPos.x);
-    const j = u32(screenPos.y);
-    const k = u32(log2(-depth) * scale + bias);
+    const i = u32(clamp(screenPos.x, 0.0f, f32(numCells.x - 1u)));
+    const j = u32(clamp(screenPos.y, 0.0f, f32(numCells.y - 1u)));
+    const k = u32(clamp(log2(-depth) * scale + bias, 0.0f, f32(numCells.z - 1u)));
 
     return u32x3(i, j, k);
 }

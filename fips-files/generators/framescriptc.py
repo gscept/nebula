@@ -512,13 +512,14 @@ class FullscreenEffectDefinition:
         else:
             file.WriteLine(f"FullScreenEffect_{self.name}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, CoreGraphics::InvalidPassId, 0, Render_{self.rp.name}, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});")
         file.WriteLine(f'FullScreenEffect_{self.name}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);')
-        file.WriteLine(f'{self.namespace}::{self.constantBlockName}::STRUCT state;')
+        # Zero initialize, so handles the frame script doesn't set aren't garbage indices into the bindless tables
+        file.WriteLine(f'{self.namespace}::{self.constantBlockName}::STRUCT state = {{}};')
         for var in self.variables:
             type = var['type']
             if type == "textureHandle":
                 file.WriteLine(f'state.{var["name"]} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{var["value"]}]);')
             elif type == "texture":
-                file.WriteLine(f'CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{var["value"]}], {self.namespace}::{var["name"]}::BINDING));')
+                file.WriteLine(f'CoreGraphics::ResourceTableSetTexture(FullScreenEffect_{self.name}_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{var["value"]}], {self.namespace}::{var["name"]}::BINDING));')
             else:
                 file.WriteLine(f'state.{var["name"]} = {var["value"]};')
         file.WriteLine('CoreGraphics::BufferCreateInfo bufInfo;')

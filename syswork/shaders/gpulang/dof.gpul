@@ -3,7 +3,7 @@
 //  Full-resolution circle of confusion, half-resolution bokeh gather, before tonemap.
 //
 //  Dispatch. Thread (0, 0) is texel (0, 0).
-//    Mask      1 by 1, local 32. Compute queue. Reads Aperture, writes BokehMaskWrite.
+//    Mask      1 by 1, local 32. Graphics queue. Reads Aperture, writes BokehMaskWrite.
 //    Setup     ceil(viewportWidth / 16) by ceil(viewportHeight / 16), local 16x16
 //    Gather    ceil(halfViewportWidth / 16) by ceil(halfViewportHeight / 16), local 16x16
 //  viewportWidth  = Viewport.z

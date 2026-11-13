@@ -14,7 +14,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > LightUniforms.NumLightClusters) { return; }
+    if (index1D >= LightUniforms.NumLightClusters) { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -87,7 +87,7 @@ csClusterAABB() void
     const index1D = computeGetGlobalThreadIndices().x;
     const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    if (index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z) { return; }
+    if (index1D >= ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z) { return; }
 
     const offsetMin = f32x3(index3D.x - ClusterUniforms.NumCells.x * 0.5f, index3D.y - ClusterUniforms.NumCells.y * 0.5f, index3D.z - ClusterUniforms.NumCells.z * 0.5f) * ClusterUniforms.BlockSize.y;
     const offsetMax = f32x3((index3D.x + 1) - ClusterUniforms.NumCells.x * 0.5f, (index3D.y + 1) - ClusterUniforms.NumCells.y * 0.5f, (index3D.z + 1) - ClusterUniforms.NumCells.z * 0.5f) * ClusterUniforms.BlockSize.y;

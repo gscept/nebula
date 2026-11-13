@@ -51,9 +51,13 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     Util::String name = viewName;
     name.AppendInt(unique++);
     CoreGraphics::TextureCreateInfo texInfo;
+    texInfo.name = "Viewport Target"_atm;
     texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
     texInfo.width = 1280;
     texInfo.height = 900;
+    // Copied to by the preview frame script and sampled by ImGui, clear so it starts out in a readable layout
+    texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
+    texInfo.clear = true;
     this->targetTexture = CoreGraphics::CreateTexture(texInfo);
     this->directionalLight = Graphics::GraphicsServer::Instance()->CreateGraphicsEntity();
     this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), mask, [this](IndexT frameIndex, IndexT bufferIndex)
@@ -330,9 +334,12 @@ Viewport::Render()
         {
             CoreGraphics::DestroyTexture(this->targetTexture);
             CoreGraphics::TextureCreateInfo texInfo;
+            texInfo.name = "Viewport Target"_atm;
             texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
             texInfo.width = space.x;
             texInfo.height = space.y;
+            texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
+            texInfo.clear = true;
             this->targetTexture = CoreGraphics::CreateTexture(texInfo);
         }
     }

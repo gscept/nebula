@@ -122,6 +122,11 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         swapchainExtent = surfCaps.currentExtent;
     }
 
+    // The surface extent can differ from the requested display mode, keep the real size so copies stay within the images
+    DisplayMode& displayMode = swapchainAllocator.Get<Swapchain_DisplayMode>(id);
+    displayMode.SetWidth(swapchainExtent.width);
+    displayMode.SetHeight(swapchainExtent.height);
+
     // figure out the best present mode, mailo
     VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     for (i = 0; i < numPresentModes; i++)
@@ -254,24 +259,9 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     res = vkGetSwapchainImagesKHR(dev, swapchain, &numBuffers, images.Begin());
     n_assert(res == VK_SUCCESS);
 
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Swap chain setup");
+    // Images are transitioned from undefined when first used after being acquired, see SwapchainCopy
     for (i = 0; i < numBuffers; i++)
     {
-        // Transition image to present source
-        VkCommandBuffer vkBuf = CmdBufferGetVk(cmdBuf);
-        VkImageMemoryBarrier imageBarrier;
-        imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        imageBarrier.pNext = nullptr;
-        imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageBarrier.image = images[i];
-        imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        imageBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-        vkCmdPipelineBarrier(vkBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0x0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
-
         // setup view
         VkImageViewCreateInfo backbufferViewInfo =
         {
@@ -306,7 +296,6 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         res = VkDebugObjectName(dev, &info);
         n_assert(res == VK_SUCCESS);
     }
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
     poolInfo.name = "Swap Commandbuffer Pool";
@@ -440,9 +429,10 @@ SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, cons
     imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageBarrier.image = images[currentBackbuffer];
-    imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    imageBarrier.srcAccessMask = 0x0;
     imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // The previous contents are discarded, the image can only be touched after it has been acquired
+    imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
     vkCmdPipelineBarrier(vkBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0x0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
@@ -495,7 +485,7 @@ SwapchainPresent(const SwapchainId id)
     const Util::FixedArray<CoreGraphics::SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id);
     uint& semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
 
-    CoreGraphics::SemaphoreId sem = renderingSemaphores[semaphorePair];
+    CoreGraphics::SemaphoreId sem = renderingSemaphores[currentBackbuffer];
     VkSemaphore semaphores[] =
     {
         SemaphoreGetVk(sem) // this will be the final semaphore of the graphics command buffer that finishes the frame
@@ -554,8 +544,10 @@ SwapchainGetCurrentDisplaySemaphore(const SwapchainId id)
 CoreGraphics::SemaphoreId
 SwapchainGetCurrentRenderingSemaphore(const SwapchainId id)
 {
-    const uint semaphorePair = swapchainAllocator.Get<Swapchain_CurrentSemaphorePair>(id.id);
-    return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[semaphorePair];
+    // Presentation waits on this semaphore, and it's only safe to signal it again once the image is re-acquired,
+    // so there is one per swapchain image, not per frame
+    const uint currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
+    return swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id.id)[currentBackbuffer];
 }
 
 } // namespace CoreGraphics

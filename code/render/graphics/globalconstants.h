@@ -33,6 +33,8 @@ void DestroyGlobalConstants();
 
 /// Run when starting frame
 void AllocateGlobalConstants();
+/// Apply bindless texture writes queued during this frame to its tick tables, call before submitting the frame
+void CommitPendingTickTables(uint32_t bufferIndex);
 
 /// Set tick params
 void UpdateTickParams(const Shared::PerTickParams::STRUCT& tickParams);

@@ -678,7 +678,7 @@ CalculateLight(
 ) f32x3
 {
     const viewDepth = CalculateViewDepth(ViewConstants.View, worldSpacePos);
-    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var light = f32x3(0, 0, 0);
@@ -764,7 +764,7 @@ CalculateLightTranslucent(
 ) f32x3
 {
     const viewDepth = CalculateViewDepth(ViewConstants.View, worldSpacePos);
-    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var light = f32x3(0, 0, 0);

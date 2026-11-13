@@ -234,6 +234,12 @@ LightContext::Create()
     {
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(lightServerState.shadowAtlas);
 
+        // The atlas is sampled as read-only depth everywhere else, and isn't part of the frame script, so transition it here
+        CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::DepthStencilWrite, CoreGraphics::BarrierDomain::Global,
+        {
+            CoreGraphics::TextureBarrierInfo{ lightServerState.shadowAtlas, CoreGraphics::TextureSubresourceInfo::Texture(CoreGraphics::ImageBits::DepthBits) }
+        });
+
         CoreGraphics::CmdBeginPass(cmdBuf, lightServerState.shadowPass);
         static const Util::FixedArray<Shared::RenderTargetParameters> RenderTargetParams = {Shared::RenderTargetParameters {
             .Dimensions = {(float)dims.width, (float)dims.height, 1.0f / dims.width, 1.0f / dims.height}, .Scale = {1, 1}
@@ -291,6 +297,11 @@ LightContext::Create()
         lightServerState.shadowCastingLights.Clear();
 
         CoreGraphics::CmdEndPass(cmdBuf);
+
+        CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::DepthStencilWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+        {
+            CoreGraphics::TextureBarrierInfo{ lightServerState.shadowAtlas, CoreGraphics::TextureSubresourceInfo::Texture(CoreGraphics::ImageBits::DepthBits) }
+        });
     });
 
     // Bind shadows

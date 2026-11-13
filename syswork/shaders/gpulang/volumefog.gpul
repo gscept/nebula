@@ -21,7 +21,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
+    if index1D >= VolumeFogUniforms.NumVolumeFogClusters { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -243,7 +243,7 @@ csRender() void
 {
     const coord = f32x2(computeGetGlobalThreadIndices().xy);
 	const boundaries = floor(ViewConstants.Viewport.zw / VolumeFogUniforms.DownscaleFog);
-	if coord.x > boundaries.x || coord.y > boundaries.y { return; }
+	if coord.x >= boundaries.x || coord.y >= boundaries.y { return; }
     const upscaleCoord = i32x2(computeGetGlobalThreadIndices().xy * VolumeFogUniforms.DownscaleFog);
     var depth = fetch2D(PerTickParams.DepthBuffer, upscaleCoord, 0).r;
     const seed = upscaleCoord * (ClusterUniforms.InvFramebufferDimensions);
@@ -310,7 +310,7 @@ csRender() void
         }
 
         // calculate cluster index
-        const index3D = CalculateClusterIndex(upscaleCoord / ClusterUniforms.BlockSize, sampleDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+        const index3D = CalculateClusterIndex(upscaleCoord / ClusterUniforms.BlockSize, sampleDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
         const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
         // sample local fog volumes
