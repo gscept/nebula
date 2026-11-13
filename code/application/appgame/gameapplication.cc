@@ -83,7 +83,6 @@ GameApplication::Open()
             root = System::NebulaSettings::ReadString(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path");
         }
 #else
-        if(System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
         Util::String toolkitRoot = IO::ProjectLocator::GetToolkitRoot();
         if (!toolkitRoot.IsEmpty())
         {
