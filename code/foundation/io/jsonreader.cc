@@ -72,7 +72,7 @@ JsonReader::Open()
                 position.Set(((const char*)this->buffer) + error.m_ofs, 40);
             }
             Util::String const fileName = uri.IsEmpty() ? "" : uri.AsString();
-            n_error(
+            n_warning(
                 "JsonReader::Open(): failed to parse json file: %s\n%s\nat: %s\n",
                 fileName.AsCharPtr(),
                 error.m_pError_message,
