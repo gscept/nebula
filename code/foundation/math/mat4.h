@@ -5,6 +5,12 @@
 
     A 4x4 single point precision float matrix.
 
+    The convention is that these are stored as row-major matrices.
+
+    The naming of the axes (x_axis, y_axis, z_axis, position) assume that the
+    matrix represents a local-to-world matrix. If the matrix represents any other
+    space conversion, this assumption might not hold.
+
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
@@ -98,13 +104,13 @@ public:
     void translate(const vec3& t);
     /// add a translation to pos_component
     void translate(const float x, const float y, const float z);
-    ///
+    /// returns the x-axis of a local->world matrix (row0)
     vec4 get_x() const;
-    ///
+    /// returns the y-axis of a local->world matrix (row1)
     vec4 get_y() const;
-    ///
+    /// returns the z-axis of a local->world matrix (row2)
     vec4 get_z() const;
-    ///
+    /// returns the "position" of a local->world matrix (row4)
     vec4 get_w() const;
     /// scale matrix
     void scale(const vec3& v);

@@ -98,9 +98,12 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
                 }
             }
             ImGui::TableSetColumnIndex(1);
+
+            ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+            ImGui::PushID((int)i);
+
             if constexpr (std::is_enum<field_type>())
             {
-                ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
                 void* fieldData = (byte*)data + TYPE::Traits::field_byte_offsets[i];
                 const char* const* names = TYPE::Traits::field_enum_names[i];
                 int count = (int)TYPE::Traits::field_enum_counts[i];
@@ -138,12 +141,14 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
                         *(field_type*)fieldData = (field_type)value;
                     }
                 }
-                ImGui::PopID();
             }
             else
             {
                 ComponentDrawFuncT<field_type>(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
             }
+
+            ImGui::PopID();
+            ImGui::PopID();
 
             if constexpr (i < TYPE::Traits::num_fields - 1)
             {

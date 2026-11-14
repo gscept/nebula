@@ -181,6 +181,7 @@ def WriteComponentHeaderDeclarations(f, document):
         f.WriteLine("Traits() = delete;")
         f.WriteLine('using type = {};'.format(c.componentName))
         f.WriteLine('static constexpr auto name = "{}";'.format(c.componentName))
+        f.WriteLine('static constexpr auto namespace_name = "{}";'.format(namespace))
         f.WriteLine('static constexpr auto fully_qualified_name = "{}.{}";'.format(namespace, c.componentName))
         f.WriteLine('static constexpr size_t num_fields = {};'.format(len(c.variables)))
         if (len(c.variables) > 0):

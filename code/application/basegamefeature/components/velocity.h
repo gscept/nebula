@@ -44,6 +44,7 @@ struct Velocity::Traits
     Traits() = delete;
     using type = Velocity;
     static constexpr auto name = "Velocity";
+    static constexpr auto namespace_name = "Game";
     static constexpr auto fully_qualified_name = "Game.Velocity";
     static constexpr size_t num_fields = 3;
     static constexpr const char* field_names[num_fields] = {
@@ -82,6 +83,7 @@ struct AngularVelocity::Traits
     Traits() = delete;
     using type = AngularVelocity;
     static constexpr auto name = "AngularVelocity";
+    static constexpr auto namespace_name = "Game";
     static constexpr auto fully_qualified_name = "Game.AngularVelocity";
     static constexpr size_t num_fields = 3;
     static constexpr const char* field_names[num_fields] = {

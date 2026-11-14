@@ -15,6 +15,7 @@
 #include "game/entity.h"
 #include "game/world.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "memdb/tablesignature.h"
 #include "physicsinterface.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
@@ -86,6 +87,16 @@ public:
     /// from a component to the mark its change means. Lets a tool that writes component
     /// values ping without knowing which physics components are bodies and which are colliders
     static void MarkComponentChange(Game::World*, Game::Entity, Game::ComponentId);
+
+    /// the collider components as a signature. An entity is only allowed one of them, so this can
+    /// be used e.g. to check if an entity already has any collider component.
+    static MemDb::TableSignature const& ColliderSignature();
+
+    /// true when the entity has any of the collider components
+    static bool HasCollider(Game::World*, Game::Entity);
+
+    /// true when the component is one of the collider components
+    static bool IsColliderComponent(Game::ComponentId);
 
     static Physics::ShapeId GetShapeForEntity(Game::World*, Game::Entity);
 

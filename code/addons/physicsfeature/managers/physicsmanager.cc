@@ -296,23 +296,72 @@ FindShapeForEntity(Physics::ActorId actorId, Game::Entity entity)
 
 //------------------------------------------------------------------------------
 /**
-    True when the entity has a collider component other than this one. An entity is only allowed to have one shape.
+    The collider components. An entity is only allowed one of them, so this is
+    the list both the component inits assert against and the caller that asks for one reads.
+*/
+static Util::FixedArray<Game::ComponentId> const&
+ColliderComponents()
+{
+    static Util::FixedArray<Game::ComponentId> colliders;
+    if (colliders.IsEmpty())
+    {
+        colliders.SetSize(6);
+        colliders[0] = Game::GetComponentId<PhysicsFeature::BoxCollider>();
+        colliders[1] = Game::GetComponentId<PhysicsFeature::SphereCollider>();
+        colliders[2] = Game::GetComponentId<PhysicsFeature::CapsuleCollider>();
+        colliders[3] = Game::GetComponentId<PhysicsFeature::PlaneCollider>();
+        colliders[4] = Game::GetComponentId<PhysicsFeature::MeshCollider>();
+        colliders[5] = Game::GetComponentId<PhysicsFeature::HeightFieldCollider>();
+    }
+
+    return colliders;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MemDb::TableSignature const&
+PhysicsManager::ColliderSignature()
+{
+    static MemDb::TableSignature signature(ColliderComponents());
+    return signature;
+}
+
+//------------------------------------------------------------------------------
+/**
+    True when the entity has any of the collider components.
+*/
+bool
+PhysicsManager::HasCollider(Game::World* world, Game::Entity entity)
+{
+    Game::EntityMapping const mapping = world->GetEntityMapping(entity);
+    MemDb::TableSignature const& signature = world->GetDatabase()->GetTable(mapping.table).GetSignature();
+    return MemDb::TableSignature::HasAny(signature, PhysicsManager::ColliderSignature());
+}
+
+//------------------------------------------------------------------------------
+/**
+    True when the component is one of the collider components. The signature only has the collider bits set, so a
+    bit test against it is the membership test.
+*/
+bool
+PhysicsManager::IsColliderComponent(Game::ComponentId component)
+{
+    return PhysicsManager::ColliderSignature().IsSet(component);
+}
+
+//------------------------------------------------------------------------------
+/**
+    True when the entity has a collider component other than this one.
 */
 static bool
 HasOtherCollider(Game::World* world, Game::Entity entity, Game::ComponentId component)
 {
-    static const Game::ComponentId colliders[] = {
-        Game::GetComponentId<PhysicsFeature::BoxCollider>(),
-        Game::GetComponentId<PhysicsFeature::SphereCollider>(),
-        Game::GetComponentId<PhysicsFeature::CapsuleCollider>(),
-        Game::GetComponentId<PhysicsFeature::PlaneCollider>(),
-        Game::GetComponentId<PhysicsFeature::MeshCollider>(),
-        Game::GetComponentId<PhysicsFeature::HeightFieldCollider>()
-    };
-
-    for (Game::ComponentId const collider : colliders)
+    Game::EntityMapping const mapping = world->GetEntityMapping(entity);
+    MemDb::TableSignature const& signature = world->GetDatabase()->GetTable(mapping.table).GetSignature();
+    for (Game::ComponentId const collider : ColliderComponents())
     {
-        if (collider != component && world->HasComponent(entity, collider))
+        if (collider != component && signature.IsSet(collider))
             return true;
     }
 

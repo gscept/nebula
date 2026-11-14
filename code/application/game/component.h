@@ -86,6 +86,7 @@ public:
         : Attribute(name, defaultValue, flags)
     {
         this->componentName = T::Traits::name;
+        this->namespaceName = T::Traits::namespace_name;
         this->fullyQualifiedName = T::Traits::fully_qualified_name;
         this->numFields = T::Traits::num_fields;
         this->fieldNames = (const char**)T::Traits::field_names;
@@ -99,6 +100,7 @@ public:
     ComponentDecayFunc Decay = nullptr;
 
     const char* GetName() const { return componentName; }
+    const char* GetNamespace() const { return namespaceName; }
     const char* GetFullyQualifiedName() const { return fullyQualifiedName; }
     const char** GetFieldNames() const { return fieldNames; };
     const char** GetFieldTypenames() const { return fieldTypenames; };
@@ -107,6 +109,7 @@ public:
 
 private:
     const char* componentName = nullptr;
+    const char* namespaceName = nullptr;
     const char* fullyQualifiedName = nullptr;
     const char** fieldNames = nullptr;
     const char** fieldTypenames = nullptr;
