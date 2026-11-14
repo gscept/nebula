@@ -4,9 +4,9 @@
     @class IO::FileWatcher
 
     For registering callbacks for file modification events.
-    
+
     @copyright
-    (C) 2019-2020 Individual contributors, see AUTHORS file
+    (C) 2019-2026 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "core/refcounted.h"
@@ -102,7 +102,6 @@ private:
     ///
     void DoWork();
     
-    Ptr<IO::IoServer> ioServer;
     Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
     Threading::SafeQueue< EventHandlerData> watcherQueue;
     double interval;

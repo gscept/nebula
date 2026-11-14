@@ -16,6 +16,13 @@
     object is only manipulated from the same thread then this 
     thread-synchronization adds unnecessary overhead.
 
+    @internal Locking rule: the debug CriticalSection is the innermost lock. It is only
+    held around the operations on the debug list itself, never across a
+    constructor, because a constructor is arbitrary code that may acquire
+    another lock. If the lock was held while a constructor acquired a second
+    lock, a thread that creates an object while holding that second lock would
+    deadlock against it.
+
     @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -93,6 +100,9 @@ private:
         bool destroyed;
         static RefCountedList list;
         RefCountedList::Iterator listIterator;
+        /// add this object to the debug list. Only the list operation is protected, so the
+        /// critical section is never held while the rest of a constructor runs
+        void RegisterInDebugList();
 public:
         /// register debug name
         void SetDebugName(const Util::String& name);
@@ -108,8 +118,8 @@ RefCounted::RefCounted() :
 {
     #if NEBULA_DEBUG
     n_assert2(this->isInCreate, "RefCounted objects must be created with Create()!");
-    this->listIterator = list.AddBack(this);
     this->destroyed = false;
+    this->RegisterInDebugList();
     #endif
 }
 
@@ -227,7 +237,9 @@ RefCounted::GetClassFourCC() const
 inline void
 RefCounted::SetDebugName(const Util::String& name)
 {
+    criticalSection.Enter();
     list.SetDebugName(this, name);
+    criticalSection.Leave();
 }
 #endif
 

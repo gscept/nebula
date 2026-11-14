@@ -89,21 +89,17 @@ private:
     type* type::Create() \
     { \
         static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = new type; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }\
     type* type::CreateArray(SizeT num) \
     { \
         static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = new type[num]; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }\
     bool type::RegisterWithFactory() \
@@ -123,21 +119,17 @@ private:
     template <class TEMP> \
     inline type<TEMP>* type<TEMP>::Create() \
     { \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type<TEMP>* newObject = new type<TEMP>; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     } \
     template <class TEMP> \
     inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
     { \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type<TEMP>* newObject = new type<TEMP>[num]; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }
 
@@ -148,21 +140,17 @@ private:
     template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::Create() \
     { \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type<TEMP...>* newObject = new type<TEMP...>; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     } \
     template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::CreateArray(SizeT num) \
     { \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type<TEMP...>* newObject = new type<TEMP...>[num]; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }
 #else
@@ -313,21 +301,17 @@ private:
     type* type::Create() \
     { \
         static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = new type; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }\
    type* type::CreateArray(SizeT num) \
     { \
         static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
-        RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = new type[num]; \
         RefCounted::isInCreate = false; \
-        RefCounted::criticalSection.Leave(); \
         return newObject; \
     }\
     bool type::RegisterWithFactory() \
