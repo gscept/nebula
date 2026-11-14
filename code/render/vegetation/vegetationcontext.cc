@@ -111,7 +111,9 @@ VegetationContext::Create()
             CmdSetResourceTable(cmdBuf, instance.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
             CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
-            CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
+            uint groupsX = instance.worldSizeX / VegetationDistributionRadius;
+            uint groupsY = instance.worldSizeZ / VegetationDistributionRadius;
+            CmdDispatch(cmdBuf, groupsX, groupsY, 1);
 
             CmdBarrier(cmdBuf, PipelineStage::ComputeShaderWrite, PipelineStage::Indirect, BarrierDomain::Global,
             {
@@ -269,13 +271,17 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
         instanceInfo.drawCountBuffer[i] = CoreGraphics::CreateBuffer(indirectCountBufferInfo);
     }
 
-    CoreGraphics::BufferCreateInfo materialUniformInfo;
-    materialUniformInfo.name = "Vegetation Materials Buffer";
-    materialUniformInfo.elementSize = sizeof(Vegetation::VegetationMaterialUniforms::STRUCT);
-    materialUniformInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
-    materialUniformInfo.mode = CoreGraphics::DeviceAndHost;
-    instanceInfo.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
-    memset(&instanceInfo.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms::STRUCT));
+    instanceInfo.heightMap = Terrain::TerrainContext::GetHeightMap(id);
+    Terrain::TerrainContext::GetHeightBounds(id, instanceInfo.minHeight, instanceInfo.maxHeight);
+    Terrain::TerrainContext::GetWorldSize(id, instanceInfo.worldSizeX, instanceInfo.worldSizeZ);
+
+    CoreGraphics::TextureCreateInfo debugTextureInfo;
+    debugTextureInfo.name = "Vegetation Debug Buffer";
+    debugTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    debugTextureInfo.format = CoreGraphics::PixelFormat::Code::R32F;
+    debugTextureInfo.width = instanceInfo.worldSizeX;
+    debugTextureInfo.height = instanceInfo.worldSizeZ;
+    instanceInfo.debugTexture = CoreGraphics::CreateTexture(debugTextureInfo);
 
     instanceInfo.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
 
@@ -288,16 +294,6 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
             0
         });
 
-    ResourceTableSetConstantBuffer(instanceInfo.systemResourceTable,
-        {
-            instanceInfo.materialUniformsBuffer,
-            Vegetation::VegetationMaterialUniforms::BINDING,
-            0,
-            sizeof(Vegetation::VegetationMaterialUniforms),
-            0
-        });
-
-
     ResourceTableSetRWBuffer(instanceInfo.systemResourceTable,
         {
             instanceInfo.meshInfoBuffer,
@@ -305,6 +301,12 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
             0,
             sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
             0
+        });
+
+    ResourceTableSetRWTexture(instanceInfo.systemResourceTable,
+        {
+            instanceInfo.debugTexture,
+            Vegetation::DebugTexture::BINDING
         });
 
     ResourceTableCommitChanges(instanceInfo.systemResourceTable);
@@ -343,10 +345,6 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
 
         ResourceTableCommitChanges(instanceInfo.argumentsTable[i]);
     }
-
-    instanceInfo.heightMap = Terrain::TerrainContext::GetHeightMap(id);
-    Terrain::TerrainContext::GetHeightBounds(id, instanceInfo.minHeight, instanceInfo.maxHeight);
-    Terrain::TerrainContext::GetWorldSize(id, instanceInfo.worldSizeX, instanceInfo.worldSizeZ);
 }
 
 //------------------------------------------------------------------------------
@@ -366,16 +364,19 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     MeshInfo& info = instanceInfo.meshInfos[infoIndex];
     info.used = false;
 
+    info.maskIndex = CoreGraphics::TextureGetBindlessHandle(CoreGraphics::Black2D);
+    info.maskSize[0] = 1;
+    info.maskSize[1] = 1;
     // Load mask, update uniforms when ready
-    Resources::CreateResource(setup.mask, "Vegetation", [&instanceInfo, infoIndex](Resources::ResourceId res)
+    Resources::CreateResource(setup.mask, "Vegetation", [&info, &instanceInfo, infoIndex](Resources::ResourceId res)
     {
-        instanceInfo.materialUniforms.VegetationMasks[infoIndex / 4][infoIndex % 4] =
-            CoreGraphics::TextureGetBindlessHandle(res.resource);
-    }, nullptr, true);
 
-    // Set the mask to black initially
-    instanceInfo.materialUniforms.VegetationMasks[infoIndex / 4][infoIndex % 4] =
-        CoreGraphics::TextureGetBindlessHandle(CoreGraphics::Black2D);
+        info.maskIndex = CoreGraphics::TextureGetBindlessHandle(res.resource);
+        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(res.resource);
+        info.maskSize[0] = dims.width;
+        info.maskSize[1] = dims.height;
+    }, nullptr);
+
 
     Resources::CreateResource(setup.model, "Vegetation", [&info, &instanceInfo, infoIndex](Resources::ResourceId res)
     {
@@ -467,8 +468,6 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
     info.distribution = 0.0f;
 
-
-    CoreGraphics::BufferUpdate(instanceInfo.materialUniformsBuffer, instanceInfo.materialUniforms);
     return infoIndex;
 }
 
@@ -573,7 +572,11 @@ VegetationContext::SetMask(const Graphics::GraphicsEntityId id, uint index, Core
 {
     Graphics::ContextEntityId cid = GetContextId(id.id);
     VegetationInstanceInfo& instanceInfo = vegetationAllocator.Get<Vegetation_InstanceInfo>(cid.id);
-    instanceInfo.materialUniforms.VegetationMasks[index / 4][index % 4] = CoreGraphics::TextureGetBindlessHandle(mask);
+    MeshInfo& info = instanceInfo.meshInfos[index];
+    info.maskIndex = CoreGraphics::TextureGetBindlessHandle(mask);
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(mask);
+    info.maskSize[0] = dims.width;
+    info.maskSize[1] = dims.height;
 }
 
 //------------------------------------------------------------------------------
@@ -596,15 +599,12 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
         uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(instance.heightMap);
         uniforms.WorldSize[0] = instance.worldSizeX;
         uniforms.WorldSize[1] = instance.worldSizeZ;
+        uniforms.WorldPosition[0] = 0;
+        uniforms.WorldPosition[1] = 0;
         uniforms.InvWorldSize[0] = 1.0f / instance.worldSizeX;
         uniforms.InvWorldSize[1] = 1.0f / instance.worldSizeZ;
-        uniforms.GenerateQuadSize[0] = VegetationDistributionRadius;
-        uniforms.GenerateQuadSize[1] = VegetationDistributionRadius;
-        Math::vec4 forwardxz = cameraTransform.z_axis;
-        forwardxz.y = 0.0f;
-        forwardxz = normalize(forwardxz);
-        uniforms.GenerateDirection[0] = forwardxz.x;
-        uniforms.GenerateDirection[1] = forwardxz.z;
+        uniforms.GenerateQuadSize[0] = instance.worldSizeX / VegetationDistributionRadius;
+        uniforms.GenerateQuadSize[1] = instance.worldSizeZ / VegetationDistributionRadius;
         uniforms.DensityFactor = 1.0f;
         uniforms.MinHeight = instance.minHeight;
         uniforms.MaxHeight = instance.maxHeight;
@@ -653,7 +653,6 @@ VegetationContext::Dealloc(Graphics::ContextEntityId id)
 
     for (auto buf : instance.drawCountBuffer)
         CoreGraphics::DestroyBuffer(buf);
-    CoreGraphics::DestroyBuffer(instance.materialUniformsBuffer);
 
     instance.meshInfoPool.Clear();
 

@@ -18,10 +18,10 @@ struct VegetationGenerationData
 {
     CameraPosition : f32x4;
     CameraForward : f32x4;
+	WorldPosition : f32x2;
     WorldSize : f32x2;
     InvWorldSize : f32x2;
     GenerateQuadSize : f32x2;
-    GenerateDirection : f32x2;
     DensityFactor : f32;
     HeightMapSize: f32x2;
     MinHeight : f32;
@@ -40,18 +40,20 @@ group(SYSTEM_GROUP) uniform VegetationGenerateUniforms : *VegetationGenerationDa
 const MAX_MESH_INFOS = 8;
 struct MeshInfo
 {
+    lodIndexOffsets : i32x4;          // hold max 4 lods
+    lodVertexOffsets : i32x4;
+    lodIndexCount : i32x4;
+    lodVertexCount : i32x4;
+    lodDistances : f32x4;
+	maskSize : f32x2;
     numLods : i32;
     vertexCount : i32;
     indexCount : i32;
     distribution : f32;
     slopeThreshold : f32;
     heightThreshold : f32;
-    lodIndexOffsets : i32x4;          // hold max 4 lods
-    lodVertexOffsets : i32x4;
-    lodIndexCount : i32x4;
-    lodVertexCount : i32x4;
-    lodDistances : f32x4;
     materialIndex : u32;
+	maskIndex : u32;
     used : u32;
 };
 
@@ -60,17 +62,9 @@ group(SYSTEM_GROUP) uniform MeshInfos : *[MAX_MESH_INFOS] mutable MeshInfo;
 
 const MAX_VEGETATION_LAYERS = 8;
 
-struct VegetationMaterial
+sampleMask(mask: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
-    VegetationMasks: [MAX_VEGETATION_LAYERS / 4]i32x4;
-};
-
-@Visibility("CS|PS")
-group(SYSTEM_GROUP) uniform VegetationMaterialUniforms : *VegetationMaterial;
-
-sampleMask(type: u32, uniform samp: *sampler, uv: f32x2) f32x4
-{
-    return textureSampleLod(Textures2D[VegetationMaterialUniforms.VegetationMasks[type / 4][type % 4]], samp, uv, 0);
+    return textureSampleLod(Textures2D[mask], samp, uv, 0);
 }
 
 @Visibility("CS")
@@ -103,6 +97,8 @@ group(SYSTEM_GROUP) sampler_state TextureSampler
 {
     Filter = FilterMode.Linear;
 };
+
+group(SYSTEM_GROUP) uniform DebugTexture : *mutable r32f texture2D;
 
 //------------------------------------------------------------------------------
 /**
@@ -147,94 +143,96 @@ SnapToGrid(worldPos : f32x2, gridSize : f32x2) f32x2
 /**
     This shader outputs the draws to be consumed later
 */
-threads_x(64)
+threads_x(32)
+threads_y(32)
 entry_point
 csGenerateDraws() void
 {
     const cameraPos = VegetationGenerateUniforms.CameraPosition.xz;
+	const relativePos = cameraPos - VegetationGenerateUniforms.WorldPosition;
+
     const cameraQuad = VegetationGenerateUniforms.GenerateQuadSize;
-
     const scaleFactor = VegetationGenerateUniforms.DensityFactor;
-    // calculate this fragments position around the camera
-    var worldPos = cameraPos - cameraQuad * 0.5f * scaleFactor + computeGetGlobalThreadIndices().xy * scaleFactor;
-    //vec2 worldPos = cameraPos - sin(computeGetGlobalThreadIndices().x)
 
-    // clamp world position to world grid so we don't move the patches with the camera
-    //worldPos = floor(worldPos);
-    worldPos = SnapToGrid(worldPos, f32x2(scaleFactor));
+    const random = hash12(computeGetWorkgroupIndices().xy + computeGetLocalThreadIndices().xy);
+	const quadWorldStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + VegetationGenerateUniforms.WorldPosition - VegetationGenerateUniforms.WorldSize * 0.5f;
+	const worldSpaceSamplePos = quadWorldStart + random * VegetationGenerateUniforms.GenerateQuadSize;
+	const worldSpaceSamplePosDist = dot(cameraPos - worldSpaceSamplePos, cameraPos - worldSpaceSamplePos);
 
-    // add some random offset to each patch to avoid a perfect grid pattern
-    const random = hash12(worldPos);
-    const randomOffset = f32x2(sin(random * 3.14), cos(random * 3.14));
-    worldPos += randomOffset;
+	// Abort if sample is too far away
+	if (worldSpaceSamplePosDist > VegetationGenerateUniforms.MaxRange)
+	{
+		return;
+	}
 
-    // calculate texture sampling position for masks and such
-    const samplePos = (VegetationGenerateUniforms.WorldSize * 0.5f + worldPos) * VegetationGenerateUniforms.InvWorldSize;
-    const dist = dot(cameraPos - worldPos, cameraPos - worldPos);
+	// Move world space pos back to (0.. WorldSize]
+	const localSpaceSamplePos = worldSpaceSamplePos - VegetationGenerateUniforms.WorldPosition + VegetationGenerateUniforms.WorldSize * 0.5f;
 
-    // cut-off circle
-    if (dist < VegetationGenerateUniforms.MaxRange)
+	// Normalize to (0..1)
+	const sampleSpacePos = localSpaceSamplePos * VegetationGenerateUniforms.InvWorldSize;
+
+    // load height map
+    var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, 0).r;
+    height = VegetationGenerateUniforms.MinHeight + height * (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight);
+
+    const pos = f32x3(worldSpaceSamplePos.x, height, worldSpaceSamplePos.y);
+    const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
+    const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
+
+    if angle < VegetationGenerateUniforms.Fov { return; }
+
+    const pixel = sampleSpacePos * VegetationGenerateUniforms.HeightMapSize;
+    const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
+
+    const offset = i32x3(-1, 1, 0);
+    const normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
+
+    // go through mesh types and generate uniforms and draws
+    for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
     {
-        // load height map
-        var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, samplePos, 0).r;
-        height = VegetationGenerateUniforms.MinHeight + height * (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight);
+        const meshInfo = bufferLoad(MeshInfos, i);
 
-        const pos = f32x3(worldPos.x, height, worldPos.y);
-        const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
-        const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
+        if !meshInfo.used { continue; }
 
-        if angle < VegetationGenerateUniforms.Fov { return; }
+        // calculate rules
+        const heightCutoff = height < meshInfo.heightThreshold;
+        const angleCutoff = dot(normal, f32x3(0, 1, 0)) > meshInfo.slopeThreshold;
 
-        const pixel = samplePos * VegetationGenerateUniforms.HeightMapSize;
-        const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
-
-        const offset = i32x3(-1, 1, 0);
-        const normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
-
-        // go through mesh types and generate uniforms and draws
-        for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
+        const mask = sampleMask(meshInfo.maskIndex, PointSampler, sampleSpacePos).r;
+        var lod = meshInfo.numLods - 1;
+        for (var j = 0; j < meshInfo.numLods; j++)
         {
-            const meshInfo = bufferLoad(MeshInfos, i);
-
-            if !meshInfo.used { continue; }
-
-            // calculate rules
-            const heightCutoff = height < meshInfo.heightThreshold;
-            const angleCutoff = dot(normal, f32x3(0, 1, 0)) > meshInfo.slopeThreshold;
-
-            const mask = sampleMask(i, PointSampler, samplePos).r;
-            var lod = meshInfo.numLods - 1;
-            for (var j = 0; j < meshInfo.numLods; j++)
+            if (meshInfo.lodDistances[j] > dot(cameraToPos, cameraToPos))
             {
-                if (meshInfo.lodDistances[j] > dot(cameraToPos, cameraToPos))
-                {
-                    lod = j;
-                    break;
-                }
+                lod = j;
+                break;
             }
+        }
 
-            if (random > meshInfo.distribution && heightCutoff && angleCutoff)
-            {
-                const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
+		textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i, 0, 0, 0));
 
-                var instanceUniform : InstanceUniforms;
-                instanceUniform.position.xz = worldPos;
-                instanceUniform.position.y = height;
-                instanceUniform.random = random;
-                instanceUniform.sincos.x = randomOffset.x;
-                instanceUniform.sincos.y = randomOffset.y;
-                instanceUniform.materialIndex = meshInfo.materialIndex;
-                instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
-                bufferStore(InstanceMeshArguments, entry, instanceUniform);
+        if (heightCutoff && angleCutoff)
+        {
+            const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
 
-                var command : DrawIndexedCommand;
-                command.indexCount = u32(meshInfo.lodIndexCount[lod]);
-                command.instanceCount = 1u;
-                command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
-                command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
-                command.startInstance = entry;  // pretend to use instancing
-                bufferStore(IndirectMeshDrawBuffer, entry + i * MAX_MESH_INFOS, command);
-            }
+            var instanceUniform : InstanceUniforms;
+            instanceUniform.position.xz = worldSpaceSamplePos;
+            instanceUniform.position.y = height;
+            instanceUniform.random = random;
+			const randomOffset = f32x2(sin(random * 3.14), cos(random * 3.14));
+            instanceUniform.sincos.x = randomOffset.x;
+            instanceUniform.sincos.y = randomOffset.y;
+            instanceUniform.materialIndex = meshInfo.materialIndex;
+            instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
+            bufferStore(InstanceMeshArguments, entry, instanceUniform);
+
+            var command : DrawIndexedCommand;
+            command.indexCount = u32(meshInfo.lodIndexCount[lod]);
+            command.instanceCount = 1u;
+            command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
+            command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
+            command.startInstance = entry;  // pretend to use instancing
+            bufferStore(IndirectMeshDrawBuffer, entry + i * MAX_MESH_INFOS, command);
         }
     }
 }
