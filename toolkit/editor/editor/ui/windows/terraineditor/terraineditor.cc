@@ -118,7 +118,7 @@ struct
     Util::Array<Terrain::BiomeSettings> biomeSettings;
     Util::Array<EditorVegetationMesh> vegetationMeshes;
 
-    CoreGraphics::TextureId activePaintMask;
+    CoreGraphics::TextureId activeHeightMap, activeBiomeMask, activeVegetationMask;
 
     CoreGraphics::CmdBufferPoolId cmdPool;
 } terrainEditorState;
@@ -363,7 +363,7 @@ TerrainEditor::Run(SaveMode save)
         IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
 
         const IO::Path heightMapPath = IO::Path::File(basePath, heightmapName, "tex");
-        CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activePaintMask, CoreGraphics::PipelineStage::AllShadersRead);
+        CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
         CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
         CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, heightMapPath.WorkURI("assets"));
         CoreGraphics::DestroyImage(image);
@@ -417,19 +417,19 @@ TerrainEditor::Run(SaveMode save)
         Util::FixedArray<uint8_t> data(selectedTerrainResource.world_size_x * selectedTerrainResource.world_size_z, 0);
         texInfo.data = (const void*)data.Back();
         texInfo.dataSize = data.ByteSize();
-        terrainEditorState.activePaintMask = CoreGraphics::CreateTexture(texInfo);
+        terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
 
         terrainEditorState.brushUniforms.heightmapSize[0] = selectedTerrainResource.world_size_x;
         terrainEditorState.brushUniforms.heightmapSize[1] = selectedTerrainResource.world_size_z;
 
         CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-            terrainEditorState.activePaintMask, Terrainbrush::OutputHeight::BINDING
+            terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
         });
 
         CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
         // Load heightmap for copying to our editable resource
-        Resources::ResourceId heightMapRes = Resources::CreateResource(IO::Path::FolderAndFile("tex", selectedTerrainResource.height_map), "editor", [heightMap = terrainEditorState.activePaintMask](const Resources::ResourceId id)
+        Resources::ResourceId heightMapRes = Resources::CreateResource(IO::Path::FolderAndFile("tex", selectedTerrainResource.height_map), "editor", [heightMap = terrainEditorState.activeHeightMap](const Resources::ResourceId id)
         {
             // Copy over data from resource to our editable texture
             CoreGraphics::TextureId source = id;
@@ -477,7 +477,7 @@ TerrainEditor::Run(SaveMode save)
             CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::GraphicsQueueType);
 
 
-        }, nullptr, true, false);
+        }, nullptr, false, false);
 
         for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
         {
@@ -605,9 +605,7 @@ TerrainEditor::Run(SaveMode save)
         Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
     }
 
-    Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activePaintMask);
-
-
+    Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
 
     if (ImGui::CollapsingHeader("Terrain Generation"))
     {
@@ -658,11 +656,11 @@ TerrainEditor::Run(SaveMode save)
     }
     if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (terrainEditorState.activePaintMask != CoreGraphics::InvalidTextureId)
+        if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
         {
             static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
             Dynui::ImguiTextureId textureInfo;
-            textureInfo.nebulaHandle = terrainEditorState.activePaintMask.id;
+            textureInfo.nebulaHandle = terrainEditorState.activeHeightMap.id;
             textureInfo.mip = 0;
             textureInfo.layer = 0;
             textureInfo.rangeMin = selectedTerrainResource.min_height;
@@ -678,10 +676,10 @@ TerrainEditor::Run(SaveMode save)
 
         if (ImGui::Button("New Heightmap"))
         {
-            if (terrainEditorState.activePaintMask != CoreGraphics::InvalidTextureId)
+            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
             {
-                CoreGraphics::DestroyTexture(terrainEditorState.activePaintMask);
-                terrainEditorState.activePaintMask = CoreGraphics::InvalidTextureId;
+                CoreGraphics::DestroyTexture(terrainEditorState.activeHeightMap);
+                terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
             }
 
             CoreGraphics::TextureCreateInfo texInfo;
@@ -690,20 +688,20 @@ TerrainEditor::Run(SaveMode save)
             texInfo.height = selectedTerrainResource.world_size_z;
             texInfo.format = CoreGraphics::PixelFormat::R16;
             texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferSource;
-            terrainEditorState.activePaintMask = CoreGraphics::CreateTexture(texInfo);
-            Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activePaintMask);
+            terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
+            Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
 
             terrainEditorState.brushUniforms.heightmapSize[0] = selectedTerrainResource.world_size_x;
             terrainEditorState.brushUniforms.heightmapSize[1] = selectedTerrainResource.world_size_z;
 
             CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-                terrainEditorState.activePaintMask, Terrainbrush::OutputHeight::BINDING
+                terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
             });
 
             CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
         }
 
-        if (terrainEditorState.activePaintMask != CoreGraphics::InvalidTextureId)
+        if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
         {
             if (drawModeButton("Raise", terrainEditorState.brushUniforms.mode, Terrainbrush::Raise))
             {
@@ -797,7 +795,7 @@ TerrainEditor::Run(SaveMode save)
             Dynui::ImguiTextureId imguiTex {.nebulaHandle = textures.maskTex, .splat = true};
             textures.imguiMaskId = Dynui::AllocateImguiTextureId(imguiTex);
 
-            terrainEditorState.activePaintMask = textures.maskTex;
+            terrainEditorState.activeBiomeMask = textures.maskTex;
             Terrain::TerrainContext::SetBiomeMask(terrainComponent.graphicsEntityId, biome, textures.maskTex);
 
             for (int i = 0; i < 4; i++)
@@ -836,9 +834,9 @@ TerrainEditor::Run(SaveMode save)
         {
             auto biomeId = terrainEditorState.biomes[selectedBiome];
             auto& biomeSettings = terrainEditorState.biomeSettings[selectedBiome];
-            terrainEditorState.activePaintMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
+            terrainEditorState.activeBiomeMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
             CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-                terrainEditorState.activePaintMask, Terrainbrush::OutputMask::BINDING
+                terrainEditorState.activeBiomeMask, Terrainbrush::OutputMask::BINDING
             });
             CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
 
@@ -981,12 +979,14 @@ TerrainEditor::Run(SaveMode save)
         {
             selectedTerrainResource.vegetation.push_back(std::make_unique<Render::VegetationMeshT>());
             selectedTerrainResource.vegetation.back()->name = Util::Format("New Plant %d", selectedTerrainResource.vegetation.size());
+            selectedTerrainResource.vegetation.back()->model = IO::Path::File("mdl", "system", "box").AsString();
 
             uint index = Vegetation::VegetationContext::SetupMesh(terrainComponent.graphicsEntityId, {});
             selectedVegetationMesh = index;
 
             terrainEditorState.vegetationMeshes.Append(EditorVegetationMesh{});
             EditorVegetationMesh& mesh = terrainEditorState.vegetationMeshes.Back();
+            mesh.model = IO::Path::File("mdl", "system", "box");
 
             // Create new mask
             CoreGraphics::TextureCreateInfo maskTexInfo;
@@ -1034,9 +1034,9 @@ TerrainEditor::Run(SaveMode save)
                 });
             }
 
-            terrainEditorState.activePaintMask = terrainEditorState.vegetationMeshes[selectedVegetationMesh].maskTex;
+            terrainEditorState.activeVegetationMask = terrainEditorState.vegetationMeshes[selectedVegetationMesh].maskTex;
             CoreGraphics::ResourceTableSetRWTexture(
-                terrainEditorState.brushResourceTable, {terrainEditorState.activePaintMask, Terrainbrush::OutputMask::BINDING}
+                terrainEditorState.brushResourceTable, {terrainEditorState.activeVegetationMask, Terrainbrush::OutputMask::BINDING}
             );
             CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
         }

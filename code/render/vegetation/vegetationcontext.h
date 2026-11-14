@@ -97,8 +97,7 @@ private:
         CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
         CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
 
-        Vegetation::VegetationMaterialUniforms::STRUCT materialUniforms;
-        CoreGraphics::BufferId materialUniformsBuffer;
+        CoreGraphics::TextureId debugTexture;
     };
 
     enum
