@@ -254,7 +254,8 @@ GraphicsFeatureUnit::OnActivate()
         PostEffects::HistogramContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
         Lighting::LightContext::OnPrepareView,
-        ::Terrain::TerrainContext::CullPatches
+        ::Terrain::TerrainContext::CullPatches,
+        Vegetation::VegetationContext::UpdateViewResources
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =
