@@ -291,7 +291,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
             instanceInfo.systemUniforms,
             Vegetation::VegetationGenerateUniforms::BINDING,
             0,
-            sizeof(Vegetation::VegetationGenerateUniforms),
+            sizeof(Vegetation::VegetationGenerateUniforms::STRUCT),
             0
         });
 
