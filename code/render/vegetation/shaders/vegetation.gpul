@@ -36,7 +36,6 @@ struct VegetationGenerationData
 @Visibility("CS")
 group(SYSTEM_GROUP) uniform VegetationGenerateUniforms : *VegetationGenerationData;
 
-
 const MAX_MESH_INFOS = 8;
 struct MeshInfo
 {
