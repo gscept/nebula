@@ -292,13 +292,26 @@ SetupTexture(const TextureId id)
         createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     if (loadInfo.sparse)
         createFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
-    if (loadInfo.allowCast)
+    if (!loadInfo.castFormats.IsEmpty())
         createFlags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
+
+    Util::FixedArray<VkFormat> formats(1 + loadInfo.castFormats.Size());
+    formats[0] = vkformat;
+    for (IndexT i = 1; i < formats.Size(); i++)
+    {
+        formats[i] = VkTypes::AsVkFormat(loadInfo.castFormats[i-1]);
+    }
+    VkImageFormatListCreateInfo aliasFormats
+    {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
+        .viewFormatCount = (uint)formats.Size(),
+        .pViewFormats = formats.Begin()
+    };
 
     VkImageCreateInfo imgInfo =
     {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        nullptr,
+        &aliasFormats,
         createFlags,
         type,
         vkformat,
@@ -429,7 +442,7 @@ SetupTexture(const TextureId id)
     VkFormatFeatureFlags supportedFlags = formatProps.optimalTilingFeatures & flags;
 
     // Remove usage bits which are not supported by the format if we intend to cast
-    if (loadInfo.allowCast && flags != supportedFlags)
+    if (!loadInfo.castFormats.IsEmpty() && flags != supportedFlags)
     {
         constexpr uint UsageLookup[] =
         {
@@ -647,7 +660,7 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
-    loadInfo.allowCast = info.allowCast;
+    loadInfo.castFormats = info.castFormats;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;
@@ -708,7 +721,7 @@ RecreateTexture(const TextureId& id, const TextureCreateInfo& info)
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
-    loadInfo.allowCast = info.allowCast;
+    loadInfo.castFormats = info.castFormats;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;

@@ -1030,7 +1030,7 @@ TerrainContext::SetupTerrain(
     albedoCacheInfo.height = PhysicalTexturePaddedSize;
     albedoCacheInfo.format = CoreGraphics::PixelFormat::BC3;
     albedoCacheInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
-    albedoCacheInfo.allowCast = true;
+    albedoCacheInfo.castFormats = { CoreGraphics::PixelFormat::R32G32B32A32 };
     instanceInfo.physicalAlbedoCacheBC = CoreGraphics::CreateTexture(albedoCacheInfo);
 
     CoreGraphics::TextureViewCreateInfo albedoCacheWriteInfo;
@@ -1044,9 +1044,9 @@ TerrainContext::SetupTerrain(
     normalCacheInfo.name = "Terrain Cache Normals"_atm;
     normalCacheInfo.width = PhysicalTexturePaddedSize;
     normalCacheInfo.height = PhysicalTexturePaddedSize;
-    normalCacheInfo.format = CoreGraphics::PixelFormat::BC3;
+    normalCacheInfo.format = CoreGraphics::PixelFormat::BC5;
     normalCacheInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
-    normalCacheInfo.allowCast = true;
+    normalCacheInfo.castFormats = { CoreGraphics::PixelFormat::R32G32B32A32 };
     instanceInfo.physicalNormalCacheBC = CoreGraphics::CreateTexture(normalCacheInfo);
 
     CoreGraphics::TextureViewCreateInfo normalCacheWriteInfo;
@@ -1062,7 +1062,7 @@ TerrainContext::SetupTerrain(
     materialCacheInfo.height = PhysicalTexturePaddedSize;
     materialCacheInfo.format = CoreGraphics::PixelFormat::BC3;
     materialCacheInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
-    materialCacheInfo.allowCast = true;
+    materialCacheInfo.castFormats = { CoreGraphics::PixelFormat::R32G32B32A32 };
     instanceInfo.physicalMaterialCacheBC = CoreGraphics::CreateTexture(materialCacheInfo);
 
     CoreGraphics::TextureViewCreateInfo materialCacheWriteInfo;
