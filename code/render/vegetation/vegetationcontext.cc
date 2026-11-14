@@ -38,6 +38,7 @@ struct
 
 } vegetationState;
 
+static const uint VegetationGridSize = 32;
 static const uint VegetationDistributionRadius = 128;
 static const uint MaxNumIndirectDraws = 8192;
 
@@ -111,8 +112,8 @@ VegetationContext::Create()
             CmdSetResourceTable(cmdBuf, instance.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
             CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
-            uint groupsX = instance.worldSizeX / VegetationDistributionRadius;
-            uint groupsY = instance.worldSizeZ / VegetationDistributionRadius;
+            uint groupsX = instance.worldSizeX / VegetationGridSize;
+            uint groupsY = instance.worldSizeZ / VegetationGridSize;
             CmdDispatch(cmdBuf, groupsX, groupsY, 1);
 
             CmdBarrier(cmdBuf, PipelineStage::ComputeShaderWrite, PipelineStage::Indirect, BarrierDomain::Global,
@@ -218,7 +219,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     CoreGraphics::BufferCreateInfo meshInfo;
     meshInfo.name = "Vegetation Mesh Info";
     meshInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
-    meshInfo.mode = CoreGraphics::DeviceLocal;
+    meshInfo.mode = CoreGraphics::DeviceAndHost;
     meshInfo.elementSize = sizeof(Vegetation::MeshInfo);
     meshInfo.size = Vegetation::MAX_MESH_INFOS;
     meshInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
@@ -585,14 +586,17 @@ VegetationContext::SetMask(const Graphics::GraphicsEntityId id, uint index, Core
 void
 VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
     Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(ViewGetCamera(view));
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
     VegetationGenerateUniforms::STRUCT uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
     cameraTransform.z_axis.store(uniforms.CameraForward);
 
-    const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
-    for (auto instance : instances)
+    Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
+    for (auto& instance : instances)
     {
         uniforms.NumMeshInfos = instance.meshInfoPool.GetNumUsed();
 
@@ -603,8 +607,8 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
         uniforms.WorldPosition[1] = 0;
         uniforms.InvWorldSize[0] = 1.0f / instance.worldSizeX;
         uniforms.InvWorldSize[1] = 1.0f / instance.worldSizeZ;
-        uniforms.GenerateQuadSize[0] = instance.worldSizeX / VegetationDistributionRadius;
-        uniforms.GenerateQuadSize[1] = instance.worldSizeZ / VegetationDistributionRadius;
+        uniforms.GenerateQuadSize[0] = VegetationGridSize;
+        uniforms.GenerateQuadSize[1] = VegetationGridSize;
         uniforms.DensityFactor = 1.0f;
         uniforms.MinHeight = instance.minHeight;
         uniforms.MaxHeight = instance.maxHeight;
@@ -615,6 +619,7 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
 
         // update uniform buffer
         CoreGraphics::BufferUpdate(instance.systemUniforms, uniforms);
+        CoreGraphics::BufferFlush(instance.systemUniforms);
 
         // update mesh and grass info buffer
         CoreGraphics::BufferUpdateArray(instance.meshInfoBuffer, instance.meshInfos, Vegetation::MAX_MESH_INFOS);

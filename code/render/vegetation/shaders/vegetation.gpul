@@ -21,9 +21,9 @@ struct VegetationGenerationData
 	WorldPosition : f32x2;
     WorldSize : f32x2;
     InvWorldSize : f32x2;
-    GenerateQuadSize : f32x2;
-    DensityFactor : f32;
+    GenerateQuadSize : i32x2;
     HeightMapSize: f32x2;
+    DensityFactor : f32;
     MinHeight : f32;
     MaxHeight : f32;
     HeightMap: u32;
@@ -154,7 +154,7 @@ csGenerateDraws() void
     const cameraQuad = VegetationGenerateUniforms.GenerateQuadSize;
     const scaleFactor = VegetationGenerateUniforms.DensityFactor;
 
-    const random = hash12(computeGetWorkgroupIndices().xy + computeGetLocalThreadIndices().xy);
+    const random = hash32(computeGetWorkgroupIndices().xy + computeGetLocalThreadIndices().xy).xy;
 	const quadWorldStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + VegetationGenerateUniforms.WorldPosition - VegetationGenerateUniforms.WorldSize * 0.5f;
 	const worldSpaceSamplePos = quadWorldStart + random * VegetationGenerateUniforms.GenerateQuadSize;
 	const worldSpaceSamplePosDist = dot(cameraPos - worldSpaceSamplePos, cameraPos - worldSpaceSamplePos);
@@ -170,6 +170,9 @@ csGenerateDraws() void
 
 	// Normalize to (0..1)
 	const sampleSpacePos = localSpaceSamplePos * VegetationGenerateUniforms.InvWorldSize;
+
+	const quadLocalStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + random * VegetationGenerateUniforms.GenerateQuadSize;
+		textureStore(DebugTexture, i32x2(quadLocalStart), f32x4(1, 0, 0, 0));
 
     // load height map
     var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, 0).r;
@@ -209,7 +212,6 @@ csGenerateDraws() void
             }
         }
 
-		textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i, 0, 0, 0));
 
         if (heightCutoff && angleCutoff)
         {
@@ -218,8 +220,8 @@ csGenerateDraws() void
             var instanceUniform : InstanceUniforms;
             instanceUniform.position.xz = worldSpaceSamplePos;
             instanceUniform.position.y = height;
-            instanceUniform.random = random;
-			const randomOffset = f32x2(sin(random * 3.14), cos(random * 3.14));
+            instanceUniform.random = random.x;
+			const randomOffset = f32x2(sin(random.x * 3.14), cos(random.x * 3.14));
             instanceUniform.sincos.x = randomOffset.x;
             instanceUniform.sincos.y = randomOffset.y;
             instanceUniform.materialIndex = meshInfo.materialIndex;
