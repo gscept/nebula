@@ -107,7 +107,7 @@ namespace Nebula
         internal HotReloadState PrepareMigration(GamePluginContext replacement)
         {
             HotReloadState state = new HotReloadState(this.assembly, replacement.assembly);
-            state.PrepareProperties(Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD));
+            state.PrepareProperties();
             state.Migrate(this.plugin, replacement.plugin, this.application, replacement.application);
             return state;
         }
@@ -148,7 +148,7 @@ namespace Nebula
             {
                 TryCleanup(Runtime.Close, "application shutdown");
                 TryCleanup(() => this.plugin.OnUnload(), "plugin unload");
-                TryCleanup(() => Nebula.Game.World.Get(Nebula.Game.World.DEFAULT_WORLD).ClearProperties(), "property detach");
+                TryCleanup(Nebula.Game.World.ClearAllProperties, "property detach");
                 TryCleanup(Game.PropertyManager.Instance.Clear, "property manager cleanup");
                 TryCleanup(() => Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly), "component cleanup");
                 TryCleanup(Runtime.ResetNebulaApp, "application reset");

@@ -96,6 +96,28 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// The worlds the managed runtime has seen. A native world the plugin has not looked at
+            /// is not in here, and cannot hold a managed property.
+            /// </summary>
+            internal static IReadOnlyCollection<World> AllWorlds()
+            {
+                return worlds.Values;
+            }
+
+            /// <summary>
+            /// Detaches properties from every world the managed runtime knows about. A property can
+            /// only be attached from C#, so the worlds the runtime has seen are the only ones that
+            /// can hold one.
+            /// </summary>
+            internal static void ClearAllProperties()
+            {
+                foreach (World world in AllWorlds())
+                {
+                    world.ClearProperties();
+                }
+            }
+
             public void DeregisterEntity(Entity entity)
             {
                 this.entities.EraseSwap(entity);
@@ -153,6 +175,25 @@ namespace Nebula
                         i--;
                     }
                 }
+            }
+
+            /// <summary>
+            /// Drops the world on the managed side. Called when the native world is destroyed
+            /// </summary>
+            public void Clear()
+            {
+                // the slot the world lived in can be taken by the next world, and a new world starting from index 0 with
+                // generation 0 produces the same entity ids. Nothing is deleted through the api here,
+                // since the native entities are gone with the world.
+
+                for (int i = 0; i < this.entities.Count; i++)
+                {
+                    this.entities[i].Detach();
+                }
+
+                this.entities.Clear();
+                this.entityMap.Clear();
+                worlds.Remove(this.id);
             }
         }
     }

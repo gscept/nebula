@@ -87,10 +87,9 @@ namespace Nebula
             catch (Exception exception)
             {
                 Console.Error.WriteLine("[NSharp] Full hot reload failed: " + exception);
-                if (this.gamePlugin != null)
-                {
-                    this.RequestReload(path, force);
-                }
+
+                // Remember the build that failed
+                this.RememberBuild(path);
             }
         }
 

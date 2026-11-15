@@ -40,6 +40,67 @@ GetComponentEntityIdForManaged()
     return componentEntityForManaged;
 }
 
+// The managed side mirrors a world it did not create, so the test runner creates and destroys one
+// and hands the id to the managed test. This is the editor case: worlds are authored in C++.
+static Game::WorldHash testWorldHash;
+
+NEBULA_EXPORT uint32_t
+CreateTestWorld()
+{
+    testWorldHash = Game::WorldHash{9999};
+    Game::World* world = Game::GameServer::Instance()->CreateWorld(testWorldHash);
+    return uint32_t(world->GetWorldId());
+}
+
+NEBULA_EXPORT void
+DestroyTestWorld()
+{
+    Game::GameServer::Instance()->DestroyWorld(testWorldHash);
+}
+
+// How many times the managed property's OnBeginFrame and OnMessage run. A property that belongs
+// to a retired plugin assembly must not keep being called after a reload, so the test counts the
+// calls against the per-instance state the property itself keeps.
+static int propertyFrameCalls = 0;
+static int propertyMessageCalls = 0;
+static int loadAttempts = 0;
+
+NEBULA_EXPORT void
+RecordLoadAttempt()
+{
+    loadAttempts++;
+}
+
+NEBULA_EXPORT int
+GetLoadAttempts()
+{
+    return loadAttempts;
+}
+
+NEBULA_EXPORT void
+RecordPropertyFrameCall()
+{
+    propertyFrameCalls++;
+}
+
+NEBULA_EXPORT void
+RecordPropertyMessageCall()
+{
+    propertyMessageCalls++;
+}
+
+NEBULA_EXPORT int
+GetPropertyFrameCalls()
+{
+    return propertyFrameCalls;
+}
+
+NEBULA_EXPORT int
+GetPropertyMessageCalls()
+{
+    return propertyMessageCalls;
+}
+
 typedef struct _Vector2
 {
     float x;
@@ -193,7 +254,8 @@ NSharpTest::Run()
     VERIFY(testArrayOfVec3Result);
     VERIFY(testArrayOfVec4Result);
 
-    for (IndexT i = 0; i < 6; i++)
+    // One frame per sync phase, then the reloads, the failed reload and the verification after them
+    for (IndexT i = 0; i < 13; i++)
         StepFrame();
     StepFrame();
     StepFrame();

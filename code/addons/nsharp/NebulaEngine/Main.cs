@@ -294,5 +294,21 @@ namespace NebulaEngine
             world.CollectGarbage();
             return 0;
         }
+
+        /// <summary>
+        /// Called by the script feature unit when a world is destroyed.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int ClearWorld(uint worldId)
+        {
+            World world = World.Get(worldId);
+            if (world == null)
+            {
+                return 0;
+            }
+
+            world.Clear();
+            return 0;
+        }
     }
 }

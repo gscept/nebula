@@ -16,8 +16,9 @@ __ImplementSingleton(ScriptFeatureUnit);
 
 // Managed entry points that take a blittable argument. The pointers are resolved once at activation
 // and cached here, which keeps the per-frame flush from doing a dictionary lookup.
-typedef int(CORECLR_DELEGATE_CALLTYPE* FlushEntitiesFn)(void*, int);
+typedef int(CORECLR_DELEGATE_CALLTYPE* FlushEntityCreateQueueFn)(void*, int);
 typedef int(CORECLR_DELEGATE_CALLTYPE* CollectGarbageFn)(uint32_t);
+typedef int(CORECLR_DELEGATE_CALLTYPE* ClearWorldFn)(uint32_t);
 
 //------------------------------------------------------------------------------
 /**
@@ -32,8 +33,10 @@ ScriptFeatureUnit::ScriptFeatureUnit() :
     reloadEntry("NebulaEngine.AppEntry::RequestReload()"),
     flushEntityCreateQueueEntry("NebulaEngine.AppEntry::FlushEntityCreateQueue()"),
     collectGarbageEntry("NebulaEngine.AppEntry::CollectGarbage()"),
+    clearWorldEntry("NebulaEngine.AppEntry::ClearWorld()"),
     flushEntityCreates(nullptr),
-    collectGarbage(nullptr)
+    collectGarbage(nullptr),
+    clearWorld(nullptr)
 {
     __ConstructSingleton;
 }
@@ -146,6 +149,7 @@ ScriptFeatureUnit::OnActivate()
 
         this->flushEntityCreates = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->flushEntityCreateQueueEntry);
         this->collectGarbage = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->collectGarbageEntry);
+        this->clearWorld = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->clearWorldEntry);
 
         // Worlds that already exist when the feature unit is attached are not reported by
         // OnWorldCreated, so mirror them here.
@@ -181,6 +185,7 @@ ScriptFeatureUnit::OnDeactivate()
     this->entityCreateQueue.Clear();
     this->flushEntityCreates = nullptr;
     this->collectGarbage = nullptr;
+    this->clearWorld = nullptr;
 
     if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
     {
@@ -222,6 +227,26 @@ ScriptFeatureUnit::OnWorldCreated(Game::World* world)
 /**
 */
 void
+ScriptFeatureUnit::OnWorldDestroyed(Game::World* world)
+{
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid() || world == nullptr)
+    return;
+
+    // A world id is a slot that the next world can take, so the mirror has to be dropped when the world
+    // goes. Otherwise the entities of the destroyed world would still resolve against the recycled slot,
+    // and a new world starting from index 0 generation 0 would produce the same ids.
+
+    uint32_t worldId = world->GetWorldId();
+    this->worldEntityCounts.Erase(worldId);
+
+    if (this->clearWorld != nullptr)
+        ((ClearWorldFn)this->clearWorld)(worldId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ScriptFeatureUnit::OnBeginFrame()
 {
     if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
@@ -257,7 +282,7 @@ ScriptFeatureUnit::OnBeginFrame()
         }
 
         if (numValid > 0)
-            ((FlushEntitiesFn)this->flushEntities)(this->entityQueue.Begin(), (int)numValid);
+            ((FlushEntityCreateQueueFn)this->flushEntityCreates)(this->entityCreateQueue.Begin(), (int)numValid);
 
         this->entityCreateQueue.Clear();
     }

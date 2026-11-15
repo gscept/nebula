@@ -14,26 +14,27 @@ namespace Nebula
             internal bool Active;
         }
 
-        internal void PrepareProperties(Nebula.Game.World world)
+        internal void PrepareProperties()
         {
-            if (world == null)
+            // A property can only be attached from C#, so the worlds the runtime has seen are the
+            // ones that can hold one. The plugin is not limited to the default world, since the
+            // native side mirrors every world it creates into the managed one.
+            foreach (Nebula.Game.World world in Nebula.Game.World.AllWorlds())
             {
-                return;
-            }
-
-            List<Nebula.Game.Entity> entities = world.GetEntities();
-            for (int entityIndex = 0; entityIndex < entities.Count; entityIndex++)
-            {
-                Nebula.Game.Entity entity = entities[entityIndex];
-                List<Nebula.Game.Property> oldProperties = entity.GetProperties();
-                if (oldProperties == null)
+                List<Nebula.Game.Entity> entities = world.GetEntities();
+                for (int entityIndex = 0; entityIndex < entities.Count; entityIndex++)
                 {
-                    continue;
-                }
+                    Nebula.Game.Entity entity = entities[entityIndex];
+                    List<Nebula.Game.Property> oldProperties = entity.GetProperties();
+                    if (oldProperties == null)
+                    {
+                        continue;
+                    }
 
-                for (int propertyIndex = 0; propertyIndex < oldProperties.Count; propertyIndex++)
-                {
-                    this.PrepareProperty(entity, oldProperties[propertyIndex]);
+                    for (int propertyIndex = 0; propertyIndex < oldProperties.Count; propertyIndex++)
+                    {
+                        this.PrepareProperty(entity, oldProperties[propertyIndex]);
+                    }
                 }
             }
         }

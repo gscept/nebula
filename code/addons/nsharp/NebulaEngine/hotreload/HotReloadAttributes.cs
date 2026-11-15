@@ -6,9 +6,6 @@ namespace Nebula
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Delegate | AttributeTargets.Enum, Inherited = false)]
     public sealed class ExportTypeAttribute : Attribute { }
 
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
-    public sealed class ExportAttribute : Attribute { }
-
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
     public sealed class NoHotReloadAttribute : Attribute { }
 

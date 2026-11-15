@@ -39,6 +39,7 @@ public:
     void OnDeactivate() override;
     void OnStart(Game::World* world) override;
     void OnWorldCreated(Game::World* world) override;
+    void OnWorldDestroyed(Game::World* world) override;
     void OnBeginFrame() override;
     void OnFrame() override;
     void OnEndFrame() override;
@@ -71,6 +72,7 @@ private:
     // up through hostfxr every frame.
     void* flushEntityCreates;
     void* collectGarbage;
+    void* clearWorld;
 
     // Cached entry point names. The server caches the resolved pointers, these are kept as members so the
     // frame callbacks do not build a Util::String from a literal every frame.
@@ -82,6 +84,7 @@ private:
     Util::String reloadEntry;
     Util::String flushEntityCreateQueueEntry;
     Util::String collectGarbageEntry;
+    Util::String clearWorldEntry;
 };
 
 } // namespace Scripting

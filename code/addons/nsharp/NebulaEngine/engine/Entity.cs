@@ -269,22 +269,18 @@ namespace Nebula
                 }
 
                 Api.DeleteEntity(entity.id);
-                entity.id = 0xFFFFFFFFFFFFFFFF;
+                entity.Detach();
+            }
 
-                if (entity.properties == null)
-                {
-                    return;
-                }
-
-                for (int i = 0; i < entity.properties.Count; i++)
-                {
-                    Property property = entity.properties[i];
-                    PropertyManager.Instance.UnregisterProperty(property);
-                    property.DetachMessages();
-                    property.Destroy();
-                }
-
-                entity.properties.Clear();
+            /// <summary>
+            /// Release the managed side of the entity without touching the native one. Used when the
+            /// world the entity belongs to goes away, because the native entities are gone with it and
+            /// there is nothing left to delete through the api.
+            /// </summary>
+            internal void Detach()
+            {
+                this.id = 0xFFFFFFFFFFFFFFFF;
+                this.ClearProperties();
             }
 
             /// <summary>

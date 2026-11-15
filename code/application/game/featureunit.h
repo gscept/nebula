@@ -63,6 +63,8 @@ public:
     /// called from within GameServer::CreateWorld()
     /// Worlds created before the feature is attached are reported by OnStart() instead.
     virtual void OnWorldCreated(World* world);
+    /// called from within GameServer::DestroyWorld() before the world is deleted
+    virtual void OnWorldDestroyed(World* world);
     /// called from within GameServer::Save()
     virtual void OnSave(World* world);
 

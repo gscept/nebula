@@ -37,6 +37,15 @@ namespace NST
     {
         public void OnLoad(GamePluginContext context)
         {
+            Tests.RecordLoadAttempt();
+
+            // The fourth attempt is the one the test drives on purpose. It has to fail once, and the
+            // manager must not keep retrying the same build on the frames after it.
+            if (Tests.GetLoadAttempts() == 4)
+            {
+                throw new InvalidOperationException("Simulated broken build");
+            }
+
             context.SetApplication(new TestApp());
         }
 
@@ -80,10 +89,10 @@ namespace NST
         public ReloadMode mode = ReloadMode.Second;
         public ValueTuple<ExportedState, int> stateTuple;
         public ExportedStruct? optionalState;
-        [Export]
         private int privateValue = 42;
         [NoHotReload]
         public int resetValue = 42;
+        private int messageCallsAtPrepare;
 
         public TestProperty()
         {
@@ -110,6 +119,7 @@ namespace NST
             this.privateValue = 99;
             this.resetValue = 99;
             this.entityReference = this.Entity;
+            this.messageCallsAtPrepare = Tests.GetPropertyMessageCalls();
         }
 
         public void VerifyReloadState()
@@ -139,11 +149,18 @@ namespace NST
             Tests.Verify(this.optionalState.HasValue && Object.ReferenceEquals(this.state, this.optionalState.Value.State) && this.optionalState.Value.Count == 13);
             Tests.Verify(this.vectors.Count == 1 && this.vectors[0].X == 1);
             Tests.Verify(this.Entity != null && this.Entity.IsValid() && Object.ReferenceEquals(this.Entity, this.entityReference));
+
+            // PropertyManager and the message dispatcher live in the engine assembly, so a property
+            // from a retired plugin assembly keeps being called if the reload does not detach it
+            Tests.Verify(Tests.GetPropertyFrameCalls() == this.i);
+            this.Entity.Send(new TestMsg { f = 1 });
+            Tests.Verify(Tests.GetPropertyMessageCalls() == this.messageCallsAtPrepare + 1);
         }
 
         public override void OnBeginFrame()
         {
             i++;
+            Tests.RecordPropertyFrameCall();
             Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", i));
 
             Console.WriteLine(this.state.Position);
@@ -154,6 +171,7 @@ namespace NST
 
         public void OnMessage(in TestMsg msg)
         {
+            Tests.RecordPropertyMessageCall();
             Console.WriteLine("Received TestMsg : " + msg.f);
         }
 
@@ -169,6 +187,16 @@ namespace NST
                 FrameEvent.OnBeginFrame
             };
         }
+    }
+
+    /// <summary>
+    /// A property attached to an entity in a world the plugin did not create. Reload has to look at
+    /// every world the managed runtime knows about, not only the default one.
+    /// </summary>
+    [ExportType]
+    public class WorldProperty : Property
+    {
+        public int value;
     }
 
     [ExportType]
@@ -267,6 +295,30 @@ namespace NST
 
         [DllImport("__Internal", EntryPoint = "GetComponentEntityIdForManaged")]
         private static extern UInt64 GetComponentEntityId();
+
+        [DllImport("__Internal", EntryPoint = "CreateTestWorld")]
+        public static extern uint CreateTestWorld();
+
+        [DllImport("__Internal", EntryPoint = "DestroyTestWorld")]
+        public static extern void DestroyTestWorld();
+
+        [DllImport("__Internal", EntryPoint = "RecordPropertyFrameCall")]
+        public static extern void RecordPropertyFrameCall();
+
+        [DllImport("__Internal", EntryPoint = "RecordLoadAttempt")]
+        public static extern void RecordLoadAttempt();
+
+        [DllImport("__Internal", EntryPoint = "GetLoadAttempts")]
+        public static extern int GetLoadAttempts();
+
+        [DllImport("__Internal", EntryPoint = "RecordPropertyMessageCall")]
+        public static extern void RecordPropertyMessageCall();
+
+        [DllImport("__Internal", EntryPoint = "GetPropertyFrameCalls")]
+        public static extern int GetPropertyFrameCalls();
+
+        [DllImport("__Internal", EntryPoint = "GetPropertyMessageCalls")]
+        public static extern int GetPropertyMessageCalls();
 
         public static void Verify(bool test,
         [CallerFilePath] string filePath = "",
@@ -480,7 +532,6 @@ namespace NST
     {
         public static ExportedState StaticState = new ExportedState();
         public static readonly List<ExportedState> StaticStates = new List<ExportedState>();
-        [Export]
         private bool testsRun;
         private int reloadCount;
         private bool reloadVerified;
@@ -491,6 +542,15 @@ namespace NST
         private int syncPhase;
         private UInt64 syncEntity;
         private UInt64 transientEntity;
+
+        // World sync test, same frame-by-frame shape. The world is created and destroyed by the
+        // test runner, which is what the editor does with its authoring worlds.
+        private uint testWorld;
+        private UInt64 testWorldEntity;
+        private World staleWorld;
+        private Entity staleEntity;
+        private WorldProperty worldProperty;
+        private Entity worldPropertyEntity;
 
         public override void OnBeginFrame()
         {
@@ -559,6 +619,77 @@ namespace NST
                 Tests.Verify(World.Get(World.DEFAULT_WORLD).GetEntity(this.transientEntity) == null);
                 this.syncPhase = 5;
             }
+            else if (this.syncPhase == 5)
+            {
+                // A world the script did not create still gets a mirror, which is the editor case
+                this.testWorld = Tests.CreateTestWorld();
+                World world = World.Get(this.testWorld);
+                Tests.Verify(world != null);
+                Tests.Verify(Object.ReferenceEquals(world, World.Get(this.testWorld)));
+                Tests.Verify(world.Entities.Count == 0);
+
+                this.testWorldEntity = Api.CreateEntity(this.testWorld);
+                Tests.Verify(world.GetEntity(this.testWorldEntity) == null);
+                this.staleWorld = world;
+                this.syncPhase = 6;
+            }
+            else if (this.syncPhase == 6)
+            {
+                World world = World.Get(this.testWorld);
+                Entity entity = world.GetEntity(this.testWorldEntity);
+                Tests.Verify(entity != null);
+                Tests.Verify(world.Entities.Count == 1);
+                this.staleEntity = entity;
+
+                Tests.DestroyTestWorld();
+
+                // The mirror goes with the world, and the world object goes with the mirror so the
+                // recycled slot gets a fresh one
+                Tests.Verify(World.Get(this.testWorld) == null);
+                Tests.Verify(this.staleWorld.Entities.Count == 0);
+                Tests.Verify(this.staleWorld.GetEntity(this.testWorldEntity) == null);
+                Tests.Verify(!this.staleEntity.IsValid());
+                this.syncPhase = 7;
+            }
+            else if (this.syncPhase == 7)
+            {
+                // The slot the destroyed world used is free, so the next world takes it and starts
+                // at index 0 generation 0, which is the same entity id the old mirror still had
+                uint recycled = Tests.CreateTestWorld();
+                Tests.Verify(recycled == this.testWorld);
+
+                World world = World.Get(recycled);
+                Tests.Verify(world != null);
+                Tests.Verify(!Object.ReferenceEquals(world, this.staleWorld));
+                Tests.Verify(world.Entities.Count == 0);
+                Tests.Verify(!Object.ReferenceEquals(world.GetEntity(this.testWorldEntity), this.staleEntity));
+
+                UInt64 sameId = Api.CreateEntity(recycled);
+                Tests.Verify(sameId == this.testWorldEntity);
+                this.syncPhase = 8;
+            }
+            else if (this.syncPhase == 8)
+            {
+                World world = World.Get(this.testWorld);
+                Entity entity = world.GetEntity(this.testWorldEntity);
+                Tests.Verify(entity != null);
+                Tests.Verify(!Object.ReferenceEquals(entity, this.staleEntity));
+                Tests.Verify(entity.IsValid());
+                Tests.Verify(Object.ReferenceEquals(entity.World, world));
+                Tests.Verify(world.Entities.Count == 1);
+
+                Tests.DestroyTestWorld();
+
+                // A property on an entity in a world the plugin did not create. Reload has to look
+                // at every world the runtime knows about, not only the default one.
+                uint propertyWorld = Tests.CreateTestWorld();
+                Tests.Verify(propertyWorld == this.testWorld);
+                Entity propertyEntity = World.Get(propertyWorld).CreateEntity();
+                this.worldPropertyEntity = propertyEntity;
+                this.worldProperty = new WorldProperty { value = 7 };
+                propertyEntity.AddProperty(this.worldProperty);
+                this.syncPhase = 9;
+            }
             else if (this.reloadCount < 2)
             {
                 this.reloadCount++;
@@ -569,6 +700,23 @@ namespace NST
                 this.VerifyReload();
                 this.reloadVerified = true;
             }
+            else if (this.syncPhase == 9)
+            {
+                // TestPlugin.OnLoad throws on the fourth attempt
+                HotReload.Request();
+                this.syncPhase = 10;
+            }
+            else if (this.syncPhase == 10)
+            {
+                // Nothing is requested here. The frame after the failure is where a manager that
+                // re-requests on failure would attempt the same build again.
+                this.syncPhase = 11;
+            }
+            else if (this.syncPhase == 11)
+            {
+                Tests.Verify(Tests.GetLoadAttempts() == 4);
+                this.syncPhase = 12;
+            }
             base.OnFrame();
         }
 
@@ -578,6 +726,11 @@ namespace NST
             this.property.VerifyReloadState();
             Tests.Verify(StaticState.Position == new Vector3(9, 8, 7));
             Tests.Verify(StaticStates.Count == 1 && Object.ReferenceEquals(StaticStates[0], this.property.state));
+
+            // The property is on an entity in a world the plugin did not create. If the reload only
+            // looks at the default world, the new instance is never attached to the entity.
+            Tests.Verify(Object.ReferenceEquals(this.worldProperty.Entity, this.worldPropertyEntity));
+            Tests.Verify(this.worldProperty.value == 7);
         }
 
         public override void OnShutdown()
