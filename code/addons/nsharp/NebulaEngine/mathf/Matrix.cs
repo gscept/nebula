@@ -782,19 +782,19 @@ namespace Nebula
 
         //--------------------------------------------------------------------------
         /** <summary>
-            Creates a new rotation <see cref="Matrix"/> from the specified yaw, pitch and roll values.
+            Creates a new rotation <see cref="Matrix"/> from the specified pitch, yaw and roll values.
             </summary>
-            <param name="yaw">The yaw rotation value in radians.</param>
             <param name="pitch">The pitch rotation value in radians.</param>
+            <param name="yaw">The yaw rotation value in radians.</param>
             <param name="roll">The roll rotation value in radians.</param>
             <returns>The rotation <see cref="Matrix"/>.</returns>
             <remarks>For more information about yaw, pitch and roll visit http://en.wikipedia.org/wiki/Euler_angles.
             </remarks>
         */
-		public static Matrix CreateFromYawPitchRoll(float yaw, float pitch, float roll)
+		public static Matrix CreateFromPitchYawRoll(float pitch, float yaw, float roll)
 		{
 			Matrix matrix;
-            CreateFromYawPitchRoll(yaw, pitch, roll, out matrix);
+            CreateFromPitchYawRoll(pitch, yaw, roll, out matrix);
 		    return matrix;
 		}
 
@@ -809,10 +809,10 @@ namespace Nebula
             <remarks>For more information about yaw, pitch and roll visit http://en.wikipedia.org/wiki/Euler_angles.
             </remarks>
         */
-		public static void CreateFromYawPitchRoll(float yaw, float pitch, float roll, out Matrix result)
+		public static void CreateFromPitchYawRoll(float pitch, float yaw, float roll, out Matrix result)
 		{
 			Quaternion quaternion;
-		    Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll, out quaternion);
+		    Quaternion.CreateFromPitchYawRoll(pitch, yaw, roll, out quaternion);
 		    CreateFromQuaternion(ref quaternion, out result);
 		}
 

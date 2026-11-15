@@ -5,9 +5,10 @@
 //------------------------------------------------------------------------------
 
 #include "io/win32/win32fswrapper.h"
-#include "system/nebulasettings.h"
+#include "io/projectlocator.h"
 #if __WIN32__
 #include "util/win32/win32stringconverter.h"
+#include "util/guid.h"
 #endif
 #include <direct.h>
 #include <sys/types.h>
@@ -385,6 +386,41 @@ Win32FSWrapper::DeleteFile(const String& path)
 
 //------------------------------------------------------------------------------
 /**
+    Rename a file or a directory. The target must not exist. NTFS is case-insensitive,
+    so a rename that only changes the case has to go through a temp name to actually
+    change it, which matches POSIX.
+*/
+bool
+Win32FSWrapper::RenameFile(const Util::String& source, const Util::String& target)
+{
+    n_assert(source.IsValid());
+    n_assert(target.IsValid());
+
+    ushort wideSourcePath[1024];
+    ushort wideTargetPath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(source, wideSourcePath, sizeof(wideSourcePath));
+    Win32::Win32StringConverter::UTF8ToWide(target, wideTargetPath, sizeof(wideTargetPath));
+
+    if (0 == String::StrICmp(source.AsCharPtr(), target.AsCharPtr()))
+    {
+        // Only the case differs, MoveFileExW would see the same entry and leave the name as is
+        Guid guid;
+        guid.Generate(); // temp name, guaranteed unique
+        const String tmpPath = source.ExtractToLastSlash() + guid.AsString();
+        ushort wideTmpPath[1024];
+        Win32::Win32StringConverter::UTF8ToWide(tmpPath, wideTmpPath, sizeof(wideTmpPath));
+        if (0 == ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTmpPath, 0))
+        {
+            return (0 != ::MoveFileExW((LPCWSTR)wideTmpPath, (LPCWSTR)wideTargetPath, 0));
+        }
+        return false;
+    }
+
+    return (0 != ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTargetPath, 0));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 Win32FSWrapper::ReplaceFile(const Util::String& source, const Util::String& target)
@@ -525,7 +561,11 @@ Win32FSWrapper::CreateTemporaryFilename(const Util::String& path)
     Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
     const wchar_t* prefix = L"NEB";
     wchar_t name[MAX_PATH];
-    n_assert(GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name));
+    if (!GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name))
+    {
+        n_error("Win32FSWrapper: CreateTemporaryFilename() failed for '%s' (error %d)\n", path.AsCharPtr(), (int)GetLastError());
+        return String();
+    }
     return Win32::Win32StringConverter::WideToUTF8((ushort*)name);
 }
 
@@ -664,7 +704,8 @@ Win32FSWrapper::GetCurrentDirectory()
     n_assert(_getcwd(buffer, NEBULA_MAXPATH));
     String result = buffer;
     result.ConvertBackslashes();
-    return String("file:///") + result;    
+    result.TrimRight("/");
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -735,11 +776,7 @@ Win32FSWrapper::GetHomeDirectory()
         return String("file:///") + homePath;
     }            
 #else
-    Util::String root;
-    if( System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
-    {
-        root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");    
-    }    
+    Util::String root = ProjectLocator::GetProjectRoot();
     if (root.IsEmpty())
     {
         String homePath = pathToExe.ExtractDirName();

@@ -133,7 +133,7 @@ void NavigationManager::InitUpdateAgentTransformProcessor()
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;
-    processorInfo.name = "PhysicsManager.PollTransforms"_atm;
+    processorInfo.name = "NavigationManager.PollTransforms"_atm;
     processorInfo.OnFrame = [](Game::World* world, Game::Dataset data)
     {
         /*

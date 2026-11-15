@@ -7,13 +7,32 @@
     (C) 2023 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include <functional>
 #include "game/processor.h"
+#include "game/timesource.h"
 #include "threading/assertingmutex.h"
 
 namespace Game
 {
 
 class FramePipeline;
+
+//------------------------------------------------------------------------------
+/**
+    Used to register a frame event in the frame pipeline.
+*/
+struct FrameEventCreateInfo
+{
+    /// sorting order of the event in the pipeline
+    int order = 100;
+    /// name of the event, processors are attached to it with ProcessorBuilder::On
+    Util::StringAtom name;
+    /// 0 means the event runs once per app frame. When non-zero the event runs once for every fixed step the
+    /// time source has available this frame
+    Timing::Time fixedStep = 0.0;
+    /// time source the fixed steps come from. Only used when fixedStep is non-zero
+    uint32_t timeSourceHash = 0;
+};
 
 struct ProcessorJobInput
 {
@@ -37,10 +56,25 @@ public:
     ~FrameEvent();
 
     class Batch;
+
+    /// A callback which runs once per event run. Callbacks are executed in order together with the batches,
+    /// which is what lets a callback sit between the processors of the event
+    struct Callback
+    {
+        /// sorting order within the frame event
+        int order = 100;
+        /// which world mode the callback is allowed to run in
+        ProcessorPhase phase = PlayPhase;
+        std::function<void(World*)> func;
+    };
+
     /// Runs the frame event.
     void Run(World* world);
     /// Adds a processor to the frame event.
     void AddProcessor(Processor* processor);
+    /// Adds a callback to the frame event, sorted by order among the batches. The phase is which world mode the
+    /// callback is allowed to run in, which is what keeps a callback out of a world that is not simulating
+    void AddCallback(int order, ProcessorPhase phase, std::function<void(World*)> func);
     /// Removes a processor for the frame event. Does not free the memory, you need to handle this yourself.
     void RemoveProcessor(Processor* processor);
 
@@ -51,6 +85,10 @@ public:
 
     Util::StringAtom name;
     int order = 100;
+    /// 0 when the event runs once per app frame, otherwise the fixed step it runs on
+    Timing::Time fixedStep = 0.0;
+    /// time source the fixed steps come from, 0 when the event is not fixed
+    uint32_t timeSourceHash = 0;
 
     Util::Array<Batch const*> const GetBatches() const;
 
@@ -62,6 +100,9 @@ private:
 
     /// Batches that this event will execute
     Util::Array<Batch*> batches;
+
+    /// Callbacks that this event will execute, sorted by order
+    Util::Array<Callback> callbacks;
 };
 
 
@@ -118,6 +159,7 @@ public:
     FramePipeline(World* world);
     ~FramePipeline();
 
+    FrameEvent* RegisterFrameEvent(FrameEventCreateInfo const& info);
     FrameEvent* RegisterFrameEvent(int order, Util::StringAtom name);
     FrameEvent* GetFrameEvent(Util::StringAtom name);
 
@@ -145,6 +187,9 @@ public:
 
 private:
     friend FrameEvent;
+
+    /// Runs an event. A fixed event runs once for every step its time source has available
+    void RunEvent(FrameEvent* frameEvent);
 
     World* world;
     bool isRunning = false;

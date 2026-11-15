@@ -67,6 +67,7 @@ Path::Parse(const Util::String& serialized)
         ret.file = serialized.ExtractRange(folderSeparatorIndex + 1, fileSeparatorIndex - folderSeparatorIndex - 1);
         ret.type = serialized.ExtractToEnd(fileSeparatorIndex + 1);
     }
+    ret.isFile = !ret.file.IsEmpty();
     ret.Build();
    
     return ret;
@@ -448,8 +449,11 @@ Path::GetExportFile() const
 void
 Path::Build()
 {
-    if (!this->file.IsEmpty())
+    // files in the root folder have no folder, a leading slash would turn tex:/file into an absolute path
+    if (!this->file.IsEmpty() && !this->folder.IsEmpty())
         this->folderAndFile = this->folder + "/" + this->file;
+    else if (!this->file.IsEmpty())
+        this->folderAndFile = this->file;
     else
         this->folderAndFile = this->folder;
 }

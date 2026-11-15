@@ -8,8 +8,6 @@
 #include "physics/debugui.h"
 #include "physicsinterface.h"
 #include "physics/physxstate.h"
-#include "dynui/imguicontext.h"
-#include "dynui/im3d/im3dcontext.h"
 #include "physics/utils.h"
 #include "imgui.h"
 #include "flat/physics/material.h"
@@ -28,9 +26,9 @@ Core::CVar* cl_debug_draw_physics               = Core::CVarCreate(Core::CVarTyp
 
 // visualization parameters
 Core::CVar* cl_physics_draw_scale               = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale", "1.0", "Visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_points        = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_points", "1.0", "Point visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_lines         = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_lines", "1.0", "Line visualization drawing scale.");
-Core::CVar* cl_physics_draw_scale_triangles     = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_triangles", "1.0", "Triangle visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_points        = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_points", "2.0", "Point visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_lines         = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_lines", "2.0", "Line visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_triangles     = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_triangles", "2.0", "Triangle visualization drawing scale.");
 Core::CVar* cl_physics_draw_world_axes          = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_world_axes", "0", "Visualize the world axes. Needs cl_debug_draw_physics set to 1.");
 Core::CVar* cl_physics_draw_body_axes           = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_axes", "0", "Visualize a bodies axes. Needs cl_debug_draw_physics set to 1.");
 Core::CVar* cl_physics_draw_body_mass_axes      = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_mass_axes", "0", "Visualize a body's mass axes. Needs cl_debug_draw_physics set to 1.");
@@ -76,9 +74,16 @@ SetDebugDrawInterface(DebugDrawInterface const& drawInterface)
 void
 UpdateDebugDrawingParameters()
 {
-    for (int sceneIndex = 0; sceneIndex < state.activeScenes.Size(); sceneIndex++)
+    // Only the scenes which are live. A slot in activeScenes can be a scene which was released
+    for (IndexT sceneIndex : state.activeSceneIds)
     {
         PxScene* scene = state.activeScenes[sceneIndex].scene;
+
+        if (scene == nullptr)
+        {
+            continue;
+        }
+
         float drawingScale = Core::CVarReadFloat(cl_physics_draw_scale);
         scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, dstate.enabled ? drawingScale : 0.0f);
 
@@ -125,9 +130,13 @@ EnableDebugDrawing(bool enabled)
 void
 ApplyBounds(PxBounds3 const& box)
 {
-    for (auto& scene : Physics::state.activeScenes)
+    for (IndexT sceneIndex : Physics::state.activeSceneIds)
     {
-        scene.scene->setVisualizationCullingBox(box);
+        PxScene* scene = Physics::state.activeScenes[sceneIndex].scene;
+        if (scene == nullptr)
+            continue;
+
+        scene->setVisualizationCullingBox(box);
     }
 }
 
@@ -224,9 +233,9 @@ DrawPhysicsDebug()
         UpdateDebugDrawingParameters();
     }
 
-    for (auto& scene : Physics::state.activeScenes)
+    for (IndexT sceneIndex : Physics::state.activeSceneIds)
     {
-        DebugVisualizeScene(scene.scene);
+        DebugVisualizeScene(Physics::state.activeScenes[sceneIndex].scene);
     }
 }
 

@@ -291,6 +291,24 @@ EnvironmentContext::SetBloomIntensity(const float intensity)
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec4
+EnvironmentContext::GetBloomColor()
+{
+    return envState.bloomColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+EnvironmentContext::GetBloomIntensity()
+{
+    return envState.bloomIntensity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 EnvironmentContext::SetMaxLuminance(const float maxLuminance)
 {

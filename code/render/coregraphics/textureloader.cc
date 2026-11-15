@@ -2,6 +2,7 @@
 //  textureloader.cc
 //  (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include <assert.h>
 #include "coregraphics/textureloader.h"
 #include "coregraphics/load/glimltypes.h"
 #include "util/bit.h"

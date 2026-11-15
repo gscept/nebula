@@ -1,0 +1,42 @@
+From 830650c4e23963d68a6cb2bbc69cf7c954fc0ea0 Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:34:54 +0100
+Subject: [PATCH 8/8] Link the OpenEXR libraries pkg-config found by full path
+
+OpenEXR_LIBRARIES only holds library names, so the linker picked up
+whichever OpenEXR it found first in its search path, not necessarily the
+one pkg-config reported (and whose headers were used). Use
+OpenEXR_LINK_LIBRARIES, which has the full paths.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ applications/compressonatorcli/CMakeLists.txt | 2 +-
+ applications/compressonatorgui/CMakeLists.txt | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/applications/compressonatorcli/CMakeLists.txt b/applications/compressonatorcli/CMakeLists.txt
+index 61c8548..7129f1f 100644
+--- a/applications/compressonatorcli/CMakeLists.txt
++++ b/applications/compressonatorcli/CMakeLists.txt
+@@ -166,7 +166,7 @@ if (UNIX)
+     if(NOT APPLE)
+         list(APPEND CMP_LIBS
+             Threads::Threads
+-            ${OpenEXR_LIBRARIES}
++            ${OpenEXR_LINK_LIBRARIES}
+         )
+     else()
+         list(APPEND CMP_LIBS "/usr/lib/libz.dylib")
+diff --git a/applications/compressonatorgui/CMakeLists.txt b/applications/compressonatorgui/CMakeLists.txt
+index 221c879..ed2242c 100644
+--- a/applications/compressonatorgui/CMakeLists.txt
++++ b/applications/compressonatorgui/CMakeLists.txt
+@@ -85,7 +85,7 @@ list(APPEND CMP_LIBS
+     Image_TGA
+ 
+     # min links
+-    ${OpenEXR_LIBRARIES}
++    ${OpenEXR_LINK_LIBRARIES}
+     ${OpenCV_LIBRARIES}
+     Threads::Threads
+ )

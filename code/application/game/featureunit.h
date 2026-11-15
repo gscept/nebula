@@ -117,6 +117,7 @@ FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
 
     ComponentInterface* cInterface = new ComponentInterface(COMPONENT_TYPE::Traits::name, COMPONENT_TYPE(), componentFlags);
     cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
+    cInterface->Decay = reinterpret_cast<ComponentInterface::ComponentDecayFunc>(info.OnDecay);
     Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
     Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
     Game::ComponentInspection::Register<COMPONENT_TYPE>(cid);

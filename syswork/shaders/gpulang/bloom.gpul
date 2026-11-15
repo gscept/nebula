@@ -13,10 +13,21 @@ sampler_state InputSampler
     AddressV = AddressMode.Mirror;
 };
 
+sampler_state DirtSampler
+{
+    Filter = FilterMode.Linear;
+    AddressU = AddressMode.Repeat;
+    AddressV = AddressMode.Repeat;
+};
+
 struct BloomData
 {
     Mips : i32;
     Resolutions : [14]f32x4;
+    // x  0 while DirtMask is the white placeholder. Nonzero is a user texture.
+    // yz reciprocal of DirtMask mip 0, in pixels. csMerge repeats the texture once per that size.
+    // w  unused. Leave it 0.
+    Dirt : f32x4;
 };
 uniform BloomUniforms : *BloomData;
 
@@ -24,6 +35,9 @@ uniform Input : *texture2D;
 uniform BloomOutput : *mutable rgba16f texture2D;
 uniform Intermediate : *texture2D;
 uniform BloomIntermediate : [14]*mutable rgba16f texture2D;
+// Screen-space lens dirt. r is the bloom amplitude. 1 leaves the bloom unchanged, 0 removes it.
+// g and b are ignored. Sampled at Dirt.yz and repeated across the bloom buffer. csMerge.
+uniform DirtMask : *texture2D;
 
 workgroup SampleLookup : [KernelSize][KernelSize]f32x3;
 
@@ -159,8 +173,15 @@ csMerge() void
 
     if (pixelOutputMask)
     {
+        // BloomColor tints the merged bloom. Default white leaves sum unchanged.
+        const rgb = sum * PerTickParams.BloomColor;
+
+        // Dirt.yz is 1 / mip0 size. One copy of DirtMask per that many bloom pixels.
+        // r is an amplitude. 1 keeps this pixel's bloom, 0 drops it.
+        const dirtUv = (f32x2(outputPixel) + f32x2(0.5f)) * BloomUniforms.Dirt.yz;
+        const amplitude = textureSampleLod(DirtMask, DirtSampler, dirtUv, 0).r;
         const weight = sum / f32(BloomUniforms.Mips);
-        textureStore(BloomOutput, i32x2(outputPixel.x, outputPixel.y), f32x4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
+        textureStore(BloomOutput, i32x2(outputPixel.x, outputPixel.y), f32x4(rgb, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity * amplitude));
     }
 }
 

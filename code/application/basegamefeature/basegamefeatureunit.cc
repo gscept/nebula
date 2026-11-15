@@ -7,7 +7,7 @@
 #include "basegamefeature/basegamefeatureunit.h"
 #include "game/gameserver.h"
 #include "managers/timemanager.h"
-#include "managers/hierarchymanager.h"
+#include "managers/transformhierarchy.h"
 #include "imgui.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "components/position.h"
@@ -50,7 +50,9 @@ BaseGameFeatureUnit::OnAttach()
     this->RegisterComponentType<Game::Scale>();
     this->RegisterComponentType<Game::IsActive>();
     this->RegisterComponentType<Game::Static>();
-    this->RegisterComponentType<Game::HTransform>();
+    this->RegisterComponentType<Game::HTransform>({
+        .OnDecay = &DecayHTransform
+    });
     this->RegisterComponentType<Game::Velocity>();
     this->RegisterComponentType<Game::AngularVelocity>();
 }
@@ -64,10 +66,8 @@ BaseGameFeatureUnit::OnActivate()
     FeatureUnit::OnActivate();
 
     this->timeManager = TimeManager::Create();
-    this->hierarchyManager = HierarchyManager::Create();
 
     this->AttachManager(this->timeManager);
-    this->AttachManager(this->hierarchyManager);
 
     this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "0", "Enable world debugging");
 }
@@ -79,10 +79,8 @@ void
 BaseGameFeatureUnit::OnDeactivate()
 {
     this->RemoveManager(this->timeManager);
-    this->RemoveManager(this->hierarchyManager);
 
     this->timeManager = nullptr;
-    this->hierarchyManager = nullptr;
 
     FeatureUnit::OnDeactivate();
 }

@@ -21,6 +21,20 @@ RefCountedList RefCounted::list;
 
 //------------------------------------------------------------------------------
 /**
+    Add the object to the debug list. The critical section is only held for the
+    duration of the list operation, never across the constructor, which keeps the
+    refcounting lock the innermost lock.
+*/
+void
+RefCounted::RegisterInDebugList()
+{
+    criticalSection.Enter();
+    this->listIterator = list.AddBack(this);
+    criticalSection.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 RefCounted::~RefCounted()
 {

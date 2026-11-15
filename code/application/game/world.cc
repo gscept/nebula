@@ -22,6 +22,7 @@
 #include "basegamefeature/level.h"
 #include "flat/game/level.h"
 #include "util/blob.h"
+#include "basegamefeature/managers/transformhierarchy.h"
 
 namespace Game
 {
@@ -47,6 +48,15 @@ GetWorld(WorldId id)
 //------------------------------------------------------------------------------
 /**
 */
+Ptr<TransformHierarchy>
+World::GetHierarchy() const
+{
+    return this->hierarchy;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 World::World(WorldHash hash, WorldId id)
     : numEntities(0),
       hash(hash),
@@ -54,6 +64,9 @@ World::World(WorldHash hash, WorldId id)
       pipeline(this)
 {
     this->db = MemDb::Database::Create();
+
+    this->hierarchy = TransformHierarchy::Create();
+    this->hierarchy->Initialize(this);
 
     // Create a table that can hold new, empty entities
     MemDb::AttributeId attributes[4] = {
@@ -76,6 +89,7 @@ World::World(WorldHash hash, WorldId id)
 */
 World::~World()
 {
+    this->hierarchy = nullptr;
     this->db = nullptr;
 }
 
@@ -609,7 +623,7 @@ World::ManageEntities()
         {
             MemDb::TableId const table = this->entityMap[cmd.entity.index].table;
             MemDb::RowId const row = this->entityMap[cmd.entity.index].instance;
-            this->DeallocateInstance(table, row);
+            this->DeallocateInstance(table, row, cmd.entity);
             this->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
             this->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
             this->DeallocateEntityId(cmd.entity);
@@ -646,6 +660,7 @@ World::Reset()
 {
     this->cacheValid = false;
     this->db->Reset();
+    this->hierarchy->Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -706,7 +721,7 @@ World::DeleteEntity(Game::Entity entity)
 /**
 */
 void
-World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance)
+World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity)
 {
     if (MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
     {
@@ -737,6 +752,14 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
         void* dst = ((byte*)decayBuffer.buffer) + (typeSize * (uint64_t)decayBuffer.size);
         decayBuffer.size++;
         Memory::Copy(this->db->GetTable(tableId).GetValuePointer(column, instance), dst, typeSize);
+    }
+
+    // run the decay callback if one is registered, independent of the decay buffer flag. The
+    // component is still readable from its table while the callback runs
+    ComponentInterface* cInterface = static_cast<ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(component));
+    if (cInterface->Decay != nullptr)
+    {
+        cInterface->Decay(this, entity, this->db->GetTable(tableId).GetValuePointer(column, instance));
     }
 }
 
@@ -900,6 +923,10 @@ World::ExecuteAddComponentCommands()
     {
         // early out if there are no staged components to add
         // avoid unnecessary sorting and iterating
+
+        // An instance can be computable now even when nothing was added this frame, because it or its parent got an
+        // instance by ManageEntities after it was queued.
+        this->hierarchy->ResolvePending();
         return;
     }
     this->addStagedQueue.QuickSortWithFunc(sortFunc);
@@ -921,6 +948,10 @@ World::ExecuteAddComponentCommands()
     // release all memory of the staged components
     componentStageAllocator.Release();
     addStagedQueue.Reset();
+
+    // An instance could not be computed when it was added because its components, or its parent's, were not in a
+    // table yet. They are now, so resolve them
+    this->hierarchy->ResolvePending();
 }
 
 //------------------------------------------------------------------------------
@@ -1020,6 +1051,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
 
     MemDb::Table& newTable = this->db->GetTable(newCategoryId);
 
+    Game::HTransform* localTransform = nullptr;
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
@@ -1027,6 +1059,20 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
         auto attrIndex = newTable.GetAttributeIndex(cmd->componentId);
         void* ptr = newTable.GetValuePointer(attrIndex, newInstance);
         Memory::Copy(cmd->data, ptr, cmd->dataSize);
+
+        // The local transform is the component which puts an entity in the hierarchy and which names its parent,
+        // so this is where an entity enters it. It cannot be computed when the command is queued, because the
+        // instance did not exist then, and it is computed after the loop because the other components of the same
+        // batch have to be in the table for the world transform to be computable
+        if (cmd->componentId == Game::GetComponentId<Game::HTransform>())
+        {
+            localTransform = (Game::HTransform*)ptr;
+        }
+    }
+
+    if (localTransform != nullptr)
+    {
+        this->hierarchy->Add(entity, localTransform->parent);
     }
 }
 
@@ -1082,7 +1128,7 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
-        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance);
+        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance, entity);
     }
 
     this->Migrate(entity, newCategoryId);
@@ -1255,8 +1301,15 @@ World::InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId ro
 
     MemDb::Table& tbl = this->db->GetTable(tableId);
     auto const& attributes = tbl.GetAttributes();
+
+    const ComponentId localTransformId = Game::GetComponentId<Game::HTransform>();
+    IndexT localTransformColumn = InvalidIndex;
+
     for (IndexT i = 4; i < attributes.Size(); i++) // skip first four, since they're always owner and TRS
     {
+        if (attributes[i] == localTransformId)
+            localTransformColumn = i;
+
         MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(attributes[i]);
         ComponentInterface* cInterface;
         cInterface = static_cast<ComponentInterface*>(attr);
@@ -1266,6 +1319,13 @@ World::InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId ro
             void* data = tbl.GetValuePointer(i, row);
             cInterface->Init(this, entity, data);
         }
+    }
+
+    // An instance which gets its components by being copied rather than by a command enters the hierarchy here.
+    if (localTransformColumn != InvalidIndex)
+    {
+        Game::HTransform* local = (Game::HTransform*)tbl.GetValuePointer(localTransformColumn, row);
+        this->hierarchy->Add(entity, local->parent);
     }
 }
 
@@ -1286,7 +1346,7 @@ World::FinalizeAllocate(Entity entity)
 /**
 */
 void
-World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
+World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance, Entity entity)
 {
     n_assert(instance != MemDb::InvalidRow);
 
@@ -1297,7 +1357,7 @@ World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
         Game::ComponentId component = componentIds[column.id];
-        this->DecayComponent(component, table, column, instance);
+        this->DecayComponent(component, table, column, instance, entity);
     }
 
     this->db->GetTable(table).RemoveRow(instance);
@@ -1314,7 +1374,7 @@ World::DeallocateInstance(Entity entity)
     MemDb::TableId& table = this->entityMap[entity.index].table;
     MemDb::RowId& instance = this->entityMap[entity.index].instance;
 
-    this->DeallocateInstance(table, instance);
+    this->DeallocateInstance(table, instance, entity);
 
     table = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
@@ -1451,6 +1511,22 @@ World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void*
     byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
     byte* valuePtr = ptr + (mapping.instance.index * size);
     Memory::Copy(value, valuePtr, size);
+
+    // A write which does not go through one of the transform specializations below has no way of knowing that the
+    // component it wrote is a transform so we need to check it
+    if (this->hierarchy->IsInHierarchy(entity))
+    {
+        if (component == Game::GetComponentId<Game::HTransform>())
+        {
+            this->hierarchy->SetLocalTransform(entity);
+        }
+        else if (component == Game::GetComponentId<Game::Position>() ||
+                 component == Game::GetComponentId<Game::Orientation>() ||
+                 component == Game::GetComponentId<Game::Scale>())
+        {
+            this->hierarchy->SetWorldTransform(entity);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1471,7 +1547,7 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
     MemDb::ColumnIndex const columnIndex = this->db->GetTable(mapping.table).GetAttributeIndex(component);
 
     // Decay the old component, this will allow managers to clean up any resources used before reinitializing
-    this->DecayComponent(component, mapping.table, columnIndex, mapping.instance);
+    this->DecayComponent(component, mapping.table, columnIndex, mapping.instance, entity);
 
     byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
     byte* valuePtr = ptr + (mapping.instance.index * size);
@@ -1488,6 +1564,12 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
             // run initialization function if it exists.
             cInterface->Init(this, entity, valuePtr);
         }
+    }
+
+    if (component == Game::GetComponentId<Game::HTransform>())
+    {
+        Game::Entity parent = reinterpret_cast<Game::HTransform*>(valuePtr)->parent;
+        this->hierarchy->Add(entity, parent);
     }
 }
 
@@ -1898,6 +1980,11 @@ World::SetComponent(Entity entity, Game::Position const& value)
     MemDb::ColumnIndex const column = Game::Position::Traits::fixed_column_index;
     Game::Position* ptr = (Game::Position*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
     *(ptr + mapping.instance.index) = value;
+
+    if (this->hierarchy->IsInHierarchy(entity))
+    {
+        this->hierarchy->SetWorldTransform(entity);
+    }
 }
 
 //------------------------------------------------------------------------------�
@@ -1921,6 +2008,11 @@ World::SetComponent(Entity entity, Game::Orientation const& value)
     MemDb::ColumnIndex const column = Game::Orientation::Traits::fixed_column_index;
     Game::Orientation* ptr = (Game::Orientation*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
     *(ptr + mapping.instance.index) = value;
+
+    if (this->hierarchy->IsInHierarchy(entity))
+    {
+        this->hierarchy->SetWorldTransform(entity);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1944,6 +2036,33 @@ World::SetComponent(Entity entity, Game::Scale const& value)
     MemDb::ColumnIndex const column = Game::Scale::Traits::fixed_column_index;
     Game::Scale* ptr = (Game::Scale*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
     *(ptr + mapping.instance.index) = value;
+
+    if (this->hierarchy->IsInHierarchy(entity))
+    {
+        this->hierarchy->SetWorldTransform(entity);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+World::SetComponent(Entity entity, Game::HTransform const& value)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Settings components in arbitrary entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+    MemDb::ColumnIndex const column = this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::HTransform>());
+    Game::HTransform* ptr = (Game::HTransform*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    *(ptr + mapping.instance.index) = value;
+
+    this->hierarchy->SetLocalTransform(entity);
 }
 
 } // namespace Game

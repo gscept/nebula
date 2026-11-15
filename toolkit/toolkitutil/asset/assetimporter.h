@@ -13,6 +13,7 @@
 */
 //------------------------------------------------------------------------------
 #include "io/uri.h"
+#include "util/fixedarray.h"
 #include "toolkitutil/base/exporttypes.h"
 #include "flat/texture.h"
 
@@ -21,13 +22,17 @@ namespace ToolkitUtil
 class Logger;
 
 /// Import an FBX
-bool ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
+bool ImportFBX(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force = true);
 // Import a GLTF or GLB
-bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger);
+bool ImportGLTF(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::ImportFlags importFlags, float scale, ToolkitUtil::Logger* logger, bool force = true);
 /// Setup a texture resource based on file name
 ToolkitUtil::TextureResourceT SetupTextureImportSettingsFromPath(const IO::URI& file);
-/// Import a texture
+/// Get the cube face (0-5 for +X, -X, +Y, -Y, +Z, -Z) an image is named after (sky_px.png, sky_negx.hdr, right.jpg, ...), or InvalidIndex
+IndexT GetCubeFaceFromPath(const IO::URI& file, Util::String& cubeName);
+/// Import a texture, a single image or a cross/strip image of a cube texture (see texture.cube_layout)
 bool ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::TextureResourceT& texture, ToolkitUtil::Logger* logger);
+/// Import six images (+X, -X, +Y, -Y, +Z, -Z) as the faces of a cube texture
+bool ImportCubeTexture(const Util::FixedArray<IO::URI>& faces, const IO::URI& destinationFolder, const Util::String& name, ToolkitUtil::TextureResourceT& texture, ToolkitUtil::Logger* logger);
 /// Import an audio file
 bool ImportAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Logger* logger);
 

@@ -75,6 +75,8 @@ Logger::Flush()
     for (const auto& message : this->messages)
         n_printf(message.AsCharPtr());
     this->messages.Clear();
+    // stdout is fully buffered when redirected
+    fflush(stdout);
 }
 
 } // namespace ToolkitUtil

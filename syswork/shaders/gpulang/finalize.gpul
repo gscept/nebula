@@ -40,34 +40,6 @@ render_state FinalizeState
     DepthWriteEnabled = false;
 };
 
-const MaxDofSamples = 23;
-
-const DofSamples : [MaxDofSamples]f32x2 = [
-        f32x2( 0.0, 0.0 ),
-        f32x2( -0.326212, -0.40581  ),
-        f32x2( -0.840144, -0.07358  ),
-        f32x2( -0.695914,  0.457137 ),
-        f32x2( -0.203345,  0.620716 ),
-        f32x2(  0.96234,  -0.194983 ),
-        f32x2(  0.473434, -0.480026 ),
-        f32x2(  0.519456,  0.767022 ),
-        f32x2(  0.185461, -0.893124 ),
-        f32x2(  0.507431,  0.064425 ),
-        f32x2(  0.89642,   0.412458 ),
-        f32x2( -0.32194,   0.93261f ),
-        f32x2(  0.326212,  0.40581  ),
-        f32x2(  0.840144,  0.07358  ),
-        f32x2(  0.695914, -0.457137 ),
-        f32x2(  0.203345, -0.620716 ),
-        f32x2( -0.96234,   0.194983 ),
-        f32x2( -0.473434,  0.480026 ),
-        f32x2( -0.519456, -0.767022 ),
-        f32x2( -0.185461,  0.893124 ),
-        f32x2( -0.507431, -0.064425 ),
-        f32x2( -0.89642,  -0.412458 ),
-        f32x2(  0.32194,  -0.93261f )
-];   
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -94,31 +66,6 @@ Fog(fogDepth : f32) f32
 
 //------------------------------------------------------------------------------
 /**
-    Get a depth-of-field blurred sample. Set all values to 0 in order to disable DoF
-*/
-DepthOfField(depth : f32, uv : f32x2) f32x4
-{
-    // compute focus-blur param (0 -> no blur, 1 -> max blur)
-    const focusDist = PerTickParams.DoFDistances.x;
-    const focusLength = PerTickParams.DoFDistances.y;
-    const filterRadius = PerTickParams.DoFDistances.z;
-    const focus = saturate(abs(depth - focusDist) / focusLength);
-    
-    // perform a gaussian blur around uv
-    var sampleColor = f32x3(0.0f);
-    const dofWeight = 1.0f / MaxDofSamples;
-    const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
-    const uvMul = focus * filterRadius * pixelSize.xy;
-    for (var i : i32 = 0; i < MaxDofSamples; i++)
-    {
-        sampleColor += sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, uv + (DofSamples[i] * uvMul), 0).rgb;
-    }
-    sampleColor *= dofWeight;
-    return f32x4(sampleColor, 1);
-} 
-
-//------------------------------------------------------------------------------
-/**
 */
 entry_point
 psMain(in UV : f32x2) void
@@ -132,11 +79,12 @@ psMain(in UV : f32x2) void
     const viewVec = ViewConstants.EyePos.xyz - worldPos.xyz;
     const viewNormal = (ViewConstants.View * f32x4(normal, 0)).xyz;
     
-    var c = f32x4(sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, UV * PassUniforms.RenderTargets[0].Scale, 0).rgb, 1.0f);
-    
-    const bloom = sample2DLod(FinalizeUniforms.BloomTexture, UpscaleSampler, UV * PassUniforms.RenderTargets[0].Scale, 0);
-    //vec4 godray = subpassLoad(InputAttachment1);
-    c.rgb = lerp(c.rgb, bloom.rgb, bloom.a);
+    const colorUv = UV * PassUniforms.RenderTargets[0].Scale;
+    var c = f32x4(sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, colorUv, 0).rgb, 1.0f);
+
+    // LightBuffer already holds the depth-of-field mix. Bloom was built from it.
+    const bloom = sample2DLod(FinalizeUniforms.BloomTexture, UpscaleSampler, colorUv, 0);
+    c.rgb += bloom.rgb * bloom.a;
 
     const grey = f32x4(dot(c.xyz, Luminance.xyz));
     c = PerTickParams.Balance * lerp(grey, c, PerTickParams.Saturation);

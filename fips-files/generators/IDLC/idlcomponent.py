@@ -181,6 +181,7 @@ def WriteComponentHeaderDeclarations(f, document):
         f.WriteLine("Traits() = delete;")
         f.WriteLine('using type = {};'.format(c.componentName))
         f.WriteLine('static constexpr auto name = "{}";'.format(c.componentName))
+        f.WriteLine('static constexpr auto namespace_name = "{}";'.format(namespace))
         f.WriteLine('static constexpr auto fully_qualified_name = "{}.{}";'.format(namespace, c.componentName))
         f.WriteLine('static constexpr size_t num_fields = {};'.format(len(c.variables)))
         if (len(c.variables) > 0):
@@ -220,6 +221,33 @@ def WriteComponentHeaderDeclarations(f, document):
                 else:
                     f.WriteLine("")
             f.WriteLine('};')
+            f.WriteLine('static constexpr const char* const* field_enum_names[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                enumName = GetEnumNameForType(document, v.type)
+                f.Write('    {}'.format(enumName + "Names" if enumName else "nullptr"))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
+            f.WriteLine('static constexpr size_t field_enum_counts[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                enumName = GetEnumNameForType(document, v.type)
+                f.Write('    {}'.format(len(document["enums"][enumName]) if enumName else 0))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
+            f.WriteLine('static constexpr const int* field_enum_values[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                enumName = GetEnumNameForType(document, v.type)
+                f.Write('    {}'.format(enumName + "Values" if enumName else "nullptr"))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
             f.WriteLine('static constexpr bool field_hide_in_inspector[num_fields] = {')
             for i, v in enumerate(c.variables):
                 f.Write('    {}'.format("true" if v.hideInInspector else "false"))
@@ -233,6 +261,9 @@ def WriteComponentHeaderDeclarations(f, document):
             f.WriteLine('static constexpr const char** field_typenames = nullptr;')
             f.WriteLine('static constexpr size_t* field_byte_offsets = nullptr;')
             f.WriteLine('static constexpr const char** field_descriptions = nullptr;')
+            f.WriteLine('static constexpr const char* const* field_enum_names = nullptr;')
+            f.WriteLine('static constexpr size_t* field_enum_counts = nullptr;')
+            f.WriteLine('static constexpr const int* field_enum_values = nullptr;')
             f.WriteLine('static constexpr bool* field_hide_in_inspector = nullptr;')
 
         if c.category:  
@@ -417,6 +448,32 @@ def WriteEnumeratedCppTypes(f, document):
             f.DecreaseIndent()
             f.WriteLine("};")
             f.WriteLine("")
+
+            # Value names ordered by value. The component inspector uses these to draw enum fields as combos.
+            ordered = sorted(enum.items(), key=lambda item: item[1])
+            f.WriteLine('static constexpr const char* const {}Names[] = {{'.format(enumName))
+            for key, value in ordered:
+                f.WriteLine('    "{}",'.format(key))
+            f.WriteLine('};')
+            f.WriteLine('static constexpr size_t {}NameCount = {};'.format(enumName, len(ordered)))
+            # The values at the same indices as the names, so combo indices and enum values can
+            # differ for enums that are not contiguous from zero
+            f.WriteLine('static constexpr int {}Values[] = {{'.format(enumName))
+            for key, value in ordered:
+                f.WriteLine('    {},'.format(value))
+            f.WriteLine('};')
+            f.WriteLine("")
+
+#------------------------------------------------------------------------------
+##
+#
+def GetEnumNameForType(document, attrType):
+    namespace = IDLDocument.GetNamespace(document)
+    if "enums" in document:
+        for enumName in document["enums"]:
+            if attrType == "{}::{}".format(namespace, enumName):
+                return enumName
+    return None
 
 #------------------------------------------------------------------------------
 ##

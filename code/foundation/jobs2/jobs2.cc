@@ -171,6 +171,11 @@ next:
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
         if (job->groupCompletionCounter.Decrement() == 0)
         {
+            // All invocations have returned, release whatever the lambda captured
+            // before anyone waiting on this job is woken up
+            if (job->l.callable != nullptr)
+                job->l.Destroy();
+
             // If we have a job counter, only signal the event when the counter reaches 0
             if (job->doneCounter != nullptr)
             {
@@ -266,9 +271,18 @@ JobAlloc(SizeT bytes)
     // make sure to always pad to next 16 byte alignment in case the 
     // context used needs to be aligned
     bytes = Memory::align(bytes, 16);
-    n_assert((ctx.iterator + bytes) < ctx.scratchMemorySize);
-    void* ret = (ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
-    ctx.iterator += bytes;
+
+    // Jobs may be dispatched from several threads (including from within jobs),
+    // so claim the range atomically. Add() returns the previous offset.
+    const IndexT offset = Threading::Interlocked::Add(&ctx.iterator, bytes);
+
+    // This check can never be disabled, running past the scratch buffer corrupts the heap
+    if (offset + bytes > ctx.scratchMemorySize)
+    {
+        n_error("Jobs2::JobAlloc: out of scratch memory (%d of %d bytes used), increase JobSystemInitInfo::scratchMemorySize", offset + bytes, ctx.scratchMemorySize);
+        return nullptr;
+    }
+    void* ret = (ctx.scratchMemory[ctx.activeBuffer] + offset);
     N_BUDGET_COUNTER_INCR(N_JOBS2_MEMORY_COUNTER, bytes);
     return ret;
 }

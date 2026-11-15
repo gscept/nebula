@@ -1,0 +1,2 @@
+# the repository ignores *.patch, these are the Compressonator patches applied by build_compressonatorcli.sh
+!*.patch

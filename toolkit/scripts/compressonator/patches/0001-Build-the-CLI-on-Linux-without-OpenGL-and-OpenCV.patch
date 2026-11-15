@@ -1,0 +1,108 @@
+From 247534d220c423e4437f1b6a1806fd8105cf0507 Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:30:47 +0100
+Subject: [PATCH 1/8] Build the CLI on Linux without OpenGL and OpenCV
+
+The CLI never links OpenGL, only the Windows GPU decode and glTF viewer
+plugins do, but external/CMakeLists.txt required it unconditionally.
+
+The analysis plugin required OpenCV even with OPTION_CMP_OPENCV off and
+always compiled ssim.cpp, which uses OpenCV. All calls into it are
+already guarded by OPTION_CMP_OPENCV, so only build ssim.cpp and look
+for OpenCV when the option is on, and guard the remaining unguarded
+users of the SSIM result.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ applications/_plugins/canalysis/CMakeLists.txt  | 17 +++++++++++++----
+ .../_plugins/canalysis/analysis/canalysis.cpp   |  4 ++++
+ external/CMakeLists.txt                         |  4 +++-
+ 3 files changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/applications/_plugins/canalysis/CMakeLists.txt b/applications/_plugins/canalysis/CMakeLists.txt
+index 31e56d8..3b2b1b3 100644
+--- a/applications/_plugins/canalysis/CMakeLists.txt
++++ b/applications/_plugins/canalysis/CMakeLists.txt
+@@ -23,11 +23,18 @@ target_sources(Image_Analysis
+                ${PROJECT_SOURCE_DIR}/applications/_plugins/common/pluginmanager.cpp
+                ${PROJECT_SOURCE_DIR}/applications/_plugins/common/textureio.h
+                ${PROJECT_SOURCE_DIR}/applications/_plugins/common/textureio.cpp
+-               ${PROJECT_SOURCE_DIR}/applications/_plugins/common/ssim.h
+-               ${PROJECT_SOURCE_DIR}/applications/_plugins/common/ssim.cpp
+                ${ANALYSIS_QT_FILES}
+                )
+ 
++# SSIM is computed with OpenCV
++if (OPTION_CMP_OPENCV)
++    target_sources(Image_Analysis
++                   PRIVATE
++                   ${PROJECT_SOURCE_DIR}/applications/_plugins/common/ssim.h
++                   ${PROJECT_SOURCE_DIR}/applications/_plugins/common/ssim.cpp
++                   )
++endif()
++
+ target_include_directories(Image_Analysis
+                PRIVATE
+                ${PROJECT_SOURCE_DIR}/cmp_compressonatorlib
+@@ -68,12 +75,14 @@ if (CMP_HOST_WINDOWS)
+ 
+ else()
+ 
+-    find_package(OpenCV) 
++    if (OPTION_CMP_OPENCV)
++        find_package(OpenCV)
++    endif()
+     if (OpenCV_FOUND)
+         target_include_directories(Image_Analysis
+                                    PRIVATE
+                                    ${OpenCV_INCLUDE_DIRS})
+-    else()
++    elseif (OPTION_CMP_OPENCV)
+         message(FATAL_ERROR "Package OpenCV are required, but not found. In Unix, run initsetup_unix.sh or sudo apt-get install libopencv-dev to install the libs.")
+     endif()
+     
+diff --git a/applications/_plugins/canalysis/analysis/canalysis.cpp b/applications/_plugins/canalysis/analysis/canalysis.cpp
+index 9724d70..9d918d9 100644
+--- a/applications/_plugins/canalysis/analysis/canalysis.cpp
++++ b/applications/_plugins/canalysis/analysis/canalysis.cpp
+@@ -33,7 +33,9 @@
+ 
+ #include "plugininterface.h"
+ #include "pluginmanager.h"
++#if (OPTION_CMP_OPENCV == 1)
+ #include "ssim.h"
++#endif
+ #include "textureio.h"
+ 
+ #include "cpimageloader.h"
+@@ -751,6 +753,7 @@ void Plugin_Canalysis::setActiveChannels()
+ 
+ void Plugin_Canalysis::processSSIMResults()
+ {
++#if (OPTION_CMP_OPENCV == 1)
+     switch (m_RGBAChannels)
+     {
+     case 0b0001:
+@@ -769,6 +772,7 @@ void Plugin_Canalysis::processSSIMResults()
+         report.data.SSIM       = (report.data.SSIM_Blue + report.data.SSIM_Green + report.data.SSIM_Red) / 3;
+         break;
+     }
++#endif
+ }
+ 
+ int Plugin_Canalysis::TC_ImageDiff(const char*       in1,
+diff --git a/external/CMakeLists.txt b/external/CMakeLists.txt
+index b2cb550..bb4617c 100644
+--- a/external/CMakeLists.txt
++++ b/external/CMakeLists.txt
+@@ -7,7 +7,9 @@ message(STATUS "++++++++++++++++++External CMakeList called" )
+ if (OPTION_BUILD_APPS_CMP_CLI OR OPTION_BUILD_APPS_CMP_GUI)
+     include(${CMAKE_CURRENT_LIST_DIR}/glew/CMakeLists.txt)
+     include(${CMAKE_CURRENT_LIST_DIR}/glm/CMakeLists.txt)
+-    include(${CMAKE_CURRENT_LIST_DIR}/opengl/CMakeLists.txt)
++    if (OPTION_CMP_OPENGL)
++        include(${CMAKE_CURRENT_LIST_DIR}/opengl/CMakeLists.txt)
++    endif()
+     include(${CMAKE_CURRENT_LIST_DIR}/qt5/CMakeLists.txt)
+     include(${CMAKE_CURRENT_LIST_DIR}/rapidxml/CMakeLists.txt)
+     include(${CMAKE_CURRENT_LIST_DIR}/vulkan/CMakeLists.txt)

@@ -13,7 +13,7 @@
     Get a pointer to a singleton object using the static Instance() method:
 
     Core::Server* coreServer = Core::Server::Instance();
-    
+
     @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -48,7 +48,7 @@ private:
     n_assert(nullptr == Singleton); Singleton = this;
 
 #define __DestructSingleton \
-    n_assert(Singleton); Singleton = nullptr;
+    n_assert(Singleton == this); Singleton = nullptr;
 
 #define __DestructInterfaceSingleton \
     n_assert(Singleton); Singleton = nullptr;

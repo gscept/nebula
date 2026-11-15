@@ -59,6 +59,8 @@ public:
     static bool IsLocked(const Util::String& path);
     /// delete a file
     static bool DeleteFile(const Util::String& path);
+    /// rename a file or a directory (the target must not exist)
+    static bool RenameFile(const Util::String& source, const Util::String& target);
     /// rename a file
     static bool ReplaceFile(const Util::String& source, const Util::String& target);
     /// delete an empty directory
@@ -87,6 +89,8 @@ public:
     static Util::String GetHomeDirectory();
     /// get path to the current bin directory (for bin: standard assign)
     static Util::String GetBinDirectory();
+    /// get the absolute path of the current working directory
+    static Util::String GetCurrentDirectory();
     /// return true when the string is a device name (e.g. "C:")
     static bool IsDeviceName(const Util::String& str);
 };

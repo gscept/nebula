@@ -11,6 +11,7 @@
 #include "stringtest.h"
 #include "arraytest.h"
 #include "arrayallocatortest.h"
+#include "arenaallocatortest.h"
 #include "stacktest.h"
 #include "arraystacktest.h"
 #include "listtest.h"
@@ -129,6 +130,7 @@ __cdecl main(int argc, const char** argv)
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
     testRunner->AttachTestCase(ArrayAllocatorTest::Create());
+    testRunner->AttachTestCase(ArenaAllocatorTest::Create());
     testRunner->AttachTestCase(ProfilingTest::Create());
     bool result = testRunner->Run(); 
 

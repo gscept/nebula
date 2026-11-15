@@ -176,69 +176,9 @@ ShaderServerBase::Open()
             changed.ToLower();
 #endif
 
-            IndexT mapIndex = this->shaderReloadMap.FindIndex(changed);
-            if (mapIndex == InvalidIndex)
-            {
-                return;
-            }
-
-            const Util::Array<Util::String>& sources = this->shaderReloadMap.ValueAtIndex(mapIndex).KeysAsArray();
-            for (IndexT i = 0; i < sources.Size(); i++)
-            {
-                Util::String out = sources[i].ExtractFileName();
-                out.StripFileExtension();
-
-                Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
-                if (file->Open())
-                {
-                    void* buf = file->Map();
-                    SizeT size = file->GetSize();
-
-                    Util::String cmd;
-                    cmd.Set((const char*)buf, size);
-
-                    Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
-
-                    System::ProcessStartInfo processInfo;
-                    processInfo.workingDir = file->GetURI().LocalPath().ExtractDirName();
-                    processInfo.exePath = cmd;
-                    processInfo.consoleWindow = false;
-                    processInfo.outputStream = stream;
-
-                    System::ProcessId process = System::StartProcess(processInfo);
-                    uint exitCode = System::WaitForProcess(process);
-
-                    Ptr<TextReader> reader = TextReader::Create();
-                    reader->SetStream(stream);
-                    reader->Open();
-
-                    if (exitCode != 0)
-                    {
-                        n_printf("Process %s ended with exit code %d\n", cmd.AsCharPtr(), exitCode);
-                    }
-
-                    while (!reader->Eof())
-                    {
-                        Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
-                    }
-
-                    reader->Close();
-
-                    IndexT oIndex = cmd.FindStringIndex("-o");
-                    if (oIndex != InvalidIndex)
-                    {
-                        Util::String exportedFilePath;
-                        char const* c = cmd.AsCharPtr() + oIndex + 3;
-                        while (*c != ' ' && *c != '\0')
-                        {
-                            exportedFilePath.AppendChar(*c);
-                            c += 1;
-                        }
-
-                        this->pendingShaderReloads.Enqueue(exportedFilePath);
-                    }
-                }
-            }
+            // The callback runs on the FileWatcher thread, which has no thread local IoServer,
+            // so the compile is deferred to BeforeFrame() on the thread that owns one
+            this->pendingShaderCompiles.Enqueue(changed);
         };
 
         for (IndexT i = 0; i < this->shaderWatchFolders.Size(); i++)
@@ -266,6 +206,7 @@ ShaderServerBase::Close()
     }
     this->shaderWatchFolders.Clear();
     this->shaderReloadMap.Clear();
+    this->pendingShaderCompiles.Clear();
 #endif
 
     // unload all currently loaded shaders
@@ -298,9 +239,90 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ShaderServerBase::CompileShaderFile(const Util::String& changedFile)
+{
+    IndexT mapIndex = this->shaderReloadMap.FindIndex(changedFile);
+    if (mapIndex == InvalidIndex)
+    {
+        return;
+    }
+
+    const Util::Array<Util::String>& sources = this->shaderReloadMap.ValueAtIndex(mapIndex).KeysAsArray();
+    for (IndexT i = 0; i < sources.Size(); i++)
+    {
+        Util::String out = sources[i].ExtractFileName();
+        out.StripFileExtension();
+
+        Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+        if (file->Open())
+        {
+            void* buf = file->Map();
+            SizeT size = file->GetSize();
+
+            Util::String cmd;
+            cmd.Set((const char*)buf, size);
+
+            Ptr<IO::MemoryStream> stream = IO::MemoryStream::Create();
+
+            System::ProcessStartInfo processInfo;
+            processInfo.workingDir = file->GetURI().LocalPath().ExtractDirName();
+            processInfo.exePath = cmd;
+            processInfo.consoleWindow = false;
+            processInfo.outputStream = stream;
+
+            System::ProcessId process = System::StartProcess(processInfo);
+            uint exitCode = System::WaitForProcess(process);
+
+            Ptr<TextReader> reader = TextReader::Create();
+            reader->SetStream(stream);
+            reader->Open();
+
+            if (exitCode != 0)
+            {
+                n_printf("Process %s ended with exit code %d\n", cmd.AsCharPtr(), exitCode);
+            }
+
+            while (!reader->Eof())
+            {
+                Core::SysFunc::DebugOut(reader->ReadLine().AsCharPtr());
+            }
+
+            reader->Close();
+
+            IndexT oIndex = cmd.FindStringIndex("-o");
+            if (oIndex != InvalidIndex)
+            {
+                Util::String exportedFilePath;
+                char const* c = cmd.AsCharPtr() + oIndex + 3;
+                while (*c != ' ' && *c != '\0')
+                {
+                    exportedFilePath.AppendChar(*c);
+                    c += 1;
+                }
+
+                this->pendingShaderReloads.Enqueue(exportedFilePath);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 ShaderServerBase::BeforeFrame()
 {
+    if (!this->pendingShaderCompiles.IsEmpty())
+    {
+        Util::Array<Util::String> changedFiles;
+        this->pendingShaderCompiles.DequeueAll(changedFiles);
+        for (IndexT i = 0; i < changedFiles.Size(); i++)
+        {
+            this->CompileShaderFile(changedFiles[i]);
+        }
+    }
+
     if (this->pendingShaderReloads.Size() > 0)
     {
         // wait for all graphics commands to finish first

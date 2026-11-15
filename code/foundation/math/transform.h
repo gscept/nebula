@@ -23,7 +23,7 @@ public:
     transform(const Math::vec3& pos, const Math::quat& rot = Math::quat(), const Math::vec3& scale = Math::_plus1);
     /// set content
     void Set(const Math::vec3& pos, const Math::quat& rot, const Math::vec3& scale);
-    /// get the relative transform from this to child, expressed as matrix result = this * inv(child)
+    /// get the relative transform from this to child, expressed as matrix result = inv(child) * this
     transform GetRelative(const transform& child);
 
     static transform FromMat4(const Math::mat4& mat);
@@ -76,7 +76,7 @@ transform::GetRelative(const transform& child)
     const vec3 invChildScale = reciprocal(child.scale);
     result.scale = multiply(scale, invChildScale);
     quat invChildRot = inverse(child.rotation);
-    result.rotation = rotation * invChildRot;
+    result.rotation = invChildRot * rotation;
     result.position = multiply(rotate(invChildRot, (position - child.position)), invChildScale);
     return result;
 }
@@ -90,9 +90,10 @@ operator*(const transform& a, const transform& b)
     // this has many weird edge cases with scale, esp. negative
     n_assert2(greater_all(a.scale, _zero) && greater_all(b.scale, _zero), "transform currently does not support negative scale");
     transform result;
+    // (a * b) applies b first and then a, the same order as mat4's operator*
     result.rotation = a.rotation * b.rotation;
     result.scale = multiply(a.scale, b.scale);
-    result.position = rotate(b.rotation, multiply(b.scale, a.position)) + b.position;
+    result.position = rotate(a.rotation, multiply(a.scale, b.position)) + a.position;
     return result;
 }
 

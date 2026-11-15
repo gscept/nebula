@@ -60,11 +60,17 @@ template <typename COMPONENT_TYPE>
 struct ComponentRegisterInfo
 {
     using OnInitFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
+    using OnDecayFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
 
     /// Set to true if the component should end up in the decay buffer before being completely destroyed.
     bool decay = false;
     /// initialization function to run for the component, or nullptr if not needed.
     OnInitFunc OnInit = nullptr;
+    /// function to run when the component is removed from a live entity, or when the entity is
+    /// deleted. Runs outside the frame pipeline while the component is still readable from its
+    /// table, which allows cleaning up or marking up anything related to the component.
+    /// Independent of the decay buffer. nullptr if not needed.
+    OnDecayFunc OnDecay = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -80,6 +86,7 @@ public:
         : Attribute(name, defaultValue, flags)
     {
         this->componentName = T::Traits::name;
+        this->namespaceName = T::Traits::namespace_name;
         this->fullyQualifiedName = T::Traits::fully_qualified_name;
         this->numFields = T::Traits::num_fields;
         this->fieldNames = (const char**)T::Traits::field_names;
@@ -88,9 +95,12 @@ public:
     }
 
     using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
+    using ComponentDecayFunc = void (*)(Game::World*, Game::Entity, void*);
     ComponentInitFunc Init = nullptr;
+    ComponentDecayFunc Decay = nullptr;
 
     const char* GetName() const { return componentName; }
+    const char* GetNamespace() const { return namespaceName; }
     const char* GetFullyQualifiedName() const { return fullyQualifiedName; }
     const char** GetFieldNames() const { return fieldNames; };
     const char** GetFieldTypenames() const { return fieldTypenames; };
@@ -99,6 +109,7 @@ public:
 
 private:
     const char* componentName = nullptr;
+    const char* namespaceName = nullptr;
     const char* fullyQualifiedName = nullptr;
     const char** fieldNames = nullptr;
     const char** fieldTypenames = nullptr;

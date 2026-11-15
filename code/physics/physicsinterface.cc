@@ -14,6 +14,7 @@
 #include "timing/time.h"
 #include "physics/physxstate.h"
 #include "physics/streamactorpool.h"
+#include "physics/formats/formats.h"
 #include "resources/resourceserver.h"
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
@@ -65,6 +66,7 @@ Ptr<Physics::StreamActorPool> actorLoader;
 void
 Setup()
 {
+    Physics::RegisterDefaultGeometryLoader();
     state.Setup();
     actorLoader = Physics::StreamActorPool::Create(); actorLoader->Setup();
     Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", actorLoader);
@@ -111,7 +113,12 @@ CreateScene()
         idx = state.activeScenes.Size();
     }
     state.activeSceneIds.Append(idx);
-    state.activeScenes.Append(Scene());
+
+    if (idx < state.activeScenes.Size())
+        state.activeScenes[idx] = Scene();
+    else
+        state.activeScenes.Append(Scene());
+
     Scene & scene = state.activeScenes[idx];
     //scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
     scene.dispatcher = PxDefaultCpuDispatcherCreate(0);
@@ -137,7 +144,6 @@ CreateScene()
 #endif
     scene.physics = state.physics;
     scene.foundation = state.foundation;
-    scene.time = 0.0;
     scene.eventBuffer.Reserve(256);
     return idx;
 }
@@ -171,6 +177,17 @@ DestroyScene(IndexT sceneId)
     scene.controllerManager->release();
     scene.scene->release();
     scene.dispatcher->release();
+
+    scene.foundation = nullptr;
+    scene.physics = nullptr;
+    scene.scene = nullptr;
+    scene.controllerManager = nullptr;
+    scene.dispatcher = nullptr;
+    scene.updateFunction = nullptr;
+    scene.eventCallback = nullptr;
+    scene.eventBuffer.Clear();
+    scene.activeActors.Clear();
+
     state.deadSceneIds.Append(sceneId);
     state.activeSceneIds.EraseIndex(activeIndex);
 }
@@ -337,53 +354,22 @@ GetNrMaterials()
 }
 
 
-#if NEBULA_DEBUG
-// used for detecting wrong api usage
-static bool updateCalled = false;
-#endif
-
 //------------------------------------------------------------------------------
 /**
 */
 void
-Update(Timing::Time delta)
+Step(Timing::Time delta)
 {
-#if NEBULA_DEBUG
-    updateCalled = true;
-#endif
-    state.Update(delta);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BeginSimulating(Timing::Time delta, IndexT scene)
-{
-#if NEBULA_DEBUG
-    n_assert2(updateCalled == false, "Mixed sync Update in PhysicsInterface with Split Begin/EndSimulating, this is most definitely wrong");
-#endif
-
-    state.BeginSimulating(delta, scene);
+    state.Step(delta);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-EndSimulating(IndexT scene)
+Step(Timing::Time delta, IndexT scene)
 {
-    state.EndSimulating(scene);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FlushSimulation(IndexT scene)
-{
-    state.FlushSimulation(scene);
+    state.Step(delta, scene);
 }
 
 //------------------------------------------------------------------------------

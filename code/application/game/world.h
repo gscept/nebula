@@ -19,6 +19,8 @@
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
 #include "util/fourcc.h"
+#include "basegamefeature/components/basegamefeature.h"
+
 
 namespace MemDb
 {
@@ -32,12 +34,28 @@ class Blob;
 namespace Game
 {
 
+class TransformHierarchy;
 class PackedLevel;
 
 /// returns a world by hash
 World* GetWorld(WorldHash worldHash);
 /// returns a world by id
 World* GetWorld(WorldId worldId);
+
+// which mode a world is currently running in. A processor only runs if its phase
+// allows the mode the world is in.
+enum WorldMode : uint8_t
+{
+    EditorMode = 0,   // world is not simulating
+    PlayMode = 1,     // world is running gameplay
+};
+
+// returns the phase bit that corresponds to a world mode
+inline ProcessorPhase
+PhaseForMode(WorldMode mode)
+{
+    return mode == PlayMode ? PlayPhase : EditorPhase;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -77,6 +95,10 @@ public:
     WorldHash GetWorldHash() const;
     /// Returns the world ID for this world. This corresponds to Game::Entity::world.
     WorldId GetWorldId() const;
+
+    /// The transform hierarchy of this world. The world owns it, which is what lets the hierarchy read the
+    /// component tables through it without knowing which world it was called from.
+    Ptr<TransformHierarchy> GetHierarchy() const;
 
     /// Create a new empty entity
     Entity CreateEntity(bool immediate = true);
@@ -173,7 +195,7 @@ public:
     void InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
     void FinalizeAllocate(Entity entity);
     /// Deallocate an entity instance. Use this with caution!
-    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
+    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance, Entity entity);
     /// Deallocate an entity instance. Use this with caution!
     void DeallocateInstance(Entity entity);
     /// Defragment an entity table
@@ -188,6 +210,9 @@ public:
     void ExecuteRemoveComponentCommands();
     /// Disable if initialization of components is not required (ex. when running as editor db)
     bool componentInitializationEnabled = true;
+
+    /// the mode this world is currently running in, which decides which processors execute
+    WorldMode mode = PlayMode;
 
     void RenderDebug();
 
@@ -245,8 +270,9 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
-    /// Copies the component to the decay table
-    void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance);
+    /// Copies the component to the decay table and runs its decay callback. The entity is the owner
+    /// of the component, which is what allows the callback to touch anything related to it
+    void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity);
 
     ///  Move a instance/row within a partition
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
@@ -278,6 +304,8 @@ private:
     Util::Array<RemoveComponentCommand> removeComponentQueue;
     /// Allocator for staged components
     Memory::ArenaAllocator<4096_KB> componentStageAllocator;
+    /// The transform hierarchy of the entities in this world
+    Ptr<TransformHierarchy> hierarchy;
     /// Set to true if the caches for the frame pipeline are valid
     bool cacheValid = false;
     /// The frame pipeline for this world
@@ -486,5 +514,10 @@ template <>
 void World::SetComponent(Entity entity, Game::Orientation const&);
 template <>
 void World::SetComponent(Entity entity, Game::Scale const&);
+
+/// The local transform is the component which puts an entity in the transform hierarchy, which is why a write of it
+/// has to reach the instances below it
+template <>
+void World::SetComponent(Entity entity, Game::HTransform const&);
 
 } // namespace Game

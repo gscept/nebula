@@ -109,13 +109,17 @@ public:
     /// destroy a world
     void DestroyWorld(WorldHash worldHash);
     
+    /// The number of world slots. A world id is the slot a world lives in, and Game::Entity::world is 8
+    /// bits, so this cannot be more than 256. Slots are recycled when a world is destroyed.
+    static const uint MaxWorlds = 64;
+
     /// contains internal state and world management
     struct State
     {
-        World* worlds[32];
+        World* worlds[MaxWorlds];
         uint numWorlds = 0;
 
-        Util::HashTable<WorldHash, WorldId, 32, 1> worldTable;
+        Util::HashTable<WorldHash, WorldId, (int) MaxWorlds, 1> worldTable;
     } state;
 
 protected:

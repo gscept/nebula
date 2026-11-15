@@ -10,10 +10,9 @@
 #include "physicsfeature/managers/physicsmanager.h"
 #include "physics/actorcontext.h"
 #include "game/api.h"
+#include "game/world.h"
 #include "components/physicsfeature.h"
 #include "managers/charactermanager.h"
-
-#define USE_SYNC_UPDATE 0
 
 namespace PhysicsFeature
 {
@@ -23,7 +22,7 @@ __ImplementSingleton(PhysicsFeatureUnit);
 //------------------------------------------------------------------------------
 /**
 */
-PhysicsFeatureUnit::PhysicsFeatureUnit() : simulating(false)
+PhysicsFeatureUnit::PhysicsFeatureUnit()
 {
     __ConstructSingleton;
 }
@@ -42,9 +41,22 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
+    // the PhysicsActor component is the handle which owns the physx actor of an entity. The body and
+    // collider components ensure a handle on init and release their actor and shapes on decay,
+    // everything in between setup and teardown is a change, and changes are pinged by whoever made them
     this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
     this->RegisterComponentType<IsKinematic>();
     this->RegisterComponentType<Character>({ .decay = true });
+
+    this->RegisterComponentType<PhysicsResource>({ .OnInit = &PhysicsManager::InitPhysicsResource, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::PhysicsResource> });
+    this->RegisterComponentType<Rigidbody>({ .OnInit = &PhysicsManager::InitRigidbody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::Rigidbody> });
+    this->RegisterComponentType<StaticBody>({ .OnInit = &PhysicsManager::InitStaticBody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::StaticBody> });
+    this->RegisterComponentType<BoxCollider>({ .OnInit = &PhysicsManager::InitBoxCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::BoxCollider> });
+    this->RegisterComponentType<SphereCollider>({ .OnInit = &PhysicsManager::InitSphereCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::SphereCollider> });
+    this->RegisterComponentType<CapsuleCollider>({ .OnInit = &PhysicsManager::InitCapsuleCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::CapsuleCollider> });
+    this->RegisterComponentType<PlaneCollider>({ .OnInit = &PhysicsManager::InitPlaneCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::PlaneCollider> });
+    this->RegisterComponentType<MeshCollider>({ .OnInit = &PhysicsManager::InitMeshCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::MeshCollider> });
+    this->RegisterComponentType<HeightFieldCollider>({ .OnInit = &PhysicsManager::InitHeightFieldCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::HeightFieldCollider> });
 }
 
 //------------------------------------------------------------------------------
@@ -57,18 +69,39 @@ PhysicsFeatureUnit::OnActivate()
 
     this->cl_debug_draw_physics = Core::CVarGet("cl_debug_draw_physics");
 
-    Game::TimeSourceCreateInfo timeSourceInfo;
-    timeSourceInfo.hash = TIMESOURCE_PHYSICS;
-    Game::Time::CreateTimeSource(timeSourceInfo);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    this->AttachManager(PhysicsManager::Create());
-    this->AttachManager(CharacterManager::Create());
+    Game::TimeSourceCreateInfo timeSourceInfo;
+    timeSourceInfo.hash = TIMESOURCE_PHYSICS;
+    timeSourceInfo.fixedFrameTime = PHYSICS_RATE;
+    Game::Time::CreateTimeSource(timeSourceInfo);
+
+    // The physics frame is a fixed event, which runs once for every step the physics time source has available.
+    // Everything which reads or writes the actors has to be inside the event, because PhysX only allows that
+    // before simulate() and after fetchResults(). The event sits between OnFrame and OnEndFrame, so the gameplay
+    // processors of the frame write the poses the step uses. It has to be registered before the managers build
+    // their processors on it
+    Game::FrameEventCreateInfo eventInfo;
+    eventInfo.order = 150;
+    eventInfo.name = "OnPhysicsFrame"_atm;
+    eventInfo.fixedStep = PHYSICS_RATE;
+    eventInfo.timeSourceHash = TIMESOURCE_PHYSICS;
+    this->physicsEvent = world->GetFramePipeline().RegisterFrameEvent(eventInfo);
+
+    // The step only runs for a world which is simulating, which is what keeps a world in editor mode from
+    // simulating while the ones running gameplay do
+    this->physicsEvent->AddCallback(150, Game::PlayPhase, [this](Game::World* world)
+    {
+        Physics::Step(Game::Time::GetTimeSource(TIMESOURCE_PHYSICS)->frameTime, this->SceneForWorld(world));
+    });
 
     Physics::Setup();
 
     IndexT defaultScene = Physics::CreateScene();
     this->physicsWorlds.Add(world, defaultScene);
+
+    this->AttachManager(PhysicsManager::Create());
+    this->AttachManager(CharacterManager::Create());
 
     Physics::SetOnSleepCallback([](Physics::ActorId* actors, SizeT num)
     {
@@ -152,46 +185,27 @@ PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
     if (this->physicsWorlds.Contains(world))
     {
         IndexT scene = this->physicsWorlds[world];
-        Physics::FlushSimulation(scene);
+
+        // this is where managers destroy their actors, which has to happen before the scene goes away
         FeatureUnit::OnBeforeCleanup(world);
+
+        // destroy the scene with the world
+        Physics::DestroyScene(scene);
+        this->physicsWorlds.Erase(world);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-PhysicsFeatureUnit::OnBeginFrame()
+IndexT
+PhysicsFeatureUnit::SceneForWorld(Game::World* world)
 {
-#if USE_SYNC_UPDATE > 0
-    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
-    Physics::Update(time->frameTime);
-#else
-    if (!simulating) return;
-
-    for (auto const& scene : this->physicsWorlds)
+    if (!this->physicsWorlds.Contains(world))
     {
-        Physics::EndSimulating(scene.Value());
+        this->physicsWorlds.Add(world, Physics::CreateScene());
     }
-    simulating = false;
-#endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysicsFeatureUnit::OnDecay()
-{
-    FeatureUnit::OnDecay();
-#if USE_SYNC_UPDATE == 0
-    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
-    for (auto const& scene : this->physicsWorlds)
-    {
-        Physics::BeginSimulating(time->frameTime, scene.Value());
-    }
-    simulating = true;
-#endif
+    return this->physicsWorlds[world];
 }
 
 //------------------------------------------------------------------------------
@@ -214,4 +228,4 @@ PhysicsFeatureUnit::OnRenderDebug()
     Physics::RenderDebug();
 }
 
-} // namespace Game
+} // namespace PhysicsFeature

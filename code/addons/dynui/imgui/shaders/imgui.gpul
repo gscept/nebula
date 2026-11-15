@@ -18,6 +18,7 @@ struct ImGuiData
     PackedTextureInfo : u32;
     RangeMin : f32;
     RangeMax : f32;
+    Exposure : f32;
 };
 
 @Visibility("VS|PS")
@@ -51,7 +52,7 @@ render_state TextState
 //------------------------------------------------------------------------------
 /**
 */ 
-UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer : u32, out useRange : u32, out useAlpha : u32, out splat : u32, out pointFilter : u32) void
+UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer : u32, out useRange : u32, out useAlpha : u32, out splat : u32, out pointFilter : u32, out tonemap : u32) void
 {
     const TEXTURE_TYPE_MASK = 0xFu;
     const TEXTURE_LAYER_MASK = 0xFFu;
@@ -61,6 +62,7 @@ UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer 
     const TEXTURE_SINGLE_CHANNEL = 0x1u;
     const TEXTURE_ID_MASK = 0x7FFu;
     const TEXTURE_POINT_FILTER_MASK = 0x1u;
+    const TEXTURE_TONEMAP_MASK = 0x1u;
 
     type = val & TEXTURE_TYPE_MASK;
     layer = (val >> 4u) & TEXTURE_LAYER_MASK;
@@ -70,6 +72,23 @@ UnpackTexture(val : u32, out id : u32, out type : u32, out mip : u32, out layer 
     splat = (val >> 18u) & TEXTURE_SINGLE_CHANNEL;
     id = (val >> 19u) & TEXTURE_ID_MASK;
     pointFilter = (val >> 30u) & TEXTURE_POINT_FILTER_MASK;
+    tonemap = (val >> 31u) & TEXTURE_TONEMAP_MASK;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Direction through a texel of a cube face, faces are ordered +X, -X, +Y, -Y, +Z, -Z
+*/
+CubeFaceDirection(uv : f32x2, face : u32) f32x3
+{
+    const s = uv.x * 2.0f - 1.0f;
+    const t = uv.y * 2.0f - 1.0f;
+    if face == 0u { return f32x3(1.0f, -t, -s); }
+    else if face == 1u { return f32x3(-1.0f, -t, s); }
+    else if face == 2u { return f32x3(s, 1.0f, t); }
+    else if face == 3u { return f32x3(s, -1.0f, -t); }
+    else if face == 4u { return f32x3(s, -t, 1.0f); }
+    return f32x3(-s, -t, -1.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -107,8 +126,8 @@ psMain(
     in Color : f32x4) void
 {
     var texColor : f32x4;
-    var id, type, layer, mip, useAlpha, useRange, splat, pointFilter : u32;
-    UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useRange, useAlpha, splat, pointFilter);
+    var id, type, layer, mip, useAlpha, useRange, splat, pointFilter, tonemap : u32;
+    UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useRange, useAlpha, splat, pointFilter, tonemap);
     if (pointFilter != 0)
     {
         if type == 0 { texColor = sample2DLod(id, PointTextureSampler, UV, mip); }
@@ -116,8 +135,9 @@ psMain(
         else if type == 2
         {
             const size = textureGetSizeMip(Textures3D[id], mip);
-            texColor = sample3DLod(id, PointTextureSampler, f32x3(UV, layer / f32(size.z)), mip);
+            texColor = sample3DLod(id, PointTextureSampler, f32x3(UV, (f32(layer) + 0.5f) / f32(size.z)), mip);
         }
+        else if type == 3 { texColor = sampleCubeLod(id, PointTextureSampler, CubeFaceDirection(UV, layer), f32(mip)); }
     }
     else
     {
@@ -126,13 +146,21 @@ psMain(
         else if type == 2
         {
             const size = textureGetSizeMip(Textures3D[id], mip);
-            texColor = sample3DLod(id, TextureSampler, f32x3(UV, layer / f32(size.z)), mip);
+            texColor = sample3DLod(id, TextureSampler, f32x3(UV, (f32(layer) + 0.5f) / f32(size.z)), mip);
         }
+        else if type == 3 { texColor = sampleCubeLod(id, TextureSampler, CubeFaceDirection(UV, layer), f32(mip)); }
     }
     
     if (useRange != 0)
     {
         texColor.rgb = (texColor.rgb - ImGUI.RangeMin) / (ImGUI.RangeMax - ImGUI.RangeMin);
+    }
+
+    // HDR values above 1 would clip to white, Reinhard maps them back below 1
+    if (tonemap != 0)
+    {
+        const exposed = max(f32x3(0), texColor.rgb * ImGUI.Exposure);
+        texColor.rgb = exposed / (exposed + f32x3(1.0f));
     }
 
     if useAlpha == 0 { texColor.a = 1.0f; }

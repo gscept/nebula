@@ -529,7 +529,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
             if (ev.target->GetValue() == 1)
             {
                 // Post the first "busy" message when we check the checkbox.
-                assert(!GetMessageByID(TBIDC("busy")));
+                n_assert(!GetMessageByID(TBIDC("busy")));
                 if (!GetMessageByID(TBIDC("busy")))
                 {
                     this->PublishMessage(TBIDC("busy"), nullptr);
@@ -544,7 +544,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
             else
             {
                 // Remove any pending "busy" message when we uncheck the checkbox.
-                assert(GetMessageByID(TBIDC("busy")));
+                n_assert(GetMessageByID(TBIDC("busy")));
                 if (TBMessage* busymsg = GetMessageByID(TBIDC("busy")))
                     DeleteMessage(busymsg);
             }

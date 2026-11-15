@@ -1,0 +1,2 @@
+# the repository ignores *.patch, these are the Texconv-Custom-DLL and DirectXTex patches applied by build_directxtex.sh
+!*.patch

@@ -10,7 +10,7 @@
 #include "dynui/nebula_icons.h"
 #include "editor/ui/windowserver.h"
 
-const char* batcherPath = NEBULA_BINARY_FOLDER "/assetbatcher.exe";
+const char* batcherPath = NEBULA_BINARY_FOLDER "/assetbatcher";
 const char* workPath = "proj:work/";
 namespace Editor
 {
@@ -64,6 +64,26 @@ struct
 
 
 Threading::Interlocked::AtomicCounter LiveBatcher::WorkCounter;
+
+//------------------------------------------------------------------------------
+/**
+    The captured output isn't null terminated and stays unallocated if the batcher
+    printed nothing
+*/
+static void
+LogBatcherOutput()
+{
+    IO::Stream::Size size = livebatcherState.outputStream->GetSize();
+    if (size > 0)
+    {
+        n_log(Live Batcher, "%.*s", (int)size, (const char*)livebatcherState.outputStream->GetRawPointer());
+    }
+    else
+    {
+        n_log(Live Batcher, "the batcher printed nothing\n");
+    }
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -107,6 +127,8 @@ LiveBatcher::BatchAssets()
             Util::String args;
             args.Append("-rawlog ");
             livebatcherState.startInfo.args = args;
+            // the process writes from the start of the stream, drop the previous job's output
+            livebatcherState.outputStream->SetSize(0);
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
@@ -138,11 +160,13 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
             args.Append("-rawlog ");
             args.Append(" -dir \"" + assetPath.GetFolder() + "\"");
             livebatcherState.startInfo.args = args;
+            // the process writes from the start of the stream, drop the previous job's output
+            livebatcherState.outputStream->SetSize(0);
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
-                n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+                LogBatcherOutput();
 
                 WorkCounter.Decrement();
                 windowServer->RemoveLoadingMessage(jobMessage);
@@ -194,11 +218,13 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
             args.Append(" -file \"" + filePath.GetWorkFile() + "\"");
             args.Append(" -force");
             livebatcherState.startInfo.args = args;
+            // the process writes from the start of the stream, drop the previous job's output
+            livebatcherState.outputStream->SetSize(0);
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
                 System::WaitForProcess(process);
-                n_log(Live Batcher, "%s", (char*)livebatcherState.outputStream->GetRawPointer());
+                LogBatcherOutput();
 
                 WorkCounter.Decrement();
                 windowServer->RemoveLoadingMessage(jobMessage);
@@ -249,6 +275,8 @@ LiveBatcher::BatchModes(Editor::BatchModes modes)
                 index++;
             }
             livebatcherState.startInfo.args = args;
+            // the process writes from the start of the stream, drop the previous job's output
+            livebatcherState.outputStream->SetSize(0);
             System::ProcessId process = System::StartProcess(livebatcherState.startInfo);
             if (process != System::InvalidProcessId)
             {
@@ -306,7 +334,8 @@ LiveBatcherWindow::Run(SaveMode save)
     {
         if (ImGui::BeginChild("Log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar))
         {
-            ImGui::TextUnformatted((const char*)Editor::livebatcherState.outputStream->GetRawPointer());
+            const char* text = (const char*)Editor::livebatcherState.outputStream->GetRawPointer();
+            ImGui::TextUnformatted(text, text + Editor::livebatcherState.outputStream->GetSize());
 
             if (Editor::livebatcherState.autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
                 ImGui::SetScrollHereY(1.0f);

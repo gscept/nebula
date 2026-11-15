@@ -818,10 +818,10 @@ DestroyTexture(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-Util::StringAtom
+const Util::StringAtom&
 TextureGetName(const TextureId id)
 {
-    const Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id.resourceId);
+    const Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.ConstGet<Vulkan::Texture_LoadInfo>(id.resourceId);
     return loadInfo.name;
 }
 

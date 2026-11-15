@@ -450,18 +450,18 @@ namespace Nebula
 
         #endregion
 
-        #region CreateFromYawPitchRoll
+        #region CreateFromPitchYawRoll
 
         //--------------------------------------------------------------------------
         /** <summary>
-            Creates a new <see cref="Quaternion"/> from the specified yaw, pitch and roll angles.
+            Creates a new <see cref="Quaternion"/> from the specified pitch, yaw and roll angles.
             </summary>
-            <param name="yaw">Yaw around the y axis in radians.</param>
             <param name="pitch">Pitch around the x axis in radians.</param>
+            <param name="yaw">Yaw around the y axis in radians.</param>
             <param name="roll">Roll around the z axis in radians.</param>
-            <returns>A new quaternion from the concatenated yaw, pitch, and roll angles.</returns>
+            <returns>A new quaternion from the concatenated pitch, yaw, and roll angles.</returns>
         */
-        public static Quaternion CreateFromYawPitchRoll(float yaw, float pitch, float roll)
+        public static Quaternion CreateFromPitchYawRoll(float pitch, float yaw, float roll)
 		{
             float halfRoll = roll * 0.5f;
             float halfPitch = pitch * 0.5f;
@@ -489,7 +489,7 @@ namespace Nebula
             <param name="roll">Roll around the z axis in radians.</param>
             <param name="result">A new quaternion from the concatenated yaw, pitch, and roll angles as an output parameter.</param>
         */
- 		public static void CreateFromYawPitchRoll(float yaw, float pitch, float roll, out Quaternion result)
+ 		public static void CreateFromPitchYawRoll(float pitch, float yaw, float roll, out Quaternion result)
 		{
             float halfRoll = roll * 0.5f;
             float halfPitch = pitch * 0.5f;

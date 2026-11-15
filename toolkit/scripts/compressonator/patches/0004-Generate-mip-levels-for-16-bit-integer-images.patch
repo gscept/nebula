@@ -1,0 +1,42 @@
+From db7a95c5bbd7021ffe98e0dd8cb671e46146a92a Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:31:43 +0100
+Subject: [PATCH 4/8] Generate mip levels for 16-bit integer images
+
+GenerateMipmapLevel() had no case for CF_16bit, so 16-bit images (from
+16-bit DDS or TIFF files) hit the assert, which is compiled out in
+release builds, and their generated mip levels were left uninitialized.
+Add a case matching the 8-bit one.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ cmp_framework/common/cmp_boxfilter.cpp | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/cmp_framework/common/cmp_boxfilter.cpp b/cmp_framework/common/cmp_boxfilter.cpp
+index 8c7c4d0..b236a81 100644
+--- a/cmp_framework/common/cmp_boxfilter.cpp
++++ b/cmp_framework/common/cmp_boxfilter.cpp
+@@ -301,6 +301,22 @@ void GenerateMipmapLevel(MipLevel* currMipLevel, MipLevel** prevMipLevels, uint3
+                     destPixel += bytesPerChannel;
+                 }
+             }
++            else if (channelFormat == CF_16bit)
++            {
++                for (uint32_t i = 0; i < numChannels; ++i)
++                {
++                    CMP_DWORD pixelValue = 0;
++                    for (uint32_t j = 0; j < numPrevLevels; ++j)
++                    {
++                        pixelValue += ((CMP_DWORD) * ((CMP_WORD*)levels[j].tl + i) + *((CMP_WORD*)levels[j].tr + i) + *((CMP_WORD*)levels[j].bl + i) +
++                                       *((CMP_WORD*)levels[j].br + i)) /
++                                      4;
++                    }
++
++                    *((CMP_WORD*)destPixel) = (CMP_WORD)pixelValue;
++                    destPixel += bytesPerChannel;
++                }
++            }
+             else if (channelFormat == CF_Float16)
+             {
+                 for (uint32_t i = 0; i < numChannels; ++i)

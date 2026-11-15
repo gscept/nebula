@@ -9,7 +9,6 @@
 #include "editor/tools/selectioncontext.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "basegamefeature/components/basegamefeature.h"
-#include "basegamefeature/managers/hierarchymanager.h"
 #include "editor/components/editorcomponents.h"
 
 namespace Edit
@@ -1175,7 +1174,7 @@ SetParent(Editor::Entity child, Editor::Entity parent)
     cmd->newHasTransform = true;
     cmd->newTransform.parent = parent;
     cmd->newTransform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(childPosition));
-    cmd->newTransform.localOrientation = childOrientation * Math::inverse(parentOrientation);
+    cmd->newTransform.localOrientation = Math::inverse(parentOrientation) * childOrientation;
     cmd->newTransform.localScale = Math::vec3(
         childScale.x / parentScale.x,
         childScale.y / parentScale.y,
@@ -1212,32 +1211,8 @@ bool
 SetWorldPosition(Editor::Entity entity, const Game::Position& position)
 {
     Game::World* editorWorld = Editor::state.editorWorld;
-    if (!editorWorld->HasComponent<Game::HTransform>(entity))
-    {
-        Game::Position value = position;
-        SetComponent(entity, Game::GetComponentId<Game::Position>(), &value);
-        return true;
-    }
-
-    Game::HTransform transform = editorWorld->GetComponent<Game::HTransform>(entity);
-    if (transform.parent == Game::Entity::Invalid())
-    {
-        transform.localPosition = position;
-        SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
-        return true;
-    }
-    Game::Scale const parentScale = editorWorld->GetComponent<Game::Scale>(transform.parent);
-    if (Math::abs(parentScale.x) < 0.000001f || Math::abs(parentScale.y) < 0.000001f || Math::abs(parentScale.z) < 0.000001f)
-    {
-        return false;
-    }
-    Math::mat4 const parentTransform = Math::trs(
-        editorWorld->GetComponent<Game::Position>(transform.parent),
-        editorWorld->GetComponent<Game::Orientation>(transform.parent),
-        parentScale
-    );
-    transform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(position));
-    SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
+    Game::Position value = position;
+    SetComponent(entity, Game::GetComponentId<Game::Position>(), &value);
     return true;
 }
 
@@ -1248,23 +1223,8 @@ bool
 SetWorldOrientation(Editor::Entity entity, const Game::Orientation& orientation)
 {
     Game::World* editorWorld = Editor::state.editorWorld;
-    if (!editorWorld->HasComponent<Game::HTransform>(entity))
-    {
-        Game::Orientation value = orientation;
-        SetComponent(entity, Game::GetComponentId<Game::Orientation>(), &value);
-        return true;
-    }
-
-    Game::HTransform transform = editorWorld->GetComponent<Game::HTransform>(entity);
-    if (transform.parent == Game::Entity::Invalid())
-    {
-        transform.localOrientation = orientation;
-        SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
-        return true;
-    }
-    Game::Orientation const parentOrientation = editorWorld->GetComponent<Game::Orientation>(transform.parent);
-    transform.localOrientation = orientation * Math::inverse(parentOrientation);
-    SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
+    Game::Orientation value = orientation;
+    SetComponent(entity, Game::GetComponentId<Game::Orientation>(), &value);
     return true;
 }
 
@@ -1275,27 +1235,8 @@ bool
 SetWorldScale(Editor::Entity entity, const Game::Scale& scale)
 {
     Game::World* editorWorld = Editor::state.editorWorld;
-    if (!editorWorld->HasComponent<Game::HTransform>(entity))
-    {
-        Game::Scale value = scale;
-        SetComponent(entity, Game::GetComponentId<Game::Scale>(), &value);
-        return true;
-    }
-
-    Game::HTransform transform = editorWorld->GetComponent<Game::HTransform>(entity);
-    if (transform.parent == Game::Entity::Invalid())
-    {
-        transform.localScale = scale;
-        SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
-        return true;
-    }
-    Game::Scale const parentScale = editorWorld->GetComponent<Game::Scale>(transform.parent);
-    if (Math::abs(parentScale.x) < 0.000001f || Math::abs(parentScale.y) < 0.000001f || Math::abs(parentScale.z) < 0.000001f)
-    {
-        return false;
-    }
-    transform.localScale = Math::vec3(scale.x / parentScale.x, scale.y / parentScale.y, scale.z / parentScale.z);
-    SetComponent(entity, Game::GetComponentId<Game::HTransform>(), &transform);
+    Game::Scale value = scale;
+    SetComponent(entity, Game::GetComponentId<Game::Scale>(), &value);
     return true;
 }
 
@@ -1308,42 +1249,10 @@ PreviewWorldTransform(Editor::Entity entity, const Game::Position& position, con
     Game::World* editorWorld = Editor::state.editorWorld;
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
     Game::Entity const gameEntity = Editor::state.editables[entity.index].gameEntity;
-    if (!editorWorld->HasComponent<Game::HTransform>(entity))
-    {
-        gameWorld->SetComponent<Game::Position>(gameEntity, position);
-        gameWorld->SetComponent<Game::Orientation>(gameEntity, orientation);
-        gameWorld->SetComponent<Game::Scale>(gameEntity, scale);
-        gameWorld->MarkAsModified(gameEntity);
-        return;
-    }
-
-    Game::HTransform transform = editorWorld->GetComponent<Game::HTransform>(entity);
-    if (transform.parent == Game::Entity::Invalid())
-    {
-        transform.localPosition = position;
-        transform.localOrientation = orientation;
-        transform.localScale = scale;
-        gameWorld->SetComponent<Game::HTransform>(gameEntity, transform);
-        Game::HierarchyManager::Resolve(gameWorld);
-        return;
-    }
-    Game::Scale const parentScale = editorWorld->GetComponent<Game::Scale>(transform.parent);
-    if (Math::abs(parentScale.x) < 0.000001f || Math::abs(parentScale.y) < 0.000001f || Math::abs(parentScale.z) < 0.000001f)
-    {
-        return;
-    }
-    Game::Orientation const parentOrientation = editorWorld->GetComponent<Game::Orientation>(transform.parent);
-    Math::mat4 const parentTransform = Math::trs(
-        editorWorld->GetComponent<Game::Position>(transform.parent),
-        parentOrientation,
-        parentScale
-    );
-    transform.parent = Editor::ToGameEntity(transform.parent);
-    transform.localPosition = Math::vec3(Math::inverse(parentTransform) * Math::point(position));
-    transform.localOrientation = orientation * Math::inverse(parentOrientation);
-    transform.localScale = Math::vec3(scale.x / parentScale.x, scale.y / parentScale.y, scale.z / parentScale.z);
-    gameWorld->SetComponent<Game::HTransform>(gameEntity, transform);
-    Game::HierarchyManager::Resolve(gameWorld);
+    gameWorld->SetComponent<Game::Position>(gameEntity, position);
+    gameWorld->SetComponent<Game::Orientation>(gameEntity, orientation);
+    gameWorld->SetComponent<Game::Scale>(gameEntity, scale);
+    gameWorld->MarkAsModified(gameEntity);
 }
 
 } // namespace Edit

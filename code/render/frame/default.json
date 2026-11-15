@@ -72,6 +72,24 @@
                 ]
             },
             {
+                "name": "HalfColor",
+                "format": "R16G16B16A16F",
+                "usage": "ReadWrite",
+                "relativeSize": [
+                    1.0,
+                    1.0
+                ]
+            },
+            {
+                "name": "BokehBuffer",
+                "format": "R16G16B16A16F",
+                "usage": "ReadWrite",
+                "relativeSize": [
+                    0.5,
+                    0.5
+                ]
+            },
+            {
                 "name": "LightBuffer",
                 "format": "R11G11B10F",
                 "usage": "Render|ReadWrite|TransferSource",
@@ -224,6 +242,11 @@
                 "queue": "Compute",
                 "_comment": "Perform clustering AABB generation and run culling for clustering systems",
                 "ops": [
+                    {
+                        "subgraph": {
+                            "name": "DoF Mask"
+                        }
+                    },
                     {
                         "subgraph": {
                             "name": "Raytracing Structures Update"
@@ -639,6 +662,22 @@
                     {
                         "subgraph": {
                             "name": "Lights Combine"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "DoF Setup"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DoF Gather"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DoF Composite"
                         }
                     },
 

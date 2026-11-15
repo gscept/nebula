@@ -1,0 +1,646 @@
+//------------------------------------------------------------------------------
+//  dof.gpul
+//  Full-resolution circle of confusion, half-resolution bokeh gather, before tonemap.
+//
+//  Dispatch. Thread (0, 0) is texel (0, 0).
+//    Mask      1 by 1, local 32. Compute queue. Reads Aperture, writes BokehMaskWrite.
+//    Setup     ceil(viewportWidth / 16) by ceil(viewportHeight / 16), local 16x16
+//    Gather    ceil(halfViewportWidth / 16) by ceil(halfViewportHeight / 16), local 16x16
+//  viewportWidth  = Viewport.z
+//  viewportHeight = Viewport.w
+//  half viewport  = [0, Viewport.zw >> 1)
+//
+//  Passes, in order.
+//    DofMask   Writes BokehMaskWrite from Aperture. Reads no color, depth, or viewport.
+//              The image is shader-read except during this store. Gather samples
+//              BokehMask, so the store must finish before that fetch.
+//              The mask changes when blade count, rotation, or roundness change.
+//    DofSetup  Writes HalfColor from color and depth, one texel per pixel.
+//              rgb is that color. a is the signed circle of confusion in full-resolution
+//              pixels, clamped to [-30, 30]. Raw depth 1 is the background: its circle
+//              of confusion is 0, so it stays sharp and is not a gather sample.
+//    DofGather Reads a 2x2 of HalfColor per half-res texel. The front-most tap wins
+//              when it is in front of the plane, otherwise the quad is averaged, and
+//              the circle of confusion is halved into half-res pixels, clamped to
+//              [-15, 15]. Samples BokehMask, writes BokehOutput.
+//              A tile whose apron is in focus stores its center color with a = 0.
+//              A pixel behind the plane averages its own aperture. A foreground
+//              texel splats that same aperture. a is the foreground coverage.
+//    DofComposite Reads HalfColor's circle of confusion per pixel and BokehOutput,
+//              and writes lerp(LightBuffer, bokeh, max(farBlend, a)) back to LightBuffer.
+//              Color Downsample and bloom run on that image. finalize.gpul adds bloom.
+//
+//  PerTickParams
+//    DoFDistances.xyz
+//        x  focus distance, linear view depth (same space as LinearizeDepth)
+//        y  focus range. At this distance from the plane the radius is DoFDistances.z
+//        z  max circle of confusion, in full-resolution pixels
+//    DepthBuffer
+//        raw depth, same pixel grid as ColorSource. DofSetup.
+//  ViewConstants
+//    FocalLengthNearFar.zw
+//        near and far. DofSetup.
+//    Viewport.zw
+//        Exclusive end of the viewport, in pixels. This is the viewport size.
+//        xy is not read. The viewport origin is texel (0, 0).
+//
+//  DofUniforms, std140. Two i32x4, then one f32x4.
+//    ColorSize.xy   pixel size of ColorSource mip 0 and the depth buffer.
+//                   Viewport.zw <= ColorSize.xy.
+//    HalfSize.xy    pixel size of BokehOutput.
+//                   HalfSize.xy >= Viewport.zw >> 1.
+//    ColorSize.zw, HalfSize.zw   unused. Leave them 0.
+//    Aperture       DofMask.
+//        x  blade count. 3..8 is a regular iris with a vertex on +X at rotation 0.
+//           Any other count is a disk.
+//        y  rotation, radians.
+//        z  roundness in [0, 1]. 0 = straight blades, 1 = disk. The blades open
+//           toward the circle of confusion and are clipped by it.
+//        w  0 skips DirtMask. Nonzero multiplies bright samples by DirtMask.r.
+//
+//  Images
+//    ColorSource      full-res HDR color, mip 0. Alpha is ignored. DofSetup fetches it.
+//    HalfColor        rgba16f, same pixel grid as ColorSource.
+//                     rgb = color, a = signed circle of confusion in full-resolution
+//                     pixels, clamped to [-30, 30]. DofSetup writes it, DofGather reads it.
+//    BokehOutput      rgba16f, half resolution.
+//                     rgb = bokeh color at full blend. a = foreground coverage in [0, 1].
+//                     DofGather writes it. finalize.gpul samples it with LinearSampler
+//                     in ColorSource UV space, (pixel + 0.5) / ColorSize. The half-res
+//                     grid is ColorSize >> 1.
+//    DirtMask         Aperture intensity. r multiplies a sample that is many times
+//                     the camera-adapted luminance. Dim samples stay at 1, so the
+//                     blur keeps the untextured average. The disk maps onto the
+//                     texture the same way for every shape:
+//                     uv = 0.5 + 0.5 * offset / radius, offset in half-res pixels from
+//                     the aperture center. No per-shape offset. g and b are ignored.
+//                     The gather still divides by coverage. DofGather uses it when
+//                     Aperture.w != 0.
+//    BokehMask        rgba16f, 31 by 1, sampled. Shader-read except during DofMask.
+//    BokehMaskWrite   the same image, storage. DofMask writes it.
+//                     Texel x is the aperture row at height (x - 15), for a circle of
+//                     confusion of 15 half-res pixels. 15 is MAX_COC.
+//                     rg = horizontal span (xMin, xMax) in half-res pixels. xMin > xMax
+//                     means that row misses the aperture.
+//                     b  = area of the whole aperture at radius 15, the same in every texel.
+//                     a  = 0.
+//                     DofGather scales rg by coc/15 and b by (coc/15)^2.
+//
+//  DofGather clamps apron reads to the half viewport.
+//
+//  Far layer: a pixel behind the plane averages its own aperture. Each mask row is one
+//  span, scaled by that pixel's radius. Aperture.w == 0 reads the fully covered texels
+//  with two prefix lookups and adds the rim texels by coverage. Otherwise each texel
+//  scales a bright sample by DirtMask.r at its aperture offset. Coverage is unchanged.
+//  In-focus and foreground texels are holes in that prefix.
+//  Near layer: a foreground texel splats the same scaled span. Tiles whose apron is
+//  entirely behind the plane skip that loop.
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+
+const TILE = 16;
+const RADIUS = 16;
+const CACHE = TILE + RADIUS * 2;
+const MAX_COC = RADIUS - 1;
+const ROWS_PER_PASS = 8;
+// Half-res circle of confusion, in half-res pixels, before a sample joins the gather.
+// finalize.gpul applies the far blend from the full-res circle of confusion.
+const FOCUS_EPS = 0.5f;
+// How many times the camera-adapted luminance a sample must be before DirtMask
+// scales it, and where that scale is complete. Below the start the color is unchanged.
+const BOKEH_RATIO_START = 8.0f;
+const BOKEH_RATIO_FULL = 32.0f;
+const MAX_BLADES = 8;
+
+struct DofData
+{
+    ColorSize : i32x4;
+    HalfSize : i32x4;
+    Aperture : f32x4;
+};
+group(BATCH_GROUP) uniform DofUniforms : *DofData;
+
+group(BATCH_GROUP) uniform ColorSource : *texture2D;
+group(BATCH_GROUP) uniform ColorTarget : *mutable r11g11b10f texture2D;
+group(BATCH_GROUP) uniform HalfColor : *mutable rgba16f texture2D;
+group(BATCH_GROUP) uniform BokehOutput : *mutable rgba16f texture2D;
+group(BATCH_GROUP) uniform BokehInput : *texture2D;
+group(BATCH_GROUP) uniform DirtMask : *texture2D;
+group(BATCH_GROUP) uniform BokehMask : *texture2D;
+group(BATCH_GROUP) uniform BokehMaskWrite : *mutable rgba16f texture2D;
+
+workgroup samples : [CACHE][CACHE]f16x4;
+workgroup rowPrefix : [ROWS_PER_PASS][CACHE]f32x4;
+workgroup sgMin : [256]f32;
+workgroup sgMax : [256]f32;
+workgroup tileMinCoc : f32;
+workgroup tileMaxCoc : f32;
+
+//------------------------------------------------------------------------------
+/**
+    Color scale for one aperture sample.
+    Offset is half-res pixels from the aperture center. The same offset lands on
+    the same DirtMask texel for every bokeh.
+    Samples near the camera-adapted luminance return 1. Samples many times brighter
+    return DirtMask.r. Coverage does not use this.
+*/
+bokehScale(offset : f32x2, radius : f32, rgb : f32x3) f32
+{
+    const lum = max(dot(rgb, Luminance), 0.0f);
+    const adapted = max(ViewConstants.Time_Random_Luminance_X.z, 1e-4f) * max(PerTickParams.MaxLuminance, 0.01f);
+    const ratio = lum / adapted;
+    const hot = smoothstep(BOKEH_RATIO_START, BOKEH_RATIO_FULL, ratio);
+    if (hot <= 0.0f)
+    {
+        return 1.0f;
+    }
+    const uv = saturate(f32x2(0.5f) + f32x2(0.5f) * offset / radius);
+    const amp = textureSampleLod(DirtMask, LinearSampler, uv, 0).r;
+    return lerp(1.0f, amp, hot);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Fraction of the half-res texel at `offset` that lies inside the aperture.
+    offset is half-res pixels from the aperture center. span.xy is the horizontal
+    extent of this row. radius is the circle of confusion in half-res pixels.
+*/
+apertureCover(offset : f32x2, span : f32x2, radius : f32) f32
+{
+    const xCover = max(0.0f, min(offset.x + 0.5f, span.y) - max(offset.x - 0.5f, span.x));
+    const yCover = max(0.0f, min(offset.y + 0.5f, radius) - max(offset.y - 0.5f, -radius));
+    return xCover * yCover;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Span of the precomputed aperture at height dy, scaled to `radius`.
+    xy = (xMin, xMax) in half-res pixels. xMin > xMax means the row misses.
+    z  = aperture area at `radius`.
+*/
+maskSpan(dy : f32, radius : f32) f32x4
+{
+    const scale = radius / f32(MAX_COC);
+    const maskDy = dy / scale;
+    if (abs(maskDy) > f32(MAX_COC))
+    {
+        return f32x4(1.0f, -1.0f, 1.0f, 0.0f);
+    }
+    const maskRow = clamp(i32(floor(maskDy + 0.5f)) + MAX_COC, 0, MAX_COC * 2);
+    const texel = textureFetch(BokehMask, i32x2(maskRow, 0), 0);
+    return f32x4(texel.xy * scale, texel.z * scale * scale, 0.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(32)
+entry_point
+csMask() void
+{
+    const row = i32(computeGetGlobalThreadIndices().x);
+    if (row > MAX_COC * 2)
+    {
+        return;
+    }
+
+    const radius = f32(MAX_COC);
+    const dy = f32(row - MAX_COC);
+    const c2 = radius * radius - dy * dy;
+    const blades = i32(DofUniforms.Aperture.x);
+    const roundness = saturate(DofUniforms.Aperture.z);
+    const shaped = blades >= 3 && blades <= MAX_BLADES && roundness < 1.0f;
+
+    var xL = 1.0f;
+    var xR = -1.0f;
+    if (c2 >= 0.0f)
+    {
+        const c = sqrt(c2);
+        xL = -c;
+        xR = c;
+        if (shaped)
+        {
+            const h = radius * lerp(cos(PI / f32(blades)), 1.0f, roundness);
+            var nrm : [MAX_BLADES]f32x2;
+            const rotation = DofUniforms.Aperture.y;
+            for (var i = 0; i < blades; i++)
+            {
+                // Vertex i sits at rotation + 2π i / N. The edge normal is half a sector past it.
+                const ang = rotation + PI / f32(blades) + 2.0f * PI * f32(i) / f32(blades);
+                nrm[i] = f32x2(cos(ang), sin(ang));
+            }
+            var missed = false;
+            for (var i = 0; i < blades; i++)
+            {
+                if (missed)
+                {
+                    continue;
+                }
+                const n = nrm[i];
+                const limit = h - n.y * dy;
+                if (n.x > 0.0f)
+                {
+                    xR = min(xR, limit / n.x);
+                }
+                else if (n.x < 0.0f)
+                {
+                    xL = max(xL, limit / n.x);
+                }
+                else if (limit < 0.0f)
+                {
+                    xL = 1.0f;
+                    xR = -1.0f;
+                    missed = true;
+                }
+            }
+        }
+    }
+
+    var area = PI * radius * radius;
+    if (shaped)
+    {
+        const h = radius * lerp(cos(PI / f32(blades)), 1.0f, roundness);
+        const gamma = acos(h / radius);
+        const halfAngle = PI / f32(blades);
+        area = f32(blades) * (h * sqrt(radius * radius - h * h) + radius * radius * (halfAngle - gamma));
+    }
+    textureStore(BokehMaskWrite, i32x2(row, 0), f32x4(xL, xR, area, 0.0f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(TILE)
+local_size_y(TILE)
+local_size_z(1)
+entry_point
+csSetup() void
+{
+    const end = i32x2(ViewConstants.Viewport.zw);
+    const local = i32x2(computeGetLocalThreadIndices().xy);
+    const pixel = i32x2(computeGetWorkgroupIndices().xy) * TILE + local;
+    const inside = all(pixel < end) && all(pixel < DofUniforms.ColorSize.xy);
+    if (!inside)
+    {
+        return;
+    }
+
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], pixel, 0).r;
+    const color = textureFetch(ColorSource, pixel, 0).rgb;
+    var coc = 0.0f;
+    // Raw depth 1 is the cleared background and the sky. It is not a lens sample.
+    if (depth != 1.0f)
+    {
+        const z = LinearizeDepth(depth, ViewConstants.FocalLengthNearFar.zw);
+        const maxRadius = min(PerTickParams.DoFDistances.z, f32(MAX_COC * 2));
+        coc = clamp((z - PerTickParams.DoFDistances.x) / PerTickParams.DoFDistances.y, -1.0f, 1.0f) * maxRadius;
+    }
+    textureStore(HalfColor, pixel, f32x4(color, coc));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(TILE)
+local_size_y(TILE)
+local_size_z(1)
+entry_point
+csGather() void
+{
+    // Lane index is the number of lanes below this one.
+    const lane = subgroupBallotBitCount(subgroupGetLowerMask(), SubgroupOperation.Reduce);
+    const sg = subgroupGetId();
+    const sgSize = subgroupGetSize();
+    const numSg = subgroupGetNum();
+    const local = i32x2(computeGetLocalThreadIndices().xy);
+    const fullEnd = min(i32x2(ViewConstants.Viewport.zw), DofUniforms.ColorSize.xy);
+    const halfEnd = i32x2(u32x2(i32x2(ViewConstants.Viewport.zw)) >> u32x2(1u));
+    const limit = min(halfEnd, DofUniforms.HalfSize.xy);
+    const tileOrigin = i32x2(computeGetWorkgroupIndices().xy) * TILE;
+
+    var cocMin = 1.0e20f;
+    var cocMax = -1.0e20f;
+    const thread = u32(local.y) * u32(TILE) + u32(local.x);
+    for (var i = thread; i < u32(CACHE * CACHE); i += u32(TILE * TILE))
+    {
+        const y = i32(i) / CACHE;
+        const x = i32(i) - y * CACHE;
+        const halfCoord = clamp(tileOrigin + i32x2(x, y) - i32x2(RADIUS), i32x2(0), limit - i32x2(1));
+        const origin = halfCoord * i32x2(2);
+        var quad : [4]f32x4;
+        for (var oy = 0; oy < 2; oy++)
+        {
+            for (var ox = 0; ox < 2; ox++)
+            {
+                const q = oy * 2 + ox;
+                const p = origin + i32x2(ox, oy);
+                if (all(p < fullEnd))
+                {
+                    quad[q] = textureLoad(HalfColor, p);
+                }
+                else
+                {
+                    quad[q] = f32x4(0.0f, 0.0f, 0.0f, 1.0e20f);
+                }
+            }
+        }
+        var nearColor = quad[0].rgb;
+        var nearCoc = quad[0].a;
+        var sumColor = f32x3(0.0f);
+        var sumCoc = 0.0f;
+        var sumW = 0.0f;
+        for (var q = 0; q < 4; q++)
+        {
+            const m = quad[q].a < 1.0e19f ? 1.0f : 0.0f;
+            sumColor += quad[q].rgb * m;
+            sumCoc += quad[q].a * m;
+            sumW += m;
+            if (quad[q].a < nearCoc)
+            {
+                nearCoc = quad[q].a;
+                nearColor = quad[q].rgb;
+            }
+        }
+        const fg = sumW > 0.0f ? saturate(-nearCoc * 0.5f) : 0.0f;
+        const outColor = sumW > 0.0f ? lerp(sumColor / sumW, nearColor, fg) : f32x3(0.0f);
+        const outCoc = sumW > 0.0f ? clamp(lerp(sumCoc / sumW, nearCoc, fg) * 0.5f, -f32(MAX_COC), f32(MAX_COC)) : 0.0f;
+        const texel = f32x4(outColor, outCoc);
+        samples[y][x] = f16x4(texel);
+        cocMin = min(cocMin, texel.a);
+        cocMax = max(cocMax, texel.a);
+    }
+
+    cocMin = subgroupMin(cocMin, SubgroupOperation.Reduce);
+    cocMax = subgroupMax(cocMax, SubgroupOperation.Reduce);
+    if (lane == 0u)
+    {
+        sgMin[sg] = cocMin;
+        sgMax[sg] = cocMax;
+    }
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+
+    if (sg == 0u)
+    {
+        var mn = 1.0e20f;
+        var mx = -1.0e20f;
+        for (var i = lane; i < numSg; i += sgSize)
+        {
+            mn = min(mn, sgMin[i]);
+            mx = max(mx, sgMax[i]);
+        }
+        mn = subgroupMin(mn, SubgroupOperation.Reduce);
+        mx = subgroupMax(mx, SubgroupOperation.Reduce);
+        if (lane == 0u)
+        {
+            tileMinCoc = mn;
+            tileMaxCoc = mx;
+        }
+    }
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+
+    const tileRadius = min(max(abs(tileMinCoc), abs(tileMaxCoc)), f32(MAX_COC));
+    const center = local + i32x2(RADIUS);
+    const centerTexel = f32x4(samples[center.y][center.x]);
+    const outPixel = tileOrigin + local;
+    const outputInside = all(outPixel < limit);
+
+    if (tileRadius < FOCUS_EPS)
+    {
+        if (outputInside)
+        {
+            textureStore(BokehOutput, outPixel, f32x4(centerTexel.rgb, 0.0f));
+        }
+        return;
+    }
+
+    const tileR = i32(ceil(tileRadius));
+    const radius = centerTexel.a > FOCUS_EPS ? min(centerTexel.a, f32(tileR)) : 0.0f;
+    const rowLimit = i32(floor(radius + 0.5f));
+    const rowBegin = RADIUS - tileR;
+    const rowEnd = RADIUS + TILE + tileR;
+    const batch = min(u32(ROWS_PER_PASS), numSg);
+
+    var farSum = f32x3(0.0f);
+    var farW = 0.0f;
+    for (var base = rowBegin; base < rowEnd; base += i32(batch))
+    {
+        const row = u32(base) + sg;
+        if (sg < batch && row < u32(rowEnd))
+        {
+            // Inclusive prefix of this cache row, in chunks of one subgroup.
+            // Lane i owns column base+i. Far texels contribute their color and a mask of 1.
+            var running = f32x4(0.0f);
+            for (var colBase = 0u; colBase < u32(CACHE); colBase += sgSize)
+            {
+                const col = colBase + lane;
+                var v = f32x4(0.0f);
+                if (col < u32(CACHE))
+                {
+                    const s = f32x4(samples[row][col]);
+                    v = s.a > FOCUS_EPS ? f32x4(s.rgb, 1.0f) : f32x4(0.0f);
+                }
+                const scan = subgroupAdd(v, SubgroupOperation.Inclusive);
+                if (col < u32(CACHE))
+                {
+                    rowPrefix[sg][col] = scan + running;
+                }
+                running += subgroupShuffle(scan, sgSize - 1u);
+            }
+        }
+        memoryBarrierWorkgroup();
+        executionBarrierWorkgroup();
+
+        const y0 = max(center.y - rowLimit, base);
+        const y1 = min(center.y + rowLimit, base + i32(batch) - 1);
+        for (var y = y0; y <= y1; y++)
+        {
+            if (radius <= 0.0f)
+            {
+                continue;
+            }
+            const dy = f32(y - center.y);
+            const span = maskSpan(dy, radius);
+            if (span.x > span.y)
+            {
+                continue;
+            }
+            const yCover = max(0.0f, min(dy + 0.5f, radius) - max(dy - 0.5f, -radius));
+            if (yCover <= 0.0f)
+            {
+                continue;
+            }
+            // Texel squares fully inside the span, then the rim squares that only overlap it.
+            const iInL = i32(ceil(span.x + 0.5f));
+            const iInR = i32(floor(span.y - 0.5f));
+            const iOutL = i32(ceil(span.x - 0.5f));
+            const iOutR = i32(floor(span.y + 0.5f));
+            if (DofUniforms.Aperture.w == 0.0f)
+            {
+                if (iInL <= iInR)
+                {
+                    const x1 = center.x + iInR;
+                    const x0 = center.x + iInL - 1;
+                    const hi = rowPrefix[y - base][x1];
+                    const lo = x0 >= 0 ? rowPrefix[y - base][x0] : f32x4(0.0f);
+                    farSum += (hi - lo).rgb * yCover;
+                    farW += (hi - lo).a * yCover;
+                }
+                for (var i = iOutL; i <= iOutR; i++)
+                {
+                    if (i >= iInL && i <= iInR)
+                    {
+                        continue;
+                    }
+                    const s = f32x4(samples[y][center.x + i]);
+                    if (s.a <= FOCUS_EPS)
+                    {
+                        continue;
+                    }
+                    const cover = apertureCover(f32x2(f32(i), dy), span.xy, radius);
+                    farSum += s.rgb * cover;
+                    farW += cover;
+                }
+            }
+            else
+            {
+                for (var i = iOutL; i <= iOutR; i++)
+                {
+                    const s = f32x4(samples[y][center.x + i]);
+                    if (s.a <= FOCUS_EPS)
+                    {
+                        continue;
+                    }
+                    const cover = apertureCover(f32x2(f32(i), dy), span.xy, radius);
+                    if (cover <= 0.0f)
+                    {
+                        continue;
+                    }
+                    const scale = bokehScale(f32x2(f32(i), dy), radius, s.rgb);
+                    farSum += s.rgb * scale * cover;
+                    farW += cover;
+                }
+            }
+        }
+
+        memoryBarrierWorkgroup();
+        executionBarrierWorkgroup();
+    }
+
+    var nearSum = f32x3(0.0f);
+    var nearW = 0.0f;
+    if (tileMinCoc < -FOCUS_EPS)
+    {
+        const reach = tileR + 1;
+        const reach2 = (f32(tileR) + 1.0f) * (f32(tileR) + 1.0f);
+        for (var dy = -reach; dy <= reach; dy++)
+        {
+            for (var dx = -reach; dx <= reach; dx++)
+            {
+                if (f32(dx * dx + dy * dy) > reach2)
+                {
+                    continue;
+                }
+                const s = f32x4(samples[center.y + dy][center.x + dx]);
+                const srcRadius = -s.a;
+                if (s.a >= -FOCUS_EPS)
+                {
+                    continue;
+                }
+                const span = maskSpan(f32(dy), srcRadius);
+                if (span.x > span.y)
+                {
+                    continue;
+                }
+                const cover = apertureCover(f32x2(f32(dx), f32(dy)), span.xy, srcRadius);
+                if (cover <= 0.0f)
+                {
+                    continue;
+                }
+                const weight = cover / span.z;
+                var scale = 1.0f;
+                if (DofUniforms.Aperture.w != 0.0f)
+                {
+                    scale = bokehScale(f32x2(f32(dx), f32(dy)), srcRadius, s.rgb);
+                }
+                nearSum += s.rgb * scale * weight;
+                nearW += weight;
+            }
+        }
+    }
+
+    var rgb = farW > 0.0f ? farSum / farW : centerTexel.rgb;
+    if (nearW > 0.0f)
+    {
+        const nearRgb = nearSum / nearW;
+        rgb = farW > 0.0f ? lerp(rgb, nearRgb, saturate(nearW)) : nearRgb;
+    }
+    if (outputInside)
+    {
+        textureStore(BokehOutput, outPixel, f32x4(rgb, saturate(nearW)));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Mask")
+program DofMask
+{
+    ComputeShader = csMask;
+};
+
+@Mask("Setup")
+program DofSetup
+{
+    ComputeShader = csSetup;
+};
+
+@Mask("Gather")
+program DofGather
+{
+    ComputeShader = csGather;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(TILE)
+local_size_y(TILE)
+local_size_z(1)
+entry_point
+csComposite() void
+{
+    const end = i32x2(ViewConstants.Viewport.zw);
+    const local = i32x2(computeGetLocalThreadIndices().xy);
+    const pixel = i32x2(computeGetWorkgroupIndices().xy) * TILE + local;
+    const inside = all(pixel < end) && all(pixel < DofUniforms.ColorSize.xy);
+    if (!inside)
+    {
+        return;
+    }
+
+    const color = textureLoad(ColorTarget, pixel).xyz;
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], pixel, 0).r;
+    const uv = (f32x2(pixel) + f32x2(0.5f)) / f32x2(DofUniforms.ColorSize.xy);
+    const bokeh = textureSampleLod(BokehInput, LinearSampler, uv, 0);
+    var coc = 0.0f;
+    if (depth != 1.0f)
+    {
+        const z = LinearizeDepth(depth, ViewConstants.FocalLengthNearFar.zw);
+        const maxRadius = min(PerTickParams.DoFDistances.z, f32(MAX_COC * 2));
+        coc = clamp((z - PerTickParams.DoFDistances.x) / PerTickParams.DoFDistances.y, -1.0f, 1.0f) * maxRadius;
+    }
+    const farBlend = coc > 0.0f ? smoothstep(1.0f, 4.0f, coc) : 0.0f;
+    const rgb = lerp(color, bokeh.rgb, max(farBlend, saturate(bokeh.a)));
+    textureStore(ColorTarget, pixel, f32x4(rgb, 0.0f));
+}
+
+@Mask("Composite")
+program DofComposite
+{
+    ComputeShader = csComposite;
+};

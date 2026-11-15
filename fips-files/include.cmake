@@ -20,7 +20,7 @@ option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
-option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
+option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the project and toolkit directories into binaries for development builds" ON)
 option(N_SHADER_PROFILE_BUILDS "Profile shader compilation, slows down compilation time" OFF)
 option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
 option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation time" ON)
@@ -28,12 +28,23 @@ option(N_SHADER_DEBUG "Output textual version of shader binary code to binary ou
 option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 option(N_SANITIZERS "Build with sanitizers (only supported on linux)" OFF)
 option(N_ENABLE_TBUI "Build the tbui addon and its test app" OFF)
+option(N_ENABLE_PHYSICS_FORMAT_NVX "Compile the nvx mesh reader into the physics cooking layer" ON)
+option(N_ENABLE_PHYSICS_FORMAT_DDS "Compile the DDS heightfield reader into the physics cooking layer" ON)
+
+if (N_ENABLE_PHYSICS_FORMAT_NVX)
+    add_compile_definitions(WITH_NEBULA_PHYSICS_FORMAT_NVX)
+endif()
+if (N_ENABLE_PHYSICS_FORMAT_DDS)
+    add_compile_definitions(WITH_NEBULA_PHYSICS_FORMAT_DDS)
+endif()
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
-    if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
-        FILE(READ "${CMAKE_BINARY_DIR}/project_root.txt" PRJ_ROOT)
-        add_definitions(-DNEBULA_PROJECT_ROOT=\"${PRJ_ROOT}\")
-    endif()
+    # The project root is the directory fips was invoked from, and the toolkit
+    # root is the nebula checkout this project imports. Both are known at
+    # configure time, so nothing has to be read from a settings file.
+    get_filename_component(nebula_toolkit_root "${NROOT}" ABSOLUTE)
+    add_definitions(-DNEBULA_PROJECT_ROOT=\"${FIPS_PROJECT_DIR}\")
+    add_definitions(-DNEBULA_TOOLKIT_ROOT=\"${nebula_toolkit_root}\")
 endif()
 
 if (N_SHADER_PROFILE_BUILDS)
@@ -324,6 +335,8 @@ macro(nebula_add_script_library target)
 endmacro()
 
 macro(nebula_idl_compile)
+    file(GLOB NIDL_GENERATOR_DEPS "${NROOT}/fips-files/generators/IDLC/*.py")
+    list(APPEND NIDL_GENERATOR_DEPS "${NROOT}/fips-files/generators/NIDL.py")
     SOURCE_GROUP("NIDL Files" FILES ${ARGN})
     set(target_has_nidl 1)
     foreach(nidl ${ARGN})
@@ -338,7 +351,7 @@ macro(nebula_idl_compile)
             COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
             WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
-            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            DEPENDS ${NIDL_GENERATOR_DEPS}
             VERBATIM)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
@@ -454,6 +467,8 @@ macro(nebula_register_nidl_cs)
 endmacro()
 
 macro(nebula_idl_generate_cs_target)
+    file(GLOB NIDL_CS_GENERATOR_DEPS "${NROOT}/fips-files/generators/IDLC/*.py")
+    list(APPEND NIDL_CS_GENERATOR_DEPS "${NROOT}/fips-files/generators/NIDL.py")
     set(NIDL_Cs_Deps "")
     set(NIDL_Cs_Files "")
     foreach(nidl ${ARGN})
@@ -480,7 +495,7 @@ macro(nebula_idl_generate_cs_target)
             COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_cs}" "--csharp"
             BYPRODUCTS "${abs_output_folder}${out_cs}"
             COMMENT "IDLC: Generating ${out_cs}..."
-            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            DEPENDS ${NIDL_CS_GENERATOR_DEPS}
             WORKING_DIRECTORY "${NROOT}"
             VERBATIM
             SOURCES "${f_abs}"
@@ -644,21 +659,9 @@ endfunction()
 include(JSONParser)
 
 macro(set_nebula_export_dir)
-    if(FIPS_WINDOWS)
-        get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
-        # get_filename_component returns /registry when a key is not found...
-        if(${workdir} STREQUAL "/registry")
-            MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
-            return()
-        endif()
-    elseif(EXISTS $ENV{HOME}/.config/nebula/gscept.cfg)
-        FILE(READ "$ENV{HOME}/.config/nebula/gscept.cfg" SettingsJson)
-        sbeParseJson(Settings SettingsJson)
-        set(workdir ${Settings.ToolkitShared.workdir})
-    else()
-        # use environment
-        set(workdir $ENV{NEBULA_WORK})
-    endif()
+    # The project root is the directory fips was invoked from, which is also the
+    # directory projectinfo.json lives in. No out-of-band state is consulted.
+    set(workdir ${FIPS_PROJECT_DIR})
     if(EXISTS ${workdir}/projectinfo.json)
         file(READ "${workdir}/projectinfo.json" projectJson)
         sbeParseJson(projectInfo projectJson)

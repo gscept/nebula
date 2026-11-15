@@ -20,6 +20,7 @@
 #include "dynui/imguicontext.h"
 #include "clustering/clustercontext.h"
 #include "posteffects/bloomcontext.h"
+#include "posteffects/dofcontext.h"
 #include "posteffects/ssaocontext.h"
 #include "graphics/globalconstants.h"
 #include "posteffects/histogramcontext.h"
@@ -171,6 +172,7 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::Create();
         Fog::VolumetricFogContext::Create();
         PostEffects::BloomContext::Create();
+        PostEffects::DofContext::Create();
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
         PostEffects::DownsamplingContext::Create();
@@ -179,6 +181,7 @@ SimpleViewerApplication::Open()
         // setup gbuffer bindings after frame script is loaded
         Graphics::SetupBufferConstants();
         PostEffects::BloomContext::Setup();
+        PostEffects::DofContext::Setup();
         PostEffects::SSAOContext::Setup();
         //PostEffects::SSRContext::Setup(frameScript);
         PostEffects::DownsamplingContext::Setup();

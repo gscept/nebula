@@ -3,6 +3,10 @@ description: Nebula frame loop, system order, and concurrency — do not invent 
 alwaysApply: true
 ---
 
+# Minimal changes
+
+Change only what the request needs. Touch as few files as possible. Do not “while we’re here” refactor APIs, call sites, tests, or unrelated systems. If a local conversion at the call site is enough, do not change the shared type.
+
 # Frame loop and concurrency
 
 Everything below is the **main thread** unless noted. `Jobs2` workers run only what was `JobDispatch`ed; they do not implicitly wait for each other or for the GPU. Feature units run in `AttachGameFeature` order (`BaseGameFeature` is always first). World ECS processors are a **different** timeline from `FeatureUnit` virtuals — do not treat `OnBeginFrame` as one phase.

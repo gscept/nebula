@@ -31,8 +31,9 @@ Gliml::ToPixelFormat(gliml::context const& ctx)
         case gliml::DXGI_FORMAT_BC4_UNORM:              return PixelFormat::BC4;
         case gliml::DXGI_FORMAT_BC5_UNORM:              return PixelFormat::BC5;
 
+        // texconv and compressonator write unsigned BC6H, decoding it as signed garbles bright texels
         case gliml::DXGI_FORMAT_BC6H_TYPELESS:
-        case gliml::DXGI_FORMAT_BC6H_UF16:
+        case gliml::DXGI_FORMAT_BC6H_UF16:              return PixelFormat::BC6HU;
         case gliml::DXGI_FORMAT_BC6H_SF16:              return PixelFormat::BC6H;
         case gliml::DXGI_FORMAT_BC7_UNORM:              return PixelFormat::BC7;
         case gliml::DXGI_FORMAT_BC7_UNORM_SRGB:         return PixelFormat::BC7sRGB;

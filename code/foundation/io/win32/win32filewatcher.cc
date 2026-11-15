@@ -109,13 +109,15 @@ FileWatcherImpl::Update(EventHandlerData& data)
                 switch (ev->Action)
                 {
                 case FILE_ACTION_ADDED: {
-                    data.callback({Created, data.folder, relDir, file});
                     ushort buf[2048];
                     Win32::Win32StringConverter::UTF8ToWide(fullRelative.AsCharPtr(), buf, sizeof(buf));
                     DWORD attributes = GetFileAttributesW((LPCWSTR)buf);
-                    n_assert(attributes != INVALID_FILE_ATTRIBUTES);
-                    if (attributes & FILE_ATTRIBUTE_DIRECTORY)
-                        AddWatchRecursive(data.folder.AsString().AppendPath(newFile), Util::String::AppendPath(relDir, newFile), p.handles[i], data);
+                    if (attributes != INVALID_FILE_ATTRIBUTES)
+                    {
+                        data.callback({ Created, data.folder, relDir, file });
+                        if (attributes & FILE_ATTRIBUTE_DIRECTORY)
+                            AddWatchRecursive(data.folder.AsString().AppendPath(newFile), Util::String::AppendPath(relDir, newFile), p.handles[i], data);
+                    }
                     break;
                 }
                 case FILE_ACTION_MODIFIED: {

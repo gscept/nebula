@@ -33,6 +33,7 @@ struct Orientation::Traits
     Traits() = delete;
     using type = Orientation;
     static constexpr auto name = "Orientation";
+    static constexpr auto namespace_name = "Game";
     static constexpr auto fully_qualified_name = "Game.Orientation";
     static constexpr size_t num_fields = 4;
     static constexpr const char* field_names[num_fields] = {

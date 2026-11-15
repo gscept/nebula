@@ -165,8 +165,22 @@ inline bool
 LinuxEvent::WaitTimeout(int ms) const
 {
     bool timeOutOccured = false;
+
+    // compute the absolute deadline once, so spurious wakeups don't extend the timeout,
+    // and keep tv_nsec below one second, otherwise pthread_cond_timedwait() fails with
+    // EINVAL and we would busy-spin until the clock produces a valid deadline
+    timespec target;
+    clock_gettime(CLOCK_REALTIME, &target);
+    target.tv_sec += ms / 1000;
+    target.tv_nsec += (ms % 1000) * 1000000L;
+    if (target.tv_nsec >= 1000000000L)
+    {
+        target.tv_sec += 1;
+        target.tv_nsec -= 1000000000L;
+    }
+
     pthread_mutex_lock(&this->mutex);
-    
+
     bool locked = false;
     do
     {
@@ -183,18 +197,14 @@ LinuxEvent::WaitTimeout(int ms) const
         }
         else
         {
-            timespec target;
-            clock_gettime(CLOCK_REALTIME, &target);
-            int secs = ms / 1000;
-            time_t remainder = (ms - secs * 1000L);
-            target.tv_sec += secs;
-            target.tv_nsec += remainder * 1000000L;
-        
             int res = pthread_cond_timedwait(&this->cond, &this->mutex, &target);
-
             if (ETIMEDOUT == res)
             {
                 timeOutOccured = true;
+            }
+            else
+            {
+                n_assert(res == 0);
             }
         }
     } while(!locked && !timeOutOccured);

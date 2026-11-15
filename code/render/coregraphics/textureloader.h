@@ -12,7 +12,6 @@
 */    
 //------------------------------------------------------------------------------
 #include "resources/resourceloader.h"
-#include "gliml.h"
 
 namespace CoreGraphics
 {

@@ -7,12 +7,14 @@
 #include "testbase/testrunner.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
+#include "physicsfeature/physicsfeatureunit.h"
 
 // tests
 #include "idtest.h"
 #include "databasetest.h"
 #include "entitysystemtest.h"
 #include "hierarchytransformtest.h"
+#include "physicstest.h"
 
 #include "testcomponents.h"
 
@@ -33,6 +35,27 @@ void
 InitializeTestVec4(Game::World* world, Game::Entity entity, TestVec4* testVec)
 {
     testVec->v4 = Math::vec4(123, 123, 123, 123);
+}
+
+namespace Test
+{
+    ComponentDecayRecord componentDecay;
+}
+
+// the decay callback of DecayTestComponent, see Test::EntitySystemTest. It runs outside of the frame
+// pipeline while the component is still in its table, which is what allows it to read the data and
+// touch anything that belongs to the entity
+void
+DecayTestComponentDecay(Game::World* world, Game::Entity entity, Test::DecayTestComponent* component)
+{
+    ++Test::componentDecay.calls;
+    Test::componentDecay.lastEntity = entity;
+
+    // writing through the pointer has to be visible from the table, which is what makes the pointer
+    // usable for cleaning up anything related to the component
+    component->destroyed = true;
+    if (world->HasComponent<Test::DecayTestComponent>(entity) && world->GetComponent<Test::DecayTestComponent>(entity).destroyed)
+        ++Test::componentDecay.liveReads;
 }
 
 class GameAppTest : public App::GameApplication
@@ -58,7 +81,13 @@ private:
         gameFeature->RegisterComponentType<MyFlag>();
         gameFeature->RegisterComponentType<TestEmptyStruct>();
         gameFeature->RegisterComponentType<TestAsyncComponent>();
-        gameFeature->RegisterComponentType<DecayTestComponent>({.decay = true});
+        gameFeature->RegisterComponentType<DecayTestComponent>({.decay = true, .OnDecay = &DecayTestComponentDecay});
+
+        // the physics feature drives actors and shapes from the component inits, pings and decay
+        // callbacks of the entities which the physics tests set up
+        physicsFeature = PhysicsFeature::PhysicsFeatureUnit::Create();
+        physicsFeature->SetCmdLineArgs(this->GetCmdLineArgs());
+        this->gameServer->AttachGameFeature(physicsFeature);
     }
 
     /// cleanup game features
@@ -68,6 +97,7 @@ private:
     }
 
     Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
+    Ptr<PhysicsFeature::PhysicsFeatureUnit> physicsFeature;
 };
 
 //------------------------------------------------------------------------------
@@ -95,6 +125,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(DatabaseTest::Create());
     testRunner->AttachTestCase(EntitySystemTest::Create());
     testRunner->AttachTestCase(HierarchyTransformTest::Create());
+    testRunner->AttachTestCase(PhysicsManagerTest::Create());
     
     bool result = testRunner->Run(); 
 

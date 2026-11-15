@@ -1,0 +1,25 @@
+From 95c3b3a2d421ef1c5b489c3eed1e2e54133921bb Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:34:25 +0100
+Subject: [PATCH 7/8] Include <cstdint> in pluginbase.h
+
+pluginbase.h uses uint32_t but relied on another header pulling in
+<cstdint>, which newer libstdc++ versions (GCC 13+) no longer do.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ applications/_plugins/common/pluginbase.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/applications/_plugins/common/pluginbase.h b/applications/_plugins/common/pluginbase.h
+index 4aeca18..946911d 100644
+--- a/applications/_plugins/common/pluginbase.h
++++ b/applications/_plugins/common/pluginbase.h
+@@ -29,6 +29,7 @@
+ #ifndef _PLUGINBASE_H
+ #define _PLUGINBASE_H
+ 
++#include <cstdint>
+ #include <memory>
+ 
+ #ifdef _WIN32

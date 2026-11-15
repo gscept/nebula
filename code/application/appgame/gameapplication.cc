@@ -13,6 +13,7 @@
 #include "memory/debug/memorypagehandler.h"
 #include "io/debug/iopagehandler.h"
 #include "io/logfileconsolehandler.h"
+#include "io/projectlocator.h"
 #include "io/debug/consolepagehandler.h"
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
@@ -82,13 +83,10 @@ GameApplication::Open()
             root = System::NebulaSettings::ReadString(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path");
         }
 #else
-        if(System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+        Util::String toolkitRoot = IO::ProjectLocator::GetToolkitRoot();
+        if (!toolkitRoot.IsEmpty())
         {
-            root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
-        }
-        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
-        {
-            this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
+            this->coreServer->SetToolDirectory(toolkitRoot);
         }
 #endif
         this->coreServer->SetRootDirectory(root);

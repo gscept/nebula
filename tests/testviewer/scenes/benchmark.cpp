@@ -109,7 +109,7 @@ void StepFrame()
     for (i = 0; i < spotLights.Size(); i++)
     {
         Math::mat4 spotLightTransform;
-        Math::quat rotation = Math::quatyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
+        Math::quat rotation = Math::quatpitchyawroll(Math::deg2rad(-55), Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, 0);
         Lighting::LightContext::SetRotation(spotLights[i], rotation);
     }
 

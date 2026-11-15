@@ -58,6 +58,8 @@ public:
     static bool IsLocked(const Util::String& path);
     /// delete a file
     static bool DeleteFile(const Util::String& path);
+    /// rename a file or a directory (the target must not exist)
+    static bool RenameFile(const Util::String& source, const Util::String& target);
     /// rename a file
     static bool ReplaceFile(const Util::String& source, const Util::String& target);
     /// delete an empty directory

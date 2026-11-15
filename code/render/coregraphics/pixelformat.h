@@ -77,6 +77,7 @@ public:
         B5G6R5A1,
         B4G4R4A4,
 
+        BC6HU,                      // BC6H with unsigned floats, BC6H is the signed variant
 
         NumPixelFormats,
 
@@ -106,6 +107,8 @@ public:
     static bool IsStencilFormat(Code code);
     /// Return true if depth/stencil format
     static bool IsDepthStencilFormat(Code code);
+    /// Return true if the format stores values above 1 (float and BC6H formats)
+    static bool IsHighDynamicRange(Code code);
 
     /// Return Image bits from format
     static CoreGraphics::ImageBits ToImageBits(Code code);

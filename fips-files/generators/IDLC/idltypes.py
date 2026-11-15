@@ -203,6 +203,8 @@ def GetCsTypeString(attrType):
         return "Matrix"
     elif (T == "string"):
         return "string"
+    elif (T == "util::stringatom"):
+        return "string"
     elif (T == "resource"):
         return "ResourceDescriptor"
     elif (T == "entity"):

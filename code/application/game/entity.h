@@ -64,6 +64,7 @@ struct Entity::Traits
     Traits() = delete;
     using type = Entity;
     static constexpr auto name = "Entity";
+    static constexpr auto namespace_name = "Game";
     static constexpr auto fully_qualified_name = "Game.Entity";
     static constexpr size_t num_fields = 1;
     static constexpr const char* field_names[num_fields] = {

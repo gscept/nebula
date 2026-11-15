@@ -1,0 +1,28 @@
+From 98c8f89c971925cfc9bf963e0af0538ba03a75c6 Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:31:00 +0100
+Subject: [PATCH 2/8] cmp_core: don't use -march=knl, GCC 15 removed it
+
+Knights Landing support was removed in GCC 15. Build the AVX-512 kernel
+with the equivalent instruction set flags instead: Haswell plus
+AVX-512F and AVX-512CD. The kernel is still only selected at runtime on
+CPUs that support AVX-512.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ cmp_core/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmp_core/CMakeLists.txt b/cmp_core/CMakeLists.txt
+index 4787377..3d838bb 100644
+--- a/cmp_core/CMakeLists.txt
++++ b/cmp_core/CMakeLists.txt
+@@ -98,7 +98,7 @@ target_include_directories(CMP_Core_AVX512 PRIVATE source shaders)
+ if (WIN32)
+     target_compile_options(CMP_Core_AVX512 PRIVATE /arch:AVX-512)
+ else()
+-    target_compile_options(CMP_Core_AVX512 PRIVATE -march=knl)
++    target_compile_options(CMP_Core_AVX512 PRIVATE -march=haswell -mavx512f -mavx512cd)
+ endif()
+ 
+ set_target_properties(CMP_Core_AVX512 PROPERTIES FOLDER ${PROJECT_FOLDER_SDK_LIBS})

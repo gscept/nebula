@@ -1,0 +1,118 @@
+From 7bceffb94744044006be36d017aa9b0c2493b4d6 Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:31:33 +0100
+Subject: [PATCH 3/8] Support OpenEXR 3 / Imath 3 on Linux
+
+- external/openexr: take the include paths from pkg-config instead of
+  hard-coding /usr/include/Imath and /usr/include/OpenEXR, which may belong
+  to a different OpenEXR than the one that is linked
+- EXR plugin: Imath 3 declares a global 'half' type, which clashes with
+  the copy of the IlmBase half class in cmp_framework/common/half. Use
+  Imath's half in the plugin when building against OpenEXR 3.
+- half: rename the unused printBits() helpers. Imath 3 defines the same
+  global functions, which fails to link with a static Imath.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ applications/_plugins/cimage/exr/CMakeLists.txt |  7 +++++++
+ cmp_framework/common/half/half.cpp              |  8 ++++----
+ cmp_framework/common/half/half.h                |  8 ++++----
+ external/openexr/CMakeLists.txt                 | 10 ++++++----
+ 4 files changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/applications/_plugins/cimage/exr/CMakeLists.txt b/applications/_plugins/cimage/exr/CMakeLists.txt
+index 735a03d..5a15994 100644
+--- a/applications/_plugins/cimage/exr/CMakeLists.txt
++++ b/applications/_plugins/cimage/exr/CMakeLists.txt
+@@ -41,4 +41,11 @@ if (WIN32)
+     target_link_libraries(Image_EXR PUBLIC advapi32)
+ endif()
+ 
++# Imath 3 declares a global 'half' type, which clashes with the copy of the
++# IlmBase half class in cmp_framework/common/half. Use Imath's everywhere in
++# the EXR plugin.
++if (NOT WIN32 AND OpenEXR_VERSION VERSION_GREATER_EQUAL 3.0)
++    target_compile_options(Image_EXR PRIVATE -include Imath/half.h -D_HALF_H_)
++endif()
++
+ set_target_properties(Image_EXR PROPERTIES FOLDER ${PROJECT_FOLDER_SDK_PLUGIN_STATIC})
+diff --git a/cmp_framework/common/half/half.cpp b/cmp_framework/common/half/half.cpp
+index 30e9f49..85b8b26 100644
+--- a/cmp_framework/common/half/half.cpp
++++ b/cmp_framework/common/half/half.cpp
+@@ -233,7 +233,7 @@ operator >> (istream &is, half &h) {
+ //---------------------------------------
+ 
+ HALF_EXPORT void
+-printBits (ostream &os, half h) {
++cmp_printBits (ostream &os, half h) {
+     unsigned short b = h.bits();
+ 
+     for (int i = 15; i >= 0; i--) {
+@@ -246,7 +246,7 @@ printBits (ostream &os, half h) {
+ 
+ 
+ HALF_EXPORT void
+-printBits (ostream &os, float f) {
++cmp_printBits (ostream &os, float f) {
+     half::uif x;
+     x.f = f;
+ 
+@@ -260,7 +260,7 @@ printBits (ostream &os, float f) {
+ 
+ 
+ HALF_EXPORT void
+-printBits (char c[19], half h) {
++cmp_printBits (char c[19], half h) {
+     unsigned short b = h.bits();
+ 
+     for (int i = 15, j = 0; i >= 0; i--, j++) {
+@@ -275,7 +275,7 @@ printBits (char c[19], half h) {
+ 
+ 
+ HALF_EXPORT void
+-printBits (char c[35], float f) {
++cmp_printBits (char c[35], float f) {
+     half::uif x;
+     x.f = f;
+ 
+diff --git a/cmp_framework/common/half/half.h b/cmp_framework/common/half/half.h
+index 461314d..d1f3e33 100644
+--- a/cmp_framework/common/half/half.h
++++ b/cmp_framework/common/half/half.h
+@@ -232,10 +232,10 @@ HALF_EXPORT std::istream &      operator >> (std::istream &is, half &h);
+ // Debugging
+ //----------
+ 
+-HALF_EXPORT void        printBits   (std::ostream &os, half  h);
+-HALF_EXPORT void        printBits   (std::ostream &os, float f);
+-HALF_EXPORT void        printBits   (char  c[19], half  h);
+-HALF_EXPORT void        printBits   (char  c[35], float f);
++HALF_EXPORT void        cmp_printBits   (std::ostream &os, half  h);
++HALF_EXPORT void        cmp_printBits   (std::ostream &os, float f);
++HALF_EXPORT void        cmp_printBits   (char  c[19], half  h);
++HALF_EXPORT void        cmp_printBits   (char  c[35], float f);
+ 
+ 
+ //-------------------------------------------------------------------------
+diff --git a/external/openexr/CMakeLists.txt b/external/openexr/CMakeLists.txt
+index 7566ce1..f40a5cc 100644
+--- a/external/openexr/CMakeLists.txt
++++ b/external/openexr/CMakeLists.txt
+@@ -16,10 +16,12 @@ if (CMP_HOST_WINDOWS)
+         ${CMAKE_CURRENT_LIST_DIR}/../../../common/lib/ext/openexr/ilmbase-2.2.0/VS2015/x64/include/OpenEXR
+         )
+ else()
+-    set(OpenEXR_INCLUDE_DIRS 
+-        /usr/include/Imath
+-        /usr/include/OpenEXR
+-        )
++    # ask pkg-config instead of assuming the system headers, they may belong to a
++    # different OpenEXR than the one that is linked
++    find_package(PkgConfig)
++    if (PKG_CONFIG_FOUND)
++        pkg_check_modules(OpenEXR QUIET OpenEXR)
++    endif()
+     target_include_directories(ExtOpenEXR INTERFACE ${OpenEXR_INCLUDE_DIRS})
+ endif()
+ 

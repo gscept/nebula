@@ -33,6 +33,7 @@ extern BaseWindow* AssetEditorWindow;
 extern BaseWindow* ResourceBrowserWindow;
 extern BaseWindow* ProfilerWindow;
 extern BaseWindow* PhysicsWindow;
+extern BaseWindow* PostEffectsWindow;
 extern BaseWindow* NavigationWindow;
 extern BaseWindow* SettingsWindow;
 extern BaseWindow* TerrainEditorWindow;

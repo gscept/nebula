@@ -82,8 +82,8 @@ fips_dir(editor)
                 scene.h
                 history.cc
                 history.h
-				importwindow.cc
-				importwindow.h
+                importwindow.cc
+                importwindow.h
                 outline.cc
                 outline.h
                 physics.cc
@@ -93,6 +93,8 @@ fips_dir(editor)
                 profiler.cc
                 profiler.h
                 resourcebrowser.cc
+                posteffects.cc
+                posteffects.h
                 resourcebrowser.h
                 settings.cc
                 settings.h
@@ -137,8 +139,8 @@ fips_dir(editor)
         fips_files(
             camera.cc
             camera.h
-			livebatcher.cc
-			livebatcher.h
+            livebatcher.cc
+            livebatcher.h
             toolinterface.h
             toolinterface.cc
             selectioncontext.h

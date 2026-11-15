@@ -28,6 +28,8 @@ nebula_begin_module(application)
 			processorid.h
 			dataset.cc
 			dataset.h
+			timesource.h
+			timesource.cc
             category.h
             category.cc
             entity.h
@@ -67,8 +69,8 @@ nebula_begin_module(application)
             fips_files(
                 timemanager.h
                 timemanager.cc
-                hierarchymanager.h
-                hierarchymanager.cc
+                transformhierarchy.h
+                transformhierarchy.cc
             )
         fips_dir(basegamefeature/components)
 			fips_files (

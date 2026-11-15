@@ -2,13 +2,13 @@
 //------------------------------------------------------------------------------
 /**
     @class ToolkitUtil::ProjectInfo
-  
+   
     Reads the projectinfo.json file in the projects root directory and 
     exposes its content through a C++ class.
     
     Setup() performs the following steps:
     
-    - query the "proj:" path from the Win32 registry
+    - resolve the project root (see IO::ProjectLocator)
     - read the "proj:projectinfo.json" file
     - setup assigns "src:" and "dst:" 
     - add assigns from th projectinfo
@@ -32,7 +32,7 @@ public:
     {
         Success = 1,
 
-        NoProjPathInRegistry,
+        NoProjectRoot,
         NoProjectInfoFile,
         CouldNotOpenProjectInfoFile,
         ProjectFileContentInvalid,
@@ -67,10 +67,6 @@ public:
     static ProjectInfo SetupFromFile(const Util::String & path);
 
 private:
-    /// query registry for proj: path and setup assign in IO server
-    Util::String QueryProjectPathFromRegistry();
-    /// query registry for the toolkit directory
-    Util::String QueryToolkitPathFromRegistry();
     /// parse the project info json file
     Result ParseProjectInfoFile(const IO::URI & path);
     /// apply all assigns from the projectinfo file (non-list keys)

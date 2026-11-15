@@ -104,12 +104,16 @@ protected:
     friend class CoreGraphics::ShaderIdentifier;
     friend class ShaderBase;
 
+    /// compile a shader source
+    void CompileShaderFile(const Util::String& changedFile);
+
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
     Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;
     Util::Dictionary<Util::String, Util::Set<Util::String>> shaderReloadMap;
     Util::Array<Util::String> shaderWatchFolders;
+    Threading::SafeQueue<Util::String> pendingShaderCompiles;
     Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
     Ids::Id32 objectIdShaderVar;
 

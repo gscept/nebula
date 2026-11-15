@@ -268,7 +268,7 @@ void CloseScene()
 void StepFrame()
 {
     const Timing::Time delta = gfxServer->GetFrameTime();
-    Physics::Update(delta);
+    Physics::Step(delta);
     auto inputServer = Input::InputServer::Instance();
     if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Space))
     {

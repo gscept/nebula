@@ -66,6 +66,15 @@ CmdLineArgsTest::Run()
     VERIFY(winArgs.GetFloat("-weight") == 1.34f);
     VERIFY(winArgs.GetVec4("-pos") == vec4(1.03f, 4.53f, 10.2f, 1.0));
     VERIFY(winArgs.GetVec4("-color") == vec4(1.0f, 2.0f, 3.0f, 1.0f));
+
+    // empty arguments are values too, they used to be dropped and "-dir" got "-file" as its value
+    const char* emptyArgv[] = { "mycommand", "-dir", "", "-file", "filename.txt" };
+    CommandLineArgs emptyPosixArgs(5, emptyArgv);
+    VERIFY(emptyPosixArgs.GetString("-dir") == "");
+    VERIFY(emptyPosixArgs.GetString("-file") == "filename.txt");
+    CommandLineArgs emptyWinArgs("mycommand -dir \"\" -file filename.txt");
+    VERIFY(emptyWinArgs.GetString("-dir") == "");
+    VERIFY(emptyWinArgs.GetString("-file") == "filename.txt");
 }
 
 } // namespace Test

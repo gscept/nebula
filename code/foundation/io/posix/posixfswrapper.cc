@@ -5,11 +5,13 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/posix/posixfswrapper.h"
+#include "io/projectlocator.h"
 #include "core/sysfunc.h"
 
 #include <errno.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include <unistd.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -252,12 +254,9 @@ PosixFSWrapper::GetIOInfo(const IO::URI& path, IO::IOStat& outInfo)
         return false;
     }
     outInfo.size = s.st_size;
-    outInfo.accessTime.time.tv_sec = s.st_atime;
-    outInfo.accessTime.time.tv_nsec = 0;
-    outInfo.modifiedTime.time.tv_sec = s.st_mtime;
-    outInfo.modifiedTime.time.tv_nsec = 0;
-    outInfo.creationTime.time.tv_sec = s.st_ctime;
-    outInfo.creationTime.time.tv_nsec = 0;
+    outInfo.accessTime.time = s.st_atim;
+    outInfo.modifiedTime.time = s.st_mtim;
+    outInfo.creationTime.time = s.st_ctim;
     return true;
 }
 
@@ -341,6 +340,19 @@ PosixFSWrapper::DeleteFile(const String& path)
 
 //------------------------------------------------------------------------------
 /**
+    Renames a file or a directory. The target must not exist, which is what makes rename() a
+    move here rather than a replace. Cross-device moves fail, like they do on Windows.
+*/
+bool
+PosixFSWrapper::RenameFile(const Util::String& source, const Util::String& target)
+{
+    n_assert(source.IsValid());
+    n_assert(target.IsValid());
+    return (0 == rename(source.AsCharPtr(), target.AsCharPtr()));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 PosixFSWrapper::ReplaceFile(const Util::String& source, const Util::String& target)
@@ -392,6 +404,23 @@ PosixFSWrapper::DirectoryExists(const String& path)
     }
     return false;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+String
+PosixFSWrapper::GetCurrentDirectory()
+{
+    char buffer[NEBULA_MAXPATH] = { 0 };
+    if (0 == getcwd(buffer, NEBULA_MAXPATH))
+    {
+        return String();
+    }
+    String result = buffer;
+    result.ConvertBackslashes();
+    result.TrimRight("/");
+    return result;
+}
  
  //------------------------------------------------------------------------------
 /**
@@ -416,8 +445,7 @@ PosixFSWrapper::GetFileWriteTime(const String& path)
     int r = stat(path.AsCharPtr(), &s);
     if (0 == r)
     {
-        fileTime.time.tv_sec = s.st_mtime;
-        fileTime.time.tv_nsec = 0;
+        fileTime.time = s.st_mtim;
     }
     return fileTime;
 }
@@ -441,9 +469,15 @@ PosixFSWrapper::CreateTemporaryFilename(const Util::String& path)
 {
     n_assert(path.IsValid());
     char buf[1024];
-    snprintf(buf, 1024, "NEB%s.XXXXXX", path.AsCharPtr());
-    String res(mkdtemp(buf));
-    return res;
+    snprintf(buf, 1024, "%s/NEBXXXXXX", path.AsCharPtr());
+    int fd = mkstemp(buf);
+    if (-1 == fd)
+    {
+        n_error("PosixFSWrapper: CreateTemporaryFilename() failed for '%s' (errno %d)\n", path.AsCharPtr(), errno);
+        return String();
+    }
+    close(fd);
+    return String(buf);
 }
 
 //------------------------------------------------------------------------------
@@ -554,7 +588,7 @@ PosixFSWrapper::GetUserDirectory()
 String
 PosixFSWrapper::GetTempDirectory()
 {
-    return String("file:///tmp/");
+    return String("file:////tmp/");
 }
 
 //------------------------------------------------------------------------------
@@ -599,10 +633,11 @@ PosixFSWrapper::GetHomeDirectory()
 {
     char buf[MAXPATHLEN];
 #if NEBULA_DEBUG
-#ifdef NEBULA_PROJECT_ROOT
-    String EmbeddedHome = NEBULA_PROJECT_ROOT;
-    return String("file:///") + EmbeddedHome;
-#endif
+    String projectRoot = ProjectLocator::GetProjectRoot();
+    if (!projectRoot.IsEmpty())
+    {
+        return String("file:///") + projectRoot;
+    }
 #endif
 #ifdef __APPLE__
     CoreFoundation::CFBundleRef mainBundle = CoreFoundation::CFBundleGetMainBundle();

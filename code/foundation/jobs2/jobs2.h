@@ -44,6 +44,7 @@ using JobFunc = void(*)(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, Siz
 template <typename... ARGS>
 struct CallableStub
 {
+    virtual ~CallableStub() = default;
     virtual void invoke(ARGS... args) = 0;
 };
 
@@ -62,7 +63,8 @@ struct Callable : CallableStub<ARGS...>
 
 struct Lambda
 {
-    CallableStub<SizeT, SizeT, IndexT, SizeT>* callable;
+    using Stub = CallableStub<SizeT, SizeT, IndexT, SizeT>;
+    Stub* callable;
 
     template<typename LAMBDA>
     Lambda(LAMBDA l)
@@ -75,6 +77,13 @@ struct Lambda
     void operator()(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
         callable->invoke(totalJobs, groupSize, groupIndex, invocationOffset);
+    }
+
+    /// destroy the captured state, the memory itself belongs to the job scratch buffer
+    void Destroy()
+    {
+        this->callable->~Stub();
+        this->callable = nullptr;
     }
 };
 

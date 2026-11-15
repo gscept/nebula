@@ -4,10 +4,10 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "frameevent.h"
+#include "api.h"
 #include "world.h"
 #include "memdb/database.h"
 #include "jobs2/jobs2.h"
-#include "editorstate.h"
 
 namespace Game
 {
@@ -50,14 +50,30 @@ FrameEvent::~FrameEvent()
 void
 FrameEvent::Run(World* world)
 {
-    for (SizeT i = 0; i < this->batches.Size(); i++)
+    IndexT batchIndex = 0;
+    IndexT callbackIndex = 0;
+
+    while (batchIndex < this->batches.Size() || callbackIndex < this->callbacks.Size())
     {
-        if (this->batches[i]->async)
+        // Callbacks are always sequential, so they are merged into the batch order here
+        if (callbackIndex < this->callbacks.Size() &&
+            (batchIndex >= this->batches.Size() || this->callbacks[callbackIndex].order < this->batches[batchIndex]->order))
+        {
+            Callback const& callback = this->callbacks[callbackIndex++];
+            if (callback.phase & PhaseForMode(world->mode))
+            {
+                callback.func(world);
+            }
+            continue;
+        }
+
+        FrameEvent::Batch* batch = this->batches[batchIndex++];
+        if (batch->async)
         {
             this->pipeline->inAsync = true;
         }
 
-        this->batches[i]->Execute(world);
+        batch->Execute(world);
 
         this->pipeline->inAsync = false;
     }
@@ -96,6 +112,28 @@ FrameEvent::AddProcessor(Processor* processor)
         n_assert(res);
         this->batches.Insert(i, batch);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameEvent::AddCallback(int order, ProcessorPhase phase, std::function<void(World*)> func)
+{
+    Callback callback;
+    callback.order = order;
+    callback.phase = phase;
+    callback.func = func;
+
+    IndexT i;
+    for (i = 0; i < this->callbacks.Size(); i++)
+    {
+        if (this->callbacks[i].order > order)
+        {
+            break;
+        }
+    }
+    this->callbacks.Insert(i, callback);
 }
 
 //--------------------------------------------------------------------------
@@ -313,20 +351,15 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         if (!processor->active)
             continue;
 
+        if (!(processor->phase & PhaseForMode(world->mode)))
+            continue;
+
 #ifdef NEBULA_ENABLE_PROFILING
         // TODO: Async batch processors will have the same timings for now. We should figure out some good way of measuring their elapsed time.
         processor->timer.Reset();
         processor->timer.Start();
 #endif
 
-#ifdef WITH_NEBULA_EDITOR
-        if (Game::EditorState::HasInstance())
-        {
-            Game::EditorState* editor = Game::EditorState::Instance();
-            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-                continue;
-        }
-#endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
     }
@@ -338,6 +371,9 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         {
             Processor* processor = this->processors[i];
             if (!processor->active)
+                continue;
+
+            if (!(processor->phase & PhaseForMode(world->mode)))
                 continue;
 
             processor->timer.Stop();
@@ -371,6 +407,9 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         if (!processor->active)
             continue;
 
+        if (!(processor->phase & PhaseForMode(world->mode)))
+            continue;
+
         processor->timer.Stop();
     }
 #endif
@@ -391,14 +430,8 @@ FrameEvent::Batch::ExecuteSequential(World* world)
         if (!processor->active)
             continue;
 
-#ifdef WITH_NEBULA_EDITOR
-        if (Game::EditorState::HasInstance())
-        {
-            Game::EditorState* editor = Game::EditorState::Instance();
-            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-                continue;
-        }
-#endif
+        if (!(processor->phase & PhaseForMode(world->mode)))
+            continue;
 
 #ifdef NEBULA_ENABLE_PROFILING
         processor->timer.Reset();
@@ -441,14 +474,16 @@ FramePipeline::~FramePipeline()
 /**
 */
 FrameEvent*
-FramePipeline::RegisterFrameEvent(int order, Util::StringAtom name)
+FramePipeline::RegisterFrameEvent(FrameEventCreateInfo const& info)
 {
     n_assert(!this->isRunning);
 
     FrameEvent* fEvent = new FrameEvent();
     fEvent->pipeline = this;
-    fEvent->name = name;
-    fEvent->order = order;
+    fEvent->name = info.name;
+    fEvent->order = info.order;
+    fEvent->fixedStep = info.fixedStep;
+    fEvent->timeSourceHash = info.timeSourceHash;
 
 #if NEBULA_DEBUG
     for (int i = 0; i < this->frameEvents.Size(); i++)
@@ -468,6 +503,18 @@ FramePipeline::RegisterFrameEvent(int order, Util::StringAtom name)
     this->frameEvents.Insert(i, fEvent);
 
     return fEvent;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameEvent*
+FramePipeline::RegisterFrameEvent(int order, Util::StringAtom name)
+{
+    FrameEventCreateInfo info;
+    info.order = order;
+    info.name = name;
+    return this->RegisterFrameEvent(info);
 }
 
 //------------------------------------------------------------------------------
@@ -517,13 +564,36 @@ FramePipeline::Reset()
 /**
 */
 void
+FramePipeline::RunEvent(FrameEvent* frameEvent)
+{
+    if (frameEvent->fixedStep <= 0.0)
+    {
+        frameEvent->Run(this->world);
+        return;
+    }
+
+    TimeSource* timeSource = Time::GetTimeSource(frameEvent->timeSourceHash);
+    while (Time::ConsumeFixedStep(timeSource))
+    {
+        frameEvent->Run(this->world);
+
+        // The dataset views come from an arena which is released once per app frame phase, so a fixed event has
+        // to release them after every run instead of growing the arena by the number of steps
+        Game::ReleaseDatasets();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FramePipeline::RunThru(Util::StringAtom name)
 {
     FrameEvent* frameEvent;
     while (currentIndex < this->frameEvents.Size())
     {
         frameEvent = this->frameEvents[currentIndex++];
-        frameEvent->Run(this->world);
+        this->RunEvent(frameEvent);
 
         if (frameEvent->name == name)
         {
@@ -542,7 +612,7 @@ FramePipeline::RunRemaining()
     while (currentIndex < this->frameEvents.Size())
     {
         frameEvent = this->frameEvents[currentIndex++];
-        frameEvent->Run(this->world);
+        this->RunEvent(frameEvent);
     }
 }
 

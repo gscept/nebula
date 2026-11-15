@@ -377,7 +377,61 @@ StringTest::Run()
         String dec = String::FromBase64(enc);
         VERIFY(str == dec);
     }
-    
+
+    // base64 without padding used to lose its last decoded byte
+    {
+        String abc = "ABC";
+        String enc = abc.AsBase64();
+        VERIFY(enc == "QUJD");
+        VERIFY(String::FromBase64(enc) == "ABC");
+        VERIFY(String::FromBase64("QUJDRA==") == "ABCD");
+        VERIFY(String::FromBase64("QUJDREU=") == "ABCDE");
+    }
+
+    // path helpers on strings without any separator used to read and write
+    // past the terminator (local buffer and heap buffer variants)
+    {
+        String local = "noslashname.txt";
+        VERIFY(local.ExtractFileName() == "noslashname.txt");
+        VERIFY(local.ExtractToLastSlash() == "");
+        VERIFY(local.ExtractToLastSlash().Length() == 0);
+        VERIFY(local.ExtractDirName() == "noslashname.txt");
+        VERIFY(local.ExtractLastDirName() == "");
+
+        String heap;
+        heap.Reserve(64);
+        heap = "noslashname.txt";
+        VERIFY(heap.ExtractFileName() == "noslashname.txt");
+        VERIFY(heap.ExtractToLastSlash() == "");
+        VERIFY(heap.ExtractDirName() == "noslashname.txt");
+
+        String nested = "dir/file";
+        VERIFY(nested.ExtractLastDirName() == "");
+        VERIFY(nested.ExtractToLastSlash() == "dir/");
+        VERIFY(nested.ExtractToLastSlash().Length() == 4);
+
+        String longPath = "a/very/long/path/that/lives/on/the/heap/file.ext";
+        String folder = longPath.ExtractToLastSlash();
+        VERIFY(folder == "a/very/long/path/that/lives/on/the/heap/");
+        VERIFY(folder.Length() == 40);
+        VERIFY(longPath.ExtractFileName() == "file.ext");
+    }
+
+    // appending a string to itself when it has to grow used to read the freed buffer
+    {
+        String self = "0123456789abcdefghij";
+        self.Append(self);
+        VERIFY(self == "0123456789abcdefghij0123456789abcdefghij");
+
+        String local = "0123456789";
+        local.Append(local);
+        VERIFY(local == "01234567890123456789");
+
+        String part = "abcdefghijklmnopqrstuvwxyz";
+        part.AppendRange(part.AsCharPtr() + 20, 6);
+        VERIFY(part == "abcdefghijklmnopqrstuvwxyzuvwxyz");
+    }
+
 
 #if __WIN32__
     LPCWSTR wideString = L"foo/";

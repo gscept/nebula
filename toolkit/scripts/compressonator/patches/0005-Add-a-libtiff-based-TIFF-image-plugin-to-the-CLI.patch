@@ -1,0 +1,679 @@
+From 8714ab433b22c060ede2917cd1a4d8a2a06ff53c Mon Sep 17 00:00:00 2001
+From: Johannes <johannes.hirche@gmail.com>
+Date: Sat, 31 Oct 2026 11:32:44 +0100
+Subject: [PATCH 5/8] Add a libtiff based TIFF image plugin to the CLI
+
+Without Qt, which the Linux CLI doesn't use, TIFF files could not be
+loaded at all, although TIF/TIFF are listed as supported inputs.
+
+The plugin loads the first image of a TIFF file. Gray, gray+alpha, RGB
+and RGBA images with 8/16-bit integer or 16/32-bit float samples keep
+their precision and straight alpha, stripped or tiled, contiguous or
+planar, with any compression and predictor libtiff was built with.
+Mirrored orientations are applied. Other photometric interpretations
+(palette, bilevel, YCbCr, CMYK, ...) are loaded as 8-bit RGBA through
+libtiff's RGBA interface.
+
+Built when OPTION_BUILD_TIFF is on (default on Linux) and libtiff is found.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ CMakeLists.txt                                |  13 +
+ .../_plugins/cimage/tiff/CMakeLists.txt       |  34 ++
+ .../_plugins/cimage/tiff/cmp_tiff.cpp         | 468 ++++++++++++++++++
+ applications/_plugins/cimage/tiff/cmp_tiff.h  |  50 ++
+ applications/compressonatorcli/CMakeLists.txt |   4 +
+ .../source/compressonatorcli.cpp              |   7 +
+ 6 files changed, 576 insertions(+)
+ create mode 100644 applications/_plugins/cimage/tiff/CMakeLists.txt
+ create mode 100644 applications/_plugins/cimage/tiff/cmp_tiff.cpp
+ create mode 100644 applications/_plugins/cimage/tiff/cmp_tiff.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index a45edc0..7ce9dd8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -200,6 +200,7 @@ set(PROJECT_EXTERNAL_LIBDIR ${PROJECT_SOURCE_DIR}/../common/lib/ext)
+ #              OPTION                    DESCRIPTION         REQUESTED VALUE          REQUIREMENT
+ cmp_option(OPTION_BUILD_KTX2         "Build CLI KTX2 Support"        ON     CMAKE_VERSION VERSION_GREATER "3.14.0")
+ cmp_option(OPTION_BUILD_EXR          "Build CLI EXR Support"         ON     CMP_HOST_WINDOWS OR CMP_HOST_LINUX)
++cmp_option(OPTION_BUILD_TIFF         "Build CLI TIFF Support"        ON     CMP_HOST_LINUX)
+ cmp_option(OPTION_BUILD_GUI          "Build the GUI Application"     ON     CMP_HOST_WINDOWS OR OPTION_BUILD_APPS_CMP_GUI)
+ cmp_option(OPTION_CMP_DIRECTX        "Use Directx"                   ON     CMP_HOST_WINDOWS)
+ cmp_option(OPTION_CMP_VULKAN         "Use Vulkan"                    ON     OPTION_ENABLE_ALL_APPS)
+@@ -379,6 +380,15 @@ else()
+             endif()
+         endif()
+ 
++        if (OPTION_BUILD_TIFF)
++            find_package(TIFF)
++            find_package(ZLIB)
++            if (NOT TIFF_FOUND)
++                message(WARNING "Package TIFF not found. CMP features using libtiff will be disabled")
++                set(OPTION_BUILD_TIFF OFF)
++            endif()
++        endif()
++
+         if (OPTION_BUILD_DRACO)
+             find_package(Draco)
+             pkg_check_modules(draco draco)
+@@ -440,6 +450,9 @@ if (LIB_BUILD_IMAGEIO)
+         endif()
+     endif()
+     add_subdirectory(applications/_plugins/cimage/tga)
++    if (OPTION_BUILD_TIFF)
++        add_subdirectory(applications/_plugins/cimage/tiff)
++    endif()
+ endif()
+ 
+ if (LIB_BUILD_ANALYSIS)
+diff --git a/applications/_plugins/cimage/tiff/CMakeLists.txt b/applications/_plugins/cimage/tiff/CMakeLists.txt
+new file mode 100644
+index 0000000..aa0d477
+--- /dev/null
++++ b/applications/_plugins/cimage/tiff/CMakeLists.txt
+@@ -0,0 +1,34 @@
++cmake_minimum_required(VERSION 3.10)
++
++add_library(Image_TIFF STATIC "")
++
++target_sources(Image_TIFF
++    PRIVATE
++    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_pluginapi.h
++    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.h
++    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.cpp
++    ./cmp_tiff.cpp
++    ./cmp_tiff.h
++    )
++
++target_include_directories(Image_TIFF
++     PRIVATE
++     ${PROJECT_SOURCE_DIR}/cmp_compressonatorlib
++     ${PROJECT_SOURCE_DIR}/cmp_framework/common/half
++     ${PROJECT_SOURCE_DIR}/applications/_plugins/common
++     )
++
++# zlib is linked explicitly for static builds of libtiff, which don't carry it along
++target_link_libraries(Image_TIFF PUBLIC TIFF::TIFF)
++if (ZLIB_FOUND)
++    target_link_libraries(Image_TIFF PUBLIC ZLIB::ZLIB)
++endif()
++if (UNIX)
++    target_link_libraries(Image_TIFF PUBLIC m)
++    target_compile_definitions(Image_TIFF PRIVATE _LINUX)
++endif()
++
++# users register the plugin only when it is actually built
++target_compile_definitions(Image_TIFF INTERFACE CMP_BUILD_TIFF_PLUGIN=1)
++
++set_target_properties(Image_TIFF PROPERTIES FOLDER ${PROJECT_FOLDER_SDK_PLUGIN_STATIC})
+diff --git a/applications/_plugins/cimage/tiff/cmp_tiff.cpp b/applications/_plugins/cimage/tiff/cmp_tiff.cpp
+new file mode 100644
+index 0000000..5d261e6
+--- /dev/null
++++ b/applications/_plugins/cimage/tiff/cmp_tiff.cpp
+@@ -0,0 +1,468 @@
++//=====================================================================
++// Copyright (c) 2026 Nebula contributors
++//
++// Permission is hereby granted, free of charge, to any person obtaining a copy
++// of this software and associated documentation files(the "Software"), to deal
++// in the Software without restriction, including without limitation the rights
++// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
++// copies of the Software, and to permit persons to whom the Software is
++// furnished to do so, subject to the following conditions :
++//
++// The above copyright notice and this permission notice shall be included in
++// all copies or substantial portions of the Software.
++//
++// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
++// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++// THE SOFTWARE.
++//
++/// \file cmp_tiff.cpp
++//=====================================================================
++
++#include <algorithm>
++#include <cstdarg>
++#include <cstdint>
++#include <cstdio>
++#include <cstring>
++#include <vector>
++
++#include <tiffio.h>
++
++#include "tc_pluginapi.h"
++#include "tc_plugininternal.h"
++#include "compressonator.h"
++#include "cmp_tiff.h"
++
++static CMIPS* TIFF_CMips = nullptr;
++// TIFF_CMips outlives every call, so the fallback instance must not be a stack local
++static CMP_CMIPS g_TIFF_CMipsFallback;
++
++//------------------------------------------------------------------------------
++/**
++*/
++void*
++make_Plugin_TIFF()
++{
++    return new Plugin_TIFF;
++}
++
++namespace
++{
++
++//------------------------------------------------------------------------------
++/**
++    libtiff reports problems through global handlers. Warnings are mostly about
++    unknown private tags written by image editors, so they are dropped.
++*/
++void
++TiffError(const char* module, const char* fmt, va_list args)
++{
++    char msg[1024];
++    vsnprintf(msg, sizeof(msg), fmt, args);
++    fprintf(stderr, "TIFF error: %s%s%s\n", module ? module : "", module ? ": " : "", msg);
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++void
++TiffWarning(const char*, const char*, va_list)
++{
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++struct TiffFile
++{
++    TIFF* tif = nullptr;
++    ~TiffFile()
++    {
++        if (this->tif)
++            TIFFClose(this->tif);
++    }
++};
++
++//------------------------------------------------------------------------------
++/**
++    Copy count pixels of a decoded strip row or tile row into the interleaved image
++*/
++void
++CopyPixels(const uint8_t* src, uint8_t* dst, uint32_t count, bool separatePlanes, uint16_t plane, size_t sampleBytes, size_t pixelBytes)
++{
++    if (!separatePlanes)
++    {
++        memcpy(dst, src, count * pixelBytes);
++        return;
++    }
++    for (uint32_t i = 0; i < count; i++)
++    {
++        memcpy(dst + i * pixelBytes + plane * sampleBytes, src + i * sampleBytes, sampleBytes);
++    }
++}
++
++//------------------------------------------------------------------------------
++/**
++    Decode the current directory into a top-down buffer of width * height pixels
++    with spp interleaved samples each. Handles strips and tiles, contiguous and
++    separate planes, libtiff takes care of compression, predictors and byte order.
++*/
++bool
++ReadInterleaved(TIFF* tif, uint32_t width, uint32_t height, uint16_t spp, uint16_t planarConfig, size_t sampleBytes, std::vector<uint8_t>& image)
++{
++    const bool     separatePlanes  = planarConfig == PLANARCONFIG_SEPARATE && spp > 1;
++    const size_t   pixelBytes      = spp * sampleBytes;
++    const size_t   chunkPixelBytes = separatePlanes ? sampleBytes : pixelBytes;
++    const uint16_t planes          = separatePlanes ? spp : 1;
++    image.resize(size_t(width) * height * pixelBytes);
++
++    if (TIFFIsTiled(tif))
++    {
++        uint32_t tileWidth = 0, tileHeight = 0;
++        TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tileWidth);
++        TIFFGetField(tif, TIFFTAG_TILELENGTH, &tileHeight);
++        const uint64_t tileSize = TIFFTileSize64(tif);
++        if (tileWidth == 0 || tileHeight == 0 || tileSize < uint64_t(tileWidth) * tileHeight * chunkPixelBytes)
++            return false;
++
++        std::vector<uint8_t> tile(tileSize);
++        for (uint16_t plane = 0; plane < planes; plane++)
++        {
++            for (uint32_t y0 = 0; y0 < height; y0 += tileHeight)
++            {
++                for (uint32_t x0 = 0; x0 < width; x0 += tileWidth)
++                {
++                    if (TIFFReadTile(tif, tile.data(), x0, y0, 0, plane) < 0)
++                        return false;
++
++                    const uint32_t rows = std::min(tileHeight, height - y0);
++                    const uint32_t cols = std::min(tileWidth, width - x0);
++                    for (uint32_t row = 0; row < rows; row++)
++                    {
++                        const uint8_t* src = tile.data() + size_t(row) * tileWidth * chunkPixelBytes;
++                        uint8_t*       dst = image.data() + (size_t(y0 + row) * width + x0) * pixelBytes;
++                        CopyPixels(src, dst, cols, separatePlanes, plane, sampleBytes, pixelBytes);
++                    }
++                }
++            }
++        }
++    }
++    else
++    {
++        const uint64_t lineSize = TIFFScanlineSize64(tif);
++        if (lineSize < uint64_t(width) * chunkPixelBytes)
++            return false;
++
++        std::vector<uint8_t> line(lineSize);
++        for (uint16_t plane = 0; plane < planes; plane++)
++        {
++            for (uint32_t y = 0; y < height; y++)
++            {
++                if (TIFFReadScanline(tif, line.data(), y, plane) < 0)
++                    return false;
++                CopyPixels(line.data(), image.data() + size_t(y) * width * pixelBytes, width, separatePlanes, plane, sampleBytes, pixelBytes);
++            }
++        }
++    }
++    return true;
++}
++
++//------------------------------------------------------------------------------
++/**
++    Apply the orientation tag to a top-down, left-to-right buffer of pixelBytes
++    sized pixels. Only the mirrored variants are supported, rotated ones are
++    practically never written for textures.
++*/
++bool
++ApplyOrientation(std::vector<uint8_t>& image, uint32_t width, uint32_t height, size_t pixelBytes, uint16_t orientation)
++{
++    const bool flipX = orientation == ORIENTATION_TOPRIGHT || orientation == ORIENTATION_BOTRIGHT;
++    const bool flipY = orientation == ORIENTATION_BOTRIGHT || orientation == ORIENTATION_BOTLEFT;
++    if (orientation > ORIENTATION_BOTLEFT)
++        return false;
++
++    const size_t         rowBytes = size_t(width) * pixelBytes;
++    std::vector<uint8_t> tmp(pixelBytes);
++    if (flipY)
++    {
++        std::vector<uint8_t> row(rowBytes);
++        for (uint32_t y = 0; y < height / 2; y++)
++        {
++            uint8_t* a = image.data() + size_t(y) * rowBytes;
++            uint8_t* b = image.data() + size_t(height - 1 - y) * rowBytes;
++            memcpy(row.data(), a, rowBytes);
++            memcpy(a, b, rowBytes);
++            memcpy(b, row.data(), rowBytes);
++        }
++    }
++    if (flipX)
++    {
++        for (uint32_t y = 0; y < height; y++)
++        {
++            uint8_t* row = image.data() + size_t(y) * rowBytes;
++            for (uint32_t x = 0; x < width / 2; x++)
++            {
++                uint8_t* a = row + size_t(x) * pixelBytes;
++                uint8_t* b = row + size_t(width - 1 - x) * pixelBytes;
++                memcpy(tmp.data(), a, pixelBytes);
++                memcpy(a, b, pixelBytes);
++                memcpy(b, tmp.data(), pixelBytes);
++            }
++        }
++    }
++    return true;
++}
++
++//------------------------------------------------------------------------------
++/**
++    Expand gray, gray+alpha, RGB and RGBA samples to RGBA. Further extra samples
++    are ignored. MinIsWhite is inverted for integer data.
++*/
++template <typename T>
++void
++ExpandToRGBA(const T* src, T* dst, size_t numPixels, uint16_t spp, bool isGray, bool invert, T maxValue, T opaque)
++{
++    for (size_t i = 0; i < numPixels; i++, src += spp, dst += 4)
++    {
++        if (isGray)
++        {
++            T v    = invert ? T(maxValue - src[0]) : src[0];
++            dst[0] = dst[1] = dst[2] = v;
++            dst[3]                   = spp > 1 ? src[1] : opaque;
++        }
++        else
++        {
++            dst[0] = src[0];
++            dst[1] = src[1];
++            dst[2] = src[2];
++            dst[3] = spp > 3 ? src[3] : opaque;
++        }
++    }
++}
++
++}  // namespace
++
++//------------------------------------------------------------------------------
++/**
++*/
++Plugin_TIFF::Plugin_TIFF()
++{
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++Plugin_TIFF::~Plugin_TIFF()
++{
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++int
++Plugin_TIFF::TC_PluginSetSharedIO(void* Shared)
++{
++    if (Shared)
++    {
++        TIFF_CMips = static_cast<CMIPS*>(Shared);
++        return 0;
++    }
++    return 1;
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++int
++Plugin_TIFF::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
++{
++    pPluginVersion->dwAPIVersionMajor    = TC_API_VERSION_MAJOR;
++    pPluginVersion->dwAPIVersionMinor    = TC_API_VERSION_MINOR;
++    pPluginVersion->dwPluginVersionMajor = TC_PLUGIN_VERSION_MAJOR;
++    pPluginVersion->dwPluginVersionMinor = TC_PLUGIN_VERSION_MINOR;
++    return 0;
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++int
++Plugin_TIFF::TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture* srcTexture)
++{
++    return -1;
++}
++
++//------------------------------------------------------------------------------
++/**
++*/
++int
++Plugin_TIFF::TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture* srcTexture)
++{
++    return -1;
++}
++
++//------------------------------------------------------------------------------
++/**
++    Loading only, compressonatorcli is used to write DDS
++*/
++int
++Plugin_TIFF::TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet)
++{
++    if (TIFF_CMips)
++        TIFF_CMips->PrintError("Error: TIFF plugin can't write '%s', TIFF output is not supported\n", pszFilename);
++    return -1;
++}
++
++//------------------------------------------------------------------------------
++/**
++    Loads the first image of a TIFF file. 8/16-bit integer and 16/32-bit float
++    gray, gray+alpha, RGB and RGBA images keep their precision and straight
++    alpha. Everything else libtiff can convert (palette, bilevel, YCbCr, CMYK,
++    ...) is loaded as 8-bit RGBA.
++*/
++int
++Plugin_TIFF::TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet)
++{
++    if (!TIFF_CMips)
++        TIFF_CMips = &g_TIFF_CMipsFallback;
++
++    TIFFSetErrorHandler(TiffError);
++    TIFFSetWarningHandler(TiffWarning);
++
++    TiffFile file;
++    file.tif = TIFFOpen(pszFilename, "r");
++    if (!file.tif)
++    {
++        TIFF_CMips->PrintError("Error: TIFF plugin failed to open '%s'\n", pszFilename);
++        return -1;
++    }
++    TIFF* tif = file.tif;
++
++    uint32_t width = 0, height = 0;
++    uint16_t spp = 1, bps = 1, sampleFormat = SAMPLEFORMAT_UINT, planarConfig = PLANARCONFIG_CONTIG, photometric = 0, orientation = ORIENTATION_TOPLEFT;
++    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
++    TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
++    TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
++    TIFFGetFieldDefaulted(tif, TIFFTAG_BITSPERSAMPLE, &bps);
++    TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
++    TIFFGetFieldDefaulted(tif, TIFFTAG_PLANARCONFIG, &planarConfig);
++    TIFFGetFieldDefaulted(tif, TIFFTAG_ORIENTATION, &orientation);
++    if (!TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometric))
++        photometric = spp >= 3 ? PHOTOMETRIC_RGB : PHOTOMETRIC_MINISBLACK;
++
++    // the largest mip level must fit into CMP_DWORD with 16 bytes per pixel
++    if (width == 0 || height == 0 || uint64_t(width) * height > (uint64_t(UINT32_MAX) / 16))
++    {
++        TIFF_CMips->PrintError("Error: TIFF plugin, '%s' has invalid dimensions %ux%u\n", pszFilename, width, height);
++        return -1;
++    }
++
++    const bool isGray   = photometric == PHOTOMETRIC_MINISBLACK || photometric == PHOTOMETRIC_MINISWHITE;
++    const bool isRGB    = photometric == PHOTOMETRIC_RGB && spp >= 3;
++    const bool isUInt   = sampleFormat == SAMPLEFORMAT_UINT && (bps == 8 || bps == 16);
++    const bool isFloat  = sampleFormat == SAMPLEFORMAT_IEEEFP && (bps == 16 || bps == 32);
++    const bool isDirect = (isGray || isRGB) && (isUInt || isFloat) && !(isFloat && photometric == PHOTOMETRIC_MINISWHITE);
++
++    CMP_ChannelFormat    channelFormat;
++    CMP_FORMAT           format;
++    std::vector<uint8_t> rgba;
++
++    if (isDirect)
++    {
++        const size_t         sampleBytes = bps / 8;
++        std::vector<uint8_t> samples;
++        if (!ReadInterleaved(tif, width, height, spp, planarConfig, sampleBytes, samples))
++        {
++            TIFF_CMips->PrintError("Error: TIFF plugin failed to decode '%s'\n", pszFilename);
++            return -1;
++        }
++
++        const size_t numPixels = size_t(width) * height;
++        const bool   invert    = photometric == PHOTOMETRIC_MINISWHITE;
++        rgba.resize(numPixels * 4 * sampleBytes);
++        if (isUInt && bps == 8)
++        {
++            channelFormat = CF_8bit;
++            format        = CMP_FORMAT_RGBA_8888;
++            ExpandToRGBA<uint8_t>(samples.data(), rgba.data(), numPixels, spp, isGray, invert, 0xFF, 0xFF);
++        }
++        else if (isUInt)
++        {
++            channelFormat = CF_16bit;
++            format        = CMP_FORMAT_RGBA_16;
++            ExpandToRGBA<uint16_t>((const uint16_t*)samples.data(), (uint16_t*)rgba.data(), numPixels, spp, isGray, invert, 0xFFFF, 0xFFFF);
++        }
++        else if (bps == 16)
++        {
++            // half floats are passed through as raw bits, 0x3C00 is 1.0
++            channelFormat = CF_Float16;
++            format        = CMP_FORMAT_RGBA_16F;
++            ExpandToRGBA<uint16_t>((const uint16_t*)samples.data(), (uint16_t*)rgba.data(), numPixels, spp, isGray, false, 0, 0x3C00);
++        }
++        else
++        {
++            channelFormat = CF_Float32;
++            format        = CMP_FORMAT_RGBA_32F;
++            ExpandToRGBA<float>((const float*)samples.data(), (float*)rgba.data(), numPixels, spp, isGray, false, 0.0f, 1.0f);
++        }
++
++        if (!ApplyOrientation(rgba, width, height, 4 * sampleBytes, orientation))
++        {
++            TIFF_CMips->PrintError("Error: TIFF plugin, '%s' uses unsupported orientation %u\n", pszFilename, orientation);
++            return -1;
++        }
++    }
++    else
++    {
++        char message[1024];
++        if (!TIFFRGBAImageOK(tif, message))
++        {
++            TIFF_CMips->PrintError("Error: TIFF plugin, '%s' is not supported: %s\n", pszFilename, message);
++            return -1;
++        }
++
++        std::vector<uint32_t> raster(size_t(width) * height);
++        if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0))
++        {
++            TIFF_CMips->PrintError("Error: TIFF plugin failed to decode '%s'\n", pszFilename);
++            return -1;
++        }
++
++        channelFormat  = CF_8bit;
++        format         = CMP_FORMAT_RGBA_8888;
++        rgba.resize(raster.size() * 4);
++        for (size_t i = 0; i < raster.size(); i++)
++        {
++            rgba[i * 4 + 0] = TIFFGetR(raster[i]);
++            rgba[i * 4 + 1] = TIFFGetG(raster[i]);
++            rgba[i * 4 + 2] = TIFFGetB(raster[i]);
++            rgba[i * 4 + 3] = TIFFGetA(raster[i]);
++        }
++    }
++
++    if (!TIFF_CMips->AllocateMipSet(pMipSet, channelFormat, TDT_ARGB, TT_2D, width, height, 1))
++    {
++        TIFF_CMips->PrintError("Error: TIFF plugin failed to allocate a mip set for '%s'\n", pszFilename);
++        return -1;
++    }
++    CMP_MipLevel* level = TIFF_CMips->GetMipLevel(pMipSet, 0);
++    if (!level || !TIFF_CMips->AllocateMipLevelData(level, width, height, channelFormat, TDT_ARGB) || level->m_dwLinearSize < rgba.size())
++    {
++        TIFF_CMips->PrintError("Error: TIFF plugin failed to allocate image data for '%s'\n", pszFilename);
++        return -1;
++    }
++
++    pMipSet->m_ChannelFormat   = channelFormat;
++    pMipSet->m_TextureDataType = TDT_ARGB;
++    pMipSet->m_format          = format;
++    pMipSet->m_dwFourCC        = 0;
++    pMipSet->m_dwFourCC2       = 0;
++    pMipSet->m_nMipLevels      = 1;
++    memcpy(level->m_pbData, rgba.data(), rgba.size());
++    pMipSet->pData      = level->m_pbData;
++    pMipSet->dwDataSize = level->m_dwLinearSize;
++    return 0;
++}
+diff --git a/applications/_plugins/cimage/tiff/cmp_tiff.h b/applications/_plugins/cimage/tiff/cmp_tiff.h
+new file mode 100644
+index 0000000..0093bbb
+--- /dev/null
++++ b/applications/_plugins/cimage/tiff/cmp_tiff.h
+@@ -0,0 +1,50 @@
++//=====================================================================
++// Copyright (c) 2026 Nebula contributors
++//
++// Permission is hereby granted, free of charge, to any person obtaining a copy
++// of this software and associated documentation files(the "Software"), to deal
++// in the Software without restriction, including without limitation the rights
++// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
++// copies of the Software, and to permit persons to whom the Software is
++// furnished to do so, subject to the following conditions :
++//
++// The above copyright notice and this permission notice shall be included in
++// all copies or substantial portions of the Software.
++//
++// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
++// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++// THE SOFTWARE.
++//
++/// \file cmp_tiff.h
++/// TIFF image loader plugin built on libtiff. Without Qt (the Linux CLI) TIFF
++/// files were not readable at all.
++//=====================================================================
++
++#ifndef _PLUGIN_IMAGE_TIFF_H
++#define _PLUGIN_IMAGE_TIFF_H
++
++#include "plugininterface.h"
++
++#define TC_PLUGIN_VERSION_MAJOR 1
++#define TC_PLUGIN_VERSION_MINOR 0
++
++class Plugin_TIFF : public PluginInterface_Image
++{
++public:
++    Plugin_TIFF();
++    virtual ~Plugin_TIFF();
++    int TC_PluginSetSharedIO(void* Shared);
++    int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
++    int TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet);
++    int TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet);
++    int TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture* srcTexture);
++    int TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture* srcTexture);
++};
++
++extern void* make_Plugin_TIFF();
++
++#endif
+diff --git a/applications/compressonatorcli/CMakeLists.txt b/applications/compressonatorcli/CMakeLists.txt
+index a6587c0..61c8548 100644
+--- a/applications/compressonatorcli/CMakeLists.txt
++++ b/applications/compressonatorcli/CMakeLists.txt
+@@ -151,6 +151,10 @@ if (OPTION_BUILD_EXR)
+     list(APPEND CMP_LIBS Image_EXR)
+ endif()
+ 
++if (OPTION_BUILD_TIFF)
++    list(APPEND CMP_LIBS Image_TIFF)
++endif()
++
+ if (OPTION_BUILD_BROTLIG)
+     list(APPEND CMP_LIBS
+         Image_BRLG
+diff --git a/applications/compressonatorcli/source/compressonatorcli.cpp b/applications/compressonatorcli/source/compressonatorcli.cpp
+index febfa95..8b72f5b 100644
+--- a/applications/compressonatorcli/source/compressonatorcli.cpp
++++ b/applications/compressonatorcli/source/compressonatorcli.cpp
+@@ -78,6 +78,9 @@ extern void* make_Plugin_ASTC();
+ 
+ extern void* make_Plugin_EXR();
+ extern void* make_Plugin_TGA();
++#ifdef CMP_BUILD_TIFF_PLUGIN
++extern void* make_Plugin_TIFF();
++#endif
+ extern void* make_Plugin_KTX();
+ extern void* make_Plugin_CAnalysis();
+ 
+@@ -581,6 +584,10 @@ int main(int argc, char* argv[])
+     g_pluginManager.registerStaticPlugin("IMAGE", "EXR", (void*)make_Plugin_EXR);
+ #endif
+ 
++#ifdef CMP_BUILD_TIFF_PLUGIN
++    g_pluginManager.registerStaticPlugin("IMAGE", "TIF", (void*)make_Plugin_TIFF);
++    g_pluginManager.registerStaticPlugin("IMAGE", "TIFF", (void*)make_Plugin_TIFF);
++#endif
+     g_pluginManager.registerStaticPlugin("IMAGE", "TGA", (void*)make_Plugin_TGA);  // Use for load only, Qt will be used for Save
+     g_pluginManager.registerStaticPlugin("IMAGE", "ANALYSIS", (void*)make_Plugin_CAnalysis);
+ 

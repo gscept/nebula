@@ -34,6 +34,14 @@ struct GltfBase
     // serialized extensions and extras
     Util::String extensions;
     Util::String extras;
+    GltfBase() = default;
+    virtual ~GltfBase() = default;
+    // keep the implicit copy and move operations that the destructor would otherwise suppress
+    GltfBase(const GltfBase&) = default;
+    GltfBase(GltfBase&&) = default;
+    GltfBase& operator=(const GltfBase&) = default;
+    GltfBase& operator=(GltfBase&&) = default;
+
     virtual bool IsEmpty() const
     {
         return false;
