@@ -243,5 +243,56 @@ namespace NebulaEngine
             }
 #endif
         }
+
+        /// <summary>
+        /// Called by the script feature unit at the beginning of the frame with the entities created
+        /// since the last flush. The buffer is a blittable array of entity ids and is only valid for
+        /// the duration of the call, so the mirror has to be populated here.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int FlushEntityCreateQueue(IntPtr ids, int count)
+        {
+            if (ids == IntPtr.Zero || count <= 0)
+            {
+                return 0;
+            }
+
+            unsafe
+            {
+                ulong* buffer = (ulong*)ids;
+                for (int i = 0; i < count; i++)
+                {
+                    ulong id = buffer[i];
+
+                    // Game::Entity stores the world id in bits 32-39
+                    World world = World.Get((uint)(id >> 32));
+                    if (world == null)
+                    {
+                        continue;
+                    }
+
+                    world.RegisterEntityFromNative(id);
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Called by the script feature unit after the game server has managed its entities, for every
+        /// world whose entity count changed since the last sweep.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int CollectGarbage(uint worldId)
+        {
+            World world = World.Get(worldId);
+            if (world == null)
+            {
+                return 0;
+            }
+
+            world.CollectGarbage();
+            return 0;
+        }
     }
 }

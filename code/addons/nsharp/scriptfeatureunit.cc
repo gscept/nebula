@@ -1,16 +1,23 @@
 //------------------------------------------------------------------------------
-//  nsharp/scriptfeatureunit.cc
-//  (C) 2022 Individual contributors, see AUTHORS file
+//  @file nsharp/scriptfeatureunit.cc
+//  @copyright (C) 2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "scriptfeatureunit.h"
 #include "nsharpserver.h"
 #include "io/filewatcher.h"
+#include "game/gameserver.h"
+#include "coreclr_delegates.h"
 
 namespace Scripting
 {
 __ImplementClass(Scripting::ScriptFeatureUnit, 'SCFU', Game::FeatureUnit);
 __ImplementSingleton(ScriptFeatureUnit);
+
+// Managed entry points that take a blittable argument. The pointers are resolved once at activation
+// and cached here, which keeps the per-frame flush from doing a dictionary lookup.
+typedef int(CORECLR_DELEGATE_CALLTYPE* FlushEntitiesFn)(void*, int);
+typedef int(CORECLR_DELEGATE_CALLTYPE* CollectGarbageFn)(uint32_t);
 
 //------------------------------------------------------------------------------
 /**
@@ -22,7 +29,11 @@ ScriptFeatureUnit::ScriptFeatureUnit() :
     beginFrameEntry("NebulaEngine.AppEntry::OnBeginFrame()"),
     frameEntry("NebulaEngine.AppEntry::OnFrame()"),
     endFrameEntry("NebulaEngine.AppEntry::OnEndFrame()"),
-    reloadEntry("NebulaEngine.AppEntry::RequestReload()")
+    reloadEntry("NebulaEngine.AppEntry::RequestReload()"),
+    flushEntityCreateQueueEntry("NebulaEngine.AppEntry::FlushEntityCreateQueue()"),
+    collectGarbageEntry("NebulaEngine.AppEntry::CollectGarbage()"),
+    flushEntityCreates(nullptr),
+    collectGarbage(nullptr)
 {
     __ConstructSingleton;
 }
@@ -51,6 +62,42 @@ Scripting::AssemblyId
 ScriptFeatureUnit::GetAssemblyId() const
 {
     return this->engineAssemblyId;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Native is the source of truth for entities, so a mirrored world is kept in sync by a callback
+    rather than by walking the database. The walk here only seeds the queue with entities that
+    already existed when the callback was registered, which is the case for entities authored by
+    C++ before the script assembly is loaded, and for worlds that exist before a reload.
+*/
+void
+ScriptFeatureUnit::RegisterWorld(Game::World* world)
+{
+    if (world == nullptr)
+        return;
+
+    Game::EntityCreatedCallback callback =
+        Game::EntityCreatedCallback::FromMethod<ScriptFeatureUnit, &ScriptFeatureUnit::OnEntityCreated>(this);
+
+    uint32_t worldId = world->GetWorldId();
+    if (!this->worldEntityCounts.Contains(worldId))
+        this->worldEntityCounts.Add(worldId, world->GetNumEntities());
+
+    world->EnumerateEntities(callback);
+    world->SetEntityCreatedCallback(callback);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Called by every registered world when an entity instance is allocated in it. The entity id is
+    blittable and carries its world id, so the queue can be flushed to the managed runtime with a
+    single call.
+*/
+void
+ScriptFeatureUnit::OnEntityCreated(Game::World* world, Game::Entity entity)
+{
+    this->entityCreateQueue.Append(uint64_t(entity));
 }
 
 //------------------------------------------------------------------------------
@@ -97,6 +144,16 @@ ScriptFeatureUnit::OnActivate()
             );
         }
 
+        this->flushEntityCreates = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->flushEntityCreateQueueEntry);
+        this->collectGarbage = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->collectGarbageEntry);
+
+        // Worlds that already exist when the feature unit is attached are not reported by
+        // OnWorldCreated, so mirror them here.
+        for (uint32_t worldIndex = 0; worldIndex < Game::GameServer::MaxWorlds; worldIndex++)
+        {
+            this->RegisterWorld(Game::GameServer::Instance()->GetWorld(worldIndex));
+        }
+
         int result = this->server->ExecUnmanagedCall(this->engineAssemblyId, this->mainEntry, pluginPath);
 
         n_assert(result == 0);
@@ -113,6 +170,18 @@ ScriptFeatureUnit::OnDeactivate()
     {
         IO::FileWatcher::Instance()->Unwatch(this->reloadWatchPath);
     }
+
+    for (IndexT i = 0; i < this->worldEntityCounts.Size(); i++)
+    {
+        Game::World* world = Game::GetWorld(this->worldEntityCounts.KeyAtIndex(i));
+        if (world != nullptr)
+            world->SetEntityCreatedCallback(Game::EntityCreatedCallback());
+    }
+    this->worldEntityCounts.Clear();
+    this->entityCreateQueue.Clear();
+    this->flushEntityCreates = nullptr;
+    this->collectGarbage = nullptr;
+
     if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
     {
         this->server->Close();
@@ -123,6 +192,30 @@ ScriptFeatureUnit::OnDeactivate()
     this->server->ExecUnmanagedCall(this->engineAssemblyId, this->exitEntry);
     this->server->Close();
     FeatureUnit::OnDeactivate();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ScriptFeatureUnit::OnStart(Game::World* world)
+{
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
+    this->RegisterWorld(world);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ScriptFeatureUnit::OnWorldCreated(Game::World* world)
+{
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
+    this->RegisterWorld(world);
 }
 
 //------------------------------------------------------------------------------
@@ -145,6 +238,28 @@ ScriptFeatureUnit::OnBeginFrame()
             this->reloads[this->reloads.Size() - 1]
         );
         this->reloads.Clear();
+    }
+
+    // Flush the entities created since the last frame and let the managed side consume them
+    if (!this->entityCreateQueue.IsEmpty() && this->flushEntityCreates != nullptr)
+    {
+        // Deletion is deferred, so an entity that was created and destroyed in the same frame is no
+        // longer valid by the time this runs. Filtering it out is what keeps the mirror from getting
+        // a stale entry: the entity count would be the same as at the last sweep, so OnDecay would
+        // not have swept it again.
+        SizeT numValid = 0;
+        for (IndexT i = 0; i < this->entityCreateQueue.Size(); i++)
+        {
+            Game::Entity entity = Game::Entity::FromId(this->entityCreateQueue[i]);
+            Game::World* world = Game::GetWorld((Game::WorldId)entity.world);
+            if (world != nullptr && world->IsValid(entity))
+                this->entityCreateQueue[numValid++] = this->entityCreateQueue[i];
+        }
+
+        if (numValid > 0)
+            ((FlushEntitiesFn)this->flushEntities)(this->entityQueue.Begin(), (int)numValid);
+
+        this->entityCreateQueue.Clear();
     }
 
     this->server->ExecUnmanagedCall(this->engineAssemblyId, this->beginFrameEntry);
@@ -172,6 +287,34 @@ ScriptFeatureUnit::OnEndFrame()
         return;
 
     this->server->ExecUnmanagedCall(this->engineAssemblyId, this->endFrameEntry);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Entity deletion is deferred, and the game server runs ManageEntities() before OnDecay(), so this
+    is the point where the managed side can drop entities that no longer exist natively. Worlds
+    whose entity count did not change are ignored
+*/
+void
+ScriptFeatureUnit::OnDecay()
+{
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid() || this->collectGarbage == nullptr)
+        return;
+
+    for (IndexT i = 0; i < this->worldEntityCounts.Size(); i++)
+    {
+        uint32_t worldId = (uint32_t)this->worldEntityCounts.KeyAtIndex(i);
+        Game::World* world = Game::GetWorld(worldId);
+        if (world == nullptr)
+            continue;
+
+        SizeT numEntities = world->GetNumEntities();
+        if (numEntities == this->worldEntityCounts.ValueAtIndex(i))
+            continue;
+
+        this->worldEntityCounts.ValueAtIndex(i) = numEntities;
+        ((CollectGarbageFn)this->collectGarbage)(worldId);
+    }
 }
 
 //------------------------------------------------------------------------------

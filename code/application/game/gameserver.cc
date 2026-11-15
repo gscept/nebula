@@ -574,6 +574,12 @@ GameServer::CreateWorld(WorldHash hash)
     World*& world = this->state.worlds[slot];
     world = new World(hash, (WorldId) slot);
     this->state.numWorlds++;
+
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
+    {
+        this->gameFeatures[i]->OnWorldCreated(world);
+    }
+
     return world;
 }
 

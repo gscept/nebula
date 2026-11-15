@@ -10,6 +10,9 @@ using ConsoleHook;
 using Nebula;
 using Nebula.Game;
 using NST;
+using Test;
+
+using Api = Nebula.Game.NebulaApiV1;
 
 [assembly: NebulaGamePlugin(typeof(NST.TestPlugin))]
 
@@ -259,11 +262,82 @@ namespace NST
         [DllImport("__Internal", EntryPoint = "VerifyManaged")]
         private static extern void VERIFY(bool success, string filePath, int lineNumber);
 
+        [DllImport("__Internal", EntryPoint = "GetNativeEntityIdForManaged")]
+        private static extern UInt64 GetNativeEntityId();
+
+        [DllImport("__Internal", EntryPoint = "GetComponentEntityIdForManaged")]
+        private static extern UInt64 GetComponentEntityId();
+
         public static void Verify(bool test,
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
         {
             VERIFY(test, filePath, lineNumber);
+        }
+
+        /// <summary>
+        /// The test runner creates an entity in the default world from C++ before the managed
+        /// tests run. Native code is the source of truth, and the script feature unit mirrors the
+        /// entities of a world into the managed one at the beginning of the frame, which is what
+        /// makes an entity authored in C++ visible to the plugin.
+        /// </summary>
+        public static void TestNativeEntityDiscovery()
+        {
+            World world = World.Get(World.DEFAULT_WORLD);
+            Verify(world != null);
+            Verify(World.HasWorld(World.DEFAULT_WORLD));
+            Verify(World.Get(63) == null);
+
+            UInt64 nativeId = GetNativeEntityId();
+            Verify(nativeId != 0xFFFFFFFFFFFFFFFF);
+
+            Entity entity = world.GetEntity(nativeId);
+            Verify(entity != null);
+            Verify(entity.Id == nativeId);
+            Verify(Object.ReferenceEquals(entity.World, world));
+
+            // The mirror must resolve to the same object every time
+            Verify(Object.ReferenceEquals(world.GetEntity(nativeId), entity));
+
+            int count = 0;
+            bool foundNative = false;
+            for (int i = 0; i < world.Entities.Count; i++)
+            {
+                Entity mirrored = world.Entities[i];
+                count++;
+                if (mirrored.Id == nativeId)
+                {
+                    foundNative = true;
+                    Verify(Object.ReferenceEquals(mirrored, entity));
+                }
+            }
+
+            Verify(foundNative);
+            Verify(count > 0);
+        }
+
+        /// <summary>
+        /// Verify that the IDL generator maps component types to blittable mirrors of the native
+        /// layout, and that a component round-trips through native with that layout.
+        /// </summary>
+        public static void TestTypeMappings()
+        {
+            Verify(typeof(TestFlags).GetField("flags32").FieldType == typeof(uint));
+            Verify(typeof(TestFlags).GetField("flags64").FieldType == typeof(UInt64));
+            Verify(typeof(TestAtom).GetField("atom").FieldType == typeof(ResourceDescriptor));
+
+            World world = World.Get(World.DEFAULT_WORLD);
+            Entity entity = world.GetEntity(GetComponentEntityId());
+            Verify(entity != null);
+            Verify(entity.HasComponent<TestFlags>());
+            Verify(entity.HasComponent<TestAtom>());
+
+            TestFlags flags = new TestFlags { flags32 = 0x80000000, flags64 = 0x8000000000000000 };
+            entity.SetComponent(flags);
+
+            TestFlags read = entity.GetComponent<TestFlags>();
+            Verify(read.flags32 == 0x80000000);
+            Verify(read.flags64 == 0x8000000000000000);
         }
 
         static public TestProperty PerformTests()
@@ -412,6 +486,12 @@ namespace NST
         private bool reloadVerified;
         private TestProperty property;
 
+        // Entity sync test, driven across frames. Native is the source of truth, and the managed
+        // mirror only changes when the script feature unit flushes or sweeps it.
+        private int syncPhase;
+        private UInt64 syncEntity;
+        private UInt64 transientEntity;
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
@@ -429,10 +509,55 @@ namespace NST
                 this.testsRun = true;
                 Tests.VariablePassing.RunTests();
                 Tests.DLLImportCalls.RunTests();
+                Tests.TestNativeEntityDiscovery();
+                Tests.TestTypeMappings();
                 this.property = Tests.PerformTests();
                 StaticState.Position = new Vector3(9, 8, 7);
                 StaticStates.Clear();
                 StaticStates.Add(this.property.state);
+
+                // Create an entity purely in native code. It is not in the managed mirror until the
+                // entity queue has been flushed at the beginning of the next frame.
+                World world = World.Get(World.DEFAULT_WORLD);
+                this.syncEntity = Api.CreateEntity(world.Id);
+                Tests.Verify(world.GetEntity(this.syncEntity) == null);
+                this.syncPhase = 1;
+            }
+            else if (this.syncPhase == 1)
+            {
+                // The entity queue was flushed at the beginning of this frame
+                World world = World.Get(World.DEFAULT_WORLD);
+                Entity entity = world.GetEntity(this.syncEntity);
+                Tests.Verify(entity != null);
+                Tests.Verify(Object.ReferenceEquals(world.GetEntity(this.syncEntity), entity));
+
+                // Deletion is deferred, so the mirror still holds the entity until the sweep at the
+                // end of the frame
+                Api.DeleteEntity(this.syncEntity);
+                Tests.Verify(Object.ReferenceEquals(world.GetEntity(this.syncEntity), entity));
+                this.syncPhase = 2;
+            }
+            else if (this.syncPhase == 2)
+            {
+                // ManageEntities ran at the end of the previous frame, which made the entity id
+                // invalid, and the script feature unit swept the mirror in OnDecay
+                Tests.Verify(World.Get(World.DEFAULT_WORLD).GetEntity(this.syncEntity) == null);
+                this.syncPhase = 3;
+            }
+            else if (this.syncPhase == 3)
+            {
+                // Create and destroy in the same frame. Deletion is deferred, so the entity is no
+                // longer valid by the time the queue is flushed, and the entity count is the same as
+                // at the last sweep. It must not end up in the mirror.
+                World world = World.Get(World.DEFAULT_WORLD);
+                this.transientEntity = Api.CreateEntity(world.Id);
+                Api.DeleteEntity(this.transientEntity);
+                this.syncPhase = 4;
+            }
+            else if (this.syncPhase == 4)
+            {
+                Tests.Verify(World.Get(World.DEFAULT_WORLD).GetEntity(this.transientEntity) == null);
+                this.syncPhase = 5;
             }
             else if (this.reloadCount < 2)
             {

@@ -240,5 +240,14 @@ WorldGetDefaultWorldId()
     return world->GetWorldId();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+WorldHasWorld(uint32_t worldId)
+{
+    return Game::GetWorld(worldId) != nullptr;
+}
+
 } // namespace Api
 } // namespace Scripting

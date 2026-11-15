@@ -8,6 +8,9 @@
 #include "timing/timer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
+#include "game/api.h"
+#include "game/world.h"
+#include "components/nsharpcomponents.h"
 
 namespace Test
 {
@@ -20,6 +23,22 @@ static Util::String reg_string;
 static bool testArrayOfIntResult = false;
 static bool testArrayOfVec3Result = false;
 static bool testArrayOfVec4Result = false;
+
+// Entities created by the test runner for the managed side to discover
+static uint64_t nativeEntityForManaged = 0;
+static uint64_t componentEntityForManaged = 0;
+
+NEBULA_EXPORT uint64_t
+GetNativeEntityIdForManaged()
+{
+    return nativeEntityForManaged;
+}
+
+NEBULA_EXPORT uint64_t
+GetComponentEntityIdForManaged()
+{
+    return componentEntityForManaged;
+}
 
 typedef struct _Vector2
 {
@@ -138,6 +157,22 @@ NSharpTest::Run()
 
     verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
     { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
+
+    // Entities created by the test runner for the managed side to discover through the entity
+    // callback. This is what a plugin needs in the editor: entities are authored by C++, not by
+    // the script, so the managed World has to mirror the native one.
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    VERIFY(world != nullptr);
+
+    nativeEntityForManaged = uint64_t(world->CreateEntity(true));
+
+    // Components can only be added from native code, so prepare an entity with the components
+    // whose managed type mapping the test checks
+    Game::Entity componentEntity = world->CreateEntity(true);
+    world->AddComponent<Test::TestFlags>(componentEntity);
+    world->AddComponent<Test::TestAtom>(componentEntity);
+    world->ExecuteAddComponentCommands();
+    componentEntityForManaged = uint64_t(componentEntity);
 
     StepFrame();
 

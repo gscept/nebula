@@ -91,6 +91,11 @@ NEBULA_EXPORT void ComponentSetData(uint64_t entity, uint32_t componentId, void*
 */
 NEBULA_EXPORT uint32_t WorldGetDefaultWorldId();
 
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT bool WorldHasWorld(uint32_t worldId);
+
 } // namespace Api
 
 } // namespace Scripting

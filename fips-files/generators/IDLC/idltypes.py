@@ -60,6 +60,8 @@ def GetCppTypeString(attrType):
         return "Math::mat4"
     elif (T == "string"):
         return "Util::String"
+    elif (T == "util::stringatom"):
+        return "Util::StringAtom"
     elif (T == "resource"):
         return "Resources::ResourceName"
     elif (T == "entity"):
@@ -130,6 +132,8 @@ def GetJsonParserTypeString(attrType):
         return "Math::mat4"
     elif (T == "string"):
         return "Util::String"
+    elif (T == "util::stringatom"):
+        return "Util::StringAtom"
     elif (T == "resource"):
         return "Resources::ResourceName"
     elif (T == "entity"):
@@ -204,7 +208,7 @@ def GetCsTypeString(attrType):
     elif (T == "string"):
         return "string"
     elif (T == "util::stringatom"):
-        return "string"
+        return "ResourceDescriptor"    # Util::StringAtom is a pointer, ResourceDescriptor is its blittable mirror
     elif (T == "resource"):
         return "ResourceDescriptor"
     elif (T == "entity"):
@@ -213,6 +217,10 @@ def GetCsTypeString(attrType):
         return "Vector4" # XNA Mathf.Color is a packed uint, while Util::Color is a vec4. We need to reflect the native type in C#
     elif (T == "bitfield16"):
         return "ushort"
+    elif (T == "bitfield32"):
+        return "uint"
+    elif (T == "bitfield64"):
+        return "UInt64"
     elif (T == "physics::characterid"):
         return "uint"
     elif (T.startswith("[") and T.endswith("]")):
@@ -346,6 +354,8 @@ def DefaultValue(attrType):
         return "Math::mat4()"
     elif (T == "string"):
         return "Util::String()"
+    elif (T == "util::stringatom"):
+        return "Util::StringAtom()"
     elif (T == "resource"):
         return "Resources::ResourceName()"
     elif (T == "entity"):

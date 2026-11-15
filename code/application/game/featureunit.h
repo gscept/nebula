@@ -60,6 +60,9 @@ public:
     virtual void OnLoad(World* world);
     /// called from within GameServer::OnStart() after OnLoad
     virtual void OnStart(World* world);
+    /// called from within GameServer::CreateWorld()
+    /// Worlds created before the feature is attached are reported by OnStart() instead.
+    virtual void OnWorldCreated(World* world);
     /// called from within GameServer::Save()
     virtual void OnSave(World* world);
 

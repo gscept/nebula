@@ -101,6 +101,10 @@ namespace Nebula
 
             [DllImport("__Internal", EntryPoint = "WorldGetDefaultWorldId")]
             public static extern uint GetDefaultWorldId();
+
+            [DllImport("__Internal", EntryPoint = "WorldHasWorld")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool HasWorld(uint worldId);
         }
 
         public class NebulaApp
