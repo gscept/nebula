@@ -8,11 +8,10 @@
 #include "io/textreader.h"
 #include "debug/debugserver.h"
 #include "nsbindings.h"
-#include "util/commandlineargs.h"
 
-#include <string>
-#include <locale>
-#include <codecvt>
+#ifdef _WIN32
+#include "util/win32/win32stringconverter.h"
+#endif
 
 // .net apphost includes
 #include "nethost.h"
@@ -29,12 +28,6 @@ __ImplementSingleton(Scripting::NSharpServer);
 using namespace Util;
 using namespace IO;
 
-#ifdef _WIN32
-using DotNetString = std::wstring;
-#else
-using DotNetString = std::string;
-#endif
-
 enum HostFxrStatusCode
 {
     // Success
@@ -46,15 +39,15 @@ enum HostFxrStatusCode
 struct NSharpServer::Assembly
 {
     Util::String name;    // assembly name
-    DotNetString dllPath; // path to dll
+    Util::String dllPath; // path to dll
     load_assembly_and_get_function_pointer_fn GetExport;
+    Util::Dictionary<Util::String, void*> entryPoints;
 };
 
 struct DotNET_API
 {
     // clang-format off
     hostfxr_initialize_for_runtime_config_fn InitConfig             = nullptr;
-    hostfxr_initialize_for_dotnet_command_line_fn InitCommandLine   = nullptr;
     hostfxr_get_runtime_delegate_fn GetDelegate                     = nullptr;
     hostfxr_close_fn Close                                          = nullptr;
     // clang-format on
@@ -63,7 +56,7 @@ struct DotNET_API
     bool
     Validate()
     {
-        return InitConfig && InitCommandLine && GetDelegate && Close;
+        return InitConfig && GetDelegate && Close;
     }
 };
 
@@ -71,15 +64,24 @@ static DotNET_API api;
 
 //------------------------------------------------------------------------------
 /**
+    nethost and hostfxr take char_t strings: wchar_t (UTF-16) on Windows, char (UTF-8) on Linux.
+    Util::String is UTF-8, so this converts on Windows and copies on Linux.
+    out must be at least NEBULA_MAXPATH char_t wide.
 */
-DotNetString
-ToWideString(Util::String const& str)
+static void
+ToDotNetString(Util::String const& str, char_t* out)
 {
 #ifdef _WIN32
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    return convert.from_bytes(str.AsCharPtr());
+    Win32::Win32StringConverter::UTF8ToWide(str, (ushort*)out, NEBULA_MAXPATH * sizeof(char_t));
 #else
-    return DotNetString(str.AsCharPtr());
+    const char* src = str.AsCharPtr();
+    size_t i = 0;
+    while (src[i] != 0)
+    {
+        out[i] = (char_t)src[i];
+        i++;
+    }
+    out[i] = 0;
 #endif
 }
 
@@ -106,45 +108,6 @@ NSharpServer::~NSharpServer()
 
 //------------------------------------------------------------------------------
 /**
-*/
-static void*
-ScriptingAlloc(size_t bytes)
-{
-    return Memory::Alloc(Memory::HeapType::ScriptingHeap, bytes);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void*
-ScriptingRealloc(void* ptr, size_t bytes)
-{
-    return Memory::Realloc(Memory::HeapType::ScriptingHeap, ptr, bytes);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
-ScriptingDealloc(void* ptr)
-{
-    Memory::Free(Memory::HeapType::ScriptingHeap, ptr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void*
-ScriptingCalloc(size_t count, size_t size)
-{
-    const size_t bytes = size * count;
-    void* ptr = Memory::Alloc(Memory::HeapType::ScriptingHeap, bytes);
-    memset(ptr, 0, bytes);
-    return ptr;
-}
-
-//------------------------------------------------------------------------------
-/**
     Using the nethost library, discover the location of hostfxr and get exports
 */
 bool
@@ -157,13 +120,11 @@ NSharpServer::LoadHostFxr()
     if (rc != 0)
         return false;
 
-    #ifdef _WIN32
-    char path[NEBULA_MAXPATH];
-    // Convert wide char path to const char*
-    sprintf(path, "%ws", buffer);
-    #else
-    const char* path = buffer;
-    #endif
+#ifdef _WIN32
+    Util::String path = Win32::Win32StringConverter::WideToUTF8((const ushort*)buffer);
+#else
+    Util::String path(buffer);
+#endif
 
     // Load hostfxr and get desired exports
     this->hostfxr.SetPath(IO::URI(path));
@@ -173,7 +134,6 @@ NSharpServer::LoadHostFxr()
     // clang-format off
     api = {
         .InitConfig=(hostfxr_initialize_for_runtime_config_fn)this->hostfxr.GetExport("hostfxr_initialize_for_runtime_config"),
-        .InitCommandLine=(hostfxr_initialize_for_dotnet_command_line_fn)this->hostfxr.GetExport("hostfxr_initialize_for_dotnet_command_line"),
         .GetDelegate=(hostfxr_get_runtime_delegate_fn)this->hostfxr.GetExport("hostfxr_get_runtime_delegate"),
         .Close=(hostfxr_close_fn)this->hostfxr.GetExport("hostfxr_close")
     };
@@ -214,17 +174,22 @@ NSharpServer::GetDelegatePointer(AssemblyId assemblyId, Util::String const& func
     ns += assembly->name;
     Util::String methodName = function.ExtractRange(methodSeparatorIndex + 2, function.Length() - methodSeparatorIndex - 4);
 
-    DotNetString dotnetType = ToWideString(ns);
-    DotNetString dotnetTypeMethod = ToWideString(methodName);
-    DotNetString delegateTypeName = ToWideString(delegateName);
+    char_t pathBuffer[NEBULA_MAXPATH];
+    char_t typeBuffer[NEBULA_MAXPATH];
+    char_t methodBuffer[NEBULA_MAXPATH];
+    char_t delegateBuffer[NEBULA_MAXPATH];
+    ToDotNetString(assembly->dllPath, pathBuffer);
+    ToDotNetString(ns, typeBuffer);
+    ToDotNetString(methodName, methodBuffer);
+    ToDotNetString(delegateName, delegateBuffer);
 
     void* func = nullptr;
 
     int rc = assembly->GetExport(
-        assembly->dllPath.c_str(),
-        dotnetType.c_str(),
-        dotnetTypeMethod.c_str(),
-        delegateTypeName.c_str(),
+        pathBuffer,
+        typeBuffer,
+        methodBuffer,
+        delegateBuffer,
         nullptr,
         &func
     );
@@ -244,6 +209,10 @@ NSharpServer::GetDelegatePointer(AssemblyId assemblyId, Util::String const& func
 //------------------------------------------------------------------------------
 /**
     Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
+    Resolved pointers are cached on the assembly so that the frame entry points do not have to be
+    looked up through hostfxr every frame. A cached pointer is only valid while the assembly it
+    came from stays loaded; the engine assembly is never unloaded, so its entry points survive a
+    plugin reload.
 */
 void*
 NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const& function)
@@ -256,6 +225,10 @@ NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const&
 
     Assembly* assembly = this->assemblies.Get<0>(assemblyId.id);
 
+    IndexT cachedIndex = assembly->entryPoints.FindIndex(function);
+    if (cachedIndex != InvalidIndex)
+        return assembly->entryPoints.ValueAtIndex(cachedIndex);
+
     // Separate class and namespace from string.
     auto methodSeparatorIndex = function.FindCharIndex(':');
     Util::String ns = function.ExtractRange(0, methodSeparatorIndex);
@@ -263,15 +236,19 @@ NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const&
     ns += assembly->name;
     Util::String methodName = function.ExtractRange(methodSeparatorIndex + 2, function.Length() - methodSeparatorIndex - 4);
 
-    DotNetString dotnetType = ToWideString(ns);
-    DotNetString dotnetTypeMethod = ToWideString(methodName);
+    char_t pathBuffer[NEBULA_MAXPATH];
+    char_t typeBuffer[NEBULA_MAXPATH];
+    char_t methodBuffer[NEBULA_MAXPATH];
+    ToDotNetString(assembly->dllPath, pathBuffer);
+    ToDotNetString(ns, typeBuffer);
+    ToDotNetString(methodName, methodBuffer);
 
     void* func = nullptr;
 
     int rc = assembly->GetExport(
-        assembly->dllPath.c_str(),
-        dotnetType.c_str(),
-        dotnetTypeMethod.c_str(),
+        pathBuffer,
+        typeBuffer,
+        methodBuffer,
         UNMANAGEDCALLERSONLY_METHOD,
         nullptr,
         &func
@@ -286,6 +263,7 @@ NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const&
         return nullptr;
     }
 
+    assembly->entryPoints.Add(function, func);
     return func;
 }
 
@@ -299,50 +277,16 @@ LoadAssemblyAndGetExport(Util::String const& configPath)
     void* load_assembly_and_get_function_pointer = nullptr;
     hostfxr_handle cxt = nullptr;
 
-    int rc = api.InitConfig(ToWideString(configPath).c_str(), nullptr, &cxt);
+    char_t configBuffer[NEBULA_MAXPATH];
+    ToDotNetString(configPath, configBuffer);
+
+    int rc = api.InitConfig(configBuffer, nullptr, &cxt);
     if (((rc != Success && rc != Success_HostAlreadyInitialized && rc != Success_DifferentRuntimeProperties) || cxt == nullptr))
     {
         n_error("Failed to initialize .NET Core!");
         api.Close(cxt);
     }
 
-    // Get the load assembly function pointer
-    rc = api.GetDelegate(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
-    if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
-    {
-        n_error("Failed to get delegate when loading dotnet assembly!");
-    }
-
-    api.Close(cxt);
-    return reinterpret_cast<load_assembly_and_get_function_pointer_fn>(load_assembly_and_get_function_pointer);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-load_assembly_and_get_function_pointer_fn
-LoadAssemblyAndGetExport(Util::CommandLineArgs const& args)
-{
-    (void)args;
-    // Load .NET Core
-    void* load_assembly_and_get_function_pointer = nullptr;
-    hostfxr_handle cxt = nullptr;
-
-    // TEMP
-    const char_t* argv[] = {
-#ifdef _WIN32
-        L"C:/Users/fredrik/git/nebula_workspace/fips-deploy/nebula/vulkan-win64-vstudio-debug/NSharpTests.dll"
-#else
-        "/tmp/NSharpTests.dll"
-#endif
-    };
-
-    int rc = api.InitCommandLine(1, argv, nullptr, &cxt);
-    if ((rc != 0 || cxt == nullptr))
-    {
-        n_error("Failed to initialize .NET Core!");
-        api.Close(cxt);
-    }
     // Get the load assembly function pointer
     rc = api.GetDelegate(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
     if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
@@ -375,8 +319,16 @@ void
 NSharpServer::Close()
 {
     n_assert(this->IsOpen());
-    
-    /// @todo Unload assemblies and clear the assemblies array
+
+    // The CLR cannot be unloaded, but the assemblies we registered with it can be dropped.
+    // Cached entry points go with them.
+    for (uint32_t i = 0; i < this->assemblies.Size(); i++)
+    {
+        Assembly* assembly = this->assemblies.Get<0>(i);
+        if (assembly != nullptr)
+            delete assembly;
+    }
+    this->assemblies.EraseRange(0, this->assemblies.Size());
 
     this->CloseHostFxr();
 
@@ -403,13 +355,12 @@ NSharpServer::LoadAssembly(IO::URI const& uri)
         return InvalidIndex;
     }
 
-    assembly->dllPath = ToWideString(uri.GetHostAndLocalPath());
+    assembly->dllPath = uri.GetHostAndLocalPath();
     assembly->name = uri.AsString().ExtractFileName();
     assembly->name.StripFileExtension();
 
     AssemblyId assemblyId = this->assemblies.Alloc();
     this->assemblies.Get<0>(assemblyId.id) = assembly;
-    this->assemblyTable.Add(assembly->name, assemblyId.id);
     return assemblyId;
 }
 

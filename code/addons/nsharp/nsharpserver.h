@@ -67,7 +67,6 @@ private:
     void CloseHostFxr();
 
     Util::ArrayAllocator<Assembly*> assemblies;
-	Util::Dictionary<Util::String, uint32_t> assemblyTable;
 
 	bool isOpen;
     System::Library hostfxr;

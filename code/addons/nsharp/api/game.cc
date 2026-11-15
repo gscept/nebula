@@ -39,6 +39,9 @@ uint64_t
 EntityCreate(uint32_t worldId)
 {
     Game::World* world = Game::GetWorld(worldId);
+    if (world == nullptr)
+        return uint64_t(Game::Entity::Invalid());
+
     Game::Entity entity = world->CreateEntity(true);
     return uint64_t(entity);
 }
@@ -51,6 +54,9 @@ EntityDelete(uint64_t entity)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return;
+
     if (world->IsValid(e))
     {
         world->DeleteEntity(e);
@@ -65,6 +71,9 @@ EntityHasComponent(uint64_t entity, uint32_t componentId)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return false;
+
     return world->HasComponent(e, componentId);
 }
 
@@ -76,6 +85,9 @@ EntityGetPosition(uint64_t entity)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return {0, 0, 0, 0};
+
     Math::vec3 const p = world->GetComponent<Game::Position>(e);
     return {p.x, p.y, p.z, 0};
 }
@@ -88,6 +100,9 @@ EntitySetPosition(uint64_t entity, Math::vec3 pos)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return;
+
     world->SetComponent<Game::Position>(e, pos);
 }
 
@@ -99,6 +114,9 @@ EntityGetOrientation(uint64_t entity)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return {0, 0, 0, 0};
+
     Math::quat const q = world->GetComponent<Game::Orientation>(e);
     return {q.x, q.y, q.z, q.w};
 }
@@ -111,6 +129,9 @@ EntitySetOrientation(uint64_t entity, Math::quat orientation)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return;
+
     world->SetComponent<Game::Orientation>(e, orientation);
 }
 
@@ -122,6 +143,9 @@ EntityGetScale(uint64_t entity)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return {0, 0, 0, 0};
+
     Math::vec3 const s = world->GetComponent<Game::Scale>(e);
     return {s.x, s.y, s.z, 0};
 }
@@ -134,6 +158,9 @@ EntitySetScale(uint64_t entity, Math::vec3 scale)
 {
     Game::Entity e = Game::Entity::FromId(entity);
     Game::World* world = Game::GetWorld(e.world);
+    if (world == nullptr)
+        return;
+
     world->SetComponent<Game::Scale>(e, scale);
 }
 
@@ -164,6 +191,8 @@ ComponentGetData(uint64_t entityId, uint32_t componentId, void* outData, int dat
 {
     Game::Entity entity = Game::Entity::FromId(entityId);
     Game::World* world = Game::GetWorld(entity.world);
+    if (world == nullptr)
+        return;
 
     n_assert2(
         dataSize == MemDb::AttributeRegistry::TypeSize(componentId),
@@ -184,6 +213,8 @@ ComponentSetData(uint64_t entityId, uint32_t componentId, void* data, int dataSi
 {
     Game::Entity entity = Game::Entity::FromId(entityId);
     Game::World* world = Game::GetWorld(entity.world);
+    if (world == nullptr)
+        return;
 
     n_assert2(
         dataSize == MemDb::AttributeRegistry::TypeSize(componentId),
@@ -202,7 +233,11 @@ ComponentSetData(uint64_t entityId, uint32_t componentId, void* data, int dataSi
 uint32_t
 WorldGetDefaultWorldId()
 {
-    return Game::GetWorld(WORLD_DEFAULT)->GetWorldId();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    if (world == nullptr)
+        return 0;
+
+    return world->GetWorldId();
 }
 
 } // namespace Api

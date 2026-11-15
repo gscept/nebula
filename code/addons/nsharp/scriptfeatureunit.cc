@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  audiofeature/audiofeatureunit.cc
+//  nsharp/scriptfeatureunit.cc
 //  (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
@@ -16,7 +16,13 @@ __ImplementSingleton(ScriptFeatureUnit);
 /**
 */
 ScriptFeatureUnit::ScriptFeatureUnit() :
-    engineAssemblyPath("bin:NebulaEngine.dll")
+    engineAssemblyPath("bin:NebulaEngine.dll"),
+    mainEntry("NebulaEngine.AppEntry::Main()"),
+    exitEntry("NebulaEngine.AppEntry::Exit()"),
+    beginFrameEntry("NebulaEngine.AppEntry::OnBeginFrame()"),
+    frameEntry("NebulaEngine.AppEntry::OnFrame()"),
+    endFrameEntry("NebulaEngine.AppEntry::OnEndFrame()"),
+    reloadEntry("NebulaEngine.AppEntry::RequestReload()")
 {
     __ConstructSingleton;
 }
@@ -75,19 +81,23 @@ ScriptFeatureUnit::OnActivate()
                     this->reloadQueue.Enqueue(this->assemblyPath.GetHostAndLocalPath());
             };
 
+            // WatchFlags values are bit positions, so they have to be set as bits, not or'd
+            // together as a mask.
+            Util::BitField<8> watchFlags;
+            watchFlags.SetBit(IO::WatchFlags::NameChanged);
+            watchFlags.SetBit(IO::WatchFlags::SizeChanged);
+            watchFlags.SetBit(IO::WatchFlags::Write);
+            watchFlags.SetBit(IO::WatchFlags::Creation);
+
             IO::FileWatcher::Instance()->Watch(
                 this->reloadWatchPath,
                 false,
-                IO::WatchFlags(IO::NameChanged | IO::SizeChanged | IO::Write | IO::Creation),
+                watchFlags,
                 reloadFileFunc
             );
         }
 
-        int result = this->server->ExecUnmanagedCall(
-            this->engineAssemblyId,
-            "NebulaEngine.AppEntry::Main()",
-            pluginPath
-        );
+        int result = this->server->ExecUnmanagedCall(this->engineAssemblyId, this->mainEntry, pluginPath);
 
         n_assert(result == 0);
     }
@@ -103,7 +113,14 @@ ScriptFeatureUnit::OnDeactivate()
     {
         IO::FileWatcher::Instance()->Unwatch(this->reloadWatchPath);
     }
-    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::Exit()");
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+    {
+        this->server->Close();
+        FeatureUnit::OnDeactivate();
+        return;
+    }
+
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, this->exitEntry);
     this->server->Close();
     FeatureUnit::OnDeactivate();
 }
@@ -114,6 +131,9 @@ ScriptFeatureUnit::OnDeactivate()
 void
 ScriptFeatureUnit::OnBeginFrame()
 {
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
     this->reloadQueue.DequeueAll(this->reloads);
 
     if (!this->reloads.IsEmpty())
@@ -121,13 +141,13 @@ ScriptFeatureUnit::OnBeginFrame()
         // Only reload the latest, clear the rest.
         this->server->ExecUnmanagedCall(
             this->engineAssemblyId,
-            "NebulaEngine.AppEntry::RequestReload()",
+            this->reloadEntry,
             this->reloads[this->reloads.Size() - 1]
         );
         this->reloads.Clear();
     }
 
-    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnBeginFrame()");
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, this->beginFrameEntry);
 }
 
 //------------------------------------------------------------------------------
@@ -136,7 +156,10 @@ ScriptFeatureUnit::OnBeginFrame()
 void
 ScriptFeatureUnit::OnFrame()
 {
-    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnFrame()");
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, this->frameEntry);
 }
 
 //------------------------------------------------------------------------------
@@ -145,7 +168,10 @@ ScriptFeatureUnit::OnFrame()
 void
 ScriptFeatureUnit::OnEndFrame()
 {
-    this->server->ExecUnmanagedCall(this->engineAssemblyId, "NebulaEngine.AppEntry::OnEndFrame()");
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, this->endFrameEntry);
 }
 
 //------------------------------------------------------------------------------

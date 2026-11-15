@@ -592,6 +592,9 @@ GameServer::GetWorld(WorldHash worldHash)
 World*
 GameServer::GetWorld(WorldId worldId)
 {
+    if (worldId >= MaxWorlds)
+        return nullptr;
+
     return this->state.worlds[worldId];
 }
 

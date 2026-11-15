@@ -48,6 +48,15 @@ private:
     Threading::SafeQueue<Util::String> reloadQueue;
     Util::Array<Util::String> reloads;
     Util::String reloadWatchPath;
+
+    // Entry point names. The server caches the resolved pointers, these are kept as members so the
+    // frame callbacks do not build a Util::String from a literal every frame.
+    Util::String mainEntry;
+    Util::String exitEntry;
+    Util::String beginFrameEntry;
+    Util::String frameEntry;
+    Util::String endFrameEntry;
+    Util::String reloadEntry;
 };
 
 } // namespace Scripting
