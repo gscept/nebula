@@ -154,10 +154,6 @@ csGenerateDraws() void
     height = VegetationGenerateUniforms.MinHeight + height * (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight);
 
     const pos = f32x3(worldSpaceSamplePos.x, height, worldSpaceSamplePos.y);
-    const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
-    const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
-
-    //if angle < VegetationGenerateUniforms.Fov { return; }
 
     const pixel = sampleSpacePos * VegetationGenerateUniforms.HeightMapSize;
     const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
@@ -172,7 +168,6 @@ csGenerateDraws() void
 
         if !meshInfo.used { continue; }
 
-
         // calculate rules
         const heightCutoff = height < meshInfo.heightThreshold;
         const angleCutoff = dot(normal, f32x3(0, 1, 0)) <= meshInfo.slopeThreshold;
@@ -181,7 +176,7 @@ csGenerateDraws() void
         var lod = meshInfo.numLods - 1;
         for (var j = 0; j < meshInfo.numLods; j++)
         {
-            if (meshInfo.lodDistances[j] > dot(cameraToPos, cameraToPos))
+            if (meshInfo.lodDistances[j] > dot(worldSpaceSamplePosDist, worldSpaceSamplePosDist))
             {
                 lod = j;
                 break;
@@ -199,7 +194,7 @@ csGenerateDraws() void
             instanceUniform.position.xz = worldSpaceSamplePos;
             instanceUniform.position.y = height;
             instanceUniform.random = random.x;
-			const randomOffset = f32x2(sin(random.x * 3.14), cos(random.x * 3.14));
+			const randomOffset = f32x2(sin(random.x * random.y * 6.28), cos(random.x * random.y * 6.28));
             instanceUniform.sincos.x = randomOffset.x;
             instanceUniform.sincos.y = randomOffset.y;
             instanceUniform.materialIndex = meshInfo.materialIndex;
@@ -385,7 +380,7 @@ psDepth(in UV : f32x2, in no_interpolate MaterialIndex : u32) void
     const mat = MaterialPointers.BRDFMaterials[MaterialIndex];
 
     const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
-    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
+    //if (baseColor.a <= mat.AlphaSensitivity) { discard; }
 }
 
 
