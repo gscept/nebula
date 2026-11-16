@@ -44,10 +44,9 @@ struct MeshInfo
     lodIndexCount : i32x4;
     lodVertexCount : i32x4;
     lodDistances : f32x4;
+    lodFlags : u32x4;
 	maskSize : f32x2;
     numLods : i32;
-    vertexCount : i32;
-    indexCount : i32;
     slopeThreshold : f32;
     heightThreshold : f32;
     materialIndex : u32;
@@ -192,9 +191,9 @@ csGenerateDraws() void
         if (heightCutoff && angleCutoff && mask > 0.0f)
         {
 			const draws = DrawCount.NumMeshDraws[i / 4][i%4];
-			textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i32(draws), 0, 0, 0));
 
             const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
+			textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i32(entry), 0, 0, 0));
 
             var instanceUniform : InstanceUniforms;
             instanceUniform.position.xz = worldSpaceSamplePos;
@@ -204,7 +203,7 @@ csGenerateDraws() void
             instanceUniform.sincos.x = randomOffset.x;
             instanceUniform.sincos.y = randomOffset.y;
             instanceUniform.materialIndex = meshInfo.materialIndex;
-            instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
+            instanceUniform.lodFlags = meshInfo.lodFlags[lod];
             bufferStore(InstanceMeshArguments, entry, instanceUniform);
 
             var command : DrawIndexedCommand;
@@ -238,12 +237,11 @@ vsDrawMeshVColor(
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * position;
 
     UV = UnpackUV(uv);
     Normal = rotation * normal;
@@ -251,7 +249,7 @@ vsDrawMeshVColor(
     Sign = tangent.w;
 
     MaterialIndex = instanceUniforms.materialIndex;
-    WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
+    WorldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
     {
@@ -259,7 +257,7 @@ vsDrawMeshVColor(
     }
     else
     {
-        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+        vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(WorldSpacePos, 1));
     }
 }
 
@@ -279,18 +277,17 @@ vsDrawDepthVColor(
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * position;
     
 
     UV = UnpackUV(uv);
 
     MaterialIndex = instanceUniforms.materialIndex;
-    const worldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
+    const worldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
     {
@@ -317,17 +314,16 @@ vsDrawDepth(
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const displacement = f32x3(sin(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * position;
 
     UV = UnpackUV(uv);
 
     MaterialIndex = instanceUniforms.materialIndex;
-    const worldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
+    const worldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
     {
@@ -357,19 +353,18 @@ vsDrawMesh(
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const displacement = f32x3(sin(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * position;
 
     UV = UnpackUV(uv);
     Normal = rotation * normal;
     Tangent = rotation * tangent.xyz;
     Sign = tangent.w;
     MaterialIndex = instanceUniforms.materialIndex;
-    WorldSpacePos = instanceUniforms.position + rotatedPos * 0.025f;
+    WorldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
     {

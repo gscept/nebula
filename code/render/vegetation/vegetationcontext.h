@@ -54,6 +54,8 @@ public:
     static void SetMask(const Graphics::GraphicsEntityId id, uint index, CoreGraphics::TextureId mask);
 #endif
 
+    /// Invalidate terrain related resources
+    static void Invalidate(const Graphics::GraphicsEntityId id);
     /// update resources
     static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 private:

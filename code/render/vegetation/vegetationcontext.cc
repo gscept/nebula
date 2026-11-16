@@ -17,6 +17,7 @@
 #include "models/nodes/transformnode.h"
 #include "models/nodes/primitivenode.h"
 #include "terrain/terraincontext.h"
+#include "materials/materialloader.h"
 
 
 #include "frame/default.h"
@@ -155,7 +156,15 @@ VegetationContext::Create()
                 CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
                 // draw
-                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], 0, instance.drawCountBuffer[bufferIndex], 0, MaxNumIndirectDraws, sizeof(Vegetation::DrawIndexedCommand));
+                CmdDrawIndirectIndexed(
+                    cmdBuf,
+                    instance.meshDrawCallsBuffer[bufferIndex],
+                    i * MAX_MESH_INFOS * sizeof(Vegetation::DrawIndexedCommand),
+                    instance.drawCountBuffer[bufferIndex],
+                    i * sizeof(uint),
+                    MaxNumIndirectDraws,
+                    sizeof(Vegetation::DrawIndexedCommand)
+                );
             }
         }
     });
@@ -188,7 +197,15 @@ VegetationContext::Create()
                 CmdSetResourceTable(cmdBuf, instance.argumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
                 // draw
-                CmdDrawIndirectIndexed(cmdBuf, instance.meshDrawCallsBuffer[bufferIndex], i * MaxNumIndirectDraws, instance.drawCountBuffer[bufferIndex], 0, MaxNumIndirectDraws, sizeof(Vegetation::DrawIndexedCommand));
+                CmdDrawIndirectIndexed(
+                    cmdBuf,
+                    instance.meshDrawCallsBuffer[bufferIndex],
+                    i * MAX_MESH_INFOS * sizeof(Vegetation::DrawIndexedCommand),
+                    instance.drawCountBuffer[bufferIndex],
+                    i * sizeof(uint),
+                    MaxNumIndirectDraws,
+                    sizeof(Vegetation::DrawIndexedCommand)
+                );
             }
         }
     });
@@ -262,8 +279,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     CoreGraphics::BufferCreateInfo indirectCountBufferInfo;
     indirectCountBufferInfo.name = "Vegetation Draw Count Buffer";
     indirectCountBufferInfo.usageFlags = CoreGraphics::BufferUsage::IndirectDraw | CoreGraphics::BufferUsage::ReadWrite;
-    indirectCountBufferInfo.elementSize = sizeof(Vegetation::DrawCount::STRUCT);
-    indirectCountBufferInfo.size = MAX_MESH_INFOS;
+    indirectCountBufferInfo.byteSize = sizeof(Vegetation::DrawCount::STRUCT);
     indirectCountBufferInfo.mode = CoreGraphics::DeviceLocal;
     indirectCountBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     instanceInfo.drawCountBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
@@ -344,6 +360,12 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
                 0
             });
 
+        CoreGraphics::ResourceTableSetConstantBuffer(instanceInfo.argumentsTable[i],
+            CoreGraphics::ResourceTableBuffer(
+                Materials::MaterialLoader::GetMaterialBindingBuffer(), Vegetation::MaterialPointers::BINDING
+            )
+        );
+
         ResourceTableCommitChanges(instanceInfo.argumentsTable[i]);
     }
 }
@@ -404,15 +426,14 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         // get primitive groups so we can update the mesh info
         const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
-        info.indexCount = 0;
-        info.vertexCount = 0;
         info.numLods = groups.Size();
 
         instanceInfo.meshVertexPositionOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
         instanceInfo.meshVertexAttributeOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
         instanceInfo.meshIndexOffsets[infoIndex] = CoreGraphics::MeshGetIndexOffset(mesh);
 
-        float distances[] = {10, 25, 50, 100, 500, 1000};
+        // Our distances in case the mesh lacks them
+        const float distances[] = {10, 25, 50, 100, 500, 1000};
 
         for (IndexT i = 0; i < groups.Size(); i++)
         {
@@ -424,8 +445,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
             info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
             info.lodIndexCount[i] = groups[i].GetNumIndices();
             info.lodVertexCount[i] = groups[i].GetNumVertices();
-            info.indexCount += groups[i].GetNumIndices();
-            info.vertexCount += groups[i].GetNumVertices();
+            info.lodFlags[i] = 0x0;
         }
 
         // make sure the mesh is valid for vegetation rendering
@@ -506,15 +526,14 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, con
         // get primitive groups so we can update the mesh info
         const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
-        info.indexCount = 0;
-        info.vertexCount = 0;
         info.numLods = groups.Size();
 
         instanceInfo.meshVertexPositionOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
         instanceInfo.meshVertexAttributeOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
         instanceInfo.meshIndexOffsets[index] = CoreGraphics::MeshGetIndexOffset(mesh);
 
-        float distances[] = { 10, 25, 50, 100, 500, 1000 };
+        // Our distances in case the mesh lacks them
+        const float distances[] = { 10, 25, 50, 100, 500, 1000 };
 
         //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
         for (IndexT i = 0; i < groups.Size(); i++)
@@ -527,8 +546,7 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, con
             info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
             info.lodIndexCount[i] = groups[i].GetNumIndices();
             info.lodVertexCount[i] = groups[i].GetNumVertices();
-            info.indexCount += groups[i].GetNumIndices();
-            info.vertexCount += groups[i].GetNumVertices();
+            info.lodFlags[i] = 0x0;
         }
 
             // make sure the mesh is valid for vegetation rendering
@@ -576,6 +594,20 @@ VegetationContext::SetMask(const Graphics::GraphicsEntityId id, uint index, Core
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(mask);
     info.maskSize[0] = dims.width;
     info.maskSize[1] = dims.height;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VegetationContext::Invalidate(const Graphics::GraphicsEntityId id)
+{
+    Graphics::ContextEntityId cid = GetContextId(id);
+    VegetationInstanceInfo& instanceInfo = vegetationAllocator.Get<Vegetation_InstanceInfo>(cid.id);
+
+    instanceInfo.heightMap = Terrain::TerrainContext::GetHeightMap(id);
+    Terrain::TerrainContext::GetHeightBounds(id, instanceInfo.minHeight, instanceInfo.maxHeight);
+    Terrain::TerrainContext::GetWorldSize(id, instanceInfo.worldSizeX, instanceInfo.worldSizeZ);
 }
 
 //------------------------------------------------------------------------------
