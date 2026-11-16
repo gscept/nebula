@@ -721,9 +721,6 @@ GraphicsServer::EndFrame()
         renderSemaphores.Append(renderSemaphore);
     }
 
-    // Make textures registered during this frame visible to it before anything is submitted
-    Graphics::CommitPendingTickTables(this->frameContext.bufferIndex);
-
     // Finish submissions
     CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, renderSemaphores);
 }
