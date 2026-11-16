@@ -311,9 +311,9 @@ Viewport::Render()
             Graphics::GraphicsEntityId cameraEntity = this->camera.GetGraphicsEntity();
             Graphics::DepthOfField dof = Graphics::CameraContext::GetDepthOfField(cameraEntity);
             static const float focusMin = 0.01f;
-            static const float focusMax = 500.0f;
+            static const float focusMax = 10000.0f;
             static const float rangeMin = 0.01f;
-            static const float rangeMax = 200.0f;
+            static const float rangeMax = 10000.0f;
             static const float radiusMin = 0.0f;
             static const float radiusMax = 30.0f;
             bool dofChanged = false;
