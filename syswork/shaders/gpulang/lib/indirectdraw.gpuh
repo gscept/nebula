@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 // struct defined by the Vulkan spec
+alignas(4)
 struct DrawCommand
 {
     vertexCount : u32;
@@ -12,6 +13,7 @@ struct DrawCommand
     startInstance : u32;
 };
 
+alignas(4)
 struct DrawIndexedCommand
 {
     indexCount : u32;

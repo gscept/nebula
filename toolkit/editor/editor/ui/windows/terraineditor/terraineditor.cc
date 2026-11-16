@@ -606,6 +606,7 @@ TerrainEditor::Run(SaveMode save)
     }
 
     Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
+    Vegetation::VegetationContext::Invalidate(terrainComponent.graphicsEntityId);
 
     if (ImGui::CollapsingHeader("Terrain Generation"))
     {
