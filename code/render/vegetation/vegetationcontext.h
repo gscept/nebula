@@ -21,8 +21,8 @@ struct VegetationMeshSetup
 {
     IO::Path mask = IO::Path::FolderAndFile("tex", "system/black");             // expects a 1 channel texture
     IO::Path model = IO::Path::FolderAndFile("mdl", "system/box");
-    float slopeThreshold;                                                       // slope threshold in percentage
-    float heightThreshold;                                                      // height threshold in percentage
+    float slopeThreshold = 1.0f;                                                       // slope threshold in percentage
+    float heightThreshold = 100000.0f;                                                 // height threshold in absolute height
 };
 
 
