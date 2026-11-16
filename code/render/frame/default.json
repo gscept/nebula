@@ -244,6 +244,11 @@
                 "ops": [
                     {
                         "subgraph": {
+                            "name": "DoF Mask"
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Raytracing Structures Update"
                         }
                     },
@@ -330,11 +335,6 @@
                 "queue": "Graphics",
                 "_comment": "Calculate shadow maps and depth prepass",
                 "ops": [
-                    {
-                        "subgraph": {
-                            "name": "DoF Mask"
-                        }
-                    },
 
                     {
                         "subgraph": {
