@@ -467,8 +467,6 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.heightThreshold = heightThreshold;
     info.materialIndex = -1;
 
-    info.distribution = 0.0f;
-
     return infoIndex;
 }
 

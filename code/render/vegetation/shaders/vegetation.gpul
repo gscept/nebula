@@ -48,7 +48,6 @@ struct MeshInfo
     numLods : i32;
     vertexCount : i32;
     indexCount : i32;
-    distribution : f32;
     slopeThreshold : f32;
     heightThreshold : f32;
     materialIndex : u32;
@@ -102,25 +101,6 @@ group(SYSTEM_GROUP) uniform DebugTexture : *mutable r32f texture2D;
 //------------------------------------------------------------------------------
 /**
 */
-CalculateNormalFromHeight(pixel : f32x2, offset : i32x3, scale : f32x2) f32x3
-{
-    const hl = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.xz) * scale, 0).r;
-    const hr = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.yz) * scale, 0).r;
-    const ht = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.zx) * scale, 0).r;
-    const hb = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.zy) * scale, 0).r;
-    var normal = f32x3(0, 0, 0);
-    normal.x = (hl - hr);
-    normal.y = 2.0f;
-    normal.z = (ht - hb);
-    normal *= f32x3((VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight), 1, (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight));
-    normal += f32x3(VegetationGenerateUniforms.MinHeight, 0, VegetationGenerateUniforms.MinHeight);
-    normal = normalize(normal);
-    return normal;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 threads_x(1)
 entry_point
 csClearDraws() void
@@ -165,13 +145,10 @@ csGenerateDraws() void
 	}
 
 	// Move world space pos back to (0.. WorldSize]
-	const localSpaceSamplePos = worldSpaceSamplePos - VegetationGenerateUniforms.WorldPosition + VegetationGenerateUniforms.WorldSize * 0.5f;
+	const quadLocalStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + random * VegetationGenerateUniforms.GenerateQuadSize;
 
 	// Normalize to (0..1)
-	const sampleSpacePos = localSpaceSamplePos * VegetationGenerateUniforms.InvWorldSize;
-
-	const quadLocalStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + random * VegetationGenerateUniforms.GenerateQuadSize;
-		textureStore(DebugTexture, i32x2(quadLocalStart), f32x4(1, 0, 0, 0));
+	const sampleSpacePos = quadLocalStart * VegetationGenerateUniforms.InvWorldSize;
 
     // load height map
     var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, 0).r;
@@ -181,13 +158,13 @@ csGenerateDraws() void
     const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
     const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
 
-    if angle < VegetationGenerateUniforms.Fov { return; }
+    //if angle < VegetationGenerateUniforms.Fov { return; }
 
     const pixel = sampleSpacePos * VegetationGenerateUniforms.HeightMapSize;
     const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
 
     const offset = i32x3(-1, 1, 0);
-    const normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
+    const normal = CalculateNormalFromHeight(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, pixel, offset, invHeightMapSize, VegetationGenerateUniforms.MinHeight, VegetationGenerateUniforms.MaxHeight);
 
     // go through mesh types and generate uniforms and draws
     for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
@@ -196,9 +173,10 @@ csGenerateDraws() void
 
         if !meshInfo.used { continue; }
 
+
         // calculate rules
         const heightCutoff = height < meshInfo.heightThreshold;
-        const angleCutoff = dot(normal, f32x3(0, 1, 0)) > meshInfo.slopeThreshold;
+        const angleCutoff = dot(normal, f32x3(0, 1, 0)) <= meshInfo.slopeThreshold;
 
         const mask = sampleMask(meshInfo.maskIndex, PointSampler, sampleSpacePos).r;
         var lod = meshInfo.numLods - 1;
@@ -211,9 +189,11 @@ csGenerateDraws() void
             }
         }
 
-
-        if (heightCutoff && angleCutoff)
+        if (heightCutoff && angleCutoff && mask > 0.0f)
         {
+			const draws = DrawCount.NumMeshDraws[i / 4][i%4];
+			textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i32(draws), 0, 0, 0));
+
             const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
 
             var instanceUniform : InstanceUniforms;

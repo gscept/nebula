@@ -718,3 +718,32 @@ CubeMapUVAndFaceFromDirection(dir : f32x3, out uv : f32x2, out cubeFace : u32) v
 	const face = (faceX * isX) + (faceY * isY) + (faceZ * isZ);
 	cubeFace = u32(face);
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateNormalFromHeight(uniform heightMap : *texture2D, uniform samp : *sampler, uv : f32x2, offset : f32x3, minHeight : f32, maxHeight : f32) f32x3
+{
+    const hl = textureSampleLod(heightMap, samp, uv + offset.xz, 0.0f).r;
+    const hr = textureSampleLod(heightMap, samp, uv + offset.yz, 0.0f).r;
+    const ht = textureSampleLod(heightMap, samp, uv + offset.zx, 0.0f).r;
+    const hb = textureSampleLod(heightMap, samp, uv + offset.zy, 0.0f).r;
+    const heightScale = maxHeight - minHeight;
+    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
+}
+
+//------------------------------------------------------------------------------
+/**
+    worldXZ is in heightmap space [0, WorldSize], same units as uv * worldSize.
+    offset is in meters (typically ±1).
+*/
+CalculateNormalFromHeight(uniform heightMap : *texture2D, uniform samp : *sampler, worldXZ : f32x2, offset : i32x3, scale : f32x2, minHeight : f32, maxHeight : f32) f32x3
+{
+    const hl = textureSampleLod(heightMap, samp, (worldXZ + offset.xz) * scale, 0).r;
+    const hr = textureSampleLod(heightMap, samp, (worldXZ + offset.yz) * scale, 0).r;
+    const ht = textureSampleLod(heightMap, samp, (worldXZ + offset.zy) * scale, 0).r;
+    const hb = textureSampleLod(heightMap, samp, (worldXZ + offset.zx) * scale, 0).r;
+    const heightScale = maxHeight - minHeight;
+    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
+}

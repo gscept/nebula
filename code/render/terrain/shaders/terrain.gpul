@@ -140,7 +140,7 @@ dsTerrain(
     pixelSize = i32x2(f32x2(1.0f) / pixelSize);
 
     const offset = f32x3(-pixelSize.x, pixelSize.x, 0.0f);
-    Normal = CalculateNormalFromHeight(UV, offset);
+    Normal = CalculateNormalFromHeight(Textures2D[TerrainInstanceUniforms.HeightMap], TextureSampler, UV, offset, TerrainInstanceUniforms.MinHeight, TerrainInstanceUniforms.MaxHeight);
 
     const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, UV, 0).r;
     Position.y = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);

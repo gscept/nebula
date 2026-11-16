@@ -377,7 +377,6 @@ InternalSetupFunction(const WindowCreateInfo& info)
     swapCreate.window = wnd;
     SwapchainId swapchain = CoreGraphics::CreateSwapchain(swapCreate);
 
-
     glfwWindowAllocator.Set<GLFW_SwapFrame>(windowId, 0);
     glfwWindowAllocator.Set<GLFW_Window>(windowId, wnd);
     glfwWindowAllocator.Set<GLFW_Swapchain>(windowId, swapchain);

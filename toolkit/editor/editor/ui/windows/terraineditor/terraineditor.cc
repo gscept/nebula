@@ -1001,6 +1001,8 @@ TerrainEditor::Run(SaveMode save)
             maskTexInfo.dataSize = data.ByteSize();
             mesh.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
 
+            Vegetation::VegetationContext::SetMask(terrainComponent.graphicsEntityId, index, mesh.maskTex);
+
             Dynui::ImguiTextureId imguiTex{ .nebulaHandle = mesh.maskTex, .splat = true };
 
             mesh.imguiMaskId = Dynui::AllocateImguiTextureId(imguiTex);
