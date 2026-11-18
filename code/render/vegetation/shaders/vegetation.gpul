@@ -195,7 +195,6 @@ csGenerateDraws() void
 
         if (heightCutoff && angleCutoff && instanceRandom < mask * meshInfo.density)
         {
-
             const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
 
             var instanceUniform : VegetationInstance;
@@ -224,7 +223,7 @@ csGenerateDraws() void
 /**
 */
 entry_point
-vsDrawMeshVColor(
+vsDrawMeshWeighted(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
     , binding(2) in uv : i32x2
@@ -264,7 +263,7 @@ vsDrawMeshVColor(
 /**
 */
 entry_point
-vsDrawDepthVColor(
+vsDrawDepthWeighted(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
     , binding(2) in uv : i32x2
@@ -366,7 +365,7 @@ vsDrawMesh(
 /**
 */
 entry_point
-psDepth(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
+psDepthBRDF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
 {
 	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
     const mat = MaterialPointers.BRDFMaterials[instanceUniforms.materialIndex];
@@ -381,7 +380,7 @@ psDepth(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
 */
 early_depth
 entry_point
-psStandardBindlessMaterial(
+psVegetationBRDF(
     in Tangent : f32x3,
     in Normal : f32x3,
     in no_interpolate Sign : f32,
@@ -406,6 +405,60 @@ psStandardBindlessMaterial(
 
 //------------------------------------------------------------------------------
 /**
+    Standard shader for conductors (metals) and dielectic materials (non-metal), using bindless materials
+*/
+early_depth
+entry_point
+psVegetationGLTF(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3,
+    in no_interpolate InstanceIndex : u32
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
+    
+    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
+    const metallicRoughness = sample2D(mat.metallicRoughnessTexture, MaterialSampler, UV) * f32x4(1.0f, mat.roughnessFactor, mat.metallicFactor, 1.0f);
+    const emissive = sample2D(mat.emissiveTexture, MaterialSampler, UV) * mat.emissiveFactor;
+    const occlusion = sample2D(mat.occlusionTexture, MaterialSampler, UV);
+    const normals = sample2D(mat.normalTexture, NormalSampler, UV) * mat.normalScale;
+    var material : f32x4;
+    material[MAT_METALLIC] = metallicRoughness.b;
+    material[MAT_ROUGHNESS] = metallicRoughness.g;
+    material[MAT_CAVITY] = occlusion.r;
+    material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
+    const N = normalize(UnpackGLTFNormal(Tangent, Normal, Sign, mat.normalScale, normals));
+
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
+    const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
+    //light += calcEnv(baseColor, F0, N, viewVec, material);
+    light += emissive.rgb;
+    
+    pixelExportColor(PackColor(light.rgb, baseColor.a), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthGLTF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
+{
+	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
+
+    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
+    if (baseColor.a == 0.0f) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 render_state MeshState
 {
@@ -420,37 +473,89 @@ render_state MeshZState
     DepthTestFunction = CompareMode.Less;
 };
 
-@Mask("VegetationMeshDrawVColorZ")
-program VegetationMeshDrawVColorZ
+//------------------------------------------------------------------------------
+/**
+    NEBULA MATERIALS
+*/
+//------------------------------------------------------------------------------
+
+@Mask("VegetaionDepthWeightedBRDF")
+program VegetaionDepthWeightedBRDF
 {
-    VertexShader = vsDrawDepthVColor;
-    PixelShader = psDepth;
+    VertexShader = vsDrawDepthWeighted;
+    PixelShader = psDepthBRDF;
     RenderState = MeshZState;
 };
 
-@Mask("VegetationMeshDrawVColor")
-program VegetationMeshDrawVColor
-{
-    VertexShader = vsDrawMeshVColor;
-    PixelShader = psStandardBindlessMaterial;
-    RenderState = MeshState;
-};
-
-@Mask("VegetationMeshDrawZ")
-program VegetationMeshDrawZ
+@Mask("VegetationDepthBRDF")
+program VegetationDepthBRDF
 {
     VertexShader = vsDrawDepth;
-    PixelShader = psDepth;
+    PixelShader = psDepthBRDF;
     RenderState = MeshZState;
 };
 
-@Mask("VegetationMeshDraw")
-program VegetationMeshDraw
+@Mask("VegetationMeshWeightedBRDF")
+program VegetationMeshWeightedBRDF
 {
-    VertexShader = vsDrawMesh;
-    PixelShader = psStandardBindlessMaterial;
+    VertexShader = vsDrawMeshWeighted;
+    PixelShader = psVegetationBRDF;
     RenderState = MeshState;
 };
+
+@Mask("VegetationMeshBRDF")
+program VegetationMeshBRDF
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psVegetationBRDF;
+    RenderState = MeshState;
+};
+
+//------------------------------------------------------------------------------
+/**
+    GLTF MATERIALS
+*/
+//------------------------------------------------------------------------------
+
+@Mask("VegetationDepthWeightedGLTF")
+program VegetationDepthWeightedGLTF
+{
+    VertexShader = vsDrawDepthWeighted;
+    PixelShader = psDepthGLTF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationDepthGLTF")
+program VegetationDepthGLTF
+{
+    VertexShader = vsDrawDepth;
+    PixelShader = psDepthGLTF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationMeshWeightedGLTF")
+program VegetationMeshWeightedGLTF
+{
+    VertexShader = vsDrawMeshWeighted;
+    PixelShader = psVegetationBRDF;
+    RenderState = MeshState;
+};
+
+@Mask("VegetationMeshGLTF")
+program VegetationMeshGLTF
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psVegetationGLTF;
+    RenderState = MeshState;
+};
+
+
+//------------------------------------------------------------------------------
+/**
+    System shaders
+*/
+//------------------------------------------------------------------------------
+
 
 @Mask("VegetationClear")
 program VegetationClear

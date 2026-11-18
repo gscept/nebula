@@ -26,6 +26,10 @@ struct VegetationMeshSetup
     float density = 1.0f;
 };
 
+struct ShaderSet
+{
+    CoreGraphics::ShaderProgramId depthShader, mainShader;
+};
 
 class VegetationContext : public Graphics::GraphicsContext
 {
@@ -99,8 +103,7 @@ private:
         SizeT meshVertexPositionOffsets[MAX_MESH_INFOS];
         SizeT meshVertexAttributeOffsets[MAX_MESH_INFOS];
         SizeT meshIndexOffsets[MAX_MESH_INFOS];
-        CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
-        CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
+        ShaderSet shaderSet[MAX_MESH_INFOS];
     };
 
     enum

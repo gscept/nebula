@@ -27,15 +27,41 @@ namespace Vegetation
 VegetationContext::VegetationAllocator VegetationContext::vegetationAllocator;
 __ImplementContext(VegetationContext, VegetationContext::vegetationAllocator);
 
+enum MaterialInterfaceType
+{
+    BRDF, // the Nebula BRDF model
+    GLTF,
+
+    NumMaterialInterfaceTypes,
+    InvalidMaterialInterfaceType
+};
+
+enum VertexInterfaceType
+{
+    Weighted,
+    NonWeighted,
+
+    NumVertexInterfaceTypes,
+    InvalidVertexInterfaceType
+};
+
+enum ShaderPassTypes
+{
+    Depth,
+    Main,
+
+    NumShaderPassTypes,
+    InvalidShaderPassType
+};
+
 struct
 {
     CoreGraphics::ShaderId vegetationBaseShader;
     CoreGraphics::ShaderProgramId vegetationClearShader;
     CoreGraphics::ShaderProgramId vegetationGenerateDrawsShader;
-    CoreGraphics::ShaderProgramId vegetationMeshZShader;
-    CoreGraphics::ShaderProgramId vegetationMeshShader;
-    CoreGraphics::ShaderProgramId vegetationMeshVColorZShader;
-    CoreGraphics::ShaderProgramId vegetationMeshVColorShader;
+    CoreGraphics::ShaderProgramId vegetationShaders[ShaderPassTypes::NumShaderPassTypes]
+                                                   [VertexInterfaceType::NumVertexInterfaceTypes]
+                                                   [MaterialInterfaceType::NumMaterialInterfaceTypes];
 
 } vegetationState;
 
@@ -70,10 +96,26 @@ VegetationContext::Create()
     vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation/shaders/vegetation.gplb");
     vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
     vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
-    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawZ"));
-    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDraw"));
-    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColorZ"));
-    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColor"));
+
+    static const char* ShaderProgramFormat = "Vegetation%s%s%s";
+    static const char* MaterialInterfaceNames[MaterialInterfaceType::NumMaterialInterfaceTypes] = {"BRDF", "GLTF" };
+    static const char* VertexInterfaceNames[VertexInterfaceType::NumVertexInterfaceTypes] = {"Weighted", ""};
+    static const char* ShaderPassTypeNames[ShaderPassTypes::NumShaderPassTypes] = {"Depth", "Mesh"};
+
+    for (auto i = 0; i < ShaderPassTypes::NumShaderPassTypes; i++)
+    {
+        for (auto j = 0; j < VertexInterfaceType::NumVertexInterfaceTypes; j++)
+        {
+            for (auto k = 0; k < MaterialInterfaceType::NumMaterialInterfaceTypes; k++)
+            {
+                const Util::String name = Util::String::Sprintf(
+                    ShaderProgramFormat, ShaderPassTypeNames[k], VertexInterfaceNames[j], MaterialInterfaceNames[i]
+                );
+                vegetationState.vegetationShaders[i][j][k] =
+                    CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask(name));
+            }
+        }
+    }
 
     FrameScript_default::RegisterSubgraph_VegetationClearDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -138,7 +180,7 @@ VegetationContext::Create()
                 if (!instance.meshInfos[i].used)
                     continue;
 
-                CmdSetShaderProgram(cmdBuf, instance.meshZPrograms[i], queue);
+                CmdSetShaderProgram(cmdBuf, instance.shaderSet[i].depthShader, queue);
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -179,7 +221,7 @@ VegetationContext::Create()
                 if (!instance.meshInfos[i].used)
                     continue;
 
-                CmdSetShaderProgram(cmdBuf, instance.meshPrograms[i], queue);
+                CmdSetShaderProgram(cmdBuf, instance.shaderSet[i].mainShader, queue);
 
                 // setup mesh
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
@@ -393,6 +435,8 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(res);
         CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
         Util::Array<float> lodDistances;
+
+        MaterialInterfaceType materialInterfaceType = MaterialInterfaceType::InvalidMaterialInterfaceType;
         for (auto node : nodes)
         {
             if (node->GetType() == Models::NodeType::PrimitiveNodeType)
@@ -402,6 +446,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
                 {
                     mesh = pnode->GetMesh();
                     info.materialIndex = Materials::MaterialGetBufferBinding(pnode->GetMaterial());
+                    MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
                 }
 
                 float minDist, maxDist;
@@ -437,6 +482,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
         // make sure the mesh is valid for vegetation rendering
         const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
+        VertexInterfaceType vertexInterfaceType = VertexInterfaceType::InvalidVertexInterfaceType; 
         n_assert(components.Size() >= 4);
         if (components.Size() == 5) // with vertex colors
         {
@@ -445,8 +491,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
             n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
-            instanceInfo.meshZPrograms[infoIndex] = vegetationState.vegetationMeshVColorZShader;
-            instanceInfo.meshPrograms[infoIndex] = vegetationState.vegetationMeshVColorShader;
+            vertexInterfaceType = VertexInterfaceType::Weighted;
             instanceInfo.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
         }
         else // without
@@ -455,14 +500,15 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
             n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Short2);
             n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
             n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            instanceInfo.meshZPrograms[infoIndex] = vegetationState.vegetationMeshZShader;
-            instanceInfo.meshPrograms[infoIndex] = vegetationState.vegetationMeshShader;
+            vertexInterfaceType = VertexInterfaceType::NonWeighted;
             instanceInfo.meshVertexLayouts[infoIndex] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
         }
-        n_assert(instanceInfo.meshZPrograms[infoIndex] != CoreGraphics::InvalidShaderProgramId);
-        n_assert(instanceInfo.meshPrograms[infoIndex] != CoreGraphics::InvalidShaderProgramId);
         n_assert(instanceInfo.meshVertexLayouts[infoIndex] != CoreGraphics::InvalidVertexLayoutId);
 
+        instanceInfo.shaderSet[infoIndex].depthShader =
+            vegetationState.vegetationShaders[ShaderPassTypes::Depth][vertexInterfaceType][materialInterfaceType];
+        instanceInfo.shaderSet[infoIndex].mainShader =
+            vegetationState.vegetationShaders[ShaderPassTypes::Main][vertexInterfaceType][materialInterfaceType];
         info.used = true;
 
     }, nullptr);

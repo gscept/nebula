@@ -727,3 +727,19 @@ CalculateNormalFromHeight(uniform heightMap : *texture2D, uniform samp : *sample
     const heightScale = maxHeight - minHeight;
     return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
 }
+
+//------------------------------------------------------------------------------
+/**
+    Convert normal from GLTF space to tanget space
+*/
+UnpackGLTFNormal(tangent : f32x3, normal : f32x3, sign : f32, scale : f32, normalMapData : f32x4) f32x3
+{
+    const tan = normalize(tangent);
+    const norm = normalize(normal);
+    const bin = cross(norm, tan) * sign;
+    const tangentViewMatrix = f32x3x3(tan, bin, norm);
+    var tNormal = f32x3(0, 0, 0);
+    tNormal.xy = (normalMapData.xy * 2.0f) - 1.0f;
+    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
+    return tangentViewMatrix * normalize((tNormal * f32x3(scale, scale, 1.0f)));
+}
