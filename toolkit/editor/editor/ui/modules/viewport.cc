@@ -292,13 +292,13 @@ Viewport::Render()
         if (showWorldAxis)
         {
             Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
-            Math::mat4 invViewTranslation = Math::translation(invView.position);
+            Math::mat4 invViewTranslation = Math::translation(invView.position());
             Math::mat4 scaling = Math::scaling(0.15f);
-            Math::mat4 offset = Math::translation(-invView.z_axis * 0.5f);
+            Math::mat4 offset = Math::translation(-invView.z_axis() * 0.5f);
             Im3d::Im3dContext::DrawAxes(invViewTranslation * offset * scaling);
         }
 
-        const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
+        const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position();
         Util::String cameraPosStr = Util::String::Sprintf("Camera Position x: %.3f, y: %.3f, z: %.3f", cameraPos.x, cameraPos.y, cameraPos.z);
         Util::String fps = Util::String::Sprintf("FPS: %.2f, ms: %.1f", ImGui::GetIO().Framerate, ImGui::GetIO().DeltaTime * 1000);
 

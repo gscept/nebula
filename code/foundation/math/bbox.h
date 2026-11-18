@@ -267,17 +267,17 @@ bbox::affine_transform(const mat4& m)
 {
     n_warn2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w == 0 && m.r[3].w == 1, "Matrix is not affine");
 
-    vec4 xa = m.x_axis * this->pmin.x;
-    vec4 xb = m.x_axis * this->pmax.x;
+    vec4 xa = m.x_axis() * this->pmin.x;
+    vec4 xb = m.x_axis() * this->pmax.x;
 
-    vec4 ya = m.y_axis * this->pmin.y;
-    vec4 yb = m.y_axis * this->pmax.y;
+    vec4 ya = m.y_axis() * this->pmin.y;
+    vec4 yb = m.y_axis() * this->pmax.y;
 
-    vec4 za = m.z_axis * this->pmin.z;
-    vec4 zb = m.z_axis * this->pmax.z;
+    vec4 za = m.z_axis() * this->pmin.z;
+    vec4 zb = m.z_axis() * this->pmax.z;
     
-    this->pmin = xyz(minimize(xa, xb) + minimize(ya, yb) + minimize(za, zb) + m.position);
-    this->pmax = xyz(maximize(xa, xb) + maximize(ya, yb) + maximize(za, zb) + m.position);
+    this->pmin = xyz(minimize(xa, xb) + minimize(ya, yb) + minimize(za, zb) + m.position());
+    this->pmax = xyz(maximize(xa, xb) + maximize(ya, yb) + maximize(za, zb) + m.position());
 }
 
 //------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ bbox::to_mat4() const
 {
     mat4 m = scaling(this->size());
     point pos = this->center();
-    m.position = pos;
+    m.position() = pos;
     return m;
 }
 

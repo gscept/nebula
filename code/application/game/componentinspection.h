@@ -84,15 +84,15 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
             fieldName.Capitalize();
             ImGui::TableSetColumnIndex(0);
             ImGui::AlignTextToFramePadding();
-            ImGui::Text(fieldName.AsCharPtr());
+            ImGui::Text("%s", fieldName.AsCharPtr());
             if (TYPE::Traits::field_descriptions[i] != nullptr)
             {
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
                     if (ImGui::BeginTooltip())
                     {
-                        ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
-                        ImGui::Text(TYPE::Traits::field_descriptions[i]);
+                        ImGui::TextDisabled("%s", TYPE::Traits::field_typenames[i]);
+                        ImGui::Text("%s", TYPE::Traits::field_descriptions[i]);
                         ImGui::EndTooltip();
                     }
                 }

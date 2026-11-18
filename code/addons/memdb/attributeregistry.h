@@ -229,7 +229,7 @@ inline Attribute*
 AttributeRegistry::GetAttribute(AttributeId descriptor)
 {
     auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
+    if (descriptor.id < reg->componentDescriptions.Size())
     {
         n_assert2(
             reg->componentDescriptions[descriptor.id] != nullptr, "Trying to get description of attribute that is not registered!"
@@ -247,7 +247,7 @@ inline SizeT
 AttributeRegistry::TypeSize(AttributeId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    n_assert(descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->typeSize;
 }
 
@@ -258,7 +258,7 @@ inline uint32_t
 AttributeRegistry::Flags(AttributeId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    n_assert(descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->externalFlags;
 }
 
@@ -269,7 +269,7 @@ inline void const* const
 AttributeRegistry::DefaultValue(AttributeId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    n_assert(descriptor.id < reg->componentDescriptions.Size());
     return reg->componentDescriptions[descriptor.id]->defVal;
 }
 

@@ -731,7 +731,7 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
     {        
         if (this->states[id.loaderInstanceId] == Resource::Loaded)
         {
-            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            n_assert(this->usage[id.loaderInstanceId] > 0);
             this->usage[id.loaderInstanceId]--;
             if (this->usage[id.loaderInstanceId] == 0)
             {
@@ -770,7 +770,7 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
         if (this->tags[i] == tag)
         {
             Resources::ResourceId id = this->resources[this->ids[this->names[i]]];
-            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            n_assert(this->usage[id.loaderInstanceId] > 0);
             this->usage[id.loaderInstanceId]--;
             if (this->usage[id.loaderInstanceId] == 0)
             {

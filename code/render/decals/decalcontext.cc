@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  decalcontext.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -296,8 +296,8 @@ DecalContext::UpdateDecals(const Graphics::FrameContext& ctx)
             pbrDecal.material = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Material>(typeIds[i]));
             Math::mat4 inverse = Math::inverse(transforms[i]);
             inverse.store(&pbrDecal.invModel[0][0]);
-            transforms[i].z_axis.store3(pbrDecal.direction);
-            Math::vec4 tangent = normalize(-transforms[i].x_axis);
+            transforms[i].z_axis().store3(pbrDecal.direction);
+            Math::vec4 tangent = normalize(-transforms[i].x_axis());
             tangent.store3(pbrDecal.tangent);
             pbrDecal.stageMask = stageMasks[i];
             numPbrDecals++;
@@ -310,7 +310,7 @@ DecalContext::UpdateDecals(const Graphics::FrameContext& ctx)
             Math::bbox bbox(transforms[i]);
             bbox.pmin.store(emissiveDecal.bboxMin);
             bbox.pmax.store(emissiveDecal.bboxMax);
-            transforms[i].z_axis.store3(emissiveDecal.direction);
+            transforms[i].z_axis().store3(emissiveDecal.direction);
             emissiveDecal.emissive = TextureGetBindlessHandle(emissiveDecalAllocator.Get<DecalEmissive_Emissive>(typeIds[i]));
             emissiveDecal.stageMask = stageMasks[i];
             numEmissiveDecals++;

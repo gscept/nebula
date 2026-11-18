@@ -41,7 +41,7 @@ VariantTest::Run()
     Variant float4Var(vec4(1.0f, 2.0f, 3.0f, 4.0f));
     mat4 m;
     vec4 value(1.0f, 2.0f, 3.0f, 1.0f);
-    m.row3 = value;
+    m.row3() = value;
     Variant matrixVar(m);
     Variant charPtrVar("Bla Bla");
     Variant strVar(bla);

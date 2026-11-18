@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  graphicsfeature/graphicsfeatureunit.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -359,6 +359,7 @@ GraphicsFeatureUnit::OnBeginFrame()
     {
     case 2:
         this->gfxServer->RenderDebug(0);
+        [[fallthrough]];
     case 1:
         Game::GameServer::Instance()->RenderDebug();
     default:

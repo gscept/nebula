@@ -63,10 +63,10 @@ quaternionequal(const quat &a, const quat&b)
 __forceinline bool
 mat4equal(const mat4 &a, const mat4 &b)
 {
-    return vec4equal(a.row0, b.row0) &&
-           vec4equal(a.row1, b.row1) &&
-           vec4equal(a.row2, b.row2) &&
-           vec4equal(a.row3, b.row3);
+    return vec4equal(a.row0(), b.row0()) &&
+           vec4equal(a.row1(), b.row1()) &&
+           vec4equal(a.row2(), b.row2()) &&
+           vec4equal(a.row3(), b.row3());
 }
 
 //------------------------------------------------------------------------------
@@ -105,10 +105,10 @@ __forceinline void
 print( const mat4& mat )
 {
 #if (__WIN32__ || __linux__)
-    print(mat.row0);
-    print(mat.row1);
-    print(mat.row2);
-    print(mat.row3);
+    print(mat.row0());
+    print(mat.row1());
+    print(mat.row2());
+    print(mat.row3());
 #else
 #  error unimplemented platform
 #endif
@@ -132,7 +132,7 @@ __forceinline void
 print_flattened(const mat4& mat, const char *msg)
 {
     n_printf("%s:\n", msg);
-    const float *flattened = (const float *)&(mat.row0);
+    const float *flattened = (const float *)&(mat.row0());
     for(int i = 0; i < 16; ++i)
     {
         n_printf( "[%02d] " SCALAR_FORMATOR "\n", i, flattened[i] );

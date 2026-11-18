@@ -10,6 +10,14 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
+#include <new>
+
+#ifdef __cpp_lib_hardware_interference_size
+#define NEBULA_CACHE_LINE_SIZE std::hardware_destructive_interference_size
+#else
+#define NEBULA_CACHE_LINE_SIZE 64
+#endif
+
 #if !SPU
 #include "memory/memory.h"
 #endif

@@ -395,8 +395,8 @@ Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCon
     
     Graphics::GraphicsEntityId cam = ViewGetCamera(view);
     Math::mat4 transform = inverse(CameraContext::GetView(cam));
-    ad.m_viewOrigin = xyz(transform.position);
-    ad.m_viewDirection = -xyz(transform.z_axis);
+    ad.m_viewOrigin = xyz(transform.position());
+    ad.m_viewDirection = -xyz(transform.z_axis());
     ad.m_worldUp = Vec3(0.0f, 1.0f, 0.0f);
     ad.m_projOrtho = false;
 
@@ -418,7 +418,7 @@ Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCon
     auto const& proj = CameraContext::GetProjection(cam);
     auto const& viewProj = CameraContext::GetViewProjection(cam);
     rayOrigin = ad.m_viewOrigin;
-    Math::vec4 rayDir(mousePos.x / proj.row0.x, mousePos.y / proj.row1.y, -1.0f, 0.0f);
+    Math::vec4 rayDir(mousePos.x / proj.row0().x, mousePos.y / proj.row1().y, -1.0f, 0.0f);
     rayDir = normalize(rayDir);    
     rayDirection = xyz(transform * rayDir);
     

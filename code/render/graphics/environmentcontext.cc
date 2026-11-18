@@ -141,7 +141,7 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
     Shared::PerTickParams::STRUCT tickParams = Graphics::GetTickParams();
     Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
-    Math::vec4 sunDir = -transform.z_axis;
+    Math::vec4 sunDir = -transform.z_axis();
 
     tickParams.RayleighFactor = 1.0f;
     tickParams.RayleighZenithLength = 615;
@@ -167,8 +167,8 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
     Math::mat4 cameraTransform = Graphics::CameraContext::GetView(Graphics::CameraContext::GetLODCameras()[0]);
     Math::mat4 temp;
-    temp.position = cameraTransform.position;
-    temp.position.w = 1.0f;
+    temp.position() = cameraTransform.position();
+    temp.position().w = 1.0f;
     Models::ModelContext::SetTransform(envState.skyBoxEntity, temp);
     
     // update perez distribution coefficients to the shared constants

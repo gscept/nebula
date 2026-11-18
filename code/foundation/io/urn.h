@@ -94,8 +94,8 @@ private:
 */
 inline
 URN::URN() :
-    isEmpty(true),
-    isFolder(false)
+    isFolder(false),
+    isEmpty(true)
 {
     // empty
 }
@@ -105,8 +105,8 @@ URN::URN() :
 */
 inline
 URN::URN(const Util::String& s) :
-    isEmpty(true),
-    isFolder(false)
+    isFolder(false),
+    isEmpty(true)
 {
     bool validUrn = this->Split(s);
 }
@@ -116,8 +116,8 @@ URN::URN(const Util::String& s) :
 */
 inline
 URN::URN(const char* s) :
-    isEmpty(true),
-    isFolder(false)
+    isFolder(false),
+    isEmpty(true)
 {
     bool validUrn = this->Split(s);
     n_assert2(validUrn, s);
@@ -154,8 +154,8 @@ URN::URN(const char* nid, const char* nss)
 */
 inline
 URN::URN(const URN& rhs) :
-    isEmpty(rhs.isEmpty),
     isFolder(rhs.isFolder),
+    isEmpty(rhs.isEmpty),
     nid(rhs.nid),
     nss(rhs.nss),
     query(rhs.query),
@@ -171,8 +171,8 @@ URN::URN(const URN& rhs) :
 inline void
 URN::operator=(const URN& rhs)
 {
-    this->isEmpty = rhs.isEmpty;
     this->isFolder = rhs.isFolder;
+    this->isEmpty = rhs.isEmpty;
     this->nid = rhs.nid;
     this->nss = rhs.nss;
     this->query = rhs.query;

@@ -27,7 +27,7 @@ MouseRayUtil::ComputeWorldMouseRay(const vec2& mousePos, float length, const mat
     localMousePos.w = 1;
     localMousePos.y = -localMousePos.y;
     vec4 worldMousePos = invViewMatrix * localMousePos;
-    vec4 worldMouseDir = worldMousePos - invViewMatrix.position;
+    vec4 worldMouseDir = worldMousePos - invViewMatrix.position();
     worldMouseDir = normalize(worldMouseDir);
     worldMouseDir *= length;
     return line(worldMousePos.vec, (worldMousePos + worldMouseDir).vec);
@@ -50,7 +50,7 @@ MouseRayUtil::ComputeWorldMouseRayOrtho(const vec2& mousePos, float length, cons
     localMousePos.w = 1;
     localMousePos.y = -localMousePos.y;
     vec4 worldMousePos = invViewMatrix * localMousePos;
-    vec4 worldMouseDir = invViewMatrix.z_axis;
+    vec4 worldMouseDir = invViewMatrix.z_axis();
     worldMouseDir *= length;
     return line(worldMousePos.vec, (worldMousePos + worldMouseDir).vec);
 }

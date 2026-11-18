@@ -108,7 +108,7 @@ FreeCameraUtil::Update(float deltaTime)
 
     this->position = Math::lerp(this->position, this->targetPosition, deltaTime * 10.0f);
 
-    this->cameraTransform.position = point(this->position);
+    this->cameraTransform.position() = point(this->position);
 }
 
 

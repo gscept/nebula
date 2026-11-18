@@ -118,37 +118,33 @@ public:
     void scale(const float x, const float y, const float z);
 
 
-    /// we use aliasing to represent the matrix in may different ways
+    /// The rows are the actual representation of the data. m is the same
+    /// storage viewed as individual floats.
     union
     {
-        struct /// as a cube
-        {
-            vec4 x_axis;
-            vec4 y_axis;
-            vec4 z_axis;
-            vec4 position;
-        };
-
-        /// float accessors
-        struct /// individual values
-        {
-            float _11, _12, _13, _14;
-            float _21, _22, _23, _24;
-            float _31, _32, _33, _34;
-            float _41, _42, _43, _44;
-        };
+        vec4 r[4]; /// array accessible rows
         float m[4][4]; /// as a two-dimensional array
-
-        /// SIMD accessors
-        vec4 r[4]; /// array accessible rows 
-        struct /// as numbered rows
-        {
-            vec4 row0;
-            vec4 row1;
-            vec4 row2;
-            vec4 row3;
-        };
     };
+
+    /// row accessors
+    vec4& row0();
+    vec4 const& row0() const;
+    vec4& row1();
+    vec4 const& row1() const;
+    vec4& row2();
+    vec4 const& row2() const;
+    vec4& row3();
+    vec4 const& row3() const;
+
+    /// axis accessors, assuming a local->world matrix
+    vec4& x_axis();
+    vec4 const& x_axis() const;
+    vec4& y_axis();
+    vec4 const& y_axis() const;
+    vec4& z_axis();
+    vec4 const& z_axis() const;
+    vec4& position();
+    vec4 const& position() const;
 
     static const mat4 identity;
 };
@@ -157,9 +153,12 @@ public:
 /**
 */
 __forceinline
-mat4::mat4() : row0(_id_x), row1(_id_y), row2(_id_z), row3(_id_w)
+mat4::mat4()
 {
-    // empty
+    this->r[0] = _id_x;
+    this->r[1] = _id_y;
+    this->r[2] = _id_z;
+    this->r[3] = _id_w;
 }
 
 //------------------------------------------------------------------------------
@@ -229,6 +228,150 @@ mat4::operator[](size_t const i)
     n_assert(i < 4);
 #endif
     return this->r[i];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::row0()
+{
+    return this->r[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::row0() const
+{
+    return this->r[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::row1()
+{
+    return this->r[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::row1() const
+{
+    return this->r[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::row2()
+{
+    return this->r[2];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::row2() const
+{
+    return this->r[2];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::row3()
+{
+    return this->r[3];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::row3() const
+{
+    return this->r[3];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::x_axis()
+{
+    return this->row0();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::x_axis() const
+{
+    return this->row0();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::y_axis()
+{
+    return this->row1();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::y_axis() const
+{
+    return this->row1();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::z_axis()
+{
+    return this->row2();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::z_axis() const
+{
+    return this->row2();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::position()
+{
+    return this->row3();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::position() const
+{
+    return this->row3();
 }
 
 //------------------------------------------------------------------------------
@@ -596,13 +739,13 @@ lookatlh(const point& eye, const point& at, const vector& up)
     const vector xaxis = normalize(cross(normUp, zaxis));
     const vector yaxis = normalize(cross(zaxis, xaxis));
     mat4 ret;
-    ret.row0 = xaxis;
-    ret.row0.w = -dot(xaxis, eye);
-    ret.row1 = yaxis;
-    ret.row1.w = -dot(yaxis, eye);
-    ret.row2 = zaxis;
-    ret.row2.w = -dot(zaxis, eye);
-    ret.row3 = vec4(0, 0, 0, 1);
+    ret.row0() = xaxis;
+    ret.row0().w = -dot(xaxis, eye);
+    ret.row1() = yaxis;
+    ret.row1().w = -dot(yaxis, eye);
+    ret.row2() = zaxis;
+    ret.row2().w = -dot(zaxis, eye);
+    ret.row3() = vec4(0, 0, 0, 1);
     return transpose(ret);
 }
 
@@ -631,13 +774,13 @@ lookatrh(const point& eye, const point& at, const vector& up)
     const vector yaxis = normalize(cross(zaxis, xaxis));
 
     mat4 ret;
-    ret.row0 = xaxis;
-    ret.row0.w = -dot(xaxis, eye);
-    ret.row1 = yaxis;
-    ret.row1.w = -dot(yaxis, eye);
-    ret.row2 = zaxis;
-    ret.row2.w = -dot(zaxis, eye);
-    ret.row3 = vec4(0, 0, 0, 1);
+    ret.row0() = xaxis;
+    ret.row0().w = -dot(xaxis, eye);
+    ret.row1() = yaxis;
+    ret.row1().w = -dot(yaxis, eye);
+    ret.row2() = zaxis;
+    ret.row2().w = -dot(zaxis, eye);
+    ret.row3() = vec4(0, 0, 0, 1);
     return transpose(ret);
 }
 
@@ -708,7 +851,7 @@ operator*(const mat4& m0, const mat4& m1)
     ret.r[0] = mx + mz;
 
     // rinse and repeat
-    mw = m1.row1;
+    mw = m1.row1();
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -724,7 +867,7 @@ operator*(const mat4& m0, const mat4& m1)
     mz = mz + mw;
     ret.r[1] = mx + mz;
 
-    mw = m1.row2;
+    mw = m1.row2();
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -740,7 +883,7 @@ operator*(const mat4& m0, const mat4& m1)
     mz = mz + mw;
     ret.r[2] = mx + mz;
 
-    mw = m1.row3;
+    mw = m1.row3();
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -1050,16 +1193,16 @@ rotationaxis(const vec3& axis, scalar angle)
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,2,0));
 
     mat4 m; 
-    m.row0 = nn5;
+    m.row0() = nn5;
     
     nn5 = _mm_shuffle_ps(v,v1,_MM_SHUFFLE(3,2,3,1));
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,0,2));
-    m.row1 = nn5;
+    m.row1() = nn5;
 
     v2 = _mm_shuffle_ps(v2,v,_MM_SHUFFLE(3,2,1,0));
-    m.row2 = v2;
+    m.row2() = v2;
 
-    m.row3 = _id_w;
+    m.row3() = _id_w;
     return m;
 
     

@@ -102,7 +102,7 @@ Px2NebQuat(const physx::PxQuat& vec)
 inline physx::PxMat44
 Neb2PxMat(const Math::mat4& mat)
 {
-    return physx::PxMat44(Neb2PxVec4(mat.row0), Neb2PxVec4(mat.row1), Neb2PxVec4(mat.row2), Neb2PxVec4(mat.row3));
+    return physx::PxMat44(Neb2PxVec4(mat.row0()), Neb2PxVec4(mat.row1()), Neb2PxVec4(mat.row2()), Neb2PxVec4(mat.row3()));
 }
 
 //------------------------------------------------------------------------------
@@ -148,6 +148,6 @@ Px2NebMat(const physx::PxTransform& mat)
     Math::quat q = Px2NebQuat(mat.q);
     Math::vec4 p = Px2NebPoint(mat.p);
     Math::mat4 m = Math::rotationquat(q);
-    m.position = p;
+    m.position() = p;
     return m;
 }

@@ -68,6 +68,9 @@ Fiber::Fiber(void(*function)(void*), void* context)
     : handle(nullptr)
     , context(nullptr)
 {
+    // FIXME: Fibers shouldn't actually own the fiber handle, instead should be 
+    //        fetched from the pool
+
     this->handle = new fiber_t;
     fiber_t* implHandle = (fiber_t*)this->handle;
     getcontext(&implHandle->fib);
@@ -89,11 +92,8 @@ Fiber::Fiber(void(*function)(void*), void* context)
 */
 Fiber::Fiber(const Fiber& rhs)
 {
-    if (this->handle != nullptr)
-    {
-        fiber_t* implHandle = (fiber_t*)this->handle;
-        delete[] (char*)implHandle->fib.uc_stack.ss_sp;
-    }
+    // BUG: We're moving/sharing ownership here potentially and the destructor of
+    //      one fiber might destroy it for the other, leading to double-free
     this->handle = rhs.handle;
     this->context = rhs.context;
 }

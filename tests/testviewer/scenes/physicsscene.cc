@@ -110,7 +110,7 @@ Shoot(int count)
         {
             Math::vector offset;// = Math::Randomvec4(5.0f);
             trans.position = (cameraPos + offset).vec;
-            Spawn(trans, xyz(mat.z_axis) * -50.0f, Math::vector(Math::rand(-10.0f, 10.0f)));
+            Spawn(trans, xyz(mat.z_axis()) * -50.0f, Math::vector(Math::rand(-10.0f, 10.0f)));
         }
     }
 }
