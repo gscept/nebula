@@ -164,6 +164,7 @@ namespace MaterialTemplatesGPULang
         uint uniqueId;
         uint properties;
         const char* bufferName;
+        const char* interfaceName = nullptr;
         uint bufferSize;
         CoreGraphics::VertexLayoutType vertexLayout;
         uint numTextures;
