@@ -41,7 +41,6 @@ struct
 
 static const uint VegetationGridSize = 32;
 static const uint VegetationDistributionRadius = 128;
-static const uint MaxNumIndirectDraws = 8192;
 
 //------------------------------------------------------------------------------
 /**
@@ -162,7 +161,7 @@ VegetationContext::Create()
                     i * MAX_MESH_INFOS * sizeof(Vegetation::DrawIndexedCommand),
                     instance.drawCountBuffer[bufferIndex],
                     i * sizeof(uint),
-                    MaxNumIndirectDraws,
+                    Vegetation::MAX_DRAWS_PER_MESH,
                     sizeof(Vegetation::DrawIndexedCommand)
                 );
             }
@@ -203,7 +202,7 @@ VegetationContext::Create()
                     i * MAX_MESH_INFOS * sizeof(Vegetation::DrawIndexedCommand),
                     instance.drawCountBuffer[bufferIndex],
                     i * sizeof(uint),
-                    MaxNumIndirectDraws,
+                    Vegetation::MAX_DRAWS_PER_MESH,
                     sizeof(Vegetation::DrawIndexedCommand)
                 );
             }
@@ -255,7 +254,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     indirectMeshArgumentsBufferInfo.usageFlags = CoreGraphics::BufferUsage::IndirectDraw | CoreGraphics::BufferUsage::ReadWrite;
     indirectMeshArgumentsBufferInfo.mode = CoreGraphics::DeviceLocal;
     indirectMeshArgumentsBufferInfo.elementSize = sizeof(DrawIndexedCommand);
-    indirectMeshArgumentsBufferInfo.size = MaxNumIndirectDraws * MAX_MESH_INFOS;
+    indirectMeshArgumentsBufferInfo.size = Vegetation::MAX_DRAWS_PER_MESH * MAX_MESH_INFOS;
     indirectMeshArgumentsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     instanceInfo.meshDrawCallsBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
     for (IndexT i = 0; i < instanceInfo.meshDrawCallsBuffer.Size(); i++)
@@ -267,8 +266,8 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     meshDrawCallsBufferInfo.name = "Vegetation Indirect Mesh Arguments Buffer";
     meshDrawCallsBufferInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     meshDrawCallsBufferInfo.mode = CoreGraphics::DeviceLocal;
-    meshDrawCallsBufferInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
-    meshDrawCallsBufferInfo.size = MaxNumIndirectDraws;
+    meshDrawCallsBufferInfo.elementSize = sizeof(Vegetation::VegetationInstance);
+    meshDrawCallsBufferInfo.size = Vegetation::MAX_DRAWS_PER_MESH * MAX_MESH_INFOS;
     meshDrawCallsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     instanceInfo.meshArgumentsBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
     for (IndexT i = 0; i < instanceInfo.meshArgumentsBuffer.Size(); i++)
@@ -292,14 +291,6 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
     Terrain::TerrainContext::GetHeightBounds(id, instanceInfo.minHeight, instanceInfo.maxHeight);
     Terrain::TerrainContext::GetWorldSize(id, instanceInfo.worldSizeX, instanceInfo.worldSizeZ);
 
-    CoreGraphics::TextureCreateInfo debugTextureInfo;
-    debugTextureInfo.name = "Vegetation Debug Buffer";
-    debugTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
-    debugTextureInfo.format = CoreGraphics::PixelFormat::Code::R32F;
-    debugTextureInfo.width = instanceInfo.worldSizeX;
-    debugTextureInfo.height = instanceInfo.worldSizeZ;
-    instanceInfo.debugTexture = CoreGraphics::CreateTexture(debugTextureInfo);
-
     instanceInfo.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
 
     ResourceTableSetConstantBuffer(instanceInfo.systemResourceTable,
@@ -318,12 +309,6 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
             0,
             sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
             0
-        });
-
-    ResourceTableSetRWTexture(instanceInfo.systemResourceTable,
-        {
-            instanceInfo.debugTexture,
-            Vegetation::DebugTexture::BINDING
         });
 
     ResourceTableCommitChanges(instanceInfo.systemResourceTable);
@@ -390,6 +375,8 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.maskIndex = CoreGraphics::TextureGetBindlessHandle(CoreGraphics::Black2D);
     info.maskSize[0] = 1;
     info.maskSize[1] = 1;
+    info.density = setup.density;
+
     // Load mask, update uniforms when ready
     Resources::CreateResource(setup.mask, "Vegetation", [&info, &instanceInfo, infoIndex](Resources::ResourceId res)
     {
@@ -600,6 +587,18 @@ VegetationContext::SetMask(const Graphics::GraphicsEntityId id, uint index, Core
 /**
 */
 void
+VegetationContext::SetDensity(const Graphics::GraphicsEntityId id, uint index, const float density)
+{
+    Graphics::ContextEntityId cid = GetContextId(id.id);
+    VegetationInstanceInfo& instanceInfo = vegetationAllocator.Get<Vegetation_InstanceInfo>(cid.id);
+    MeshInfo& info = instanceInfo.meshInfos[index];
+    info.density = density;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 VegetationContext::Invalidate(const Graphics::GraphicsEntityId id)
 {
     Graphics::ContextEntityId cid = GetContextId(id);
@@ -639,7 +638,6 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
         uniforms.InvWorldSize[1] = 1.0f / instance.worldSizeZ;
         uniforms.GenerateQuadSize[0] = VegetationGridSize;
         uniforms.GenerateQuadSize[1] = VegetationGridSize;
-        uniforms.DensityFactor = 1.0f;
         uniforms.MinHeight = instance.minHeight;
         uniforms.MaxHeight = instance.maxHeight;
         uniforms.HeightMapSize[0] = CoreGraphics::TextureGetDimensions(instance.heightMap).width;

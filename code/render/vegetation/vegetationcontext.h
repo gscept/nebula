@@ -23,6 +23,7 @@ struct VegetationMeshSetup
     IO::Path model = IO::Path::FolderAndFile("mdl", "system/box");
     float slopeThreshold = 1.0f;                                                       // slope threshold in percentage
     float heightThreshold = 100000.0f;                                                 // height threshold in absolute height
+    float density = 1.0f;
 };
 
 
@@ -52,6 +53,8 @@ public:
     static void SetModel(const Graphics::GraphicsEntityId id, uint index, const IO::Path& model);
     /// Set the mask to use for the vegetation
     static void SetMask(const Graphics::GraphicsEntityId id, uint index, CoreGraphics::TextureId mask);
+    /// Set the vegetation density
+    static void SetDensity(const Graphics::GraphicsEntityId id, uint index, const float density);
 #endif
 
     /// Invalidate terrain related resources
@@ -98,8 +101,6 @@ private:
         SizeT meshIndexOffsets[MAX_MESH_INFOS];
         CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
         CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
-
-        CoreGraphics::TextureId debugTexture;
     };
 
     enum

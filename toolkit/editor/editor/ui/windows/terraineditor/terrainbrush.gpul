@@ -128,7 +128,7 @@ csBrushMask() void
 
     var oldValue = textureLoad(OutputMask, coordinate).x;
 
-    const newValue = lerp(oldValue, 1.0f, BrushUniforms.strength * weight);
+    const newValue = lerp(oldValue, BrushUniforms.strength, weight);
 
     textureStore(OutputMask, coordinate, f32x4(newValue, 0, 0, 1));
 }

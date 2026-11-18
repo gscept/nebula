@@ -507,7 +507,6 @@ EvaluateTerrainSample(worldXZ : f32x2, out outAlbedo : f32x3, out outMaterial : 
             continue;
         }
 	
-		// THIS BREAKS NORMALS
         SampleTerrain(i, normal, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, outAlbedo, outMaterial, outNormal);
     }
 }

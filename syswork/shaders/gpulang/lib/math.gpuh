@@ -1,22 +1,60 @@
 //------------------------------------------------------------------------------
-//  math.fxh
+//  math.gpuh
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+
 
 
 //------------------------------------------------------------------------------
 /**
 */
-makequat(axis : f32x3, sine : f32, cosine: f32) f32x4
+QuatFromAxisAngle(axis : f32x3, angle : f32) f32x4
 {
-    return f32x4(axis * f32x3(sine, sine, sine), cosine);
+	const halfAngle : f32 = angle * 0.5f;
+	const s : f32 = sin(halfAngle);
+	return f32x4(axis * s, cos(halfAngle));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-quatrotate(quat : f32x4, position : f32x3) f32x3
+QuatRotateVector(q : f32x4, v : f32x3) f32x3
 {
-    const temp = cross(quat.xyz, position) + quat.w * position;
-    return position + 2.0f * cross(quat.xyz, temp);
+    const qv : f32x3 = q.xyz;
+    const t : f32x3 = 2.0f * cross(qv, v);
+    return v + (q.w * t) + cross(qv, t);
+}
+
+//------------------------------------------------------------------------------
+/**
+	Construct a quaternion that rotates v0 to v1
+*/
+QuatFromVectors(v0 : f32x3, v1 : f32x3) f32x4
+{
+	const c = cross(v0, v1);
+	const d = dot(v0, v1);
+
+	return normalize(f32x4(c, 1.0f + d));
+}
+
+//------------------------------------------------------------------------------
+/**
+	Construct a quaternion from an up normal
+*/
+QuatFromNormal(n : f32x3) f32x4
+{
+	return normalize(f32x4(n.z, 0.0f, -n.x, 1.0f + n.y));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+	Multiply two quaternions
+*/
+QuatMul(q0 : f32x4, q1 : f32x4) f32x4
+{
+    return f32x4(
+        q0.w * q1.xyz + q1.w * q0.xyz + cross(q0.xyz, q1.xyz),
+        q0.w * q1.w - dot(q0.xyz, q1.xyz)
+    );
 }
