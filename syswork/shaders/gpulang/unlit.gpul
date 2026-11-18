@@ -32,13 +32,13 @@ entry_point
 vsMain(
     binding(0) in position : f32x3,
     binding(1) in normal : f32x3,
-    binding(2) in uv : f32x2,
+    binding(2) in uv : i32x2,
     binding(3) in tangent : f32x3,
     binding(4) in binormal : f32x3,
     out UV : f32x2) void
 {
     vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
