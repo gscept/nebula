@@ -89,7 +89,7 @@ ThreadStressTest::Run()
 {
     App::Application app;
 
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+    IO::StartupFilesystem({});
 
     app.SetAppTitle("Jobs test!");
     app.SetCompanyName("gscept");

@@ -39,8 +39,7 @@ MiscTest::Run()
 {
     App::Application app;
 
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
-
+    IO::StartupFilesystem({});
     app.SetAppTitle("Misc test!");
     app.SetCompanyName("gscept");
     app.Open();

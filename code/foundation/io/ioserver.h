@@ -83,8 +83,6 @@ bool CopyFile(const URI& from, const URI& to);
 bool RenameFile(const URI& from, const URI& to);
 /// delete a file
 bool DeleteFile(const URI& path);
-/// rename a directory
-bool MoveFile(const URI& oldPath, const URI& newPath);
 /// return true if file exists
 bool FileExists(const URI& path);
 /// return if file is locked

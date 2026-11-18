@@ -524,7 +524,7 @@ EntitySystemTest::Run()
         VERIFY(stagingWorld.GetComponent<TestVec4>(stagingInstance[0]).v4 == Math::vec4(1, 2, 3, 4));
         stagingWorld.UnloadLevel(stagingLevel);
     }
-    IO::IoServer::Instance()->DeleteFile(packedLevelPath);
+    IO::DeleteFile(packedLevelPath);
 
     // The decay callback of a component runs both when the component is removed from a live entity
     // and when it goes away with its entity, and it runs while the component is still reachable,

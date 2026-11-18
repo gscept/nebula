@@ -38,7 +38,7 @@ RenderTest::Run()
     App::Application app;
 
     Ptr<Input::InputServer> inputServer = Input::InputServer::Create();
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+    IO::StartupFilesystem({});
 
     app.SetAppTitle("RenderTest!");
     app.SetCompanyName("gscept");

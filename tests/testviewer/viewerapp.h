@@ -60,7 +60,6 @@ protected:
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Resources::ResourceServer> resMgr;
     Ptr<Input::InputServer> inputServer;
-    Ptr<IO::IoServer> ioServer;
 
     CoreGraphics::WindowId wnd;
     Graphics::ViewId view;
