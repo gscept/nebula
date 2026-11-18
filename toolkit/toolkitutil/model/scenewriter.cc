@@ -20,6 +20,21 @@ using namespace Util;
 
 //------------------------------------------------------------------------------
 /**
+    Importers either give a material name local to the asset's folder ("MI_Altar"),
+    or an already serialized path such as "system:placeholder:mat", which must not
+    get the asset's folder prepended
+*/
+static Util::String
+MaterialResource(const Util::String& category, const Util::String& material)
+{
+    const IO::Path path = IO::Path::Parse(material);
+    if (path.IsFile() && path.GetType() == "mat")
+        return material;
+    return IO::Path::File(category, material, "mat").AsString();
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 std::unique_ptr<SceneResourceT>
 SceneWriter::GenerateGraphicsModel(
@@ -73,7 +88,7 @@ SceneWriter::GenerateGraphicsModel(
                 shape->prim_group = mesh->skin.skinFragments[j];
                 shape->mesh_resource = meshResource;
                 shape->mesh_index = mesh->mesh.meshIndex;
-                shape->material = IO::Path::File(category, mesh->mesh.material, "mat").AsString();
+                shape->material = MaterialResource(category, mesh->mesh.material);
                 shape->transform = std::move(transform);
 
                 auto skinFragment = std::make_unique<ToolkitUtil::SkinFragmentNodeT>();
@@ -98,7 +113,7 @@ SceneWriter::GenerateGraphicsModel(
             shape->prim_group = mesh->mesh.groupId;
             shape->mesh_resource = meshResource;
             shape->mesh_index = mesh->mesh.meshIndex;
-            shape->material = IO::Path::File(category, mesh->mesh.material, "mat").AsString();
+            shape->material = MaterialResource(category, mesh->mesh.material);
             shape->transform = std::move(transform);
             model->shapes.push_back(std::move(shape));
 

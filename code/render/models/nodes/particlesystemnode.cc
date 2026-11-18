@@ -84,8 +84,16 @@ ParticleSystemNode::OnFinishedLoading(ModelStreamingData* streamingData)
 
     // load surface ourselves since state node does the resource table setup too, but we need it explicit
     streamingData->requiredBits |= LoadBits::MaterialBit;
-    Resources::CreateResource(this->materialName, this->tag, [this, streamingData](Resources::ResourceId id)
+    Resources::CreateResource(this->materialName, this->tag,
+        [this, streamingData](Resources::ResourceId id)
         {
+            streamingData->loadedBits |= LoadBits::MaterialBit;
+            this->material = id;
+        },
+        [this, streamingData](Resources::ResourceId id)
+        {
+            // The id is the material loader's error material, the model would never finish loading without the bit
+            n_log_warn(Models, "Material '%s' failed to load, using the error material\n", this->materialName.AsString().AsCharPtr());
             streamingData->loadedBits |= LoadBits::MaterialBit;
             this->material = id;
         });

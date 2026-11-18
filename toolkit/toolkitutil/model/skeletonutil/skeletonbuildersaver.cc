@@ -58,7 +58,13 @@ SkeletonBuilderSaver::SaveBinary(const IO::URI& uri, const ToolkitUtil::Skeleton
         SkeletonBuilderSaver::WriteHeader(stream, resource, byteOrder);
         SkeletonBuilderSaver::WriteSkeletons(stream, resource, byteOrder);
         SkeletonBuilderSaver::WriteJoints(stream, resource, byteOrder);
+
+        stream->Close();
+        stream = nullptr;
+        return true;
     }
+
+    // failed to open write stream
     return false;
 }
 

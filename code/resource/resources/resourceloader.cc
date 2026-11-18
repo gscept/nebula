@@ -826,6 +826,16 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         // get id of resource
         Resources::ResourceId ret = this->ids.ValueAtIndex(i);
 
+        // Reinitializing frees the stream data of the previous load, which a pending load is still using,
+        // and a failed resource shares the loader's fail resource, so only reload what has actually been loaded.
+        // A pending load reads the file when it runs, so it picks up the new contents anyway
+        const Resource::State state = this->states[ret.loaderInstanceId];
+        if (state != Resource::Loaded && state != Resource::Reloaded)
+        {
+            n_log(Resources, "Skipping reload of '%s', it's not loaded (state %d)\n", res.AsString().AsCharPtr(), (int)state);
+            return;
+        }
+
         _PendingResourceLoad pending;
         pending.entry = ret.loaderInstanceId;
         pending.tag = this->tags[ret.loaderInstanceId];
