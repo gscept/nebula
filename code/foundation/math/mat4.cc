@@ -53,8 +53,8 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
     mat4 mCopy(mat);
 
     // Start by extracting the translation (and/or any projection) from the given matrix
-    outTranslation = xyz(mCopy.position);
-    mCopy.position = _id_w;
+    outTranslation = xyz(mCopy.position());
+    mCopy.position() = _id_w;
     
     // Extract the rotation component - this is done using polar decompostion, where
     // we successively average the matrix with its inverse transpose until there is
@@ -118,9 +118,9 @@ affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, cons
 {
     // The matrix scales along the local axes, rotates around the rotation center and translates
     mat4 m = rotationquat(rotation);
-    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
-    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
-    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
+    m.row0().vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0().vec);
+    m.row1().vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1().vec);
+    m.row2().vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2().vec);
 
     vec4 rotc = vec4(rotationCenter, 0.0f);
     vec4 trans = vec4(translation, 0.0f);
@@ -143,10 +143,10 @@ affine(const vec3& scale, const quat& rotation, const vec3& translation)
     // m = translation * rotation * scale
     // The matrix scales along the local axes, rotates, then translates
     mat4 m = rotationquat(rotation);
-    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
-    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
-    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
-    m.position = vec4(translation, 1);
+    m.row0().vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0().vec);
+    m.row1().vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1().vec);
+    m.row2().vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2().vec);
+    m.position() = vec4(translation, 1);
     return m;
 }
 
@@ -159,10 +159,10 @@ affine(const vec3& scale, const vec3& eulerRadians, const vec3& translation)
     // m = translation * eulerRadians * scale
     // The matrix scales along the local axes, rotates, then translates
     mat4 m = rotationpitchyawroll(eulerRadians.x, eulerRadians.y, eulerRadians.z);
-    m.row0.vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0.vec);
-    m.row1.vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1.vec);
-    m.row2.vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2.vec);
-    m.position = vec4(translation, 1);
+    m.row0().vec = _mm_mul_ps(_mm_set1_ps(scale.x), m.row0().vec);
+    m.row1().vec = _mm_mul_ps(_mm_set1_ps(scale.y), m.row1().vec);
+    m.row2().vec = _mm_mul_ps(_mm_set1_ps(scale.z), m.row2().vec);
+    m.position() = vec4(translation, 1);
     return m;
 }
 
@@ -257,14 +257,14 @@ fromeuler(const vec3& v)
     si = sin(ti); sj = sin(tj); sh = sin(th);
     cc = ci * ch; cs = ci * sh; sc = si * ch; ss = si * sh;
     if (s == EulRepYes) {
-        mat._11 = (float)(cj);          mat._12 = (float)(sj * si);         mat._13 = (float)(sj * ci);
-        mat._21 = (float)(sj * sh);     mat._22 = (float)(-cj * ss + cc);   mat._23 = (float)(-cj * cs - sc);
-        mat._31 = (float)(-sj * ch);    mat._23 = (float)(cj * sc + cs);    mat._33 = (float)(cj * cc - ss);
+        mat.m[0][0] = (float)(cj);          mat.m[0][1] = (float)(sj * si);         mat.m[0][2] = (float)(sj * ci);
+        mat.m[1][0] = (float)(sj * sh);     mat.m[1][1] = (float)(-cj * ss + cc);   mat.m[1][2] = (float)(-cj * cs - sc);
+        mat.m[2][0] = (float)(-sj * ch);    mat.m[2][1] = (float)(cj * sc + cs);    mat.m[2][2] = (float)(cj * cc - ss);
     }
     else {
-        mat._11 = (float)(cj * ch);     mat._12 = (float)(sj * sc - cs);    mat._13 = (float)(sj * cc + ss);
-        mat._21 = (float)(cj * sh);     mat._22 = (float)(sj * ss + cc);    mat._23 = (float)(sj * cs - sc);
-        mat._31 = (float)(-sj);         mat._32 = (float)(cj * si);         mat._33 = (float)(cj * ci);
+        mat.m[0][0] = (float)(cj * ch);     mat.m[0][1] = (float)(sj * sc - cs);    mat.m[0][2] = (float)(sj * cc + ss);
+        mat.m[1][0] = (float)(cj * sh);     mat.m[1][1] = (float)(sj * ss + cc);    mat.m[1][2] = (float)(sj * cs - sc);
+        mat.m[2][0] = (float)(-sj);         mat.m[2][1] = (float)(cj * si);         mat.m[2][2] = (float)(cj * ci);
     }
 
     return mat;

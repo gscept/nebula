@@ -63,7 +63,7 @@ ViewApply(const ViewId id)
 
         Math::mat4 view = CameraContext::GetView(cam);
         Math::mat4 proj = CameraContext::GetProjection(cam);
-        proj.row1 = -proj.row1;
+        proj.row1() = -proj.row1();
         Math::mat4 viewProj = proj * view;
         Math::mat4 invView = Math::inverse(view);
         Math::mat4 invProj = Math::inverse(proj);
@@ -75,7 +75,7 @@ ViewApply(const ViewId id)
         invView.store(&viewConstants.InvView[0][0]);
         invProj.store(&viewConstants.InvProjection[0][0]);
         invViewProj.store(&viewConstants.InvViewProjection[0][0]);
-        invView.position.store(viewConstants.EyePos);
+        invView.position().store(viewConstants.EyePos);
 
         viewConstants.FocalLengthNearFar[0] = settings.GetFocalLength().x;
         viewConstants.FocalLengthNearFar[1] = settings.GetFocalLength().y;

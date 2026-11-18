@@ -1446,13 +1446,13 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                     numSpotLightsProjection++;
                 }
 
-                Math::vec4 forward = normalize(trans.z_axis);
+                Math::vec4 forward = normalize(trans.z_axis());
                 if (angles[0] == angles[1])
                     spotLight.angleFade = 1.0f;
                 else
                     spotLight.angleFade = 1.0f / (angles[1] - angles[0]);
 
-                trans.position.store3(spotLight.position);
+                trans.position().store3(spotLight.position);
                 forward.store3(spotLight.forward);
                 (color[i] * intensity[i]).store(spotLight.color);
 
@@ -1478,8 +1478,8 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
 
                 Math::point pos = trans.getposition();
                 Math::mat4 rotation = Math::rotationquat(trans.getrotate());
-                Math::vec4 xAxis = rotation.x_axis;
-                Math::vec4 yAxis = rotation.y_axis;
+                Math::vec4 xAxis = rotation.x_axis();
+                Math::vec4 yAxis = rotation.y_axis();
 
                 xAxis.store3(areaLight.xAxis);
                 areaLight.width = trans.getscale().x * 0.5f;
@@ -1493,7 +1493,7 @@ LightContext::UpdateLights(const Graphics::FrameContext& ctx)
                 trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : range[i]));
                 trans.setposition(trans.getposition() + Math::vector(0, 0, 0));
 
-                trans.getmatrix().position.store3(areaLight.position);
+                trans.getmatrix().position().store3(areaLight.position);
                 Math::bbox box = trans.getmatrix();
                 //Math::vec3 localExtents = Math::vec3((abs(trans.getscale().x) + abs(trans.getscale().y) + abs(trans.getscale().z)) * 0.5f);
                 //(box.extents() * 2).store(areaLight.extents);
@@ -1788,16 +1788,16 @@ LightContext::OnRenderDebug(uint32_t flags)
 
                 // take transform, scale Z with range and move back half the range
                 Math::mat4 unscaledTransform = spotTrans[ids[i]].getmatrix();
-                Math::vec4 pos = unscaledTransform.position - unscaledTransform.z_axis * ranges[i] * 0.5f;
-                unscaledTransform.position = Math::vec4(0,0,0,1);
-                unscaledTransform.x_axis = unscaledTransform.x_axis * ranges[i];
-                unscaledTransform.y_axis = unscaledTransform.y_axis * ranges[i];
-                unscaledTransform.z_axis = unscaledTransform.z_axis * ranges[i];
+                Math::vec4 pos = unscaledTransform.position() - unscaledTransform.z_axis() * ranges[i] * 0.5f;
+                unscaledTransform.position() = Math::vec4(0,0,0,1);
+                unscaledTransform.x_axis() = unscaledTransform.x_axis() * ranges[i];
+                unscaledTransform.y_axis() = unscaledTransform.y_axis() * ranges[i];
+                unscaledTransform.z_axis() = unscaledTransform.z_axis() * ranges[i];
                 unscaledTransform.scale(Math::vector(2.0f)); // rescale because box should be in [-1, 1] and not [-0.5, 0.5]
-                unscaledTransform.position = pos;
+                unscaledTransform.position() = pos;
 
                 // removed skewedness because we are actually just interested in transforming points
-                proj.row3 = Math::vec4(0, 0, 0, 1);
+                proj.row3() = Math::vec4(0, 0, 0, 1);
 
                 // we want the points to first get projected, then transformed v * Projection * Transform;
                 Math::mat4 frustum = unscaledTransform * proj;

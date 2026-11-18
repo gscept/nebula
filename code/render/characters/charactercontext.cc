@@ -823,12 +823,12 @@ CharacterContext::OnRenderDebug(uint32_t flags)
         {
             Math::mat4 joint = transform * jointsPalette[j];
             Math::mat4 mat;
-            mat.row0 = normalize3(joint.row0);
-            mat.row1 = normalize3(joint.row1);
-            mat.row2 = normalize3(joint.row2);
-            mat.row3 = normalize3(joint.row3);
-            mat.row3.w = 1.0f;
-            mat.position = joint.position;
+            mat.row0() = normalize3(joint.row0());
+            mat.row1() = normalize3(joint.row1());
+            mat.row2() = normalize3(joint.row2());
+            mat.row3() = normalize3(joint.row3());
+            mat.row3().w = 1.0f;
+            mat.position() = joint.position();
             mat = mat * scale;
             CoreGraphics::RenderShape shape;
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::AlwaysOnTop), Math::vec4(1, 0, 0, 0.5f), mat);

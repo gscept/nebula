@@ -84,6 +84,49 @@ private:
     /// set active folder from selection and trigger watcher and sync updates if necessary
     void SetActiveFolder(uint64_t folderId);
 
+    /// inline name editing in the folder tree, nothing touches the disk until the name is committed with Enter
+    enum class FolderEditMode
+    {
+        None,
+        NewFolder,      ///< folderId is the parent the new folder will be created in
+        Rename          ///< folderId is the folder being renamed
+    };
+    struct FolderEdit
+    {
+        FolderEditMode mode = FolderEditMode::None;
+        uint64_t folderId = 0;
+        char name[256] = { 0 };
+        Util::String error;
+        bool requestFocus = false;
+        int focusRequestFrame = 0;
+        bool openParent = false;
+        bool wasActive = false;
+        bool drawn = false;
+        bool commitRequested = false;
+    };
+    FolderEdit folderEdit;
+    /// folder the tree context menu was opened on
+    uint64_t contextFolder = 0;
+
+    /// start editing the name of a new, not yet created, subfolder of parentId
+    void BeginNewFolder(uint64_t parentId);
+    /// start editing the name of an existing folder
+    void BeginRenameFolder(uint64_t folderId);
+    /// draw the inline name editor at the current cursor position, handles commit and cancel
+    void DisplayFolderNameEditor();
+    /// try to apply the edited name, returns false and sets an error if the name can't be used
+    bool CommitFolderEdit();
+    /// drop the current edit without touching anything
+    void CancelFolderEdit();
+    /// create a folder on disk and in the FileDB
+    bool CreateSubFolder(uint64_t parentId, const Util::String& name, Util::String& outError);
+    /// rename a folder on disk and resync the FileDB, folder ids are derived from parent and name so the subtree gets new ids
+    bool RenameFolder(uint64_t folderId, const Util::String& newName, Util::String& outError);
+    /// load a folder subtree from the FileDB into the folder caches and search index
+    void CacheFolderSubtree(uint64_t folderId);
+    /// remove a folder subtree from the folder caches and search index
+    void UncacheFolderSubtree(uint64_t folderId);
+
     struct FolderScanResult
     {
         uint64_t folderId = 0;

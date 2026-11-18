@@ -407,9 +407,9 @@ AudioDevice::UpdateVelocity(ClipInstanceId id, Math::vector const& vel)
 void
 AudioDevice::SetListenerTransform(Math::mat4 const& transform)
 {
-    auto& pos = transform.position;
-    auto& fw = transform.z_axis;
-    auto& up = transform.y_axis;
+    auto& pos = transform.position();
+    auto& fw = transform.z_axis();
+    auto& up = transform.y_axis();
     this->listener.position[0] = pos.x;
     this->listener.position[1] = pos.y;
     this->listener.position[2] = pos.z;

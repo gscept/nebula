@@ -160,7 +160,9 @@ Sqlite3Database::Open()
 
         // compile begin and end transaction commands
         this->beginTransactionCmd = DbFactory::Instance()->CreateCommand();
-        this->beginTransactionCmd->Compile(this, "BEGIN DEFERRED");
+        // IMMEDIATE takes the write lock up front. With DEFERRED two connections that read and then write inside a
+        // transaction deadlock (each waits for the other to release its lock), and Execute() retries SQLITE_BUSY forever.
+        this->beginTransactionCmd->Compile(this, "BEGIN IMMEDIATE");
         this->endTransactionCmd = DbFactory::Instance()->CreateCommand();
         this->endTransactionCmd->Compile(this, "COMMIT");
         
@@ -235,7 +237,7 @@ Sqlite3Database::BeginTransaction()
     n_assert(!this->inTransaction);
     if (!this->beginTransactionCmd->IsValid())
     {
-        this->beginTransactionCmd->Compile(this, "BEGIN");
+        this->beginTransactionCmd->Compile(this, "BEGIN IMMEDIATE");
     }
     bool beginTransactionExecuted = this->beginTransactionCmd->Execute();
     n_assert(beginTransactionExecuted);

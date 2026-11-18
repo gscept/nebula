@@ -321,7 +321,7 @@ AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetTyp
 
     if (!Resources::ResourceServer::Instance()->HasStreamLoader(asset))
     {
-        // we just ignore for now
+        n_log_warn(Asset Editor, "No loader for '%s', can't open it\n", asset.GetFolderAndFile().AsCharPtr());
         return;
     }
 
@@ -338,9 +338,13 @@ AssetEditor::Open(const IO::Path& asset, const Util::String root, const AssetTyp
             item.editCounter = 0;
 
             Setup(&item);
+        },
+        [asset](Resources::ResourceId id)
+        {
+            n_log_warn(Asset Editor, "Failed to load '%s', can't open it\n", asset.GetFolderAndFile().AsCharPtr());
         }
     );
-    
+
 }
 
 } // namespace Presentation

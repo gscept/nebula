@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 //------------------------------------------------------------------------------
 /**
     The Vulkan implementation of the graphics device.

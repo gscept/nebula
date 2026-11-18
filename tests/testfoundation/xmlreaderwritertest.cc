@@ -59,7 +59,7 @@ XmlReaderWriterTest::Run()
         writer->BeginNode("Node3");
         mat4 m;
         vec4 value(10.0,20.0, 30.0, 1.0f);
-        m.row3 = value;
+        m.row3() = value;
         writer->SetMat4("attr", m);
         writer->EndNode();
     }

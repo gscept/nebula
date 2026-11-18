@@ -1099,7 +1099,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 }
 
                 Models::NodeInstanceFlags nodeFlag = NodeInstances.renderable.nodeFlags[j];
-                Math::vec4 viewVector = cameraTransform.position - transform.position;
+                Math::vec4 viewVector = cameraTransform.position() - transform.position();
                 float viewDistance = length(viewVector);
 
                 // Calculate if object should be culled due to LOD

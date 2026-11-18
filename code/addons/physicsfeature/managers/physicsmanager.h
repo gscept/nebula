@@ -30,6 +30,7 @@ namespace PhysicsFeature
 /// decay callbacks, everything else is pinged by whoever changed the entity
 enum PhysicsPending : uint32_t
 {
+    PendingNone = 0,            ///< nothing queued for the entity
     PendingPose = 1 << 0,       ///< push the pose of the actor, and the local pose of its shapes
     PendingShape = 1 << 1,      ///< build or update the shapes of the collider components
     PendingBody = 1 << 2,       ///< create or update the physx actor of the body component

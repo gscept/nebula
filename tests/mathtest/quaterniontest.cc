@@ -155,10 +155,10 @@ QuaternionTest::Run()
 	{
 		const mat4 mProd = rotationquat(q0) * rotationquat(q1);
 		const mat4 qProd = rotationquat(q2);
-		VERIFY(nearequal(mProd.row0, qProd.row0, TEST_EPSILON));
-		VERIFY(nearequal(mProd.row1, qProd.row1, TEST_EPSILON));
-		VERIFY(nearequal(mProd.row2, qProd.row2, TEST_EPSILON));
-		VERIFY(nearequal(mProd.row3, qProd.row3, TEST_EPSILON));
+		VERIFY(nearequal(mProd.row0(), qProd.row0(), TEST_EPSILON));
+		VERIFY(nearequal(mProd.row1(), qProd.row1(), TEST_EPSILON));
+		VERIFY(nearequal(mProd.row2(), qProd.row2(), TEST_EPSILON));
+		VERIFY(nearequal(mProd.row3(), qProd.row3(), TEST_EPSILON));
 
 		const vec3 turned(1.0f, 0.0f, 0.0f);
 		VERIFY(nearequal(rotate(q2, turned), rotate(q0, rotate(q1, turned)), TEST_EPSILON));

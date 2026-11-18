@@ -12,7 +12,7 @@ target_precompile_headers(physics PRIVATE [["foundation/stdneb.h"]])
 # pull in the dependencies of the formats that are enabled
 fips_deps(foundation resource nflatbuffer input imgui)
 if (N_ENABLE_PHYSICS_FORMAT_NVX)
-    fips_deps(render)
+    target_include_directories(physics PUBLIC ${CODE_ROOT}/render)
 endif()
 
 fips_files(physicsinterface.h physicsinterface.cc)

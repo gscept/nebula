@@ -43,10 +43,10 @@ Path::~Path()
 /**
 */
 Path::Path(const Path& path)
-    : folder(path.folder)
+    : isFile(path.isFile)
+    , folder(path.folder)
     , file(path.file)
-    , type(path.type),
-      isFile(path.isFile)
+    , type(path.type)
 {
     this->Build();
 }

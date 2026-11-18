@@ -539,7 +539,7 @@ VolumetricFogContext::SetTransform(const Graphics::GraphicsEntityId id, const Ma
     case BoxVolume:
         return fogBoxVolumeAllocator.Set<FogBoxVolume_Transform>(tid, mat);
     case SphereVolume:
-        return fogSphereVolumeAllocator.Set<FogSphereVolume_Position>(tid, xyz(mat.position));
+        return fogSphereVolumeAllocator.Set<FogSphereVolume_Position>(tid, xyz(mat.position()));
     };
 }
 

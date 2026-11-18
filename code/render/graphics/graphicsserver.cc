@@ -44,9 +44,9 @@ __ImplementSingleton(Graphics::GraphicsServer);
 */
 GraphicsServer::GraphicsServer()
     : resizeCall(nullptr)
-    , isOpen(false)
-    , maxWindowHeight(0)
     , maxWindowWidth(0)
+    , maxWindowHeight(0)
+    , isOpen(false)
 
 {
     __ConstructSingleton;

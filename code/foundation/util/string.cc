@@ -1716,10 +1716,10 @@ String::SetMat4(const Math::mat4& m)
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f",
-                 m.row0.x, m.row0.y, m.row0.z, m.row0.w,
-                 m.row1.x, m.row1.y, m.row1.z, m.row1.w,
-                 m.row2.x, m.row2.y, m.row2.z, m.row2.w,
-                 m.row3.x, m.row3.y, m.row3.z, m.row3.w);
+                 m.row0().x, m.row0().y, m.row0().z, m.row0().w,
+                 m.row1().x, m.row1().y, m.row1().z, m.row1().w,
+                 m.row2().x, m.row2().y, m.row2().z, m.row2().w,
+                 m.row3().x, m.row3().y, m.row3().z, m.row3().w);
 }
 
 //------------------------------------------------------------------------------

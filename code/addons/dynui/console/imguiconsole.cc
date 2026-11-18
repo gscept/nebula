@@ -390,7 +390,9 @@ ImguiConsole::RenderContent()
     if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
     {
         char* input_end = this->command + strlen(this->command);
-        while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
+        while (input_end > this->command && input_end[-1] == ' ')
+            input_end--;
+        *input_end = 0;
         if (this->command[0])
         {
             this->AppendToLog({ LogMessageType::N_INPUT, this->command });

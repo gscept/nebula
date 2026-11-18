@@ -706,6 +706,10 @@ if __name__ == '__main__':
     shaderBinaryOutput = "{}/material_interfaces.gplb".format(outDir)
     shaderHeaderOutput = "{}/material_interfaces.h".format(outDir)
 
+    if not shaderC or not os.path.isfile(shaderC):
+        Warning("shader compiler", "GPULang compiler '{}' not found, skipping shader compile".format(shaderC))
+        exit(0)
+
     try:
         outputShaderBinaryChangeTime = os.path.getmtime(shaderBinaryOutput)
         outputShaderHeaderChangeTime = os.path.getmtime(shaderHeaderOutput)

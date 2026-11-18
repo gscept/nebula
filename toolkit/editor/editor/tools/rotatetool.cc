@@ -75,9 +75,9 @@ RotateTool::Render(Presentation::Modules::Viewport* viewport)
 
         Math::mat4 m = Math::rotationquat(orientation);
         gizmoRotation = {
-            Im3d::Vec3(m.row0.x, m.row0.y, m.row0.z),
-            Im3d::Vec3(m.row1.x, m.row1.y, m.row1.z),
-            Im3d::Vec3(m.row2.x, m.row2.y, m.row2.z),
+            Im3d::Vec3(m.row0().x, m.row0().y, m.row0().z),
+            Im3d::Vec3(m.row1().x, m.row1().y, m.row1().z),
+            Im3d::Vec3(m.row2().x, m.row2().y, m.row2().z),
         };
     }
 

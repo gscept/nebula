@@ -26,13 +26,13 @@ entry_point
 vsStatic(
     binding(0) in  position : f32x3,
     binding(1) in  normal : f32x3,
-    binding(2) in  uv : f32x2,
+    binding(2) in  uv : i32x2,
     binding(3) in  tangent : f32x3,
     binding(4) in  binormal : f32x3,
     out UV : f32x2) void
 {
     vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -41,11 +41,11 @@ vsStatic(
 entry_point
 vsBillboard(
     binding(0) in  position : f32x2,
-    binding(2) in  uv : f32x2,
+    binding(2) in  uv : i32x2,
     out UV : f32x2) void
 {
     vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 0, 1));
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ entry_point
 vsSkinned(
     binding(0) in  position : f32x3,
     binding(1) in  normal : f32x4,
-    binding(2) in  uv : f32x2,
+    binding(2) in  uv : i32x2,
     binding(3) in  tangent : f32x4,
     binding(4) in  binormal : f32x4,
     binding(7) in  weights : f32x4,
@@ -64,7 +64,7 @@ vsSkinned(
 {
     const skinnedPos = SkinnedPosition(position, weights, indices);
     vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * skinnedPos);
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -74,14 +74,14 @@ entry_point
 vsStaticInst(
     binding(0) in  position : f32x3,
     binding(1) in  normal : f32x3,
-    binding(2) in  uv : f32x2,
+    binding(2) in  uv : i32x2,
     binding(3) in  tangent : f32x3,
     binding(4) in  binormal : f32x3,
     out UV : f32x2) void
 {
     const id = vertexGetInstanceIndex();
     vertexExportCoordinates(ViewConstants.ViewProjection * Instances.ModelArray[id] * f32x4(position, 1));
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------

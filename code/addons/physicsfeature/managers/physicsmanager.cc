@@ -994,7 +994,7 @@ PhysicsManager::RebuildQueued()
         // merge what the rebuild changed in the handle with what was marked while it ran, and keep the
         // entity queued as long as anything is left to do
         PhysicsFeature::PhysicsActor after = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
-        actor.pending = after.pending | (retry ? PendingShape : 0);
+        actor.pending = after.pending | (retry ? PendingShape : PendingNone);
         if (actor.pending != 0 && after.pending == 0)
             this->rebuildQueue.Append(entity);
 

@@ -36,7 +36,9 @@ AnimSampleBuffer::~AnimSampleBuffer()
 */
 AnimSampleBuffer::AnimSampleBuffer(AnimSampleBuffer&& rhs) :
     animResource(rhs.animResource),
-    numSamples(rhs.numSamples)
+    numSamples(rhs.numSamples),
+    samples(nullptr),
+    sampleCounts(nullptr)
 {
     // erase any current arrays
     if (this->samples)
@@ -58,7 +60,9 @@ AnimSampleBuffer::AnimSampleBuffer(AnimSampleBuffer&& rhs) :
 */
 AnimSampleBuffer::AnimSampleBuffer(const AnimSampleBuffer& rhs) :
     animResource(rhs.animResource),
-    numSamples(rhs.numSamples)
+    numSamples(rhs.numSamples),
+    samples(nullptr),
+    sampleCounts(nullptr)
 {
     if (this->samples)
         Memory::Free(Memory::ResourceHeap, this->samples);

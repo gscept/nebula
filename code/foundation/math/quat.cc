@@ -18,7 +18,7 @@ rotationmatrix(const mat4& m)
 {
     // FIXME write own implementation
 
-    scalar trace = m._11 + m._22 + m._33;
+    scalar trace = m.m[0][0] + m.m[1][1] + m.m[2][2];
     mat4 mm = transpose(m);
     scalar temp[4];
 

@@ -1755,7 +1755,7 @@ TerrainContext::CullPatches(const Graphics::ViewId view, const Graphics::FrameCo
                 // mask out y coordinate by multiplying result with, 1, 0 ,1
                 Math::vec4 min = Math::vec4(subTexture.worldCoordinate.x, 0, subTexture.worldCoordinate.y, 0);
                 Math::vec4 max = min + Math::vec4(uniforms.subTextureWorldSize, 0.0f, uniforms.subTextureWorldSize, 0.0f);
-                Math::vec4 cameraXZ = camera.position * Math::vec4(1, 0, 1, 0);
+                Math::vec4 cameraXZ = camera.position() * Math::vec4(1, 0, 1, 0);
                 Math::vec4 nearestPoint = Math::minimize(Math::maximize(cameraXZ, min), max);
                 float distance = length(nearestPoint - cameraXZ);
 
@@ -2171,11 +2171,11 @@ TerrainContext::UpdateLOD(const Graphics::FrameContext& ctx)
         if (terrainState.sun != Graphics::InvalidGraphicsEntityId)
         {
             Math::mat4 sunTransform = Lighting::LightContext::GetTransform(terrainState.sun);
-            if (terrainState.cachedSunDirection != sunTransform.z_axis)
+            if (terrainState.cachedSunDirection != sunTransform.z_axis())
             {
                 Threading::CriticalScope scope(&terrainState.syncPoint);
                 terrainState.shadowMapInvalid = true;
-                terrainState.cachedSunDirection = sunTransform.z_axis;
+                terrainState.cachedSunDirection = sunTransform.z_axis();
             }
         }
 

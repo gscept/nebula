@@ -216,7 +216,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Res
             for (IndexT i = 0; i < emitters.meshes.Size(); i++)
             {
                 float activityDist = emitters.attrs[i].GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
-                Math::bbox box(emitters.transform[i].position, Math::vec3(activityDist));
+                Math::bbox box(emitters.transform[i].position(), Math::vec3(activityDist));
                 primitiveGroups.Append(0);
                 if (emitters.meshes[i] == Resources::InvalidResourceId)
                 {

@@ -17,6 +17,13 @@ VisibilitySystem::VisibilitySystem()
 //------------------------------------------------------------------------------
 /**
 */
+VisibilitySystem::~VisibilitySystem()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VisibilitySystem::PrepareObservers(const Math::mat4* transforms, const bool* orthoFlags, const Graphics::StageMask* stages, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
