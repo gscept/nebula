@@ -167,7 +167,7 @@ void OpenScene()
             entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
             transform = Math::rotationpitchyawroll(Math::deg2rad(90), 0, Math::deg2rad(Math::rand() * 90.0f)) * transform;
-            transform.position = Math::vec4(i * 16, 0, j * 16, 1);
+            transform.position() = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
             Resources::ResourceId albedo = Resources::CreateResource("systex:white.dds", "decal"_atm, nullptr, nullptr, true);
@@ -196,7 +196,7 @@ void OpenScene()
             entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
             transform = Math::rotationpitchyawroll(0, Math::deg2rad(Math::rand() * 90.0f), 0) * transform;
-            transform.position = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
+            transform.position() = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
 
             const float red = Math::rand();
             const float green = Math::rand();
@@ -313,7 +313,7 @@ void StepFrame()
     {
         Math::mat4 spotLightTransform;
         spotLightTransform = Math::rotationpitchyawroll(Math::deg2rad(-55), Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, 0);
-        spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
+        spotLightTransform.position() = Lighting::LightContext::GetTransform(spotLights[i]).position();
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
@@ -321,7 +321,7 @@ void StepFrame()
     {
         Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
         decalTransform = Math::rotationpitchyawroll(Math::deg2rad(90), Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, 0) * decalTransform;
-        decalTransform.position = Decals::DecalContext::GetTransform(decals[i]).position;
+        decalTransform.position() = Decals::DecalContext::GetTransform(decals[i]).position();
         //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
 

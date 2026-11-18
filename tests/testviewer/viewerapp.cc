@@ -622,7 +622,7 @@ SimpleViewerApplication::ResetCamera()
 void 
 SimpleViewerApplication::ToMaya()
 {
-    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), xyz(this->freeCamUtil.GetTransform().position), Math::vec3(0, 1, 0));
+    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), xyz(this->freeCamUtil.GetTransform().position()), Math::vec3(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -631,7 +631,7 @@ SimpleViewerApplication::ToMaya()
 void 
 SimpleViewerApplication::ToFree()
 {
-    Math::vec3 pos = xyz(this->mayaCameraUtil.GetCameraTransform().position);
+    Math::vec3 pos = xyz(this->mayaCameraUtil.GetCameraTransform().position());
     this->freeCamUtil.Setup(pos, Math::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
 }
 
