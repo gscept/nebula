@@ -22,8 +22,9 @@ using namespace IO;
 void
 TextReaderWriterTest::Run()
 {
+    IO::StartupFilesystem({});
+
     // create necessary objects...
-    Ptr<IoServer> ioServer = IoServer::Create();
     Ptr<MemoryStream> stream = MemoryStream::Create();
     Ptr<TextReader> reader = TextReader::Create();
     Ptr<TextWriter> writer = TextWriter::Create();

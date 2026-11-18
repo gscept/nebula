@@ -22,10 +22,11 @@ using namespace Util;
 void
 ExcelXmlReaderTest::Run()
 {
+    IO::StartupFilesystem({});
+
     // create necessary objects
-    Ptr<IoServer> ioServer = IoServer::Create();
-    ioServer->MountStandardArchives();
-    Ptr<Stream> stream = ioServer->CreateStream("home:work/testdata/excelxmlreadertest.xml");
+    IO::MountStandardArchives();
+    Ptr<Stream> stream = IO::CreateStream("home:work/testdata/excelxmlreadertest.xml");
     Ptr<ExcelXmlReader> reader = ExcelXmlReader::Create();
 
     n_assert(false);

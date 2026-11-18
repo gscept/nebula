@@ -26,8 +26,8 @@ using namespace Math;
 void
 JSonReaderWriterTest::Run()
 {   
+    IO::StartupFilesystem({});
     // create necessary objects
-    Ptr<IoServer> ioServer = IoServer::Create();
     Ptr<MemoryStream> ostream = MemoryStream::Create();
     
     Ptr<JsonWriter> writer = JsonWriter::Create();
@@ -49,7 +49,7 @@ JSonReaderWriterTest::Run()
     n_printf("%s", (char*)buffer);
     
     
-    Ptr<Stream> stream = ioServer->CreateStream(URI("bin:jsontest.json"));    
+    Ptr<Stream> stream = IO::CreateStream(URI("bin:jsontest.json"));    
     Ptr<JsonReader> reader = JsonReader::Create();
     
     reader->SetStream(stream);
