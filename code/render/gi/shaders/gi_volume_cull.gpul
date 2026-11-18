@@ -17,7 +17,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > GIVolumeUniforms.NumGIVolumeClusters) { return ; }
+    if (index1D >= GIVolumeUniforms.NumGIVolumeClusters) { return ; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -58,7 +58,7 @@ csDebug() void
 
     const viewDepth = CalculateViewDepth(ViewConstants.View, worldPos.xyz);
 
-    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
