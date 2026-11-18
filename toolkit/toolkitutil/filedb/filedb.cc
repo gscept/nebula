@@ -153,7 +153,6 @@ FileDB::Open(Logger& logger, bool memoryOnly)
     this->database = DbFactory::Instance()->CreateDatabase();
     
     // Determine access mode
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     Db::Database::AccessMode accessMode = Db::Database::ReadWriteCreate;
     
     this->database->SetURI(this->databaseURI);

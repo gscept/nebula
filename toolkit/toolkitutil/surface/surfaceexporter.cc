@@ -47,9 +47,9 @@ SurfaceExporter::ProcessFile(const IO::URI& file)
     String dst = String::Sprintf("mat:%s/%s.mat", category.AsCharPtr(), fileName.AsCharPtr());
 
     // create folder if it doesn't exist
-    if (!IoServer::Instance()->DirectoryExists("mat:" + category))
+    if (!DirectoryExists("mat:" + category))
     {
-        IoServer::Instance()->CreateDirectory("mat:" + category);
+        CreateDirectory("mat:" + category);
     }
 
     // simply convert xml to binary

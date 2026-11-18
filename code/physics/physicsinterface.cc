@@ -241,7 +241,7 @@ LoadCollisionFilters()
     const IO::URI collisionTable("phys:CollisionFilters.filt");
     Util::String collisionsString;
 
-    if (IO::IoServer::Instance()->ReadFile(collisionTable, collisionsString))
+    if (IO::ReadFile(collisionTable, collisionsString))
     {
         Physics::FilterBehavioursT behaviours;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::FilterBehaviours>(behaviours, (uint8_t*)collisionsString.AsCharPtr());
@@ -261,7 +261,7 @@ LoadMaterialTable(const IO::URI & materialTable)
     const IO::URI materialtable(materialTable);
     Util::String materialsString;
 
-    if (IO::IoServer::Instance()->ReadFile(materialtable, materialsString))
+    if (IO::ReadFile(materialtable, materialsString))
     {
         Physics::MaterialsT materials;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());

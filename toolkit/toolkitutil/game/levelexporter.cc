@@ -59,7 +59,7 @@ LevelExporter::Close()
 void 
 LevelExporter::ProcessAll(const Util::String& source)
 {
-    Array<String> files = IoServer::Instance()->ListFiles(IO::URI(source), "*.json");
+    Array<String> files = ListFiles(IO::URI(source), "*.json");
     for (int fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
         this->ProcessFile(source + "/" + files[fileIndex]);
@@ -84,7 +84,7 @@ LevelExporter::ProcessFile( const URI& file )
 {
     n_assert(this->isOpen);
    
-    Ptr<Stream> levelStream = IoServer::Instance()->CreateStream(file);
+    Ptr<Stream> levelStream = CreateStream(file);
     Ptr<JsonReader> jsonReader = JsonReader::Create();
     
     if(!levelStream->Open())
@@ -115,7 +115,7 @@ LevelExporter::ProcessFile( const URI& file )
         Util::String outputName = file.GetHostAndLocalPath().ExtractFileName();
         outputName.StripFileExtension();
         IO::URI outputFile("export:levels/" + outputName + ".nlvl");
-        IO::IoServer::Instance()->EnsureDirectoriesForFile(outputFile);
+        IO::EnsureDirectoriesForFile(outputFile);
 
         Game::World* world = new Game::World(Game::WorldHash('TEMP'), 0);
         if (!this->ExportLevel(jsonReader, world, outputFile))

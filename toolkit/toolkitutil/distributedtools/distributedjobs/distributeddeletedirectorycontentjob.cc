@@ -48,14 +48,14 @@ DistributedDeleteDirectoryContentJob::RunJob()
     this->jobState = Working;
 
     // get all files from directory
-    Array<String> files = IoServer::Instance()->ListFiles(this->delDirPath.LocalPath(), "*");
+    Array<String> files = ListFiles(this->delDirPath.LocalPath(), "*");
     // delete each file
     IndexT fileIndex;
     for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
         String file;
         file.Format("%s/%s", this->delDirPath.LocalPath().AsCharPtr(), files[fileIndex].AsCharPtr());
-        IoServer::Instance()->DeleteFile(file);
+        DeleteFile(file);
     }
 
     
@@ -104,7 +104,7 @@ DistributedDeleteDirectoryContentJob::IsAbleToRun()
     {
         success = false;
     }
-    if(!IoServer::Instance()->DirectoryExists(this->delDirPath))
+    if(!DirectoryExists(this->delDirPath))
     {
         success = false;
     }

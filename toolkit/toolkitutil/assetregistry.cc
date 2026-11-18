@@ -39,7 +39,6 @@ AssetRegistry::AssetRegistry() :
 bool
 AssetRegistry::UpdateLocal(Logger& logger)
 {
-    IoServer* ioServer = IoServer::Instance();
     this->updateLocalTimer.Start();
 
     // first try to load registry file (may not exist yet)
@@ -54,7 +53,7 @@ AssetRegistry::UpdateLocal(Logger& logger)
         return false;
     }
     URI registryURI = this->rootPath + this->registryPath;
-    if (ioServer->FileExists(registryURI))
+    if (IO::FileExists(registryURI))
     {
         logger.Print(">> Loading local asset registry file...\n");
         if (!this->LoadRegistryFile(logger, registryURI))
@@ -106,8 +105,6 @@ AssetRegistry::UpdateLocal(Logger& logger)
 bool
 AssetRegistry::UpdateRemote(Logger& logger)
 {
-    IoServer* ioServer = IoServer::Instance();
-
     // first try to load registry file (may not exist yet)
     if (!this->rootPath.IsValid())
     {
@@ -120,7 +117,7 @@ AssetRegistry::UpdateRemote(Logger& logger)
         return false;
     }
     URI registryURI = this->rootPath + this->registryPath;
-    if (ioServer->FileExists(registryURI))
+    if (IO::FileExists(registryURI))
     {
         logger.Print(">> Loading remote asset registry file...\n");
         if (this->LoadRegistryFile(logger, registryURI))
@@ -146,13 +143,12 @@ bool
 AssetRegistry::UpdateRegistry(Logger& logger)
 {
     bool retval = true;
-    IoServer* ioServer = IoServer::Instance();
 
     // for each asset directory
     IndexT i;
     for (i = 0; i < this->directories.Size(); i++)
     {
-        if (ioServer->DirectoryExists(this->rootPath + this->directories[i]))
+        if (IO::DirectoryExists(this->rootPath + this->directories[i]))
         {
             retval &= this->RecurseUpdateRegistry(logger, this->directories[i]);
         }
@@ -168,9 +164,8 @@ AssetRegistry::UpdateRegistry(Logger& logger)
 bool
 AssetRegistry::RecurseUpdateRegistry(Logger& logger, const String& dir)
 {
-    IoServer* ioServer = IoServer::Instance();
     URI dirURI = this->rootPath + dir;
-    if (!ioServer->DirectoryExists(dirURI))
+    if (!IO::DirectoryExists(dirURI))
     {
         logger.Error("Asset directory not found: '%s'!\n", dir.AsCharPtr());
         return false;
@@ -178,7 +173,7 @@ AssetRegistry::RecurseUpdateRegistry(Logger& logger, const String& dir)
     // logger.Print("> %s\n", dir.AsCharPtr());
 
     // iterate over files
-    Array<String> files = ioServer->ListFiles(dirURI, "*");
+    Array<String> files = IO::ListFiles(dirURI, "*");
     IndexT i;
     for (i = 0; i < files.Size(); i++)
     {
@@ -197,7 +192,7 @@ AssetRegistry::RecurseUpdateRegistry(Logger& logger, const String& dir)
     }
 
     // enter subdirectories
-    Array<String> subDirs = ioServer->ListDirectories(dirURI, "*");
+    Array<String> subDirs = IO::ListDirectories(dirURI, "*");
     for (i = 0; i < subDirs.Size(); i++)
     {
         if ((subDirs[i] != "CVS") && (subDirs[i] != ".svn"))
@@ -241,11 +236,10 @@ AssetRegistry::AddAssetFile(Logger& logger, const StringAtom& filePath)
 {
     String fullPath = this->rootPath + filePath.Value();
 
-    IoServer* ioServer = IoServer::Instance();
     AssetFile assetFile;
     assetFile.SetPath(filePath);
-    assetFile.SetTimeStamp(ioServer->GetFileWriteTime(fullPath));
-    assetFile.SetChecksum(ioServer->ComputeFileCrc(fullPath));
+    assetFile.SetTimeStamp(IO::GetFileWriteTime(fullPath));
+    assetFile.SetChecksum(IO::ComputeFileCrc(fullPath));
     assetFile.SetState(AssetFile::New);
     this->registry.Add(filePath, assetFile);
     this->numAddedFiles++;
@@ -261,17 +255,16 @@ AssetRegistry::AddAssetFile(Logger& logger, const StringAtom& filePath)
 void
 AssetRegistry::UpdateAssetFile(Logger& logger, const StringAtom& filePath)
 {
-    IoServer* ioServer = IoServer::Instance();
     AssetFile& assetFile = this->registry[filePath];
     n_assert(assetFile.GetPath() == filePath);
     
     String fullPath = this->rootPath + filePath.Value();
 
-    FileTime fileTime = ioServer->GetFileWriteTime(fullPath);
+    FileTime fileTime = IO::GetFileWriteTime(fullPath);
     if (fileTime != assetFile.GetTimeStamp())
     {
         // need to update the crc checksum
-        assetFile.SetChecksum(ioServer->ComputeFileCrc(fullPath));
+        assetFile.SetChecksum(IO::ComputeFileCrc(fullPath));
         assetFile.SetTimeStamp(fileTime);
         assetFile.SetState(AssetFile::Changed);
         this->numChangedFiles++;
@@ -292,8 +285,7 @@ AssetRegistry::LoadRegistryFile(Logger& logger, const URI& uri)
 {
     n_assert(this->registry.IsEmpty());
 
-    IoServer* ioServer = IoServer::Instance();
-    Ptr<Stream> stream = ioServer->CreateStream(uri);
+    Ptr<Stream> stream = IO::CreateStream(uri);
     Ptr<BinaryReader> reader = BinaryReader::Create();
     reader->SetMemoryMappingEnabled(true);
     reader->SetStream(stream);
@@ -354,8 +346,7 @@ AssetRegistry::SaveRegistry(Logger& logger)
 bool
 AssetRegistry::SaveRegistryFile(Logger& logger, const URI& uri)
 {
-    IoServer* ioServer = IoServer::Instance();
-    Ptr<Stream> stream = ioServer->CreateStream(uri);
+    Ptr<Stream> stream = IO::CreateStream(uri);
     Ptr<BinaryWriter> writer = BinaryWriter::Create();
     writer->SetStream(stream);
     if (writer->Open())

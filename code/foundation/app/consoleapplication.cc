@@ -43,8 +43,7 @@ ConsoleApplication::Open()
         this->coreServer->SetAppName(this->appName);
         this->coreServer->Open();
 
-        // initialize io subsystem
-        this->ioServer = IoServer::Create();
+        IO::StartupFilesystem({});
 
         // attach a log file console handler
         #if __WIN32__
@@ -66,7 +65,7 @@ ConsoleApplication::Close()
     n_assert(this->IsOpen());
 
     // shutdown io subsystem
-    this->ioServer = nullptr;
+    IO::ShutdownFilesystem();
 
     // shutdown core subsystem
     this->coreServer = nullptr;

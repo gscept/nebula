@@ -69,10 +69,8 @@ Sqlite3Database::Open()
     n_assert(!this->uri.IsEmpty());
     if (Database::Open())
     {
-        IoServer* ioServer = IoServer::Instance();
-
         // check if database file exists'
-        if (!ioServer->FileExists(this->uri))
+        if (!IO::FileExists(this->uri))
         {
             // if we are in read only mode, fail
             if ((ReadOnly == this->accessMode) || (ReadWriteExisting == this->accessMode))
@@ -85,7 +83,7 @@ Sqlite3Database::Open()
             else
             {
                 // if database is created, make sure directory path is valid
-                bool dirSuccess = ioServer->CreateDirectory(this->uri.AsString().ExtractDirName());
+                bool dirSuccess = IO::CreateDirectory(this->uri.AsString().ExtractDirName());
                 if (!dirSuccess)
                 {
                     String err;
@@ -363,7 +361,7 @@ Sqlite3Database::AttachDatabase(const URI& uri, const String& dbName)
     n_assert(dbName.IsValid());
 
     // first check if the file actually exists
-    if (IoServer::Instance()->FileExists(uri))
+    if (FileExists(uri))
     {
         // SQLite wants a native path in UTF-8 format
         String nativePath = this->uri.GetTail();

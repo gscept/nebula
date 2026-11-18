@@ -65,7 +65,6 @@ public:
 
     void DoWork() override
     {
-        Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
         ToolkitUtil::FileDB fileDB;
         ToolkitUtil::Logger logger;
         fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
@@ -89,7 +88,7 @@ public:
 
             const IO::URI workUri = path.WorkURI("assets");
 
-            if (!ioServer->DirectoryExists(workUri))
+            if (!IO::DirectoryExists(workUri))
             {
                 continue;
             }
@@ -97,7 +96,7 @@ public:
             IndexT idIndex = pathToId.FindIndex(path);
             n_assert(idIndex != InvalidIndex);
             const uint64_t folderId = pathToId.ValueAtIndex(idIndex);
-            this->browser->ScanFolder(fileDB, ioServer, workUri, false, folderId, false);
+            this->browser->ScanFolder(fileDB, workUri, false, folderId, false);
 
             AssetBrowser::FolderScanResult result;
             result.folderId = folderId;
@@ -316,7 +315,6 @@ AssetBrowser::Update()
             this->pendingWatchEvents.DequeueAll(events);
             if (!events.IsEmpty() && this->fileDB.IsOpen())
             {
-                IO::IoServer* ioServer = IO::IoServer::Instance();
                 bool cacheNeedsRefresh = false;
                 for (const IO::WatchEvent& event : events)
                 {
@@ -326,7 +324,7 @@ AssetBrowser::Update()
 
                     IO::Path path = IO::Path::File(event.relativePath, fileName, ToolkitUtil::FileTypeURNMapping[DetermineFileType(fileName.GetFileExtension())]);
                     IO::URI fileUri = path.WorkURI("assets");
-                    bool fileExistsOnDisk = ioServer->FileExists(fileUri);
+                    bool fileExistsOnDisk = IO::FileExists(fileUri);
 
                     switch (event.type)
                     {
@@ -338,7 +336,7 @@ AssetBrowser::Update()
                                 IO::IOStat ioInfo;
                                 IO::Stream::Size fileSize = 0;
                                 IO::FileTime modifiedTime;
-                                if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                                if (IO::GetIOInfo(fileUri, ioInfo, false))
                                 {
                                     fileSize = ioInfo.size;
                                     modifiedTime = ioInfo.modifiedTime;
@@ -372,7 +370,7 @@ AssetBrowser::Update()
                             {
                                 uint64_t fileId = this->fileInfoDict[path];
                                 IO::IOStat ioInfo;
-                                if (ioServer->GetIOInfo(fileUri, ioInfo, false))
+                                if (IO::GetIOInfo(fileUri, ioInfo, false))
                                 {
                                     this->fileDB.UpdateFileMetadata(this->logger, fileId, ioInfo.modifiedTime);
                                 }
@@ -519,10 +517,9 @@ AssetBrowser::SetActiveFolder(uint64_t folderId)
         IO::URI folderPath = info.folderPath.WorkURI("assets");
         if (!this->scannedFolders.Contains(folderId))
         {
-            IO::IoServer* ioServer = IO::IoServer::Instance();
             if (this->currentScanJob != nullptr)
             {
-                Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*", false);
+                Util::Array<Util::String> files = IO::ListFiles(folderPath, "*", false);
                 this->fileInfoCache.Clear();
                 this->fileInfoDict.Clear();
                 this->fileInfoCache.Reserve(files.Size());
@@ -544,7 +541,7 @@ AssetBrowser::SetActiveFolder(uint64_t folderId)
             }
             else
             {
-                this->ScanFolder(this->fileDB, ioServer, folderPath, info.isArchive, folderId, false);
+                this->ScanFolder(this->fileDB, folderPath, info.isArchive, folderId, false);
                 Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
                 this->fileDB.GetChildFolders(folderId, children);
                 Util::Array<uint64_t> childIds;
@@ -651,8 +648,7 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
     {
         if (!this->scannedFolders.Contains(folderId) && this->currentScanJob == nullptr)
         {
-            IO::IoServer* ioServer = IO::IoServer::Instance();
-            this->ScanFolder(this->fileDB, ioServer,info.folderPath.WorkURI("assets"), info.isArchive, folderId, false);
+            this->ScanFolder(this->fileDB, info.folderPath.WorkURI("assets"), info.isArchive, folderId, false);
             Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
             this->fileDB.GetChildFolders(folderId, children);
             Util::Array<uint64_t> childIds;
@@ -1105,7 +1101,7 @@ retry:
             goto retry;
         }
     }
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(newFilePath);
+    Ptr<IO::Stream> stream = IO::CreateStream(newFilePath);
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
     stream->Open();
 
@@ -1259,7 +1255,7 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void
-AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive)
+AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive)
 {
     if (!recursive)
     {
@@ -1267,7 +1263,7 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServ
     }
 
     // List all files in the current directory
-    Util::Array<Util::String> files = ioServer->ListFiles(folderPath, "*", true);
+    Util::Array<Util::String> files = IO::ListFiles(folderPath, "*", true);
     Util::Array<Util::String> filesystemFileNames;
     filesystemFileNames.Reserve(files.Size());
     for (const auto& fileName : files)
@@ -1277,7 +1273,7 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServ
         IO::IOStat ioInfo;
         IO::Stream::Size fileSize = 0;
         IO::FileTime modifiedTime;
-        if (ioServer->GetIOInfo(fileName, ioInfo, useArchive))
+        if (IO::GetIOInfo(fileName, ioInfo, useArchive))
         {
             fileSize = ioInfo.size;
             modifiedTime = ioInfo.modifiedTime;
@@ -1307,7 +1303,7 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServ
     }
     
     // List all subdirectories and recursively scan them
-    Util::Array<Util::String> directories = ioServer->ListDirectories(folderPath, "*", true, useArchive);
+    Util::Array<Util::String> directories = IO::ListDirectories(folderPath, "*", true, useArchive);
     Util::Array<Util::String> filesystemDirectoryNames;
     filesystemDirectoryNames.Reserve(directories.Size());
     for (const auto& childDir : directories)
@@ -1319,7 +1315,7 @@ AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServ
         // Recursively scan the subdirectory
         if (childId != 0 && recursive)
         {
-            ScanFolder(fileDB, ioServer, childDir, useArchive, childId, true);
+            ScanFolder(fileDB, childDir, useArchive, childId, true);
         }
     }
 

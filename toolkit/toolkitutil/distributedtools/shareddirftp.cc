@@ -67,7 +67,7 @@ SharedDirFTP::CopyFilesToSharedDir(const Util::String & src, const Util::String 
     String dstPath;
     dstPath.Format("%s/%s",this->sharedDir.LocalPath().AsCharPtr(),dst.AsCharPtr());
     this->ScriptCreateSubDirectory(writer, dstPath);
-    Array<String> files = IoServer::Instance()->ListFiles(URI(src),"*.*");
+    Array<String> files = IO::ListFiles(URI(src), "*.*");
     String path;
     IndexT i;
     for(i = 0; i < files.Size(); i++)
@@ -486,9 +486,7 @@ SharedDirFTP::CloseWriterAndGetStream(const Ptr<IO::TextWriter> & writer)
 */
 Ptr<Stream>
 SharedDirFTP::RunScript(const Ptr<Stream> & script)
-{
-    Ptr<IoServer> ioServer = IoServer::Instance();
-    
+{  
     // write script to a temporary textfile
     URI uri;
     Guid filenameGuid;
@@ -496,12 +494,12 @@ SharedDirFTP::RunScript(const Ptr<Stream> & script)
     uri.Set("temp:distributedtools/ftpscript/");
     URI dirUri(uri);
     // create the script directory
-    ioServer->CreateDirectory(dirUri);
+    IO::CreateDirectory(dirUri);
     
     String scriptName;
     scriptName.Format("%s.ftp",filenameGuid.AsString().AsCharPtr());
     uri.AppendLocalPath(scriptName);
-    Ptr<Stream> stream = ioServer->CreateStream(uri);
+    Ptr<Stream> stream = IO::CreateStream(uri);
     Ptr<TextWriter> writer = TextWriter::Create();
     writer->SetStream(stream);
 
@@ -566,12 +564,12 @@ SharedDirFTP::RunScript(const Ptr<Stream> & script)
     // wait until script file is found... wait 90 seconds
     Timing::Timer timer;
     timer.Start();
-    while(!ioServer->FileExists(uri) && timer.GetTime() < 90)
+    while (!IO::FileExists(uri) && timer.GetTime() < 90)
     {
         Timing::Sleep(0.1);
     }
     timer.Stop();
-    if(ioServer->FileExists(uri))
+    if (IO::FileExists(uri))
     {
         appLauncher.LaunchWait();
     }
@@ -583,24 +581,24 @@ SharedDirFTP::RunScript(const Ptr<Stream> & script)
     // delete the script file
     timer.Reset();
     timer.Start();
-    while(ioServer->FileExists(uri) && timer.GetTime() < 90)
+    while (IO::FileExists(uri) && timer.GetTime() < 90)
     {
         // try to delete the file within 90 seconds.
-        if(!ioServer->DeleteFile(uri))
+        if (!IO::DeleteFile(uri))
         {
             Timing::Sleep(0.1);
         }
     }
     timer.Stop();
-    if(ioServer->FileExists(uri))
+    if (IO::FileExists(uri))
     {
         Console::Instance()->Warning("Could not delete script file from Temp directory:\n%s",uri.LocalPath().AsCharPtr());
     }
 
     // ... and the script directory if possible
-    if(ioServer->DirectoryExists(dirUri))
+    if (IO::DirectoryExists(dirUri))
     {
-        ioServer->DeleteDirectory(dirUri);
+        IO::DeleteDirectory(dirUri);
     }
 
     return output.upcast<Stream>();
@@ -661,7 +659,7 @@ SharedDirFTP::ScriptPutDirectoryContent(const Ptr<IO::TextWriter> & writer, cons
     this->ScriptCreateSubDirectory(writer,dst);
 
     // list files
-    Array<String> files = IoServer::Instance()->ListFiles(URI(src),"*.*");
+    Array<String> files = IO::ListFiles(URI(src), "*.*");
     String filePath;
     Array<String> filePaths;
     IndexT i;
@@ -673,7 +671,7 @@ SharedDirFTP::ScriptPutDirectoryContent(const Ptr<IO::TextWriter> & writer, cons
     this->ScriptPutFiles(writer,filePaths);
 
     // list subdirectories
-    Array<String> dirs = IoServer::Instance()->ListDirectories(URI(src),"*.*");
+    Array<String> dirs = IO::ListDirectories(URI(src), "*.*");
     for(i = 0; i < dirs.Size(); i++)
     {
         filePath.Format("%s/%s",src.AsCharPtr(),dirs[i].AsCharPtr());
@@ -720,7 +718,7 @@ void
 SharedDirFTP::ScriptGetFileHierachy(const Ptr<IO::TextWriter> & writer, const DistributedTools::SharedDirFTP::FTPFile &src, const Util::String &dst)
 {
     // create directory if it doe snot exist
-    if(IoServer::Instance()->CreateDirectory(URI(dst)))
+    if(CreateDirectory(URI(dst)))
     {
         // move to local dir
         writer->WriteString("lcd \"");

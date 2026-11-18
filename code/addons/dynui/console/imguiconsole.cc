@@ -229,14 +229,14 @@ ImguiConsole::Setup()
     // load persistent history
     auto reader = IO::TextReader::Create();
     Util::String history = App::Application::Instance()->GetAppTitle() + "_history.txt";    
-    reader->SetStream(IO::IoServer::Instance()->CreateStream("bin:" + history));
+    reader->SetStream(IO::CreateStream("bin:" + history));
     if (reader->Open())
     {
         this->previousCommands = reader->ReadAllLines();
         reader->Close();
     }
     this->persistentHistory = IO::TextWriter::Create();
-    auto stream = IO::IoServer::Instance()->CreateStream("bin:" + history);
+    auto stream = IO::CreateStream("bin:" + history);
     stream->SetAccessMode(IO::Stream::AppendAccess);
     if (stream->Open())
     {

@@ -112,7 +112,7 @@ void
 FlatbufferInterface::DeserializeFlatbufferFile(ItemT& item, IO::URI const& file)
 {
     Util::String contents;
-    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    if (IO::ReadFile(file, contents))
     {
         const BaseT* bItem = flatbuffers::GetRoot<BaseT>(contents.AsCharPtr());
         bItem->UnPackTo(&item);

@@ -116,7 +116,7 @@ GraphicsFeatureUnit::OnActivate()
 
     const IO::URI levelSetupPath("tbl:app/base_level.nlst");
     App::LevelSettingsT levelSettings;
-    if (IO::IoServer::Instance()->ReadFile(levelSetupPath, contents))
+    if (IO::ReadFile(levelSetupPath, contents))
     {
         Flat::FlatbufferInterface::DeserializeFlatbuffer<App::LevelSettings>(levelSettings, (byte*)contents.AsCharPtr());
     }

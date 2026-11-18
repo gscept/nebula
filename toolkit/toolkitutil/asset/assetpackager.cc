@@ -81,7 +81,7 @@ PackageModel(
     };
 
     IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
-    Ptr<IO::Stream> modelStream = IO::IoServer::Instance()->CreateStream(output);
+    Ptr<IO::Stream> modelStream = IO::CreateStream(output);
     modelStream->SetAccessMode(IO::Stream::WriteAccess);
     if (modelStream->Open())
     {
@@ -302,7 +302,7 @@ static bool
 WriteTextureFile(const IO::URI& path, const std::vector<uint8_t>& data)
 {
     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-    writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    writer->SetStream(IO::CreateStream(path));
     if (writer->Open())
     {
         writer->WriteRawData(data.data(), (uint)data.size());
@@ -335,7 +335,7 @@ StripSRGBFormat(const IO::URI& dds)
     const SizeT FourCCOffset = 84, DXGIFormatOffset = 128;
 
     std::vector<uint8_t> data;
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(dds);
+    Ptr<IO::Stream> stream = IO::CreateStream(dds);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (!stream->Open())
     {
@@ -415,11 +415,11 @@ AssembleCubeTexture(
     if (written)
     {
         // '--' ends the options, texassemble would take absolute linux paths for options otherwise
-        Util::String args = Util::Format(" %s -y -nologo -o \"%s\" --", LayoutCommand[tex->cube_layout], IO::IoServer::NativePath(IO::URI(output).LocalPath()).AsCharPtr());
+        Util::String args = Util::Format(" %s -y -nologo -o \"%s\" --", LayoutCommand[tex->cube_layout], IO::NativePath(IO::URI(output).LocalPath()).AsCharPtr());
         for (const Util::String& input : inputs)
         {
             args.Append(" \"");
-            args.Append(IO::IoServer::NativePath(IO::URI(input).LocalPath()));
+            args.Append(IO::NativePath(IO::URI(input).LocalPath()));
             args.Append("\"");
         }
 
@@ -447,7 +447,7 @@ AssembleCubeTexture(
 
     for (const Util::String& input : inputs)
     {
-        IO::IoServer::Instance()->DeleteFile(input);
+        IO::DeleteFile(input);
     }
     return res;
 }
@@ -503,7 +503,7 @@ PackageTexture(
         }
         if (!written)
         {
-            IO::IoServer::Instance()->DeleteFile(tmpFile);
+            IO::DeleteFile(tmpFile);
             logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package texture:").Color(TextColor::Red).AsCharPtr(), Text(fileName).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
             return false;
         }
@@ -524,7 +524,7 @@ PackageTexture(
         info.tmpDir = "temp:texturepackager";
         info.texture = tex;
         bool res = ConvertTexture(info);
-        IO::IoServer::Instance()->DeleteFile(tmpFile);
+        IO::DeleteFile(tmpFile);
         if (res)
             logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         else
@@ -635,7 +635,7 @@ PackagePhysics(
 bool 
 PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -664,7 +664,7 @@ PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, Toolki
 bool 
 PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -689,7 +689,7 @@ PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitU
 bool 
 PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -714,7 +714,7 @@ PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 bool 
 PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {

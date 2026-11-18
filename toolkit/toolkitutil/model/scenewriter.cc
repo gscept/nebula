@@ -33,7 +33,7 @@ SceneWriter::GenerateGraphicsModel(
     n_assert(scene != nullptr);
 
     // make sure category directory exists
-    IO::IoServer::Instance()->CreateDirectory(basePath);
+    IO::CreateDirectory(basePath);
 
     // extract file path from export path
     String file = scene->GetName();
@@ -123,7 +123,7 @@ SceneWriter::GeneratePhysicsModel(
     n_assert(scene != nullptr);
 
     // make sure category directory exists
-    IO::IoServer::Instance()->CreateDirectory(basePath);
+    IO::CreateDirectory(basePath);
 
     // extract file path from export path
     String file = scene->GetName();

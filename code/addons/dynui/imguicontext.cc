@@ -1125,7 +1125,7 @@ ImguiContext::Create()
     {
         // load settings from disk. If we don't do this here we need to
         // run an entire frame before being able to create or load settings
-        if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+        if (!IO::FileExists("imgui.ini"))
         {
             ImGui::SaveIniSettingsToDisk("imgui.ini");
         }
@@ -1141,8 +1141,8 @@ ImguiContext::Discard()
 {
     IO::URI userEditorIni = IO::URI(EditorUIPath);
     Util::String path = userEditorIni.LocalPath();
-    IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
-    if (IO::IoServer::Instance()->FileExists(userEditorIni))
+    IO::CreateDirectory("user:nebula/editor/");
+    if (IO::FileExists(userEditorIni))
     {
         ImGui::SaveIniSettingsToDisk(userEditorIni.LocalPath().AsCharPtr());
     }

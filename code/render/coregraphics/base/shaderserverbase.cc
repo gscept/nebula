@@ -49,7 +49,7 @@ ShaderServerBase::~ShaderServerBase()
 void
 RecursiveLoadShaders(ShaderServerBase* shaderServer, const Util::String& path)
 {
-    Util::Array<Util::String> files = IoServer::Instance()->ListFiles(path, "*.gplb");
+    Util::Array<Util::String> files = ListFiles(path, "*.gplb");
 
     for (IndexT i = 0; i < files.Size(); i++)
     {
@@ -59,7 +59,7 @@ RecursiveLoadShaders(ShaderServerBase* shaderServer, const Util::String& path)
         shaderServer->LoadShader(resId);
     }
 
-    Util::Array<Util::String> directories = IoServer::Instance()->ListDirectories(path, "*", false, false);
+    Util::Array<Util::String> directories = ListDirectories(path, "*", false, false);
     for (IndexT i = 0; i < directories.Size(); i++)
     {
         RecursiveLoadShaders(shaderServer, path + directories[i] + "/");
@@ -96,7 +96,8 @@ ShaderServerBase::Open()
             for (IndexT i = 0; i < depFiles.Size(); i++)
             {
                 Util::String contents;
-                n_assert2(IoServer::ReadFile(depFiles[i], contents), depFiles[i].AsCharPtr());
+                bool res = IO::ReadFile(depFiles[i], contents);
+                n_assert2(res, depFiles[i].AsCharPtr());
 
                 Util::Array<Util::String> dependencies = contents.Tokenize(";");
                 n_assert(dependencies.Size() > 0);
@@ -104,7 +105,7 @@ ShaderServerBase::Open()
                 Util::String source = dependencies[0];
                 source.Trim(" \r\n\t");
                 n_assert(source.IsValid());
-                source = IoServer::NativePath(source);
+                source = IO::NativePath(source);
                 source.ConvertBackslashes();
 #if __WIN32__
                 source.ToLower();
@@ -116,7 +117,7 @@ ShaderServerBase::Open()
                     dep.Trim(" \r\n\t");
                     n_assert(dep.IsValid());
 
-                    dep = IoServer::NativePath(dep);
+                    dep = IO::NativePath(dep);
                     dep.ConvertBackslashes();
 #if __WIN32__
                     dep.ToLower();
@@ -254,7 +255,7 @@ ShaderServerBase::CompileShaderFile(const Util::String& changedFile)
         Util::String out = sources[i].ExtractFileName();
         out.StripFileExtension();
 
-        Ptr<IO::Stream> file = IO::IoServer::Instance()->CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
+        Ptr<IO::Stream> file = IO::CreateStream(Util::String::Sprintf("bin:shaders/%s.txt", out.AsCharPtr()));
         if (file->Open())
         {
             void* buf = file->Map();

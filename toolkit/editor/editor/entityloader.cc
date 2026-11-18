@@ -42,13 +42,13 @@ bool
 SaveEntities(const char* filePath)
 {
     IO::URI const file = filePath;
-    if (!IO::IoServer::Instance()->EnsureDirectoriesForFile(file))
+    if (!IO::EnsureDirectoriesForFile(file))
     {
         n_warning("Could not create directory for JSON level '%s'\n", filePath);
         return false;
     }
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
-    writer->SetStream(IO::IoServer::Instance()->CreateStream(file));
+    writer->SetStream(IO::CreateStream(file));
 
     // TODO: Maybe move this to a SceneSerializer class that can be used outside of the editor as well.
 

@@ -102,10 +102,10 @@ Settings::Run(SaveMode save)
     if (ImGui::Button("Reset to default layout"))
     {
         const Util::String defaultIni = "tool:syswork/data/editor/defaultui.ini";
-        IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
-        if (IO::IoServer::Instance()->FileExists(defaultIni))
+        IO::CreateDirectory("user:nebula/editor/");
+        if (IO::FileExists(defaultIni))
         {
-            IO::IoServer::Instance()->CopyFile(defaultIni, path);
+            IO::CopyFile(defaultIni, path);
         }
         ImGui::LoadIniSettingsFromDisk(path.LocalPath().c_str());
     }

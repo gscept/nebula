@@ -89,7 +89,7 @@ StreamNavMeshCache::InitializeResource(const ResourceLoadJob& job, const Ptr<IO:
 
     this->allocator.Set<Nav_Name>(ret.resourceId, meshInfo.name);
 
-    Ptr<IO::Stream> storedNavMesh = IO::IoServer::Instance()->CreateStream(meshInfo.file);
+    Ptr<IO::Stream> storedNavMesh = IO::CreateStream(meshInfo.file);
     if (storedNavMesh->Open())
     {
         unsigned char* navData = (unsigned char*)storedNavMesh->Map();

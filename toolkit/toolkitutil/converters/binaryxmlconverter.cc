@@ -38,7 +38,6 @@ BinaryXmlConverter::~BinaryXmlConverter()
 bool
 BinaryXmlConverter::ConvertDir(const Util::String& srcDir, const Util::String& dstDir, Logger& logger)
 {
-    IoServer* ioServer = IoServer::Instance();
     this->srcDir = srcDir;
     this->dstDir = dstDir;
 
@@ -53,7 +52,7 @@ BinaryXmlConverter::ConvertDir(const Util::String& srcDir, const Util::String& d
         logger.Error("No destination directory set!\n");
         return false;
     }
-    if (!ioServer->DirectoryExists(this->srcDir))
+    if (!IO::DirectoryExists(this->srcDir))
     {
         logger.Error("Source directory '%s' does not exist!\n", this->srcDir.AsCharPtr());
         return false;
@@ -73,12 +72,10 @@ BinaryXmlConverter::ConvertDir(const Util::String& srcDir, const Util::String& d
 bool
 BinaryXmlConverter::RecurseConvert(const String& sourceDir, const String& destDir, Logger& logger)
 {
-    IoServer* ioServer = IoServer::Instance();
-
     // make sure the destination directory exists
-    if (!ioServer->DirectoryExists(destDir))
+    if (!IO::DirectoryExists(destDir))
     {
-        if (!ioServer->CreateDirectory(destDir))
+        if (!IO::CreateDirectory(destDir))
         {
             logger.Error("Failed to create destination directory '%s'!\n", destDir.AsCharPtr());
             return false;
@@ -86,7 +83,7 @@ BinaryXmlConverter::RecurseConvert(const String& sourceDir, const String& destDi
     }
 
     // for each XML file...
-    Array<String> srcFiles = ioServer->ListFiles(sourceDir, "*.xml");
+    Array<String> srcFiles = IO::ListFiles(sourceDir, "*.xml");
     IndexT i;
     for (i = 0; i < srcFiles.Size(); i++)
     {
@@ -102,7 +99,7 @@ BinaryXmlConverter::RecurseConvert(const String& sourceDir, const String& destDi
     }
 
     // recurse into subdirectory
-    Array<String> dirs = ioServer->ListDirectories(sourceDir, "*");
+    Array<String> dirs = IO::ListDirectories(sourceDir, "*");
     for (i = 0; i < dirs.Size(); i++)
     {
         if ((dirs[i] != ".svn") && (dirs[i] != "CVS"))
@@ -200,8 +197,7 @@ BinaryXmlConverter::LoadFile(const String& srcFile, Logger& logger)
     this->ClearUniqueStrings();
 
     // open source file as XML
-    IoServer* ioServer = IoServer::Instance();
-    Ptr<Stream> stream = ioServer->CreateStream(srcFile);
+    Ptr<Stream> stream = IO::CreateStream(srcFile);
     Ptr<XmlReader> xmlReader = XmlReader::Create();
     xmlReader->SetStream(stream);
     if (!xmlReader->Open())
@@ -390,7 +386,7 @@ BinaryXmlConverter::RecurseAddFileNode(const Node& node, ushort prevSiblingIndex
 bool
 BinaryXmlConverter::SaveFile(const String& dstFile, Logger& logger)
 {
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(dstFile);
+    Ptr<Stream> stream = CreateStream(dstFile);
     Ptr<BinaryWriter> writer = BinaryWriter::Create();
     writer->SetStream(stream);
     writer->SetStreamByteOrder(Platform::GetPlatformByteOrder(this->platform));

@@ -352,7 +352,7 @@ TerrainEditor::Run(SaveMode save)
     {
         Util::String heightmapName = Util::String::Sprintf("%s_height", Editor::state.editables[entity.index].guid.AsString().AsCharPtr());
         Util::String basePath = Util::String::Sprintf(BaseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
-        IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
+        IO::CreateDirectory(IO::URI(basePath));
 
         const IO::Path heightMapPath = IO::Path::File(basePath, heightmapName, "tex");
         CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);

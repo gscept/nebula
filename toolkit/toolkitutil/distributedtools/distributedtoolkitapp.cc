@@ -70,7 +70,7 @@ DistributedToolkitApp::Close()
     if (this->distributedArg && this->slaveArg)
     {
         this->DeleteDirectoryContent(URI("dst:"));
-        IoServer::Instance()->DeleteDirectory(URI("dst:"));
+        DeleteDirectory(URI("dst:"));
     }
     // dispose shared dir creator
     this->sharedDirCreator = nullptr;
@@ -188,10 +188,10 @@ DistributedToolkitApp::ParseCmdLineArgs()
         
         // Create the new destination dir. It is cleared and removed on application close.
         int tries = 0;
-        while (!IoServer::Instance()->DirectoryExists(URI("dst:")))
+        while (!DirectoryExists(URI("dst:")))
         {
-            IoServer::Instance()->CreateDirectory(URI("dst:"));
-            if (!IoServer::Instance()->DirectoryExists(URI("dst:")))
+            CreateDirectory(URI("dst:"));
+            if (!DirectoryExists(URI("dst:")))
             {
                 tries++;
                 if (tries > 3)
@@ -394,11 +394,11 @@ DistributedToolkitApp::CreateAndProcessJobs()
         // is the executable does not exist at the given path,
         // it maybe was'nt inside a bin/win32 directory.
         // Try the standard home: assign in that case...
-        if (!IoServer::Instance()->FileExists(appUri))
+        if (!FileExists(appUri))
         {
             appUri.Set("home:");
             appUri.AppendLocalPath(exeName);
-            if (!IoServer::Instance()->FileExists(appUri))
+            if (!FileExists(appUri))
             {
                 n_printf("Application path for jobs is not valid: %s\n",appUri.AsString().AsCharPtr());
                 this->SetReturnCode(10);
@@ -548,7 +548,7 @@ DistributedToolkitApp::CreateFileList()
         URI listUri;
         listUri.Set(this->listfileArg);
         
-        Ptr<Stream> readStream = IoServer::Instance()->CreateStream(listUri);
+        Ptr<Stream> readStream = CreateStream(listUri);
         readStream->SetAccessMode(Stream::ReadAccess);
         readStream->Open();
         
@@ -587,7 +587,7 @@ DistributedToolkitApp::CreateFileList()
             dirUri.Set(this->projectdirArg);
             dirUri.AppendLocalPath(this->dirArg);
             
-            Array<String> fileList = IoServer::Instance()->ListFiles(dirUri,"*.*");
+            Array<String> fileList = ListFiles(dirUri,"*.*");
             
             IndexT i;
             for (i=0;i<fileList.Size();i++)
@@ -738,9 +738,9 @@ DistributedToolkitApp::OnBeforeRunDistSlave()
     // Create destination directory, if it does not exist,
     // else clean it up, by deleting all content in it.
     URI dst("dst:");
-    if (!IoServer::Instance()->DirectoryExists(dst))
+    if (!DirectoryExists(dst))
     {
-        if (!IoServer::Instance()->CreateDirectory(dst))
+        if (!CreateDirectory(dst))
         {
             Console::Instance()->Error("Could not create destination directory: %s\n", dst.AsString().AsCharPtr());
         }
@@ -842,22 +842,22 @@ DistributedToolkitApp::GenerateFinalizeJobList()
 void
 DistributedToolkitApp::DeleteDirectoryContent(const IO::URI & path)
 {
-    Array<String> files = IoServer::Instance()->ListFiles(path, "*");
+    Array<String> files = ListFiles(path, "*");
     IndexT fileIndex;
     for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
         URI file(path);
         file.AppendLocalPath(files[fileIndex]);
-        IoServer::Instance()->DeleteFile(file);
+        DeleteFile(file);
     }
-    Array<String> dirs = IoServer::Instance()->ListDirectories(path, "*");
+    Array<String> dirs = ListDirectories(path, "*");
     IndexT dirIndex;
     for (dirIndex = 0; dirIndex < dirs.Size(); dirIndex++)
     {
         URI dir(path);
         dir.AppendLocalPath(dirs[dirIndex]);
         this->DeleteDirectoryContent(dir);
-        IoServer::Instance()->DeleteDirectory(dir);
+        DeleteDirectory(dir);
     }
 }
 
