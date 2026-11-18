@@ -123,19 +123,11 @@ MaskColor(albedo : f32x4, cutoff : f32) f32x4
     }
     else if (ColorMaskMode == ColorMaskModes.Masked)
     {
-        if (gplIsPixelShader)
-        {
-            if (albedo.a <= cutoff) { discard; }
-        }
-        return f32x4(albedo.rgb, 1.0f);
+        return f32x4(albedo.rgb, albedo.a <= cutoff ? 0.0f : 1.0f);
     }
     else if (ColorMaskMode == ColorMaskModes.AlphaMasked)
     {
-        if (gplIsPixelShader)
-        {
-            if (albedo.a <= cutoff) { discard; }
-        }
-        return albedo;
+        return f32x4(albedo.rgb, albedo.a <= cutoff ? 0.0f : albedo.a);
     }
     return albedo;
 }
