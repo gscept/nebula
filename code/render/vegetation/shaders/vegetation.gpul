@@ -405,6 +405,19 @@ psVegetationBRDF(
 
 //------------------------------------------------------------------------------
 /**
+*/
+entry_point
+psDepthGLTF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
+{
+	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
+
+    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
+    if (baseColor.a == 0.0f) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
     Standard shader for conductors (metals) and dielectic materials (non-metal), using bindless materials
 */
 early_depth
@@ -447,19 +460,6 @@ psVegetationGLTF(
 //------------------------------------------------------------------------------
 /**
 */
-entry_point
-psDepthGLTF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
-{
-	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
-    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
-
-    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
-    if (baseColor.a == 0.0f) { discard; }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 render_state MeshState
 {
     Cull = CullFace.None;
@@ -479,8 +479,8 @@ render_state MeshZState
 */
 //------------------------------------------------------------------------------
 
-@Mask("VegetaionDepthWeightedBRDF")
-program VegetaionDepthWeightedBRDF
+@Mask("VegetationDepthWeightedBRDF")
+program VegetationDepthWeightedBRDF
 {
     VertexShader = vsDrawDepthWeighted;
     PixelShader = psDepthBRDF;
@@ -537,7 +537,7 @@ program VegetationDepthGLTF
 program VegetationMeshWeightedGLTF
 {
     VertexShader = vsDrawMeshWeighted;
-    PixelShader = psVegetationBRDF;
+    PixelShader = psVegetationGLTF;
     RenderState = MeshState;
 };
 

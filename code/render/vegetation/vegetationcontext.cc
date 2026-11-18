@@ -437,6 +437,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         Util::Array<float> lodDistances;
 
         MaterialInterfaceType materialInterfaceType = MaterialInterfaceType::InvalidMaterialInterfaceType;
+        const char* materialInterfaceName = nullptr;
         for (auto node : nodes)
         {
             if (node->GetType() == Models::NodeType::PrimitiveNodeType)
@@ -446,7 +447,20 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
                 {
                     mesh = pnode->GetMesh();
                     info.materialIndex = Materials::MaterialGetBufferBinding(pnode->GetMaterial());
-                    MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
+
+                    if (materialInterfaceType == MaterialInterfaceType::InvalidMaterialInterfaceType)
+                    {
+                        const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
+                        materialInterfaceName = materialTemplate->interfaceName;
+                        if (strcmp(materialInterfaceName, "BRDF") == 0)
+                        {
+                            materialInterfaceType = MaterialInterfaceType::BRDF;
+                        }
+                        else if (strcmp(materialInterfaceName, "GLTF") == 0)
+                        {
+                            materialInterfaceType = MaterialInterfaceType::GLTF;
+                        }
+                    }
                 }
 
                 float minDist, maxDist;
@@ -505,11 +519,19 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         }
         n_assert(instanceInfo.meshVertexLayouts[infoIndex] != CoreGraphics::InvalidVertexLayoutId);
 
-        instanceInfo.shaderSet[infoIndex].depthShader =
-            vegetationState.vegetationShaders[ShaderPassTypes::Depth][vertexInterfaceType][materialInterfaceType];
-        instanceInfo.shaderSet[infoIndex].mainShader =
-            vegetationState.vegetationShaders[ShaderPassTypes::Main][vertexInterfaceType][materialInterfaceType];
-        info.used = true;
+        if (vertexInterfaceType != VertexInterfaceType::InvalidVertexInterfaceType && materialInterfaceType != MaterialInterfaceType::InvalidMaterialInterfaceType)
+        {
+            instanceInfo.shaderSet[infoIndex].depthShader =
+                vegetationState.vegetationShaders[ShaderPassTypes::Depth][vertexInterfaceType][materialInterfaceType];
+            instanceInfo.shaderSet[infoIndex].mainShader =
+                vegetationState.vegetationShaders[ShaderPassTypes::Main][vertexInterfaceType][materialInterfaceType];
+            info.used = true;
+        }
+        else
+        {
+            n_warning("Material interface %s is not supported by the vegetation system. Edit vegetation.gpul to add a shader for this interface", materialInterfaceName);
+        }
+        
 
     }, nullptr);
 
@@ -534,83 +556,117 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, con
     VegetationInstanceInfo& instanceInfo = vegetationAllocator.Get<Vegetation_InstanceInfo>(cid.id);
     MeshInfo& info = instanceInfo.meshInfos[index];
     info.used = false;
-    Resources::CreateResource(model, "Vegetation", [&instanceInfo, &info, index](Resources::ResourceId res)
+    Resources::CreateResource(model, "Vegetation", [&instanceInfo, &info, infoIndex = index](Resources::ResourceId res)
     {
-        const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(res);
-        CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
-        Util::Array<float> lodDistances;
-        for (auto node : nodes)
-        {
-            if (node->GetType() == Models::NodeType::PrimitiveNodeType)
+            const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(res);
+            CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
+            Util::Array<float> lodDistances;
+
+            MaterialInterfaceType materialInterfaceType = MaterialInterfaceType::InvalidMaterialInterfaceType;
+            const char* materialInterfaceName = nullptr;
+            for (auto node : nodes)
             {
-                auto pnode = static_cast<Models::PrimitiveNode*>(node);
-                if (mesh == CoreGraphics::InvalidMeshId)
+                if (node->GetType() == Models::NodeType::PrimitiveNodeType)
                 {
-                    mesh = pnode->GetMesh();
-                    info.materialIndex = Materials::MaterialGetBufferBinding(pnode->GetMaterial());
+                    auto pnode = static_cast<Models::PrimitiveNode*>(node);
+                    if (mesh == CoreGraphics::InvalidMeshId)
+                    {
+                        mesh = pnode->GetMesh();
+                        info.materialIndex = Materials::MaterialGetBufferBinding(pnode->GetMaterial());
+
+                        if (materialInterfaceType == MaterialInterfaceType::InvalidMaterialInterfaceType)
+                        {
+                            const MaterialTemplatesGPULang::Entry* materialTemplate =
+                                Materials::MaterialGetTemplate(pnode->GetMaterial());
+                            materialInterfaceName = materialTemplate->interfaceName;
+                            if (materialInterfaceName == "BRDF")
+                            {
+                                materialInterfaceType = MaterialInterfaceType::BRDF;
+                            }
+                            else if (materialInterfaceName == "GLTF")
+                            {
+                                materialInterfaceType = MaterialInterfaceType::GLTF;
+                            }
+                        }
+                    }
+
+                    float minDist, maxDist;
+                    pnode->GetLODDistances(minDist, maxDist);
+                    lodDistances.Append(maxDist);
                 }
-
-                float minDist, maxDist;
-                pnode->GetLODDistances(minDist, maxDist);
-                lodDistances.Append(maxDist);
             }
-        }
 
-        // get primitive groups so we can update the mesh info
-        const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
+            // get primitive groups so we can update the mesh info
+            const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
 
-        info.numLods = groups.Size();
+            info.numLods = groups.Size();
 
-        instanceInfo.meshVertexPositionOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
-        instanceInfo.meshVertexAttributeOffsets[index] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
-        instanceInfo.meshIndexOffsets[index] = CoreGraphics::MeshGetIndexOffset(mesh);
+            instanceInfo.meshVertexPositionOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            instanceInfo.meshVertexAttributeOffsets[infoIndex] = CoreGraphics::MeshGetVertexOffset(mesh, 1);
+            instanceInfo.meshIndexOffsets[infoIndex] = CoreGraphics::MeshGetIndexOffset(mesh);
 
-        // Our distances in case the mesh lacks them
-        const float distances[] = { 10, 25, 50, 100, 500, 1000 };
+            // Our distances in case the mesh lacks them
+            const float distances[] = {10, 25, 50, 100, 500, 1000};
 
-        //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
-        for (IndexT i = 0; i < groups.Size(); i++)
-        {
-            if (lodDistances[i] == FLT_MAX)
-                info.lodDistances[i] = distances[i] * distances[i];
-            else
-                info.lodDistances[i] = lodDistances[i] * lodDistances[i];
-            info.lodIndexOffsets[i] = groups[i].GetBaseIndex();
-            info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
-            info.lodIndexCount[i] = groups[i].GetNumIndices();
-            info.lodVertexCount[i] = groups[i].GetNumVertices();
-            info.lodFlags[i] = 0x0;
-        }
+            for (IndexT i = 0; i < groups.Size(); i++)
+            {
+                if (lodDistances[i] == FLT_MAX)
+                    info.lodDistances[i] = distances[i] * distances[i];
+                else
+                    info.lodDistances[i] = lodDistances[i] * lodDistances[i];
+                info.lodIndexOffsets[i] = groups[i].GetBaseIndex();
+                info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
+                info.lodIndexCount[i] = groups[i].GetNumIndices();
+                info.lodVertexCount[i] = groups[i].GetNumVertices();
+                info.lodFlags[i] = 0x0;
+            }
 
             // make sure the mesh is valid for vegetation rendering
-        const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
-        n_assert(components.Size() >= 5);
-        if (components.Size() == 6) // with vertex colors
-        {
-            n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
-            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
-            n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[5].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
-            instanceInfo.meshZPrograms[index] = vegetationState.vegetationMeshVColorZShader;
-            instanceInfo.meshPrograms[index] = vegetationState.vegetationMeshVColorShader;
-            instanceInfo.meshVertexLayouts[index] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
-        }
-        else // without
-        {
-            n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
-            n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
-            n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
-            instanceInfo.meshZPrograms[index] = vegetationState.vegetationMeshZShader;
-            instanceInfo.meshPrograms[index] = vegetationState.vegetationMeshShader;
-            instanceInfo.meshVertexLayouts[index] = CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
-        }
+            const Util::Array<CoreGraphics::VertexComponent>& components =
+                CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
+            VertexInterfaceType vertexInterfaceType = VertexInterfaceType::InvalidVertexInterfaceType;
+            n_assert(components.Size() >= 4);
+            if (components.Size() == 5) // with vertex colors
+            {
+                n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
+                n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Short2);
+                n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
+                n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
+                n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
+                vertexInterfaceType = VertexInterfaceType::Weighted;
+                instanceInfo.meshVertexLayouts[infoIndex] =
+                    CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Colors);
+            }
+            else // without
+            {
+                n_assert(components[0].GetFormat() == CoreGraphics::VertexComponent::Float3);
+                n_assert(components[1].GetFormat() == CoreGraphics::VertexComponent::Short2);
+                n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
+                n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
+                vertexInterfaceType = VertexInterfaceType::NonWeighted;
+                instanceInfo.meshVertexLayouts[infoIndex] =
+                    CoreGraphics::MeshLoader::GetLayout(CoreGraphics::VertexLayoutType::Normal);
+            }
+            n_assert(instanceInfo.meshVertexLayouts[infoIndex] != CoreGraphics::InvalidVertexLayoutId);
 
-        info.used = true;
-
+            if (vertexInterfaceType != VertexInterfaceType::InvalidVertexInterfaceType &&
+                materialInterfaceType != MaterialInterfaceType::InvalidMaterialInterfaceType)
+            {
+                instanceInfo.shaderSet[infoIndex].depthShader =
+                    vegetationState.vegetationShaders[ShaderPassTypes::Depth][vertexInterfaceType][materialInterfaceType];
+                instanceInfo.shaderSet[infoIndex].mainShader =
+                    vegetationState.vegetationShaders[ShaderPassTypes::Main][vertexInterfaceType][materialInterfaceType];
+                info.used = true;
+            }
+            else
+            {
+                n_warning(
+                    "Material interface %s is not supported by the vegetation system. Edit vegetation.gpul to add a shader for "
+                    "this interface",
+                    materialInterfaceName
+                );
+            }
+        
     }, nullptr);
 }
 
