@@ -49,6 +49,7 @@ table VegetationMesh
 	model : string = "system:box:mdl";
 	slope_threshold : float = 0.5;
 	height_threshold : float = 1.0;
+	density : float = 1.0;
 }
 
 root_type TerrainResource;

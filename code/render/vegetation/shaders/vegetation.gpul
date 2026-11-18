@@ -10,9 +10,9 @@
 #include "lib/math.gpuh"
 #include "lib/pbr.gpuh"
 #include "lib/standard_shading.gpuh"
+#include "lib/math.gpuh"
 
 //#define LOD_DEBUG 1
-const MAX_MESH_TYPES = 4;
 
 struct VegetationGenerationData
 {
@@ -23,7 +23,6 @@ struct VegetationGenerationData
     InvWorldSize : f32x2;
     GenerateQuadSize : i32x2;
     HeightMapSize: f32x2;
-    DensityFactor : f32;
     MinHeight : f32;
     MaxHeight : f32;
     HeightMap: u32;
@@ -37,6 +36,7 @@ struct VegetationGenerationData
 group(SYSTEM_GROUP) uniform VegetationGenerateUniforms : *VegetationGenerationData;
 
 const MAX_MESH_INFOS = 8;
+const MAX_DRAWS_PER_MESH = 16384;
 struct MeshInfo
 {
     lodIndexOffsets : i32x4;          // hold max 4 lods
@@ -47,6 +47,7 @@ struct MeshInfo
     lodFlags : u32x4;
 	maskSize : f32x2;
     numLods : i32;
+	density : f32;
     slopeThreshold : f32;
     heightThreshold : f32;
     materialIndex : u32;
@@ -57,7 +58,6 @@ struct MeshInfo
 @Visibility("CS")
 group(SYSTEM_GROUP) uniform MeshInfos : *[MAX_MESH_INFOS] mutable MeshInfo;
 
-const MAX_VEGETATION_LAYERS = 8;
 
 sampleMask(mask: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
@@ -67,20 +67,11 @@ sampleMask(mask: u32, uniform samp: *sampler, uv: f32x2) f32x4
 @Visibility("CS")
 group(BATCH_GROUP) uniform IndirectMeshDrawBuffer : *[] mutable DrawIndexedCommand;
 
-struct InstanceUniforms
-{
-    position : f32x3;
-    materialIndex : u32;
-    sincos : f32x2;
-    random : f32;   // use for wind sway
-    lodFlags : u32;
-};
-
 const LOD_DEBUG = 0x1u;
 const LOD_BILLBOARD = 0x2u;
 
 @Visibility("CS|VS")
-group(BATCH_GROUP) uniform InstanceMeshArguments : *[] mutable InstanceUniforms;
+group(BATCH_GROUP) uniform InstanceMeshArguments : *[] mutable VegetationInstance;
 
 struct DrawCountData
 {
@@ -94,8 +85,6 @@ group(SYSTEM_GROUP) sampler_state TextureSampler
 {
     Filter = FilterMode.Linear;
 };
-
-group(SYSTEM_GROUP) uniform DebugTexture : *mutable r32f texture2D;
 
 //------------------------------------------------------------------------------
 /**
@@ -126,14 +115,28 @@ threads_y(32)
 entry_point
 csGenerateDraws() void
 {
+	// Calculate closest corner
     const cameraPos = VegetationGenerateUniforms.CameraPosition.xz;
-	const relativePos = cameraPos - VegetationGenerateUniforms.WorldPosition;
+	const quadWorldStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + VegetationGenerateUniforms.WorldPosition - VegetationGenerateUniforms.WorldSize * 0.5f;
 
-    const cameraQuad = VegetationGenerateUniforms.GenerateQuadSize;
-    const scaleFactor = VegetationGenerateUniforms.DensityFactor;
+	const c0 = quadWorldStart;
+	const c1 = quadWorldStart + f32x2(VegetationGenerateUniforms.GenerateQuadSize.x, 0);
+	const c2 = quadWorldStart + f32x2(0, VegetationGenerateUniforms.GenerateQuadSize.y);
+	const c3 = quadWorldStart + f32x2(VegetationGenerateUniforms.GenerateQuadSize.x, VegetationGenerateUniforms.GenerateQuadSize.y);
+
+	const d0 = dot(cameraPos - c0, cameraPos - c0);
+	const d1 = dot(cameraPos - c1, cameraPos - c1);
+	const d2 = dot(cameraPos - c2, cameraPos - c2);
+	const d3 = dot(cameraPos - c3, cameraPos - c3);
+	const smallestD = min(d0, min(d1, min(d2, d3)));
+
+	// If closes corner is outside of range, abort generation
+	if (smallestD > VegetationGenerateUniforms.MaxRange)
+	{
+		return;
+	}
 
     const random = hash32(computeGetWorkgroupIndices().xy + computeGetLocalThreadIndices().xy).xy;
-	const quadWorldStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + VegetationGenerateUniforms.WorldPosition - VegetationGenerateUniforms.WorldSize * 0.5f;
 	const worldSpaceSamplePos = quadWorldStart + random * VegetationGenerateUniforms.GenerateQuadSize;
 	const worldSpaceSamplePosDist = dot(cameraPos - worldSpaceSamplePos, cameraPos - worldSpaceSamplePos);
 
@@ -158,8 +161,8 @@ csGenerateDraws() void
     const pixel = sampleSpacePos * VegetationGenerateUniforms.HeightMapSize;
     const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
 
-    const offset = i32x3(-1, 1, 0);
-    const normal = CalculateNormalFromHeight(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, pixel, offset, invHeightMapSize, VegetationGenerateUniforms.MinHeight, VegetationGenerateUniforms.MaxHeight);
+    const offset = f32x3(-invHeightMapSize.x, invHeightMapSize.x, 0);
+    var normal = CalculateNormalFromHeight(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, offset, VegetationGenerateUniforms.MinHeight, VegetationGenerateUniforms.MaxHeight);
 
     // go through mesh types and generate uniforms and draws
     for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
@@ -167,6 +170,11 @@ csGenerateDraws() void
         const meshInfo = bufferLoad(MeshInfos, i);
 
         if !meshInfo.used { continue; }
+
+		const draws = DrawCount.NumMeshDraws[i / 4][i%4];
+		if (draws >= MAX_DRAWS_PER_MESH) { continue; }
+
+		// TODO: Add view frustum culling
 
         // calculate rules
         const heightCutoff = height < meshInfo.heightThreshold;
@@ -183,20 +191,20 @@ csGenerateDraws() void
             }
         }
 
-        if (heightCutoff && angleCutoff && mask > 0.0f)
+		const instanceRandom = hash12(sampleSpacePos);
+
+        if (heightCutoff && angleCutoff && instanceRandom < mask * meshInfo.density)
         {
-			const draws = DrawCount.NumMeshDraws[i / 4][i%4];
 
             const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
-			textureStore(DebugTexture, i32x2(sampleSpacePos * meshInfo.maskSize), f32x4(i32(entry), 0, 0, 0));
 
-            var instanceUniform : InstanceUniforms;
+            var instanceUniform : VegetationInstance;
             instanceUniform.position.xz = worldSpaceSamplePos;
             instanceUniform.position.y = height;
+			const rotation = QuatFromNormal(normal); 
+			const randomRotation = QuatFromAxisAngle(f32x3(0,1,0), random.y);
+			instanceUniform.rotation = QuatMul(randomRotation, rotation);
             instanceUniform.random = random.x;
-			const randomOffset = f32x2(sin(random.x * random.y * 6.28), cos(random.x * random.y * 6.28));
-            instanceUniform.sincos.x = randomOffset.x;
-            instanceUniform.sincos.y = randomOffset.y;
             instanceUniform.materialIndex = meshInfo.materialIndex;
             instanceUniform.lodFlags = meshInfo.lodFlags[lod];
             bufferStore(InstanceMeshArguments, entry, instanceUniform);
@@ -227,23 +235,19 @@ vsDrawMeshVColor(
     , out Sign : f32
     , out UV : f32x2
     , out WorldSpacePos : f32x3
-    , out MaterialIndex : u32
+    , out InstanceIndex : u32
 
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const rotation = f32x3x3(
-        instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
-        0, 1, 0,
-        -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * position;
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
 
     UV = UnpackUV(uv);
-    Normal = rotation * normal;
-    Tangent = rotation * tangent.xyz;
+    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
+    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
     Sign = tangent.w;
 
-    MaterialIndex = instanceUniforms.materialIndex;
+    InstanceIndex = vertexGetInstanceIndex();
     WorldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
@@ -267,21 +271,16 @@ vsDrawDepthVColor(
     , binding(3) in tangent : f32x4
     , binding(5) in color : f32x4
     , out UV : f32x2
-    , out MaterialIndex : u32
+    , out InstanceIndex : u32
 
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const rotation = f32x3x3(
-        instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
-        0, 1, 0,
-        -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * position;
-    
-
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+   
     UV = UnpackUV(uv);
 
-    MaterialIndex = instanceUniforms.materialIndex;
+    InstanceIndex = vertexGetInstanceIndex();
     const worldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
@@ -304,20 +303,16 @@ vsDrawDepth(
     , binding(2) in uv : i32x2
     , binding(3) in tangent : f32x4
     , out UV : f32x2
-    , out MaterialIndex : u32
+    , out InstanceIndex : u32
 
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const rotation = f32x3x3(
-        instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
-        0, 1, 0,
-        -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * position;
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
 
     UV = UnpackUV(uv);
 
-    MaterialIndex = instanceUniforms.materialIndex;
+    InstanceIndex = vertexGetInstanceIndex();
     const worldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
@@ -344,21 +339,17 @@ vsDrawMesh(
     , out Sign : f32
     , out UV : f32x2
     , out WorldSpacePos : f32x3
-    , out MaterialIndex : u32
+    , out InstanceIndex : u32
 ) void
 {
     const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const rotation = f32x3x3(
-        instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
-        0, 1, 0,
-        -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    const rotatedPos = rotation * position;
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
 
     UV = UnpackUV(uv);
-    Normal = rotation * normal;
-    Tangent = rotation * tangent.xyz;
+    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
+    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
     Sign = tangent.w;
-    MaterialIndex = instanceUniforms.materialIndex;
+    InstanceIndex = vertexGetInstanceIndex();
     WorldSpacePos = instanceUniforms.position + rotatedPos;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
@@ -375,14 +366,43 @@ vsDrawMesh(
 /**
 */
 entry_point
-psDepth(in UV : f32x2, in no_interpolate MaterialIndex : u32) void
+psDepth(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
 {
-    const mat = MaterialPointers.BRDFMaterials[MaterialIndex];
+	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.BRDFMaterials[instanceUniforms.materialIndex];
 
     const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
-    //if (baseColor.a <= mat.AlphaSensitivity) { discard; }
+    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
 }
 
+//------------------------------------------------------------------------------
+/**
+    Standard shader for conductors (metals) and dielectic materials (non-metal), using bindless materials
+*/
+early_depth
+entry_point
+psStandardBindlessMaterial(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3,
+    in no_interpolate InstanceIndex : u32
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.BRDFMaterials[instanceUniforms.materialIndex];
+
+    const albedo   = MaskColor(sample2D(mat.AlbedoMap, MaterialSampler, UV), 1.0f) * mat.MatAlbedoIntensity;
+    var material = UnpackMaterialMap(sample2D(mat.ParameterMap, MaterialSampler, UV));
+    material[MAT_EMISSIVE] = 0.0f;
+    const N        = normalize(UnpackNormalMap(Tangent, Normal, Sign, sample2D(mat.NormalMap, NormalSampler, UV)));
+    
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, albedo.rgb, material, N);
+    
+    pixelExportColor(PackColor(light.rgb, albedo.a), 0);
+}
 
 //------------------------------------------------------------------------------
 /**

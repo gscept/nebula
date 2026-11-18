@@ -333,7 +333,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "metallicFactor", material.metallicFactor, 1);
         LoadFloat(reader, "roughnessFactor", material.roughnessFactor, 1);
         LoadFloat(reader, "normalScale", material.normalScale, 1);
-        LoadFloat(reader, "alphaCutoff", material.alphaCutoff, 1);
+        LoadFloat(reader, "alphaCutoff", material.alphaCutoff, 0.5f);
         Materials::MaterialSetData(mat, &material, sizeof(material));
     };
     LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::GLTF, gltfLoader);
@@ -347,7 +347,7 @@ MaterialLoader::Setup()
         LoadVec4(reader, "MatSpecularIntensity", material.MatSpecularIntensity, Math::vec4(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
         LoadFloat(reader, "MatMetallicIntensity", material.MatMetallicIntensity, 1);
-        LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
+        LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 0.5f);
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
         Materials::MaterialSetData(mat, &material, sizeof(material));
     };
@@ -362,7 +362,7 @@ MaterialLoader::Setup()
         LoadVec4(reader, "MatSpecularIntensity", material.MatSpecularIntensity, Math::vec4(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
         LoadFloat(reader, "MatMetallicIntensity", material.MatMetallicIntensity, 1);
-        LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
+        LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 0.5f);
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
         LoadFloat(reader, "Transmission", material.Transmission, 0);
         Materials::MaterialSetData(mat, &material, sizeof(material));

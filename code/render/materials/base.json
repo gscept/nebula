@@ -270,7 +270,7 @@
                     },
                     {
                         "name": "AlphaSensitivity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.5
                     },
                     {
                         "name": "AlphaBlendFactor",
@@ -534,7 +534,7 @@
                     },
                     {
                         "name": "AlphaSensitivity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.5
                     },
                     {
                         "name": "AlphaBlendFactor",
@@ -704,7 +704,7 @@
                     },
                     {
                         "name": "AlphaSensitivity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.5
                     },
                     {
                         "name": "AlphaBlendFactor",
@@ -812,7 +812,7 @@
                     },
                     {
                         "name": "AlphaSensitivity",
-                        "defaultValue": 1.0
+                        "defaultValue": 0.5
                     },
                     {
                         "name": "AlphaBlendFactor",

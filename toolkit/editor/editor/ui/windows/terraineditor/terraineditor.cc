@@ -1037,6 +1037,12 @@ TerrainEditor::Run(SaveMode save)
                 });
             }
 
+            static const float Density = 0.0f;
+            if (ImGui::SliderFloat("Density", &selectedTerrainResource.vegetation[selectedVegetationMesh]->density, 0.001f, 1.0f))
+            {
+                Vegetation::VegetationContext::SetDensity(terrainComponent.graphicsEntityId, selectedVegetationMesh, selectedTerrainResource.vegetation[selectedVegetationMesh]->density);
+            }
+
             terrainEditorState.activeVegetationMask = terrainEditorState.vegetationMeshes[selectedVegetationMesh].maskTex;
             CoreGraphics::ResourceTableSetRWTexture(
                 terrainEditorState.brushResourceTable, {terrainEditorState.activeVegetationMask, Terrainbrush::OutputMask::BINDING}

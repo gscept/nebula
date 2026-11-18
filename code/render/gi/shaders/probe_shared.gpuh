@@ -5,6 +5,7 @@
 
 #include <lib/std.gpuh>
 #include <lib/ddgi.gpuh>
+#include <lib/math.gpuh>
 struct VolumeData
 {
     TemporalRotation : f32x4x4;

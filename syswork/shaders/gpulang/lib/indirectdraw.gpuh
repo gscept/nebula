@@ -22,3 +22,12 @@ struct DrawIndexedCommand
     offsetVertex : u32;
     startInstance : u32;
 };
+
+struct VegetationInstance
+{
+    position : f32x3;
+    materialIndex : u32;
+	rotation : f32x4;		// rotation as a quaternion
+    random : f32;			// use for wind sway
+    lodFlags : u32;
+};
