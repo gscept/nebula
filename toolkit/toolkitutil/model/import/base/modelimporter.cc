@@ -7,6 +7,7 @@
 #include "io/filestream.h"
 #include "io/uri.h"
 #include "io/ioserver.h"
+#include "io/assignregistry.h"
 #include "timing/timer.h"
 
 #include "nflatbuffer/flatbufferinterface.h"
@@ -27,10 +28,73 @@
 #include "model/scenewriter.h"
 
 #include "toolkitutil/text.h"
+#include "toolkitutil/asset/assetimporter.h"
 
 using namespace Util;
 namespace ToolkitUtil
 {
+
+//------------------------------------------------------------------------------
+/**
+    Gives the shapes of a regenerated scene the materials the shapes of the previous scene had, so reimporting keeps
+    the materials assigned since. Shapes are matched by node name and primitive group, then by node name alone.
+    Skinned models are packaged as a single skin node that shares one material, so skins take the first one found.
+*/
+static void
+KeepMaterials(const SceneResourceT& oldScene, SceneResourceT& newScene)
+{
+    Util::Dictionary<Util::String, Util::String> byNodeAndGroup, byNode;
+    const auto remember = [&byNodeAndGroup, &byNode](const ShapeNodeT* shape)
+    {
+        if (shape == nullptr || shape->transform == nullptr || shape->material.IsEmpty())
+            return;
+        const Util::String nodeAndGroup = Util::Format("%s/%d", shape->transform->name.AsCharPtr(), shape->prim_group);
+        if (!byNodeAndGroup.Contains(nodeAndGroup))
+            byNodeAndGroup.Add(nodeAndGroup, shape->material);
+        if (!byNode.Contains(shape->transform->name))
+            byNode.Add(shape->transform->name, shape->material);
+    };
+    const auto restore = [&byNodeAndGroup, &byNode](ShapeNodeT* shape)
+    {
+        if (shape == nullptr || shape->transform == nullptr)
+            return;
+        const Util::String nodeAndGroup = Util::Format("%s/%d", shape->transform->name.AsCharPtr(), shape->prim_group);
+        IndexT i = byNodeAndGroup.FindIndex(nodeAndGroup);
+        if (i != InvalidIndex)
+        {
+            shape->material = byNodeAndGroup.ValueAtIndex(i);
+            return;
+        }
+        i = byNode.FindIndex(shape->transform->name);
+        if (i != InvalidIndex)
+        {
+            shape->material = byNode.ValueAtIndex(i);
+        }
+    };
+
+    for (const auto& shape : oldScene.shapes)
+        remember(shape.get());
+    for (auto& shape : newScene.shapes)
+        restore(shape.get());
+
+    Util::String skinMaterial;
+    for (const auto& skin : oldScene.skins)
+    {
+        if (skin != nullptr && skin->shape != nullptr && !skin->shape->material.IsEmpty())
+        {
+            skinMaterial = skin->shape->material;
+            break;
+        }
+    }
+    if (!skinMaterial.IsEmpty())
+    {
+        for (auto& skin : newScene.skins)
+        {
+            if (skin != nullptr && skin->shape != nullptr)
+                skin->shape->material = skinMaterial;
+        }
+    }
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -137,18 +201,21 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         stream->Close();
     }
 
-    // Set flags
+    // The mesh is always packaged again with these flags, so they're stored whether the scene is replaced or not,
+    // which is what reimporting and the import window go by
     uint flags = 0;
-    if (AllBits(importFlags, ToolkitUtil::ReplaceExistingMesh))
-    {
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcNormals) ? ToolkitUtil::OptimizationFlags_CalculateNormals : 0;
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcRigidSkin) ? ToolkitUtil::OptimizationFlags_CalculateRigidSkinning : 0;
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::RemoveRedundant) ? ToolkitUtil::OptimizationFlags_RemoveRedundantVertices : 0;
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::FlipUVs) ? ToolkitUtil::OptimizationFlags_FlipUVs : 0;
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportColors) ? ToolkitUtil::OptimizationFlags_ImportVertexColors : 0;
-        flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportSecondaryUVs) ? ToolkitUtil::OptimizationFlags_ImportSecondaryUVs : 0;
-    }
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcNormals) ? ToolkitUtil::OptimizationFlags_CalculateNormals : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcRigidSkin) ? ToolkitUtil::OptimizationFlags_CalculateRigidSkinning : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::RemoveRedundant) ? ToolkitUtil::OptimizationFlags_RemoveRedundantVertices : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::FlipUVs) ? ToolkitUtil::OptimizationFlags_FlipUVs : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportColors) ? ToolkitUtil::OptimizationFlags_ImportVertexColors : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::ImportSecondaryUVs) ? ToolkitUtil::OptimizationFlags_ImportSecondaryUVs : 0;
+    flags |= AllBits(importFlags, ToolkitUtil::ImportFlags::CalcTangents) ? ToolkitUtil::OptimizationFlags_CalculateTangentFrame : 0;
     modelAsset.flags = (ToolkitUtil::OptimizationFlags)flags;
+    modelAsset.scale = scale;
+
+    // remember where the asset comes from, relative to the project when it's in there so it survives moving the project
+    modelAsset.source = GetSourceReference(file);
 
     if (mergedMeshes.Size() > 0)
     {
@@ -180,6 +247,7 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
         {
             if (importFlags & ImportFlags::ReplaceExistingMesh)
             {
+                std::unique_ptr<SceneResourceT> oldScene = std::move(modelAsset.scene);
                 modelAsset.scene = SceneWriter::GenerateGraphicsModel(
                     this->sourceDir
                     , this->scene
@@ -187,6 +255,10 @@ ModelImporter::ProcessFile(const IO::URI& file, ToolkitUtil::ImportFlags importF
                     , mergedMeshNodes
                     , importFlags
                 );
+                if (oldScene != nullptr && modelAsset.scene != nullptr)
+                {
+                    KeepMaterials(*oldScene, *modelAsset.scene);
+                }
             }
         }
         else

@@ -245,7 +245,7 @@ struct ColliderDescription
     float capsuleRadius = 0.5f;
     float capsuleHalfHeight = 0.5f;
 
-    /// mesh and heightfield geometry is read through the geometry loader
+    /// mesh and heightfield geometry is read through the geometry loader, from a URN such as folder:file:msh
     Util::StringAtom resource;
     IndexT primGroup = 0;
     Physics::MeshTopology topology = Physics::MeshTopology_Triangles;

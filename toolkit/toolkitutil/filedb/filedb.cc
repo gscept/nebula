@@ -32,7 +32,7 @@ Util::Dictionary<FileType, const char*> FileTypeURNMapping =
     { FileType::Text, "" },
     { FileType::Frame, "" },
     { FileType::Shader, "" },
-    { FileType::Physics, "actor" },
+    { FileType::Physics, "phys" },
     { FileType::NavMesh, "navmesh" },
     { FileType::Other, "" }
 };

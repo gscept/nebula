@@ -7,6 +7,7 @@
 #include "physics/formats/formats.h"
 #include "io/ioserver.h"
 #include "io/stream.h"
+#include "io/path.h"
 
 #if WITH_NEBULA_PHYSICS_FORMAT_DDS
 #include "gliml.h"
@@ -16,11 +17,19 @@ namespace Physics
 
 //------------------------------------------------------------------------------
 /**
+    The resource is a texture URN, folder:file:tex, which is read from the exported dds file.
 */
 bool
 DdsHeightField(Util::StringAtom resource, HeightFieldInput& out)
 {
-    Ptr<IO::Stream> stream = IO::CreateStream(IO::URI(resource.AsString()));
+    const IO::Path path = IO::Path::Parse(resource.AsString());
+    if (!path.IsFile() || path.GetType() != "tex")
+    {
+        n_warning("DdsHeightField: '%s' is not a texture URN (folder:file:tex)\n", resource.Value());
+        return false;
+    }
+
+    Ptr<IO::Stream> stream = IO::CreateStream(path.ExportURI());
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (!stream->Open())
     {
@@ -46,17 +55,13 @@ DdsHeightField(Util::StringAtom resource, HeightFieldInput& out)
         {
             const ushort* heightBuffer = (const ushort*)ctx.image_data(0, 0);
 
+            // the image layout is the height field input layout, columns along x and rows along z
             out.width = (SizeT)width;
             out.height = (SizeT)height;
             out.samples.Resize(out.width * out.height);
-
-            // need to flip to be in same orientation with rendering
-            for (SizeT i = 0; i < out.width; i++)
+            for (SizeT i = 0; i < out.samples.Size(); i++)
             {
-                for (SizeT j = 0; j < out.height; j++)
-                {
-                    out.samples[i * out.width + j] = heightBuffer[j * out.width + i];
-                }
+                out.samples[i] = heightBuffer[i];
             }
             parsed = true;
         }

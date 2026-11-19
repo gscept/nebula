@@ -715,7 +715,15 @@ RecreateTexture(const TextureId& id, const TextureCreateInfo& info)
     loadInfo.dataSize = adjustedInfo.dataSize;
     loadInfo.window = adjustedInfo.window;
 
-    runtimeInfo.bind = 0xFFFFFFFF;
+    // a recreated texture, like a reloaded one, keeps its bindless slot, SetupTexture points it at the new image.
+    // Materials refer to the texture by its slot, a new one would leave them sampling the old image once it's deleted
+    const bool keepBind = runtimeInfo.bind != 0xFFFFFFFF && adjustedInfo.bindless && runtimeInfo.type == adjustedInfo.type;
+    if (!keepBind)
+    {
+        if (runtimeInfo.bind != 0xFFFFFFFF && runtimeInfo.type != TextureType::InvalidTextureType)
+            Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+        runtimeInfo.bind = 0xFFFFFFFF;
+    }
     runtimeInfo.type = adjustedInfo.type;
 
     loadInfo.stencilExtension = Ids::InvalidId32;

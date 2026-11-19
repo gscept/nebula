@@ -14,14 +14,14 @@ static Materials::MaterialId SolidMaterial = Materials::InvalidMaterialId;
 /**
 */
 void
-MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
+MeshInfo(const CoreGraphics::MeshResourceId resource)
 {
-    SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
+    SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(resource);
     for (IndexT i = 0; i < numMeshes; i++)
     {
         if (ImGui::CollapsingHeader(Util::Format("Mesh %d", i).AsCharPtr(), ImGuiTreeNodeFlags_DefaultOpen))
         {
-            CoreGraphics::MeshId mesh = CoreGraphics::MeshResourceGetMesh(item->asset.mesh, i);
+            CoreGraphics::MeshId mesh = CoreGraphics::MeshResourceGetMesh(resource, i);
             CoreGraphics::MeshIdLock _0(mesh);
 
             CoreGraphics::VertexLayoutId vlo = CoreGraphics::MeshGetVertexLayout(mesh);
@@ -48,7 +48,16 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
-    assetEditor->viewport.Render();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
+{
+    MeshInfo(item->asset.mesh);
+    assetEditor->viewport.RenderInChildWindow();
 }
 
 //------------------------------------------------------------------------------

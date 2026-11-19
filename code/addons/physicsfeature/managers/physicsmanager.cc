@@ -528,13 +528,23 @@ BuildActorFromPhysicsResource(Game::World* world, Game::Entity entity, PhysicsFe
 
     PhysicsFeature::PhysicsResource const actor = world->GetComponent<PhysicsFeature::PhysicsResource>(entity);
 
+    // the resource is an actor URN, the entity is left without an actor if it is anything else
+    IO::Path const resource = IO::Path::Parse(actor.resource.Value());
+    if (!resource.IsFile() || resource.GetType() != "phys")
+    {
+        n_warning("PhysicsManager: '%s' is not an actor URN (folder:file:phys)\n", actor.resource.Value());
+        self.actorId = Ids::InvalidId32;
+        self.body = Game::Entity::Invalid();
+        return;
+    }
+
     Math::transform const worldTransform(
         world->GetComponent<Game::Position>(entity),
         world->GetComponent<Game::Orientation>(entity),
         world->GetComponent<Game::Scale>(entity)
     );
 
-    Resources::ResourceId resId = Resources::CreateResource(actor.resource, "PHYS", nullptr, nullptr, true);
+    Resources::ResourceId resId = Resources::CreateResource(resource, "PHYS", nullptr, nullptr, true);
     Physics::ActorId const actorid = Physics::CreateActorInstance(
         resId, worldTransform, (Physics::ActorType)actor.actorType, Ids::Id64(entity), PhysicsFeatureUnit::Instance()->SceneForWorld(world));
     self.actorId = actorid.id;

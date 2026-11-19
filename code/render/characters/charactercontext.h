@@ -28,6 +28,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "resources/resourceid.h"
+#include "io/path.h"
 #include "coreanimation/animclip.h"
 #include "coreanimation/animsamplemask.h"
 #include "characters/skeleton.h"
@@ -78,6 +79,11 @@ public:
         , bool supportBlending = true
     );
 
+    /// if the entity's model is skinned, register and setup the entity as a character using the skeleton and animation packaged
+    /// with the model (folder:file:ske and folder:file:ani), and play its first clip. Call when the model is loaded and the entity
+    /// is observable. Returns false if the model isn't skinned or doesn't have both
+    static bool SetupFromModel(const Graphics::GraphicsEntityId id, const IO::Path& model, const Util::StringAtom& tag);
+
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
 
@@ -116,6 +122,20 @@ public:
 
     /// retrieve animation clip names and lengths
     static void QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArray<CoreAnimation::AnimClip>& outClips);
+    /// get the skeleton, invalid until it's loaded
+    static const SkeletonId GetSkeleton(const Graphics::GraphicsEntityId id);
+    /// get the animation, invalid until it's loaded
+    static const CoreAnimation::AnimationId GetAnimation(const Graphics::GraphicsEntityId id);
+    /// get the model space transforms of the joints in the last evaluated pose, one per joint of the skeleton
+    static const Util::FixedArray<Math::mat4>& GetJointTransforms(const Graphics::GraphicsEntityId id);
+    /// get the clip playing on a track, InvalidIndex if none is
+    static const IndexT GetPlayingClip(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// check if the clip playing on a track is paused
+    static bool IsTrackPaused(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// get the time in the clip playing on a track in seconds, within its duration for looped clips, 0 if none is playing
+    static Timing::Time GetTrackTime(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// move the clip playing on a track to a time in it in seconds, it plays on from there, a paused one shows the pose at that time
+    static void SeekTrack(const Graphics::GraphicsEntityId id, const IndexT track, const Timing::Time time);
 
     /// runs before frame is updated
     static void UpdateAnimations(const Graphics::FrameContext& ctx);
@@ -158,6 +178,8 @@ private:
         float timeFactor;
         float blend;
         bool paused;
+        /// the base time is set once the clip starts playing, a clip replacing the playing one starts on the next update
+        bool started;
 #if NEBULA_DEBUG
         Util::String name;
 #endif
@@ -189,7 +211,9 @@ private:
         SampleBuffer,
         SupportMix,
         EntityId,
-        CharacterSkinNodeIndexOffset
+        CharacterSkinNodeIndexOffset,
+        AnimationResource,
+        AnimationIndex
     };
 
     typedef Ids::IdAllocator<
@@ -205,6 +229,8 @@ private:
         CoreAnimation::AnimSampleBuffer,
         bool,
         Graphics::GraphicsEntityId,
+        IndexT,
+        Resources::ResourceId,
         IndexT
     > CharacterContextAllocator;
     static CharacterContextAllocator characterContextAllocator;

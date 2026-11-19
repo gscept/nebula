@@ -7,6 +7,7 @@
 #include "physics/formats/formats.h"
 #include "io/ioserver.h"
 #include "io/streamreader.h"
+#include "io/path.h"
 
 #if WITH_NEBULA_PHYSICS_FORMAT_NVX
 #include "coregraphics/nvx3fileformatstructs.h"
@@ -17,11 +18,19 @@ namespace Physics
 
 //------------------------------------------------------------------------------
 /**
+    The resource is a mesh URN, folder:file:msh, which is read from the exported nvx file.
 */
 bool
 NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out)
 {
-    Ptr<IO::Stream> stream = IO::CreateStream(IO::URI(resource.AsString()));
+    const IO::Path path = IO::Path::Parse(resource.AsString());
+    if (!path.IsFile() || path.GetType() != "msh")
+    {
+        n_warning("NvxMeshGeometry: '%s' is not a mesh URN (folder:file:msh)\n", resource.Value());
+        return false;
+    }
+
+    Ptr<IO::Stream> stream = IO::CreateStream(path.ExportURI());
     stream->SetAccessMode(IO::Stream::ReadAccess);
 
     Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();

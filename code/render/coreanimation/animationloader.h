@@ -17,6 +17,11 @@
 #include "coregraphics/config.h"
 #include "ids/idallocator.h"
 
+namespace Characters
+{
+class CharacterContext;
+}
+
 namespace CoreAnimation
 {
 
@@ -29,9 +34,12 @@ class AnimationLoader : public Resources::ResourceLoader
 
 private:
     friend class AnimSampleBuffer;
+    friend class Characters::CharacterContext;
 
     /// perform actual load, override in subclass
     ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+    /// load the animations again into the same resource, the animations it had are destroyed
+    ResourceLoader::ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// unload resource
     void Unload(const Resources::ResourceId id) override;
 };

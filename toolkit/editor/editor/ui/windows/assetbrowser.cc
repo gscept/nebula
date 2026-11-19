@@ -12,11 +12,15 @@
 #include "io/fswrapper.h"
 #include "imgui_internal.h"
 #include "asseteditor/asseteditor.h"
+#include "importwindow.h"
 #include "timing/calendartime.h"
 #include "editor/tools/pathconverter.h"
 #include "io/filewatcher.h"
 #include "io/assignregistry.h"
 #include "asseteditor/particleasseteditor.h"
+#include "asseteditor/materialasseteditor.h"
+#include "editor/tools/livebatcher.h"
+#include "toolkitutil/asset/assetimporter.h"
 #include "toolkitutil/filedb/filedb.h"
 
 using namespace Editor;
@@ -53,18 +57,19 @@ DeleteFolderSubtree(ToolkitUtil::FileDB& fileDB, ToolkitUtil::Logger& logger, ui
     }
 }
 
-// Check a folder name typed by the user. Uses the Windows rules on every platform so asset folders stay portable.
+// Check a folder or asset name typed by the user, kind names which in the messages. Uses the Windows rules on every
+// platform so asset folders stay portable, which also keeps the URN separator out of names.
 bool
-ValidateFolderName(const Util::String& name, Util::String& outError)
+ValidateName(const Util::String& name, const char* kind, Util::String& outError)
 {
     if (name.IsEmpty())
     {
-        outError = "The folder name can't be empty";
+        outError.Format("The %s name can't be empty", kind);
         return false;
     }
     if (name == "." || name == "..")
     {
-        outError.Format("'%s' is not a valid folder name", name.AsCharPtr());
+        outError.Format("'%s' is not a valid %s name", name.AsCharPtr(), kind);
         return false;
     }
     static const char* InvalidChars = "\\/:*?\"<>|";
@@ -73,13 +78,13 @@ ValidateFolderName(const Util::String& name, Util::String& outError)
         const char c = name[i];
         if ((unsigned char)c < 32 || strchr(InvalidChars, c) != nullptr)
         {
-            outError = "A folder name can't contain any of these characters: \\ / : * ? \" < > |";
+            outError.Format("A %s name can't contain any of these characters: \\ / : * ? \" < > |", kind);
             return false;
         }
     }
     if (name[name.Length() - 1] == '.')
     {
-        outError = "A folder name can't end with a period";
+        outError.Format("A %s name can't end with a period", kind);
         return false;
     }
     return true;
@@ -212,13 +217,24 @@ public:
 __ImplementClass(Presentation::ScanFolderJob, 'ScFj', Threading::Thread);
 
 using NewFunc = void(*)(const Ptr<IO::Stream>& file, const Util::String& path);
+
+//------------------------------------------------------------------------------
+/**
+    A new material from the asset browser gets the template the importer gives opaque materials
+*/
+static void
+NewMaterial(const Ptr<IO::Stream>& file, const Util::String& path)
+{
+    MaterialNew(file, path, "GLTF");
+}
+
 static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
 {
     nullptr,  
     nullptr,  
     nullptr,  
     ParticleNew,
-    nullptr,  
+    NewMaterial,
     nullptr,  
     nullptr,  
     nullptr,  
@@ -250,11 +266,17 @@ AssetBrowser::AssetBrowser()
     watchFlags.SetBit(IO::WatchFlags::SizeChanged);
     watchFlags.SetBit(IO::WatchFlags::Creation);
 
-    IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
+    // the asset browser set up first owns the folder scan and the watch of the assets folder, the file watcher keeps one watch per
+    // folder and asserts on unwatching it twice
+    this->ownsScanJob = AssetBrowserWindow == nullptr || AssetBrowserWindow == this;
+    if (this->ownsScanJob)
     {
-        this->pendingWatchEvents.Enqueue(event);
-    };
-    IO::FileWatcher::Instance()->Watch(IO::Path().WorkURI("assets").LocalPath(), true, watchFlags, callback);
+        IO::WatchDelegate callback = [this](IO::WatchEvent const& event)
+        {
+            this->pendingWatchEvents.Enqueue(event);
+        };
+        IO::FileWatcher::Instance()->Watch(IO::Path().WorkURI("assets").LocalPath(), true, watchFlags, callback);
+    }
     
     this->activeFileTree = rootFolderId;
     this->activeFile = 0;
@@ -263,7 +285,7 @@ AssetBrowser::AssetBrowser()
 
     this->fileTreeReady = true;
     this->showProgress = true;
-    if (AssetBrowserWindow != nullptr && AssetBrowserWindow != this)
+    if (!this->ownsScanJob)
     {
         AssetBrowser* owner = (AssetBrowser*)AssetBrowserWindow;
         if (owner->currentScanJob != nullptr)
@@ -273,7 +295,6 @@ AssetBrowser::AssetBrowser()
     }
     else
     {
-        this->ownsScanJob = true;
         this->currentScanJob = ScanFolderJob::Create();
         this->currentScanJob->browser = this;
     }
@@ -284,6 +305,10 @@ AssetBrowser::AssetBrowser()
 */
 AssetBrowser::~AssetBrowser()
 {
+    // IsWatched can't be asked here, the watch is added on the file watcher thread and may not be there yet
+    if (this->ownsScanJob)
+        IO::FileWatcher::Instance()->Unwatch(IO::Path().WorkURI("assets").LocalPath());
+
     if (this->ownsScanJob && this->currentScanJob != nullptr)
     {
         this->pendingFolderRefreshes.Enqueue(-1);
@@ -492,12 +517,15 @@ AssetBrowser::Run(SaveMode save)
 /**
 */
 void 
-AssetBrowser::PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker)
+AssetBrowser::PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker, const Util::String& type)
 {
     this->open = true;
     this->popupThisFrame = true;
     this->pickFileFunction = picker;
     this->pendingPickPath = path;
+    this->pickType = type;
+    this->searchFilter[0] = '\0';
+    this->focusSearch = true;
 }
 
 //------------------------------------------------------------------------------
@@ -510,6 +538,22 @@ AssetBrowser::PickFolder(const IO::Path& path, std::function<void(const IO::Path
     this->popupThisFrame = true;
     this->pickFolderFunction = picker;
     this->pendingPickPath = path;
+    this->pickType.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AssetBrowser::GetSelectedFolder(IO::Path& outFolder) const
+{
+    if (this->activeFolder == 0)
+        return false;
+    IndexT i = folderInfoCache.FindIndex(this->activeFolder);
+    if (i == InvalidIndex)
+        return false;
+    outFolder = folderInfoCache.ValueAtIndex(i).folderPath;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -687,7 +731,8 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
     }
     const bool renaming = this->folderEdit.mode == FolderEditMode::Rename && this->folderEdit.folderId == folderId;
     const bool addingChild = this->folderEdit.mode == FolderEditMode::NewFolder && this->folderEdit.folderId == folderId;
-    if (info.id == this->activeFolder || renaming)
+    // the name editor has no highlight behind it, like the one of a new folder
+    if (info.id == this->activeFolder && !renaming)
     {
         flags |= ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected;
     }
@@ -702,6 +747,7 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
         this->folderEdit.openParent = false;
     }
 
+    const float nodeX = ImGui::GetCursorPosX();
     ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(folderId)));
     bool bIsOpen = ImGui::TreeNodeEx("##folder", flags, "%s", renaming ? "" : info.name.AsCharPtr());
     ImGui::PopID();
@@ -728,7 +774,8 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
 
     if (renaming)
     {
-        ImGui::SameLine();
+        // the text starts where the folder name does, the field's frame padding is left of it
+        ImGui::SameLine(nodeX + ImGui::GetTreeNodeToLabelSpacing() - ImGui::GetStyle().FramePadding.x);
         this->DisplayFolderNameEditor();
     }
 
@@ -791,13 +838,190 @@ AssetBrowser::DisplayFileTreeFolderHierarchy(uint64_t folderId, int depth)
         }
         if (addingChild)
         {
-            // placeholder entry for the folder that gets created once the name is confirmed
-            ImGui::TreeNodeEx("##newfolder", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_AllowOverlap, "%s", "");
-            ImGui::SameLine();
+            // the name of the folder that gets created once it's confirmed, the text starts where the names of its
+            // siblings start, past the space for the arrow, the field's frame padding is left of it
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing() - ImGui::GetStyle().FramePadding.x);
             this->DisplayFolderNameEditor();
         }
         ImGui::TreePop();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Draws a card of the grid view. The name is left out when the name editor is drawn in its place
+*/
+static void
+DrawFileCard(ImDrawList* draw, ImVec2 pos, float itemSize, const char* typeName, const char* name, bool highlighted)
+{
+    const float s = itemSize / 150.0f;
+
+    const float padding = 8.0f * s;
+    const float headerHeight = 24.0f * s;
+    const float nameHeight = 22.0f * s;
+    const float rounding = 6.0f * s;
+    const float headerFontSize = 13.0f * s;
+    const float nameFontSize = 13.0f * s;
+
+    ImVec2 max = ImVec2(pos.x + itemSize, pos.y + itemSize);
+
+    // Card background
+    draw->AddRectFilled(
+        pos,
+        max,
+        IM_COL32(40, 40, 40, 255),
+        6.0f
+    );
+
+    // Header
+    draw->AddRectFilled(
+        pos,
+        ImVec2(max.x, pos.y + headerHeight),
+        IM_COL32(55, 55, 55, 255),
+        6.0f,
+        ImDrawFlags_RoundCornersTop
+    );
+
+    // Header text
+    draw->AddText(
+        ImGui::GetFont(),
+        headerFontSize,
+        ImVec2(
+            pos.x + padding,
+            pos.y + (headerHeight - headerFontSize) * 0.5f
+        ),
+        IM_COL32(210, 210, 210, 255),
+        typeName
+    );
+
+    // Thumbnail area
+    ImVec2 imageMin(
+        pos.x + padding,
+        pos.y + headerHeight + padding
+    );
+
+    ImVec2 imageMax(
+        max.x - padding,
+        max.y - nameHeight - padding
+    );
+
+    // Draw a square where the image will be
+    draw->AddRectFilled(
+        imageMin,
+        imageMax,
+        IM_COL32(55, 55, 55, 255),
+        6.0f,
+        ImDrawFlags_RoundCornersAll
+    );
+
+    /*
+    // Icon / thumbnail
+    draw->AddImage(
+        iconTexture,
+        ImVec2(min.x + 10, min.y + 34),
+        ImVec2(max.x - 10, max.y - 32)
+    );
+    */
+
+    // Name
+    if (name != nullptr)
+    {
+        draw->AddText(
+            ImGui::GetFont(),
+            nameFontSize,
+            ImVec2(
+                pos.x + padding,
+                max.y - nameHeight
+            ),
+            IM_COL32(230, 230, 230, 255),
+            name
+        );
+    }
+
+    if (highlighted)
+    {
+        draw->AddRect(
+            pos,
+            max,
+            IM_COL32(100, 160, 255, 255),
+            rounding,
+            2.0f * s,
+            ImDrawFlags_None
+        );
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Draws the background of a selected entry for the list view row about to be drawn
+*/
+static void
+HighlightListRow()
+{
+    const ImVec2 rowMin = ImGui::GetCursorScreenPos();
+    const ImVec2 rowMax(rowMin.x + ImGui::GetContentRegionAvail().x, rowMin.y + ImGui::GetFrameHeight());
+    ImGui::GetWindowDrawList()->AddRectFilled(rowMin, rowMax, ImGui::GetColorU32(ImGuiCol_Header));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Scores how well one word of a search matches a text, its characters have to appear in it in order,
+    ignoring case. Runs of characters and ones starting a word (after a separator or a lowercase letter
+    before an uppercase one) count more, characters skipped count against it. Returns false if it doesn't match
+*/
+static bool
+FuzzyMatchWord(const char* word, SizeT wordLength, const Util::String& text, int& outScore)
+{
+    outScore = 0;
+    IndexT w = 0;
+    IndexT lastMatch = InvalidIndex;
+    for (IndexT t = 0; t < text.Length() && w < wordLength; t++)
+    {
+        const char c = text[t];
+        if (Util::String::ToLower(c) != Util::String::ToLower(word[w]))
+            continue;
+
+        int score = 1;
+        const char previous = t > 0 ? text[t - 1] : '\0';
+        const bool wordStart = t == 0 || previous == '/' || previous == ':' || previous == '_' || previous == '-' || previous == ' ' || previous == '.'
+            || (previous >= 'a' && previous <= 'z' && c >= 'A' && c <= 'Z');
+        if (wordStart)
+            score += 8;
+        if (lastMatch != InvalidIndex && lastMatch == t - 1)
+            score += 5;
+        else if (lastMatch != InvalidIndex)
+            score -= Math::min(t - lastMatch - 1, 5);
+        outScore += score;
+        lastMatch = t;
+        w++;
+    }
+    return w == wordLength;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Fuzzy matches a search against a file, each word of the search (split by spaces) has to match its name
+    or its folder and name. The name counts more, a match in it is what's usually looked for
+*/
+static bool
+FuzzyMatch(const Util::String& search, const Util::String& name, const Util::String& folderAndName, int& outScore)
+{
+    outScore = 0;
+    const Util::Array<Util::String> words = search.Tokenize(" ");
+    if (words.IsEmpty())
+        return false;
+    for (const Util::String& word : words)
+    {
+        int nameScore = 0, pathScore = 0;
+        const bool inName = FuzzyMatchWord(word.AsCharPtr(), word.Length(), name, nameScore);
+        const bool inPath = FuzzyMatchWord(word.AsCharPtr(), word.Length(), folderAndName, pathScore);
+        if (!inName && !inPath)
+            return false;
+        outScore += inName ? Math::max(nameScore + 10, inPath ? pathScore : 0) : pathScore;
+    }
+    // shorter names with the same matches are closer to what was typed
+    outScore -= name.Length() / 8;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -847,16 +1071,40 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     if (searching && (this->searchIndexDirty || this->lastSearchFilter != filter))
     {
         this->searchResults.Clear();
-        Util::String pattern = filter;
-        if (pattern.FindCharIndex('*') == InvalidIndex && pattern.FindCharIndex('?') == InvalidIndex)
+        if (filter.FindCharIndex('*') != InvalidIndex || filter.FindCharIndex('?') != InvalidIndex)
         {
-            pattern = Util::String::Sprintf("*%s*", filter.AsCharPtr());
-        }
-        for (const auto& file : this->searchIndex)
-        {
-            if (Util::String::MatchPattern(file.name, pattern) || Util::String::MatchPattern(file.filePath.GetFolderAndFile(), pattern))
+            // a wildcard pattern matches as it's written
+            for (const auto& file : this->searchIndex)
             {
-                this->searchResults.Append(file);
+                if (Util::String::MatchPattern(file.name, filter) || Util::String::MatchPattern(file.filePath.GetFolderAndFile(), filter))
+                {
+                    this->searchResults.Append(file);
+                }
+            }
+        }
+        else
+        {
+            // otherwise fuzzy, best matches first
+            Util::Array<Util::KeyValuePair<int, IndexT>> ranked;
+            for (IndexT i = 0; i < this->searchIndex.Size(); i++)
+            {
+                const auto& file = this->searchIndex[i];
+                int score = 0;
+                if (FuzzyMatch(filter, file.name, file.filePath.GetFolderAndFile(), score))
+                {
+                    ranked.Append({ score, i });
+                }
+            }
+            std::sort(ranked.begin(), ranked.end(), [this](const Util::KeyValuePair<int, IndexT>& a, const Util::KeyValuePair<int, IndexT>& b)
+            {
+                if (a.Key() != b.Key())
+                    return a.Key() > b.Key();
+                return this->searchIndex[a.Value()].name < this->searchIndex[b.Value()].name;
+            });
+            this->searchResults.Reserve(ranked.Size());
+            for (const auto& entry : ranked)
+            {
+                this->searchResults.Append(this->searchIndex[entry.Value()]);
             }
         }
         this->lastSearchFilter = filter;
@@ -867,6 +1115,12 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     {
         return;
     }
+
+    // names are edited in the folder they belong to, search results don't show the editor
+    const bool editingInFolder = !searching && this->folderEdit.folderId == this->activeFolder;
+    const bool newAssetShown = editingInFolder && this->folderEdit.mode == FolderEditMode::NewAsset;
+    const uint64_t renamedFile = editingInFolder && this->folderEdit.mode == FolderEditMode::RenameFile ? this->folderEdit.fileId : 0;
+    const char* newAssetTypeName = ToolkitUtil::FileTypeNames[this->folderEdit.assetType];
 
     if (this->activeFolder != 0 || searching)
     {
@@ -892,6 +1146,21 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 visibleFiles.Append(file);
             }
         }
+        if (this->pickFileFunction && !this->pickType.IsEmpty())
+        {
+            // picking an asset of a type, the others can't be picked
+            IndexT write = 0;
+            for (IndexT read = 0; read < visibleFiles.Size(); read++)
+            {
+                if (visibleFiles[read].filePath.GetType() == this->pickType)
+                {
+                    if (write != read)
+                        visibleFiles[write] = visibleFiles[read];
+                    write++;
+                }
+            }
+            visibleFiles.Resize(write);
+        }
 
 
         switch(this->fileViewMode)
@@ -900,9 +1169,20 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             {
                 for (const auto& file : visibleFiles)
                 {
+                    if (file.id == renamedFile)
+                    {
+                        HighlightListRow();
+                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], 0.0f);
+                        continue;
+                    }
                     bool isSelected = (this->activeFile == file.id);
                     ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(file.id)));
                     if (ImGui::Selectable(Util::Format("[%s] %s", ToolkitUtil::FileTypeNames[file.type], file.name.AsCharPtr()).AsCharPtr(), &isSelected))
+                    {
+                        this->activeFile = file.id;
+                    }
+                    // the context menu acts on the selected file, so right clicking selects it
+                    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
                     {
                         this->activeFile = file.id;
                     }
@@ -913,6 +1193,11 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     }
                     AddDragSourceForFileUri(file.filePath);
                     ImGui::PopID();
+                }
+                if (newAssetShown)
+                {
+                    HighlightListRow();
+                    this->DisplayFileNameEditorEntry(newAssetTypeName, 0.0f);
                 }
                 break;
             }
@@ -925,8 +1210,9 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 ImGui::TableSetupColumn("Modified", ImGuiTableColumnFlags_WidthFixed);
                 ImGui::TableHeadersRow();
 
+                // search results stay ranked by how well they match
                 if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-                if (sorts_specs->SpecsDirty && visibleFiles.Size() > 1)
+                if (sorts_specs->SpecsDirty && visibleFiles.Size() > 1 && !searching)
                 {
                     s_sort_specs = sorts_specs;
                     const bool descending = s_sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Descending;
@@ -957,18 +1243,32 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     bool isSelected = (this->activeFile == file.id);
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::PushID(file.name.HashCode() + (uint)file.type);
-                    if (ImGui::Selectable(Util::Format("[%s] %s", ToolkitUtil::FileTypeNames[file.type], file.name.AsCharPtr()).AsCharPtr(), &isSelected))
+                    if (file.id == renamedFile)
                     {
-                        this->activeFile = file.id;
+                        // drawn like a selected row
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::GetColorU32(ImGuiCol_Header));
+                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], 0.0f);
                     }
-                    if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    else
                     {
-                        hasFileToOpen = true;
-                        fileToOpen = file;
+                        ImGui::PushID(file.name.HashCode() + (uint)file.type);
+                        if (ImGui::Selectable(Util::Format("[%s] %s", ToolkitUtil::FileTypeNames[file.type], file.name.AsCharPtr()).AsCharPtr(), &isSelected))
+                        {
+                            this->activeFile = file.id;
+                        }
+                        // the context menu acts on the selected file, so right clicking selects it
+                        if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+                        {
+                            this->activeFile = file.id;
+                        }
+                        if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                        {
+                            hasFileToOpen = true;
+                            fileToOpen = file;
+                        }
+                        ImGui::PopID();
+                        AddDragSourceForFileUri(file.filePath);
                     }
-                    ImGui::PopID();
-                    AddDragSourceForFileUri(file.filePath);
                     ImGui::TableNextColumn();
                     if (file.size > 1_GB)
                         ImGui::Text("%d GB", (int)(file.size / 1_GB));
@@ -983,6 +1283,14 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     Timing::CalendarTime cal = Timing::CalendarTime::FileTimeToSystemTime(file.modifiedDate);
                     ImGui::Text(Base::CalendarTimeBase::Format("{YEAR}/{MONTH}/{DAY} {HOUR}:{MINUTE}", cal).AsCharPtr());
                 }
+                if (newAssetShown)
+                {
+                    // drawn like a selected row
+                    ImGui::TableNextRow();
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::GetColorU32(ImGuiCol_Header));
+                    ImGui::TableNextColumn();
+                    this->DisplayFileNameEditorEntry(newAssetTypeName, 0.0f);
+                }
                 ImGui::EndTable();
                 ImGui::EndGroup();
                 break;
@@ -990,13 +1298,27 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             case FileViewMode::Icons:
             {        
                 ImGuiStyle& style = ImGui::GetStyle();
-                int numFiles = visibleFiles.Size();
+                int numFiles = visibleFiles.Size() + (newAssetShown ? 1 : 0);
                 float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetContentRegionAvail().x;
                 static int itemSize = 150;
                 ImGui::SliderInt("Zoom", &itemSize, 25, 200);
                 int n = 0;
+                const auto sameLineIfFits = [&]()
+                {
+                    float lastButtonX = ImGui::GetItemRectMax().x;
+                    float nextButtonX = lastButtonX + style.ItemSpacing.x + (float)itemSize + 30.0f; // Expected position if next button was on same line
+                    if (n + 1 < numFiles && nextButtonX < windowVisibleX)
+                        ImGui::SameLine();
+                    n++;
+                };
                 for (const auto& file : visibleFiles)
                 {
+                    if (file.id == renamedFile)
+                    {
+                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], (float)itemSize);
+                        sameLineIfFits();
+                        continue;
+                    }
                     Util::String const& name = file.name;
                     ImGui::BeginGroup();
                     ImGui::PushID(file.id);
@@ -1005,6 +1327,10 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
                     //ImGui::ImageButton(name.AsCharPtr(), &Editor::UI::Icons::game, { (float)itemSize, (float)itemSize });
                     if(ImGui::InvisibleButton(name.AsCharPtr(), { (float)itemSize, (float)itemSize }))
+                    {
+                        this->activeFile = file.id;
+                    }
+                    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
                     {
                         this->activeFile = file.id;
                     }
@@ -1021,105 +1347,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     AddDragSourceForFileUri(file.filePath);
 
                     // Now draw the widget yourself.
-                    ImDrawList* draw = ImGui::GetWindowDrawList();
-
-                    const float s = itemSize / 150.0f;
-
-                    const float padding = 8.0f * s;
-                    const float headerHeight = 24.0f * s;
-                    const float nameHeight = 22.0f * s;
-                    const float rounding = 6.0f * s;
-                    const float headerFontSize = 13.0f * s;
-                    const float nameFontSize = 13.0f * s;
-
-                    ImVec2 max = ImVec2(pos.x + itemSize, pos.y + itemSize);
-
-                    // Card background
-                    draw->AddRectFilled(
-                        pos,
-                        max,
-                        IM_COL32(40, 40, 40, 255),
-                        6.0f
-                    );
-
-                    // Clip everything inside the card.
-                    //draw->PushClipRect(pos, max, true);
-
-                    // Header
-                    draw->AddRectFilled(
-                        pos,
-                        ImVec2(max.x, pos.y + headerHeight),
-                        IM_COL32(55, 55, 55, 255),
-                        6.0f,
-                        ImDrawFlags_RoundCornersTop
-                    );
-
-                    // Header text
-                    draw->AddText(
-                        ImGui::GetFont(),
-                        headerFontSize,
-                        ImVec2(
-                            pos.x + padding,
-                            pos.y + (headerHeight - headerFontSize) * 0.5f
-                        ),
-                        IM_COL32(210, 210, 210, 255),
-                        ToolkitUtil::FileTypeNames[file.type]
-                    );
-
-                    // Thumbnail area
-                    ImVec2 imageMin(
-                        pos.x + padding,
-                        pos.y + headerHeight + padding
-                    );
-
-                    ImVec2 imageMax(
-                        max.x - padding,
-                        max.y - nameHeight - padding
-                    );
-
-                    // Draw a square where the image will be
-                    draw->AddRectFilled(
-                        imageMin,
-                        imageMax,
-                        IM_COL32(55, 55, 55, 255),
-                        6.0f,
-                        ImDrawFlags_RoundCornersAll
-                    );
-
-                    /*
-                    // Icon / thumbnail
-                    draw->AddImage(
-                        iconTexture,
-                        ImVec2(min.x + 10, min.y + 34),
-                        ImVec2(max.x - 10, max.y - 32)
-                    );
-                    */
-
-                    // Name
-                    draw->AddText(
-                        ImGui::GetFont(),
-                        nameFontSize,
-                        ImVec2(
-                            pos.x + padding,
-                            max.y - nameHeight
-                        ),
-                        IM_COL32(230, 230, 230, 255),
-                        name.AsCharPtr()
-                    );
-
-                    //draw->PopClipRect();
-
-                    if (hovered)
-                    {
-                        draw->AddRect(
-                            pos,
-                            max,
-                            IM_COL32(100, 160, 255, 255),
-                            rounding,
-                            2.0f * s,
-                            ImDrawFlags_None
-                        );
-                    }
+                    DrawFileCard(ImGui::GetWindowDrawList(), pos, (float)itemSize, ToolkitUtil::FileTypeNames[file.type], name.AsCharPtr(), hovered);
                     ImGui::PopID();
 
 
@@ -1139,13 +1367,11 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     }
                     AddDragSourceForFileUri(file.filePath);
                     ImGui::EndGroup();
-
-                    float lastButtonX = ImGui::GetItemRectMax().x;
-                    float nextButtonX = lastButtonX + style.ItemSpacing.x + (float)itemSize + 30.0f; // Expected position if next button was on same line
-                    if (n + 1 < numFiles && nextButtonX < windowVisibleX)
-                        ImGui::SameLine();
-                    n++;
-
+                    sameLineIfFits();
+                }
+                if (newAssetShown)
+                {
+                    this->DisplayFileNameEditorEntry(newAssetTypeName, (float)itemSize);
                 }
                 break;
             }
@@ -1175,43 +1401,240 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
 
 //------------------------------------------------------------------------------
 /**
+    Like in the OS file browsers, a new file is shown at the end of the folder and a renamed one in its place,
+    with the name editor where its name would be. The grid view passes its card size, the other views 0.
 */
 void
-NewAsset(Util::String requestedFileName, ToolkitUtil::FileDB& db, ToolkitUtil::FileType type, uint64_t folderEntry, ToolkitUtil::Logger& logger)
+AssetBrowser::DisplayFileNameEditorEntry(const char* typeName, float itemSize)
 {
-    IO::Path folderPath = db.GetFolderPath(folderEntry);
-    Util::Array<ToolkitUtil::FileDB::FileInfo> files(32, 8);
-    db.GetFilesInFolder(folderEntry, files);
-    Util::String newFilePath = Util::Format("%s/%s", folderPath.GetFolderAndFile().AsCharPtr(), requestedFileName.AsCharPtr());
-retry:
-    SizeT counter = 0;
-    for (const auto& file : files)
+    ImGui::PushID("##editedfile");
+    if (itemSize > 0.0f)
     {
-        if (file.name == requestedFileName)
+        // the name editor takes the place of the card's name
+        const float nameHeight = 22.0f * itemSize / 150.0f;
+        ImGui::BeginGroup();
+        DrawFileCard(ImGui::GetWindowDrawList(), ImGui::GetCursorScreenPos(), itemSize, typeName, nullptr, true);
+        ImGui::Dummy(ImVec2(itemSize, itemSize - nameHeight));
+        this->DisplayFolderNameEditor(itemSize);
+        ImGui::EndGroup();
+    }
+    else
+    {
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("[%s]", typeName);
+        ImGui::SameLine();
+        this->DisplayFolderNameEditor();
+    }
+    if (this->folderEdit.scrollIntoView)
+    {
+        if (!ImGui::IsItemVisible())
         {
-            Util::String ext = requestedFileName.GetFileExtension();
-            requestedFileName.StripFileExtension();
-            requestedFileName += Util::String::Sprintf(" (%d).%s", counter++, ext.AsCharPtr());
-            newFilePath = Util::Format("%s/%s", folderPath.GetFolderAndFile().AsCharPtr(), requestedFileName.AsCharPtr());
-            goto retry;
+            ImGui::SetScrollHereY(1.0f);
+        }
+        this->folderEdit.scrollIntoView = false;
+    }
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::BeginNewAsset(uint64_t folderId, ToolkitUtil::FileType type, const Util::String& defaultName)
+{
+    if (!this->folderInfoCache.Contains(folderId))
+    {
+        return;
+    }
+    const ToolkitUtil::FileDB::FolderInfo& info = this->folderInfoCache[folderId];
+    if (info.isArchive)
+    {
+        return;
+    }
+
+    // default name, numbered when it's already taken
+    const char* ns = ToolkitUtil::FileTypeURNMapping[type];
+    Util::String name = defaultName;
+    IndexT uniqueCounter = 2;
+    while (IO::FileExists(IO::Path::File(info.folderPath.GetFolder(), name, ns).WorkURI("assets")))
+    {
+        name.Format("%s_%d", defaultName.AsCharPtr(), uniqueCounter++);
+    }
+
+    this->folderEdit = FolderEdit();
+    this->folderEdit.mode = FolderEditMode::NewAsset;
+    this->folderEdit.folderId = folderId;
+    this->folderEdit.assetType = type;
+    this->folderEdit.requestFocus = true;
+    this->folderEdit.scrollIntoView = true;
+    this->activeFile = 0;
+    name.CopyToBuffer(this->folderEdit.name, sizeof(this->folderEdit.name));
+}
+
+//------------------------------------------------------------------------------
+/**
+    The work file is the one the asset's URN, folder:name:type, resolves to. The asset is batched right away,
+    so it can be referenced before it has been edited, and is selected once it's created.
+*/
+bool
+AssetBrowser::CreateAsset(uint64_t folderId, ToolkitUtil::FileType type, const Util::String& name, Util::String& outError)
+{
+    ToolkitUtil::FileDB::FolderInfo folderInfo;
+    if (!this->fileDB.GetFolderInfo(folderId, folderInfo))
+    {
+        outError = "The folder doesn't exist anymore";
+        return false;
+    }
+    if (folderInfo.isArchive)
+    {
+        outError = "Assets can't be created inside archives";
+        return false;
+    }
+
+    const IO::Path path = IO::Path::File(folderInfo.folderPath.GetFolder(), name, ToolkitUtil::FileTypeURNMapping[type]);
+    const IO::URI uri = path.WorkURI("assets");
+    if (IO::FileExists(uri))
+    {
+        outError.Format("'%s' already exists", path.GetWorkFile().AsCharPtr());
+        return false;
+    }
+    Ptr<IO::Stream> stream = IO::CreateStream(uri);
+    stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+    if (!stream->Open())
+    {
+        outError.Format("Could not create '%s'", path.GetWorkFile().AsCharPtr());
+        return false;
+    }
+    if (NewFuncs[(uint)type] != nullptr)
+    {
+        NewFuncs[(uint)type](stream, uri.LocalPath());
+    }
+    const IO::Stream::Size size = stream->GetSize();
+    stream->Close();
+
+    const uint64_t fileId = this->fileDB.AddFile(this->logger, path.GetWorkFile(), folderId, size, type, IO::FileTime());
+    Editor::LiveBatcher::BatchFile(path);
+
+    this->RefreshFileInfoCaches();
+    this->IndexFolderForSearch(this->activeFolder, this->fileInfoCache);
+    this->activeFile = fileId;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::BeginRenameFile(uint64_t fileId)
+{
+    if (!this->folderInfoCache.Contains(this->activeFolder) || this->folderInfoCache[this->activeFolder].isArchive)
+    {
+        return;
+    }
+    for (const auto& file : this->fileInfoCache)
+    {
+        if (file.id == fileId)
+        {
+            // like the OS file browsers, the name is edited without its extension
+            Util::String name = file.name;
+            name.StripFileExtension();
+
+            this->folderEdit = FolderEdit();
+            this->folderEdit.mode = FolderEditMode::RenameFile;
+            this->folderEdit.folderId = this->activeFolder;
+            this->folderEdit.fileId = fileId;
+            this->folderEdit.assetType = file.type;
+            this->folderEdit.requestFocus = true;
+            this->folderEdit.scrollIntoView = true;
+            name.CopyToBuffer(this->folderEdit.name, sizeof(this->folderEdit.name));
+            return;
         }
     }
-    Ptr<IO::Stream> stream = IO::CreateStream(newFilePath);
-    stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
-    stream->Open();
+}
 
-    if (NewFuncs[(uint)type] != nullptr)
-        NewFuncs[(uint)type](stream, newFilePath);
+//------------------------------------------------------------------------------
+/**
+    Opens the import window for a model or texture asset with its source files and the settings it was imported
+    with. Importing a model generates the scene again, keeping the materials assigned to it.
+*/
+void
+AssetBrowser::ReimportAsset(const IO::Path& asset)
+{
+    // an open tab holds the whole asset as it was loaded, and saving it would write the old mesh back
+    if (AssetEditor::GetOpenItem(asset) != nullptr)
+    {
+        n_log_warn(Asset Browser, "Close '%s' in the asset editor before reimporting it\n", asset.GetFolderAndFile().AsCharPtr());
+        return;
+    }
 
-    db.AddFile(
-        logger,
-        stream->GetURI().LocalPath().ExtractFileName(),
-        folderEntry,
-        stream->GetSize(),
-        ToolkitUtil::FileType::Particle,
-        IO::FileTime()
-    );
-    stream->Close();
+    // the import window imports and batches it, its settings can be changed before
+    Util::String error;
+    if (!AssetImporterWindow::Reimport(asset, error))
+    {
+        n_log_warn(Asset Browser, "Could not reimport '%s': %s\n", asset.GetFolderAndFile().AsCharPtr(), error.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Only the work file is renamed. Its export is batched under the new name, and the one under the old name is
+    kept for the assets and levels that still refer to it.
+*/
+bool
+AssetBrowser::RenameFile(uint64_t fileId, const Util::String& newName, Util::String& outError)
+{
+    ToolkitUtil::FileDB::FileInfo info;
+    ToolkitUtil::FileDB::FolderInfo folderInfo;
+    if (!this->fileDB.GetFileInfo(fileId, info) || !this->fileDB.GetFolderInfo(info.folderId, folderInfo))
+    {
+        outError = "The file doesn't exist anymore";
+        return false;
+    }
+    if (folderInfo.isArchive)
+    {
+        outError = "Files inside archives can't be renamed";
+        return false;
+    }
+
+    const Util::String extension = info.name.GetFileExtension();
+    const Util::String newFileName = extension.IsEmpty() ? newName : Util::Format("%s.%s", newName.AsCharPtr(), extension.AsCharPtr());
+    if (newFileName == info.name)
+    {
+        return true;
+    }
+
+    // files are addressed by their name on disk, as not every file type has a work mapping to build it from
+    Util::String folder = folderInfo.folderPath.WorkURI("assets").LocalPath();
+    folder.TrimRight("/\\");
+    const IO::URI fromUri = Util::Format("%s/%s", folder.AsCharPtr(), info.name.AsCharPtr());
+    const IO::URI toUri = Util::Format("%s/%s", folder.AsCharPtr(), newFileName.AsCharPtr());
+    // on case insensitive file systems a case-only rename finds the file itself as the target
+    const bool caseOnly = Util::String::StrICmp(newFileName.AsCharPtr(), info.name.AsCharPtr()) == 0;
+    if (!caseOnly && (IO::FileExists(toUri) || IO::DirectoryExists(toUri)))
+    {
+        outError.Format("'%s' already exists", newFileName.AsCharPtr());
+        return false;
+    }
+    if (!IO::RenameFile(fromUri, toUri))
+    {
+        outError.Format("Could not rename '%s', it might be in use", info.name.AsCharPtr());
+        return false;
+    }
+
+    // file ids are derived from the name, so the file is registered again under the new one
+    this->fileDB.DeleteFile(this->logger, fileId);
+    const uint64_t newFileId = this->fileDB.AddFile(this->logger, newFileName, info.folderId, info.size, info.type, info.modifiedDate);
+
+    const char* ns = ToolkitUtil::FileTypeURNMapping[info.type];
+    if (IO::Path::WorkExtensions.Contains(ns))
+    {
+        Editor::LiveBatcher::BatchFile(IO::Path::File(folderInfo.folderPath.GetFolder(), newName, ns));
+    }
+
+    this->RefreshFileInfoCaches();
+    this->IndexFolderForSearch(this->activeFolder, this->fileInfoCache);
+    this->activeFile = newFileId;
+    return true;
 }
 
 
@@ -1251,8 +1674,16 @@ AssetBrowser::DisplayFileTree()
             }
         }
     }
-    ImGui::Text("Search");
-    ImGui::InputText("##search", this->searchFilter, sizeof(this->searchFilter));
+    if (this->pickFileFunction && !this->pickType.IsEmpty())
+        ImGui::Text("Search (only %s files are shown)", this->pickType.AsCharPtr());
+    else
+        ImGui::Text("Search");
+    if (this->focusSearch)
+    {
+        ImGui::SetKeyboardFocusHere();
+        this->focusSearch = false;
+    }
+    ImGui::InputTextWithHint("##search", "Fuzzy search, or a pattern with * and ?", this->searchFilter, sizeof(this->searchFilter));
     
      
     ImGui::PopItemWidth();
@@ -1272,26 +1703,6 @@ AssetBrowser::DisplayFileTree()
     const bool folderTreeFocused = ImGui::IsWindowFocused();
     ImGui::EndChild();
 
-    if (this->folderEdit.commitRequested)
-    {
-        // committed here and not while drawing the tree, as it changes the folder caches the tree is iterating
-        this->folderEdit.commitRequested = false;
-        if (!this->CommitFolderEdit())
-        {
-            // keep editing so the name can be fixed
-            this->folderEdit.requestFocus = true;
-            this->folderEdit.wasActive = false;
-        }
-    }
-    else if (this->folderEdit.mode != FolderEditMode::None && !this->folderEdit.drawn)
-    {
-        // the edited entry went out of view (parent collapsed, folder vanished), drop the edit
-        this->CancelFolderEdit();
-    }
-    if (folderTreeFocused && this->folderEdit.mode == FolderEditMode::None && ImGui::IsKeyPressed(ImGuiKey_F2, false))
-    {
-        this->BeginRenameFolder(this->activeFolder);
-    }
     ImGui::NextColumn();
     if (ImGui::Button("Details"))
     {
@@ -1309,7 +1720,33 @@ AssetBrowser::DisplayFileTree()
     }
     ImGui::BeginChild("ScrollingRegionFiles");
     this->DisplaySelectedFolder(this->searchFilter);
+    const bool fileViewFocused = ImGui::IsWindowFocused();
     ImGui::EndChild();
+
+    if (this->folderEdit.commitRequested)
+    {
+        // committed here and not while drawing, as it changes the folder and file caches the views are iterating
+        this->folderEdit.commitRequested = false;
+        if (!this->CommitFolderEdit())
+        {
+            // keep editing so the name can be fixed
+            this->folderEdit.requestFocus = true;
+            this->folderEdit.wasActive = false;
+        }
+    }
+    else if (this->folderEdit.mode != FolderEditMode::None && !this->folderEdit.drawn)
+    {
+        // the edited entry went out of view (parent collapsed, folder vanished, other folder shown), drop the edit
+        this->CancelFolderEdit();
+    }
+    if (folderTreeFocused && this->folderEdit.mode == FolderEditMode::None && ImGui::IsKeyPressed(ImGuiKey_F2, false))
+    {
+        this->BeginRenameFolder(this->activeFolder);
+    }
+    else if (fileViewFocused && this->folderEdit.mode == FolderEditMode::None && this->activeFile != 0 && this->searchFilter[0] == '\0' && ImGui::IsKeyPressed(ImGuiKey_F2, false))
+    {
+        this->BeginRenameFile(this->activeFile);
+    }
 
     if (ShowContextMenu)
     {
@@ -1355,15 +1792,32 @@ AssetBrowser::DisplayFileTree()
     {
         if (ImGui::BeginPopupContextItem("AssetActions"))
         {
-            if (ImGui::MenuItem("Create Particle System###Item"))
+            // the asset is created once its name is committed with Enter
+            const bool canCreate = this->folderInfoCache.Contains(this->activeFolder) && !this->folderInfoCache[this->activeFolder].isArchive;
+            if (ImGui::MenuItem("Create Particle System", nullptr, false, canCreate))
             {
-                NewAsset("new_particle_system.par", this->fileDB, ToolkitUtil::FileType::Particle, this->activeFolder, this->logger);
-                this->RefreshFileInfoCaches();
+                this->BeginNewAsset(this->activeFolder, ToolkitUtil::FileType::Particle, "new_particle_system");
             }
-            if (ImGui::MenuItem("Create Material###Item"))
+            if (ImGui::MenuItem("Create Material", nullptr, false, canCreate))
             {
-                NewAsset("new_surface.mat", this->fileDB, ToolkitUtil::FileType::Surface, this->activeFolder, this->logger);
-                this->RefreshFileInfoCaches();
+                this->BeginNewAsset(this->activeFolder, ToolkitUtil::FileType::Surface, "new_material");
+            }
+
+            // model assets can be imported again from the file they were imported from
+            const ToolkitUtil::FileDB::FileInfo* contextFile = nullptr;
+            for (const auto& file : this->fileInfoCache)
+            {
+                if (file.id == this->activeFile)
+                {
+                    contextFile = &file;
+                    break;
+                }
+            }
+            const bool canReimport = canCreate && contextFile != nullptr && (contextFile->type == ToolkitUtil::FileType::Asset || contextFile->type == ToolkitUtil::FileType::Texture);
+            ImGui::Separator();
+            if (ImGui::MenuItem("Reimport", nullptr, false, canReimport))
+            {
+                this->ReimportAsset(contextFile->filePath);
             }
             ImGui::EndPopup();
         }
@@ -1428,7 +1882,7 @@ AssetBrowser::BeginRenameFolder(uint64_t folderId)
     Escape or clicking somewhere else cancels.
 */
 void
-AssetBrowser::DisplayFolderNameEditor()
+AssetBrowser::DisplayFolderNameEditor(float width)
 {
     this->folderEdit.drawn = true;
     if (this->folderEdit.requestFocus)
@@ -1437,7 +1891,7 @@ AssetBrowser::DisplayFolderNameEditor()
         this->folderEdit.requestFocus = false;
         this->folderEdit.focusRequestFrame = ImGui::GetFrameCount();
     }
-    ImGui::SetNextItemWidth(ImMax(ImGui::GetContentRegionAvail().x, 100.0f));
+    ImGui::SetNextItemWidth(width > 0.0f ? width : ImMax(ImGui::GetContentRegionAvail().x, 100.0f));
     const bool submitted = ImGui::InputText(
         "##foldername",
         this->folderEdit.name,
@@ -1489,7 +1943,15 @@ AssetBrowser::CommitFolderEdit()
     name.Trim(" \t");
 
     Util::String error;
-    bool success = ValidateFolderName(name, error);
+    const bool newAsset = this->folderEdit.mode == FolderEditMode::NewAsset;
+    const bool renameFile = this->folderEdit.mode == FolderEditMode::RenameFile;
+    bool success = ValidateName(name, newAsset ? "asset" : (renameFile ? "file" : "folder"), error);
+    if (success && (newAsset || renameFile) && ToolkitUtil::FileTypeURNMapping[this->folderEdit.assetType][0] != '\0' && name.FindCharIndex('.') != InvalidIndex)
+    {
+        // paths strip everything after a period as the file extension, which an asset gets from its type
+        error = "An asset name can't contain a period";
+        success = false;
+    }
     if (success)
     {
         if (this->folderEdit.mode == FolderEditMode::NewFolder)
@@ -1499,6 +1961,14 @@ AssetBrowser::CommitFolderEdit()
         else if (this->folderEdit.mode == FolderEditMode::Rename)
         {
             success = this->RenameFolder(this->folderEdit.folderId, name, error);
+        }
+        else if (newAsset)
+        {
+            success = this->CreateAsset(this->folderEdit.folderId, this->folderEdit.assetType, name, error);
+        }
+        else if (renameFile)
+        {
+            success = this->RenameFile(this->folderEdit.fileId, name, error);
         }
     }
 

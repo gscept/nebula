@@ -10,10 +10,12 @@ import subprocess
 
 def run(fips_dir, proj_dir, args) :
     """run the 'gpulang' verb"""
+    # must match where gpulangcompiler/build.{bat,sh} deploy to, and the
+    # FIND_PROGRAM(GPULANGC) paths in code/render/CMakeLists.txt
     if sys.platform == "win32" :
-        target = "gpulangc-windows/gpulangc.exe"        
+        target = "win64/gpulangc.exe"
     else :
-        target = "gpulangc-linux/gpulangc"        
+        target = "linux/gpulangc"
     if len(args) > 0 :
         noun = args[0]
         if noun == 'setup' :

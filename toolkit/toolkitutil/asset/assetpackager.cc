@@ -17,6 +17,8 @@
 #include "flat/skeleton.h"
 #include "flat/particle.h"
 #include "flat/anim.h"
+#include "coreanimation/naxfileformatstructs.h"
+#include "coreanimation/curvetype.h"
 #include "flat/texture.h"
 #include "flat/physics/actor.h"
 
@@ -31,6 +33,31 @@
 
 namespace ToolkitUtil
 {
+
+//------------------------------------------------------------------------------
+/**
+    Node names have to be unique within a model
+*/
+Util::Array<Util::String>
+GetSkinNodeNames(const ToolkitUtil::SceneResourceT* model)
+{
+    Util::Array<Util::String> names;
+    for (const auto& skinFragment : model->skins)
+    {
+        Util::String name = skinFragment->shape != nullptr && skinFragment->shape->transform != nullptr ? skinFragment->shape->transform->name : Util::String();
+        if (name.IsEmpty())
+            name = "character";
+        if (names.FindIndex(name) != InvalidIndex)
+        {
+            IndexT number = 1;
+            while (names.FindIndex(Util::Format("%s_%d", name.AsCharPtr(), number)) != InvalidIndex)
+                number++;
+            name = Util::Format("%s_%d", name.AsCharPtr(), number);
+        }
+        names.Append(name);
+    }
+    return names;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -142,33 +169,33 @@ PackageModel(
 
         writer->BeginModelNode("TransformNode", 'TRFN', "root");
 
-            if (model->skins.size() > 0)
+            // Each skin fragment is a node of its own, a node draws one primitive group with one material and joint palette
+            const Util::Array<Util::String> skinNodeNames = GetSkinNodeNames(model);
+            for (size_t skinIndex = 0; skinIndex < model->skins.size(); skinIndex++)
             {
-                writer->BeginModelNode("CharacterSkinNode", 'CHSN', "character");
+                const auto& skinFragment = model->skins[skinIndex];
+                const Util::String& nodeName = skinNodeNames[(IndexT)skinIndex];
+                writer->BeginModelNode("CharacterSkinNode", 'CHSN', nodeName);
                 writer->BeginTag("Number of skin fragments", 'NSKF');
-                writer->WriteInt((uint)model->skins.size());
+                writer->WriteInt(1);
                 writer->EndTag();
 
-                // Write skins
-                for (const auto& skinFragment : model->skins)
+                // write the used skin fragment
+                writer->BeginTag("Used skin fragments", 'SFRG');
+                writer->WriteInt(skinFragment->shape->prim_group);
+
+                // write the used joints for the fragment
+                writer->WriteInt((uint)skinFragment->joints.size());
+
+                IndexT j;
+                for (j = 0; j < skinFragment->joints.size(); j++)
                 {
-                    // write the used skin fragments
-                    writer->BeginTag("Used skin fragments", 'SFRG');
-                    writer->WriteInt(skinFragment->shape->prim_group);
-
-                    // write the used joints for the fragment
-                    writer->WriteInt((uint)skinFragment->joints.size());
-
-                    IndexT j;
-                    for (j = 0; j < skinFragment->joints.size(); j++)
-                    {
-                        writer->WriteInt(skinFragment->joints[j]);
-                    }
-                    writer->EndTag();
-
-                    writeTransform(writer, skinFragment->shape->transform);
-                    writeShape(writer, skinFragment->shape);
+                    writer->WriteInt(skinFragment->joints[j]);
                 }
+                writer->EndTag();
+
+                writeTransform(writer, skinFragment->shape->transform);
+                writeShape(writer, skinFragment->shape);
 
                 // end skin node
                 writer->EndModelNode();
@@ -212,6 +239,234 @@ PackageModel(
         return true;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The name of a clip is stored in a fixed size buffer in the nax file
+*/
+static const SizeT MaxClipNameLength = sizeof(CoreAnimation::Nax3Clip::name) - 1;
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+FindClip(const ToolkitUtil::AnimResourceT* anim, const Util::String& name, IndexT& outAnimation, IndexT& outClip)
+{
+    for (size_t a = 0; a < anim->animations.size(); a++)
+    {
+        const auto& clips = anim->animations[a]->clips;
+        for (size_t c = 0; c < clips.size(); c++)
+        {
+            if (clips[c]->name == name)
+            {
+                outAnimation = (IndexT)a;
+                outClip = (IndexT)c;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ValidateClipSection(const ToolkitUtil::AnimResourceT* anim, const ToolkitUtil::AnimClipSectionT& section, Util::String& outError)
+{
+    IndexT animIndex, clipIndex;
+    if (section.name.IsEmpty())
+        outError = "it has no name";
+    else if (section.name.Length() > MaxClipNameLength)
+        outError.Format("its name is longer than %d characters", MaxClipNameLength);
+    else if (anim == nullptr || !FindClip(anim, section.clip, animIndex, clipIndex))
+        outError.Format("there's no clip '%s' to cut it from", section.clip.AsCharPtr());
+    else if (FindClip(anim, section.name, animIndex, clipIndex))
+        outError.Format("there's a clip named '%s' already", section.name.AsCharPtr());
+    else if (section.start >= section.end)
+        outError = "it doesn't end after it starts";
+    else
+    {
+        FindClip(anim, section.clip, animIndex, clipIndex);
+        const uint duration = anim->animations[animIndex]->clips[clipIndex]->duration;
+        if (section.end > duration)
+            outError.Format("it ends after the clip, which is %.3f s long", duration / 1000.0f);
+        else
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sample a curve like the runtime does, linearly between the keys around the time, holding the first and last key
+    outside of them
+*/
+static void
+SampleCurve(const ToolkitUtil::AnimInstanceT& anim, const ToolkitUtil::AnimCurve& curve, const uint time, float* outValue)
+{
+    const uint stride = curve.type() == CoreAnimation::CurveType::Rotation ? 4 : 3;
+    const uint* times = anim.key_times.data() + curve.first_time_offset();
+    const float* keys = anim.keys.data() + curve.first_key_offset();
+    const uint numKeys = curve.num_keys();
+
+    uint key = 0;
+    while (key + 1 < numKeys && times[key + 1] <= time)
+        key++;
+    if (key + 1 >= numKeys || time <= times[key])
+    {
+        Memory::Copy(keys + key * stride, outValue, stride * sizeof(float));
+        return;
+    }
+
+    const float weight = float(time - times[key]) / float(times[key + 1] - times[key]);
+    const float* key0 = keys + key * stride;
+    const float* key1 = keys + (key + 1) * stride;
+    if (stride == 4)
+    {
+        Math::quat q0, q1;
+        q0.loadu(key0);
+        q1.loadu(key1);
+        Math::slerp(q0, q1, weight).storeu(outValue);
+    }
+    else
+    {
+        for (uint i = 0; i < stride; i++)
+            outValue[i] = key0[i] + (key1[i] - key0[i]) * weight;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The keys of a section of a curve, with keys added where the section starts and ends unless there are keys there,
+    and the times moved so it starts at 0
+*/
+static ToolkitUtil::AnimCurve
+CutCurve(const ToolkitUtil::AnimInstanceT& anim, const ToolkitUtil::AnimCurve& curve, const uint start, const uint end, std::vector<float>& keys, std::vector<uint>& times)
+{
+    const uint stride = curve.type() == CoreAnimation::CurveType::Rotation ? 4 : 3;
+    const uint firstKey = (uint)keys.size();
+    const uint firstTime = (uint)times.size();
+    float value[4];
+
+    if (curve.num_keys() == 0)
+    {
+        // an inactive curve, the runtime uses the idle pose
+        return ToolkitUtil::AnimCurve(0, 0, 0, curve.type(), curve.pre_infinity(), curve.post_infinity());
+    }
+    else if (curve.num_keys() == 1)
+    {
+        SampleCurve(anim, curve, start, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(0);
+    }
+    else
+    {
+        SampleCurve(anim, curve, start, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(0);
+        for (uint i = 0; i < curve.num_keys(); i++)
+        {
+            const uint time = anim.key_times[curve.first_time_offset() + i];
+            if (time > start && time < end)
+            {
+                const float* key = anim.keys.data() + curve.first_key_offset() + i * stride;
+                keys.insert(keys.end(), key, key + stride);
+                times.push_back(time - start);
+            }
+        }
+        SampleCurve(anim, curve, end, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(end - start);
+    }
+    return ToolkitUtil::AnimCurve(firstKey, firstTime, (uint)times.size() - firstTime, curve.type(), curve.pre_infinity(), curve.post_infinity());
+}
+
+//------------------------------------------------------------------------------
+/**
+    The nax file has no curve or event offsets per clip, a clip's curves and events follow the ones of the clip before it.
+    The velocity curves come after the curves of all clips, so the curves of the sections go in before them
+*/
+void
+CutClipSections(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, ToolkitUtil::Logger* logger)
+{
+    if (anim == nullptr)
+        return;
+
+    // validate them all first, cutting adds clips the next ones are checked against
+    std::vector<const ToolkitUtil::AnimClipSectionT*> valid;
+    for (const auto& section : sections)
+    {
+        Util::String error;
+        bool unique = true;
+        for (const ToolkitUtil::AnimClipSectionT* other : valid)
+            unique &= other->name != section->name;
+        if (!unique)
+            error.Format("there's another section named '%s'", section->name.AsCharPtr());
+        if (unique && ValidateClipSection(anim, *section, error))
+            valid.push_back(section.get());
+        else
+            logger->Warning("Clip section '%s' is skipped, %s\n", section->name.AsCharPtr(), error.AsCharPtr());
+    }
+
+    for (const ToolkitUtil::AnimClipSectionT* section : valid)
+    {
+        IndexT animIndex, clipIndex;
+        FindClip(anim, section->clip, animIndex, clipIndex);
+        ToolkitUtil::AnimInstanceT& instance = *anim->animations[animIndex];
+        const ToolkitUtil::AnimClipT source = *instance.clips[clipIndex];
+
+        // where the curves and events of a clip added after the others go
+        uint curveEnd = 0, eventEnd = 0;
+        for (const auto& clip : instance.clips)
+        {
+            curveEnd += clip->num_curves;
+            eventEnd += clip->num_events;
+        }
+
+        std::vector<float> keys;
+        std::vector<uint> times;
+        std::vector<ToolkitUtil::AnimCurve> curves;
+        const size_t keyBase = instance.keys.size(), timeBase = instance.key_times.size();
+        for (uint i = 0; i < source.num_curves; i++)
+        {
+            ToolkitUtil::AnimCurve curve = CutCurve(instance, instance.curves[source.first_curve_offset + i], section->start, section->end, keys, times);
+            if (curve.num_keys() > 0)
+                curve = ToolkitUtil::AnimCurve(curve.first_key_offset() + (uint)keyBase, curve.first_time_offset() + (uint)timeBase, curve.num_keys(), curve.type(), curve.pre_infinity(), curve.post_infinity());
+            curves.push_back(curve);
+        }
+        instance.keys.insert(instance.keys.end(), keys.begin(), keys.end());
+        instance.key_times.insert(instance.key_times.end(), times.begin(), times.end());
+        instance.curves.insert(instance.curves.begin() + curveEnd, curves.begin(), curves.end());
+
+        // the events in the section, at their time in it
+        uint numEvents = 0;
+        for (uint i = 0; i < source.num_events; i++)
+        {
+            const ToolkitUtil::AnimEventT& event = *instance.events[source.first_event_offset + i];
+            if (event.time >= section->start && event.time <= section->end)
+            {
+                auto copy = std::make_unique<ToolkitUtil::AnimEventT>(event);
+                copy->time = event.time - section->start;
+                instance.events.insert(instance.events.begin() + eventEnd + numEvents, std::move(copy));
+                numEvents++;
+            }
+        }
+
+        auto clip = std::make_unique<ToolkitUtil::AnimClipT>();
+        clip->name = section->name;
+        clip->first_curve_offset = curveEnd;
+        clip->num_curves = source.num_curves;
+        clip->first_event_offset = eventEnd;
+        clip->num_events = numEvents;
+        clip->first_velocity_curve_offset = 0;
+        clip->num_velocity_curves = 0;
+        clip->duration = section->end - section->start;
+        instance.clips.push_back(std::move(clip));
+
+        logger->Print("Cut clip '%s' from '%s' (%.3f s - %.3f s)\n", section->name.AsCharPtr(), section->clip.AsCharPtr(), section->start / 1000.0f, section->end / 1000.0f);
+    }
 }
 
 //------------------------------------------------------------------------------

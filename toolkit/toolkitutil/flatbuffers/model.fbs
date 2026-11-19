@@ -32,6 +32,13 @@ table ModelAsset
 	animation : AnimResource;
 	physics : PhysicsResource;
 	flags : OptimizationFlags;
+	// the file the asset was imported from, src: relative when it's in the project, which reimporting imports again
+	source : string;
+	// the import scale, the factor the source units are multiplied with to get meters
+	scale : float = 1.0;
+	// parts of the animation clips packaged as clips of their own, for sources without a take per clip. They're
+	// stored apart from the animation, so reimporting keeps them
+	clip_sections : [AnimClipSection];
 }
 
 root_type ModelAsset;

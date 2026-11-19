@@ -31,7 +31,13 @@ public:
     Util::Array<IO::URI> ExtractAll();
 
     void ExtractMaterial(ToolkitUtil::MaterialResourceT* materialResource, Gltf::Material const& material);
+
+    /// name of the texture asset an image is imported as, the index for embedded images and the file name for external ones
+    static Util::String TextureName(Gltf::Document const& document, int32_t imageIndex);
 private:
+    /// URN of the texture asset a material's texture slot uses
+    Util::String TextureURN(int32_t textureIndex) const;
+
     Gltf::Document const* doc;
     Util::String outputFolder;
 

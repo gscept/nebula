@@ -534,7 +534,7 @@ struct CMDAddProperty : public Edit::Command
     bool
     Execute() override
     {
-        return InternalAddProperty(id, component, nullptr);
+        return InternalAddProperty(id, component, value.IsValid() ? value.GetPtr() : nullptr);
     };
     bool
     Unexecute() override
@@ -543,6 +543,8 @@ struct CMDAddProperty : public Edit::Command
     };
     Editor::Entity id;
     Game::ComponentId component;
+    /// initial value of the component, the component defaults are used if this is not set
+    Util::Blob value;
 };
 
 //------------------------------------------------------------------------------
@@ -962,6 +964,24 @@ AddComponent(Editor::Entity entity, Game::ComponentId component)
     CMDAddProperty* cmd = new CMDAddProperty;
     cmd->id = entity;
     cmd->component = component;
+    CommandManager::Execute(cmd);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Adds a component initialized with the provided value instead of the component defaults
+*/
+void
+AddComponent(Editor::Entity entity, Game::ComponentId component, void* value)
+{
+    CMDAddProperty* cmd = new CMDAddProperty;
+    cmd->id = entity;
+    cmd->component = component;
+    SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
+    if (typeSize > 0)
+    {
+        cmd->value.Set(value, typeSize);
+    }
     CommandManager::Execute(cmd);
 }
 

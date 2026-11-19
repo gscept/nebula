@@ -152,8 +152,16 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
 {
     if (reader->SetToFirstChild(name))
     {
+#ifdef WITH_NEBULA_EDITOR
+        // the editor shows the material's textures from its texture values, which binding the handle doesn't set
+        const uint nameHash = Util::String(name).HashCode();
+#endif
         auto tmp = Resources::CreateResource(IO::Path::Parse(reader->GetString("value")), tag,
-        [&handle, &dirtyFlag, mat, data, dataSize](Resources::ResourceId rid) mutable
+        [&handle, &dirtyFlag, mat, data, dataSize
+#ifdef WITH_NEBULA_EDITOR
+            , nameHash
+#endif
+        ](Resources::ResourceId rid) mutable
         {
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
@@ -162,9 +170,16 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             materialLoaderState.pendingMaterialUpdates.Emplace(mat) = Util::MakePair(data, (uint)dataSize);
             materialLoaderState.pendingMaterialUpdatesSection.Leave();
             MaterialAddLODTexture(mat, rid);
+#ifdef WITH_NEBULA_EDITOR
+            MaterialSetEditorTexture(mat, nameHash, rid);
+#endif
             dirtyFlag = true;
         },
-        [&handle, &dirtyFlag, mat, data, dataSize](Resources::ResourceId rid) mutable
+        [&handle, &dirtyFlag, mat, data, dataSize
+#ifdef WITH_NEBULA_EDITOR
+            , nameHash
+#endif
+        ](Resources::ResourceId rid) mutable
         {
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
@@ -173,8 +188,14 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             materialLoaderState.pendingMaterialUpdates.Emplace(mat) = Util::MakePair(data, (uint)dataSize);
             materialLoaderState.pendingMaterialUpdatesSection.Leave();
             MaterialAddLODTexture(mat, rid);
+#ifdef WITH_NEBULA_EDITOR
+            MaterialSetEditorTexture(mat, nameHash, rid);
+#endif
             dirtyFlag = true;
         });
+#ifdef WITH_NEBULA_EDITOR
+        MaterialSetEditorTexture(mat, nameHash, tmp);
+#endif
         handle = CoreGraphics::TextureGetBindlessHandle(def);
         reader->SetToParent();
     }

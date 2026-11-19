@@ -159,6 +159,8 @@ GraphicsServer::Open()
         IO::Path::AddExportMapping("tex", "dds");
         IO::Path::AddExportMapping("mat", "mat");
         IO::Path::AddExportMapping("par", "par");
+        IO::Path::AddExportMapping("ske", "nsk");
+        IO::Path::AddExportMapping("ani", "nax");
     #else
         #error "Platform unsupported"
     #endif

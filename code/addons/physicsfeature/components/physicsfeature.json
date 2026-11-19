@@ -74,7 +74,7 @@
 		"PhysicsResource": {
 			"resource": {
 				"type": "resource",
-				"default": "sysphys:box.actor"
+				"default": "system:box:phys"
 			},
 			"actorType": {
 				"type": "PhysicsFeature::ActorType",
@@ -269,7 +269,7 @@
 			"resource": {
 				"type": "Util::StringAtom",
 				"default": "",
-				"description": "Resource read by the registered Physics::GeometryLoader."
+				"description": "Mesh URN, folder:file:msh, read by the registered Physics::GeometryLoader."
 			},
 			"primGroup": {
 				"type": "uint",
@@ -306,7 +306,7 @@
 			"resource": {
 				"type": "Util::StringAtom",
 				"default": "",
-				"description": "Resource read by the registered Physics::GeometryLoader."
+				"description": "Height map texture URN, folder:file:tex, read by the registered Physics::GeometryLoader."
 			},
 			"heightRange": {
 				"type": "float",
