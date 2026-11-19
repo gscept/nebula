@@ -46,7 +46,7 @@ BBoxTest::Run()
         VERIFY(nearequal(b.pmax, point(1.5f, 3.0f, 5.0f), EPSILON4));
         mat4 m = b.to_mat4();
         // to_mat4 produces scaling(size) with position = center
-        VERIFY(nearequal(m.position, vec3(1.0f, 2.0f, 3.0f), EPSILON3));
+        VERIFY(nearequal(m.position(), vec3(1.0f, 2.0f, 3.0f), EPSILON3));
         VERIFY(nearequal(xyz(m.r[0]), vec3(1.0f, 0.0f, 0.0f) * b.size().x, EPSILON3));
     }
 

@@ -121,12 +121,12 @@ public:
             {
                 const IO::URI uri = countStack.Back();
                 countStack.EraseBack();
-                if (!ioServer->DirectoryExists(uri))
+                if (!IO::DirectoryExists(uri))
                 {
                     continue;
                 }
-                totalWork += 1 + ioServer->ListFiles(uri, "*", false).Size();
-                for (const Util::String& dir : ioServer->ListDirectories(uri, "*", true, false))
+                totalWork += 1 + IO::ListFiles(uri, "*", false).Size();
+                for (const Util::String& dir : IO::ListDirectories(uri, "*", true, false))
                 {
                     countStack.Append(IO::URI(dir));
                 }
