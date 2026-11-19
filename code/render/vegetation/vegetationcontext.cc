@@ -723,8 +723,8 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(ViewGetCamera(view));
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
     VegetationGenerateUniforms::STRUCT uniforms;
-    cameraTransform.position.store(uniforms.CameraPosition);
-    cameraTransform.z_axis.store(uniforms.CameraForward);
+    cameraTransform.position().store(uniforms.CameraPosition);
+    cameraTransform.z_axis().store(uniforms.CameraForward);
 
     Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
     for (auto& instance : instances)

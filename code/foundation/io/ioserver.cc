@@ -532,7 +532,7 @@ DirectoryExists(const URI& uri)
 /**
 */
 bool
-IoServer::MoveFile(const URI& oldPath, const URI& newPath) const
+MoveFile(const URI& oldPath, const URI& newPath)
 {
     n_assert(oldPath.Scheme() == "file" && newPath.Scheme() == "file");
     return FSWrapper::MoveFile(oldPath.GetHostAndLocalPath(), newPath.GetHostAndLocalPath());
