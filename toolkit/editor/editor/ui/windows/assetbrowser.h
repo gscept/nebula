@@ -71,7 +71,7 @@ private:
     /// Determine file type from file extension
     static ToolkitUtil::FileType DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and sync entries to FileDB
-    void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
+    void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
     /// replace this folder's files in the search index after a disk scan
     void IndexFolderForSearch(uint64_t folderId, const Util::Array<ToolkitUtil::FileDB::FileInfo>& files);
     friend class ScanFolderJob;

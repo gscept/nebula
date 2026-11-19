@@ -17,7 +17,7 @@ bool
 OpenFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
-    if (!IO::IoServer::Instance()->FileExists(start))
+    if (!IO::FileExists(start))
     {
         localpath.Append("/");
     }
@@ -67,7 +67,7 @@ bool
 SaveFile(Util::String const& title, const IO::URI & start, std::initializer_list<const char*>const& filters, Util::String& path)
 {
     Util::String localpath = start.LocalPath();
-    if (!IO::IoServer::Instance()->FileExists(start))
+    if (!IO::FileExists(start))
     {
         localpath.Append("/");
     }

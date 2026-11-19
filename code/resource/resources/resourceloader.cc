@@ -382,7 +382,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     if (AllBits(job.flags, LoadFlags::Create))
     {
         // construct stream
-        Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
+        Ptr<Stream> stream = IO::CreateStream(job.name.AsCharPtr());
         stream->SetAccessMode(Stream::ReadAccess);
         if (stream->Open())
         {

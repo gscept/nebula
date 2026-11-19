@@ -41,9 +41,8 @@ RCSWrapper::~RCSWrapper()
 void
 RCSWrapper::WriteTempSVNConfigFiles()
 {
-    IoServer* ioServer = IoServer::Instance();
-    ioServer->CreateDirectory("temp:synctool3");
-    Ptr<Stream> stream = ioServer->CreateStream("temp:synctool3/config");
+    IO::CreateDirectory("temp:synctool3");
+    Ptr<Stream> stream = IO::CreateStream("temp:synctool3/config");
     Ptr<TextWriter> textWriter = TextWriter::Create();
     textWriter->SetStream(stream);
     if (textWriter->Open())
@@ -84,7 +83,7 @@ RCSWrapper::WriteTempSVNConfigFiles()
         textWriter->WriteLine("*.dds = svn:needs-lock");
         textWriter->Close();
 
-        ioServer->CopyFile("temp:synctool3/config", "temp:synctool3/config.txt");
+        IO::CopyFile("temp:synctool3/config", "temp:synctool3/config.txt");
     }
 
     // also need to write the user's authentification files
@@ -101,20 +100,19 @@ RCSWrapper::WriteTempSVNConfigFiles()
 void
 RCSWrapper::CopyDirectory(const String& from, const String& to)
 {
-    IoServer* ioServer = IoServer::Instance();
     URI fromUri(from);
     URI toUri(to);
-    if (ioServer->DirectoryExists(fromUri))
+    if (IO::DirectoryExists(fromUri))
     {
-        if (ioServer->CreateDirectory(toUri))
+        if (IO::CreateDirectory(toUri))
         {
-            Array<String> files = ioServer->ListFiles(fromUri, "*");
+            Array<String> files = IO::ListFiles(fromUri, "*");
             IndexT i;
             for (i = 0; i < files.Size(); i++)
             {
                 String fromPath = from + "/" + files[i];
                 String toPath = to + "/" + files[i];
-                ioServer->CopyFile(URI(fromPath), URI(toPath));
+                IO::CopyFile(URI(fromPath), URI(toPath));
             }
         }
     }
@@ -275,9 +273,7 @@ RCSWrapper::GetModifiedFiles(Logger& logger, const String& directory, Array<Stri
 bool
 RCSWrapper::IsSVNDirectory(Logger& logger, const String& directory) const
 {
-    IoServer* ioServer = IoServer::Instance();
-
-    if (!ioServer->DirectoryExists(directory + "/.svn"))
+    if (!IO::DirectoryExists(directory + "/.svn"))
     {
         logger.Error("Directory not under SVN or CVS control: %s\n", directory.AsCharPtr());
         return false;
@@ -290,15 +286,13 @@ RCSWrapper::IsSVNDirectory(Logger& logger, const String& directory) const
 */
 bool
 RCSWrapper::IsSVNCommandLineConfigured(Logger& logger) const
-{
-    IoServer* ioServer = IoServer::Instance();
-    
+{  
     if (!this->svnToolLocation.IsValid())
     {
         logger.Error("SVN command line tool has not been set!\n");
         return false;
     }
-    if (!ioServer->FileExists(this->svnToolLocation))
+    if (!IO::FileExists(this->svnToolLocation))
     {
         logger.Error("SVN command line tool not found: '%s'!\n", this->svnToolLocation.AsCharPtr());
         return false;

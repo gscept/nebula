@@ -20,7 +20,7 @@ namespace Physics
 bool
 DdsHeightField(Util::StringAtom resource, HeightFieldInput& out)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
+    Ptr<IO::Stream> stream = IO::CreateStream(IO::URI(resource.AsString()));
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (!stream->Open())
     {

@@ -48,14 +48,14 @@ DistributedAppJob::RunJob()
     
     // create a temporary list file on the jobs host system
     this->localListPath.Set("temp:distributedtools/"+this->GetGuid().AsString()+".txt");   
-    if(!IoServer::Instance()->DirectoryExists(this->localListPath.LocalPath().ExtractDirName()))
+    if(!DirectoryExists(this->localListPath.LocalPath().ExtractDirName()))
     {
-        IoServer::Instance()->CreateDirectory(this->localListPath.LocalPath().ExtractDirName());
+        CreateDirectory(this->localListPath.LocalPath().ExtractDirName());
     }
     
     // write temporary list file
     Ptr<TextWriter> writer = TextWriter::Create();
-    writer->SetStream(IoServer::Instance()->CreateStream(this->localListPath));
+    writer->SetStream(CreateStream(this->localListPath));
     writer->Open();
     IndexT fileIndex;
     for (fileIndex = 0; fileIndex < this->fileList.Size(); fileIndex++)
@@ -66,7 +66,7 @@ DistributedAppJob::RunJob()
     IndexT dirIndex;
     for (dirIndex = 0; dirIndex < this->dirList.Size(); dirIndex++)
     {
-        Array<String> dirFiles = IoServer::Instance()->ListFiles(this->dirList[dirIndex], "*");
+        Array<String> dirFiles = ListFiles(this->dirList[dirIndex], "*");
         for (fileIndex = 0; fileIndex < dirFiles.Size(); fileIndex++)
         {
             String path;
@@ -209,7 +209,7 @@ DistributedAppJob::IsAbleToRun()
     bool success = DistributedJob::IsAbleToRun();
     
     // check application path
-    if(!IoServer::Instance()->FileExists(this->applicationPath))
+    if(!FileExists(this->applicationPath))
     {
         success = false;
     }
@@ -230,9 +230,9 @@ DistributedAppJob::UpdateJob()
     if(!this->jobApplication.IsRunning())
     {
         // check if a list file was created and remove it from disk
-        if(IoServer::Instance()->FileExists(this->localListPath))
+        if(FileExists(this->localListPath))
         {
-            IoServer::Instance()->DeleteFile(this->localListPath);
+            DeleteFile(this->localListPath);
         }
         // print output of job
         Ptr<TextReader> reader = TextReader::Create();

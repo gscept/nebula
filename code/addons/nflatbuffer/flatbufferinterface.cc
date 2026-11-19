@@ -20,13 +20,13 @@ using namespace Flat;
 // wrapper functions to allow flatbuffer to use nebula assign style paths
 bool FlatFileExistFunction(const char* filename)
 {
-    return IO::IoServer::Instance()->FileExists(filename);
+    return IO::FileExists(filename);
 }
 
 bool FlatLoadFileFunction(const char* filename, bool binary, std::string* target)
 {
     Util::String buf;
-    bool success = IO::IoServer::Instance()->ReadFile(filename, buf);
+    bool success = IO::ReadFile(filename, buf);
     n_assert(success);
     target->assign(buf.AsCharPtr(), buf.Length() + 1);
     return success;
@@ -57,7 +57,7 @@ void FlatbufferState::Init()
 
 void FlatbufferState::LoadFolder(Util::String const& folder)
 {
-    Util::Array<Util::String> files = IO::IoServer::Instance()->ListFiles(folder, "*.bfbs", true);
+    Util::Array<Util::String> files = IO::ListFiles(folder, "*.bfbs", true);
 
     for (int i = 0; i < files.Size(); i++)
     {
@@ -65,7 +65,7 @@ void FlatbufferState::LoadFolder(Util::String const& folder)
     }
 
     // Recurse all folders
-    Util::Array<Util::String> dirs = IO::IoServer::Instance()->ListDirectories(folder, "*", true);
+    Util::Array<Util::String> dirs = IO::ListDirectories(folder, "*", true);
     for (auto const& dir : dirs)
     {
         this->LoadFolder(dir);
@@ -86,7 +86,7 @@ void FlatbufferState::LoadExported()
 flatbuffers::Parser*
 CreateParser(IO::URI const& file)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     if (stream->Open())
     {
         void * buf = stream->Map();
@@ -159,7 +159,7 @@ Util::Blob
 FlatbufferInterface::ParseJson(IO::URI const& file)
 {
     Util::String contents;
-    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    if (IO::ReadFile(file, contents))
     {
         flatbuffers::Parser* parser = CreateParserForJson(file);
         if (parser->ParseJson(contents.AsCharPtr(),file.LocalPath().AsCharPtr()))
@@ -182,7 +182,7 @@ Util::Blob
 FlatbufferInterface::ParseJson(IO::URI const& file, const Util::String& schema)
 {
     Util::String contents;
-    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    if (IO::ReadFile(file, contents))
     {
         IndexT schemaIndex = state.schemaFiles.FindIndex(schema.AsCharPtr());
         n_assert(schemaIndex != InvalidIndex);
@@ -205,7 +205,7 @@ FlatbufferInterface::ParseJson(IO::URI const& file, const Util::String& schema)
 */
 bool FlatbufferInterface::CompileSchema(IO::URI const& file, IO::URI const& outFile)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     bool retval = false;
     if (stream->Open())
     {
@@ -230,8 +230,8 @@ bool FlatbufferInterface::CompileSchema(IO::URI const& file, IO::URI const& outF
             parser->Serialize();
             auto builderSize = parser->builder_.GetSize();
             char* builderData = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
-            IO::IoServer::Instance()->EnsureDirectoriesForFile(outFile);
-            Ptr<IO::Stream> outStream = IO::IoServer::Instance()->CreateStream(outFile);
+            IO::EnsureDirectoriesForFile(outFile);
+            Ptr<IO::Stream> outStream = IO::CreateStream(outFile);
             outStream->SetAccessMode(IO::Stream::WriteAccess);
             if (outStream->Open())
             {
@@ -275,7 +275,7 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
     }
     flatbuffers::Parser *parser = CreateParser(state.schemaFiles[ident]);
     Util::String bufferText;
-    if (IO::IoServer::Instance()->ReadFile(source, bufferText))
+    if (IO::ReadFile(source, bufferText))
     {
         Util::String filename = source.LocalPath().ExtractFileName();
         filename.StripFileExtension();
@@ -290,7 +290,7 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
             // make sure we have a final / for the output folder
             // FIXME could use own writer
             target += "/";
-            if (IO::IoServer::Instance()->CreateDirectory(target))
+            if (IO::CreateDirectory(target))
             {
                 std::unique_ptr<flatbuffers::RealFileSaver> file_saver(new flatbuffers::RealFileSaver());
                 parser->opts.file_saver = file_saver.get();

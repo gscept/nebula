@@ -131,7 +131,7 @@ ProjectInfo::Setup()
         // the argument is normally the project directory, but a path directly
         // to the project info file is also accepted
         String projectArg = args.GetString("-project");
-        if (IoServer::Instance()->FileExists(projectArg))
+        if (FileExists(projectArg))
         {
             projectPath = projectArg;
             projPath = projectPath.ExtractToLastSlash();
@@ -145,7 +145,7 @@ ProjectInfo::Setup()
     }
 
     Result res = ProjectInfo::Success;
-    if (IoServer::Instance()->FileExists(projectPath))
+    if (FileExists(projectPath))
     {
         res = this->ParseProjectInfoFile(URI(projectPath));
         this->AddAttrAssigns();
@@ -188,7 +188,7 @@ ProjectInfo::ParseProjectInfoFile(const IO::URI & path)
 {
     n_assert(!this->IsValid());
 
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
+    Ptr<Stream> stream = CreateStream(path);
     Ptr<JsonReader> jsonReader = JsonReader::Create();
     jsonReader->SetStream(stream);
     if (jsonReader->Open())
@@ -314,7 +314,7 @@ ProjectInfo::SetupFromFile(const String& file)
 {
     ProjectInfo pi;
     URI uri(file);
-    if(IO::IoServer::Instance()->FileExists(uri))
+    if(IO::FileExists(uri))
     {
         pi.ParseProjectInfoFile(uri);
     }

@@ -343,7 +343,7 @@ DistributedJob::IsAbleToRun()
     // check svn path
     URI svnUri;
     svnUri.Set(this->svnPath);
-    if(!IoServer::Instance()->FileExists(svnUri))
+    if(!FileExists(svnUri))
     {
         success = false;
     }
@@ -351,7 +351,7 @@ DistributedJob::IsAbleToRun()
     // check project path
     URI projUri;
     projUri.Set(this->projectDirectory);
-    if(!IoServer::Instance()->DirectoryExists(projUri))
+    if(!DirectoryExists(projUri))
     {
         success = false;
     }

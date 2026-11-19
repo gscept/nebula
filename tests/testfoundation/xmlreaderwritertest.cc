@@ -26,7 +26,6 @@ void
 XmlReaderWriterTest::Run()
 {
     // create necessary objects
-    Ptr<IoServer> ioServer = IoServer::Create();
     Ptr<MemoryStream> stream = MemoryStream::Create();
     Ptr<XmlWriter> writer = XmlWriter::Create();
     Ptr<XmlReader> reader = XmlReader::Create();

@@ -21,7 +21,7 @@ namespace Physics
 bool
 NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
+    Ptr<IO::Stream> stream = IO::CreateStream(IO::URI(resource.AsString()));
     stream->SetAccessMode(IO::Stream::ReadAccess);
 
     Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();

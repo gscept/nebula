@@ -61,6 +61,7 @@ StartProcess(const ProcessStartInfo& createInfo)
         creationFlags |= CREATE_NO_WINDOW;
     }
 
+
     Ids::Id32 id = processIdAllocator.Alloc();
 
     PROCESS_INFORMATION& processInfo = processIdAllocator.Get<Process_LaunchInfo>(id);
@@ -78,6 +79,7 @@ StartProcess(const ProcessStartInfo& createInfo)
 
     // build a command line
     String cmdLine = createInfo.exePath.LocalPath();
+    cmdLine.ReplaceChars("/", '\\');
     cmdLine.Append(" ");
     cmdLine.Append(createInfo.args);
     STARTUPINFO startupInfo = { sizeof(STARTUPINFO), 0 };

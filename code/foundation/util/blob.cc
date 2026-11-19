@@ -88,7 +88,7 @@ Blob::GetBase64() const
 void 
 Blob::SetFromFile(const IO::URI & uri)
 {
-    Ptr<IO::FileStream> file = IO::IoServer::Instance()->CreateStream(uri).downcast<IO::FileStream>();
+    Ptr<IO::FileStream> file = IO::CreateStream(uri).downcast<IO::FileStream>();
     n_assert(file->Open());
     const size_t fileSize = file->GetSize();
     this->SetSize(fileSize);

@@ -166,7 +166,7 @@ DestinationField(const Util::String& requester, IO::Path& destination, const Uti
     ImGui::TextDisabled("Imports to");
     ImGui::SameLine();
     ImGui::TextUnformatted(target.AsCharPtr());
-    if (!IO::IoServer::Instance()->DirectoryExists(destination.WorkURI("assets")))
+    if (!IO::DirectoryExists(destination.WorkURI("assets")))
     {
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), "(new folder)");
@@ -630,7 +630,7 @@ AssetImporterWindow::Run(SaveMode save)
                     Util::String::Sprintf("%s Import %s", ICON_ttf_SAVE, fileNameNoExt.AsCharPtr());
                 if (ImGui::Button(saveButton.AsCharPtr()))
                 {
-                    IO::IoServer::Instance()->CreateDirectory(destination.WorkURI("assets"));
+                    IO::CreateDirectory(destination.WorkURI("assets"));
                     if (faces.IsEmpty())
                     {
                         ToolkitUtil::ImportTexture(file, destination.WorkURI("assets"), textureResource, &logger);
@@ -700,7 +700,7 @@ AssetImporterWindow::Run(SaveMode save)
                     case 1: scale = 1.0f; break; // m to m
                     case 2: scale = 1000.0f; break; // km to m
                 }
-                IO::IoServer::Instance()->CreateDirectory(destination.WorkURI("assets"));
+                IO::CreateDirectory(destination.WorkURI("assets"));
                 ToolkitUtil::ImportFBX(file, destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 IO::Path asset = destination;
                 asset.SetFile(fileNameNoExt, "mdl");
@@ -756,7 +756,7 @@ AssetImporterWindow::Run(SaveMode save)
                     case 1: scale = 1.0f; break; // m to m
                     case 2: scale = 1000.0f; break; // km to m
                 }
-                IO::IoServer::Instance()->CreateDirectory(destination.WorkURI("assets"));
+                IO::CreateDirectory(destination.WorkURI("assets"));
                 ToolkitUtil::ImportGLTF(file, destination.WorkURI("assets"), (ToolkitUtil::ImportFlags)flags, scale, &logger);
                 IO::Path asset = destination;
                 asset.SetFile(fileNameNoExt, "mdl");

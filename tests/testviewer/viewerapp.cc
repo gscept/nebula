@@ -92,7 +92,7 @@ SimpleViewerApplication::Open()
         this->gfxServer = GraphicsServer::Create();
         this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
-        this->ioServer = IO::IoServer::Create();
+        IO::StartupFilesystem({});
 
 #ifdef USE_GITHUB_DEMO        
         this->ioServer->MountArchive("root:export");
@@ -641,8 +641,8 @@ SimpleViewerApplication::ToFree()
 void 
 SimpleViewerApplication::Browse()
 {
-    this->folders = IO::IoServer::Instance()->ListDirectories("mdl:", "*");    
-    this->files = IO::IoServer::Instance()->ListFiles("mdl:" + this->folders[this->selectedFolder], "*");
+    this->folders = IO::ListDirectories("mdl:", "*");    
+    this->files = IO::ListFiles("mdl:" + this->folders[this->selectedFolder], "*");
 }
 
 } // namespace Tests

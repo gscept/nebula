@@ -7,6 +7,7 @@
 #include "core/coreserver.h"
 #include "core/sysfunc.h"
 #include "io/gamecontentserver.h"
+#include "io/ioserver.h"
 #include "testbase/testrunner.h"
 #include "stringtest.h"
 #include "arraytest.h"
@@ -68,6 +69,8 @@ __cdecl main(int argc, const char** argv)
     Ptr<CoreServer> coreServer = CoreServer::Create();
     coreServer->SetAppName(Util::StringAtom("Nebula Foundation Tests"));
     coreServer->Open();
+
+    IO::StartupFilesystem({});
 
     Ptr<IO::GameContentServer> gameContentServer = IO::GameContentServer::Create();
     gameContentServer->SetTitle("RL Test Title");
@@ -139,6 +142,8 @@ __cdecl main(int argc, const char** argv)
     coreServer->Close();
     testRunner = nullptr;
     coreServer = nullptr;
+
+    IO::ShutdownFilesystem();
     
     Core::SysFunc::Exit(result ? 0 : -1);
 }

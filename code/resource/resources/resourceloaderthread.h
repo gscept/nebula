@@ -41,6 +41,5 @@ private:
 
     Threading::SafeQueue<std::function<void()>> jobs;
     Threading::Event completeEvent;
-    Ptr<IO::IoServer> ioServer;
 };
 } // namespace Resources

@@ -183,7 +183,7 @@ GetCubeFaceFromPath(const IO::URI& file, Util::String& cubeName)
 static bool
 ReadImportFile(const IO::URI& file, std::vector<uint8_t>& data)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -203,7 +203,7 @@ ReadImportFile(const IO::URI& file, std::vector<uint8_t>& data)
 static bool
 SaveTextureResource(const ToolkitUtil::TextureResourceT& texture, const IO::URI& output)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(output);
+    Ptr<IO::Stream> stream = IO::CreateStream(output);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
     {
@@ -291,7 +291,7 @@ ImportAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::
     else if (ext == "ogg")
         audio.container = ToolkitUtil::AudioContainer_OGG;
 
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -312,7 +312,7 @@ ImportAudio(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::
     IO::URI output = Util::String::Sprintf("%s/%s.naaud", destinationFolder.LocalPath().AsCharPtr(), file.LocalPath().ExtractFileName().AsCharPtr());
 
     logger->Print("%s -> %s\n", file.LocalPath().AsCharPtr(), output.LocalPath().AsCharPtr());
-    stream = IO::IoServer::Instance()->CreateStream(output);
+    stream = IO::CreateStream(output);
     stream->SetAccessMode(IO::Stream::WriteAccess);
     if (stream->Open())
     {

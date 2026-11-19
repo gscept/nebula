@@ -113,7 +113,7 @@ UIManager::OnActivate()
     windowServer->RegisterCommand([](){ 
         static Util::String localpath = IO::URI("export:levels").LocalPath();
         Util::String path;
-        IO::IoServer::Instance()->CreateDirectory(localpath);
+        IO::CreateDirectory(localpath);
         if (IO::FileDialog::SaveFile("Select location of exported level file", localpath, {"*.nlvl"}, path))
             Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
     }, "Export nlvl", "Ctrl+Shift+E", "File");
@@ -189,13 +189,13 @@ UIManager::OnActivate()
     });
     IO::URI userEditorIni = IO::URI(Dynui::EditorUIPath);
     Util::String path = userEditorIni.LocalPath();
-    if (!IO::IoServer::Instance()->FileExists(userEditorIni))
+    if (!IO::FileExists(userEditorIni))
     {
         const Util::String defaultIni = "tool:syswork/data/editor/defaultui.ini";
-        IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
-        if (IO::IoServer::Instance()->FileExists(defaultIni))
+        IO::CreateDirectory("user:nebula/editor/");
+        if (IO::FileExists(defaultIni))
         {
-            IO::IoServer::Instance()->CopyFile(defaultIni, userEditorIni);
+            IO::CopyFile(defaultIni, userEditorIni);
         }
         else
         {
@@ -242,7 +242,7 @@ UIManager::OnFrame()
         this->delayedImguiLoad = false;
         IO::URI userEditorIni = IO::URI(Dynui::EditorUIPath);
         Util::String path = userEditorIni.LocalPath();
-        if (IO::IoServer::Instance()->FileExists(userEditorIni))
+        if (IO::FileExists(userEditorIni))
         {
             ImGui::LoadIniSettingsFromDisk(path.c_str());
         }

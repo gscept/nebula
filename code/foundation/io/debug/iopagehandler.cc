@@ -138,7 +138,6 @@ IoPageHandler::ListDirectory(const Util::String& path, const Ptr<HttpRequest>& r
     htmlWriter->SetTitle("Nebula Directory Listing");
     if (htmlWriter->Open())
     {
-        IoServer* ioServer = IoServer::Instance();        
         AssignRegistry* assignRegistry = AssignRegistry::Instance();
         htmlWriter->Element(HtmlElement::Heading1, "Directory Listing");
         htmlWriter->AddAttr("href", "/index.html");
@@ -158,8 +157,8 @@ IoPageHandler::ListDirectory(const Util::String& path, const Ptr<HttpRequest>& r
         htmlWriter->LineBreak();
         
         htmlWriter->Element(HtmlElement::Heading3, path + "    (" + assignRegistry->ResolveAssigns(path).AsString() + ")");
-        Array<String> dirs = ioServer->ListDirectories(path, "*");
-        Array<String> files = ioServer->ListFiles(path, "*");
+        Array<String> dirs = IO::ListDirectories(path, "*");
+        Array<String> files = IO::ListFiles(path, "*");
 
         htmlWriter->Begin(HtmlElement::UnorderedList);
         IndexT i;

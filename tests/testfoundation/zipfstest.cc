@@ -20,11 +20,10 @@ using namespace Util;
 void
 ZipFSTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
-    ioServer->MountStandardArchives();
+    IO::MountStandardArchives();
 
     // open a file, read its data and write it into a temp file
-    Ptr<Stream> stream = ioServer->CreateStream("export:data/tables/blueprints.xml");
+    Ptr<Stream> stream = IO::CreateStream("export:data/tables/blueprints.xml");
     stream->SetAccessMode(Stream::ReadAccess);
     if (stream->Open())
     {
@@ -42,7 +41,7 @@ ZipFSTest::Run()
         }
         Memory::Free(Memory::ScratchHeap, buf);
 
-        Array<String> files = ioServer->ListFiles("export:data/tables", "*");
+        Array<String> files = IO::ListFiles("export:data/tables", "*");
         VERIFY(files.Size() == 5);
         VERIFY(0 != files.Find("anims.xml"));
         VERIFY(0 != files.Find("blueprints.xml"));

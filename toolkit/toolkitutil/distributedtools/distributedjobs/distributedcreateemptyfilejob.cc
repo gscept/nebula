@@ -46,7 +46,7 @@ DistributedCreateEmptyFileJob::RunJob()
     
     this->jobState = Working;
 
-    Ptr<IO::Stream> stream = IoServer::Instance()->CreateStream(this->filePath);
+    Ptr<IO::Stream> stream = CreateStream(this->filePath);
     stream->SetAccessMode(IO::Stream::ReadWriteAccess);
     if(stream->Open())
     {

@@ -45,7 +45,7 @@ GltfFileMaterialExtractor::ExtractAll()
 
     if (this->doc->materials.Size() > 0)
     {
-        IO::IoServer::Instance()->CreateDirectory(this->outputFolder);
+        IO::CreateDirectory(this->outputFolder);
 
         // Generate surfaces
         for (IndexT i = 0; i < this->doc->materials.Size(); i++)
@@ -115,7 +115,7 @@ GltfFileMaterialExtractor::ExtractAll()
             }
             Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::MaterialResource>(materialResource);
             IO::URI output = this->outputFolder + "/" + material.name + ".namat";
-            Ptr<IO::Stream> outStream = IO::IoServer::Instance()->CreateStream(output);
+            Ptr<IO::Stream> outStream = IO::CreateStream(output);
             outStream->SetAccessMode(IO::Stream::WriteAccess);
             if (outStream->Open())
             {

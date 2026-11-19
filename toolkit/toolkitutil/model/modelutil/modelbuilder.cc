@@ -49,10 +49,10 @@ bool
 ModelBuilder::SaveN3(const IO::URI& uri, Platform::Code platform)
 {
     // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+    CreateDirectory(uri.LocalPath().ExtractDirName());
 
     // create stream
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
+    Ptr<Stream> stream = CreateStream(uri);
     stream->SetAccessMode(Stream::WriteAccess);
     if (stream->Open())
     {
@@ -108,7 +108,7 @@ ModelBuilder::SaveN3Physics(const IO::URI& uri, Platform::Code platform)
 {
 
     // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+    CreateDirectory(uri.LocalPath().ExtractDirName());
 
     Util::Blob target = this->WritePhysics();
     if (!target.IsValid())
@@ -117,7 +117,7 @@ ModelBuilder::SaveN3Physics(const IO::URI& uri, Platform::Code platform)
     }
 
     // create stream
-    Ptr<IO::FileStream> stream = IO::IoServer::Instance()->CreateStream(uri).downcast<IO::FileStream>();
+    Ptr<IO::FileStream> stream = IO::CreateStream(uri).downcast<IO::FileStream>();
     stream->SetAccessMode(Stream::WriteAccess);
     if (stream->Open())
     {

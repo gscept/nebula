@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 //------------------------------------------------------------------------------
 /**
     @class App::ConsoleApplication
@@ -31,7 +32,6 @@ public:
     
 protected:
     Ptr<Core::CoreServer> coreServer;
-    Ptr<IO::IoServer> ioServer;
 };
 
 } // namespace App

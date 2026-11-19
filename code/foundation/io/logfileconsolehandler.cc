@@ -42,10 +42,9 @@ void
 LogFileConsoleHandler::Open()
 {
     ConsoleHandler::Open();
-    IoServer* ioServer = IoServer::Instance();
 
     // make sure log directory exists
-    ioServer->CreateDirectory("bin:logfiles");
+    IO::CreateDirectory("bin:logfiles");
 
     // build a file name for the log file
     String calString = CalendarTime::Format("{YEAR}_{MONTH}_{DAY}_{HOUR}_{MINUTE}_{SECOND}", CalendarTime::GetLocalTime());
@@ -53,7 +52,7 @@ LogFileConsoleHandler::Open()
     fileName.Format("bin:logfiles/%s_%s.txt", Core::CoreServer::Instance()->GetAppName().Value(), calString.AsCharPtr());
 
     // open file stream
-    this->stream = ioServer->CreateStream(URI(fileName));
+    this->stream = IO::CreateStream(URI(fileName));
     this->textWriter = TextWriter::Create();
     this->textWriter->SetStream(this->stream);
     this->textWriter->Open();

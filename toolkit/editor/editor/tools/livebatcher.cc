@@ -159,12 +159,11 @@ void
 LiveBatcher::BatchAsset(const IO::Path& assetPath)
 {
     Presentation::BatcherWindow->Open() = true;
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     WorkCounter.Increment();
     Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
     uint32_t jobMessage = windowServer->PushLoadingMessage(Util::Format("[Packaging] %s", assetPath.AsString().AsCharPtr()));
-    livebatcherState.batchThread->Enqueue(LiveBatchJob{
-        [assetPath, ioServer, jobMessage, windowServer]() -> bool
+    livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
+        [assetPath, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -193,7 +192,7 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
                 for (SizeT i = 0; i < lengthof(exportFolders); i++)
                 {
                     const char* basePath = exportFolders[i];
-                    Util::Array<Util::String> files = ioServer->ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
+                    Util::Array<Util::String> files = IO::ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
                     for (const auto& file : files)
                     {
                         livebatcherState.filesToReload.Enqueue(Util::Format("%s:%s/%s", basePath, assetPath.GetFolder().AsCharPtr(), file.AsCharPtr()));

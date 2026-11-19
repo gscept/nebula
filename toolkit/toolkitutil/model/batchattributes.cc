@@ -71,7 +71,7 @@ void
 BatchAttributes::Load()
 {
     n_assert(this->isOpen);
-    Ptr<Stream> batchFile = IoServer::Instance()->CreateStream(URI("proj:work/assets/batchattributes.xml"));
+    Ptr<Stream> batchFile = CreateStream(URI("proj:work/assets/batchattributes.xml"));
     Ptr<XmlReader> xmlReader = XmlReader::Create();
     if (batchFile->Open())
     {

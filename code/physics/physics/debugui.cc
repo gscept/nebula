@@ -404,7 +404,7 @@ RenderMaterialsUI()
         Util::String saved = SerializeFlatbufferText(Materials, mtable);
         IO::URI tablePath = "root:work/data/tables/physicsmaterials.json";
         Util::String wrappedPath = "safefile:///" + tablePath.LocalPath();
-        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(wrappedPath);
+        Ptr<IO::Stream> stream = IO::CreateStream(wrappedPath);
         Ptr<IO::TextWriter> writer = IO::TextWriter::Create();
         stream->SetAccessMode(IO::Stream::WriteAccess);
         writer->SetStream(stream);

@@ -25,7 +25,6 @@ using namespace Util;
 void
 FileServerTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
     AssignRegistry* assignRegistry = AssignRegistry::Instance();
 
     // check for standard assigns
@@ -49,15 +48,15 @@ FileServerTest::Run()
     VERIFY(assignRegistry->GetAssign("test") == "temp:");
 
     // create a test directory in test:
-    VERIFY(ioServer->CreateDirectory("test:one/two"));
+    VERIFY(IO::CreateDirectory("test:one/two"));
     assignRegistry->SetAssign(Assign("test", "temp:one/two"));
-    VERIFY(ioServer->DirectoryExists("temp:one"));
-    VERIFY(ioServer->DirectoryExists("temp:one/two"));
-    VERIFY(!ioServer->DirectoryExists("temp:one/two/three"));
-    VERIFY(!ioServer->FileExists("temp:one"));
+    VERIFY(IO::DirectoryExists("temp:one"));
+    VERIFY(IO::DirectoryExists("temp:one/two"));
+    VERIFY(!IO::DirectoryExists("temp:one/two/three"));
+    VERIFY(!IO::FileExists("temp:one"));
 
     // create a file in the test directory
-    Ptr<Stream> file = ioServer->CreateStream("test:file1");
+    Ptr<Stream> file = IO::CreateStream("test:file1");
     file->SetAccessMode(Stream::WriteAccess);
     VERIFY(file->Open());
 
@@ -72,14 +71,14 @@ FileServerTest::Run()
     file->Close();
 
     // test if file exists
-    VERIFY(ioServer->FileExists("test:file1"));
-    VERIFY(!ioServer->FileExists("test:file2"));
-    VERIFY(!ioServer->DirectoryExists("test:file1"));
+    VERIFY(IO::FileExists("test:file1"));
+    VERIFY(!IO::FileExists("test:file2"));
+    VERIFY(!IO::DirectoryExists("test:file1"));
 
     // copy file
-    VERIFY(ioServer->CopyFile("test:file1", "test:file2"));
-    VERIFY(ioServer->FileExists("test:file2"));
-    VERIFY(ioServer->ComputeFileCrc("test:file1") == ioServer->ComputeFileCrc("test:file2"));
+    VERIFY(IO::CopyFile("test:file1", "test:file2"));
+    VERIFY(IO::FileExists("test:file2"));
+    VERIFY(IO::ComputeFileCrc("test:file1") == IO::ComputeFileCrc("test:file2"));
     
     // check copied contents
     file->SetURI("test:file2");
@@ -97,32 +96,32 @@ FileServerTest::Run()
     reader->Close();
     file->Close();
 
-    VERIFY(!ioServer->IsReadOnly("test:file2"));
-    ioServer->SetReadOnly("test:file2", true);
-    VERIFY(ioServer->IsReadOnly("test:file2"));
-    ioServer->SetReadOnly("test:file2", false);
-    VERIFY(!ioServer->IsReadOnly("test:file2"));
+    VERIFY(!IO::IsReadOnly("test:file2"));
+    IO::SetReadOnly("test:file2", true);
+    VERIFY(IO::IsReadOnly("test:file2"));
+    IO::SetReadOnly("test:file2", false);
+    VERIFY(!IO::IsReadOnly("test:file2"));
 
     // test directory listing
-    VERIFY(ioServer->CreateDirectory("temp:one/anotherdir"));
-    Array<String> list = ioServer->ListFiles("temp:one/two", "*");
+    VERIFY(IO::CreateDirectory("temp:one/anotherdir"));
+    Array<String> list = IO::ListFiles("temp:one/two", "*");
     VERIFY(list.Size() == 2);
-    list = ioServer->ListDirectories("temp:one/two", "*");
+    list = IO::ListDirectories("temp:one/two", "*");
     VERIFY(list.Size() == 0);
-    list = ioServer->ListFiles("temp:one", "*");
+    list = IO::ListFiles("temp:one", "*");
     VERIFY(list.Size() == 0);
-    list = ioServer->ListDirectories("temp:one", "*");
+    list = IO::ListDirectories("temp:one", "*");
     VERIFY(list.Size() == 2);
 
     // test file deleting
-    VERIFY(ioServer->DeleteFile("temp:one/two/file1"));
-    VERIFY(!ioServer->FileExists("temp:one/two/file1"));
-    VERIFY(!ioServer->DeleteDirectory("temp:one/two"));
-    VERIFY(ioServer->DeleteFile("temp:one/two/file2"));
-    VERIFY(ioServer->DeleteDirectory("temp:one/two"));
-    VERIFY(!ioServer->DirectoryExists("temp:one/two"));
-    VERIFY(ioServer->DeleteDirectory("temp:one/anotherdir"));
-    VERIFY(ioServer->DeleteDirectory("temp:one"));
+    VERIFY(IO::DeleteFile("temp:one/two/file1"));
+    VERIFY(!IO::FileExists("temp:one/two/file1"));
+    VERIFY(!IO::DeleteDirectory("temp:one/two"));
+    VERIFY(IO::DeleteFile("temp:one/two/file2"));
+    VERIFY(IO::DeleteDirectory("temp:one/two"));
+    VERIFY(!IO::DirectoryExists("temp:one/two"));
+    VERIFY(IO::DeleteDirectory("temp:one/anotherdir"));
+    VERIFY(IO::DeleteDirectory("temp:one"));
     #endif
 }
 

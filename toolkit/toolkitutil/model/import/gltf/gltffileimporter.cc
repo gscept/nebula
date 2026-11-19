@@ -71,7 +71,7 @@ GltfFileImporter::NeedsConversion(const Util::String& path)
     Util::String folder = path.ExtractDirName();
     bool needsConversion = false;
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    reader->SetStream(IO::CreateStream(path));
     if (reader->Open())
     {
         for (const char* key : { "buffers", "images" })
@@ -151,7 +151,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
                 tex.data = std::vector<uint8_t>((uint8_t*)data.GetPtr() + view.byteOffset, (uint8_t*)data.GetPtr() + view.byteOffset + view.byteLength);
             }
             Util::String outputFile = Util::String::Sprintf("%s/%d.natex", outputDir.AsCharPtr(), imageIndex);
-            Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(outputFile);
+            Ptr<IO::Stream> stream = IO::CreateStream(outputFile);
             stream->SetAccessMode(IO::Stream::WriteAccess);
             if (stream->Open())
             {
@@ -169,7 +169,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             Util::String fullFileName = Util::String::Sprintf("%s%s", oneFolderUp.AsCharPtr(), fileName.AsCharPtr());
 
             // Source is not embedded, so load source data
-            Ptr<IO::Stream> fileSource = IO::IoServer::Instance()->CreateStream(fullFileName);
+            Ptr<IO::Stream> fileSource = IO::CreateStream(fullFileName);
             fileSource->SetAccessMode(IO::Stream::ReadAccess);
             if (fileSource->Open())
             {
@@ -180,7 +180,7 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
 
                 // Save asset file
                 Util::String outputFile = Util::String::Sprintf("%s/%d.natex", outputDir.AsCharPtr(), imageIndex);
-                Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(outputFile);
+                Ptr<IO::Stream> stream = IO::CreateStream(outputFile);
                 stream->SetAccessMode(IO::Stream::WriteAccess);
                 if (stream->Open())
                 {

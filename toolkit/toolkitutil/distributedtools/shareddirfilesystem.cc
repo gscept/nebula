@@ -45,7 +45,7 @@ SharedDirFileSystem::CopyFileToSharedDir(const Util::String & src, const Util::S
         this->sharedDir.AsString().AsCharPtr(),
         dst.AsCharPtr()
     );
-    if(!IoServer::Instance()->CopyFile(src, dstPath))
+    if(!CopyFile(src, dstPath))
     {
         Console::Instance()->Error("Could not copy %s to %s.", src.AsCharPtr(), dstPath.AsCharPtr());
     }
@@ -59,7 +59,7 @@ SharedDirFileSystem::CopyFileToSharedDir(const Util::String & src, const Util::S
 void
 SharedDirFileSystem::CopyFilesToSharedDir(const Util::String & src, const Util::String & dst)
 {
-    Array<String> files = IoServer::Instance()->ListFiles(src, "*");
+    Array<String> files = IO::ListFiles(src, "*");
     IndexT index;
     for(index = 0; index < files.Size(); index++)
     {
@@ -92,7 +92,7 @@ SharedDirFileSystem::CopyFileFromSharedDir(const Util::String & src, const Util:
         this->sharedDir.AsString().AsCharPtr(),
         src.AsCharPtr()
     );
-    if(!IoServer::Instance()->CopyFile(srcPath, dst))
+    if(!CopyFile(srcPath, dst))
     {
         Console::Instance()->Error("Could not copy %s to %s.", srcPath.AsCharPtr(), dst.AsCharPtr());
     }
@@ -139,7 +139,7 @@ SharedDirFileSystem::RemoveFileInSharedDir(const Util::String & filepath)
         this->sharedDir.AsString().AsCharPtr(),
         filepath.AsCharPtr()
     );
-    if(!IoServer::Instance()->DeleteFile(path))
+    if(!DeleteFile(path))
     {
         Console::Instance()->Error("Could not delete file %s.", path.AsCharPtr());
     }
@@ -158,7 +158,7 @@ SharedDirFileSystem::RemoveDirectoryInSharedDir(const Util::String & dirpath)
         this->sharedDir.AsString().AsCharPtr(),
         dirpath.AsCharPtr()
     );
-    if(!IoServer::Instance()->DeleteDirectory(path))
+    if(!DeleteDirectory(path))
     {
         Console::Instance()->Error("Could not delete directory %s.", path.AsCharPtr());
     }
@@ -172,22 +172,22 @@ SharedDirFileSystem::RemoveDirectoryInSharedDir(const Util::String & dirpath)
 void
 SharedDirFileSystem::RemoveDirectoryContent(const Util::String & path)
 {
-    Array<String> files = IoServer::Instance()->ListFiles(path, "*");
+    Array<String> files = IO::ListFiles(path, "*");
     IndexT fileIndex;
     for(fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
         String file;
         file.Format("%s/%s", path.AsCharPtr(), files[fileIndex].AsCharPtr());
-        IoServer::Instance()->DeleteFile(file);
+        DeleteFile(file);
     }
-    Array<String> dirs = IoServer::Instance()->ListDirectories(path, "*");
+    Array<String> dirs = IO::ListDirectories(path, "*");
     IndexT dirIndex;
     for(dirIndex = 0; dirIndex < dirs.Size(); dirIndex++)
     {
         String dir;
         dir.Format("%s/%s", path.AsCharPtr(), dirs[dirIndex].AsCharPtr());
         this->RemoveDirectoryContent(dir);
-        IoServer::Instance()->DeleteDirectory(dir);
+        DeleteDirectory(dir);
     }
 }
 
@@ -203,7 +203,7 @@ SharedDirFileSystem::ContainsGuidSubDir(const Util::Guid & guid)
         this->path.AsString().AsCharPtr(),
         guid.AsString().AsCharPtr()
     );
-    return IoServer::Instance()->DirectoryExists(path);
+    return DirectoryExists(path);
 }
 
 //------------------------------------------------------------------------------
@@ -218,8 +218,8 @@ SharedDirFileSystem::DirIsEmpty(const Util::String & dir)
         this->sharedDir.AsString().AsCharPtr(),
         dir.AsCharPtr()
     );
-    Array<String> files = IoServer::Instance()->ListFiles(path, "*");
-    Array<String> dirs = IoServer::Instance()->ListDirectories(path, "*");
+    Array<String> files = IO::ListFiles(path, "*");
+    Array<String> dirs = IO::ListDirectories(path, "*");
     return (files.IsEmpty() && dirs.IsEmpty());
 }
     
@@ -235,7 +235,7 @@ SharedDirFileSystem::ListDirectories(const Util::String & dir)
         this->sharedDir.AsString().AsCharPtr(),
         dir.AsCharPtr()
     );
-    return IoServer::Instance()->ListDirectories(path, "*");
+    return IO::ListDirectories(path, "*");
 }
 
 //------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ SharedDirFileSystem::ListFiles(const Util::String & dir)
         this->sharedDir.AsString().AsCharPtr(),
         dir.AsCharPtr()
     );
-    return IoServer::Instance()->ListFiles(path, "*");
+    return IO::ListFiles(path, "*");
 }
 
 //------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ SharedDirFileSystem::ListFiles(const Util::String & dir)
 void
 SharedDirFileSystem::CreateControlDir()
 {
-    if(!IoServer::Instance()->CreateDirectory(this->sharedDir))
+    if(!CreateDirectory(this->sharedDir))
     {
         Console::Instance()->Error("Could not create control dir in %s.", this->path.LocalPath().AsCharPtr());
     }
@@ -275,7 +275,7 @@ SharedDirFileSystem::RemoveControlDir()
 {
     // We assume that shared dir is composed of root shared directory
     // and guid sub dir. DeleteDirectory will only remove the subdir (guid).
-    if(!IoServer::Instance()->DeleteDirectory(this->sharedDir))
+    if(!DeleteDirectory(this->sharedDir))
     {
         Console::Instance()->Error("Could not delete control dir in %s.", this->sharedDir.AsString().ExtractToLastSlash().AsCharPtr());
     }
@@ -288,7 +288,7 @@ SharedDirFileSystem::RemoveControlDir()
 void
 SharedDirFileSystem::CopyDirectoryContent(const Util::String & src, const Util::String & dst)
 {
-    Array<String> files = IoServer::Instance()->ListFiles(src, "*");
+    Array<String> files = IO::ListFiles(src, "*");
     IndexT fileIndex;
     for(fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
@@ -296,9 +296,9 @@ SharedDirFileSystem::CopyDirectoryContent(const Util::String & src, const Util::
         String dstPath;
         srcPath.Format("%s/%s", src.AsCharPtr(), files[fileIndex].AsCharPtr());
         dstPath.Format("%s/%s", dst.AsCharPtr(), files[fileIndex].AsCharPtr());
-        IoServer::Instance()->CopyFile(srcPath, dstPath);
+        CopyFile(srcPath, dstPath);
     }
-    Array<String> dirs = IoServer::Instance()->ListDirectories(src, "*");
+    Array<String> dirs = IO::ListDirectories(src, "*");
     IndexT dirIndex;
     for(dirIndex = 0; dirIndex < dirs.Size(); dirIndex++)
     {
@@ -306,7 +306,7 @@ SharedDirFileSystem::CopyDirectoryContent(const Util::String & src, const Util::
         String dstDir;
         srcDir.Format("%s/%s", src.AsCharPtr(), dirs[dirIndex].AsCharPtr());
         dstDir.Format("%s/%s", dst.AsCharPtr(), dirs[dirIndex].AsCharPtr());
-        IoServer::Instance()->CreateDirectory(dstDir);
+        CreateDirectory(dstDir);
         this->CopyDirectoryContent(srcDir, dstDir);
     }
 }

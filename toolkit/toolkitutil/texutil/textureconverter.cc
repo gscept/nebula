@@ -55,7 +55,7 @@ GetTexconvFormatString(ToolkitUtil::TextureResourceT const* texture)
 static bool
 ConvertWithTexconv(const TextureConversionInfo& info)
 {
-    IO::IoServer::Instance()->CreateDirectory(info.destPath);
+    IO::CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
 
     // the texture's color space decides if the image is sRGB, not the file's metadata
@@ -92,7 +92,7 @@ ConvertWithTexconv(const TextureConversionInfo& info)
     args.Append(" -o \"");
     args.Append(info.destPath);
     args.Append("\" -- \"");
-    Util::String srcPath = IO::IoServer::NativePath(srcPathUri.LocalPath());
+    Util::String srcPath = IO::NativePath(srcPathUri.LocalPath());
     args.Append(srcPath);
     args.Append("\"");
 
@@ -176,7 +176,7 @@ NeedsHalfFloatDDS(const IO::URI& srcPath)
     const SizeT FourCCOffset = 84, DXGIFormatOffset = 128;
     const uint32_t D3DFMT_A32B32G32R32F = 116, DXGI_FORMAT_R32G32B32A32_FLOAT = 2;
     uint8_t header[DXGIFormatOffset + 4] = {};
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(srcPath);
+    Ptr<IO::Stream> stream = IO::CreateStream(srcPath);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (!stream->Open())
     {
@@ -199,7 +199,7 @@ NeedsHalfFloatDDS(const IO::URI& srcPath)
 static Util::String
 ConvertToHalfFloatDDS(const IO::URI& srcPath, const IO::URI& dstDir, Logger* logger)
 {
-    IO::IoServer::Instance()->CreateDirectory(dstDir);
+    IO::CreateDirectory(dstDir);
     Util::String args = " -nologo -y -ft dds -f R16G16B16A16_FLOAT -m 1 -o \"";
     args.Append(dstDir.LocalPath());
     args.Append("\" -- \"");
@@ -236,11 +236,11 @@ ConvertToHalfFloatDDS(const IO::URI& srcPath, const IO::URI& dstDir, Logger* log
 static bool
 ConvertWithCompressonator(const TextureConversionInfo& info)
 {
-    IO::IoServer::Instance()->CreateDirectory(info.destPath);
+    IO::CreateDirectory(info.destPath);
     URI srcPathUri(info.sourcePath);
 
     IO::URI toolPath = GetConverterToolPath();
-    if (!IO::IoServer::Instance()->FileExists(toolPath))
+    if (!IO::FileExists(toolPath))
     {
         info.logger->Error("Converter tool '%s' not found, place compressonatorcli there or set NEBULA_COMPRESSONATORCLI\n", toolPath.LocalPath().AsCharPtr());
         return false;
@@ -310,7 +310,7 @@ ConvertWithCompressonator(const TextureConversionInfo& info)
     uint exitCode = process != System::InvalidProcessId ? System::WaitForProcess(process) : 0;
     if (!halfFile.IsEmpty())
     {
-        IO::IoServer::Instance()->DeleteFile(halfFile);
+        IO::DeleteFile(halfFile);
     }
     if (process == System::InvalidProcessId)
     {

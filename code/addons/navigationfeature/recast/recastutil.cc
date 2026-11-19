@@ -90,7 +90,7 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
 	{
         IO::URI meshFile = entry->resource;
         const Math::mat4& transform = entry->transform;
-		Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(meshFile);
+		Ptr<IO::Stream> stream = IO::CreateStream(meshFile);
 		stream->SetAccessMode(IO::Stream::ReadAccess);
 
 		Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
