@@ -803,6 +803,11 @@
                                         "name": "ParticleUnlit"
                                     }
                                 },
+                                {
+                                    "subgraph": {
+                                        "name": "Wireframe"
+                                    }
+                                },
 
                                 {
                                     "subgraph": {

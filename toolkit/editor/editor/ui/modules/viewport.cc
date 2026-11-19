@@ -16,14 +16,91 @@
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/assetbrowser.h"
 
+#include "renderutil/drawfullscreenquad.h"
+
 #include "frame/default.h"
 #include "frame/preview.h"
+#include "gpulang/render/system_shaders/editor/editor_wireframe.h"
 
 namespace Presentation
 {
 
 namespace Modules
 {
+
+namespace
+{
+
+/// viewports that have been initialized, used to find the render mode of the view being rendered
+Util::Array<Viewport*> ActiveViewports;
+
+/// colors are linear, both frame scripts draw the wireframe after tonemapping into an sRGB target
+constexpr float WireframeBackgroundColor[4] = { 0.025f, 0.025f, 0.03f, 1.0f };
+constexpr float WireframeLineColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+constexpr float LitWireframeLineColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+CoreGraphics::ShaderProgramId WireframeBackgroundProgram = CoreGraphics::InvalidShaderProgramId;
+CoreGraphics::ShaderProgramId WireframeStaticProgram = CoreGraphics::InvalidShaderProgramId;
+
+//------------------------------------------------------------------------------
+/**
+    Runs in the "Wireframe" subgraph of the default and preview frame scripts.
+    The meshes are drawn with the Wireframe batch of their material template.
+*/
+void
+DrawWireframe(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+{
+    const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();
+    const Viewport::RenderMode mode = Viewport::GetRenderMode(view);
+    if (mode != Viewport::Wireframe && mode != Viewport::LitWireframe)
+        return;
+
+    // All programs of the wireframe shader share one pipeline layout,
+    // so the color pushed here stays valid while the batch switches between them
+    EditorWireframe::WireframeConstants constants;
+    if (mode == Viewport::Wireframe)
+    {
+        // Hide the shaded scene, fill with the background color and reset depth to the far plane
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, WireframeBackgroundProgram, queue);
+        memcpy(constants.Color, WireframeBackgroundColor, sizeof(constants.Color));
+        CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, 0, sizeof(constants), &constants);
+        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+        CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
+        memcpy(constants.Color, WireframeLineColor, sizeof(constants.Color));
+    }
+    else
+    {
+        // Bind the wireframe pipeline layout before pushing the line color
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, WireframeStaticProgram, queue);
+        memcpy(constants.Color, LitWireframeLineColor, sizeof(constants.Color));
+    }
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, 0, sizeof(constants), &constants);
+    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::Wireframe, Graphics::ViewGetCamera(view), bufferIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetupWireframeRendering()
+{
+    if (WireframeBackgroundProgram != CoreGraphics::InvalidShaderProgramId)
+        return;
+
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:system_shaders/editor/editor_wireframe.gplb");
+    WireframeBackgroundProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Background"));
+    WireframeStaticProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Static"));
+
+    // Pipelines are created on demand when drawing, but registering the callback avoids the missing callback warning
+    auto noPipelines = [](const CoreGraphics::RenderPassId pass) {};
+    FrameScript_default::RegisterSubgraph_Wireframe_Render(DrawWireframe);
+    FrameScript_default::RegisterSubgraphPipelines_Wireframe_Render(noPipelines);
+    FrameScript_preview::RegisterSubgraph_Wireframe_Render(DrawWireframe);
+    FrameScript_preview::RegisterSubgraphPipelines_Wireframe_Render(noPipelines);
+}
+
+} // namespace
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +115,23 @@ Viewport::Viewport()
 */
 Viewport::~Viewport()
 {
+    IndexT index = ActiveViewports.FindIndex(this);
+    if (index != InvalidIndex)
+        ActiveViewports.EraseIndex(index);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+Viewport::RenderMode
+Viewport::GetRenderMode(const Graphics::ViewId view)
+{
+    for (const Viewport* viewport : ActiveViewports)
+    {
+        if (viewport->view == view)
+            return viewport->renderMode;
+    }
+    return TexturedLit;
 }
 
 //------------------------------------------------------------------------------
@@ -82,6 +175,10 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
     this->imguiTextureId = Dynui::AllocateImguiTextureId({});
+
+    SetupWireframeRendering();
+    if (ActiveViewports.FindIndex(this) == InvalidIndex)
+        ActiveViewports.Append(this);
 }
 
 //------------------------------------------------------------------------------
@@ -96,6 +193,10 @@ Viewport::Init(const Graphics::ViewId view)
 	this->camera.Update();
     this->targetTexture = CoreGraphics::InvalidTextureId;
     this->imguiTextureId = Dynui::AllocateImguiTextureId({});
+
+    SetupWireframeRendering();
+    if (ActiveViewports.FindIndex(this) == InvalidIndex)
+        ActiveViewports.Append(this);
 }
 
 //------------------------------------------------------------------------------
@@ -278,6 +379,14 @@ Viewport::Render()
             if (ImGui::MenuItem("Textured + Lit", NULL, this->renderMode == TexturedLit))
             {
                 this->renderMode = TexturedLit;
+            }
+            if (ImGui::MenuItem("Wireframe", NULL, this->renderMode == Wireframe))
+            {
+                this->renderMode = Wireframe;
+            }
+            if (ImGui::MenuItem("Lit Wireframe", NULL, this->renderMode == LitWireframe))
+            {
+                this->renderMode = LitWireframe;
             }
             ImGui::EndMenu();
         }

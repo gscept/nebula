@@ -17,12 +17,6 @@ render_state FillState
     Cull = CullFace.None;
 };
 
-render_state WireframeState
-{
-    Rasterize = RasterizationMode.Line;
-    Cull = CullFace.None;
-};
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -79,12 +73,4 @@ program EditorPreviewFill
     VertexShader = vsMesh;
     PixelShader = psMesh;
     RenderState = FillState;
-};
-
-@Mask("Wireframe")
-program EditorPreviewWireframe
-{
-    VertexShader = vsMesh;
-    PixelShader = psMesh;
-    RenderState = WireframeState;
 };
