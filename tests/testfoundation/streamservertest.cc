@@ -21,7 +21,6 @@ using namespace IO;
 void
 StreamServerTest::Run()
 {
-    IO::StartupFilesystem({});
     SchemeRegistry* schemeRegistry = SchemeRegistry::Instance();
 
     // register some classes with the stream server

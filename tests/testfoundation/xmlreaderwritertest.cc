@@ -25,8 +25,6 @@ using namespace Math;
 void
 XmlReaderWriterTest::Run()
 {
-    IO::StartupFilesystem({});
-
     // create necessary objects
     Ptr<MemoryStream> stream = MemoryStream::Create();
     Ptr<XmlWriter> writer = XmlWriter::Create();

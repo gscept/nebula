@@ -20,7 +20,6 @@ using namespace Util;
 void
 ZipFSTest::Run()
 {
-    IO::StartupFilesystem({});
     IO::MountStandardArchives();
 
     // open a file, read its data and write it into a temp file

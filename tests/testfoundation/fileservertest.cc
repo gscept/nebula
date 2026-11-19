@@ -25,7 +25,6 @@ using namespace Util;
 void
 FileServerTest::Run()
 {
-    IO::StartupFilesystem({});
     AssignRegistry* assignRegistry = AssignRegistry::Instance();
 
     // check for standard assigns
