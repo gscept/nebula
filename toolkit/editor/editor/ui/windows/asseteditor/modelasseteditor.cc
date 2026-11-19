@@ -335,6 +335,247 @@ ClipSections(AssetEditor* assetEditor, AssetEditorItem* item, ModelEditorItemDat
 
 //------------------------------------------------------------------------------
 /**
+    Keep the events the preview fired in the last update, a few of the latest are kept
+*/
+static void
+RecordFiredEvents(const Graphics::GraphicsEntityId preview, ModelEditorItemData* itemData)
+{
+    const CoreAnimation::AnimationId animation = Characters::CharacterContext::GetAnimation(preview);
+    if (animation == CoreAnimation::InvalidAnimationId)
+        return;
+    const double now = ImGui::GetTime();
+    for (const Characters::CharacterContext::FiredEvent& fired : Characters::CharacterContext::GetFiredEvents(preview))
+    {
+        const Util::StringAtom clip = CoreAnimation::AnimGetClip(animation, fired.clip).GetName();
+        itemData->firedEvents.Append({
+            fired.event.name.IsValid() ? fired.event.name.Value() : "",
+            fired.event.category.IsValid() ? fired.event.category.Value() : "",
+            clip.IsValid() ? clip.Value() : "",
+            now });
+    }
+    const SizeT MaxFired = 8;
+    while (itemData->firedEvents.Size() > MaxFired)
+        itemData->firedEvents.EraseIndex(0);
+}
+
+//------------------------------------------------------------------------------
+/**
+    True if an event of a clip fired within the time a marker flashes for
+*/
+static bool
+FiredRecently(const ModelEditorItemData* itemData, const Util::String& clip, const Util::String& name)
+{
+    const double now = ImGui::GetTime();
+    for (const auto& fired : itemData->firedEvents)
+    {
+        if (fired.clip == clip && fired.name == name && now - fired.time < 0.3)
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The events added to the clips and sections when the asset is packaged. Events of a clip within a section are in the
+    section's clip as well
+*/
+static void
+ClipEvents(AssetEditor* assetEditor, AssetEditorItem* item, ModelEditorItemData* itemData)
+{
+    const ToolkitUtil::AnimResourceT* anim = itemData->asset.animation.get();
+    if (anim == nullptr)
+        return;
+    auto& events = itemData->asset.clip_events;
+    const auto& sections = itemData->asset.clip_sections;
+    const Graphics::GraphicsEntityId preview = item->previewObject;
+    auto edited = [assetEditor, item]()
+    {
+        assetEditor->Edit();
+        item->editCounter++;
+    };
+
+    // the clip the preview plays, a clip of the asset or one cut from a section, and its time
+    Util::String playingName;
+    Timing::Time playingTime = 0.0;
+    const IndexT playing = Characters::CharacterContext::GetPlayingClip(preview, 0);
+    const CoreAnimation::AnimationId animation = Characters::CharacterContext::GetAnimation(preview);
+    if (playing != InvalidIndex && animation != CoreAnimation::InvalidAnimationId)
+    {
+        const Util::StringAtom name = CoreAnimation::AnimGetClip(animation, playing).GetName();
+        if (name.IsValid())
+        {
+            playingName = name.Value();
+            playingTime = Characters::CharacterContext::GetTrackTime(preview, 0);
+        }
+    }
+
+    // the clips events can be added to, and how long they are
+    Util::Array<Util::String> clipNames;
+    Util::Array<uint> clipDurations;
+    for (const auto& instance : anim->animations)
+    {
+        for (const auto& clip : instance->clips)
+        {
+            clipNames.Append(clip->name);
+            clipDurations.Append(clip->duration);
+        }
+    }
+    for (const auto& section : sections)
+    {
+        clipNames.Append(section->name);
+        clipDurations.Append(section->end > section->start ? section->end - section->start : 0);
+    }
+    auto durationOf = [&](const Util::String& clip) -> uint
+    {
+        const IndexT i = clipNames.FindIndex(clip);
+        return i != InvalidIndex ? clipDurations[i] : 0;
+    };
+
+    ImGui::SeparatorText("Events");
+    ImGui::TextDisabled("Events of the clips and sections, they're in the clips once the asset is saved");
+
+    IndexT erase = InvalidIndex;
+    if (!events.empty() && ImGui::BeginTable("Events", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+    {
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+        ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthStretch, 1.5f);
+        ImGui::TableSetupColumn("Clip", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+        ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthStretch, 1.5f);
+        ImGui::TableSetupColumn("##actions", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableHeadersRow();
+
+        for (IndexT i = 0; i < (IndexT)events.size(); i++)
+        {
+            ToolkitUtil::AnimClipEventT& event = *events[i];
+            ImGui::PushID(i);
+
+            ImGui::TableNextColumn();
+            char name[64];
+            event.name.CopyToBuffer(name, sizeof(name));
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::InputText("##name", name, sizeof(name)))
+                event.name = name;
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                edited();
+            Util::String error;
+            if (!ToolkitUtil::ValidateClipEvent(anim, sections, event, error))
+            {
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), " (!)");
+                ImGui::SetItemTooltip("It isn't packaged, %s", error.AsCharPtr());
+            }
+
+            ImGui::TableNextColumn();
+            char category[32];
+            event.category.CopyToBuffer(category, sizeof(category));
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::InputTextWithHint("##category", "none", category, sizeof(category)))
+                event.category = category;
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                edited();
+
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::BeginCombo("##clip", event.clip.AsCharPtr()))
+            {
+                for (IndexT c = 0; c < clipNames.Size(); c++)
+                {
+                    if (ImGui::Selectable(clipNames[c].AsCharPtr(), clipNames[c] == event.clip))
+                    {
+                        event.clip = clipNames[c];
+                        event.time = Math::min(event.time, clipDurations[c]);
+                        edited();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            // the time is edited in seconds, the button takes the time the clip is played at
+            ImGui::TableNextColumn();
+            float seconds = event.time / 1000.0f;
+            ImGui::SetNextItemWidth(-ImGui::GetFrameHeight() - ImGui::GetStyle().ItemInnerSpacing.x);
+            if (ImGui::DragFloat("##time", &seconds, 0.01f, 0.0f, durationOf(event.clip) / 1000.0f, "%.3f s", ImGuiSliderFlags_AlwaysClamp))
+                event.time = (uint)Math::round(seconds * 1000.0f);
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                edited();
+            ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+            const bool canTakeTime = playingName == event.clip;
+            ImGui::BeginDisabled(!canTakeTime);
+            if (ImGui::Button(ICON_ttf_LOCATION_ARROW, ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+            {
+                event.time = Math::min((uint)Math::round(playingTime * 1000.0), durationOf(event.clip));
+                edited();
+            }
+            ImGui::EndDisabled();
+            ImGui::SetItemTooltip(canTakeTime ? "Take the time the clip is at" : "Play or scrub the clip to take its time");
+
+            ImGui::TableNextColumn();
+            if (ImGui::Button(ICON_ttf_TRASH))
+                erase = i;
+            ImGui::SetItemTooltip("Remove the event");
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+
+    if (erase != InvalidIndex)
+    {
+        events.erase(events.begin() + erase);
+        edited();
+    }
+
+    // a new event is at the time the clip is played at
+    ImGui::BeginDisabled(playingName.IsEmpty() || clipNames.FindIndex(playingName) == InvalidIndex);
+    if (ImGui::Button(Util::Format("%s Add event", ICON_ttf_PLUS).AsCharPtr()))
+    {
+        auto event = std::make_unique<ToolkitUtil::AnimClipEventT>();
+        event->clip = playingName;
+        event->time = Math::min((uint)Math::round(playingTime * 1000.0), durationOf(playingName));
+        for (int n = (int)events.size() + 1;; n++)
+        {
+            event->name = Util::Format("event_%d", n);
+            bool unique = true;
+            for (const auto& other : events)
+                unique &= other->name != event->name || other->clip != event->clip;
+            if (unique)
+                break;
+        }
+        events.push_back(std::move(event));
+        edited();
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Add an event to the clip played, at the time it's at");
+
+    // the latest events the preview fired, the ones in the packaged clips
+    if (!itemData->firedEvents.IsEmpty())
+    {
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Clear"))
+            itemData->firedEvents.Clear();
+        ImGui::SetItemTooltip("Clear the fired events");
+    }
+    ImGui::TextDisabled("Fired by the preview:");
+    if (itemData->firedEvents.IsEmpty())
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled("none yet");
+    }
+    const double now = ImGui::GetTime();
+    for (IndexT i = itemData->firedEvents.Size() - 1; i >= 0; i--)
+    {
+        const ModelEditorItemData::FiredEvent& fired = itemData->firedEvents[i];
+        // a just fired event is bright, and fades
+        const float fade = Math::clamp(1.0f - (float)(now - fired.time) / 1.5f, 0.0f, 1.0f);
+        const ImVec4 color(0.6f + 0.4f * fade, 0.6f + 0.3f * fade, 0.6f - 0.25f * fade, 1.0f);
+        if (fired.category.IsEmpty())
+            ImGui::TextColored(color, "  %s in %s", fired.name.AsCharPtr(), fired.clip.AsCharPtr());
+        else
+            ImGui::TextColored(color, "  %s [%s] in %s", fired.name.AsCharPtr(), fired.category.AsCharPtr(), fired.clip.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     The material of each node drawing a mesh, followed by the resources packaged from the asset if they're exported:
     the mesh, and for skinned models the skeleton and animation of the character the preview is set up with,
     which are shown in the viewport
@@ -416,14 +657,50 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             {
                 ImGui::PushID("animation");
                 UpdateSectionPreview(preview, itemData);
+                RecordFiredEvents(preview, itemData);
                 Util::Array<ClipMarker> markers;
                 for (IndexT i = 0; i < (IndexT)itemData->asset.clip_sections.size(); i++)
                 {
                     const ToolkitUtil::AnimClipSectionT& section = *itemData->asset.clip_sections[i];
-                    markers.Append({ section.clip, section.name, section.start / 1000.0f, section.end / 1000.0f, i == itemData->previewSection });
+                    markers.Append({ section.clip, section.name, section.start / 1000.0f, section.end / 1000.0f, i == itemData->previewSection, false, i });
                 }
-                AnimationClips(preview, itemData->loopClips, itemData->clip, markers);
+                for (IndexT i = 0; i < (IndexT)itemData->asset.clip_events.size(); i++)
+                {
+                    const ToolkitUtil::AnimClipEventT& event = *itemData->asset.clip_events[i];
+                    markers.Append({ event.clip, event.name, event.time / 1000.0f, event.time / 1000.0f, FiredRecently(itemData, event.clip, event.name), true, i });
+                }
+                AnimationClips(preview, itemData->loopClips, itemData->clip, markers,
+                    [assetEditor, model = item->path](const ClipMarker& marker, float start, float end, bool done)
+                {
+                    // the item is looked up again, a marker is dragged over several frames
+                    AssetEditorItem* item = AssetEditor::GetOpenItem(model);
+                    if (item == nullptr || item->data == nullptr)
+                        return;
+                    // points are events, ranges are sections
+                    ModelEditorItemData* data = (ModelEditorItemData*)item->data;
+                    if (marker.point)
+                    {
+                        auto& events = data->asset.clip_events;
+                        if (marker.id < 0 || marker.id >= (IndexT)events.size())
+                            return;
+                        events[marker.id]->time = (uint)Math::round(start * 1000.0f);
+                    }
+                    else
+                    {
+                        auto& sections = data->asset.clip_sections;
+                        if (marker.id < 0 || marker.id >= (IndexT)sections.size())
+                            return;
+                        sections[marker.id]->start = (uint)Math::round(start * 1000.0f);
+                        sections[marker.id]->end = (uint)Math::round(end * 1000.0f);
+                    }
+                    if (done)
+                    {
+                        assetEditor->Edit();
+                        item->editCounter++;
+                    }
+                });
                 ClipSections(assetEditor, item, itemData);
+                ClipEvents(assetEditor, item, itemData);
                 ImGui::PopID();
             }
         }

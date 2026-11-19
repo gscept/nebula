@@ -471,6 +471,126 @@ CutClipSections(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_
 
 //------------------------------------------------------------------------------
 /**
+    The event names and categories are stored in fixed size buffers in the nax file, and the time as a 16 bit number
+*/
+static const SizeT MaxEventNameLength = sizeof(CoreAnimation::Nax3AnimEvent::name) - 1;
+static const SizeT MaxEventCategoryLength = sizeof(CoreAnimation::Nax3AnimEvent::category) - 1;
+static const uint MaxEventTime = 0xFFFF;
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ValidateClipEvent(const ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const ToolkitUtil::AnimClipEventT& event, Util::String& outError)
+{
+    // the clip is one of the animation, or one a section is cut into
+    IndexT animIndex, clipIndex;
+    uint duration = 0;
+    bool found = anim != nullptr && FindClip(anim, event.clip, animIndex, clipIndex);
+    if (found)
+        duration = anim->animations[animIndex]->clips[clipIndex]->duration;
+    for (size_t i = 0; i < sections.size() && !found; i++)
+    {
+        if (sections[i]->name == event.clip)
+        {
+            found = true;
+            duration = sections[i]->end > sections[i]->start ? sections[i]->end - sections[i]->start : 0;
+        }
+    }
+
+    if (event.name.IsEmpty())
+        outError = "it has no name";
+    else if (event.name.Length() > MaxEventNameLength)
+        outError.Format("its name is longer than %d characters", MaxEventNameLength);
+    else if (event.category.Length() > MaxEventCategoryLength)
+        outError.Format("its category is longer than %d characters", MaxEventCategoryLength);
+    else if (!found)
+        outError.Format("there's no clip or section '%s'", event.clip.AsCharPtr());
+    else if (event.time > duration)
+        outError.Format("it's after the end of the clip, which is %.3f s long", duration / 1000.0f);
+    else if (event.time > MaxEventTime)
+        outError.Format("it's after %.3f s, events can't be later in a clip", MaxEventTime / 1000.0f);
+    else
+        return true;
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The events of a clip follow the ones of the clip before it, in the order of their time
+*/
+static void
+AddClipEvent(ToolkitUtil::AnimResourceT* anim, const ToolkitUtil::AnimClipEventT& event)
+{
+    IndexT animIndex, clipIndex;
+    if (!FindClip(anim, event.clip, animIndex, clipIndex))
+        return;
+    ToolkitUtil::AnimInstanceT& instance = *anim->animations[animIndex];
+
+    uint offset = 0;
+    for (IndexT i = 0; i < clipIndex; i++)
+        offset += instance.clips[i]->num_events;
+    ToolkitUtil::AnimClipT& clip = *instance.clips[clipIndex];
+    uint insert = offset;
+    while (insert < offset + clip.num_events && instance.events[insert]->time <= event.time)
+        insert++;
+
+    auto added = std::make_unique<ToolkitUtil::AnimEventT>();
+    added->name = event.name;
+    added->category = event.category;
+    added->time = event.time;
+    instance.events.insert(instance.events.begin() + insert, std::move(added));
+    clip.num_events++;
+
+    // the offsets of the clips after it move
+    uint running = 0;
+    for (auto& other : instance.clips)
+    {
+        other->first_event_offset = running;
+        running += other->num_events;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BuildClips(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipEventT>>& events, ToolkitUtil::Logger* logger)
+{
+    if (anim == nullptr)
+        return;
+
+    // the events of the clips first, so the sections cut from them get them too
+    std::vector<const ToolkitUtil::AnimClipEventT*> sectionEvents;
+    for (const auto& event : events)
+    {
+        Util::String error;
+        if (!ValidateClipEvent(anim, sections, *event, error))
+        {
+            logger->Warning("Event '%s' of '%s' is skipped, %s\n", event->name.AsCharPtr(), event->clip.AsCharPtr(), error.AsCharPtr());
+            continue;
+        }
+        IndexT animIndex, clipIndex;
+        if (FindClip(anim, event->clip, animIndex, clipIndex))
+            AddClipEvent(anim, *event);
+        else
+            sectionEvents.push_back(event.get());
+    }
+
+    CutClipSections(anim, sections, logger);
+
+    for (const ToolkitUtil::AnimClipEventT* event : sectionEvents)
+    {
+        IndexT animIndex, clipIndex;
+        if (FindClip(anim, event->clip, animIndex, clipIndex))
+            AddClipEvent(anim, *event);
+        else
+            logger->Warning("Event '%s' is skipped, the section '%s' wasn't cut\n", event->name.AsCharPtr(), event->clip.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 PackageAnimation(

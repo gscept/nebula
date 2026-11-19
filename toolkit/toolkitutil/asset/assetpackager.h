@@ -22,6 +22,7 @@ namespace ToolkitUtil
 struct SceneResourceT;
 struct AnimResourceT;
 struct AnimClipSectionT;
+struct AnimClipEventT;
 struct SkeletonResourceT;
 struct MeshResourceT;
 struct TextureResourceT;
@@ -43,6 +44,12 @@ bool ValidateClipSection(const ToolkitUtil::AnimResourceT* anim, const ToolkitUt
 /// Cut the sections of the animation's clips into clips of their own, which are added after the clips of the animation
 /// the clip is in. Sections that can't be cut are skipped with a warning
 void CutClipSections(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, ToolkitUtil::Logger* logger);
+/// Check that an event can be added to a clip of an animation, or to the clip a section is cut into: its name and
+/// category fit the nax file, and it's within the clip. Returns false with the reason otherwise
+bool ValidateClipEvent(const ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const ToolkitUtil::AnimClipEventT& event, Util::String& outError);
+/// Add the events to the clips, cut the sections and add the events of the sections' clips. Events of a clip that are
+/// in a section are in the section's clip as well. What can't be added or cut is skipped with a warning
+void BuildClips(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipEventT>>& events, ToolkitUtil::Logger* logger);
 /// Package animation from memory
 bool PackageAnimation(const ToolkitUtil::AnimResourceT* anim, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package skeleton from memory

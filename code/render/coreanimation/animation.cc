@@ -80,6 +80,15 @@ AnimGetCurves(const AnimationId& id)
 //------------------------------------------------------------------------------
 /**
 */
+const Util::FixedArray<AnimEvent>&
+AnimGetEvents(const AnimationId& id)
+{
+    return animAllocator.Get<Anim_Events>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const IndexT
 AnimGetIndex(const AnimationId& id, const Util::StringAtom& name)
 {

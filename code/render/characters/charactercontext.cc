@@ -257,7 +257,8 @@ CharacterContext::PlayClip(
     runtime.baseTime = 0;
     runtime.duration = 0;
     runtime.evalTime = runtime.prevEvalTime = 0;
-    runtime.sampleTime = runtime.prevSampleTime = 0;
+    // before the start, so the events at the start of the clip fire on its first update
+    runtime.sampleTime = runtime.prevSampleTime = -1;
     runtime.paused = false;
     runtime.started = false;
     runtime.duration = Timing::Tick(clip.duration * loopCount * (1 / timeFactor));
@@ -509,6 +510,19 @@ CharacterContext::SeekTrack(const Graphics::GraphicsEntityId id, const IndexT tr
         playing.baseTime += playing.prevEvalTime - evalTime;
     playing.prevEvalTime = evalTime;
     playing.evalTime = evalTime;
+
+    // the next update fires the events from here on
+    playing.sampleTime = Timing::Tick(Math::max(evalTime, 0) * playing.timeFactor) + playing.timeOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CharacterContext::FiredEvent>&
+CharacterContext::GetFiredEvents(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<FiredEvents>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -542,6 +556,30 @@ GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime)
     return (runtime.baseTime + runtime.startTime + runtime.duration) - runtime.fadeOutTime;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Add the events of a clip that are passed going from one sample time to a later one, the start isn't included.
+    The times go on past the clip's duration when it loops, an event is added once however often it's passed
+*/
+static void
+CollectFiredEvents(const CoreAnimation::AnimationId anim, const IndexT clipIndex, const IndexT track, const Timing::Tick from, const Timing::Tick to, Util::Array<CharacterContext::FiredEvent>& outEvents)
+{
+    const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, clipIndex);
+    if (clip.numEvents == 0 || clip.duration <= 0 || to <= from)
+        return;
+    const Util::FixedArray<CoreAnimation::AnimEvent>& events = CoreAnimation::AnimGetEvents(anim);
+    for (IndexT i = 0; i < clip.numEvents; i++)
+    {
+        const CoreAnimation::AnimEvent& event = events[clip.firstEvent + i];
+
+        // the first time the event is at after the start
+        const Timing::Tick loop = (Timing::Tick)Math::floor(double(from - event.time) / double(clip.duration)) + 1;
+        const Timing::Tick time = loop * clip.duration + event.time;
+        if (time <= to)
+            outEvents.Append({ event, clipIndex, track });
+    }
+}
+
 struct CharacterJobContext
 {
     const Util::Array<Timing::Time>* times;
@@ -558,6 +596,7 @@ struct CharacterJobContext
     Math::mat4** tmpJoints;
     
     const Util::Array<Graphics::GraphicsEntityId>* entities;
+    Util::Array<Util::Array<CharacterContext::FiredEvent>>* firedEvents;
     CoreAnimation::AnimSampleMixInfo* animMixInfos;
     float frameTime;
     Timing::Tick time;
@@ -584,6 +623,7 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         Timing::Time& currentTime = context->times->Get(index);
         currentTime += context->frameTime;
         CharacterContext::AnimationTracks& trackController = context->tracks->Get(index);
+        Util::Array<CharacterContext::FiredEvent>& firedEvents = (*context->firedEvents)[index];
         const AnimationId anim = context->anims->Get(index);
         if (anim == InvalidAnimationId)
             continue;
@@ -673,7 +713,12 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
 
             // if expired, invalidate job, the runtimes keep their times in ticks
             if (playing.clip != -1 && playing.started && IsExpired(playing, context->ticks))
+            {
+                // the clip ends between updates, the events up to its end fire
+                const Timing::Tick end = Timing::Tick(playing.duration * playing.timeFactor) + playing.timeOffset;
+                CollectFiredEvents(anim, playing.clip, j, playing.sampleTime, end, firedEvents);
                 trackController.playingAnimations[j].clip = -1;
+            }
 
             // if current playing job on this track is invalid, copy a pending job over
             if (playing.clip == -1)
@@ -707,6 +752,9 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                 playing.prevEvalTime = playing.evalTime;
                 playing.prevSampleTime = playing.sampleTime;
                 playing.sampleTime = Timing::Tick(Math::max(playing.evalTime, 0) * playing.timeFactor) + playing.timeOffset;
+
+                // the events passed since the last update, none while it's paused
+                CollectFiredEvents(anim, playing.clip, j, playing.prevSampleTime, playing.sampleTime, firedEvents);
 
                 // Need to compute the sample weight and pointers to "before" and "after" keys
                 const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, playing.clip);
@@ -847,7 +895,18 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         n_assert(animationCounter.counter == 0);
         animationCounter = 1;
 
+        // the events the last update's jobs collected are the ones reported until the next update finishes,
+        // so they aren't read while the jobs add to them
+        Util::Array<Util::Array<FiredEvent>>& firedEvents = characterContextAllocator.GetArray<FiredEvents>();
+        Util::Array<Util::Array<FiredEvent>>& pendingFiredEvents = characterContextAllocator.GetArray<PendingFiredEvents>();
+        for (IndexT i = 0; i < firedEvents.Size(); i++)
+        {
+            firedEvents[i] = pendingFiredEvents[i];
+            pendingFiredEvents[i].Clear();
+        }
+
         CharacterJobContext charCtx;
+        charCtx.firedEvents = &pendingFiredEvents;
         charCtx.times = &times;
         charCtx.tracks = &tracks;
         charCtx.anims = &anims;

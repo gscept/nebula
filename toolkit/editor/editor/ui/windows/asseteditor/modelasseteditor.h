@@ -26,6 +26,16 @@ struct ModelEditorItemData
     IndexT clip = 0;
     /// the clip section played, its clip is looped within it, InvalidIndex if none is
     IndexT previewSection = InvalidIndex;
+    /// an event the preview fired
+    struct FiredEvent
+    {
+        Util::String name;
+        Util::String category;
+        Util::String clip;
+        double time;        ///< ImGui time it fired at
+    };
+    /// the events the preview fired last, the latest last
+    Util::Array<FiredEvent> firedEvents;
     /// the joint hovered in the skeleton section, highlighted in the viewport
     IndexT hoveredJoint = InvalidIndex;
 };

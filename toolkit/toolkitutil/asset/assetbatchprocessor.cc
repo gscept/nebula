@@ -148,7 +148,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 if (needsPackaging(PackageModes::ForceAssets, dstFile))
                 {
                     packaged = true;
-                    ToolkitUtil::CutClipSections(modelAsset.animation.get(), modelAsset.clip_sections, this->logger);
+                    ToolkitUtil::BuildClips(modelAsset.animation.get(), modelAsset.clip_sections, modelAsset.clip_events, this->logger);
                     ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
                 }
             }

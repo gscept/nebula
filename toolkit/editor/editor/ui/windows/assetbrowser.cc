@@ -22,6 +22,7 @@
 #include "editor/tools/livebatcher.h"
 #include "toolkitutil/asset/assetimporter.h"
 #include "toolkitutil/filedb/filedb.h"
+#include "dynui/nebula_icons.h"
 
 using namespace Editor;
 
@@ -965,6 +966,50 @@ HighlightListRow()
 
 //------------------------------------------------------------------------------
 /**
+    Icon shown in front of a file's name in the list and details views
+*/
+static const char*
+FileTypeIcon(ToolkitUtil::FileType type)
+{
+    switch (type)
+    {
+        case ToolkitUtil::FileType::Asset:      return ICON_ttf_CUBE;
+        case ToolkitUtil::FileType::Texture:    return ICON_ttf_PICTURE;
+        case ToolkitUtil::FileType::Particle:   return ICON_ttf_FIRE;
+        case ToolkitUtil::FileType::Surface:    return ICON_ttf_PAINT_BRUSH;
+        case ToolkitUtil::FileType::Audio:      return ICON_ttf_VOLUME_UP;
+        case ToolkitUtil::FileType::Text:       return ICON_ttf_FILE_TEXT_O;
+        case ToolkitUtil::FileType::Frame:      return ICON_ttf_SITEMAP;
+        case ToolkitUtil::FileType::Shader:     return ICON_ttf_CODE;
+        case ToolkitUtil::FileType::Physics:    return ICON_ttf_FUTBOL_O;
+        case ToolkitUtil::FileType::NavMesh:    return ICON_ttf_MAP_O;
+        default:                                return ICON_ttf_FILE_O;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Draws the type icon centered in a slot of fixed width, so the names after it line up whatever the icon's width.
+    Leaves the cursor after the slot on the same line. The type name shows as tooltip over the icon if the row is hovered.
+*/
+static void
+DisplayFileTypeIcon(ToolkitUtil::FileType type, bool rowHovered)
+{
+    const char* icon = FileTypeIcon(type);
+    const float slotWidth = ImGui::GetFontSize() * 1.5f;
+    const ImVec2 slotPos = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(ImVec2(slotPos.x + (slotWidth - ImGui::CalcTextSize(icon).x) * 0.5f, slotPos.y));
+    ImGui::TextUnformatted(icon);
+    if (rowHovered && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+    {
+        ImGui::SetTooltip("%s", ToolkitUtil::FileTypeNames[type]);
+    }
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::SetCursorScreenPos(ImVec2(slotPos.x + slotWidth, ImGui::GetCursorScreenPos().y));
+}
+
+//------------------------------------------------------------------------------
+/**
     Scores how well one word of a search matches a text, its characters have to appear in it in order,
     ignoring case. Runs of characters and ones starting a word (after a separator or a lowercase letter
     before an uppercase one) count more, characters skipped count against it. Returns false if it doesn't match
@@ -1120,7 +1165,6 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     const bool editingInFolder = !searching && this->folderEdit.folderId == this->activeFolder;
     const bool newAssetShown = editingInFolder && this->folderEdit.mode == FolderEditMode::NewAsset;
     const uint64_t renamedFile = editingInFolder && this->folderEdit.mode == FolderEditMode::RenameFile ? this->folderEdit.fileId : 0;
-    const char* newAssetTypeName = ToolkitUtil::FileTypeNames[this->folderEdit.assetType];
 
     if (this->activeFolder != 0 || searching)
     {
@@ -1172,15 +1216,17 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     if (file.id == renamedFile)
                     {
                         HighlightListRow();
-                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], 0.0f);
+                        this->DisplayFileNameEditorEntry(file.type, 0.0f);
                         continue;
                     }
                     bool isSelected = (this->activeFile == file.id);
                     ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(file.id)));
-                    if (ImGui::Selectable(Util::Format("[%s] %s", ToolkitUtil::FileTypeNames[file.type], file.name.AsCharPtr()).AsCharPtr(), &isSelected))
+                    // no label, icon and name are drawn after it as the selectable takes no width
+                    if (ImGui::Selectable("##file", &isSelected))
                     {
                         this->activeFile = file.id;
                     }
+                    const bool rowHovered = ImGui::IsItemHovered();
                     // the context menu acts on the selected file, so right clicking selects it
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
                     {
@@ -1192,12 +1238,15 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         fileToOpen = file;
                     }
                     AddDragSourceForFileUri(file.filePath);
+                    ImGui::SameLine(0.0f, 0.0f);
+                    DisplayFileTypeIcon(file.type, rowHovered);
+                    ImGui::TextUnformatted(file.name.AsCharPtr());
                     ImGui::PopID();
                 }
                 if (newAssetShown)
                 {
                     HighlightListRow();
-                    this->DisplayFileNameEditorEntry(newAssetTypeName, 0.0f);
+                    this->DisplayFileNameEditorEntry(this->folderEdit.assetType, 0.0f);
                 }
                 break;
             }
@@ -1247,15 +1296,17 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     {
                         // drawn like a selected row
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::GetColorU32(ImGuiCol_Header));
-                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], 0.0f);
+                        this->DisplayFileNameEditorEntry(file.type, 0.0f);
                     }
                     else
                     {
                         ImGui::PushID(file.name.HashCode() + (uint)file.type);
-                        if (ImGui::Selectable(Util::Format("[%s] %s", ToolkitUtil::FileTypeNames[file.type], file.name.AsCharPtr()).AsCharPtr(), &isSelected))
+                        // no label, icon and name are drawn after it as the selectable takes no width
+                        if (ImGui::Selectable("##file", &isSelected))
                         {
                             this->activeFile = file.id;
                         }
+                        const bool rowHovered = ImGui::IsItemHovered();
                         // the context menu acts on the selected file, so right clicking selects it
                         if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
                         {
@@ -1268,6 +1319,9 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                         }
                         ImGui::PopID();
                         AddDragSourceForFileUri(file.filePath);
+                        ImGui::SameLine(0.0f, 0.0f);
+                        DisplayFileTypeIcon(file.type, rowHovered);
+                        ImGui::TextUnformatted(file.name.AsCharPtr());
                     }
                     ImGui::TableNextColumn();
                     if (file.size > 1_GB)
@@ -1289,7 +1343,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                     ImGui::TableNextRow();
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::GetColorU32(ImGuiCol_Header));
                     ImGui::TableNextColumn();
-                    this->DisplayFileNameEditorEntry(newAssetTypeName, 0.0f);
+                    this->DisplayFileNameEditorEntry(this->folderEdit.assetType, 0.0f);
                 }
                 ImGui::EndTable();
                 ImGui::EndGroup();
@@ -1315,7 +1369,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 {
                     if (file.id == renamedFile)
                     {
-                        this->DisplayFileNameEditorEntry(ToolkitUtil::FileTypeNames[file.type], (float)itemSize);
+                        this->DisplayFileNameEditorEntry(file.type, (float)itemSize);
                         sameLineIfFits();
                         continue;
                     }
@@ -1371,7 +1425,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 }
                 if (newAssetShown)
                 {
-                    this->DisplayFileNameEditorEntry(newAssetTypeName, (float)itemSize);
+                    this->DisplayFileNameEditorEntry(this->folderEdit.assetType, (float)itemSize);
                 }
                 break;
             }
@@ -1405,7 +1459,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     with the name editor where its name would be. The grid view passes its card size, the other views 0.
 */
 void
-AssetBrowser::DisplayFileNameEditorEntry(const char* typeName, float itemSize)
+AssetBrowser::DisplayFileNameEditorEntry(ToolkitUtil::FileType type, float itemSize)
 {
     ImGui::PushID("##editedfile");
     if (itemSize > 0.0f)
@@ -1413,7 +1467,7 @@ AssetBrowser::DisplayFileNameEditorEntry(const char* typeName, float itemSize)
         // the name editor takes the place of the card's name
         const float nameHeight = 22.0f * itemSize / 150.0f;
         ImGui::BeginGroup();
-        DrawFileCard(ImGui::GetWindowDrawList(), ImGui::GetCursorScreenPos(), itemSize, typeName, nullptr, true);
+        DrawFileCard(ImGui::GetWindowDrawList(), ImGui::GetCursorScreenPos(), itemSize, ToolkitUtil::FileTypeNames[type], nullptr, true);
         ImGui::Dummy(ImVec2(itemSize, itemSize - nameHeight));
         this->DisplayFolderNameEditor(itemSize);
         ImGui::EndGroup();
@@ -1421,8 +1475,7 @@ AssetBrowser::DisplayFileNameEditorEntry(const char* typeName, float itemSize)
     else
     {
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("[%s]", typeName);
-        ImGui::SameLine();
+        DisplayFileTypeIcon(type, false);
         this->DisplayFolderNameEditor();
     }
     if (this->folderEdit.scrollIntoView)

@@ -208,6 +208,9 @@ struct ImguiState
     bool dockOverViewport;
 
     Util::Array<ImTextureData*> pendingTextureUpdates;
+
+    ImGuiStyle baseStyle;       // unscaled style, the active ImGui style is this scaled by styleScale
+    float styleScale = 1.0f;
 } state;
 
 IndexT VertexBufferOffset = 0;
@@ -879,20 +882,20 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
 
-    style.FrameRounding = 12.0f;
-    style.GrabRounding = 12.0f;
-    style.ChildRounding = 6.0f;
-    style.WindowRounding = 12.0f;
-    style.PopupRounding = 12.0f;
+    style.FrameRounding = 4.0f;
+    style.GrabRounding = 4.0f;
+    style.ChildRounding = 2.0f;
+    style.WindowRounding = 4.0f;
+    style.PopupRounding = 0.0f;
     style.ScrollbarRounding = 12.0f;
-    style.TabRounding = 8.0f;
+    style.TabRounding = 2.0f;
     style.TabCloseButtonMinWidthSelected = FLT_MAX;
     style.WindowTitleAlign = { 0.0f, 0.52f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
-
+    
     style.WindowPadding = { 10.0f, 10.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 12, 4 };//{ 16, 3 };
+    style.FramePadding = { 5, 4 };//{ 16, 3 };
     style.ItemInnerSpacing = { 2, 2 };
     style.ItemSpacing = { 4, 4 };
     style.IndentSpacing = 10.0f;
@@ -902,8 +905,6 @@ ImguiContext::Create()
     style.WindowBorderSize = 1.0f;
     style.PopupBorderSize = 1.0f;
     style.ChildBorderSize = 0.0f;
-
-    style.ScaleAllSizes(scaleFactor);
 
 
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
@@ -965,6 +966,11 @@ ImguiContext::Create()
     colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.0f);
+
+    // everything above is defined unscaled, keep it as the base style and apply the content scale on top
+    state.baseStyle = style;
+    state.styleScale = scaleFactor;
+    ImguiContext::ApplyBaseStyle();
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
     //io.KeyMap[ImGuiKey_Tab] = Key::Tab;
@@ -1131,6 +1137,37 @@ ImguiContext::Create()
         }
         ImGui::LoadIniSettingsFromDisk("imgui.ini");
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ImGuiStyle&
+ImguiContext::GetBaseStyle()
+{
+    return state.baseStyle;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+ImguiContext::GetStyleScale()
+{
+    return state.styleScale;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiContext::ApplyBaseStyle()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    const float alpha = style.Alpha;    // driven by the ui_opacity cvar, don't clobber it
+    style = state.baseStyle;
+    style.ScaleAllSizes(state.styleScale);
+    style.Alpha = alpha;
 }
 
 //------------------------------------------------------------------------------

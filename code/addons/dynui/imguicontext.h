@@ -94,6 +94,13 @@ public:
     /// called after frame
     static void EndFrame(const Graphics::FrameContext& ctx);
 
+    /// get the unscaled base style, call ApplyBaseStyle after modifying it
+    static ImGuiStyle& GetBaseStyle();
+    /// get the content scale applied on top of the base style
+    static float GetStyleScale();
+    /// copy the base style into the active ImGui style, scaled by the content scale
+    static void ApplyBaseStyle();
+
 private:
     static void RecoverImGuiContextErrors();
 };

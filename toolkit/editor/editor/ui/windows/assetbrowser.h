@@ -126,7 +126,7 @@ private:
     /// draw the inline name editor at the current cursor position, handles commit and cancel. A width of 0 fills the available space
     void DisplayFolderNameEditor(float width = 0.0f);
     /// draw a file view entry with the name editor in place of its name, for a new asset or a file being renamed
-    void DisplayFileNameEditorEntry(const char* typeName, float itemSize);
+    void DisplayFileNameEditorEntry(ToolkitUtil::FileType type, float itemSize);
     /// try to apply the edited name, returns false and sets an error if the name can't be used
     bool CommitFolderEdit();
     /// drop the current edit without touching anything

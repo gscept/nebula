@@ -39,6 +39,8 @@ table ModelAsset
 	// parts of the animation clips packaged as clips of their own, for sources without a take per clip. They're
 	// stored apart from the animation, so reimporting keeps them
 	clip_sections : [AnimClipSection];
+	// events added to the clips and the clip sections when they're packaged, stored apart from the animation as well
+	clip_events : [AnimClipEvent];
 }
 
 root_type ModelAsset;
