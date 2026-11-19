@@ -1375,6 +1375,375 @@ AssetBrowser::DisplayFileTree()
 /**
 */
 void
+AssetBrowser::BeginNewFolder(uint64_t parentId)
+{
+    if (!this->folderInfoCache.Contains(parentId))
+    {
+        return;
+    }
+    const IO::Path parentPath = this->folderInfoCache[parentId].folderPath;
+
+    // default name like the OS file browsers, numbered when it's already taken
+    Util::String name = "New Folder";
+    IndexT uniqueCounter = 2;
+    while (IO::DirectoryExists((parentPath / name).WorkURI("assets")) || IO::FileExists((parentPath / name).WorkURI("assets")))
+    {
+        name.Format("New Folder (%d)", uniqueCounter++);
+    }
+
+    this->folderEdit = FolderEdit();
+    this->folderEdit.mode = FolderEditMode::NewFolder;
+    this->folderEdit.folderId = parentId;
+    this->folderEdit.openParent = true;
+    this->folderEdit.requestFocus = true;
+    name.CopyToBuffer(this->folderEdit.name, sizeof(this->folderEdit.name));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::BeginRenameFolder(uint64_t folderId)
+{
+    if (folderId == 0 || folderId == this->activeFileTree || !this->folderInfoCache.Contains(folderId))
+    {
+        return;
+    }
+    const ToolkitUtil::FileDB::FolderInfo& info = this->folderInfoCache[folderId];
+    if (info.isRoot || info.isArchive)
+    {
+        return;
+    }
+
+    this->folderEdit = FolderEdit();
+    this->folderEdit.mode = FolderEditMode::Rename;
+    this->folderEdit.folderId = folderId;
+    this->folderEdit.requestFocus = true;
+    info.name.CopyToBuffer(this->folderEdit.name, sizeof(this->folderEdit.name));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Draws the name field. Enter commits (deferred until the tree is drawn, as committing changes the folder caches),
+    Escape or clicking somewhere else cancels.
+*/
+void
+AssetBrowser::DisplayFolderNameEditor()
+{
+    this->folderEdit.drawn = true;
+    if (this->folderEdit.requestFocus)
+    {
+        ImGui::SetKeyboardFocusHere();
+        this->folderEdit.requestFocus = false;
+        this->folderEdit.focusRequestFrame = ImGui::GetFrameCount();
+    }
+    ImGui::SetNextItemWidth(ImMax(ImGui::GetContentRegionAvail().x, 100.0f));
+    const bool submitted = ImGui::InputText(
+        "##foldername",
+        this->folderEdit.name,
+        sizeof(this->folderEdit.name),
+        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue
+    );
+    if (ImGui::IsItemActive())
+    {
+        this->folderEdit.wasActive = true;
+    }
+    else if (!this->folderEdit.wasActive && ImGui::GetFrameCount() - this->folderEdit.focusRequestFrame > 2)
+    {
+        // focus went elsewhere before the field got active (e.g. while the context menu closed), ask again
+        this->folderEdit.requestFocus = true;
+    }
+    if (ImGui::IsItemEdited())
+    {
+        this->folderEdit.error.Clear();
+    }
+
+    if (submitted)
+    {
+        this->folderEdit.commitRequested = true;
+    }
+    else if (this->folderEdit.wasActive && ImGui::IsItemDeactivated())
+    {
+        this->CancelFolderEdit();
+        return;
+    }
+
+    if (!this->folderEdit.error.IsEmpty())
+    {
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y + 2.0f));
+        if (ImGui::BeginTooltip())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "%s", this->folderEdit.error.AsCharPtr());
+            ImGui::EndTooltip();
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AssetBrowser::CommitFolderEdit()
+{
+    Util::String name = this->folderEdit.name;
+    name.Trim(" \t");
+
+    Util::String error;
+    bool success = ValidateFolderName(name, error);
+    if (success)
+    {
+        if (this->folderEdit.mode == FolderEditMode::NewFolder)
+        {
+            success = this->CreateSubFolder(this->folderEdit.folderId, name, error);
+        }
+        else if (this->folderEdit.mode == FolderEditMode::Rename)
+        {
+            success = this->RenameFolder(this->folderEdit.folderId, name, error);
+        }
+    }
+
+    if (!success)
+    {
+        this->folderEdit.error = error;
+        return false;
+    }
+    this->folderEdit = FolderEdit();
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::CancelFolderEdit()
+{
+    this->folderEdit = FolderEdit();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AssetBrowser::CreateSubFolder(uint64_t parentId, const Util::String& name, Util::String& outError)
+{
+    ToolkitUtil::FileDB::FolderInfo parentInfo;
+    if (!this->fileDB.GetFolderInfo(parentId, parentInfo))
+    {
+        outError = "The parent folder doesn't exist anymore";
+        return false;
+    }
+    if (parentInfo.isArchive)
+    {
+        outError = "Folders can't be created inside archives";
+        return false;
+    }
+
+    const IO::URI uri = (parentInfo.folderPath / name).WorkURI("assets");
+    if (IO::DirectoryExists(uri) || IO::FileExists(uri))
+    {
+        outError.Format("'%s' already exists", name.AsCharPtr());
+        return false;
+    }
+    if (!IO::CreateDirectory(uri))
+    {
+        outError.Format("Could not create the folder '%s'", name.AsCharPtr());
+        return false;
+    }
+
+    const uint64_t folderId =
+        this->fileDB.CreateFolder(this->logger, name, parentId, IO::FSWrapper::GetFileWriteTime(uri.LocalPath()), false);
+    this->CacheFolderSubtree(folderId);
+    this->SetActiveFolder(folderId);
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AssetBrowser::RenameFolder(uint64_t folderId, const Util::String& newName, Util::String& outError)
+{
+    ToolkitUtil::FileDB::FolderInfo info, parentInfo;
+    if (!this->fileDB.GetFolderInfo(folderId, info) || info.isRoot || !this->fileDB.GetFolderInfo(info.parentId, parentInfo))
+    {
+        outError = "This folder can't be renamed";
+        return false;
+    }
+    if (info.isArchive)
+    {
+        outError = "Folders inside archives can't be renamed";
+        return false;
+    }
+    if (newName == info.name)
+    {
+        return true;
+    }
+
+    const IO::URI fromUri = info.folderPath.WorkURI("assets");
+    const IO::URI toUri = (parentInfo.folderPath / newName).WorkURI("assets");
+    // on case insensitive file systems a case-only rename finds the folder itself as the target
+    const bool caseOnly = Util::String::StrICmp(newName.AsCharPtr(), info.name.AsCharPtr()) == 0;
+    if (!caseOnly && (IO::DirectoryExists(toUri) || IO::FileExists(toUri)))
+    {
+        outError.Format("'%s' already exists", newName.AsCharPtr());
+        return false;
+    }
+    if (!IO::RenameFile(fromUri, toUri))
+    {
+        outError.Format("Could not rename '%s', a file inside it might be in use", info.name.AsCharPtr());
+        return false;
+    }
+
+    // the folder ids below the renamed folder are about to change, remember if the selection is in there
+    bool selectionInside = false;
+    uint64_t walkId = this->activeFolder;
+    while (walkId != 0 && this->folderInfoCache.Contains(walkId))
+    {
+        if (walkId == folderId)
+        {
+            selectionInside = true;
+            break;
+        }
+        const ToolkitUtil::FileDB::FolderInfo& walkInfo = this->folderInfoCache[walkId];
+        if (walkInfo.isRoot)
+        {
+            break;
+        }
+        walkId = walkInfo.parentId;
+    }
+
+    // folder ids are derived from parent id and name, so the subtree is registered again under the new name
+    this->UncacheFolderSubtree(folderId);
+    IndexT siblingsIndex = this->folderChildIds.FindIndex(info.parentId);
+    if (siblingsIndex != InvalidIndex)
+    {
+        Util::Array<uint64_t>& siblings = this->folderChildIds.ValueAtIndex(siblingsIndex);
+        IndexT i = siblings.FindIndex(folderId);
+        if (i != InvalidIndex)
+        {
+            siblings.EraseIndex(i);
+        }
+    }
+
+    this->fileDB.BeginTransaction();
+    DeleteFolderSubtree(this->fileDB, this->logger, folderId);
+    this->fileDB.DeleteFolder(this->logger, folderId);
+    const uint64_t newFolderId = this->fileDB.CreateFolder(
+        this->logger, newName, info.parentId, IO::FSWrapper::GetFileWriteTime(toUri.LocalPath()), false
+    );
+    this->ScanFolder(this->fileDB, toUri, false, newFolderId, true);
+    this->fileDB.EndTransaction();
+    this->CacheFolderSubtree(newFolderId);
+
+    if (selectionInside)
+    {
+        // the old active folder id is gone, don't let SetActiveFolder look it up
+        this->activeFolder = 0;
+        this->SetActiveFolder(newFolderId);
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::CacheFolderSubtree(uint64_t folderId)
+{
+    ToolkitUtil::FileDB::FolderInfo info;
+    if (!this->fileDB.GetFolderInfo(folderId, info))
+    {
+        return;
+    }
+    this->folderInfoCache.Emplace(folderId) = info;
+    this->folderInfoDict.Emplace(info.folderPath) = folderId;
+    if (!info.isRoot)
+    {
+        Util::Array<uint64_t>& siblings = this->folderChildIds.Emplace(info.parentId);
+        if (siblings.FindIndex(folderId) == InvalidIndex)
+        {
+            siblings.Append(folderId);
+        }
+    }
+
+    Util::Array<ToolkitUtil::FileDB::FolderInfo> children;
+    this->fileDB.GetChildFolders(folderId, children);
+    Util::Array<uint64_t>& childIds = this->folderChildIds.Emplace(folderId);
+    childIds.Clear();
+    for (const auto& child : children)
+    {
+        childIds.Append(child.id);
+    }
+
+    Util::Array<ToolkitUtil::FileDB::FileInfo> files;
+    this->fileDB.GetFilesInFolder(folderId, files);
+    this->IndexFolderForSearch(folderId, files);
+    this->scannedFolders.Emplace(folderId) = true;
+
+    for (const auto& child : children)
+    {
+        this->CacheFolderSubtree(child.id);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBrowser::UncacheFolderSubtree(uint64_t folderId)
+{
+    IndexT childIndex = this->folderChildIds.FindIndex(folderId);
+    if (childIndex != InvalidIndex)
+    {
+        const Util::Array<uint64_t> childIds = this->folderChildIds.ValueAtIndex(childIndex);
+        this->folderChildIds.EraseAtIndex(childIndex);
+        for (uint64_t childId : childIds)
+        {
+            this->UncacheFolderSubtree(childId);
+        }
+    }
+
+    IndexT infoIndex = this->folderInfoCache.FindIndex(folderId);
+    if (infoIndex != InvalidIndex)
+    {
+        const IO::Path path = this->folderInfoCache.ValueAtIndex(infoIndex).folderPath;
+        this->folderInfoCache.EraseAtIndex(infoIndex);
+        IndexT pathIndex = this->folderInfoDict.FindIndex(path);
+        if (pathIndex != InvalidIndex && this->folderInfoDict.ValueAtIndex(pathIndex) == folderId)
+        {
+            this->folderInfoDict.EraseAtIndex(pathIndex);
+        }
+    }
+
+    IndexT scannedIndex = this->scannedFolders.FindIndex(folderId);
+    if (scannedIndex != InvalidIndex)
+    {
+        this->scannedFolders.EraseAtIndex(scannedIndex);
+    }
+
+    IndexT write = 0;
+    for (IndexT read = 0; read < this->searchIndex.Size(); read++)
+    {
+        if (this->searchIndex[read].folderId != folderId)
+        {
+            if (write != read)
+            {
+                this->searchIndex[write] = this->searchIndex[read];
+            }
+            write++;
+        }
+    }
+    if (write != this->searchIndex.Size())
+    {
+        this->searchIndex.Resize(write);
+        this->searchIndexDirty = true;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 AssetBrowser::ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive)
 {
     if (!recursive)
