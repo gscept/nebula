@@ -6,6 +6,7 @@
 #include "scene.h"
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
+#include "editor/cmds.h"
 #include "editor/ui/uimanager.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "editor/ui/windowserver.h"
@@ -15,8 +16,16 @@
 #include "graphicsfeature/components/model.h"
 #include "graphicsfeature/components/lighting.h"
 #include "graphicsfeature/components/terrain.h"
+#include "physicsfeature/components/physicsfeature.h"
 #include "models/modelcontext.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "renderutil/mouserayutil.h"
+#include "io/ioserver.h"
+#include "imgui_internal.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
 
 #include "editor/tools/selectiontool.h"
 #include "editor/tools/translatetool.h"
@@ -82,6 +91,132 @@ Scene::Update()
 
 //------------------------------------------------------------------------------
 /**
+    Reads the mesh of a model asset straight from the flatbuffer without unpacking it. Returns false if
+    the asset has no mesh data, or no shape in its scene that references a mesh. Otherwise the mesh
+    URN and primitive group of the first shape are returned.
+*/
+static bool
+FindAssetMesh(const IO::Path& asset, Util::String& outMeshResource, uint& outPrimGroup)
+{
+    bool found = false;
+    Ptr<IO::Stream> stream = IO::CreateStream(asset.WorkURI("assets"));
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        // assets are written without a file identifier, so the only thing to check before reading is that
+        // the offset to the root table the buffer starts with lies within the file
+        IO::Stream::Size const size = stream->GetSize();
+        if (size >= (IO::Stream::Size)sizeof(flatbuffers::uoffset_t))
+        {
+            const void* data = stream->MemoryMap();
+            if (flatbuffers::ReadScalar<flatbuffers::uoffset_t>(data) < (flatbuffers::uoffset_t)size)
+            {
+                const ToolkitUtil::ModelAsset* modelAsset = ToolkitUtil::GetModelAsset(data);
+                const ToolkitUtil::MeshResource* mesh = modelAsset->mesh();
+                const ToolkitUtil::SceneResource* scene = modelAsset->scene();
+                bool const hasMesh = mesh != nullptr && mesh->meshes() != nullptr && mesh->meshes()->size() > 0;
+                if (hasMesh && scene != nullptr)
+                {
+                    // skinned models keep their shapes in the skin fragments instead
+                    const ToolkitUtil::ShapeNode* shape = nullptr;
+                    if (scene->shapes() != nullptr && scene->shapes()->size() > 0)
+                        shape = scene->shapes()->Get(0);
+                    else if (scene->skins() != nullptr && scene->skins()->size() > 0)
+                        shape = scene->skins()->Get(0)->shape();
+
+                    if (shape != nullptr && shape->mesh_resource() != nullptr && shape->mesh_resource()->size() > 0)
+                    {
+                        outMeshResource = shape->mesh_resource()->c_str();
+                        outPrimGroup = shape->prim_group();
+                        found = true;
+                    }
+                }
+            }
+            stream->MemoryUnmap();
+        }
+        stream->Close();
+    }
+    return found;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Accepts model assets dragged from the asset browser onto the viewport. An asset that has a mesh
+    becomes a new entity named after the asset, with a model, a static body and a mesh collider,
+    placed where the mouse ray hits the ground plane.
+*/
+static void
+AcceptAssetDrop(Modules::Viewport& viewport)
+{
+    Math::vec2 const imagePos = viewport.lastViewportImagePositionAbsolute;
+    Math::vec2 const imageSize = viewport.lastViewportImageSizeAbsolute;
+    ImRect const imageRect(ImVec2(imagePos.x, imagePos.y), ImVec2(imagePos.x + imageSize.x, imagePos.y + imageSize.y));
+    if (!ImGui::BeginDragDropTargetCustom(imageRect, ImGui::GetID("##SceneViewportDrop")))
+        return;
+
+    // peek at the payload first so that only model assets highlight the viewport
+    Util::String resource;
+    const ImGuiPayload* peek = ImGui::GetDragDropPayload();
+    if (peek != nullptr && peek->IsDataType("resource") && IO::Path::Parse((const char*)peek->Data).GetType() == "mdl")
+    {
+        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("resource");
+        if (payload != nullptr)
+        {
+            // the payload is cleared by EndDragDropTarget once it has been delivered
+            resource = (const char*)payload->Data;
+        }
+    }
+    ImGui::EndDragDropTarget();
+
+    if (resource.IsEmpty())
+        return;
+
+    IO::Path const asset = IO::Path::Parse(resource);
+    Util::String meshResource;
+    uint primGroup = 0;
+    if (!asset.IsFile() || !FindAssetMesh(asset, meshResource, primGroup))
+    {
+        n_warning("'%s' has no mesh, no entity is created for it\n", resource.AsCharPtr());
+        return;
+    }
+
+    ImVec2 const mouse = ImGui::GetMousePos();
+    Math::vec2 const mousePos = { (mouse.x - imagePos.x) / imageSize.x, (mouse.y - imagePos.y) / imageSize.y };
+    Math::mat4 const camTransform = Math::inverse(viewport.camera.GetViewTransform());
+    Math::mat4 const invProj = Math::inverse(viewport.camera.GetProjectionTransform());
+    Math::line const ray = viewport.camera.GetProjectionMode() == Editor::Camera::ProjectionMode::ORTHOGRAPHIC
+        ? RenderUtil::MouseRayUtil::ComputeWorldMouseRayOrtho(mousePos, 10000, camTransform, invProj, 0.01f)
+        : RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
+
+    // a ray pointing above the horizon never hits the ground, so the entity is put in front of the camera instead
+    Math::plane groundPlane(Math::point(0, 0, 0), Math::vector(0, 1, 0));
+    Math::point dropPoint;
+    if (!groundPlane.intersect(ray, dropPoint))
+        dropPoint = ray.start() + Math::normalize(ray.vec()) * 10.0f;
+
+    GraphicsFeature::Model model;
+    model.resource = resource;
+
+    // the collider reads the same mesh URN as the model
+    PhysicsFeature::MeshCollider collider;
+    collider.resource = meshResource;
+    collider.primGroup = primGroup;
+
+    PhysicsFeature::StaticBody body;
+
+    Edit::CommandManager::BeginMacro("Create entity from asset", true);
+    Editor::Entity const entity = Edit::CreateEntity();
+    Edit::SetEntityName(entity, asset.GetFile());
+    Edit::SetWorldPosition(entity, Game::Position(Math::xyz(dropPoint)));
+    Edit::AddComponent(entity, Game::GetComponentId<GraphicsFeature::Model>(), &model);
+    Edit::AddComponent(entity, Game::GetComponentId<PhysicsFeature::StaticBody>(), &body);
+    Edit::AddComponent(entity, Game::GetComponentId<PhysicsFeature::MeshCollider>(), &collider);
+    Edit::SetSelection({ entity });
+    Edit::CommandManager::EndMacro();
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 Scene::Run(SaveMode save)
@@ -90,6 +225,8 @@ Scene::Run(SaveMode save)
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
 
     this->viewPort.Render();
+
+    AcceptAssetDrop(this->viewPort);
 
     if (this->currentTool != nullptr)
     {

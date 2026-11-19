@@ -144,7 +144,8 @@ AnimSampleBuffer::Setup(const AnimationId& animRes)
 
     // The amount of samples we need is going to be the amount of curves, which is pos/rot/scale / 3 * 10
     this->numSamples = (maxCurveCount / 3) * 10;
-    this->samples      = (float*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float));
+    // one float of padding, 3 component samples are loaded and stored as 4 floats
+    this->samples      = (float*) Memory::Alloc(Memory::ResourceHeap, (this->numSamples + 1) * sizeof(float));
 
     // NOTE: sample count size must be aligned to 16 bytes, this allocate some more bytes in the buffer
     this->sampleCounts = (uchar*)  Memory::Alloc(Memory::ResourceHeap, (maxCurveCount * sizeof(uchar)) + 16);

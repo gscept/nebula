@@ -103,6 +103,8 @@ const MaterialBindlessBufferBinding& MaterialGetBindlessForEditor(const Material
 ubyte* MaterialGetConstants(const MaterialId mat);
 /// Get texture value
 const Resources::ResourceId MaterialGetTexture(const MaterialId mat, const IndexT i);
+/// Set the texture value the editor shows for a template texture, for loaders that bind the texture themselves
+void MaterialSetEditorTexture(const MaterialId mat, uint name, const Resources::ResourceId tex);
 /// Invalidate material
 void MaterialInvalidate(const MaterialId mat);
 /// Set template for material

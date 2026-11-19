@@ -46,7 +46,8 @@ AnimKeyBuffer::Setup(SizeT numIntervals, SizeT numKeys, void* intervalPtr, void*
     this->numIntervals = numIntervals;
     this->numKeys = numKeys;
     this->mapCount = 0;
-    this->keyBuffer = (float*)Memory::Alloc(Memory::ResourceHeap, sizeof(float) * this->numKeys);
+    // one float of padding, 3 component keys are loaded as 4 floats
+    this->keyBuffer = (float*)Memory::Alloc(Memory::ResourceHeap, sizeof(float) * (this->numKeys + 1));
     Memory::Copy(keyPtr, this->keyBuffer, this->GetByteSize());
     this->intervalBuffer = (AnimKeyBuffer::Interval*)Memory::Alloc(Memory::ResourceHeap, sizeof(AnimKeyBuffer::Interval) * this->numIntervals);
     Memory::Copy(intervalPtr, this->intervalBuffer, sizeof(AnimKeyBuffer::Interval) * this->numIntervals);

@@ -50,8 +50,8 @@ void
 StreamActorPool::Setup()
 {
     ResourceLoader::Setup();
-    this->placeholderResourceName = IO::Path::File("system", "box", "actor");
-    this->failResourceName = IO::Path::File("system", "box", "actor");
+    this->placeholderResourceName = IO::Path::File("system", "box", "phys");
+    this->failResourceName = IO::Path::File("system", "box", "phys");
 }
 
 //------------------------------------------------------------------------------

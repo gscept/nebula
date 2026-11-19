@@ -63,6 +63,8 @@ table TextureFace
 {
 	container : TextureContainer = Unknown;
 	data : [ubyte];
+	// the image the face was imported from, src: relative when it's in the project
+	source : string;
 }
 
 table TextureResource
@@ -76,6 +78,8 @@ table TextureResource
 	data : [ubyte];
 	cube_layout : TextureCubeLayout = None;
 	faces : [TextureFace];
+	// the image the texture was imported from, src: relative when it's in the project. Cube faces have their own
+	source : string;
 }
 
 root_type TextureResource;

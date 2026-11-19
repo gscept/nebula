@@ -258,13 +258,17 @@ ResourceLoader::Update(IndexT frameIndex)
     for (IndexT i = 0; i < this->pendingLoads.Size(); i++)
     {
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
-        resourceLoad.inflight = true;
         Resource::State state = this->states[resourceLoad.entry];
 
-        // Skip loads of resources already done
-        n_assert(state == Resource::Pending);
-        if (state == Resource::Loaded || state == Resource::Failed)
+        // A queued load can be overtaken, by an immediate load or by being unloaded, before it gets here.
+        // Its callbacks have run already, and loading an unloaded resource would load into a freed slot, so skip it
+        if (state != Resource::Pending)
+        {
+            static const char* StateNames[] = { "pending", "loaded", "reloaded", "failed", "unloaded" };
+            n_log_warn(Resource Loader, "Skipping the queued load of '%s', it's %s already\n", this->names[resourceLoad.entry].Value(), StateNames[state]);
             continue;
+        }
+        resourceLoad.inflight = true;
 
         LoadState loadState = this->loadStates[resourceLoad.entry];
         ResourceLoadJob job = ResourceLoadJob::FromPending(this, frameIndex, resourceLoad);

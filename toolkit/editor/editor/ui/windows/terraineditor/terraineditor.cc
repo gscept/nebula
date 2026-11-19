@@ -852,7 +852,7 @@ TerrainEditor::Run(SaveMode save)
                                     );
                                     Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
                                 }
-                            });
+                            }, "tex");
                             const char* patterns[] = { "*.natex" };
                             const char* sourcePath = IO::URI(Util::Format("work:assets/%s.natex", path)).LocalPath().AsCharPtr();
 

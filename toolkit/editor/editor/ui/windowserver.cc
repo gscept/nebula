@@ -82,10 +82,14 @@ BaseWindow* ImporterWindow;
 __ImplementClass(Presentation::WindowServer, 'wSrv', Core::RefCounted);
 __ImplementSingleton(Presentation::WindowServer);
 
+// the globals the windows are set up in, cleared when the windows are deleted
+static Util::Array<BaseWindow**> windowGlobals;
+
 #define SETUP_WINDOW(var, type, name, category)\
     var = new type(); var->SetName(#name); var->SetCategory(#category);\
     this->windowByName.Add(#name, var);\
     this->windows.Append(var);\
+    windowGlobals.Append(&var);\
     this->AddCategory(#category);
 
 
@@ -127,6 +131,14 @@ WindowServer::WindowServer()
 */
 WindowServer::~WindowServer()
 {
+    // in reverse, windows set up later may refer to earlier ones, like the asset picker to the asset browser owning the folder scan
+    for (IndexT i = this->windows.Size() - 1; i >= 0; i--)
+        delete this->windows[i];
+    this->windows.Clear();
+    this->windowByName.Clear();
+    for (BaseWindow** window : windowGlobals)
+        *window = nullptr;
+    windowGlobals.Clear();
     __DestructSingleton;
 }
 

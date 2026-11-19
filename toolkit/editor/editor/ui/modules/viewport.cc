@@ -359,7 +359,7 @@ Viewport::Render()
                         current.dirtMask = id;
                         Graphics::CameraContext::SetDepthOfField(cameraEntity, current);
                     }, nullptr);
-                });
+                }, "tex");
             }
             if (dof.dirtMask != Resources::InvalidResourceId && ImGui::Button("Clear dirt mask"))
             {
@@ -391,14 +391,19 @@ Viewport::Render()
             ImGui::EndMenu();
         }
 
-        static bool showWorldAxis = false;
+        // Im3d only draws in the default frame script, viewports with their own target render with the preview frame script
+        const bool hasIm3d = this->targetTexture == CoreGraphics::InvalidTextureId;
         if (ImGui::BeginMenu("    Debug    "))
         {
-            ImGui::Checkbox("   Show World axis   ", &showWorldAxis);
+            ImGui::BeginDisabled(!hasIm3d);
+            ImGui::Checkbox("   Show World axis   ", &this->showWorldAxis);
+            ImGui::EndDisabled();
+            if (!hasIm3d)
+                ImGui::SetItemTooltip("Debug drawing is only available in the scene viewport");
             ImGui::EndMenu();
         }
 
-        if (showWorldAxis)
+        if (hasIm3d && this->showWorldAxis)
         {
             Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
             Math::mat4 invViewTranslation = Math::translation(invView.position());
@@ -497,6 +502,32 @@ Viewport::Render()
         ImGui::GetIO().WantCaptureKeyboard = true;
         ImGui::GetIO().WantCaptureMouse = true;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Set up like the scene window, menu bar and no padding, so the image fills the child window
+*/
+void
+Viewport::RenderInChildWindow(const std::function<void(ImDrawList* drawList)>& overlay)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    if (ImGui::BeginChild("##Viewport", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+    {
+        this->Render();
+        if (overlay)
+        {
+            // child windows draw over their parent, so the overlay has to draw in the child to be on top of the image
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 min(this->lastViewportImagePositionAbsolute.x, this->lastViewportImagePositionAbsolute.y);
+            const ImVec2 max(min.x + this->lastViewportImageSizeAbsolute.x, min.y + this->lastViewportImageSizeAbsolute.y);
+            drawList->PushClipRect(min, max, true);
+            overlay(drawList);
+            drawList->PopClipRect();
+        }
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
 }
 
 

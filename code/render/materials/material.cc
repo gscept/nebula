@@ -396,6 +396,23 @@ MaterialGetTexture(const MaterialId mat, const IndexT i)
 
 //------------------------------------------------------------------------------
 /**
+    The template loaders write texture handles straight into their material buffers, so the textures the editor
+    shows are set separately. name is the hashed name of the template texture, textures not in the template are ignored
+*/
+void
+MaterialSetEditorTexture(const MaterialId mat, uint name, const Resources::ResourceId tex)
+{
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    IndexT i = temp->texturesByHash.FindIndex(name);
+    if (i != InvalidIndex)
+    {
+        Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
+        textures[temp->texturesByHash.ValueAtIndex(i)->textureIndex] = tex;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 MaterialInvalidate(const MaterialId mat)

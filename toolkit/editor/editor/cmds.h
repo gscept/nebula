@@ -23,6 +23,7 @@ void DeleteEntity(Editor::Entity entity);
 void SetSelection(Util::Array<Editor::Entity> const& selection);
 void SetComponent(Editor::Entity entity, Game::ComponentId component, void* value);
 void AddComponent(Editor::Entity entity, Game::ComponentId component);
+void AddComponent(Editor::Entity entity, Game::ComponentId component, void* value);
 void RemoveComponent(Editor::Entity entity, Game::ComponentId component);
 void SetEntityName(Editor::Entity entity, Util::String const& name);
 Util::Guid CreateCollection(const Util::String& name, const Util::Guid& parent = Util::Guid());

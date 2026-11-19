@@ -221,8 +221,13 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
 
     // Loaders look resources up by their resolved path, so the reload needs the full export URI, not just folder/file.ext
     const Util::String exportFile = filePath.ExportURI().AsString();
+    // a model asset packages its animation under the model's name, with the clip sections cut from it, which characters
+    // set up from the model play
+    const Util::String animationFile = filePath.GetType() == "mdl" && IO::Path::ExportExtensions.Contains("ani")
+        ? IO::Path::File(filePath.GetFolder(), filePath.GetFile(), "ani").ExportURI().AsString()
+        : Util::String();
     livebatcherState.batchThread->Enqueue(LiveBatchJob{
-        [filePath, exportFile, jobMessage, windowServer]() -> bool
+        [filePath, exportFile, animationFile, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -242,6 +247,8 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
                 windowServer->RemoveLoadingMessage(jobMessage);
 
                 livebatcherState.filesToReload.Enqueue(exportFile);
+                if (!animationFile.IsEmpty())
+                    livebatcherState.filesToReload.Enqueue(animationFile);
 
                 return true;
             }

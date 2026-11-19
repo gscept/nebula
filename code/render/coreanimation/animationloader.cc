@@ -29,12 +29,11 @@ AnimationLoader::AnimationLoader()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceLoader::ResourceInitOutput
-AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+static bool
+LoadAnimations(const Ptr<IO::Stream>& stream, Util::FixedArray<CoreAnimation::AnimationId>& outAnimations)
 {
     Ptr<AnimKeyBuffer> keyBuffer = nullptr;
-    Resources::ResourceLoader::ResourceInitOutput ret;
-    
+
     // map buffer
     uchar* ptr = (uchar*)stream->Map();
 
@@ -46,7 +45,7 @@ AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
     if (FourCC(naxHeader->magic) != NEBULA_NAX3_MAGICNUMBER)
     {
         n_error("StreamAnimationLoader::InitializeResource(): '%s' has invalid file format (magic number doesn't match)!", stream->GetURI().AsString().AsCharPtr());
-        return ret;
+        return false;
     }
 
     // load animation if it has clips in it
@@ -140,10 +139,46 @@ AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 
     // unmap memory
     stream->Unmap();
+    outAnimations = animations;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Resources::ResourceLoader::ResourceInitOutput
+AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    Resources::ResourceLoader::ResourceInitOutput ret;
+    Util::FixedArray<CoreAnimation::AnimationId> animations;
+    if (!LoadAnimations(stream, animations))
+        return ret;
 
     auto id = animationResourceAllocator.Alloc();
     animationResourceAllocator.Set<0>(id, animations);
     ret.id = id;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The resource keeps its id, users of its animations are told by the reload listeners to fetch them again
+*/
+Resources::ResourceLoader::ResourceInitOutput
+AnimationLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    Resources::ResourceLoader::ResourceInitOutput ret;
+    const AnimationResourceId id = job.id.resource;
+    ret.id = id;
+
+    Util::FixedArray<CoreAnimation::AnimationId> animations;
+    if (!LoadAnimations(stream, animations))
+        return ret;
+
+    Util::FixedArray<CoreAnimation::AnimationId>& old = animationResourceAllocator.Get<0>(id.id);
+    for (IndexT i = 0; i < old.Size(); i++)
+        DestroyAnimation(old[i]);
+    old = animations;
     return ret;
 }
 

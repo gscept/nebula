@@ -17,6 +17,7 @@
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/assetbrowser.h"
 #include "dynui/nebula_icons.h"
+#include "editor/ui/windows/asseteditor/asseteditor.h"
 
 using namespace Editor;
 
@@ -58,47 +59,16 @@ Inspector::Update()
 void 
 InspectorResourceDrawFunc(Game::Entity owner, Game::ComponentId component, void* data, bool* commit)
 {
+    // the same field the asset editors use for the assets an asset refers to, any type of asset can be dropped
     auto labelData = (Util::StringAtom*)data;
-    const char* label = "None";
-    if (labelData->IsValid())
-        label = labelData->Value();
+    const Util::String label = labelData->IsValid() ? labelData->Value() : "";
 
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::Button(label))
+    AssetField("resource", label, IO::Path::Parse(label), nullptr, [data, commit](const IO::Path& path)
     {
-        auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-        
-        browser->PickFile(IO::Path::Parse(label), [data, commit](const IO::Path& path)
-        {
-            *(Util::StringAtom*)data = path.AsString();
-            *commit = true;
-        });
-    }
-    ImGui::PopID();
-    if (ImGui::BeginDragDropTarget())
-    {
-        auto payload = ImGui::AcceptDragDropPayload("resource");
-        if (payload)
-        {
-            Util::String resourceName = (const char*)payload->Data;
-            *(Util::StringAtom*)data = resourceName;
-            *commit = true;
-        }
-        ImGui::EndDragDropTarget();
-    }
-
-    ImGui::SameLine();
-    ImGui::PushID(component.id + 0x125733 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::Button(ICON_ttf_FOLDER_OPEN))
-    {
-        auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-
-        browser->PickFile(IO::Path::Parse(label), [data, commit](const IO::Path& path)
-        {
-            *(Util::StringAtom*)data = path.AsString();
-            *commit = true;
-        });
-    }
+        *(Util::StringAtom*)data = path.AsString();
+        *commit = true;
+    });
     ImGui::PopID();
 }
 

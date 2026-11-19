@@ -67,7 +67,7 @@ RegisterModelEntity(
         gid,
         modelURN,
         "NONE",
-        [gid, anim, skeleton, raytracing, t]()
+        [gid, modelURN, anim, skeleton, raytracing, t]()
         {
             if (!Graphics::GraphicsServer::Instance()->IsValidGraphicsEntity(gid))
                 return;
@@ -84,6 +84,11 @@ RegisterModelEntity(
                 Characters::CharacterContext::RegisterEntity(gid);
                 Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
                 Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
+            }
+            else
+            {
+                // a skinned model without an animation and skeleton set uses the ones packaged with it
+                Characters::CharacterContext::SetupFromModel(gid, modelURN, "NONE");
             }
         },
         stage

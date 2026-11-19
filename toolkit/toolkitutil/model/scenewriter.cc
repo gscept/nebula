@@ -163,9 +163,8 @@ SceneWriter::GeneratePhysicsModel(
     String skeletonRes;
     skeletonRes.Format("ske:%s/%s.nsk", category.AsCharPtr(), file.AsCharPtr());
 
-    // create mesh name
-    String meshResource;
-    meshResource.Format("msh:%s/%s.nvx", category.AsCharPtr(), scene->GetName().AsCharPtr());
+    // create mesh name, physics reads its geometry from the same mesh URN as the graphics model
+    String meshResource = IO::Path::FolderAndFile("msh", Util::Format("%s/%s", category.AsCharPtr(), file.AsCharPtr())).AsString();
 
     auto model = std::make_unique<ToolkitUtil::PhysicsResourceT>();
     model->name = scene->GetName();

@@ -68,7 +68,7 @@ PostEffectSettings::Run(SaveMode save)
                     this->bloomDirt = id;
                     PostEffects::BloomContext::SetDirtMask(CoreGraphics::TextureId(id));
                 }, nullptr);
-            });
+            }, "tex");
         }
         if (this->bloomDirt != Resources::InvalidResourceId && ImGui::Button("Clear dirt"))
         {

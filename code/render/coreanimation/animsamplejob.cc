@@ -101,7 +101,7 @@ AnimSampleStep(
                 if (activeCurve)
                     memcpy(outSamplePtr, &srcSamplePtr[currentTime.key0], 4 * sizeof(float));
                 else
-                    idleSamples[i].store(outSamplePtr);
+                    idleSamples[i].storeu(outSamplePtr);
                 stride = 4;
                 break;
             }
@@ -112,7 +112,7 @@ AnimSampleStep(
                 if (activeCurve)
                     memcpy(outSamplePtr, &srcSamplePtr[currentTime.key0], 3 * sizeof(float));
                 else
-                    idleSamples[i].store(outSamplePtr);
+                    idleSamples[i].storeu(outSamplePtr);
                 stride = 3;
                 break;
             }
@@ -183,14 +183,14 @@ AnimSampleLinear(
                 if (activeCurve)
                 {
                     Math::quat q1;
-                    q0.load(&srcSamplePtr[currentTime.key0]);
-                    q1.load(&srcSamplePtr[currentTime.key1]);
+                    q0.loadu(&srcSamplePtr[currentTime.key0]);
+                    q1.loadu(&srcSamplePtr[currentTime.key1]);
                     q0 = Math::slerp(q0, q1, sampleWeight);
                 }
                 else
                     q0 = idleSamples[i].vec;
 
-                q0.store(outSamplePtr);
+                q0.storeu(outSamplePtr);
                 stride = 4;
                 break;
             }
@@ -202,8 +202,8 @@ AnimSampleLinear(
                 if (activeCurve)
                 {
                     Math::vec3 v1;
-                    v0.load(&srcSamplePtr[currentTime.key0]);
-                    v1.load(&srcSamplePtr[currentTime.key1]);
+                    v0.loadu(&srcSamplePtr[currentTime.key0]);
+                    v1.loadu(&srcSamplePtr[currentTime.key1]);
                     v0 = Math::lerp(v0, v1, sampleWeight);
                 }
                 else

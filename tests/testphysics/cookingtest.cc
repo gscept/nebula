@@ -110,12 +110,14 @@ CookingTest::Run()
         {
             return false;
         }
+        // image layout, samples[z * width + x]. Spans the whole unsigned range, samples above
+        // 32767 must not turn negative
         out.width = 2;
         out.height = 2;
         out.samples.Append(0);
-        out.samples.Append(8192);
-        out.samples.Append(16384);
-        out.samples.Append(24576);
+        out.samples.Append(21845);
+        out.samples.Append(43690);
+        out.samples.Append(65535);
         return true;
     };
 
@@ -212,7 +214,7 @@ CookingTest::Run()
     VERIFY(field.width == 2 && field.height == 2);
 
     physx::PxGeometryHolder heightField;
-    VERIFY(Physics::CookHeightField(field, 65536.0f, 10.0f, 20.0f, heightField));
+    VERIFY(Physics::CookHeightField(field, 32767.0f, 10.0f, 20.0f, heightField));
     VERIFY(heightField.getType() == PxGeometryType::eHEIGHTFIELD);
     const PxHeightFieldGeometry& hfGeom = heightField.heightField();
     VERIFY(hfGeom.heightField != nullptr);
@@ -220,15 +222,64 @@ CookingTest::Run()
     {
         VERIFY(hfGeom.heightField->getNbColumns() == 2);
         VERIFY(hfGeom.heightField->getNbRows() == 2);
+
+        // physx heights are signed, the unsigned samples are halved into 0..32767. Physx rows run
+        // along x and columns along z, so sample(x, z) reads input[z * width + x]
         VERIFY(hfGeom.heightField->getSample(0, 0).height == 0);
-        VERIFY(hfGeom.heightField->getSample(0, 1).height == 8192);
-        VERIFY(hfGeom.heightField->getSample(1, 0).height == 16384);
-        VERIFY(hfGeom.heightField->getSample(1, 1).height == 24576);
+        VERIFY(hfGeom.heightField->getSample(1, 0).height == 10922);
+        VERIFY(hfGeom.heightField->getSample(0, 1).height == 21845);
+        VERIFY(hfGeom.heightField->getSample(1, 1).height == 32767);
 
         // the scales are derived from the height range and the world extent
         VERIFY(NearlyEqual(hfGeom.heightScale, 1.0f));
         VERIFY(NearlyEqual(hfGeom.rowScale, 5.0f));
         VERIFY(NearlyEqual(hfGeom.columnScale, 10.0f));
+    }
+
+    // the top sample sits exactly heightRange above the field origin
+    physx::PxGeometryHolder rangedField;
+    VERIFY(Physics::CookHeightField(field, 42.5f, 10.0f, 20.0f, rangedField));
+    if (rangedField.getType() == PxGeometryType::eHEIGHTFIELD && rangedField.heightField().heightField != nullptr)
+    {
+        const PxHeightFieldGeometry& ranged = rangedField.heightField();
+        VERIFY(NearlyEqual(ranged.heightField->getSample(1, 1).height * ranged.heightScale, 42.5f));
+        VERIFY(NearlyEqual(ranged.heightField->getSample(0, 0).height * ranged.heightScale, 0.0f));
+        ranged.heightField->release();
+    }
+
+    // a non square field, 3 samples along x and 2 along z
+    Physics::HeightFieldInput wide;
+    wide.width = 3;
+    wide.height = 2;
+    const ushort wideSamples[] = { 0, 2000, 4000, 6000, 8000, 10000 };
+    for (ushort s : wideSamples)
+    {
+        wide.samples.Append(s);
+    }
+
+    physx::PxGeometryHolder wideField;
+    VERIFY(Physics::CookHeightField(wide, 32767.0f, 30.0f, 8.0f, wideField));
+    if (wideField.getType() == PxGeometryType::eHEIGHTFIELD && wideField.heightField().heightField != nullptr)
+    {
+        const PxHeightFieldGeometry& wideGeom = wideField.heightField();
+        VERIFY(wideGeom.heightField->getNbRows() == 3);
+        VERIFY(wideGeom.heightField->getNbColumns() == 2);
+        bool samplesMatch = true;
+        for (PxU32 x = 0; x < 3; x++)
+        {
+            for (PxU32 z = 0; z < 2; z++)
+            {
+                samplesMatch &= wideGeom.heightField->getSample(x, z).height == (PxI16)(wideSamples[z * 3 + x] >> 1);
+            }
+        }
+        VERIFY(samplesMatch);
+        VERIFY(NearlyEqual(wideGeom.rowScale, 10.0f));
+        VERIFY(NearlyEqual(wideGeom.columnScale, 4.0f));
+        wideGeom.heightField->release();
+    }
+    else
+    {
+        VERIFY(false);
     }
 
     // a project that registers no loader at all can not build file based colliders

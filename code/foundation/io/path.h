@@ -110,9 +110,9 @@ public:
     /// Get file with export extension
     Util::String GetExportFile() const;
 
-    /// Add an export binding using namespace -> file extension to use with ExportURI
+    /// Add an export binding using namespace -> file extension to use with ExportURI. Adding the same binding again is allowed, binding a namespace to another extension is not
     static void AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
-    /// Add a work binding using namespace -> file extension to use with WorkURI
+    /// Add a work binding using namespace -> file extension to use with WorkURI. Adding the same binding again is allowed, binding a namespace to another extension is not
     static void AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension);
     /// Set the work folder
     static void SetWorkRoot(const Util::StringAtom& root);
@@ -135,21 +135,39 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+    Several systems read the same namespace, such as graphics and physics both reading meshes,
+    and each registers the mappings it needs regardless of setup order. They have to agree though.
 */
 inline void
 Path::AddExportMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
 {
-    n_assert(Path::ExportExtensions.FindIndex(ns) == InvalidIndex);
+    IndexT i = Path::ExportExtensions.FindIndex(ns);
+    if (i != InvalidIndex)
+    {
+        n_assert_fmt(Path::ExportExtensions.ValueAtIndex(i) == extension,
+            "Export namespace '%s' is already mapped to '%s', can't map it to '%s'",
+            ns.Value(), Path::ExportExtensions.ValueAtIndex(i).Value(), extension.Value());
+        return;
+    }
     Path::ExportExtensions.Add(ns, extension);
 }
 
 //------------------------------------------------------------------------------
 /**
+    Several systems read the same namespace and each registers the mappings it needs regardless of
+    setup order. They have to agree though.
 */
 inline void
 Path::AddWorkMapping(const Util::StringAtom& ns, const Util::StringAtom& extension)
 {
-    n_assert(Path::WorkExtensions.FindIndex(ns) == InvalidIndex);
+    IndexT i = Path::WorkExtensions.FindIndex(ns);
+    if (i != InvalidIndex)
+    {
+        n_assert_fmt(Path::WorkExtensions.ValueAtIndex(i) == extension,
+            "Work namespace '%s' is already mapped to '%s', can't map it to '%s'",
+            ns.Value(), Path::WorkExtensions.ValueAtIndex(i).Value(), extension.Value());
+        return;
+    }
     Path::WorkExtensions.Add(ns, extension);
 }
 
