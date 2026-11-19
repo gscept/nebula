@@ -28,13 +28,15 @@ jobs:
             physx: vc18
             physxkey: vc18
             gpulang: win64
+            gpulang_sdk: windows-x86_64
           - name: ubuntu-26.04
             os: ubuntu-26.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
             gpulang: linux
-          
+            gpulang_sdk: linux-x86_64
+
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -95,23 +97,47 @@ jobs:
         run: |
           python fips physx build ${{ matrix.physx }} debug
 
+      # Prebuilt compiler published by GPULang's CI (rolling 'continuous' prerelease).
+      # The gpulang sources are checked out at the commit the compiler was built
+      # from, so the gpulang runtime nebula links against always matches it.
+      - name: Download prebuilt GPULang compiler
+        id: gpulang-prebuilt
+        continue-on-error: true
+        shell: bash
+        env:
+          GPULANG_SDK_URL: https://github.com/gscept/GPULang/releases/download/continuous/gpulangc-${{ matrix.gpulang_sdk }}.tar.gz
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o gpulangc-sdk.tar.gz "$GPULANG_SDK_URL"
+          dest=../fips-deploy/gpulang/${{ matrix.gpulang }}
+          mkdir -p "$dest"
+          tar -xzf gpulangc-sdk.tar.gz -C "$dest"
+          rm gpulangc-sdk.tar.gz
+          sha=$(cat "$dest/COMMIT")
+          git -C ../gpulang fetch --quiet origin
+          git -C ../gpulang checkout --quiet "$sha"
+          echo "Using prebuilt gpulangc from GPULang@$sha"
+
+      # Fallback: build the compiler from source if no prebuilt one is available.
       - name: Check GPULang version
         id: gpulang-rev
+        if: steps.gpulang-prebuilt.outcome != 'success'
         shell: bash
         run: |
           pushd ../gpulang
           echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd
-                    
+
       - name: Check for GPULang cached build
         id: cache-gpulang
+        if: steps.gpulang-prebuilt.outcome != 'success'
         uses: actions/cache@v3
         with:
           path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/gpulang
           key: ${{ runner.os }}-gpulang-${{ steps.gpulang-rev.outputs.gitrev }}
 
       - name: Build GPULang Compiler
-        if: steps.cache-gpulang.outputs.cache-hit != 'true'
+        if: steps.gpulang-prebuilt.outcome != 'success' && steps.cache-gpulang.outputs.cache-hit != 'true'
         run: |
           pushd ../gpulang
           python fips build ${{ matrix.gpulang }}
