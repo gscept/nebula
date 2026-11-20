@@ -18,6 +18,10 @@ namespace Visibility
 {
 class VisibilityContext;
 }
+namespace Characters
+{
+class CharacterContext;
+}
 namespace Models
 {
 
@@ -42,6 +46,7 @@ private:
     friend class ParticleSystemNode;
     friend class Models::ModelContext;
     friend class Visibility::VisibilityContext;
+    friend class Characters::CharacterContext;
 
     /// Parse the model tree
     ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;

@@ -66,10 +66,13 @@ extern void AnimSampleLinear(
 
 //------------------------------------------------------------------------------
 /**
+    Mix the samples of a clip, src1, over others, src0. The samples are a translation, rotation and scale per joint,
+    the curves of the clip in that order. Each joint is mixed by the weight times the mask's weight of the joint.
+    Curves of src1 without keys keep src0
 */
 extern void AnimMix(
     const AnimClip& clip,
-    const SizeT numSamples,
+    const Util::FixedArray<AnimCurve>& curves,
     const AnimSampleMask* mask,
     float mixWeight,
     const float* src0SamplePtr,

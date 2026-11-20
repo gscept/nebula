@@ -593,6 +593,73 @@ BuildClips(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<T
 /**
 */
 bool
+ValidateJointMask(const ToolkitUtil::SkeletonResourceT* skeleton, const std::vector<std::unique_ptr<ToolkitUtil::JointMaskAssetT>>& masks, IndexT index, Util::String& outError)
+{
+    const ToolkitUtil::JointMaskAssetT& mask = *masks[index];
+    if (skeleton == nullptr || skeleton->skeletons.empty())
+    {
+        outError = "the model has no skeleton";
+        return false;
+    }
+    if (mask.name.IsEmpty())
+    {
+        outError = "it has no name";
+        return false;
+    }
+    for (IndexT i = 0; i < index; i++)
+    {
+        if (masks[i]->name == mask.name)
+        {
+            outError = "a mask before it has the name";
+            return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BuildJointMasks(ToolkitUtil::SceneResourceT* scene, const ToolkitUtil::SkeletonResourceT* skeleton, const std::vector<std::unique_ptr<ToolkitUtil::JointMaskAssetT>>& masks, ToolkitUtil::Logger* logger)
+{
+    if (scene == nullptr)
+        return;
+
+    // the character plays the first skeleton, the weights are in the order of its joints
+    scene->joint_masks.clear();
+    for (IndexT i = 0; i < (IndexT)masks.size(); i++)
+    {
+        const ToolkitUtil::JointMaskAssetT& mask = *masks[i];
+        Util::String error;
+        if (!ValidateJointMask(skeleton, masks, i, error))
+        {
+            logger->Warning("Joint mask '%s' is skipped, %s\n", mask.name.AsCharPtr(), error.AsCharPtr());
+            continue;
+        }
+
+        const auto& joints = skeleton->skeletons[0]->joints;
+        auto info = std::make_unique<ToolkitUtil::JointMaskInfoT>();
+        info->name = mask.name;
+        info->weights.assign(joints.size(), 0.0f);
+        for (const auto& weight : mask.joints)
+        {
+            size_t joint = 0;
+            while (joint < joints.size() && joints[joint]->name != weight->joint)
+                joint++;
+            if (joint == joints.size())
+                logger->Warning("Joint mask '%s' has the joint '%s' the skeleton hasn't, it's left out\n", mask.name.AsCharPtr(), weight->joint.AsCharPtr());
+            else
+                info->weights[joint] = Math::clamp(weight->weight, 0.0f, 1.0f);
+        }
+        scene->joint_masks.push_back(std::move(info));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
 PackageAnimation(
     const ToolkitUtil::AnimResourceT* anim,
     const Util::String& fileName,

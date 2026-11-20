@@ -15,11 +15,12 @@ namespace Presentation
 /**
 */
 static void
-PlayFromStart(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop)
+PlayFromStart(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const float speed, const float fade = 0.0f)
 {
-    // the clip starts on the next update
-    Characters::CharacterContext::StopTrack(character, 0);
-    Characters::CharacterContext::PlayClip(character, nullptr, clip, 0, Characters::EnqueueMode::Replace, 1.0f, loop ? 0 : 1);
+    // the clip starts on the next update. With a fade it fades in over the clip playing, and out as it ends if it isn't looped
+    if (fade <= 0.0f)
+        Characters::CharacterContext::StopTrack(character, 0);
+    Characters::CharacterContext::PlayClip(character, nullptr, clip, 0, Characters::EnqueueMode::Replace, 1.0f, loop ? 0 : 1, 0.0f, fade, loop ? 0.0f : fade, 0.0f, speed);
 }
 
 //------------------------------------------------------------------------------
@@ -28,14 +29,14 @@ PlayFromStart(const Graphics::GraphicsEntityId character, const IndexT clip, con
     The id keeps whether to resume in the state storage
 */
 static void
-BeginScrub(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const ImGuiID id)
+BeginScrub(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const float speed, const ImGuiID id)
 {
     const IndexT playing = Characters::CharacterContext::GetPlayingClip(character, 0);
     const bool wasPlaying = playing != InvalidIndex && !Characters::CharacterContext::IsTrackPaused(character, 0);
     ImGui::GetStateStorage()->SetBool(id, wasPlaying);
     if (playing == InvalidIndex)
     {
-        PlayFromStart(character, clip, loop);
+        PlayFromStart(character, clip, loop, speed);
         Characters::CharacterContext::PauseTrack(character, 0);
     }
     else if (wasPlaying)
@@ -65,7 +66,7 @@ EndScrub(const Graphics::GraphicsEntityId character, const ImGuiID id)
     point, which drag it. The slider has to allow overlap for the handles to get the mouse
 */
 static void
-ClipMarkerHandles(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const Util::Array<ClipMarker>& markers, const ClipMarkerChanged& onChange, const Util::String& clipName, const float duration)
+ClipMarkerHandles(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const float speed, const Util::Array<ClipMarker>& markers, const ClipMarkerChanged& onChange, const Util::String& clipName, const float duration)
 {
     if (duration <= 0.0f)
         return;
@@ -161,7 +162,7 @@ ClipMarkerHandles(const Graphics::GraphicsEntityId character, const IndexT clip,
             {
                 storage->SetFloat(id, mouse.x - x);
                 storage->SetBool(id + 2, false);
-                BeginScrub(character, clip, loop, id + 1);
+                BeginScrub(character, clip, loop, speed, id + 1);
             }
             if (ImGui::IsItemActive())
             {
@@ -196,6 +197,49 @@ ClipMarkerHandles(const Graphics::GraphicsEntityId character, const IndexT clip,
 
     if (!hoveredNames.IsEmpty())
         ImGui::SetTooltip("%s", hoveredNames.AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
+    Draw the fades of a clip over the time slider, the last item. The fades are in the clip's time: a ramp up from the
+    start of the clip where it fades in, and down to its end where it fades out. Where it isn't at its full weight
+    is shaded
+*/
+static void
+FadeRamps(const float fadeIn, const float fadeOut, const float duration)
+{
+    if (duration <= 0.0f || (fadeIn <= 0.0f && fadeOut <= 0.0f))
+        return;
+
+    // where the slider puts the center of its grab for a time, like the marker handles
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    const float grabPadding = 2.0f;
+    const float grabSize = Math::min(style.GrabMinSize, max.x - min.x - grabPadding * 2.0f);
+    const float x0 = min.x + grabPadding + grabSize * 0.5f;
+    const float x1 = max.x - grabPadding - grabSize * 0.5f;
+    auto toX = [&](float time) { return x0 + (x1 - x0) * Math::clamp(time / duration, 0.0f, 1.0f); };
+    const float top = min.y + 2.0f;
+    const float bottom = max.y - 2.0f;
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    const ImU32 shade = IM_COL32(0, 0, 0, 90);
+    const ImU32 ramp = IM_COL32(230, 230, 230, 200);
+    if (fadeIn > 0.0f)
+    {
+        const ImVec2 start(toX(0.0f), bottom);
+        const ImVec2 end(toX(fadeIn), top);
+        drawList->AddTriangleFilled(ImVec2(start.x, top), start, end, shade);
+        drawList->AddLine(start, end, ramp, 1.5f);
+    }
+    if (fadeOut > 0.0f)
+    {
+        const ImVec2 start(toX(duration - fadeOut), top);
+        const ImVec2 end(toX(duration), bottom);
+        drawList->AddTriangleFilled(start, ImVec2(end.x, top), end, shade);
+        drawList->AddLine(start, end, ramp, 1.5f);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -235,12 +279,12 @@ ClipKeyTimes(const CoreAnimation::AnimationId animation, const IndexT clipIndex)
     Show the pose of a clip at a time, the clip is paused there, a stopped one is started paused
 */
 static void
-PauseAt(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const float seconds)
+PauseAt(const Graphics::GraphicsEntityId character, const IndexT clip, const bool loop, const float speed, const float seconds)
 {
     const IndexT playing = Characters::CharacterContext::GetPlayingClip(character, 0);
     if (playing != clip)
     {
-        PlayFromStart(character, clip, loop);
+        PlayFromStart(character, clip, loop, speed);
         Characters::CharacterContext::PauseTrack(character, 0);
     }
     else if (!Characters::CharacterContext::IsTrackPaused(character, 0))
@@ -271,8 +315,10 @@ IconButton(const char* icon, const char* tooltip, const bool on = false)
 /**
 */
 void
-AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& clip, const Util::Array<ClipMarker>& markers, const ClipMarkerChanged& onMarkerChanged)
+AnimationClips(const Graphics::GraphicsEntityId character, ClipPlayback& playback, IndexT& clip, const Util::Array<ClipMarker>& markers, const ClipMarkerChanged& onMarkerChanged)
 {
+    bool& loop = playback.loop;
+    float& speed = playback.speed;
     const CoreAnimation::AnimationId animation = Characters::CharacterContext::GetAnimation(character);
     if (animation == CoreAnimation::InvalidAnimationId)
     {
@@ -299,7 +345,7 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
         if (isPlaying)
             Characters::CharacterContext::SeekTrack(character, 0, 0.0);
         else
-            PauseAt(character, clip, loop, 0.0f);
+            PauseAt(character, clip, loop, speed, 0.0f);
     }
     ImGui::SameLine(0.0f, 2.0f);
     const bool stepBack = IconButton(ICON_ttf_STEP_BACKWARD, "Step back to the previous key");
@@ -310,19 +356,40 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
         if (playing != InvalidIndex)
             Characters::CharacterContext::PauseTrack(character, 0);
         else
-            PlayFromStart(character, clip, loop);
+            PlayFromStart(character, clip, loop, speed, playback.fade);
     }
     ImGui::SameLine(0.0f, 2.0f);
     const bool stepForward = IconButton(ICON_ttf_STEP_FORWARD, "Step on to the next key");
     ImGui::EndDisabled();
     ImGui::SameLine(0.0f, 2.0f);
     ImGui::BeginDisabled(playing == InvalidIndex);
-    if (IconButton(ICON_ttf_STOP, "Stop"))
-        Characters::CharacterContext::StopTrack(character, 0);
+    if (IconButton(ICON_ttf_STOP, playback.fade > 0.0f ? "Stop, fading out" : "Stop"))
+        Characters::CharacterContext::StopTrack(character, 0, paused ? 0.0f : playback.fade);
     ImGui::EndDisabled();
     ImGui::SameLine(0.0f, 2.0f);
     if (IconButton(ICON_ttf_REPEAT, loop ? "Looping, applies to the clips played next" : "Not looping, applies to the clips played next", loop))
         loop = !loop;
+
+    // the speed applies to the clip playing right away and to the ones played next
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
+    bool speedChanged = ImGui::SliderFloat("##speed", &speed, 0.1f, 4.0f, "%.2fx", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+    {
+        speed = 1.0f;
+        speedChanged = true;
+    }
+    ImGui::SetItemTooltip("Playback speed, ctrl+click to type it, right-click to reset it to 1x");
+    if (speedChanged && playing != InvalidIndex)
+        Characters::CharacterContext::SetTrackTimeFactor(character, 0, speed);
+
+    // the fade applies to the clips played and stopped next
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+    ImGui::DragFloat("##fade", &playback.fade, 0.01f, 0.0f, 5.0f, playback.fade > 0.0f ? "fade %.2f s" : "no fade", ImGuiSliderFlags_AlwaysClamp);
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+        playback.fade = 0.0f;
+    ImGui::SetItemTooltip("Seconds a clip played fades in over the one playing, shown on the time slider, a clip that isn't looped fades out as it ends,\nand stopping fades out. Right-click to turn it off");
     ImGui::PopID();
 
     // stepping pauses the clip at the key before or after the time it's at, clips without keys step a frame at 30 fps
@@ -348,7 +415,7 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
                 }
             }
         }
-        PauseAt(character, clip, loop, (float)Timing::TicksToSeconds(target));
+        PauseAt(character, clip, loop, speed, (float)Timing::TicksToSeconds(target));
     }
 
     if (!clips.IsEmpty())
@@ -361,14 +428,22 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
         const bool changed = ImGui::SliderFloat("##time", &time, 0.0f, duration, "%.2f s");
         const ImGuiID resumeId = ImGui::GetItemID();
         if (ImGui::IsItemActivated())
-            BeginScrub(character, clip, loop, resumeId);
+            BeginScrub(character, clip, loop, speed, resumeId);
         if (changed || ImGui::IsItemActivated())
             Characters::CharacterContext::SeekTrack(character, 0, time);
         if (ImGui::IsItemDeactivated())
             EndScrub(character, resumeId);
 
+        // the fades of the playback, they take as long whatever the speed, so they're longer in the clip's time the faster
+        // it plays. Looped clips don't fade out
+        if (playback.fade > 0.0f)
+        {
+            const float fade = playback.fade * speed;
+            FadeRamps(fade, loop ? 0.0f : fade, duration);
+        }
+
         const Util::StringAtom clipName = clips[clip].GetName();
-        ClipMarkerHandles(character, clip, loop, markers, onMarkerChanged, clipName.IsValid() ? clipName.Value() : "", duration);
+        ClipMarkerHandles(character, clip, loop, speed, markers, onMarkerChanged, clipName.IsValid() ? clipName.Value() : "", duration);
     }
 
     // the clips with their events under them, clicking a clip plays it, clicking an event shows the pose at it
@@ -441,7 +516,7 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
                 clip = i;
-                PlayFromStart(character, i, loop);
+                PlayFromStart(character, i, loop, speed, playback.fade);
             }
             ImGui::SetItemTooltip(info.numEvents > 0 ? "Click to play it, open it for its events" : "Click to play it");
             ImGui::TableNextColumn();
@@ -465,7 +540,7 @@ AnimationClips(const Graphics::GraphicsEntityId character, bool& loop, IndexT& c
                     if (ImGui::IsItemClicked())
                     {
                         clip = i;
-                        PauseAt(character, i, loop, (float)Timing::TicksToSeconds(event.time));
+                        PauseAt(character, i, loop, speed, (float)Timing::TicksToSeconds(event.time));
                     }
                     ImGui::SetItemTooltip("Click to show the pose at it");
                     ImGui::TableNextColumn();

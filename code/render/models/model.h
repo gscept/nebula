@@ -117,6 +117,8 @@ const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(
 
 /// Set model nodes
 void ModelSetNodes(const ModelId id, Util::Array<Models::ModelNode*>& nodes);
+/// Get model joint masks, the weights of a mask are per joint of the model's skeleton
+const Util::FixedArray<JointMask>& ModelGetJointMasks(const ModelId id);
 /// Set model joint masks
 void ModelSetJointMasks(const ModelId id, const Util::FixedArray<JointMask>& masks);
 /// Set model takes

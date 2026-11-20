@@ -24,6 +24,7 @@ struct AnimResourceT;
 struct AnimClipSectionT;
 struct AnimClipEventT;
 struct SkeletonResourceT;
+struct JointMaskAssetT;
 struct MeshResourceT;
 struct TextureResourceT;
 struct AudioResourceT;
@@ -50,6 +51,12 @@ bool ValidateClipEvent(const ToolkitUtil::AnimResourceT* anim, const std::vector
 /// Add the events to the clips, cut the sections and add the events of the sections' clips. Events of a clip that are
 /// in a section are in the section's clip as well. What can't be added or cut is skipped with a warning
 void BuildClips(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipEventT>>& events, ToolkitUtil::Logger* logger);
+/// Check that the joint mask at the index can be packaged: there's a skeleton, and the mask has a name no mask before it
+/// in the list has. Returns false with the reason otherwise
+bool ValidateJointMask(const ToolkitUtil::SkeletonResourceT* skeleton, const std::vector<std::unique_ptr<ToolkitUtil::JointMaskAssetT>>& masks, IndexT index, Util::String& outError);
+/// Set the joint masks of the scene from the masks of the model asset, with a weight per joint of the first skeleton.
+/// Masks without a name or with one used before are skipped, joints not in the skeleton are left out, with warnings
+void BuildJointMasks(ToolkitUtil::SceneResourceT* scene, const ToolkitUtil::SkeletonResourceT* skeleton, const std::vector<std::unique_ptr<ToolkitUtil::JointMaskAssetT>>& masks, ToolkitUtil::Logger* logger);
 /// Package animation from memory
 bool PackageAnimation(const ToolkitUtil::AnimResourceT* anim, const Util::String& fileName, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger);
 /// Package skeleton from memory

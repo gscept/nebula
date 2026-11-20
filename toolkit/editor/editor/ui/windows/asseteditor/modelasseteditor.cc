@@ -280,7 +280,7 @@ ClipSections(AssetEditor* assetEditor, AssetEditorItem* item, ModelEditorItemDat
                 itemData->clip = sourceIndex;
                 itemData->previewSection = i;
                 Characters::CharacterContext::StopTrack(preview, 0);
-                Characters::CharacterContext::PlayClip(preview, nullptr, sourceIndex, 0, Characters::EnqueueMode::Replace, 1.0f, 0);
+                Characters::CharacterContext::PlayClip(preview, nullptr, sourceIndex, 0, Characters::EnqueueMode::Replace, 1.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, itemData->playback.speed);
                 Characters::CharacterContext::SeekTrack(preview, 0, Timing::TicksToSeconds(section.start));
             }
             ImGui::EndDisabled();
@@ -576,6 +576,454 @@ ClipEvents(AssetEditor* assetEditor, AssetEditorItem* item, ModelEditorItemData*
 
 //------------------------------------------------------------------------------
 /**
+    The joints of the skeleton of the asset the character plays, the first one. Masks name its joints, their weights
+    are in its order once packaged
+*/
+static const std::vector<std::unique_ptr<ToolkitUtil::JointInstanceT>>*
+AssetJoints(const ModelEditorItemData* itemData)
+{
+    const ToolkitUtil::SkeletonResourceT* skeleton = itemData->asset.skeleton.get();
+    if (skeleton == nullptr || skeleton->skeletons.empty())
+        return nullptr;
+    return &skeleton->skeletons[0]->joints;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The weight of a joint in a mask, the joints it leaves out weigh 0
+*/
+static float
+JointMaskWeight(const ToolkitUtil::JointMaskAssetT& mask, const Util::String& joint)
+{
+    for (const auto& weight : mask.joints)
+    {
+        if (weight->joint == joint)
+            return weight->weight;
+    }
+    return 0.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Joints that weigh 0 are left out of the mask
+*/
+static void
+SetJointMaskWeight(ToolkitUtil::JointMaskAssetT& mask, const Util::String& joint, const float value)
+{
+    for (auto it = mask.joints.begin(); it != mask.joints.end(); it++)
+    {
+        if ((*it)->joint == joint)
+        {
+            if (value <= 0.0f)
+                mask.joints.erase(it);
+            else
+                (*it)->weight = value;
+            return;
+        }
+    }
+    if (value > 0.0f)
+    {
+        auto weight = std::make_unique<ToolkitUtil::JointMaskWeightT>();
+        weight->joint = joint;
+        weight->weight = value;
+        mask.joints.push_back(std::move(weight));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Set the weight of a joint and all joints under it
+*/
+static void
+SetJointMaskSubtree(ToolkitUtil::JointMaskAssetT& mask, const std::vector<std::unique_ptr<ToolkitUtil::JointInstanceT>>& joints, const IndexT joint, const float value)
+{
+    SetJointMaskWeight(mask, joints[joint]->name, value);
+    for (IndexT i = 0; i < (IndexT)joints.size(); i++)
+    {
+        if (joints[i]->parent == joint && i != joint)
+            SetJointMaskSubtree(mask, joints, i, value);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The weights of a mask per joint of the skeleton, like it's packaged
+*/
+static void
+JointMaskWeights(const ToolkitUtil::JointMaskAssetT* mask, const std::vector<std::unique_ptr<ToolkitUtil::JointInstanceT>>& joints, float* outWeights, const SizeT count)
+{
+    for (IndexT i = 0; i < count; i++)
+    {
+        if (mask == nullptr)
+            outWeights[i] = 1.0f;
+        else
+            outWeights[i] = i < (IndexT)joints.size() ? Math::clamp(JointMaskWeight(*mask, joints[i]->name), 0.0f, 1.0f) : 0.0f;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    A row of the joint weight tree, returns true once an edit is done
+*/
+static bool
+JointMaskNode(ToolkitUtil::JointMaskAssetT& mask, const std::vector<std::unique_ptr<ToolkitUtil::JointInstanceT>>& joints, const IndexT joint, IndexT& hovered)
+{
+    bool done = false;
+    bool hasChildren = false;
+    for (IndexT i = 0; i < (IndexT)joints.size() && !hasChildren; i++)
+        hasChildren = joints[i]->parent == joint && i != joint;
+
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow;
+    if (!hasChildren)
+        flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+    const Util::String& name = joints[joint]->name;
+    const bool open = ImGui::TreeNodeEx((void*)(intptr_t)joint, flags, "%s", name.IsEmpty() ? Util::Format("Joint %d", joint).AsCharPtr() : name.AsCharPtr());
+    if (ImGui::IsItemHovered())
+        hovered = joint;
+    ImGui::SetItemTooltip("Right-click to set the joints under it too");
+
+    float weight = JointMaskWeight(mask, name);
+    if (ImGui::BeginPopupContextItem())
+    {
+        if (ImGui::MenuItem("Include it and the joints under it"))
+        {
+            SetJointMaskSubtree(mask, joints, joint, 1.0f);
+            done = true;
+        }
+        if (ImGui::MenuItem("Leave it and the joints under it out"))
+        {
+            SetJointMaskSubtree(mask, joints, joint, 0.0f);
+            done = true;
+        }
+        if (ImGui::MenuItem(Util::Format("Set the joints under it to %.2f", weight).AsCharPtr(), nullptr, false, hasChildren))
+        {
+            SetJointMaskSubtree(mask, joints, joint, weight);
+            done = true;
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::TableNextColumn();
+    ImGui::PushID(joint);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::SliderFloat("##weight", &weight, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+        SetJointMaskWeight(mask, name, weight);
+    if (ImGui::IsItemHovered())
+        hovered = joint;
+    done |= ImGui::IsItemDeactivatedAfterEdit();
+    ImGui::PopID();
+
+    if (open && hasChildren)
+    {
+        for (IndexT i = 0; i < (IndexT)joints.size(); i++)
+        {
+            if (joints[i]->parent == joint && i != joint)
+                done |= JointMaskNode(mask, joints, i, hovered);
+        }
+        ImGui::TreePop();
+    }
+    return done;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The joint masks of the asset, packaged into the model. The mask edited gets a weight per joint, which the viewport
+    shows, and which the layer played with it uses right away
+*/
+static void
+JointMasks(AssetEditor* assetEditor, AssetEditorItem* item, ModelEditorItemData* itemData)
+{
+    const auto* joints = AssetJoints(itemData);
+    if (joints == nullptr)
+        return;
+    auto& masks = itemData->asset.joint_masks;
+    auto edited = [assetEditor, item]()
+    {
+        assetEditor->Edit();
+        item->editCounter++;
+    };
+
+    ImGui::SeparatorText("Joint masks");
+    ImGui::TextDisabled("The joints a clip layered over another is mixed on, packaged into the model");
+
+    IndexT erase = InvalidIndex;
+    if (!masks.empty() && ImGui::BeginTable("Masks", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+    {
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("##actions", ImGuiTableColumnFlags_WidthFixed);
+        for (IndexT i = 0; i < (IndexT)masks.size(); i++)
+        {
+            ToolkitUtil::JointMaskAssetT& mask = *masks[i];
+            ImGui::PushID(i);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            char name[64];
+            mask.name.CopyToBuffer(name, sizeof(name));
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::InputText("##name", name, sizeof(name)))
+                mask.name = name;
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                edited();
+            bool rowHovered = ImGui::IsItemHovered();
+
+            // the reason the mask isn't packaged, and the joints it has that the skeleton hasn't
+            Util::String error;
+            Util::String unknown;
+            if (!ToolkitUtil::ValidateJointMask(itemData->asset.skeleton.get(), masks, i, error))
+            {
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), " (!)");
+                ImGui::SetItemTooltip("It isn't packaged, %s", error.AsCharPtr());
+                rowHovered |= ImGui::IsItemHovered();
+            }
+            for (const auto& weight : mask.joints)
+            {
+                bool found = false;
+                for (const auto& joint : *joints)
+                    found |= joint->name == weight->joint;
+                if (!found)
+                    unknown.Append(Util::Format("\n%s", weight->joint.AsCharPtr()));
+            }
+            if (!unknown.IsEmpty())
+            {
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), " (?)");
+                ImGui::SetItemTooltip("Joints the skeleton hasn't are left out, edit the mask to remove them:%s", unknown.AsCharPtr());
+                rowHovered |= ImGui::IsItemHovered();
+            }
+
+            ImGui::TableNextColumn();
+            const bool editing = itemData->editedMask == i;
+            if (editing)
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+            if (ImGui::Button(ICON_ttf_EDIT))
+                itemData->editedMask = editing ? InvalidIndex : i;
+            rowHovered |= ImGui::IsItemHovered();
+            if (editing)
+                ImGui::PopStyleColor();
+            ImGui::SetItemTooltip(editing ? "Stop editing the weights" : "Edit the weights of the joints, they're shown in the viewport");
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_ttf_TRASH))
+                erase = i;
+            rowHovered |= ImGui::IsItemHovered();
+            ImGui::SetItemTooltip("Remove the mask");
+            if (rowHovered)
+                itemData->hoveredMask = i;
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+
+    if (erase != InvalidIndex)
+    {
+        masks.erase(masks.begin() + erase);
+        itemData->hoveredMask = InvalidIndex;
+        auto shift = [erase](IndexT& index)
+        {
+            if (index == erase)
+                index = InvalidIndex;
+            else if (index > erase)
+                index--;
+        };
+        shift(itemData->editedMask);
+        shift(itemData->layerMask);
+        edited();
+    }
+
+    if (ImGui::Button(Util::Format("%s Add mask", ICON_ttf_PLUS).AsCharPtr()))
+    {
+        auto mask = std::make_unique<ToolkitUtil::JointMaskAssetT>();
+        for (int n = (int)masks.size() + 1;; n++)
+        {
+            mask->name = Util::Format("Mask_%d", n);
+            bool unique = true;
+            for (const auto& other : masks)
+                unique &= other->name != mask->name;
+            if (unique)
+                break;
+        }
+        masks.push_back(std::move(mask));
+        itemData->editedMask = (IndexT)masks.size() - 1;
+        edited();
+    }
+    ImGui::SetItemTooltip("Add a mask without joints, right-click a joint to include it and the joints under it");
+
+    if (itemData->editedMask < 0 || itemData->editedMask >= (IndexT)masks.size())
+    {
+        itemData->editedMask = InvalidIndex;
+        return;
+    }
+
+    ToolkitUtil::JointMaskAssetT& mask = *masks[itemData->editedMask];
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Weights of '%s'", mask.name.AsCharPtr());
+    bool done = false;
+
+    // shortcuts for all joints of the skeleton, joints it hasn't are kept
+    ImGui::SameLine();
+    if (ImGui::SmallButton("All 1"))
+    {
+        for (const auto& joint : *joints)
+            SetJointMaskWeight(mask, joint->name, 1.0f);
+        done = true;
+    }
+    ImGui::SetItemTooltip("Include all joints");
+    ImGui::SameLine();
+    if (ImGui::SmallButton("All 0"))
+    {
+        for (const auto& joint : *joints)
+            SetJointMaskWeight(mask, joint->name, 0.0f);
+        done = true;
+    }
+    ImGui::SetItemTooltip("Leave all joints out");
+    if (ImGui::BeginTable("JointWeights", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+    {
+        ImGui::TableSetupColumn("Joint", ImGuiTableColumnFlags_WidthStretch, 3.0f);
+        ImGui::TableSetupColumn("Weight", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+        ImGui::TableHeadersRow();
+        for (IndexT i = 0; i < (IndexT)joints->size(); i++)
+        {
+            const int parent = (*joints)[i]->parent;
+            if (parent < 0 || parent >= (int)joints->size() || parent == i)
+                done |= JointMaskNode(mask, *joints, i, itemData->hoveredJoint);
+        }
+        ImGui::EndTable();
+    }
+
+    // the joints the skeleton hasn't, from a reimport that renamed joints
+    SizeT numUnknown = 0;
+    for (const auto& weight : mask.joints)
+    {
+        bool found = false;
+        for (const auto& joint : *joints)
+            found |= joint->name == weight->joint;
+        numUnknown += found ? 0 : 1;
+    }
+    if (numUnknown > 0 && ImGui::Button(Util::Format("Remove the %d joints the skeleton hasn't", numUnknown).AsCharPtr()))
+    {
+        for (size_t w = mask.joints.size(); w-- > 0;)
+        {
+            bool found = false;
+            for (const auto& joint : *joints)
+                found |= joint->name == mask.joints[w]->joint;
+            if (!found)
+                mask.joints.erase(mask.joints.begin() + w);
+        }
+        done = true;
+    }
+    if (done)
+        edited();
+}
+
+//------------------------------------------------------------------------------
+/**
+    A clip played on the second track over the one the transport plays, mixed on the joints of a mask of the asset.
+    The mask is the one edited, so changes show right away without saving
+*/
+static void
+AnimationLayer(ModelEditorItemData* itemData, const Graphics::GraphicsEntityId preview)
+{
+    const CoreAnimation::AnimationId animation = Characters::CharacterContext::GetAnimation(preview);
+    if (animation == CoreAnimation::InvalidAnimationId)
+        return;
+    const Util::FixedArray<CoreAnimation::AnimClip>& clips = CoreAnimation::AnimGetClips(animation);
+    if (clips.IsEmpty())
+        return;
+    const auto* joints = AssetJoints(itemData);
+    const auto& masks = itemData->asset.joint_masks;
+    if (itemData->layerClip < 0 || itemData->layerClip >= clips.Size())
+        itemData->layerClip = 0;
+    if (itemData->layerMask >= (IndexT)masks.size())
+        itemData->layerMask = InvalidIndex;
+
+    const IndexT LayerTrack = 1;
+    const bool playing = Characters::CharacterContext::GetPlayingClip(preview, LayerTrack) != InvalidIndex;
+
+    // the mask is kept up to date in place while the layer plays
+    CoreAnimation::AnimSampleMask& sampleMask = itemData->layerSampleMask;
+    if (joints != nullptr)
+        JointMaskWeights(itemData->layerMask != InvalidIndex ? masks[itemData->layerMask].get() : nullptr, *joints, sampleMask.weights.Begin(), sampleMask.weights.Size());
+    else
+        JointMaskWeights(nullptr, {}, sampleMask.weights.Begin(), sampleMask.weights.Size());
+
+    ImGui::SeparatorText("Layer");
+    ImGui::TextDisabled("A clip mixed over the one played, on the joints of a mask");
+    ImGui::PushID("layer");
+    bool restart = false;
+
+    auto clipName = [&clips](IndexT i) { return clips[i].GetName().IsValid() ? clips[i].GetName().Value() : ""; };
+    const float width = ImGui::GetContentRegionAvail().x;
+    ImGui::SetNextItemWidth(width * 0.35f);
+    if (ImGui::BeginCombo("##clip", clipName(itemData->layerClip)))
+    {
+        for (IndexT i = 0; i < clips.Size(); i++)
+        {
+            if (ImGui::Selectable(clipName(i), i == itemData->layerClip))
+            {
+                restart = playing && i != itemData->layerClip;
+                itemData->layerClip = i;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("The clip layered");
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(width * 0.3f);
+    const char* maskName = itemData->layerMask != InvalidIndex ? masks[itemData->layerMask]->name.AsCharPtr() : "All joints";
+    if (ImGui::BeginCombo("##mask", maskName))
+    {
+        if (ImGui::Selectable("All joints", itemData->layerMask == InvalidIndex))
+            itemData->layerMask = InvalidIndex;
+        for (IndexT i = 0; i < (IndexT)masks.size(); i++)
+        {
+            ImGui::PushID(i);
+            if (ImGui::Selectable(masks[i]->name.AsCharPtr(), i == itemData->layerMask))
+                itemData->layerMask = i;
+            ImGui::PopID();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("The joint mask it's mixed with");
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.0f);
+    if (ImGui::SliderFloat("##weight", &itemData->layerWeight, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp) && playing)
+        Characters::CharacterContext::SetTrackWeight(preview, LayerTrack, itemData->layerWeight);
+    ImGui::SetItemTooltip("The weight it's mixed with");
+
+    ImGui::SameLine();
+    if (ImGui::Button(playing ? ICON_ttf_STOP : ICON_ttf_PLAY))
+    {
+        if (playing)
+            Characters::CharacterContext::StopTrack(preview, LayerTrack, itemData->playback.fade);
+        else
+            restart = true;
+    }
+    ImGui::SetItemTooltip(playing ? "Stop the layer, it fades out with the fade of the clips" : "Play the layer, looped. It fades in with the fade of the clips");
+    ImGui::PopID();
+
+    if (restart)
+    {
+        // with a fade a clip picked while the layer plays fades in over the one it plays
+        const float fade = itemData->playback.fade;
+        if (fade <= 0.0f)
+            Characters::CharacterContext::StopTrack(preview, LayerTrack);
+        Characters::CharacterContext::PlayClip(preview, &sampleMask, itemData->layerClip, LayerTrack, Characters::EnqueueMode::Replace, itemData->layerWeight, 0, 0.0f, fade, 0.0f, 0.0f, itemData->playback.speed);
+        itemData->layerSpeed = itemData->playback.speed;
+    }
+    else if (playing && itemData->layerSpeed != itemData->playback.speed)
+    {
+        // the layer plays at the speed of the clips
+        Characters::CharacterContext::SetTrackTimeFactor(preview, LayerTrack, itemData->playback.speed);
+        itemData->layerSpeed = itemData->playback.speed;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     The material of each node drawing a mesh, followed by the resources packaged from the asset if they're exported:
     the mesh, and for skinned models the skeleton and animation of the character the preview is set up with,
     which are shown in the viewport
@@ -588,18 +1036,28 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     const bool isCharacter = Characters::CharacterContext::IsEntityRegistered(preview);
     const Characters::SkeletonId skeleton = isCharacter ? Characters::CharacterContext::GetSkeleton(preview) : Characters::InvalidSkeletonId;
 
+    // the weights of the joint mask hovered in the list, or else the one edited, are shown on the skeleton
+    Util::FixedArray<float> maskWeights;
+    const auto* assetJoints = AssetJoints(itemData);
+    const IndexT shownMask = itemData->hoveredMask != InvalidIndex ? itemData->hoveredMask : itemData->editedMask;
+    if (assetJoints != nullptr && shownMask >= 0 && shownMask < (IndexT)itemData->asset.joint_masks.size())
+    {
+        maskWeights.Resize((SizeT)assetJoints->size());
+        JointMaskWeights(itemData->asset.joint_masks[shownMask].get(), *assetJoints, maskWeights.Begin(), maskWeights.Size());
+    }
+
     if (ImGui::BeginTable("Model Editor", 2, ImGuiTableFlags_Resizable))
     {
         // Column 1
         {
             ImGui::TableSetupScrollFreeze(2, 1);
             ImGui::TableNextColumn();
-            assetEditor->viewport.RenderInChildWindow([assetEditor, itemData, preview, skeleton](ImDrawList* drawList)
+            assetEditor->viewport.RenderInChildWindow([assetEditor, itemData, preview, skeleton, &maskWeights](ImDrawList* drawList)
             {
                 if (!itemData->showSkeleton || skeleton == Characters::InvalidSkeletonId)
                     return;
                 SkeletonOverlay(drawList, assetEditor->viewport, skeleton, Characters::CharacterContext::GetJointTransforms(preview),
-                    Models::ModelContext::GetTransform(preview), itemData->hoveredJoint);
+                    Models::ModelContext::GetTransform(preview), itemData->hoveredJoint, maskWeights.IsEmpty() ? nullptr : &maskWeights);
             });
         }
 
@@ -646,11 +1104,13 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
 
             itemData->hoveredJoint = InvalidIndex;
+            itemData->hoveredMask = InvalidIndex;
             if (skeleton != Characters::InvalidSkeletonId && ImGui::CollapsingHeader("Skeleton", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 ImGui::Checkbox("Show in viewport", &itemData->showSkeleton);
                 ImGui::SetItemTooltip("Hover a joint to highlight it");
                 itemData->hoveredJoint = SkeletonJointTree(skeleton);
+                JointMasks(assetEditor, item, itemData);
             }
 
             if (isCharacter && ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen))
@@ -669,7 +1129,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                     const ToolkitUtil::AnimClipEventT& event = *itemData->asset.clip_events[i];
                     markers.Append({ event.clip, event.name, event.time / 1000.0f, event.time / 1000.0f, FiredRecently(itemData, event.clip, event.name), true, i });
                 }
-                AnimationClips(preview, itemData->loopClips, itemData->clip, markers,
+                AnimationClips(preview, itemData->playback, itemData->clip, markers,
                     [assetEditor, model = item->path](const ClipMarker& marker, float start, float end, bool done)
                 {
                     // the item is looked up again, a marker is dragged over several frames
@@ -699,6 +1159,7 @@ ModelEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                         item->editCounter++;
                     }
                 });
+                AnimationLayer(itemData, preview);
                 ClipSections(assetEditor, item, itemData);
                 ClipEvents(assetEditor, item, itemData);
                 ImGui::PopID();
@@ -729,6 +1190,12 @@ ModelSetup(AssetEditorItem* item)
         assetFileStream->Close();
     }
     item->data = itemData;
+
+    // the layer's mask has a weight per joint, it's only changed in place from here on
+    const auto* joints = AssetJoints(itemData);
+    itemData->layerSampleMask.name = "preview";
+    itemData->layerSampleMask.weights.Resize(joints != nullptr ? (SizeT)joints->size() : 0);
+    itemData->layerSampleMask.weights.Fill(1.0f);
 
     // the mesh packaged from the asset, the model loads it as well
     const IO::Path mesh = IO::Path::File(item->path.GetFolder(), item->path.GetFile(), "msh");

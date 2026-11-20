@@ -16,6 +16,7 @@
 #include "resources/resourceserver.h"
 #include "io/ioserver.h"
 #include "coreanimation/animationloader.h"
+#include "models/modelloader.h"
 
 using namespace Graphics;
 using namespace Resources;
@@ -43,6 +44,26 @@ CharacterContext::CharacterContext()
 CharacterContext::~CharacterContext()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+    Copy the joint masks of the model of a character, they're kept with the character so the clips playing with them
+    can point to them
+*/
+static void
+FetchJointMasks(const Graphics::GraphicsEntityId id, Util::FixedArray<CoreAnimation::AnimSampleMask>& outMasks)
+{
+    const Models::ModelId model = Models::ModelContext::GetModel(id);
+    if (model == Models::InvalidModelId)
+        return;
+    const Util::FixedArray<Models::JointMask>& masks = Models::ModelGetJointMasks(model);
+    outMasks.Resize(masks.Size());
+    for (IndexT i = 0; i < masks.Size(); i++)
+    {
+        outMasks[i].name = masks[i].name;
+        outMasks[i].weights = masks[i].weights;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -81,7 +102,54 @@ CharacterContext::Create()
             {
                 tracks.pendingAnimations[track].Clear();
                 tracks.playingAnimations[track].clip = -1;
+                tracks.fadingAnimations[track].clip = -1;
             }
+        }
+    });
+
+    // a reloaded model may have other joint masks, the clips playing with one of the model get the reloaded mask of
+    // the same name, or none if there's none of the name anymore
+    Models::ModelLoader* modelLoader = Resources::ResourceServer::Instance()->GetStreamLoader<Models::ModelLoader>();
+    modelLoader->AddReloadListener([](Resources::ResourceId id)
+    {
+        const Models::ModelId reloaded = id;
+        const Util::Array<Graphics::GraphicsEntityId>& entities = characterContextAllocator.GetArray<EntityId>();
+        for (IndexT i = 0; i < entities.Size(); i++)
+        {
+            if (entities[i] == Graphics::InvalidGraphicsEntityId || Models::ModelContext::GetModel(entities[i]) != reloaded)
+                continue;
+
+            Util::FixedArray<CoreAnimation::AnimSampleMask>& masks = characterContextAllocator.Get<JointMasks>(i);
+            Util::FixedArray<CoreAnimation::AnimSampleMask> newMasks;
+            FetchJointMasks(entities[i], newMasks);
+
+            // the masks are found by name before the old ones are replaced, then pointed to once they're in place
+            AnimationTracks& tracks = characterContextAllocator.Get<TrackController>(i);
+            Util::Array<AnimationRuntime*> runtimes;
+            Util::Array<IndexT> newIndices;
+            auto remap = [&](AnimationRuntime& runtime)
+            {
+                if (runtime.mask == nullptr || masks.IsEmpty() || runtime.mask < masks.Begin() || runtime.mask >= masks.End())
+                    return;
+                IndexT found = InvalidIndex;
+                for (IndexT m = 0; m < newMasks.Size() && found == InvalidIndex; m++)
+                {
+                    if (newMasks[m].name == runtime.mask->name)
+                        found = m;
+                }
+                runtimes.Append(&runtime);
+                newIndices.Append(found);
+            };
+            for (IndexT track = 0; track < MaxNumTracks; track++)
+            {
+                remap(tracks.playingAnimations[track]);
+                remap(tracks.fadingAnimations[track]);
+                for (IndexT p = 0; p < tracks.pendingAnimations[track].Size(); p++)
+                    remap(tracks.pendingAnimations[track][p]);
+            }
+            masks = newMasks;
+            for (IndexT r = 0; r < runtimes.Size(); r++)
+                runtimes[r]->mask = newIndices[r] != InvalidIndex ? &masks[newIndices[r]] : nullptr;
         }
     });
 #endif
@@ -105,6 +173,7 @@ CharacterContext::Setup(
     n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in CharacterContext", id.HashCode());
     characterContextAllocator.Set<Loaded>(cid.id, NoneLoaded);
     characterContextAllocator.Set<EntityId>(cid.id, id);
+    characterContextAllocator.Set<JointMasks>(cid.id, Util::FixedArray<CoreAnimation::AnimSampleMask>());
 
     // check to make sure we registered this entity for observation, then get the visibility context
     const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
@@ -174,7 +243,81 @@ CharacterContext::Setup(
     {
         memset(&characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[i], 0, sizeof(AnimationRuntime));
         characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[i].clip = -1;
+        memset(&characterContextAllocator.Get<TrackController>(cid.id).fadingAnimations[i], 0, sizeof(AnimationRuntime));
+        characterContextAllocator.Get<TrackController>(cid.id).fadingAnimations[i].clip = -1;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    A clip takes the track over. The clip playing plays on under it while it fades in, a clip appended after the
+    playing one fades in for as long as the playing one fades out if that's longer. Without a fade the clip playing
+    is dropped, and so is one still fading from before
+*/
+void
+TakeOverTrack(CharacterContext::AnimationRuntime& playing, CharacterContext::AnimationRuntime& fading, CharacterContext::AnimationRuntime& next, const bool appended)
+{
+    Timing::Tick fade = next.fadeInTime;
+    if (appended)
+        fade = Math::max(fade, playing.fadeOutTime);
+    if (fade <= 0)
+    {
+        fading.clip = -1;
+    }
+    else if (playing.clip != -1 && playing.started)
+    {
+        // a clip that took over without having started yet leaves the one fading under it
+        fading = std::move(playing);
+        next.fadeInTime = fade;
+    }
+    playing = std::move(next);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Move a clip on to the time of the update. It starts on the first update it's in, a paused clip holds its time
+*/
+void
+AdvanceRuntime(CharacterContext::AnimationRuntime& runtime, const Timing::Tick ticks)
+{
+    if (!runtime.started)
+    {
+        // 0 unless the clip was moved to a time before it started
+        runtime.baseTime = ticks - runtime.startTime - runtime.prevEvalTime;
+        runtime.started = true;
+    }
+
+    // the time since the clip started
+    runtime.evalTime = ticks - (runtime.baseTime + runtime.startTime);
+    if (runtime.paused)
+    {
+        // hold the pose, the clip starts later by the time it's paused, which delays its expiry as well
+        runtime.baseTime += runtime.evalTime - runtime.prevEvalTime;
+        runtime.evalTime = runtime.prevEvalTime;
+    }
+    runtime.prevEvalTime = runtime.evalTime;
+    runtime.prevSampleTime = runtime.sampleTime;
+    runtime.sampleTime = Timing::Tick(Math::max(runtime.evalTime, 0) * runtime.timeFactor) + runtime.timeOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+    How far a clip is faded in, and out as it ends if it isn't infinite, from 0 to 1. The fades go by the time since
+    the clip started, not its own time, so they take as long whatever the clip's speed
+*/
+float
+FadeWeight(const CharacterContext::AnimationRuntime& runtime)
+{
+    float weight = 1.0f;
+    if (runtime.fadeInTime > 0 && runtime.evalTime < runtime.fadeInTime)
+        weight *= Math::max(runtime.evalTime, 0) / (float)runtime.fadeInTime;
+    if (runtime.fadeOutTime > 0 && runtime.duration > 0)
+    {
+        const Timing::Tick remaining = runtime.duration - runtime.evalTime;
+        if (remaining < runtime.fadeOutTime)
+            weight *= Math::max(remaining, 0) / (float)runtime.fadeOutTime;
+    }
+    return weight;
 }
 
 //------------------------------------------------------------------------------
@@ -245,8 +388,8 @@ CharacterContext::PlayClip(
     runtime.clip = clipIndex;
     runtime.enqueueMode = mode;
     runtime.blend = weight;
-    runtime.fadeInTime = fadeIn;
-    runtime.fadeOutTime = fadeOut;
+    runtime.fadeInTime = Timing::SecondsToTicks(Math::max(fadeIn, 0.0f));
+    runtime.fadeOutTime = Timing::SecondsToTicks(Math::max(fadeOut, 0.0f));
     runtime.timeFactor = timeFactor;
     runtime.timeOffset = timeOffset;
     runtime.startTime = startTime;
@@ -263,9 +406,12 @@ CharacterContext::PlayClip(
     runtime.started = false;
     runtime.duration = Timing::Tick(clip.duration * loopCount * (1 / timeFactor));
 
-    // append to pending animations
+    // a replacing clip takes the track over right away, the others are queued
     if (mode == Replace)
-        characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track] = std::move(runtime);
+    {
+        AnimationTracks& tracks = characterContextAllocator.Get<TrackController>(cid.id);
+        TakeOverTrack(tracks.playingAnimations[track], tracks.fadingAnimations[track], runtime, false);
+    }
     else if (mode == Append)
         characterContextAllocator.Get<TrackController>(cid.id).pendingAnimations[track].Append(std::move(runtime));
     else if (mode == IgnoreIfSame)
@@ -284,14 +430,30 @@ CharacterContext::PlayClip(
 /**
 */
 void 
-CharacterContext::StopTrack(const Graphics::GraphicsEntityId id, const IndexT track)
+CharacterContext::StopTrack(const Graphics::GraphicsEntityId id, const IndexT track, const float fadeOut)
 {
     n_assert(track < MaxNumTracks);
     const ContextEntityId cid = GetContextId(id);
     AnimationTracks& tracks = characterContextAllocator.Get<TrackController>(cid.id);
 
     tracks.pendingAnimations[track].Clear();
-    tracks.playingAnimations[track].clip = -1;
+    tracks.fadingAnimations[track].clip = -1;
+    AnimationRuntime& playing = tracks.playingAnimations[track];
+    const Timing::Tick fadeTime = Timing::SecondsToTicks(Math::max(fadeOut, 0.0f));
+    if (fadeTime > 0 && playing.clip != -1 && playing.started)
+    {
+        // the clip ends once it's faded out from where it is, unless it ends before
+        const Timing::Tick end = playing.prevEvalTime + fadeTime;
+        if (playing.duration <= 0 || end < playing.duration)
+        {
+            playing.duration = end;
+            playing.fadeOutTime = fadeTime;
+        }
+    }
+    else
+    {
+        playing.clip = -1;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -308,6 +470,7 @@ CharacterContext::StopAllTracks(const Graphics::GraphicsEntityId id)
     {
         tracks.pendingAnimations[i].Clear();
         tracks.playingAnimations[i].clip = -1;
+        tracks.fadingAnimations[i].clip = -1;
     }
 }
 
@@ -327,6 +490,7 @@ CharacterContext::PauseTrack(const Graphics::GraphicsEntityId id, const IndexT t
         tracks.pendingAnimations[track][i].paused = !tracks.pendingAnimations[track][i].paused;
 
     tracks.playingAnimations[track].paused = !tracks.playingAnimations[track].paused;
+    tracks.fadingAnimations[track].paused = tracks.playingAnimations[track].paused;
 }
 
 //------------------------------------------------------------------------------
@@ -396,7 +560,19 @@ CharacterContext::SetTrackTimeFactor(const Graphics::GraphicsEntityId id, const 
     for (i = 0; i < tracks.pendingAnimations[track].Size(); i++)
         tracks.pendingAnimations[track][i].timeFactor = factor;
 
-    tracks.playingAnimations[track].timeFactor = factor;
+    // the playing clip goes on from the time it's at, the time since it started and its duration are scaled to the new rate
+    AnimationRuntime& playing = tracks.playingAnimations[track];
+    if (playing.clip != -1 && playing.timeFactor > 0.0f && factor > 0.0f && playing.timeFactor != factor)
+    {
+        const float scale = playing.timeFactor / factor;
+        const Timing::Tick evalTime = Timing::Tick(playing.prevEvalTime * scale);
+        if (playing.started)
+            playing.baseTime += playing.prevEvalTime - evalTime;
+        playing.prevEvalTime = evalTime;
+        playing.evalTime = evalTime;
+        playing.duration = Timing::Tick(playing.duration * scale);
+    }
+    playing.timeFactor = factor;
 }
 
 //------------------------------------------------------------------------------
@@ -498,9 +674,13 @@ CharacterContext::SeekTrack(const Graphics::GraphicsEntityId id, const IndexT tr
 {
     n_assert(track < MaxNumTracks);
     const ContextEntityId cid = GetContextId(id);
-    AnimationRuntime& playing = characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track];
+    AnimationTracks& tracks = characterContextAllocator.Get<TrackController>(cid.id);
+    AnimationRuntime& playing = tracks.playingAnimations[track];
     if (playing.clip == -1)
         return;
+
+    // moving the clip ends a fade from the clip before it
+    tracks.fadingAnimations[track].clip = -1;
 
     const Timing::Tick clipTime = Timing::SecondsToTicks(time) - playing.timeOffset;
     const Timing::Tick evalTime = playing.timeFactor > 0.0f ? Timing::Tick(clipTime / playing.timeFactor) : clipTime;
@@ -513,6 +693,35 @@ CharacterContext::SeekTrack(const Graphics::GraphicsEntityId id, const IndexT tr
 
     // the next update fires the events from here on
     playing.sampleTime = Timing::Tick(Math::max(evalTime, 0) * playing.timeFactor) + playing.timeOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The masks are copied from the model the first time they're asked for once it's loaded
+*/
+const Util::FixedArray<CoreAnimation::AnimSampleMask>&
+CharacterContext::GetJointMasks(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::FixedArray<CoreAnimation::AnimSampleMask>& masks = characterContextAllocator.Get<JointMasks>(cid.id);
+    if (masks.IsEmpty())
+        FetchJointMasks(id, masks);
+    return masks;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreAnimation::AnimSampleMask*
+CharacterContext::GetJointMask(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
+{
+    const Util::FixedArray<CoreAnimation::AnimSampleMask>& masks = GetJointMasks(id);
+    for (IndexT i = 0; i < masks.Size(); i++)
+    {
+        if (masks[i].name == name)
+            return &masks[i];
+    }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -592,7 +801,7 @@ struct CharacterJobContext
     const Util::Array<Util::FixedArray<Math::mat4>>* scaledJointPalettes;
     const Util::Array<Util::FixedArray<Math::mat4>>* userJoints;
     float** tmpSamples;
-    uint** tmpSampleIndices;
+    uchar** tmpSampleCounts;
     Math::mat4** tmpJoints;
     
     const Util::Array<Graphics::GraphicsEntityId>* entities;
@@ -602,6 +811,30 @@ struct CharacterJobContext
     Timing::Tick time;
     Timing::Tick ticks;
 };
+
+//------------------------------------------------------------------------------
+/**
+    Set the samples to the idle pose, a translation, rotation and scale per joint, for clips to be mixed over
+*/
+static void
+IdleSamples(const Util::FixedArray<Math::vec4>& idleSamples, const CoreAnimation::AnimSampleBuffer& sampleBuffer)
+{
+    float* samples = sampleBuffer.GetSamplesPointer();
+    uchar* counts = sampleBuffer.GetSampleCountsPointer();
+    const SizeT numJoints = Math::min(idleSamples.Size() / 3, sampleBuffer.GetNumSamples() / 10);
+    for (IndexT joint = 0; joint < numJoints; joint++)
+    {
+        const Math::vec4& translation = idleSamples[joint * 3];
+        const Math::vec4& rotation = idleSamples[joint * 3 + 1];
+        const Math::vec4& scale = idleSamples[joint * 3 + 2];
+        samples[0] = translation.x; samples[1] = translation.y; samples[2] = translation.z;
+        samples[3] = rotation.x; samples[4] = rotation.y; samples[5] = rotation.z; samples[6] = rotation.w;
+        samples[7] = scale.x; samples[8] = scale.y; samples[9] = scale.z;
+        samples += 10;
+        counts[0] = counts[1] = counts[2] = 1;
+        counts += 3;
+    }
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -639,167 +872,142 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         const CoreAnimation::AnimSampleBuffer& sampleBuffer = context->sampleBuffers->Get(index);
         Math::mat4* tmpMatrices = context->tmpJoints[index];
         float* tmpSamples = context->tmpSamples[index];
-        uint* tmpSampleIndices = context->tmpSampleIndices[index];
+        uchar* tmpSampleCounts = context->tmpSampleCounts[index];
         auto sampleMixInfo = context->animMixInfos + index;
         bool runSkeletonThisFrame = false;
 
-        // loop over all tracks, and update the playing clip on each respective track
+        // sample a clip at a time of its own, the first clip with its full weight and no mask is sampled right into the
+        // samples, the others are mixed over the clips sampled before them, or over the idle pose if there are none.
+        // Without scratch memory for mixing the clips replace each other
         bool firstAnimTrack = true;
+        const Ptr<AnimKeyBuffer>& buffer = AnimGetBuffer(anim);
+        const float* srcPtr = buffer->GetKeyBufferPointer();
+        const AnimKeyBuffer::Interval* srcTimePtr = buffer->GetIntervalBufferPointer();
+        const Util::FixedArray<AnimCurve>& curves = CoreAnimation::AnimGetCurves(anim);
+        auto sampleClip = [&](CharacterContext::AnimationRuntime& runtime, const float weight, const Timing::Tick sampleTime)
+        {
+            // nothing to mix
+            if (weight <= 0.0f && !firstAnimTrack)
+                return;
+
+            const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, runtime.clip);
+            Memory::Clear(sampleMixInfo, sizeof(AnimSampleMixInfo));
+            sampleMixInfo->sampleType = SampleType::Linear;
+            sampleMixInfo->velocityScale.set(runtime.timeFactor, runtime.timeFactor, runtime.timeFactor, 0);
+            sampleMixInfo->mixWeight = weight;
+
+            Timing::Tick evalTime = clip.duration > 0 ? sampleTime % clip.duration : 0;
+            if (evalTime < 0)
+                evalTime += clip.duration;
+
+            const bool mix = tmpSamples != nullptr && (!firstAnimTrack || weight != 1.0f || runtime.mask != nullptr);
+            if (!mix)
+            {
+                if (sampleMixInfo->sampleType == SampleType::Step)
+                    AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, runtime.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+                else
+                    AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, runtime.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+            }
+            else
+            {
+                if (firstAnimTrack)
+                    IdleSamples(idleSamples, sampleBuffer);
+
+                if (sampleMixInfo->sampleType == SampleType::Step)
+                    AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, runtime.curveSampleIndices.Begin(), tmpSamples, tmpSampleCounts);
+                else
+                    AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, runtime.curveSampleIndices.Begin(), tmpSamples, tmpSampleCounts);
+
+                AnimMix(clip, curves, runtime.mask, sampleMixInfo->mixWeight, sampleBuffer.GetSamplesPointer(), tmpSamples, sampleBuffer.GetSampleCountsPointer(), tmpSampleCounts, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+            }
+
+            // run the skeleton once a clip is sampled, the next ones are mixed over it
+            runSkeletonThisFrame = true;
+            firstAnimTrack = false;
+        };
+
+        // loop over all tracks, and update the playing clip on each respective track
         IndexT j;
         for (j = 0; j < CharacterContext::MaxNumTracks; j++)
         {
-            // get playing animation on this track
             CharacterContext::AnimationRuntime& playing = trackController.playingAnimations[j];
-            bool startedNew = false;
+            CharacterContext::AnimationRuntime& fading = trackController.fadingAnimations[j];
+            Util::StackArray<CharacterContext::AnimationRuntime, 8>& pending = trackController.pendingAnimations[j];
 
-            // update pending animations
-            IndexT k;
-            for (k = 0; k < trackController.pendingAnimations[j].Size(); k++)
-            {
-                CharacterContext::AnimationRuntime& pending = trackController.pendingAnimations[j][k];
-                if (playing.clip == -1)
-                {
-                    // no clip is playing, this acts as replace automatically
-                    pending.baseTime = context->ticks;
-                    pending.started = true;
-                    startedNew = true;
-                    playing = pending;
-                }
-                else
-                {
-                    if (pending.enqueueMode == Characters::Replace)
-                    {
-                        // an infinite clip has no stop time, the replacing clip starts right away
-                        pending.baseTime = IsInfinite(playing) ? context->ticks : GetAbsoluteStopTime(playing);
-                        pending.started = true;
-                        startedNew = true;
-                        playing = pending;
-                    }
-                    else if (pending.enqueueMode == Characters::IgnoreIfSame)
-                    {
-                        if (pending.clip == playing.clip && !IsExpired(playing, context->ticks))
-                        {
-                            // erase clip, because we are already playing it
-                            trackController.pendingAnimations[j].EraseIndex(k);
-                            k--;
-                            continue;
-                        }
-                        else
-                        {
-                            // otherwise, act like replace
-                            pending.baseTime = IsInfinite(playing) ? context->ticks : GetAbsoluteStopTime(playing);
-                            pending.started = true;
-                            startedNew = true;
-                            playing = pending;
-                        }
-                    }
-                    else if (pending.enqueueMode == Characters::Append && IsInfinite(playing))
-                    {
-
-#if NEBULA_DEBUG
-                        n_error("CharacterContext: Can't insert anim job '%s' because track is blocked by an infinite clip\n", playing.name.AsCharPtr());
-#endif
-                    }
-                    // if none of the above, we have to wait for our current animation to finish
-                }
-
-                // if we started a new clip, erase the current pending, and quit the loop
-                if (startedNew)
-                {
-                    trackController.pendingAnimations[j].EraseIndex(k);
-                    break;
-                }
-            }
-
-            // if expired, invalidate job, the runtimes keep their times in ticks
+            // a clip that ended fires the events up to its end, the runtimes keep their times in ticks
             if (playing.clip != -1 && playing.started && IsExpired(playing, context->ticks))
             {
-                // the clip ends between updates, the events up to its end fire
                 const Timing::Tick end = Timing::Tick(playing.duration * playing.timeFactor) + playing.timeOffset;
                 CollectFiredEvents(anim, playing.clip, j, playing.sampleTime, end, firedEvents);
-                trackController.playingAnimations[j].clip = -1;
+                playing.clip = -1;
             }
-
-            // if current playing job on this track is invalid, copy a pending job over
             if (playing.clip == -1)
+                fading.clip = -1;
+
+            // the clip queued first takes the track over, right away if none is playing or the playing one is infinite,
+            // otherwise once the playing one starts fading out, or ends if it doesn't. Clips already playing are skipped
+            while (!pending.IsEmpty())
             {
-                if (trackController.pendingAnimations[j].Size() > 0)
+                CharacterContext::AnimationRuntime& next = pending[0];
+                if (playing.clip != -1 && next.enqueueMode == Characters::IgnoreIfSame && next.clip == playing.clip)
                 {
-                    playing = trackController.pendingAnimations[j].Back();
-                    trackController.pendingAnimations[j].EraseBack();
+                    pending.EraseIndex(0);
+                    continue;
                 }
+                bool appended = false;
+                if (playing.clip != -1)
+                {
+                    if (IsInfinite(playing))
+                    {
+                        if (next.enqueueMode == Characters::Append)
+                        {
+#if NEBULA_DEBUG
+                            n_error("CharacterContext: Can't insert anim job '%s' because track is blocked by an infinite clip\n", playing.name.AsCharPtr());
+#endif
+                            break;
+                        }
+                    }
+                    else if (!playing.started || context->ticks < GetAbsoluteStopTime(playing))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        appended = true;
+                    }
+                }
+                TakeOverTrack(playing, fading, next, appended);
+                pending.EraseIndex(0);
+                break;
             }
 
-            // this might change from the previous condition, so test it again
-            if (playing.clip != -1)
+            if (playing.clip == -1)
+                continue;
+
+            // the events passed since the last update, none while it's paused
+            AdvanceRuntime(playing, context->ticks);
+            CollectFiredEvents(anim, playing.clip, j, playing.prevSampleTime, playing.sampleTime, firedEvents);
+            const float fadeWeight = FadeWeight(playing);
+
+            // the clip the playing one took over from plays on under it until it's faded in. It doesn't fade out
+            // itself, the one over it does that, and it holds its last pose if it ends before
+            if (fading.clip != -1 && (playing.fadeInTime <= 0 || playing.evalTime >= playing.fadeInTime))
+                fading.clip = -1;
+            if (fading.clip != -1)
             {
-                // a clip put on the track directly, by replacing the playing one or after one expired, starts now
-                if (!playing.started)
+                AdvanceRuntime(fading, context->ticks);
+                Timing::Tick sampleTime = fading.sampleTime;
+                if (fading.duration > 0)
                 {
-                    // 0 unless the clip was moved to a time before it started
-                    playing.baseTime = context->ticks - playing.startTime - playing.prevEvalTime;
-                    playing.started = true;
+                    const Timing::Tick end = Timing::Tick(fading.duration * fading.timeFactor) + fading.timeOffset;
+                    fading.sampleTime = Math::min(fading.sampleTime, end);
+                    sampleTime = Math::max(Math::min(sampleTime, end - 1), fading.timeOffset);
                 }
-
-                // the time since the clip started
-                playing.evalTime = context->ticks - (playing.baseTime + playing.startTime);
-                if (playing.paused)
-                {
-                    // hold the pose, the clip starts later by the time it's paused, which delays its expiry as well
-                    playing.baseTime += playing.evalTime - playing.prevEvalTime;
-                    playing.evalTime = playing.prevEvalTime;
-                }
-                playing.prevEvalTime = playing.evalTime;
-                playing.prevSampleTime = playing.sampleTime;
-                playing.sampleTime = Timing::Tick(Math::max(playing.evalTime, 0) * playing.timeFactor) + playing.timeOffset;
-
-                // the events passed since the last update, none while it's paused
-                CollectFiredEvents(anim, playing.clip, j, playing.prevSampleTime, playing.sampleTime, firedEvents);
-
-                // Need to compute the sample weight and pointers to "before" and "after" keys
-                const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, playing.clip);
-                const Ptr<AnimKeyBuffer>& buffer = AnimGetBuffer(anim);
-
-                // Create scratch memory
-                Memory::Clear(sampleMixInfo, sizeof(AnimSampleMixInfo));
-                sampleMixInfo->sampleType = SampleType::Linear;
-                sampleMixInfo->velocityScale.set(playing.timeFactor, playing.timeFactor, playing.timeFactor, 0);
-
-                // Get pointers to memory and size
-                const float* srcPtr = buffer->GetKeyBufferPointer();
-                const AnimKeyBuffer::Interval* srcTimePtr = buffer->GetIntervalBufferPointer();
-
-                const Util::FixedArray<AnimCurve>& curves = CoreAnimation::AnimGetCurves(anim);
-                Timing::Tick evalTime = clip.duration > 0 ? playing.sampleTime % clip.duration : 0;
-                if (evalTime < 0)
-                    evalTime += clip.duration;
-
-                if (firstAnimTrack
-                    || playing.blend != 1.0f)
-                {
-                    if (sampleMixInfo->sampleType == SampleType::Step)
-                        AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, playing.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
-                    else
-                        AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, playing.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
-                }
-                else // Playing with mix
-                {
-                    uchar tmpSampleCounts = 0;
-                    if (sampleMixInfo->sampleType == SampleType::Step)
-                        AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, tmpSampleIndices, tmpSamples, &tmpSampleCounts);
-                    else
-                        AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, tmpSampleIndices, tmpSamples, &tmpSampleCounts);
-
-                    AnimMix(clip, curves.Size(), playing.mask, sampleMixInfo->mixWeight, sampleBuffer.GetSamplesPointer(), tmpSamples, sampleBuffer.GetSampleCountsPointer(), &tmpSampleCounts, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
-                }
-
-                // Run skeleton as soon as we have a single anim job queued
-                runSkeletonThisFrame = true;
-
-                // flip the first anim track flag, which will trigger the next job to mix
-                firstAnimTrack = false;
+                CollectFiredEvents(anim, fading.clip, j, fading.prevSampleTime, fading.sampleTime, firedEvents);
+                sampleClip(fading, fading.blend, sampleTime);
             }
 
+            sampleClip(playing, playing.blend * fadeWeight, playing.sampleTime);
         }
 
         // If we have no animations, just skip the character skeleton update
@@ -923,7 +1131,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         charCtx.animMixInfos = Jobs2::JobAlloc<AnimSampleMixInfo>(models.Size());
 
         charCtx.tmpJoints = Jobs2::JobAlloc<Math::mat4*>(models.Size());
-        charCtx.tmpSampleIndices = Jobs2::JobAlloc<uint*>(models.Size());
+        charCtx.tmpSampleCounts = Jobs2::JobAlloc<uchar*>(models.Size());
         charCtx.tmpSamples = Jobs2::JobAlloc<float*>(models.Size());
 
         IndexT i;
@@ -937,11 +1145,15 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
             charCtx.tmpJoints[i] = Jobs2::JobAlloc<Math::mat4>(jointPalette.Size());
 
             // Allocate scratch memory for animation mixing
+            // the samples have a float of padding like the sample buffer's, 3 component samples are stored as 4 floats.
+            // There's a count per curve, 3 per 10 samples, padded like the sample buffer's as well
             const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
-            if (supportsBlending[i])
+            charCtx.tmpSamples[i] = nullptr;
+            charCtx.tmpSampleCounts[i] = nullptr;
+            if (supportsBlending[i] && sampleBuffer.IsValid())
             {
-                charCtx.tmpSampleIndices[i] = Jobs2::JobAlloc<uint>(jointPalette.Size() * 3);
-                charCtx.tmpSamples[i] = Jobs2::JobAlloc<float>(sampleBuffer.GetNumSamples());
+                charCtx.tmpSamples[i] = Jobs2::JobAlloc<float>(sampleBuffer.GetNumSamples() + 1);
+                charCtx.tmpSampleCounts[i] = Jobs2::JobAlloc<uchar>(sampleBuffer.GetNumSamples() / 10 * 3 + 16);
             }
         }
 

@@ -95,7 +95,10 @@ public:
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
 
-    /// play animation on a specific track
+    /// play animation on a specific track. The fades are in seconds: a clip fades in over the clip it replaces on the
+    /// track, which plays on under it until it's faded in, or over the tracks before it if there's none. A clip that
+    /// isn't infinite fades out to the tracks before it as it ends, a clip appended after it starts that long before
+    /// and fades in over it for as long as the longer of the two fades
     static bool PlayClip(
         const Graphics::GraphicsEntityId id,
         const CoreAnimation::AnimSampleMask* mask,
@@ -109,8 +112,9 @@ public:
         const float fadeOut = 0.0f,
         const float timeOffset = 0.0f,
         const float timeFactor = 1.0f);
-    /// stops all animations queued on track (and resets their time)
-    static void StopTrack(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// stops all animations queued on track (and resets their time). With a fade out in seconds the clip playing fades
+    /// out to the tracks before it over that time before it's stopped, the queued ones are dropped right away
+    static void StopTrack(const Graphics::GraphicsEntityId id, const IndexT track, const float fadeOut = 0.0f);
     /// stops all animations on all tracks
     static void StopAllTracks(const Graphics::GraphicsEntityId id);
     /// pause animation on track, which doesn't reset time
@@ -125,7 +129,7 @@ public:
 
     /// set weight for track
     static void SetTrackWeight(const Graphics::GraphicsEntityId id, const IndexT track, const float weight);
-    /// set time factor for track
+    /// set time factor for track, the clip playing goes on from the time it is at
     static void SetTrackTimeFactor(const Graphics::GraphicsEntityId id, const IndexT track, const float factor);
 
     /// retrieve animation clip names and lengths
@@ -154,6 +158,12 @@ public:
     static void UpdateAnimations(const Graphics::FrameContext& ctx);
     /// run after frame
     static void WaitForCharacterJobs(const Graphics::FrameContext& ctx);
+
+    /// get a joint mask of the character's model by name, nullptr if it has none of the name. Pass it to PlayClip to
+    /// mix the clip over the tracks before it only on the joints the mask weights. It's valid as long as the character is
+    static const CoreAnimation::AnimSampleMask* GetJointMask(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
+    /// get the joint masks of the character's model, empty until the model is loaded or if it has none
+    static const Util::FixedArray<CoreAnimation::AnimSampleMask>& GetJointMasks(const Graphics::GraphicsEntityId id);
 
     /// register anim sample mask, and return pointer
     static CoreAnimation::AnimSampleMask* CreateAnimSampleMask(const Util::StringAtom& name, const Util::FixedArray<Math::scalar>& weights);
@@ -202,12 +212,17 @@ private:
     friend const bool IsInfinite(const CharacterContext::AnimationRuntime& runtime);
     friend Timing::Tick GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime);
     friend void EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
+    friend void TakeOverTrack(CharacterContext::AnimationRuntime& playing, CharacterContext::AnimationRuntime& fading, CharacterContext::AnimationRuntime& next, const bool appended);
+    friend void AdvanceRuntime(CharacterContext::AnimationRuntime& runtime, const Timing::Tick ticks);
+    friend float FadeWeight(const CharacterContext::AnimationRuntime& runtime);
 
     static const SizeT MaxNumTracks = 16;
     struct AnimationTracks
     {
         Util::StackArray<AnimationRuntime, 8>   pendingAnimations[MaxNumTracks]; // max 16 tracks
         AnimationRuntime                        playingAnimations[MaxNumTracks]; // max 16 tracks
+        /// the clip a playing clip took the track over from, it plays on under it until the playing one has faded in
+        AnimationRuntime                        fadingAnimations[MaxNumTracks];
     };
 
     enum
@@ -228,7 +243,8 @@ private:
         AnimationResource,
         AnimationIndex,
         FiredEvents,
-        PendingFiredEvents
+        PendingFiredEvents,
+        JointMasks
     };
 
     typedef Ids::IdAllocator<
@@ -248,7 +264,8 @@ private:
         Resources::ResourceId,
         IndexT,
         Util::Array<FiredEvent>,
-        Util::Array<FiredEvent>
+        Util::Array<FiredEvent>,
+        Util::FixedArray<CoreAnimation::AnimSampleMask>
     > CharacterContextAllocator;
     static CharacterContextAllocator characterContextAllocator;
 

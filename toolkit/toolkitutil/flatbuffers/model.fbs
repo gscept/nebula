@@ -24,6 +24,21 @@ enum OptimizationFlags : uint
 	ImportSecondaryUVs = 0x80
 }
 
+// the weight a joint has in a joint mask, from 0 to 1
+table JointMaskWeight
+{
+	joint : string;
+	weight : float;
+}
+
+// a mask of the joints of the model's skeleton a clip is mixed on, packaged into the model with a weight per joint.
+// The joints are named so the mask survives reimporting, joints it leaves out weigh 0
+table JointMaskAsset
+{
+	name : string;
+	joints : [JointMaskWeight];
+}
+
 table ModelAsset
 {
 	scene : SceneResource;
@@ -41,6 +56,8 @@ table ModelAsset
 	clip_sections : [AnimClipSection];
 	// events added to the clips and the clip sections when they're packaged, stored apart from the animation as well
 	clip_events : [AnimClipEvent];
+	// the joint masks packaged into the model, stored apart from the scene so reimporting keeps them
+	joint_masks : [JointMaskAsset];
 }
 
 root_type ModelAsset;

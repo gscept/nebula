@@ -239,7 +239,7 @@ AnimSampleLinear(
 void 
 AnimMix(
     const AnimClip& clip,
-    const SizeT numSamples,
+    const Util::FixedArray<AnimCurve>& curves,
     const AnimSampleMask* mask,
     float mixWeight,
     const float* src0SamplePtr,
@@ -250,43 +250,45 @@ AnimMix(
     uchar* outSampleCounts)
 {
     int i;
-    for (i = 0; i < numSamples; i++)
+    for (i = 0; i < clip.numCurves; i++)
     {
-        uchar src0Count = src0SampleCounts[i];
-        uchar src1Count = src1SampleCounts[i];
+        const AnimCurve& curve = curves[clip.firstCurve + i];
+        const int stride = curve.curveType == CurveType::Rotation ? 4 : 3;
 
-        // update dst sample counts
-        outSampleCounts[i] = src0Count + src1Count;
+        // a joint has a translation, rotation and scale curve, joints the mask has no weight for aren't masked
+        float weight = mixWeight;
+        const IndexT joint = i / 3;
+        if (mask != nullptr && joint < mask->weights.Size())
+            weight *= mask->weights[joint];
 
-        if ((src0Count > 0) && (src1Count > 0))
+        if (src1SampleCounts[i] == 0 || weight <= 0.0f)
         {
-            float maskWeight = 1;
-
-            // we have 4 curves per joint
-            if (mask != 0) maskWeight = mask->weights[i / 4];
-
-            *outSamplePtr = Math::lerp(*src0SamplePtr, *src1SamplePtr, mixWeight * maskWeight);
+            // keep the samples mixed over
+            for (int c = 0; c < stride; c++)
+                outSamplePtr[c] = src0SamplePtr[c];
         }
-        else if (src0Count > 0)
+        else if (src0SampleCounts[i] == 0 || weight >= 1.0f)
         {
-            // only "left" sample is valid
-            *outSamplePtr = *src0SamplePtr;
+            for (int c = 0; c < stride; c++)
+                outSamplePtr[c] = src1SamplePtr[c];
         }
-        else if (src1Count > 0)
+        else if (curve.curveType == CurveType::Rotation)
         {
-            // only "right" sample is valid
-            *outSamplePtr = *src1SamplePtr;
+            Math::quat q0, q1;
+            q0.loadu(src0SamplePtr);
+            q1.loadu(src1SamplePtr);
+            Math::slerp(q0, q1, weight).storeu(outSamplePtr);
         }
         else
         {
-            // neither the left nor the right sample is valid,
-            // sample key is undefined
+            for (int c = 0; c < stride; c++)
+                outSamplePtr[c] = Math::lerp(src0SamplePtr[c], src1SamplePtr[c], weight);
         }
+        outSampleCounts[i] = src0SampleCounts[i] | src1SampleCounts[i];
 
-        // update pointers
-        src0SamplePtr++;
-        src1SamplePtr++;
-        outSamplePtr++;
+        src0SamplePtr += stride;
+        src1SamplePtr += stride;
+        outSamplePtr += stride;
     }
 }
 

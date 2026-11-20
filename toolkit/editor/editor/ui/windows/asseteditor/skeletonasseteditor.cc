@@ -81,7 +81,7 @@ SkeletonJointTree(const Characters::SkeletonId skeleton)
 /**
 */
 void
-SkeletonOverlay(ImDrawList* drawList, const Modules::Viewport& viewport, const Characters::SkeletonId skeleton, const Util::FixedArray<Math::mat4>& joints, const Math::mat4& transform, const IndexT highlight)
+SkeletonOverlay(ImDrawList* drawList, const Modules::Viewport& viewport, const Characters::SkeletonId skeleton, const Util::FixedArray<Math::mat4>& joints, const Math::mat4& transform, const IndexT highlight, const Util::FixedArray<float>* weights)
 {
     const Util::FixedArray<Characters::CharacterJoint>& skeletonJoints = Characters::SkeletonGetJoints(skeleton);
     if (joints.Size() != skeletonJoints.Size())
@@ -116,15 +116,46 @@ SkeletonOverlay(ImDrawList* drawList, const Modules::Viewport& viewport, const C
         if (visible[parent])
             drawList->AddLine(points[parent], points[i], boneColor, 2.0f);
     }
+    // with weights, like a joint mask's, each joint gets a ring filled clockwise from the top by its weight, and a dot
+    // from grey at 0 to green at 1
+    const float ringRadius = 9.0f;
+    const ImU32 ringColor = IM_COL32(20, 20, 20, 160);
+    const ImU32 weightColor = IM_COL32(60, 230, 90, 255);
     for (IndexT i = 0; i < joints.Size(); i++)
     {
-        if (visible[i] && i != highlight)
+        if (!visible[i])
+            continue;
+        if (weights != nullptr && i < weights->Size())
+        {
+            const float w = Math::clamp((*weights)[i], 0.0f, 1.0f);
+            drawList->AddCircle(points[i], ringRadius, ringColor, 0, 4.0f);
+            if (w >= 0.999f)
+            {
+                drawList->AddCircle(points[i], ringRadius, weightColor, 0, 2.5f);
+            }
+            else if (w > 0.0f)
+            {
+                const float start = -PI * 0.5f;
+                drawList->PathArcTo(points[i], ringRadius, start, start + 2.0f * PI * w);
+                drawList->PathStroke(weightColor, 2.5f);
+            }
+            if (i != highlight)
+            {
+                const ImU32 color = IM_COL32((int)Math::lerp(110.0f, 60.0f, w), (int)Math::lerp(110.0f, 230.0f, w), (int)Math::lerp(110.0f, 90.0f, w), 255);
+                drawList->AddCircleFilled(points[i], 3.0f, color);
+            }
+        }
+        else if (i != highlight)
+        {
             drawList->AddCircleFilled(points[i], 3.0f, jointColor);
+        }
     }
     if (highlight >= 0 && highlight < joints.Size() && visible[highlight])
     {
         drawList->AddCircleFilled(points[highlight], 6.0f, highlightColor);
-        const Util::String name = JointName(skeletonJoints[highlight], highlight);
+        Util::String name = JointName(skeletonJoints[highlight], highlight);
+        if (weights != nullptr && highlight < weights->Size())
+            name.Append(Util::Format(" (%.2f)", (*weights)[highlight]));
         drawList->AddText(ImVec2(points[highlight].x + 8.0f, points[highlight].y - 8.0f), highlightColor, name.AsCharPtr());
     }
 }

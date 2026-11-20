@@ -178,6 +178,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 if (needsPackaging(PackageModes::ForceAssets, dstFile))
                 {
                     packaged = true;
+                    ToolkitUtil::BuildJointMasks(modelAsset.scene.get(), modelAsset.skeleton.get(), modelAsset.joint_masks, this->logger);
                     ToolkitUtil::PackageModel(modelAsset.scene.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
                 }
             }

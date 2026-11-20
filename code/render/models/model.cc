@@ -72,6 +72,15 @@ ModelSetNodes(const ModelId id, Util::Array<Models::ModelNode*>& nodes)
 //------------------------------------------------------------------------------
 /**
 */
+const Util::FixedArray<JointMask>&
+ModelGetJointMasks(const ModelId id)
+{
+    return modelAllocator.Get<Model_JointMasks>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ModelSetJointMasks(const ModelId id, const Util::FixedArray<JointMask>& masks)
 {
