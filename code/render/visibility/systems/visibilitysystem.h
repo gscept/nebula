@@ -87,6 +87,9 @@ public:
     /// Constructor
     VisibilitySystem();
 
+    /// Destructor
+    virtual ~VisibilitySystem();
+
     /// setup observers
     virtual void PrepareObservers(const Math::mat4* transforms, const bool* orthoFlags, const Graphics::StageMask* stages, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
     /// prepare system with entities to insert into the structure

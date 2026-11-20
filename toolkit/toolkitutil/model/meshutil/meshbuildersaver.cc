@@ -140,9 +140,9 @@ bool
 MeshBuilderSaver::SaveBinary(const IO::URI& uri, const ToolkitUtil::MeshResourceT* resource, Platform::Code platform)
 {
     // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+    CreateDirectory(uri.LocalPath().ExtractDirName());
 
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
+    Ptr<Stream> stream = CreateStream(uri);
     stream->SetAccessMode(Stream::WriteAccess);
     if (stream->Open())
     {
@@ -246,7 +246,14 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::
             nvx3Group.firstIndex = byteOrder.Convert<uint>(firstTriangle * 3);
             nvx3Group.numIndices = byteOrder.Convert<uint>(numTriangles * 3);
             nvx3Group.primType = PrimitiveTopology::TriangleList;
-            Memory::Copy(&box, &nvx3Group.boundingBox, sizeof(Nvx3BBox));
+            // Math::bbox holds two 4-component points, so copying its bytes into the packed 6 float
+            // Nvx3BBox would store pmin.w as max[0] and lose pmax.z, write each component instead
+            nvx3Group.boundingBox.min[0] = box.pmin.x;
+            nvx3Group.boundingBox.min[1] = box.pmin.y;
+            nvx3Group.boundingBox.min[2] = box.pmin.z;
+            nvx3Group.boundingBox.max[0] = box.pmax.x;
+            nvx3Group.boundingBox.max[1] = box.pmax.y;
+            nvx3Group.boundingBox.max[2] = box.pmax.z;
             
             // TODO: Add support for meshlets
             nvx3Group.firstMeshlet = 0;

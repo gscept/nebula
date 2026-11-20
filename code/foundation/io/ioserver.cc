@@ -21,117 +21,124 @@
 
 namespace IO
 {
-__ImplementClass(IO::IoServer, 'IOSV', Core::RefCounted);
-__ImplementSingleton(IO::IoServer);
-
-Threading::CriticalSection IoServer::assignCriticalSection;
-Threading::CriticalSection IoServer::schemeCriticalSection;
-Threading::CriticalSection IoServer::archiveCriticalSection;
-Threading::CriticalSection IoServer::watcherCriticalSection;
-bool IoServer::StandardArchivesMounted = false;
 
 using namespace Core;
 using namespace Util;
 
+struct
+{
+    bool archiveFileSystemEnabled = true;
+    Ptr<ArchiveFileSystem> archiveFileSystem;
+    Threading::CriticalSection archiveCriticalSection;
+    bool StandardArchivesMounted = false;
+
+    Ptr<Http::HttpClientRegistry> httpClientRegistry;
+    Ptr<AssignRegistry> assignRegistry;
+    Ptr<SchemeRegistry> schemeRegistry;
+    Ptr<FileWatcher> watcher;
+    Ptr<StreamCache> streamCache;
+    Threading::CriticalSection assignCriticalSection;
+    Threading::CriticalSection schemeCriticalSection;
+    Threading::CriticalSection watcherCriticalSection;
+} state;
+
+
 //------------------------------------------------------------------------------
 /**
 */
-IoServer::IoServer() :
-    archiveFileSystemEnabled(true)
+void
+StartupFilesystem(const FilesystemStartupInfo& info)
 {
-    __ConstructSingleton;
-
     // the first IoServer sets up the global scheme registry
-    this->schemeCriticalSection.Enter();
+    state.schemeCriticalSection.Enter();
     if (!SchemeRegistry::HasInstance())
     {
-        this->schemeRegistry = SchemeRegistry::Create();
-        this->schemeRegistry->Setup();
+        state.schemeRegistry = SchemeRegistry::Create();
+        state.schemeRegistry->Setup();
     }
     else
     {
-        this->schemeRegistry = SchemeRegistry::Instance();
-    }    
-    this->schemeCriticalSection.Leave();
+        state.schemeRegistry = SchemeRegistry::Instance();
+    }
+    state.schemeCriticalSection.Leave();
 
-    this->archiveCriticalSection.Enter();
+    state.archiveCriticalSection.Enter();
     if (!ArchiveFileSystem::HasInstance())
     {
-        n_assert(!StandardArchivesMounted);
-        this->archiveFileSystem = ArchiveFileSystem::Create();
-        this->archiveFileSystem->Setup();
+        n_assert(!state.StandardArchivesMounted);
+        state.archiveFileSystem = ArchiveFileSystem::Create();
+        state.archiveFileSystem->Setup();
     }
     else
     {
-        this->archiveFileSystem = ArchiveFileSystem::Instance();
+        state.archiveFileSystem = ArchiveFileSystem::Instance();
     }
-    this->archiveCriticalSection.Leave();
+    state.archiveCriticalSection.Leave();
 
     // the first IoServer created sets up the global assign registry
-    this->assignCriticalSection.Enter();
+    state.assignCriticalSection.Enter();
     if (!AssignRegistry::HasInstance())
     {
-        this->assignRegistry = AssignRegistry::Create();
-        this->assignRegistry->Setup();
+        state.assignRegistry = AssignRegistry::Create();
+        state.assignRegistry->Setup();
     }
     else
     {
         // global assign registry already exists
-        this->assignRegistry = AssignRegistry::Instance();
+        state.assignRegistry = AssignRegistry::Instance();
     }
-    this->assignCriticalSection.Leave();
+    state.assignCriticalSection.Leave();
 
+    state.watcherCriticalSection.Enter();
 
-    this->watcherCriticalSection.Enter();
-    
     if (!FileWatcher::HasInstance())
     {
-        this->watcher = FileWatcher::Create();
-        this->watcher->Setup();
+        state.watcher = FileWatcher::Create();
+        state.watcher->Setup();
     }
     else
     {
-        this->watcher = FileWatcher::Instance();
+        state.watcher = FileWatcher::Instance();
     }
 
-    this->watcherCriticalSection.Leave();
+    state.watcherCriticalSection.Leave();
 
-    this->httpClientRegistry = Http::HttpClientRegistry::Create();
-    this->httpClientRegistry->Setup();
-    this->streamCache = StreamCache::Create();
+    state.httpClientRegistry = Http::HttpClientRegistry::Create();
+    state.httpClientRegistry->Setup();
+    state.streamCache = StreamCache::Create();
 }
+
 
 //------------------------------------------------------------------------------
 /**
 */
-IoServer::~IoServer()
+void
+ShutdownFilesystem()
 {
-    this->streamCache = nullptr;
-    this->httpClientRegistry->Discard();
-    this->httpClientRegistry = nullptr;
+    state.streamCache = nullptr;
+    state.httpClientRegistry->Discard();
+    state.httpClientRegistry = nullptr;
 
-    this->watcher = nullptr;
+    state.watcher = nullptr;
     // unmount standard archives if this is the last instance
-    if (StandardArchivesMounted && (this->archiveFileSystem->GetRefCount() == 1))
+    if (state.StandardArchivesMounted && (state.archiveFileSystem->GetRefCount() == 1))
     {
-        this->UnmountStandardArchives();
+        UnmountStandardArchives();
     }
-    this->archiveFileSystem = nullptr;
-    this->assignRegistry = nullptr;
-    this->schemeRegistry = nullptr;
-
-    __DestructSingleton;
+    state.archiveFileSystem = nullptr;
+    state.assignRegistry = nullptr;
+    state.schemeRegistry = nullptr;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 Ptr<Stream>
-IoServer::CreateStream(const URI& uri) const
+CreateStream(const URI& uri)
 {
     n_assert(!uri.IsEmpty());
     n_assert(SchemeRegistry::Instance()->IsUriSchemeRegistered(uri.Scheme()));
-    const Core::Rtti & streamClass = SchemeRegistry::Instance()->GetStreamClassByUriScheme(uri.Scheme());
+    const Core::Rtti& streamClass = SchemeRegistry::Instance()->GetStreamClassByUriScheme(uri.Scheme());
 
 #if !PUBLIC_BUILD
     if (streamClass == FileStream::RTTI)
@@ -147,16 +154,16 @@ IoServer::CreateStream(const URI& uri) const
     }
 #endif
     // check if the URI points into a mounted archive
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
         URI newUri = ArchiveFileSystem::Instance()->ConvertFileToArchiveURIIfExists(uri);
-        Ptr<Stream> stream = (Stream*) schemeRegistry->GetStreamClassByUriScheme(newUri.Scheme()).Create();
+        Ptr<Stream> stream = (Stream*)state.schemeRegistry->GetStreamClassByUriScheme(newUri.Scheme()).Create();
         stream->SetURI(newUri);
         return stream;
     }
     else
     {
-        Ptr<Stream> stream = (Stream*) schemeRegistry->GetStreamClassByUriScheme(uri.Scheme()).Create();
+        Ptr<Stream> stream = (Stream*)state.schemeRegistry->GetStreamClassByUriScheme(uri.Scheme()).Create();
         stream->SetURI(uri);
         return stream;
     }
@@ -166,9 +173,9 @@ IoServer::CreateStream(const URI& uri) const
 /**
 */
 bool
-IoServer::MountArchive(const URI& uri)
+MountArchive(const URI& uri)
 {
-    Ptr<Archive> archive = this->archiveFileSystem->Mount(uri);
+    Ptr<Archive> archive = state.archiveFileSystem->Mount(uri);
     return archive.isvalid();
 }
 
@@ -176,76 +183,93 @@ IoServer::MountArchive(const URI& uri)
 /**
 */
 bool
-IoServer::MountEmbeddedArchive(const URI& uri)
+MountEmbeddedArchive(const URI& uri)
 {
-    Ptr<Archive> archive = this->archiveFileSystem->MountEmbedded(uri, "root:");
+    Ptr<Archive> archive = state.archiveFileSystem->MountEmbedded(uri, "root:");
     return archive.isvalid();
 }
-
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-IoServer::UnmountArchive(const URI& uri)
+UnmountArchive(const URI& uri)
 {
-    this->archiveFileSystem->Unmount(uri);
+    state.archiveFileSystem->Unmount(uri);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-IoServer::IsArchiveMounted(const URI& uri) const
+IsArchiveMounted(const URI& uri)
 {
-    return this->archiveFileSystem->IsMounted(uri);
+    return state.archiveFileSystem->IsMounted(uri);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-IoServer::MountStandardArchives()
+SetArchiveFileSystemEnabled(bool b)
 {
-    this->archiveCriticalSection.Enter();
-    n_assert(!StandardArchivesMounted);
-    StandardArchivesMounted = true;
+    state.archiveFileSystemEnabled = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+IsArchiveFileSystemEnabled()
+{
+    return state.archiveFileSystemEnabled && state.archiveFileSystem->HasArchives();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MountStandardArchives()
+{
+    state.archiveCriticalSection.Enter();
+    n_assert(!state.StandardArchivesMounted);
+    state.StandardArchivesMounted = true;
 
     // first load the platform specific archives, since platform specific
     // files override any generic files
     // if the archive files don't exist, no archives will be mounted
-    System::SystemInfo systemInfo;  
+    System::SystemInfo systemInfo;
     String platformString = System::PlatformTypeAsString(System::Platform);
     String platformArchivePath = "root:export";
-    
-    // prioritize export folder before zip 
-    if (!this->DirectoryExists(platformArchivePath))
+
+    // prioritize export folder before zip
+    if (!DirectoryExists(platformArchivePath))
     {
-        this->MountArchive(platformArchivePath);
+        MountArchive(platformArchivePath);
     }
 
-    this->archiveCriticalSection.Leave();
+    state.archiveCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-IoServer::UnmountStandardArchives()
+UnmountStandardArchives()
 {
-    this->archiveCriticalSection.Enter();
-    n_assert(StandardArchivesMounted);
-    StandardArchivesMounted = false;
+    state.archiveCriticalSection.Enter();
+    n_assert(state.StandardArchivesMounted);
+    state.StandardArchivesMounted = false;
 
-    System::SystemInfo systemInfo;  
+    System::SystemInfo systemInfo;
     String platformString = System::PlatformTypeAsString(System::Platform);
     String platformArchivePath = "root:export";
-    if (this->IsArchiveMounted(platformArchivePath))
+    if (IsArchiveMounted(platformArchivePath))
     {
-        this->UnmountArchive(platformArchivePath);
+        UnmountArchive(platformArchivePath);
     }
 
-    this->archiveCriticalSection.Leave();
+    state.archiveCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -253,14 +277,14 @@ IoServer::UnmountStandardArchives()
     This method creates all missing directories in a path.
 */
 bool
-IoServer::CreateDirectory(const URI& uri) const
+CreateDirectory(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
     String path = uri.GetHostAndLocalPath();
 
     // build stack of non-existing dir components
     Stack<String> pathStack;
-    while ((!path.IsEmpty()) && (!this->DirectoryExists(path)))
+    while ((!path.IsEmpty()) && (!DirectoryExists(path)))
     {
         pathStack.Push(path);
         String nextPath = path.ExtractDirName();
@@ -294,13 +318,13 @@ IoServer::CreateDirectory(const URI& uri) const
 /**
 */
 bool
-IoServer::EnsureDirectoriesForFile(const URI& uri) const
+EnsureDirectoriesForFile(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
     String path = uri.GetHostAndLocalPath();
 
     String folder = path.ExtractToLastSlash();
-    return this->CreateDirectory(folder);
+    return CreateDirectory(folder);
 }
 
 //------------------------------------------------------------------------------
@@ -308,13 +332,13 @@ IoServer::EnsureDirectoriesForFile(const URI& uri) const
     This copies a file to another file.
 */
 bool
-IoServer::CopyFile(const URI& fromUri, const URI& toUri) const
+CopyFile(const URI& fromUri, const URI& toUri)
 {
     // transparent archive support...
     URI srcUri;
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
-        srcUri = ArchiveFileSystem::Instance()->ConvertFileToArchiveURIIfExists(fromUri);
+        srcUri = state.archiveFileSystem->ConvertFileToArchiveURIIfExists(fromUri);
     }
     else
     {
@@ -322,17 +346,17 @@ IoServer::CopyFile(const URI& fromUri, const URI& toUri) const
     }
 
     // if target file exists, remove read-only flag
-    if (this->FileExists(toUri))
+    if (FileExists(toUri))
     {
-        this->SetReadOnly(toUri, false);
+        SetReadOnly(toUri, false);
     }
 
     // create file streams
-    Ptr<Stream> srcStream = this->CreateStream(srcUri);
+    Ptr<Stream> srcStream = CreateStream(srcUri);
     srcStream->SetAccessMode(Stream::ReadAccess);
     if (srcStream->Open())
     {
-        Ptr<Stream> toStream = this->CreateStream(toUri);
+        Ptr<Stream> toStream = CreateStream(toUri);
         toStream->SetAccessMode(Stream::WriteAccess);
         if (toStream->Open())
         {
@@ -367,19 +391,19 @@ IoServer::CopyFile(const URI& fromUri, const URI& toUri) const
     This method computes the CRC checksum for a file.
 */
 unsigned int
-IoServer::ComputeFileCrc(const URI& uri) const
+ComputeFileCrc(const URI& uri)
 {
     unsigned int result = 0;
 
     // create a stream
-    Ptr<Stream> stream = this->CreateStream(uri);
+    Ptr<Stream> stream = CreateStream(uri);
     stream->SetAccessMode(Stream::ReadAccess);
     if (stream->Open())
     {
         Crc crc;
         crc.Begin();
-        const int bufSize = (1<<16);
-        unsigned char* buffer = (unsigned char*) Memory::Alloc(Memory::ScratchHeap, bufSize);
+        const int bufSize = (1 << 16);
+        unsigned char* buffer = (unsigned char*)Memory::Alloc(Memory::ScratchHeap, bufSize);
         while (!stream->Eof())
         {
             Stream::Size bytesRead = stream->Read(buffer, bufSize);
@@ -405,7 +429,7 @@ IoServer::ComputeFileCrc(const URI& uri) const
     only in case counts as a new name on both platforms.
 */
 bool
-IoServer::RenameFile(const URI& fromUri, const URI& toUri) const
+RenameFile(const URI& fromUri, const URI& toUri)
 {
     n_assert(fromUri.Scheme() == "file");
     n_assert(toUri.Scheme() == "file");
@@ -437,7 +461,7 @@ IoServer::RenameFile(const URI& fromUri, const URI& toUri) const
 /**
 */
 bool
-IoServer::DeleteFile(const URI& uri) const
+DeleteFile(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
@@ -449,7 +473,7 @@ IoServer::DeleteFile(const URI& uri) const
 /**
 */
 bool
-IoServer::DeleteDirectory(const URI& uri) const
+DeleteDirectory(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
@@ -461,10 +485,10 @@ IoServer::DeleteDirectory(const URI& uri) const
 /**
 */
 bool
-IoServer::FileExists(const URI& uri) const
+FileExists(const URI& uri)
 {
     // transparent archive support
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
         Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithFile(uri);
         if (archive.isvalid())
@@ -483,10 +507,10 @@ IoServer::FileExists(const URI& uri) const
 /**
 */
 bool
-IoServer::DirectoryExists(const URI& uri) const
+DirectoryExists(const URI& uri)
 {
     // transparent archive support
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
         if (uri.Scheme() == "file")
         {
@@ -508,7 +532,7 @@ IoServer::DirectoryExists(const URI& uri) const
 /**
 */
 void
-IoServer::SetReadOnly(const URI& uri, bool readOnly) const
+SetReadOnly(const URI& uri, bool readOnly)
 {
     n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
@@ -520,14 +544,14 @@ IoServer::SetReadOnly(const URI& uri, bool readOnly) const
 /**
 */
 bool
-IoServer::IsReadOnly(const URI& uri) const
+IsReadOnly(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
 
     // transparent archive file system support
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
-        URI arcUri = ArchiveFileSystem::Instance()->ConvertFileToArchiveURIIfExists(uri);
+        URI arcUri = state.archiveFileSystem->ConvertFileToArchiveURIIfExists(uri);
         if (arcUri.Scheme() != "file")
         {
             // file exists in archive, archives are generally read only
@@ -545,7 +569,7 @@ IoServer::IsReadOnly(const URI& uri) const
 /**
 */
 void
-IoServer::SetFileWriteTime(const URI& uri, FileTime fileTime)
+SetFileWriteTime(const URI& uri, FileTime fileTime)
 {
     n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
@@ -557,7 +581,7 @@ IoServer::SetFileWriteTime(const URI& uri, FileTime fileTime)
 /**
 */
 FileTime
-IoServer::GetFileWriteTime(const URI& uri) const
+GetFileWriteTime(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
@@ -569,7 +593,29 @@ IoServer::GetFileWriteTime(const URI& uri) const
 /**
 */
 Array<String>
-IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) const
+AddPathPrefixToArray(const String& prefix, const Array<String>& filenames)
+{
+    Array<String> result;
+    if (!filenames.IsEmpty())
+    {
+        result.Reserve(filenames.Size());
+        IndexT i;
+        for (i = 0; i < filenames.Size(); i++)
+        {
+            String path = prefix;
+            path.Append("/");
+            path.Append(filenames[i]);
+            result.Append(path);
+        }
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Array<String>
+ListFiles(const URI& uri, const String& pattern, bool asFullPath)
 {
     n_assert(pattern.IsValid());
     Array<String> result;
@@ -580,7 +626,7 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         Util::String fileList;
         URI listFile = uri;
         listFile.AppendLocalPath("/_files.lst");
-        if (IoServer::ReadFile(listFile, fileList))
+        if (ReadFile(listFile, fileList))
         {
             Util::Array<Util::String> files = fileList.Tokenize("\n");
             for (auto const& fileName : files)
@@ -595,7 +641,7 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
     }
 
     // transparent archive file system support
-    if (this->IsArchiveFileSystemEnabled())
+    if (IsArchiveFileSystemEnabled())
     {
         Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithDir(uri);
         if (archive.isvalid())
@@ -618,7 +664,7 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
 #endif
     if (asFullPath)
     {
-        result = this->AddPathPrefixToArray(uri.LocalPath(), result);
+        result = AddPathPrefixToArray(uri.LocalPath(), result);
     }
     return result;
 }
@@ -627,13 +673,13 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
 /**
 */
 Array<String>
-IoServer::ListDirectories(const URI& uri, const String& pattern, bool asFullPath, bool prioritizeArchive) const
+ListDirectories(const URI& uri, const String& pattern, bool asFullPath, bool prioritizeArchive)
 {
     n_assert(pattern.IsValid());
     Array<String> result;
 
     // transparent archive file system support
-    if (this->IsArchiveFileSystemEnabled() && prioritizeArchive)
+    if (IsArchiveFileSystemEnabled() && prioritizeArchive)
     {
         Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithDir(uri);
         if (archive.isvalid())
@@ -642,51 +688,31 @@ IoServer::ListDirectories(const URI& uri, const String& pattern, bool asFullPath
             result = archive->ListDirectories(pathInArchive, pattern);
             if (asFullPath)
             {
-                result = this->AddPathPrefixToArray(uri.LocalPath(), result);
+                result = AddPathPrefixToArray(uri.LocalPath(), result);
             }
             return result;
         }
     }
-    
+
     // fallthrough: not contained in archive, handle conventionally
     result = FSWrapper::ListDirectories(uri.GetHostAndLocalPath(), pattern);
     if (asFullPath)
     {
-        result = this->AddPathPrefixToArray(uri.LocalPath(), result);
+        result = AddPathPrefixToArray(uri.LocalPath(), result);
     }
     return result;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-Array<String>
-IoServer::AddPathPrefixToArray(const String& prefix, const Array<String>& filenames) const
-{
-    Array<String> result;
-    if (!filenames.IsEmpty())
-    {
-        result.Reserve(filenames.Size());
-        IndexT i;
-        for (i = 0; i < filenames.Size(); i++)
-        {
-            String path = prefix;
-            path.Append("/");
-            path.Append(filenames[i]);
-            result.Append(path);
-        }
-    }
-    return result;
-}
+
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-IoServer::ReadFile(const URI& path, Util::String& contents)
+ReadFile(const URI& path, Util::String& contents)
 {
     // create file stream
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
+    Ptr<Stream> stream = CreateStream(path);
 
     // open file
     if (stream->Open())
@@ -710,10 +736,10 @@ IoServer::ReadFile(const URI& path, Util::String& contents)
 /**
 */
 bool
-IoServer::IsLocked(const URI& uri) const
+IsLocked(const URI& uri)
 {
     n_assert(uri.Scheme() == "file");
-    n_assert(this->FileExists(uri));
+    n_assert(FileExists(uri));
     const String path = uri.GetHostAndLocalPath();
     n_assert(path.IsValid());
     return FSWrapper::IsLocked(path);
@@ -723,11 +749,11 @@ IoServer::IsLocked(const URI& uri) const
 /**
 */
 IO::URI
-IoServer::CreateTemporaryFilename(const URI& uri) const
+CreateTemporaryFilename(const URI& uri)
 {
-    n_assert(uri.Scheme() == "file");   
+    n_assert(uri.Scheme() == "file");
     const String path = uri.GetHostAndLocalPath();
-    n_assert(path.IsValid());   
+    n_assert(path.IsValid());
     const String tmpName = FSWrapper::CreateTemporaryFilename(path);
     if (!tmpName.IsValid())
     {
@@ -740,7 +766,7 @@ IoServer::CreateTemporaryFilename(const URI& uri) const
 /**
 */
 Util::String
-IoServer::NativePath(const Util::String& path)
+NativePath(const Util::String& path)
 {
 #if __cplusplus > 201703L
     std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::path((char8_t*)path.AsCharPtr()));
@@ -753,11 +779,11 @@ IoServer::NativePath(const Util::String& path)
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-IoServer::GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive) const
+bool
+GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive)
 {
     // transparent archive support
-    if (this->IsArchiveFileSystemEnabled() && prioritizeArchive)
+    if (IsArchiveFileSystemEnabled() && prioritizeArchive)
     {
         Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithFile(uri);
         if (archive.isvalid())
@@ -776,8 +802,8 @@ IoServer::GetIOInfo(const URI& uri, IOStat& outInfo, bool prioritizeArchive) con
 //------------------------------------------------------------------------------
 /**
 */
-void 
-IoServer::IterateFolders(const URI& dir, const Util::String& pattern, FileMapFunc iter)
+void
+IterateFolders(const URI& dir, const Util::String& pattern, FileMapFunc iter)
 {
     Util::Array<Util::String> dirs;
     dirs.Append(dir.LocalPath());
@@ -785,14 +811,13 @@ IoServer::IterateFolders(const URI& dir, const Util::String& pattern, FileMapFun
     while (dirs.Size() > 0)
     {
         Util::String currentDir = dirs.PopFront();
-        Util::Array<Util::String> files = this->ListFiles(currentDir, pattern, false);
-        dirs.AppendArray(this->ListDirectories(currentDir, "*", true));
+        Util::Array<Util::String> files = ListFiles(currentDir, pattern, false);
+        dirs.AppendArray(ListDirectories(currentDir, "*", true));
         for (auto file : files)
         {
             iter(file, currentDir);
         }
     }
-
 }
 
 } // namespace IO

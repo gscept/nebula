@@ -57,8 +57,6 @@ JobThread::EmitWakeupSignal()
 void
 JobThread::DoWork()
 {
-    if (this->enableIo)
-        IO::IoServer::Create();
     if (this->enableProfiling)
         Profiling::ProfilingRegisterThread();
     while (true)

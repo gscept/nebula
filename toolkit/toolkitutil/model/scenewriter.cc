@@ -20,6 +20,21 @@ using namespace Util;
 
 //------------------------------------------------------------------------------
 /**
+    Importers either give a material name local to the asset's folder ("MI_Altar"),
+    or an already serialized path such as "system:placeholder:mat", which must not
+    get the asset's folder prepended
+*/
+static Util::String
+MaterialResource(const Util::String& category, const Util::String& material)
+{
+    const IO::Path path = IO::Path::Parse(material);
+    if (path.IsFile() && path.GetType() == "mat")
+        return material;
+    return IO::Path::File(category, material, "mat").AsString();
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 std::unique_ptr<SceneResourceT>
 SceneWriter::GenerateGraphicsModel(
@@ -33,7 +48,7 @@ SceneWriter::GenerateGraphicsModel(
     n_assert(scene != nullptr);
 
     // make sure category directory exists
-    IO::IoServer::Instance()->CreateDirectory(basePath);
+    IO::CreateDirectory(basePath);
 
     // extract file path from export path
     String file = scene->GetName();
@@ -73,7 +88,7 @@ SceneWriter::GenerateGraphicsModel(
                 shape->prim_group = mesh->skin.skinFragments[j];
                 shape->mesh_resource = meshResource;
                 shape->mesh_index = mesh->mesh.meshIndex;
-                shape->material = IO::Path::File(category, mesh->mesh.material, "mat").AsString();
+                shape->material = MaterialResource(category, mesh->mesh.material);
                 shape->transform = std::move(transform);
 
                 auto skinFragment = std::make_unique<ToolkitUtil::SkinFragmentNodeT>();
@@ -98,7 +113,7 @@ SceneWriter::GenerateGraphicsModel(
             shape->prim_group = mesh->mesh.groupId;
             shape->mesh_resource = meshResource;
             shape->mesh_index = mesh->mesh.meshIndex;
-            shape->material = IO::Path::File(category, mesh->mesh.material, "mat").AsString();
+            shape->material = MaterialResource(category, mesh->mesh.material);
             shape->transform = std::move(transform);
             model->shapes.push_back(std::move(shape));
 
@@ -123,7 +138,7 @@ SceneWriter::GeneratePhysicsModel(
     n_assert(scene != nullptr);
 
     // make sure category directory exists
-    IO::IoServer::Instance()->CreateDirectory(basePath);
+    IO::CreateDirectory(basePath);
 
     // extract file path from export path
     String file = scene->GetName();
@@ -148,9 +163,8 @@ SceneWriter::GeneratePhysicsModel(
     String skeletonRes;
     skeletonRes.Format("ske:%s/%s.nsk", category.AsCharPtr(), file.AsCharPtr());
 
-    // create mesh name
-    String meshResource;
-    meshResource.Format("msh:%s/%s.nvx", category.AsCharPtr(), scene->GetName().AsCharPtr());
+    // create mesh name, physics reads its geometry from the same mesh URN as the graphics model
+    String meshResource = IO::Path::FolderAndFile("msh", Util::Format("%s/%s", category.AsCharPtr(), file.AsCharPtr())).AsString();
 
     auto model = std::make_unique<ToolkitUtil::PhysicsResourceT>();
     model->name = scene->GetName();

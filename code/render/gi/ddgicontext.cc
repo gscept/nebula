@@ -628,7 +628,7 @@ DDGIContext::UpdateActiveVolumes(const Graphics::ViewId view, const Graphics::Fr
         return;
 
     N_SCOPE(UpdateGIVolumes, DDGI);
-    const Math::point cameraPos = CameraContext::GetTransform(ViewGetCamera(view)).position;
+    const Math::point cameraPos = CameraContext::GetTransform(ViewGetCamera(view)).position();
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     const auto& projectSettings = Options::ProjectSettings;
     float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);

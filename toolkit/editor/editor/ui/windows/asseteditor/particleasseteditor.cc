@@ -716,7 +716,7 @@ ParticleEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {
             ImGui::TableSetupScrollFreeze(1, 1);
             ImGui::TableNextColumn();
-            assetEditor->viewport.Render();
+            assetEditor->viewport.RenderInChildWindow();
             ImGui::TableNextColumn();
 
             if (ImGui::BeginChild("ParticleParameters"))

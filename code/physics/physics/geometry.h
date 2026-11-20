@@ -63,15 +63,16 @@ struct MeshGeometryInput
     Physics::MeshTopology topology = Physics::MeshTopology_Triangles;
 };
 
-/// Height field samples for the cooking layer.
+/// Height field samples for the cooking layer, laid out like an image.
 struct HeightFieldInput
 {
-    SizeT width = 0;
-    SizeT height = 0;
-    Util::Array<ushort> samples; // width * height samples
+    SizeT width = 0;    // samples along x
+    SizeT height = 0;   // samples along z
+    Util::Array<ushort> samples; // samples[z * width + x], unsigned, 0 is the bottom and 65535 the top of the height range
 };
 
-/// Holds function pointers for reading meshes and heightfields from resources.
+/// Holds function pointers for reading meshes and heightfields from resources. Resources are URNs,
+/// folder:file:type, which the default readers in physics/formats resolve to the exported file.
 struct GeometryLoader
 {
     std::function<bool(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out)> LoadMesh = nullptr;

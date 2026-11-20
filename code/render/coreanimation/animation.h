@@ -102,6 +102,8 @@ const AnimClip& AnimGetClip(const AnimationId& id, const IndexT index);
 const Ptr<AnimKeyBuffer>& AnimGetBuffer(const AnimationId& id);
 /// Get curves
 const Util::FixedArray<AnimCurve>& AnimGetCurves(const AnimationId& id);
+/// Get events, the ones of a clip start at its first event
+const Util::FixedArray<AnimEvent>& AnimGetEvents(const AnimationId& id);
 /// Get anim clip index
 const IndexT AnimGetIndex(const AnimationId& id, const Util::StringAtom& name);
 

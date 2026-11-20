@@ -18,7 +18,7 @@ voidpf ZCALLBACK nebula3_open_file_func (voidpf opaque, const void* filename64, 
 {
     const char * filename = (const char*)filename64;
     n_assert(mode == (ZLIB_FILEFUNC_MODE_READ | ZLIB_FILEFUNC_MODE_EXISTING));
-    Ptr<IO::Stream> fileStream = IO::IoServer::Instance()->CreateStream(filename);
+    Ptr<IO::Stream> fileStream = IO::CreateStream(filename);
     fileStream->SetAccessMode(IO::Stream::ReadAccess);
     fileStream->SetURI(filename);
     if (fileStream->Open())

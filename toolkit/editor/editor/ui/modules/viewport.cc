@@ -16,14 +16,91 @@
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/assetbrowser.h"
 
+#include "renderutil/drawfullscreenquad.h"
+
 #include "frame/default.h"
 #include "frame/preview.h"
+#include "gpulang/render/system_shaders/editor/editor_wireframe.h"
 
 namespace Presentation
 {
 
 namespace Modules
 {
+
+namespace
+{
+
+/// viewports that have been initialized, used to find the render mode of the view being rendered
+Util::Array<Viewport*> ActiveViewports;
+
+/// colors are linear, both frame scripts draw the wireframe after tonemapping into an sRGB target
+constexpr float WireframeBackgroundColor[4] = { 0.025f, 0.025f, 0.03f, 1.0f };
+constexpr float WireframeLineColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+constexpr float LitWireframeLineColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+CoreGraphics::ShaderProgramId WireframeBackgroundProgram = CoreGraphics::InvalidShaderProgramId;
+CoreGraphics::ShaderProgramId WireframeStaticProgram = CoreGraphics::InvalidShaderProgramId;
+
+//------------------------------------------------------------------------------
+/**
+    Runs in the "Wireframe" subgraph of the default and preview frame scripts.
+    The meshes are drawn with the Wireframe batch of their material template.
+*/
+void
+DrawWireframe(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+{
+    const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();
+    const Viewport::RenderMode mode = Viewport::GetRenderMode(view);
+    if (mode != Viewport::Wireframe && mode != Viewport::LitWireframe)
+        return;
+
+    // All programs of the wireframe shader share one pipeline layout,
+    // so the color pushed here stays valid while the batch switches between them
+    EditorWireframe::WireframeConstants constants;
+    if (mode == Viewport::Wireframe)
+    {
+        // Hide the shaded scene, fill with the background color and reset depth to the far plane
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, WireframeBackgroundProgram, queue);
+        memcpy(constants.Color, WireframeBackgroundColor, sizeof(constants.Color));
+        CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, 0, sizeof(constants), &constants);
+        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+        CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
+        memcpy(constants.Color, WireframeLineColor, sizeof(constants.Color));
+    }
+    else
+    {
+        // Bind the wireframe pipeline layout before pushing the line color
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, WireframeStaticProgram, queue);
+        memcpy(constants.Color, LitWireframeLineColor, sizeof(constants.Color));
+    }
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, 0, sizeof(constants), &constants);
+    Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::Wireframe, Graphics::ViewGetCamera(view), bufferIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetupWireframeRendering()
+{
+    if (WireframeBackgroundProgram != CoreGraphics::InvalidShaderProgramId)
+        return;
+
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:system_shaders/editor/editor_wireframe.gplb");
+    WireframeBackgroundProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Background"));
+    WireframeStaticProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Static"));
+
+    // Pipelines are created on demand when drawing, but registering the callback avoids the missing callback warning
+    auto noPipelines = [](const CoreGraphics::RenderPassId pass) {};
+    FrameScript_default::RegisterSubgraph_Wireframe_Render(DrawWireframe);
+    FrameScript_default::RegisterSubgraphPipelines_Wireframe_Render(noPipelines);
+    FrameScript_preview::RegisterSubgraph_Wireframe_Render(DrawWireframe);
+    FrameScript_preview::RegisterSubgraphPipelines_Wireframe_Render(noPipelines);
+}
+
+} // namespace
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +115,23 @@ Viewport::Viewport()
 */
 Viewport::~Viewport()
 {
+    IndexT index = ActiveViewports.FindIndex(this);
+    if (index != InvalidIndex)
+        ActiveViewports.EraseIndex(index);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+Viewport::RenderMode
+Viewport::GetRenderMode(const Graphics::ViewId view)
+{
+    for (const Viewport* viewport : ActiveViewports)
+    {
+        if (viewport->view == view)
+            return viewport->renderMode;
+    }
+    return TexturedLit;
 }
 
 //------------------------------------------------------------------------------
@@ -51,9 +144,13 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     Util::String name = viewName;
     name.AppendInt(unique++);
     CoreGraphics::TextureCreateInfo texInfo;
+    texInfo.name = "Viewport Target"_atm;
     texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
     texInfo.width = 1280;
     texInfo.height = 900;
+    // Copied to by the preview frame script and sampled by ImGui, clear so it starts out in a readable layout
+    texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
+    texInfo.clear = true;
     this->targetTexture = CoreGraphics::CreateTexture(texInfo);
     this->directionalLight = Graphics::GraphicsServer::Instance()->CreateGraphicsEntity();
     this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_preview::Run, Math::rectangle<int>(0, 0, 1280, 900), mask, [this](IndexT frameIndex, IndexT bufferIndex)
@@ -78,6 +175,10 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
     this->imguiTextureId = Dynui::AllocateImguiTextureId({});
+
+    SetupWireframeRendering();
+    if (ActiveViewports.FindIndex(this) == InvalidIndex)
+        ActiveViewports.Append(this);
 }
 
 //------------------------------------------------------------------------------
@@ -92,6 +193,10 @@ Viewport::Init(const Graphics::ViewId view)
 	this->camera.Update();
     this->targetTexture = CoreGraphics::InvalidTextureId;
     this->imguiTextureId = Dynui::AllocateImguiTextureId({});
+
+    SetupWireframeRendering();
+    if (ActiveViewports.FindIndex(this) == InvalidIndex)
+        ActiveViewports.Append(this);
 }
 
 //------------------------------------------------------------------------------
@@ -254,7 +359,7 @@ Viewport::Render()
                         current.dirtMask = id;
                         Graphics::CameraContext::SetDepthOfField(cameraEntity, current);
                     }, nullptr);
-                });
+                }, "tex");
             }
             if (dof.dirtMask != Resources::InvalidResourceId && ImGui::Button("Clear dirt mask"))
             {
@@ -275,26 +380,39 @@ Viewport::Render()
             {
                 this->renderMode = TexturedLit;
             }
+            if (ImGui::MenuItem("Wireframe", NULL, this->renderMode == Wireframe))
+            {
+                this->renderMode = Wireframe;
+            }
+            if (ImGui::MenuItem("Lit Wireframe", NULL, this->renderMode == LitWireframe))
+            {
+                this->renderMode = LitWireframe;
+            }
             ImGui::EndMenu();
         }
 
-        static bool showWorldAxis = false;
+        // Im3d only draws in the default frame script, viewports with their own target render with the preview frame script
+        const bool hasIm3d = this->targetTexture == CoreGraphics::InvalidTextureId;
         if (ImGui::BeginMenu("    Debug    "))
         {
-            ImGui::Checkbox("   Show World axis   ", &showWorldAxis);
+            ImGui::BeginDisabled(!hasIm3d);
+            ImGui::Checkbox("   Show World axis   ", &this->showWorldAxis);
+            ImGui::EndDisabled();
+            if (!hasIm3d)
+                ImGui::SetItemTooltip("Debug drawing is only available in the scene viewport");
             ImGui::EndMenu();
         }
 
-        if (showWorldAxis)
+        if (hasIm3d && this->showWorldAxis)
         {
             Math::mat4 invView = Math::inverse(this->camera.GetViewTransform());
-            Math::mat4 invViewTranslation = Math::translation(invView.position);
+            Math::mat4 invViewTranslation = Math::translation(invView.position());
             Math::mat4 scaling = Math::scaling(0.15f);
-            Math::mat4 offset = Math::translation(-invView.z_axis * 0.5f);
+            Math::mat4 offset = Math::translation(-invView.z_axis() * 0.5f);
             Im3d::Im3dContext::DrawAxes(invViewTranslation * offset * scaling);
         }
 
-        const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
+        const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position();
         Util::String cameraPosStr = Util::String::Sprintf("Camera Position x: %.3f, y: %.3f, z: %.3f", cameraPos.x, cameraPos.y, cameraPos.z);
         Util::String fps = Util::String::Sprintf("FPS: %.2f, ms: %.1f", ImGui::GetIO().Framerate, ImGui::GetIO().DeltaTime * 1000);
 
@@ -330,9 +448,12 @@ Viewport::Render()
         {
             CoreGraphics::DestroyTexture(this->targetTexture);
             CoreGraphics::TextureCreateInfo texInfo;
+            texInfo.name = "Viewport Target"_atm;
             texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
             texInfo.width = space.x;
             texInfo.height = space.y;
+            texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
+            texInfo.clear = true;
             this->targetTexture = CoreGraphics::CreateTexture(texInfo);
         }
     }
@@ -381,6 +502,32 @@ Viewport::Render()
         ImGui::GetIO().WantCaptureKeyboard = true;
         ImGui::GetIO().WantCaptureMouse = true;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Set up like the scene window, menu bar and no padding, so the image fills the child window
+*/
+void
+Viewport::RenderInChildWindow(const std::function<void(ImDrawList* drawList)>& overlay)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    if (ImGui::BeginChild("##Viewport", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+    {
+        this->Render();
+        if (overlay)
+        {
+            // child windows draw over their parent, so the overlay has to draw in the child to be on top of the image
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 min(this->lastViewportImagePositionAbsolute.x, this->lastViewportImagePositionAbsolute.y);
+            const ImVec2 max(min.x + this->lastViewportImageSizeAbsolute.x, min.y + this->lastViewportImageSizeAbsolute.y);
+            drawList->PushClipRect(min, max, true);
+            overlay(drawList);
+            drawList->PopClipRect();
+        }
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
 }
 
 

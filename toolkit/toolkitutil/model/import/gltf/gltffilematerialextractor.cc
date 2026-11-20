@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  ngltfmaterialextractor.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -36,16 +36,38 @@ GltfFileMaterialExtractor::~GltfFileMaterialExtractor()
 
 //------------------------------------------------------------------------------
 /**
+    URNs name an asset's folder relative to the work assets folder, which the output folder lies in
+*/
+static Util::String
+AssetFolder(const Util::String& outputFolder)
+{
+    Util::String folder = IO::URI(outputFolder).LocalPath();
+    folder.TrimRight("/\\");
+    if (IO::Path::WorkRoot.IsValid())
+    {
+        Util::String root = IO::URI(Util::Format("%s/assets", IO::Path::WorkRoot.Value())).LocalPath();
+        root.TrimRight("/\\");
+        if (folder == root)
+            return Util::String();
+        if (folder.Length() > root.Length() && folder.BeginsWithString(root) && (folder[root.Length()] == '/' || folder[root.Length()] == '\\'))
+            return folder.ExtractToEnd(root.Length() + 1);
+    }
+    n_warning("GltfFileMaterialExtractor: '%s' is not in the work assets folder, materials refer to their textures by the folder name only\n", folder.AsCharPtr());
+    return folder.ExtractFileName();
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 Util::Array<IO::URI>
 GltfFileMaterialExtractor::ExtractAll()
 {
     Util::Array<IO::URI> outputFiles;
-    this->textureDir = this->outputFolder.StripSubstring(IO::URI("src:assets").LocalPath());
+    this->textureDir = AssetFolder(this->outputFolder);
 
     if (this->doc->materials.Size() > 0)
     {
-        IO::IoServer::Instance()->CreateDirectory(this->outputFolder);
+        IO::CreateDirectory(this->outputFolder);
 
         // Generate surfaces
         for (IndexT i = 0; i < this->doc->materials.Size(); i++)
@@ -115,7 +137,7 @@ GltfFileMaterialExtractor::ExtractAll()
             }
             Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::MaterialResource>(materialResource);
             IO::URI output = this->outputFolder + "/" + material.name + ".namat";
-            Ptr<IO::Stream> outStream = IO::IoServer::Instance()->CreateStream(output);
+            Ptr<IO::Stream> outStream = IO::CreateStream(output);
             outStream->SetAccessMode(IO::Stream::WriteAccess);
             if (outStream->Open())
             {
@@ -138,54 +160,20 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
 {
     if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
     {
-        int baseColorTexture = this->doc->textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
-        IO::Path value;
-        if (this->doc->images[baseColorTexture].embedded)
-            value = IO::Path::File(this->textureDir, Util::String::FromInt(baseColorTexture), "tex");
-        else
-        {
-            // texture is not embedded, we need to figure out the correct path to it
-            Util::String texFile = this->doc->images[baseColorTexture].uri;
-            texFile.StripFileExtension();
-            value = IO::Path::File(this->textureDir, Util::String::FromInt(baseColorTexture), "tex");
-        }
-
         materialResource->value_names.push_back("baseColorTexture");
-        materialResource->values.push_back(value.AsString());
+        materialResource->values.push_back(this->TextureURN(material.pbrMetallicRoughness.baseColorTexture.index));
     }
 
     if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
     {
-        int metallicRoughnessTexture = this->doc->textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
-        IO::Path value;
-        if (this->doc->images[metallicRoughnessTexture].embedded)
-            value = IO::Path::File(this->textureDir, Util::String::FromInt(metallicRoughnessTexture), "tex");
-        else
-        {
-            // texture is not embedded, we need to find the correct path to it
-            Util::String texFile = this->doc->images[metallicRoughnessTexture].uri;
-            texFile.StripFileExtension();
-            value = IO::Path::File(this->textureDir, texFile, "tex");
-        }
         materialResource->value_names.push_back("metallicRoughnessTexture");
-        materialResource->values.push_back(value.AsString());
+        materialResource->values.push_back(this->TextureURN(material.pbrMetallicRoughness.metallicRoughnessTexture.index));
     }
-    
+
     if (material.normalTexture.index != -1)
     {
-        int normalTexture = this->doc->textures[material.normalTexture.index].source;
-        IO::Path value;
-        n_assert(normalTexture > -1)
-            if (this->doc->images[normalTexture].embedded)
-                value = IO::Path::File(this->textureDir, Util::String::FromInt(normalTexture), "tex");
-            else
-            {
-                Util::String texFile = this->doc->images[normalTexture].uri;
-                texFile.StripFileExtension();
-                value = IO::Path::File(this->textureDir, texFile, "tex");
-            }
         materialResource->value_names.push_back("normalTexture");
-        materialResource->values.push_back(value.AsString());
+        materialResource->values.push_back(this->TextureURN(material.normalTexture.index));
 
         materialResource->value_names.push_back("normalScale");
         materialResource->values.push_back(Util::String::FromFloat(material.normalTexture.scale));
@@ -193,38 +181,14 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
 
     if (material.emissiveTexture.index != -1)
     {
-        int emissiveTexture = this->doc->textures[material.emissiveTexture.index].source;
-        IO::Path value;
-        n_assert(emissiveTexture > -1)
-            if (this->doc->images[emissiveTexture].embedded)
-                value = IO::Path::File(this->textureDir, Util::String::FromInt(emissiveTexture), "tex");
-            else
-            {
-                // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->doc->images[emissiveTexture].uri;
-                texFile.StripFileExtension();
-                value = IO::Path::File(this->textureDir, texFile, "tex");
-            }
         materialResource->value_names.push_back("emissiveTexture");
-        materialResource->values.push_back(value.AsString());
+        materialResource->values.push_back(this->TextureURN(material.emissiveTexture.index));
     }
 
     if (material.occlusionTexture.index != -1)
     {
-        int occlusionTexture = this->doc->textures[material.occlusionTexture.index].source;
-        IO::Path value;
-        n_assert(occlusionTexture > -1)
-            if (this->doc->images[occlusionTexture].embedded)
-                value = IO::Path::File(this->textureDir, Util::String::FromInt(occlusionTexture), "tex");
-            else
-            {
-                // texture is not embedded, we need to find the correct path to it
-                Util::String texFile = this->doc->images[occlusionTexture].uri;
-                texFile.StripFileExtension();
-                value = IO::Path::File(this->textureDir, texFile, "tex");
-            }
         materialResource->value_names.push_back("occlusionTexture");
-        materialResource->values.push_back(value.AsString());
+        materialResource->values.push_back(this->TextureURN(material.occlusionTexture.index));
     }
 
     materialResource->value_names.push_back("baseColorFactor"); 
@@ -238,6 +202,33 @@ GltfFileMaterialExtractor::ExtractMaterial(ToolkitUtil::MaterialResourceT* mater
 
     materialResource->value_names.push_back("emissiveFactor");
     materialResource->values.push_back(Util::String::FromVec3(material.emissiveFactor));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Embedded images have no name of their own and are named after their index, external images after their file.
+    The importer saves the textures under these names, so it has to agree with the URNs the materials use
+*/
+Util::String
+GltfFileMaterialExtractor::TextureName(Gltf::Document const& document, int32_t imageIndex)
+{
+    Gltf::Image const& image = document.images[imageIndex];
+    if (image.embedded)
+        return Util::String::FromInt(imageIndex);
+    Util::String name = image.uri.ExtractFileName();
+    name.StripFileExtension();
+    return name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+GltfFileMaterialExtractor::TextureURN(int32_t textureIndex) const
+{
+    int32_t const imageIndex = this->doc->textures[textureIndex].source;
+    n_assert(imageIndex > -1);
+    return IO::Path::File(this->textureDir, TextureName(*this->doc, imageIndex), "tex").AsString();
 }
 
 } // namespace ToolkitUtil

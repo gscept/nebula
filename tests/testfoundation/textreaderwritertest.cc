@@ -23,7 +23,6 @@ void
 TextReaderWriterTest::Run()
 {
     // create necessary objects...
-    Ptr<IoServer> ioServer = IoServer::Create();
     Ptr<MemoryStream> stream = MemoryStream::Create();
     Ptr<TextReader> reader = TextReader::Create();
     Ptr<TextWriter> writer = TextWriter::Create();

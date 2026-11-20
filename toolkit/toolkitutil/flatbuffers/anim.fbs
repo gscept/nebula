@@ -52,6 +52,26 @@ table AnimClip
 	duration : uint;
 }
 
+// a part of a clip, cut into a clip of its own when the model asset is packaged, keeping the clip it's cut from.
+// The times are in milliseconds, the time base of the clip's key times
+table AnimClipSection
+{
+	name : string;
+	clip : string;		// the clip the section is cut from
+	start : uint;
+	end : uint;
+}
+
+// an event added to a clip, or to a clip cut from a section, when the model asset is packaged.
+// The time is in milliseconds from the start of the clip
+table AnimClipEvent
+{
+	clip : string;
+	name : string;
+	category : string;
+	time : uint;
+}
+
 root_type AnimResource;
 file_identifier "ANIM";
 file_extension "naani";

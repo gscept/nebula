@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  assetexporter.cc
 //  (C) 2015-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 
     if (this->packageMode & PackageModes::Assets && ext == "nasset")
     {
-        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+        Ptr<IO::Stream> stream = IO::CreateStream(file);
         stream->SetAccessMode(IO::Stream::ReadAccess);
         if (stream->Open())
         {
@@ -148,6 +148,7 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
                 if (needsPackaging(PackageModes::ForceAssets, dstFile))
                 {
                     packaged = true;
+                    ToolkitUtil::BuildClips(modelAsset.animation.get(), modelAsset.clip_sections, modelAsset.clip_events, this->logger);
                     ToolkitUtil::PackageAnimation(modelAsset.animation.get(), fileNameNoExt, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
                 }
             }
@@ -239,10 +240,8 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
 void
 AssetBatchProcessor::ProcessDir(const Util::String& dir)
 {
-    IoServer* ioServer = IoServer::Instance();
-
     // Scan depth first
-    Array<String> folders = ioServer->ListDirectories(dir, "*");
+    Array<String> folders = IO::ListDirectories(dir, "*");
     IndexT folderIndex;
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
@@ -255,7 +254,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
     ToolLog log(dir);
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
 
-    Array<String> files = ioServer->ListFiles(dir, "*");
+    Array<String> files = IO::ListFiles(dir, "*");
 
     Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles;
     for (const auto& file : files)
@@ -468,7 +467,7 @@ void
 AssetBatchProcessor::ProcessAll(const Util::String& source)
 {
     IndexT folderIndex;
-    Array<String> folders = IoServer::Instance()->ListDirectories(source, "*");
+    Array<String> folders = ListDirectories(source, "*");
     for (folderIndex = 0; folderIndex < folders.Size(); folderIndex++)
     {
         this->ProcessDir(source + folders[folderIndex]);
@@ -484,14 +483,14 @@ AssetBatchProcessor::ProcessList(const Util::Array<Util::String>& files)
     for (Array<String>::Iterator iter = files.Begin(); iter != files.End(); iter++)
     {
         const Util::String& str = *iter;
-        if (IO::IoServer::Instance()->FileExists(str))
+        if (IO::FileExists(str))
         {
             this->ProcessFile(str);
         }
-        else if (IO::IoServer::Instance()->DirectoryExists(str))
+        else if (IO::DirectoryExists(str))
         {
-            Array<String> filesInFolder = IoServer::Instance()->ListFiles(str, "*");
-            filesInFolder.AppendArray(IoServer::Instance()->ListDirectories(str, "*"));
+            Array<String> filesInFolder = ListFiles(str, "*");
+            filesInFolder.AppendArray(ListDirectories(str, "*"));
             for (auto& f : filesInFolder)
                 f = str + "/" + f;
             this->ProcessList(filesInFolder);

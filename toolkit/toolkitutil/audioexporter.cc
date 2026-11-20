@@ -61,11 +61,10 @@ AudioExporter::ExportXact()
     n_assert(this->toolPath.IsValid());
     n_assert(this->projectFile.IsValid());      
     n_assert(this->dstDir.IsValid());
-    IoServer* ioServer = IoServer::Instance();
 
     // resolve assigns in project file path
     String resolvedProjFilePath = AssignRegistry::Instance()->ResolveAssignsInString(this->projectFile);
-    if (!ioServer->FileExists(resolvedProjFilePath))
+    if (!IO::FileExists(resolvedProjFilePath))
     {
         n_printf("WARNING: XACT project file '%s' does not exist!\n", resolvedProjFilePath.AsCharPtr());
         return false;
@@ -73,7 +72,7 @@ AudioExporter::ExportXact()
     
     // resolve assigns in destination dir and make sure that path exists
     String resolvedDstPath = AssignRegistry::Instance()->ResolveAssignsInString(this->dstDir);
-    ioServer->CreateDirectory(this->dstDir);
+    IO::CreateDirectory(this->dstDir);
 
     // setup command line args and launch xactbld3.exe
     String args = "/L /X:HEADER /X:CUELIST /X:REPORT ";
@@ -119,8 +118,6 @@ AudioExporter::ExportWii()
     n_assert(this->srcDir.IsValid());
     n_assert(this->dstDir.IsValid());
 
-    IoServer* ioServer = IoServer::Instance();
-
     // find all SoundMaker projectfiles in the audio folder
     this->FindRspjFiles(this->srcDir);
     
@@ -148,9 +145,9 @@ AudioExporter::ExportWii()
         destFolder.SubstituteString("src:audio", "");
         destFolder.TerminateAtIndex(destFolder.FindStringIndex("/rspj"));
         destFolder = localDstPath + destFolder;
-        if (!ioServer->DirectoryExists(destFolder))
+        if (!IO::DirectoryExists(destFolder))
         {
-            ioServer->CreateDirectory(destFolder);
+            IO::CreateDirectory(destFolder);
         }
 
         // copy files from source folder to destination folder
@@ -166,10 +163,8 @@ AudioExporter::ExportWii()
 void
 AudioExporter::FindRspjFiles(String folder)
 {
-    IoServer* ioServer = IoServer::Instance();
-
     // look for rspj files
-    Array<String> rspjFiles = ioServer->ListFiles(folder, "*.rspj");
+    Array<String> rspjFiles = IO::ListFiles(folder, "*.rspj");
     IndexT i;
     for (i = 0; i < rspjFiles.Size(); i++)
     {
@@ -178,7 +173,7 @@ AudioExporter::FindRspjFiles(String folder)
     }
 
     // step through all subfolders
-    Array<String> subfolders = ioServer->ListDirectories(folder, "*");
+    Array<String> subfolders = IO::ListDirectories(folder, "*");
     for (i = 0; i < subfolders.Size(); i++)
     {
         if ((subfolders[i] != "CVS") && (subfolders[i] != ".svn"))
@@ -194,21 +189,19 @@ AudioExporter::FindRspjFiles(String folder)
 void
 AudioExporter::CopyDirectory(Util::String src, Util::String dst)
 {   
-    IoServer* ioServer = IoServer::Instance();
-
     // copy all files in the directory
-    Array<String> files = ioServer->ListFiles(src, "*");
+    Array<String> files = IO::ListFiles(src, "*");
     IndexT i;
     for (i = 0; i < files.Size(); i++)
     {
-        ioServer->CopyFile(src + "/" + files[i], dst + "/" + files[i]);
+        IO::CopyFile(src + "/" + files[i], dst + "/" + files[i]);
     }
 
     // copy all subdirectories
-    Array<String> directories = ioServer->ListDirectories(src, "*");
+    Array<String> directories = IO::ListDirectories(src, "*");
     for (i = 0; i < directories.Size(); i++)
     {
-        ioServer->CreateDirectory(dst + "/" + directories[i]);
+        IO::CreateDirectory(dst + "/" + directories[i]);
         this->CopyDirectory(src + "/" + directories[i], dst + "/" + directories[i]);
     }
 }
@@ -219,13 +212,12 @@ AudioExporter::CopyDirectory(Util::String src, Util::String dst)
 void
 AudioExporter::FmodFindProjectFiles(const Util::String &folder, Util::Array<Util::String> &projectFiles, const Util::String & pattern) const
 {
-    IoServer* ioServer = IoServer::Instance();
     projectFiles.Clear();
-    Array<String> directories = ioServer->ListDirectories(folder, "*");
+    Array<String> directories = IO::ListDirectories(folder, "*");
     for (IndexT j = 0; j < directories.Size(); j++)
     {
         // look for fmod project files in folder
-        Util::Array<Util::String> projs = ioServer->ListFiles(folder + "/" + directories[j], pattern);
+        Util::Array<Util::String> projs = IO::ListFiles(folder + "/" + directories[j], pattern);
         IndexT i;
         for (i = 0; i < projs.Size(); i++)
         {
@@ -245,14 +237,12 @@ AudioExporter::ExportFmod()
     n_assert(this->toolPath.IsValid());
     n_assert(this->srcDir.IsValid());
     n_assert(this->dstDir.IsValid());
-    IoServer* ioServer = IoServer::Instance();
-
 
     // 1. create audio export directory
     // resolve assigns in destination dir and make sure that path exists
     const String resolvedDstPath = AssignRegistry::Instance()->ResolveAssignsInString(this->dstDir);
     const String resolvedSrcPath = AssignRegistry::Instance()->ResolveAssignsInString(this->srcDir);
-    ioServer->CreateDirectory(this->dstDir);
+    IO::CreateDirectory(this->dstDir);
 
     // 2. collect all *.fspro files (fmod studio project file)
     Util::Array<Util::String> projects;
@@ -281,7 +271,7 @@ AudioExporter::ExportFmod()
     String args = baseArgs + "\"" + projects[0] + "\"";
 
     // since fmod studio has no useful way of using their commandline tool we have to do some magic here
-    Array<String> paths = ioServer->ListDirectories(this->toolPath, "FMOD Studio 1*");
+    Array<String> paths = IO::ListDirectories(this->toolPath, "FMOD Studio 1*");
     n_assert2(paths.Size() > 0, "No FMOD Studio application directory found");
 
     String executable = this->toolPath + "/" + paths[paths.Size() - 1] + "/fmodstudiocl.exe";
@@ -299,11 +289,11 @@ AudioExporter::ExportFmod()
     }
     
     // copy build files to output folder
-    Array<String> files = ioServer->ListFiles(projects[0].ExtractDirName() + "/Build/Desktop/","*.bank");
+    Array<String> files = IO::ListFiles(projects[0].ExtractDirName() + "/Build/Desktop/", "*.bank");
 
     for (int i = 0; i < files.Size(); i++)
     {
-        ioServer->CopyFile(projects[0].ExtractDirName() + "/Build/Desktop/" + files[i], resolvedDstPath + "/" + files[i]);
+        IO::CopyFile(projects[0].ExtractDirName() + "/Build/Desktop/" + files[i], resolvedDstPath + "/" + files[i]);
     }
 
     //////////////////////////////////////

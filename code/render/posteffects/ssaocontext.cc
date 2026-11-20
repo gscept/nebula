@@ -231,6 +231,12 @@ SSAOContext::Setup()
 void
 SSAOContext::UpdateViewDependentResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx)
 {
+    // The HBAO passes are in the default frame script, which the main view runs.
+    // Every view is updated before any is recorded, so another view, such as the editor preview,
+    // would leave its size and camera here for the main view's dispatches and constants.
+    if (view != Graphics::GraphicsServer::Instance()->GetView("mainview"))
+        return;
+
     // get camera settings
     using namespace Graphics;
     using namespace CoreGraphics;

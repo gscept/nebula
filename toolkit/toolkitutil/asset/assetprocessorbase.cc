@@ -178,18 +178,18 @@ AssetProcessorBase::CountExports(const Util::String& dir, const Util::String& ex
 	{
 		case All:
 		{
-			Array<String> dirs = IoServer::Instance()->ListDirectories(dir, "*");
+			Array<String> dirs = ListDirectories(dir, "*");
 			for (int catIndex = 0; catIndex < dirs.Size(); catIndex++)
 			{
 				String category = dir + "/" + dirs[catIndex];
-				Array<String> files = IoServer::Instance()->ListFiles(category, "*." + ext);
+				Array<String> files = ListFiles(category, "*." + ext);
 				count += files.Size();
 			}
 			break;
 		}
 		case Dir:
 		{
-			Array<String> files = IoServer::Instance()->ListFiles(dir, "*." + ext);
+			Array<String> files = ListFiles(dir, "*." + ext);
 			count += files.Size();
 			break;
 		}
@@ -211,15 +211,14 @@ AssetProcessorBase::NeedsConversion(const Util::String& src, const Util::String&
 		return true;
 	}
 
-	IoServer* ioServer = IoServer::Instance();
-	if (!ioServer->FileExists(src))
+    if (!IO::FileExists(src))
 	{
 		return false;
 	}
-	if (ioServer->FileExists(dst))
+    if (IO::FileExists(dst))
 	{
-		FileTime srcFileTime = ioServer->GetFileWriteTime(src);
-		FileTime dstFileTime = ioServer->GetFileWriteTime(dst);
+        FileTime srcFileTime = IO::GetFileWriteTime(src);
+        FileTime dstFileTime = IO::GetFileWriteTime(dst);
 		if (dstFileTime > srcFileTime)
 		{
 			return false;
@@ -236,8 +235,6 @@ AssetProcessorBase::NeedsConversion(const Util::String& src, const Util::String&
 void
 AssetProcessorBase::ValidateIntermediateFile(String const& filePath)
 {
-	IoServer* ioServer = IoServer::Instance();
-
 	// first check if the source file has been removed, if so, we read the intermediate file and remove all exported data.
 	constexpr char fileExt[] = ".export";
 	constexpr SizeT numCharsToStrip = (sizeof(fileExt) / sizeof(char)) - 1;
@@ -245,11 +242,11 @@ AssetProcessorBase::ValidateIntermediateFile(String const& filePath)
 	String sourceFilePath = filePath.ExtractRange(0, filePath.Length() - numCharsToStrip);
 	sourceFilePath.SubstituteString("intermediate:", "src:");
 
-	if (!ioServer->FileExists(sourceFilePath))
+	if (!IO::FileExists(sourceFilePath))
 	{
 		IO::URI const file = filePath;
 		Ptr<JsonReader> reader = JsonReader::Create();
-		reader->SetStream(ioServer->CreateStream(file));
+        reader->SetStream(IO::CreateStream(file));
 		if (reader->Open())
 		{
 			reader->SetToFirstChild("exported_files");
@@ -261,17 +258,17 @@ AssetProcessorBase::ValidateIntermediateFile(String const& filePath)
 				{
 					URI uri = exportedFile;
 					// Hopefully avoids stupid mistakes
-					if (uri.IsEmpty() || !uri.IsValid() || exportedFile == "/" || !ioServer->FileExists(uri))
+                    if (uri.IsEmpty() || !uri.IsValid() || exportedFile == "/" || !IO::FileExists(uri))
 						continue;
 
-					ioServer->DeleteFile(uri);
+					IO::DeleteFile(uri);
 				}
 			}
 			reader->SetToParent();
 		}
 		reader->Close();
 		// delete the intermediate file
-		ioServer->DeleteFile(file);
+        IO::DeleteFile(file);
 	}
 }
 
@@ -283,15 +280,14 @@ void
 AssetProcessorBase::RecurseValidateIntermediates(String const& dir)
 {
 	
-	IoServer* ioServer = IoServer::Instance();
-	Util::Array<String> files = ioServer->ListFiles(dir, "*.export");
+    Util::Array<String> files = IO::ListFiles(dir, "*.export");
 
 	for (IndexT i = 0; i < files.Size(); i++)
 	{
 		this->ValidateIntermediateFile(dir + files[i]);
 	}
 
-	Util::Array<String> directories = ioServer->ListDirectories(dir, "*");
+	Util::Array<String> directories = IO::ListDirectories(dir, "*");
 	for (IndexT i = 0; i < directories.Size(); i++)
 	{
 		this->RecurseValidateIntermediates(dir + directories[i] + "/");
@@ -309,13 +305,12 @@ AssetProcessorBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array
 	Util::String intermediateFile = sourceFile.LocalPath();
 	intermediateFile.SubstituteString(assetPath.LocalPath(), "intermediate:");
 	intermediateFile.Append(".export");
-	Ptr<IoServer> ioServer = IoServer::Instance();
 	IO::URI intermediateDir = intermediateFile.ExtractDirName();
-	if (!ioServer->DirectoryExists(intermediateDir))
+    if (!IO::DirectoryExists(intermediateDir))
 	{
-		ioServer->CreateDirectory(intermediateDir);
+        IO::CreateDirectory(intermediateDir);
 	}
-	writer->SetStream(ioServer->CreateStream(intermediateFile));
+    writer->SetStream(IO::CreateStream(intermediateFile));
 	if (writer->Open())
 	{
 		writer->BeginArray("exported_files");

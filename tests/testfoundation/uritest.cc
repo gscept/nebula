@@ -21,9 +21,6 @@ using namespace IO;
 void
 URITest::Run()
 {
-    // we need a file server
-    Ptr<IoServer> ioServer = IoServer::Create();
-
     // build some URIs
     URI remoteFileUri("file://gambar/temp/bla.txt");
     URI localFileUri("file:///temp/blub.txt");

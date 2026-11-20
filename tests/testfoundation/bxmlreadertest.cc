@@ -22,8 +22,8 @@ using namespace Math;
 void
 BXmlReaderTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
-    Ptr<Stream> stream = ioServer->CreateStream("home:work/testdata/modelloadsavetest.bxml");
+    IO::StartupFilesystem({});
+    Ptr<Stream> stream = IO::CreateStream("home:work/testdata/modelloadsavetest.bxml");
     Ptr<BXmlReader> reader = BXmlReader::Create();
     reader->SetStream(stream);
     

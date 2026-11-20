@@ -32,7 +32,7 @@ Util::Dictionary<FileType, const char*> FileTypeURNMapping =
     { FileType::Text, "" },
     { FileType::Frame, "" },
     { FileType::Shader, "" },
-    { FileType::Physics, "actor" },
+    { FileType::Physics, "phys" },
     { FileType::NavMesh, "navmesh" },
     { FileType::Other, "" }
 };
@@ -153,7 +153,6 @@ FileDB::Open(Logger& logger, bool memoryOnly)
     this->database = DbFactory::Instance()->CreateDatabase();
     
     // Determine access mode
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     Db::Database::AccessMode accessMode = Db::Database::ReadWriteCreate;
     
     this->database->SetURI(this->databaseURI);

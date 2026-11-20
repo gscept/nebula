@@ -886,7 +886,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Image>>(Util::Array<Gltf::Image>& items
                 {
                     item.embedded = false;
                     Util::String fullPath = this->stream->GetURI().AsString().ExtractDirName() + item.uri;
-                    if (IO::IoServer::Instance()->FileExists(fullPath))
+                    if (IO::FileExists(fullPath))
                     {
                         item.data.SetFromFile(fullPath);
                     }
@@ -1078,7 +1078,7 @@ Gltf::Buffer::Load(Util::String const& folder)
 bool
 Document::Deserialize(const IO::URI& uri)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(uri);
+    Ptr<IO::Stream> stream = IO::CreateStream(uri);
     bool const binary = uri.GetTail().GetFileExtension() == "glb";
     return this->Deserialize(stream, binary);
 }

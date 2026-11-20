@@ -258,13 +258,17 @@ ResourceLoader::Update(IndexT frameIndex)
     for (IndexT i = 0; i < this->pendingLoads.Size(); i++)
     {
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
-        resourceLoad.inflight = true;
         Resource::State state = this->states[resourceLoad.entry];
 
-        // Skip loads of resources already done
-        n_assert(state == Resource::Pending);
-        if (state == Resource::Loaded || state == Resource::Failed)
+        // A queued load can be overtaken, by an immediate load or by being unloaded, before it gets here.
+        // Its callbacks have run already, and loading an unloaded resource would load into a freed slot, so skip it
+        if (state != Resource::Pending)
+        {
+            static const char* StateNames[] = { "pending", "loaded", "reloaded", "failed", "unloaded" };
+            n_log_warn(Resource Loader, "Skipping the queued load of '%s', it's %s already\n", this->names[resourceLoad.entry].Value(), StateNames[state]);
             continue;
+        }
+        resourceLoad.inflight = true;
 
         LoadState loadState = this->loadStates[resourceLoad.entry];
         ResourceLoadJob job = ResourceLoadJob::FromPending(this, frameIndex, resourceLoad);
@@ -382,7 +386,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     if (AllBits(job.flags, LoadFlags::Create))
     {
         // construct stream
-        Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
+        Ptr<Stream> stream = IO::CreateStream(job.name.AsCharPtr());
         stream->SetAccessMode(Stream::ReadAccess);
         if (stream->Open())
         {
@@ -731,7 +735,7 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
     {        
         if (this->states[id.loaderInstanceId] == Resource::Loaded)
         {
-            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            n_assert(this->usage[id.loaderInstanceId] > 0);
             this->usage[id.loaderInstanceId]--;
             if (this->usage[id.loaderInstanceId] == 0)
             {
@@ -770,7 +774,7 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
         if (this->tags[i] == tag)
         {
             Resources::ResourceId id = this->resources[this->ids[this->names[i]]];
-            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            n_assert(this->usage[id.loaderInstanceId] > 0);
             this->usage[id.loaderInstanceId]--;
             if (this->usage[id.loaderInstanceId] == 0)
             {
@@ -825,6 +829,16 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
     {
         // get id of resource
         Resources::ResourceId ret = this->ids.ValueAtIndex(i);
+
+        // Reinitializing frees the stream data of the previous load, which a pending load is still using,
+        // and a failed resource shares the loader's fail resource, so only reload what has actually been loaded.
+        // A pending load reads the file when it runs, so it picks up the new contents anyway
+        const Resource::State state = this->states[ret.loaderInstanceId];
+        if (state != Resource::Loaded && state != Resource::Reloaded)
+        {
+            n_log(Resources, "Skipping reload of '%s', it's not loaded (state %d)\n", res.AsString().AsCharPtr(), (int)state);
+            return;
+        }
 
         _PendingResourceLoad pending;
         pending.entry = ret.loaderInstanceId;

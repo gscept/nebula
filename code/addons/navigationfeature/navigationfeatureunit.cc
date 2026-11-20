@@ -92,7 +92,7 @@ void RenderUI(Graphics::GraphicsEntityId camera)
 {
     ImGui::Separator();
     static bool showNavmesh = false;
-    if (ImGui::Checkbox("Render Navmeshes", &showNavmesh))
+    if (ImGui::Checkbox("Render Navmeshes", &showNavmesh) && Navigation::navMeshCache != nullptr)
     {
         Util::Array<Navigation::NavMeshId> meshes = Navigation::navMeshCache->GetLoadedMeshes();
         for (Navigation::NavMeshId id : meshes)

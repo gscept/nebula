@@ -44,9 +44,9 @@ __ImplementSingleton(Graphics::GraphicsServer);
 */
 GraphicsServer::GraphicsServer()
     : resizeCall(nullptr)
-    , isOpen(false)
-    , maxWindowHeight(0)
     , maxWindowWidth(0)
+    , maxWindowHeight(0)
+    , isOpen(false)
 
 {
     __ConstructSingleton;
@@ -159,6 +159,8 @@ GraphicsServer::Open()
         IO::Path::AddExportMapping("tex", "dds");
         IO::Path::AddExportMapping("mat", "mat");
         IO::Path::AddExportMapping("par", "par");
+        IO::Path::AddExportMapping("ske", "nsk");
+        IO::Path::AddExportMapping("ani", "nax");
     #else
         #error "Platform unsupported"
     #endif

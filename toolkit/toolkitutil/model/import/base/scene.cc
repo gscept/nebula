@@ -63,10 +63,24 @@ Scene::OptimizeGraphics(
         {
             if (node.mesh.material != "physics")
             {
-                if (MeshBuilderVertex::GetVertexLayoutType(this->meshes[node.mesh.meshIndex].GetComponents()) == CoreGraphics::VertexLayoutType::Invalid)
+                MeshBuilder& mesh = this->meshes[node.mesh.meshIndex];
+                if (MeshBuilderVertex::GetVertexLayoutType(mesh.GetComponents()) == CoreGraphics::VertexLayoutType::Invalid)
                 {
-                    logger->Warning("Mesh node '%s' has unknown vertex layout, reverting to Normal\n", node.base.name.AsCharPtr());
-                    this->meshes[node.mesh.meshIndex].SetComponents(MeshBuilderVertex::Components::Position | MeshBuilderVertex::Components::Uvs | MeshBuilderVertex::Components::Normals | MeshBuilderVertex::Components::Tangents);
+                    MeshBuilderVertex::ComponentMask components = MeshBuilderVertex::Components::Position | MeshBuilderVertex::Components::Uvs | MeshBuilderVertex::Components::Normals | MeshBuilderVertex::Components::Tangents;
+                    const MeshBuilderVertex::ComponentMask skinComponents = MeshBuilderVertex::Components::SkinWeights | MeshBuilderVertex::Components::SkinIndices;
+
+                    // There is no layout combining skinning with vertex colors or secondary UVs (both are imported by default).
+                    // Keep the skin, the node is still written as a skin and the skinned shaders need the weights and joint indices
+                    if (AllBits(mesh.GetComponents(), skinComponents))
+                    {
+                        logger->Warning("Mesh node '%s' is skinned, skinned meshes don't support vertex colors or secondary UVs, dropping them\n", node.base.name.AsCharPtr());
+                        components |= skinComponents;
+                    }
+                    else
+                    {
+                        logger->Warning("Mesh node '%s' has unknown vertex layout, reverting to Normal\n", node.base.name.AsCharPtr());
+                    }
+                    mesh.SetComponents(components);
                 }
                 nodesByComponents.Emplace(this->meshes[node.mesh.meshIndex].GetComponents()).Append(&node);
             }
@@ -141,106 +155,112 @@ Scene::OptimizeGraphics(
         outMeshes.Append(builder);
     }
 
-    // Go through and split primitive groups if they are skins.
-    // This is because each joint index in the ubyte4 compressed data can only
-    // access 255 individual joints
-    for (IndexT i = 0; i < outMeshNodes.Size(); i++)
+    // Split the primitive group of each skin into fragments of at most 256 joints, the joint indices are stored as ubyte4.
+    // The palette of a fragment is uploaded packed, holding only its joints, so the vertices index into it rather than into the skeleton.
+    // The vertices of a node aren't shared with other nodes, merging copies them
+    for (SceneNode* node : outMeshNodes)
     {
-        SceneNode* node = outMeshNodes[i];
-        Util::Array<MeshBuilderGroup> groups;
+        if (!node->base.isSkin)
+            continue;
 
-        if (node->base.isSkin)
+        MeshBuilder* mesh = outMeshes[node->mesh.meshIndex];
+        Util::Array<MeshBuilderGroup> groups = mesh->GetPrimitiveGroups();
+        const MeshBuilderGroup nodeGroup = groups[node->mesh.groupId];
+        const IndexT firstTriangle = nodeGroup.GetFirstTriangleIndex();
+        const IndexT endTriangle = firstTriangle + nodeGroup.GetNumTriangles();
+
+        node->skin.skinFragments.Clear();
+        node->skin.jointLookup.Clear();
+
+        // The first fragment keeps the node's group, further ones get groups of their own covering the rest of its triangles
+        Util::Set<IndexT> joints;
+        IndexT fragmentStart = firstTriangle;
+        auto closeFragment = [&](IndexT fragmentEnd)
         {
-            MeshBuilder* mesh = outMeshes[node->mesh.meshIndex];
-            IndexT groupId = 0;
-
-            Util::Set<IndexT> joints;
-            SizeT baseTriangle = 0;
-            SizeT numTriangles = 0;
-            IndexT currentGroup = node->mesh.groupId;
-            MeshBuilderGroup& group = mesh->GetPrimitiveGroups()[currentGroup];
-            for (IndexT j = 0; j < mesh->GetNumTriangles(); j++)
+            IndexT groupIndex = node->mesh.groupId;
+            if (!node->skin.skinFragments.IsEmpty())
             {
-                const MeshBuilderTriangle& tri = mesh->TriangleAt(j);
-                const MeshBuilderVertex& vtx0 = mesh->VertexAt(tri.GetVertexIndex(0));
-                const MeshBuilderVertex& vtx1 = mesh->VertexAt(tri.GetVertexIndex(1));
-                const MeshBuilderVertex& vtx2 = mesh->VertexAt(tri.GetVertexIndex(2));
-                
-                // Create set of unique joint
-                Util::Set<IndexT> uniqueJoints;
+                groupIndex = groups.Size();
+                groups.Append(nodeGroup);
+            }
+            groups[groupIndex].SetFirstTriangleIndex(fragmentStart);
+            groups[groupIndex].SetNumTriangles(fragmentEnd - fragmentStart);
+            node->skin.skinFragments.Append(groupIndex);
+            node->skin.jointLookup.Append(joints);
+        };
+
+        for (IndexT j = firstTriangle; j < endTriangle; j++)
+        {
+            const MeshBuilderTriangle& tri = mesh->TriangleAt(j);
+            Util::Set<IndexT> newJoints;
+            for (IndexT v = 0; v < 3; v++)
+            {
+                const MeshBuilderVertex& vtx = mesh->VertexAt(tri.GetVertexIndex(v));
                 for (IndexT k = 0; k < 4; k++)
                 {
-                    if (joints.FindIndex(vtx0.attributes.skin.indices.v[k]) == InvalidIndex)
-                        uniqueJoints.Add(vtx0.attributes.skin.indices.v[k]);
-                    if (joints.FindIndex(vtx1.attributes.skin.indices.v[k]) == InvalidIndex)
-                        uniqueJoints.Add(vtx1.attributes.skin.indices.v[k]);
-                    if (joints.FindIndex(vtx2.attributes.skin.indices.v[k]) == InvalidIndex)
-                        uniqueJoints.Add(vtx2.attributes.skin.indices.v[k]);
+                    if (!joints.Contains(vtx.attributes.skin.indices.v[k]))
+                        newJoints.Add(vtx.attributes.skin.indices.v[k]);
                 }
-                numTriangles++;
-
-                // If we passed 256 joints, create a new fragment and reset the joints list
-                if (joints.Size() + uniqueJoints.Size() >= 256)
-                {
-                    // Create new group and joint lookup whenever we hit the max allowed
-                    currentGroup = groupId++;
-                    node->skin.skinFragments.Append(currentGroup);
-                    node->skin.jointLookup.Append(joints);
-
-                    group.SetFirstTriangleIndex(baseTriangle);
-                    group.SetNumTriangles(numTriangles);
-                    groups.Append(group);
-
-                    // The joints pushing us over the boundary is saved for the next iteration
-                    baseTriangle = numTriangles;
-                    numTriangles = 0;
-                    joints = uniqueJoints;
-                }
-                else
-                {
-                    // If we are still within 256, simply add joints
-                    for (IndexT k = 0; k < uniqueJoints.Size(); k++)
-                        joints.Add(uniqueJoints.KeyAtIndex(k));
-                }                
             }
 
-            // Change the group the mesh node pointed to initially
-            node->skin.skinFragments.Append(node->mesh.groupId);
-            node->skin.jointLookup.Append(joints);
-            group.SetFirstTriangleIndex(baseTriangle);
-            group.SetNumTriangles(numTriangles); 
-
-            // Fixup joint indices, by moving the range of joints per fragment to 0-255
-            int jointOffset = 0;
-            for (IndexT i = 0; i < node->skin.skinFragments.Size(); i++)
+            // The triangle starts a new fragment if its joints don't fit
+            if (joints.Size() + newJoints.Size() > 256)
             {
-                // The first joint is going to be the lowest value in our range
-                const Util::Set<IndexT>& lookup = node->skin.jointLookup[i];
-                const MeshBuilderGroup& group = mesh->GetPrimitiveGroups()[node->skin.skinFragments[i]];
-                for (IndexT i = 0; i < group.GetNumTriangles(); i++)
-                {
-                    const MeshBuilderTriangle& tri = mesh->TriangleAt(group.GetFirstTriangleIndex() + i);
-                    MeshBuilderVertex& vtx0 = mesh->VertexAt(tri.GetVertexIndex(0));
-                    MeshBuilderVertex& vtx1 = mesh->VertexAt(tri.GetVertexIndex(1));
-                    MeshBuilderVertex& vtx2 = mesh->VertexAt(tri.GetVertexIndex(2));
+                closeFragment(j);
+                fragmentStart = j;
+                joints.Clear();
+            }
+            for (IndexT k = 0; k < newJoints.Size(); k++)
+                joints.Add(newJoints.KeyAtIndex(k));
+        }
+        closeFragment(endTriangle);
+        mesh->SetPrimitiveGroups(groups);
 
-                    // Using the joint lookup table, remap the vertex joint indices
+        // Remap the joint indices into the palette of the vertex's fragment. A vertex used by triangles of two fragments
+        // can only index one palette, so the later fragment gets a copy of it
+        Util::Array<IndexT> vertexFragment;
+        vertexFragment.Fill(0, mesh->GetNumVertices(), InvalidIndex);
+        for (IndexT fragment = 0; fragment < node->skin.skinFragments.Size(); fragment++)
+        {
+            const Util::Set<IndexT>& lookup = node->skin.jointLookup[fragment];
+            const MeshBuilderGroup& group = groups[node->skin.skinFragments[fragment]];
+            for (IndexT j = 0; j < group.GetNumTriangles(); j++)
+            {
+                MeshBuilderTriangle& tri = mesh->TriangleAt(group.GetFirstTriangleIndex() + j);
+                for (IndexT v = 0; v < 3; v++)
+                {
+                    IndexT vertexIndex = tri.GetVertexIndex(v);
+                    if (vertexFragment[vertexIndex] == fragment)
+                        continue;
+                    if (vertexFragment[vertexIndex] != InvalidIndex)
+                    {
+                        // copied before adding, adding may move the vertices
+                        const MeshBuilderVertex copy = mesh->VertexAt(vertexIndex);
+                        vertexIndex = mesh->GetNumVertices();
+                        mesh->AddVertex(copy);
+                        vertexFragment.Append(InvalidIndex);
+                        tri.SetVertexIndex(v, vertexIndex);
+                    }
+                    vertexFragment[vertexIndex] = fragment;
+
+                    MeshBuilderVertex& vtx = mesh->VertexAt(vertexIndex);
                     for (IndexT k = 0; k < 4; k++)
                     {
-                        IndexT idx0, idx1, idx2;
-                        idx0 = lookup.FindIndex(vtx0.attributes.skin.indices.v[k]);
-                        n_assert(idx0 != InvalidIndex);
-                        vtx0.attributes.skin.remapIndices.v[k] = idx0;
-
-                        idx1 = lookup.FindIndex(vtx1.attributes.skin.indices.v[k]);
-                        n_assert(idx1 != InvalidIndex);
-                        vtx1.attributes.skin.remapIndices.v[k] = idx1;
-
-                        idx2 = lookup.FindIndex(vtx2.attributes.skin.indices.v[k]);
-                        n_assert(idx2 != InvalidIndex);
-                        vtx2.attributes.skin.remapIndices.v[k] = idx2;
+                        const IndexT index = lookup.FindIndex(vtx.attributes.skin.indices.v[k]);
+                        n_assert(index != InvalidIndex);
+                        vtx.attributes.skin.remapIndices.v[k] = index;
                     }
                 }
+            }
+        }
+
+        // The lookups above use the skeleton indices, so they're only replaced once all are remapped
+        for (IndexT vertexIndex = 0; vertexIndex < vertexFragment.Size(); vertexIndex++)
+        {
+            if (vertexFragment[vertexIndex] != InvalidIndex)
+            {
+                MeshBuilderVertex& vtx = mesh->VertexAt(vertexIndex);
+                vtx.attributes.skin.indices = vtx.attributes.skin.remapIndices;
             }
         }
     }

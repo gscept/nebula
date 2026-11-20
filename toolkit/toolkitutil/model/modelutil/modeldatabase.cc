@@ -78,7 +78,7 @@ void
 ModelDatabase::LoadAttributes(const Util::String & folder)
 {
     
-    Array<String> files = IoServer::Instance()->ListFiles(folder, "*.attributes");
+    Array<String> files = ListFiles(folder, "*.attributes");
     for (IndexT fileIndex = 0; fileIndex < files.Size(); fileIndex++)
     {
 
@@ -100,12 +100,12 @@ ModelDatabase::LoadAttributes(const Util::String & folder)
         // set the name of the attribute
         attrs->SetName(modelName);
         // create stream
-        Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+        Ptr<Stream> file = CreateStream(path);
         attrs->Load(file);
 
         this->modelAttributes.Add(modelName, attrs);
     }
-    Array<String> cfiles = IoServer::Instance()->ListFiles(folder, "*.constants");
+    Array<String> cfiles = ListFiles(folder, "*.constants");
     for (IndexT fileIndex = 0; fileIndex < cfiles.Size(); fileIndex++)
     {
 
@@ -126,7 +126,7 @@ ModelDatabase::LoadAttributes(const Util::String & folder)
         // set the name of the attribute
         attrs->SetName(modelName);
         // create stream
-        Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+        Ptr<Stream> file = CreateStream(path);
         attrs->Load(file);
 
         this->modelConstants.Add(modelName, attrs);
@@ -155,7 +155,7 @@ ModelDatabase::LookupAttributes(const Util::String& name, bool reload)
             path.Format("src:assets/%s.attributes", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             attrs->Load(file);
         }
 
@@ -180,7 +180,7 @@ ModelDatabase::LookupAttributes(const Util::String& name, bool reload)
             path.Format("src:assets/%s.attributes", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             attrs->Load(file);
         }
 
@@ -203,7 +203,7 @@ ModelDatabase::AttributesExist(const Util::String& name)
     file.Format("src:assets/%s.attributes", name.AsCharPtr());
 
     // basically check if the file system has the attribute requested
-    if (IoServer::Instance()->FileExists(file))
+    if (FileExists(file))
     {
         return true;
     }
@@ -244,7 +244,7 @@ ModelDatabase::LookupPhysics(const Util::String& name, bool reload)
             path.Format("src:assets/%s.physics", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             phys->Load(file);
         }
 
@@ -269,7 +269,7 @@ ModelDatabase::LookupPhysics(const Util::String& name, bool reload)
             path.Format("src:assets/%s.physics", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             phys->Load(file);
         }
 
@@ -292,7 +292,7 @@ ModelDatabase::PhysicsExist(const Util::String& name)
     file.Format("src:assets/%s.physics", name.AsCharPtr());
 
     // basically check if the file system has the attribute requested
-    if (IoServer::Instance()->FileExists(file))
+    if (FileExists(file))
     {
         return true;
     }
@@ -333,7 +333,7 @@ ModelDatabase::LookupConstants(const Util::String& name, bool reload)
             path.Format("src:assets/%s.constants", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             constants->Load(file);
         }
 
@@ -358,7 +358,7 @@ ModelDatabase::LookupConstants(const Util::String& name, bool reload)
             path.Format("src:assets/%s.constants", name.AsCharPtr());
 
             // create stream
-            Ptr<Stream> file = IoServer::Instance()->CreateStream(path);
+            Ptr<Stream> file = CreateStream(path);
             constants->Load(file);
         }
 
@@ -381,7 +381,7 @@ ModelDatabase::ConstantsExist(const Util::String& name)
     file.Format("src:assets/%s.constants", name.AsCharPtr());
 
     // basically check if the file system has the attribute requested
-    if (IoServer::Instance()->FileExists(file))
+    if (FileExists(file))
     {
         return true;
     }

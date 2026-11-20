@@ -8,34 +8,20 @@
 namespace Presentation
 {
 
-static int selectedRenderMode = 0;
-static Materials::MaterialId SolidMaterial = Materials::InvalidMaterialId, WireframeMaterial = Materials::InvalidMaterialId;
+static Materials::MaterialId SolidMaterial = Materials::InvalidMaterialId;
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
+void
+MeshInfo(const CoreGraphics::MeshResourceId resource)
 {
-    static const char* renderModes[] = { "Fill", "Wireframe" };
-    static int newMode = 0;
-    ImGui::Combo("Render Mode", &newMode, renderModes, IM_ARRAYSIZE(renderModes));
-    if (selectedRenderMode != newMode)
-    {
-        Materials::MaterialId mat;
-        if (newMode == 0)
-            mat = SolidMaterial;
-        else
-            mat = WireframeMaterial;
-        Models::ModelContext::ChangeMaterial(item->previewObject, mat);
-        selectedRenderMode = newMode;
-    }
-    SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
+    SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(resource);
     for (IndexT i = 0; i < numMeshes; i++)
     {
         if (ImGui::CollapsingHeader(Util::Format("Mesh %d", i).AsCharPtr(), ImGuiTreeNodeFlags_DefaultOpen))
         {
-            CoreGraphics::MeshId mesh = CoreGraphics::MeshResourceGetMesh(item->asset.mesh, i);
+            CoreGraphics::MeshId mesh = CoreGraphics::MeshResourceGetMesh(resource, i);
             CoreGraphics::MeshIdLock _0(mesh);
 
             CoreGraphics::VertexLayoutId vlo = CoreGraphics::MeshGetVertexLayout(mesh);
@@ -62,7 +48,16 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
         }
     }
-    assetEditor->viewport.Render();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
+{
+    MeshInfo(item->asset.mesh);
+    assetEditor->viewport.RenderInChildWindow();
 }
 
 //------------------------------------------------------------------------------
@@ -74,7 +69,6 @@ MeshSetup(AssetEditorItem* item)
     if (SolidMaterial == Materials::InvalidMaterialId)
     {
         SolidMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewFill.entry, "EditorPreviewMeshFill");
-        WireframeMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__EditorPreviewWireframe.entry, "EditorPreviewMeshWireframe");
     }
     Models::ModelContext::RegisterEntity(item->previewObject);
     Models::ModelContext::Setup(

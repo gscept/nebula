@@ -65,7 +65,6 @@ protected:
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
     Ptr<Resources::ResourceServer> resourceServer;
-    Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
 

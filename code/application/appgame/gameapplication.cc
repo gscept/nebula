@@ -100,10 +100,10 @@ GameApplication::Open()
         this->gameContentServer->Setup();
 
         // setup io subsystem
-        this->ioServer = IoServer::Create();
-        this->ioServer->MountStandardArchives();
+        IO::StartupFilesystem({});
+        IO::MountStandardArchives();
 #ifdef HAS_EMBEDDED_EXPORT
-        this->ioServer->MountEmbeddedArchive("embed:///export");
+        IO::MountEmbeddedArchive("embed:///export");
 #endif
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
@@ -214,7 +214,7 @@ GameApplication::Close()
 
     this->ioInterface->Close();
     this->ioInterface = nullptr;
-    this->ioServer = nullptr;
+    IO::ShutdownFilesystem();
 
     this->coreServer->Close();
     this->coreServer = nullptr;

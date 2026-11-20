@@ -65,9 +65,9 @@
 //                     pixels, clamped to [-30, 30]. DofSetup writes it, DofGather reads it.
 //    BokehOutput      rgba16f, half resolution.
 //                     rgb = bokeh color at full blend. a = foreground coverage in [0, 1].
-//                     DofGather writes it. finalize.gpul samples it with LinearSampler
-//                     in ColorSource UV space, (pixel + 0.5) / ColorSize. The half-res
-//                     grid is ColorSize >> 1.
+//                     DofGather writes texels [0, Viewport.zw >> 1) and no others.
+//                     DofComposite samples it with LinearSampler at (pixel + 0.5) / 2
+//                     half-res pixels, clamped half a texel inside the written texels.
 //    DirtMask         Aperture intensity. r multiplies a sample that is many times
 //                     the camera-adapted luminance. Dim samples stay at 1, so the
 //                     blur keeps the untextured average. The disk maps onto the
@@ -625,7 +625,12 @@ csComposite() void
 
     const color = textureLoad(ColorTarget, pixel).xyz;
     const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], pixel, 0).r;
-    const uv = (f32x2(pixel) + f32x2(0.5f)) / f32x2(DofUniforms.ColorSize.xy);
+    // DofGather writes BokehOutput texels [0, written) only. The texels past them are never
+    // written and can hold NaN, and the linear sample of the last row and column reaches them.
+    // Keep the sample position half a texel inside the written texels.
+    const written = max(min(i32x2(u32x2(end) >> u32x2(1u)), DofUniforms.HalfSize.xy), i32x2(1));
+    const halfPos = clamp((f32x2(pixel) + f32x2(0.5f)) * 0.5f, f32x2(0.5f), f32x2(written) - f32x2(0.5f));
+    const uv = halfPos / f32x2(DofUniforms.HalfSize.xy);
     const bokeh = textureSampleLod(BokehInput, LinearSampler, uv, 0);
     var coc = 0.0f;
     if (depth != 1.0f)

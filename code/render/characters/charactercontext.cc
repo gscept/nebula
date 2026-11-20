@@ -14,6 +14,8 @@
 #include "models/nodes/characterskinnode.h"
 #include "profiling/profiling.h"
 #include "resources/resourceserver.h"
+#include "io/ioserver.h"
+#include "coreanimation/animationloader.h"
 
 using namespace Graphics;
 using namespace Resources;
@@ -54,6 +56,35 @@ CharacterContext::Create()
     __bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
+
+#if WITH_NEBULA_EDITOR
+    // a reloaded animation has animations of its own, the characters playing it fetch them again. Its clips may
+    // not be the ones played anymore, so the tracks are stopped
+    CoreAnimation::AnimationLoader* loader = Resources::ResourceServer::Instance()->GetStreamLoader<CoreAnimation::AnimationLoader>();
+    loader->AddReloadListener([](Resources::ResourceId id)
+    {
+        const Util::Array<Resources::ResourceId>& resources = characterContextAllocator.GetArray<AnimationResource>();
+        for (IndexT i = 0; i < resources.Size(); i++)
+        {
+            if (resources[i].loaderInstanceId != id.loaderInstanceId || resources[i].loaderIndex != id.loaderIndex)
+                continue;
+
+            const CoreAnimation::AnimationId animation = CoreAnimation::AnimationResourceGetAnimation(id, characterContextAllocator.Get<AnimationIndex>(i));
+            characterContextAllocator.Set<Animation>(i, animation);
+            CoreAnimation::AnimSampleBuffer& sampleBuffer = characterContextAllocator.Get<SampleBuffer>(i);
+            if (sampleBuffer.IsValid())
+                sampleBuffer.Discard();
+            sampleBuffer.Setup(animation);
+
+            AnimationTracks& tracks = characterContextAllocator.Get<TrackController>(i);
+            for (IndexT track = 0; track < MaxNumTracks; track++)
+            {
+                tracks.pendingAnimations[track].Clear();
+                tracks.playingAnimations[track].clip = -1;
+            }
+        }
+    });
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -123,10 +154,13 @@ CharacterContext::Setup(
         }, nullptr, true);
 
     characterContextAllocator.Get<Animation>(cid.id) = CoreAnimation::InvalidAnimationId;
+    characterContextAllocator.Set<AnimationResource>(cid.id, Resources::InvalidResourceId);
     Resources::CreateResource(animationResource, tag, [cid, animationIndex, supportBlending](Resources::ResourceId rid)
         {
             auto animation = CoreAnimation::AnimationResourceGetAnimation(rid, animationIndex);
             characterContextAllocator.Set<Animation>(cid.id, animation);
+            characterContextAllocator.Set<AnimationResource>(cid.id, rid);
+            characterContextAllocator.Set<AnimationIndex>(cid.id, animationIndex);
             characterContextAllocator.Get<Loaded>(cid.id) |= AnimationLoaded;
 
             // setup sample buffer when animation is done loading
@@ -145,8 +179,39 @@ CharacterContext::Setup(
 
 //------------------------------------------------------------------------------
 /**
+    The packager writes a model's skeleton and animation under the model's name, so a skinned model that's
+    placed without naming them (like a model asset dropped in the editor) still gets skinned. Without a character
+    the skinned shaders read a joint palette that's never uploaded
 */
-IndexT 
+bool
+CharacterContext::SetupFromModel(const Graphics::GraphicsEntityId id, const IO::Path& model, const Util::StringAtom& tag)
+{
+    const Models::NodeInstanceRange& nodeRange = Models::ModelContext::GetModelRenderableRange(id);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+    bool skinned = false;
+    for (SizeT i = nodeRange.begin; i < nodeRange.end && !skinned; i++)
+        skinned = renderables.nodeTypes[i] == Models::CharacterSkinNodeType;
+    if (!skinned)
+        return false;
+
+    const IO::URI skeleton = IO::Path::File(model.GetFolder(), model.GetFile(), "ske").ExportURI();
+    const IO::URI animation = IO::Path::File(model.GetFolder(), model.GetFile(), "ani").ExportURI();
+    if (!IO::FileExists(skeleton) || !IO::FileExists(animation))
+    {
+        n_warning("Skinned model '%s' has no skeleton or animation, it isn't animated\n", model.AsString().AsCharPtr());
+        return false;
+    }
+
+    CharacterContext::RegisterEntity(id);
+    CharacterContext::Setup(id, skeleton.AsString(), 0, animation.AsString(), 0, tag);
+    CharacterContext::PlayClip(id, nullptr, 0, 0, EnqueueMode::Replace);
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
 CharacterContext::GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
 {
     const ContextEntityId cid = GetContextId(id);
@@ -192,8 +257,10 @@ CharacterContext::PlayClip(
     runtime.baseTime = 0;
     runtime.duration = 0;
     runtime.evalTime = runtime.prevEvalTime = 0;
-    runtime.sampleTime = runtime.prevSampleTime = 0;
+    // before the start, so the events at the start of the clip fire on its first update
+    runtime.sampleTime = runtime.prevSampleTime = -1;
     runtime.paused = false;
+    runtime.started = false;
     runtime.duration = Timing::Tick(clip.duration * loopCount * (1 / timeFactor));
 
     // append to pending animations
@@ -346,6 +413,121 @@ CharacterContext::QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArr
 //------------------------------------------------------------------------------
 /**
 */
+const SkeletonId
+CharacterContext::GetSkeleton(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<Skeleton>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreAnimation::AnimationId
+CharacterContext::GetAnimation(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<Animation>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The scaled palette holds the joints in model space, the skinning palette has the inverse bind pose applied
+*/
+const Util::FixedArray<Math::mat4>&
+CharacterContext::GetJointTransforms(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<JointPaletteScaled>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexT
+CharacterContext::GetPlayingClip(const Graphics::GraphicsEntityId id, const IndexT track)
+{
+    n_assert(track < MaxNumTracks);
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track].clip;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+CharacterContext::IsTrackPaused(const Graphics::GraphicsEntityId id, const IndexT track)
+{
+    n_assert(track < MaxNumTracks);
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track].paused;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The time is taken from the time since the clip started as of the last update, or the last seek, so a seek shows
+    right away
+*/
+Timing::Time
+CharacterContext::GetTrackTime(const Graphics::GraphicsEntityId id, const IndexT track)
+{
+    n_assert(track < MaxNumTracks);
+    const ContextEntityId cid = GetContextId(id);
+    const AnimationRuntime& playing = characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track];
+    const CoreAnimation::AnimationId anim = characterContextAllocator.Get<Animation>(cid.id);
+    if (playing.clip == -1 || anim == CoreAnimation::InvalidAnimationId)
+        return 0.0;
+
+    const Timing::Tick duration = CoreAnimation::AnimGetClip(anim, playing.clip).duration;
+    if (duration <= 0)
+        return 0.0;
+    Timing::Tick time = Timing::Tick(Math::max(playing.prevEvalTime, 0) * playing.timeFactor) + playing.timeOffset;
+    time %= duration;
+    if (time < 0)
+        time += duration;
+    return Timing::TicksToSeconds(time);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The clip's start is moved, the next update gets the time since the clip started from it. That keeps the time a
+    clip that isn't looped stops at in step with the time it's moved to
+*/
+void
+CharacterContext::SeekTrack(const Graphics::GraphicsEntityId id, const IndexT track, const Timing::Time time)
+{
+    n_assert(track < MaxNumTracks);
+    const ContextEntityId cid = GetContextId(id);
+    AnimationRuntime& playing = characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track];
+    if (playing.clip == -1)
+        return;
+
+    const Timing::Tick clipTime = Timing::SecondsToTicks(time) - playing.timeOffset;
+    const Timing::Tick evalTime = playing.timeFactor > 0.0f ? Timing::Tick(clipTime / playing.timeFactor) : clipTime;
+
+    // a clip that hasn't started yet gets its start from this when it does
+    if (playing.started)
+        playing.baseTime += playing.prevEvalTime - evalTime;
+    playing.prevEvalTime = evalTime;
+    playing.evalTime = evalTime;
+
+    // the next update fires the events from here on
+    playing.sampleTime = Timing::Tick(Math::max(evalTime, 0) * playing.timeFactor) + playing.timeOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CharacterContext::FiredEvent>&
+CharacterContext::GetFiredEvents(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return characterContextAllocator.Get<FiredEvents>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const bool
 IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time)
 {
@@ -374,6 +556,30 @@ GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime)
     return (runtime.baseTime + runtime.startTime + runtime.duration) - runtime.fadeOutTime;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Add the events of a clip that are passed going from one sample time to a later one, the start isn't included.
+    The times go on past the clip's duration when it loops, an event is added once however often it's passed
+*/
+static void
+CollectFiredEvents(const CoreAnimation::AnimationId anim, const IndexT clipIndex, const IndexT track, const Timing::Tick from, const Timing::Tick to, Util::Array<CharacterContext::FiredEvent>& outEvents)
+{
+    const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, clipIndex);
+    if (clip.numEvents == 0 || clip.duration <= 0 || to <= from)
+        return;
+    const Util::FixedArray<CoreAnimation::AnimEvent>& events = CoreAnimation::AnimGetEvents(anim);
+    for (IndexT i = 0; i < clip.numEvents; i++)
+    {
+        const CoreAnimation::AnimEvent& event = events[clip.firstEvent + i];
+
+        // the first time the event is at after the start
+        const Timing::Tick loop = (Timing::Tick)Math::floor(double(from - event.time) / double(clip.duration)) + 1;
+        const Timing::Tick time = loop * clip.duration + event.time;
+        if (time <= to)
+            outEvents.Append({ event, clipIndex, track });
+    }
+}
+
 struct CharacterJobContext
 {
     const Util::Array<Timing::Time>* times;
@@ -390,6 +596,7 @@ struct CharacterJobContext
     Math::mat4** tmpJoints;
     
     const Util::Array<Graphics::GraphicsEntityId>* entities;
+    Util::Array<Util::Array<CharacterContext::FiredEvent>>* firedEvents;
     CoreAnimation::AnimSampleMixInfo* animMixInfos;
     float frameTime;
     Timing::Tick time;
@@ -416,6 +623,7 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         Timing::Time& currentTime = context->times->Get(index);
         currentTime += context->frameTime;
         CharacterContext::AnimationTracks& trackController = context->tracks->Get(index);
+        Util::Array<CharacterContext::FiredEvent>& firedEvents = (*context->firedEvents)[index];
         const AnimationId anim = context->anims->Get(index);
         if (anim == InvalidAnimationId)
             continue;
@@ -452,7 +660,8 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                 if (playing.clip == -1)
                 {
                     // no clip is playing, this acts as replace automatically
-                    pending.baseTime = context->time;
+                    pending.baseTime = context->ticks;
+                    pending.started = true;
                     startedNew = true;
                     playing = pending;
                 }
@@ -460,13 +669,15 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                 {
                     if (pending.enqueueMode == Characters::Replace)
                     {
-                        pending.baseTime = GetAbsoluteStopTime(playing);
+                        // an infinite clip has no stop time, the replacing clip starts right away
+                        pending.baseTime = IsInfinite(playing) ? context->ticks : GetAbsoluteStopTime(playing);
+                        pending.started = true;
                         startedNew = true;
                         playing = pending;
                     }
                     else if (pending.enqueueMode == Characters::IgnoreIfSame)
                     {
-                        if (pending.clip == playing.clip && !IsExpired(playing, currentTime))
+                        if (pending.clip == playing.clip && !IsExpired(playing, context->ticks))
                         {
                             // erase clip, because we are already playing it
                             trackController.pendingAnimations[j].EraseIndex(k);
@@ -476,7 +687,8 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                         else
                         {
                             // otherwise, act like replace
-                            pending.baseTime = GetAbsoluteStopTime(playing);
+                            pending.baseTime = IsInfinite(playing) ? context->ticks : GetAbsoluteStopTime(playing);
+                            pending.started = true;
                             startedNew = true;
                             playing = pending;
                         }
@@ -499,9 +711,14 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                 }
             }
 
-            // if expired, invalidate job
-            if (IsExpired(playing, currentTime))
+            // if expired, invalidate job, the runtimes keep their times in ticks
+            if (playing.clip != -1 && playing.started && IsExpired(playing, context->ticks))
+            {
+                // the clip ends between updates, the events up to its end fire
+                const Timing::Tick end = Timing::Tick(playing.duration * playing.timeFactor) + playing.timeOffset;
+                CollectFiredEvents(anim, playing.clip, j, playing.sampleTime, end, firedEvents);
                 trackController.playingAnimations[j].clip = -1;
+            }
 
             // if current playing job on this track is invalid, copy a pending job over
             if (playing.clip == -1)
@@ -516,22 +733,28 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             // this might change from the previous condition, so test it again
             if (playing.clip != -1)
             {
-                // update times
-                playing.evalTime = context->ticks - (playing.baseTime + playing.startTime);
-                playing.prevEvalTime = playing.evalTime;
-                playing.sampleTime = playing.startTime + context->ticks;
-                playing.prevSampleTime = playing.sampleTime;
-
-                // if not paused, update sample time
-                if (!playing.paused)
+                // a clip put on the track directly, by replacing the playing one or after one expired, starts now
+                if (!playing.started)
                 {
-                    int timeDivider = Math::frnd(1 / playing.timeFactor);
-                    Timing::Tick frameTicks = playing.evalTime - playing.prevEvalTime;
-                    Timing::Tick timeDiff = frameTicks / timeDivider;
-                    playing.sampleTime = playing.prevSampleTime + timeDiff;
-                    playing.prevSampleTime = playing.sampleTime;
-                    playing.sampleTime += playing.timeOffset;
+                    // 0 unless the clip was moved to a time before it started
+                    playing.baseTime = context->ticks - playing.startTime - playing.prevEvalTime;
+                    playing.started = true;
                 }
+
+                // the time since the clip started
+                playing.evalTime = context->ticks - (playing.baseTime + playing.startTime);
+                if (playing.paused)
+                {
+                    // hold the pose, the clip starts later by the time it's paused, which delays its expiry as well
+                    playing.baseTime += playing.evalTime - playing.prevEvalTime;
+                    playing.evalTime = playing.prevEvalTime;
+                }
+                playing.prevEvalTime = playing.evalTime;
+                playing.prevSampleTime = playing.sampleTime;
+                playing.sampleTime = Timing::Tick(Math::max(playing.evalTime, 0) * playing.timeFactor) + playing.timeOffset;
+
+                // the events passed since the last update, none while it's paused
+                CollectFiredEvents(anim, playing.clip, j, playing.prevSampleTime, playing.sampleTime, firedEvents);
 
                 // Need to compute the sample weight and pointers to "before" and "after" keys
                 const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, playing.clip);
@@ -547,7 +770,9 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
                 const AnimKeyBuffer::Interval* srcTimePtr = buffer->GetIntervalBufferPointer();
 
                 const Util::FixedArray<AnimCurve>& curves = CoreAnimation::AnimGetCurves(anim);
-                Timing::Tick evalTime = playing.sampleTime % clip.duration;
+                Timing::Tick evalTime = clip.duration > 0 ? playing.sampleTime % clip.duration : 0;
+                if (evalTime < 0)
+                    evalTime += clip.duration;
 
                 if (firstAnimTrack
                     || playing.blend != 1.0f)
@@ -612,9 +837,9 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             static const size_t ROTATION_OFFSET = 3;
             static const size_t SCALE_OFFSET = 7;
 
-            translate.load(samplesPtr + TRANSLATION_OFFSET);
-            rotate.load(samplesPtr + ROTATION_OFFSET);
-            scale.load(samplesPtr + SCALE_OFFSET);
+            translate.loadu(samplesPtr + TRANSLATION_OFFSET);
+            rotate.loadu(samplesPtr + ROTATION_OFFSET);
+            scale.loadu(samplesPtr + SCALE_OFFSET);
 
             samplesPtr += sampleWidth;
 
@@ -670,7 +895,18 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         n_assert(animationCounter.counter == 0);
         animationCounter = 1;
 
+        // the events the last update's jobs collected are the ones reported until the next update finishes,
+        // so they aren't read while the jobs add to them
+        Util::Array<Util::Array<FiredEvent>>& firedEvents = characterContextAllocator.GetArray<FiredEvents>();
+        Util::Array<Util::Array<FiredEvent>>& pendingFiredEvents = characterContextAllocator.GetArray<PendingFiredEvents>();
+        for (IndexT i = 0; i < firedEvents.Size(); i++)
+        {
+            firedEvents[i] = pendingFiredEvents[i];
+            pendingFiredEvents[i].Clear();
+        }
+
         CharacterJobContext charCtx;
+        charCtx.firedEvents = &pendingFiredEvents;
         charCtx.times = &times;
         charCtx.tracks = &tracks;
         charCtx.anims = &anims;
@@ -718,8 +954,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         // Run job to update constants
         Jobs2::JobDispatch(
             [
-                characterNodeIndices = characterSkinNodeIndices.ConstBegin()
-                , entities = models.ConstBegin()
+                entities = models.ConstBegin()
                 , jointPalettes = jointPalettes.ConstBegin()
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
@@ -739,27 +974,34 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
                 const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[index];
-                IndexT node = range.begin + characterNodeIndices[index];
-                n_assert(renderables.nodeTypes[node] == Models::NodeType::CharacterSkinNodeType);
-                Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
-                const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-                Util::FixedArray<Math::mat4, true> usedMatrices(usedIndices.Size());
 
-                // update joints, which is stored in character context
-                if (!jointPalette.IsEmpty())
+                // every skin fragment is a node of its own, each gets the joints of its palette packed
+                for (IndexT node = range.begin; node < range.end; node++)
                 {
-                    // copy active matrix palette, or set identity
-                    IndexT j;
-                    for (j = 0; j < usedIndices.Size(); j++)
-                    {
-                        const IndexT lookup = usedIndices[j];
-                        usedMatrices[j] = jointPalette[lookup];
-                    }
-                }
+                    if (renderables.nodeTypes[node] != Models::NodeType::CharacterSkinNodeType)
+                        continue;
+                    Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
+                    if (sparent->skinFragments.IsEmpty())
+                        continue;
+                    const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+                    Util::FixedArray<Math::mat4, true> usedMatrices(usedIndices.Size());
 
-                // Update skinning palette
-                uint64_t offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size(), CoreGraphics::QueueType::GraphicsQueueType);
-                renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
+                    // update joints, which is stored in character context
+                    if (!jointPalette.IsEmpty())
+                    {
+                        // copy active matrix palette, or set identity
+                        IndexT j;
+                        for (j = 0; j < usedIndices.Size(); j++)
+                        {
+                            const IndexT lookup = usedIndices[j];
+                            usedMatrices[j] = jointPalette[lookup];
+                        }
+                    }
+
+                    // Update skinning palette
+                    uint64_t offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size(), CoreGraphics::QueueType::GraphicsQueueType);
+                    renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
+                }
             }
 
         }, characterSkinNodeIndices.Size(), 64, { &animationCounter }, &ConstantUpdateCounter, &CharacterContext::totalCompletionEvent);
@@ -823,12 +1065,12 @@ CharacterContext::OnRenderDebug(uint32_t flags)
         {
             Math::mat4 joint = transform * jointsPalette[j];
             Math::mat4 mat;
-            mat.row0 = normalize3(joint.row0);
-            mat.row1 = normalize3(joint.row1);
-            mat.row2 = normalize3(joint.row2);
-            mat.row3 = normalize3(joint.row3);
-            mat.row3.w = 1.0f;
-            mat.position = joint.position;
+            mat.row0() = normalize3(joint.row0());
+            mat.row1() = normalize3(joint.row1());
+            mat.row2() = normalize3(joint.row2());
+            mat.row3() = normalize3(joint.row3());
+            mat.row3().w = 1.0f;
+            mat.position() = joint.position();
             mat = mat * scale;
             CoreGraphics::RenderShape shape;
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::AlwaysOnTop), Math::vec4(1, 0, 0, 0.5f), mat);

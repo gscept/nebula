@@ -71,7 +71,7 @@ GltfFileImporter::NeedsConversion(const Util::String& path)
     Util::String folder = path.ExtractDirName();
     bool needsConversion = false;
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    reader->SetStream(IO::CreateStream(path));
     if (reader->Open())
     {
         for (const char* key : { "buffers", "images" })
@@ -135,9 +135,11 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
         this->outputFiles.AppendArray(outputs);
     }
 
+    // textures are saved under the names the material extractor gives them in the materials' URNs
     auto textureSave = [this](ToolkitUtil::TextureResourceT& tex, const Gltf::Image& image, const Gltf::Document& scene, const Util::String& outputDir, int32_t imageIndex)
     {
         tex.container = (image.type == Gltf::Image::Type::Jpg) ? ToolkitUtil::TextureContainer_JPG : ToolkitUtil::TextureContainer_PNG;
+        Util::String outputFile = Util::String::Sprintf("%s/%s.natex", outputDir.AsCharPtr(), GltfFileMaterialExtractor::TextureName(scene, imageIndex).AsCharPtr());
         if (image.embedded)
         {
             if (image.data.IsValid())
@@ -150,47 +152,43 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
                 const Util::Blob& data = scene.buffers[view.buffer].data;
                 tex.data = std::vector<uint8_t>((uint8_t*)data.GetPtr() + view.byteOffset, (uint8_t*)data.GetPtr() + view.byteOffset + view.byteLength);
             }
-            Util::String outputFile = Util::String::Sprintf("%s/%d.natex", outputDir.AsCharPtr(), imageIndex);
-            Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(outputFile);
-            stream->SetAccessMode(IO::Stream::WriteAccess);
-            if (stream->Open())
-            {
-                Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::TextureResource>(tex);
-                stream->Write(data.GetPtr(), data.Size());
-                stream->Close();
-
-                this->logger->Print("%s\n", Format("Generated texture: %s", Text(IO::URI(outputFile).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-            }
         }
         else
         {
-            Util::String fileName = image.uri;
-            Util::String oneFolderUp = this->sourceDir.ExtractToLastSlash();
-            Util::String fullFileName = Util::String::Sprintf("%s%s", oneFolderUp.AsCharPtr(), fileName.AsCharPtr());
-
-            // Source is not embedded, so load source data
-            Ptr<IO::Stream> fileSource = IO::IoServer::Instance()->CreateStream(fullFileName);
-            fileSource->SetAccessMode(IO::Stream::ReadAccess);
-            if (fileSource->Open())
+            // an external image that has been imported already, by an earlier model import or as a texture of its own,
+            // keeps the settings it was imported with. Reimporting the model doesn't change the image, so this holds
+            // for forced imports as well
+            if (IO::FileExists(outputFile))
             {
-                IO::Stream::Size size = fileSource->GetSize();
-                void* data = fileSource->Map();
-
-                tex.data = std::vector<uint8_t>((uint8_t*)data, (uint8_t*)data + size);
-
-                // Save asset file
-                Util::String outputFile = Util::String::Sprintf("%s/%d.natex", outputDir.AsCharPtr(), imageIndex);
-                Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(outputFile);
-                stream->SetAccessMode(IO::Stream::WriteAccess);
-                if (stream->Open())
-                {
-                    Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::TextureResource>(tex);
-                    stream->Write(data.GetPtr(), data.Size());
-                    stream->Close();
-
-                    this->logger->Print("%s\n", Format("Generated texture: %s", Text(IO::URI(outputFile).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
-                }
+                return;
             }
+
+            // external images are resolved relative to the gltf file
+            Util::String fullFileName = Util::String::Sprintf("%s/%s", this->path.LocalPath().ExtractDirName().AsCharPtr(), image.uri.AsCharPtr());
+            Ptr<IO::Stream> fileSource = IO::CreateStream(fullFileName);
+            fileSource->SetAccessMode(IO::Stream::ReadAccess);
+            if (!fileSource->Open())
+            {
+                this->logger->Warning("Failed to read texture %s\n", fullFileName.AsCharPtr());
+                return;
+            }
+            IO::Stream::Size size = fileSource->GetSize();
+            void* data = fileSource->Map();
+            tex.data = std::vector<uint8_t>((uint8_t*)data, (uint8_t*)data + size);
+            fileSource->Unmap();
+            fileSource->Close();
+        }
+
+        // Save asset file
+        Ptr<IO::Stream> stream = IO::CreateStream(outputFile);
+        stream->SetAccessMode(IO::Stream::WriteAccess);
+        if (stream->Open())
+        {
+            Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::TextureResource>(tex);
+            stream->Write(data.GetPtr(), data.Size());
+            stream->Close();
+
+            this->logger->Print("%s\n", Format("Generated texture: %s", Text(IO::URI(outputFile).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         }
     };
 
@@ -233,6 +231,16 @@ GltfFileImporter::ParseScene(ToolkitUtil::ImportFlags importFlags, float scale)
             tex.color_space = ToolkitUtil::TextureColorSpace_sRGB;
 
             int32_t imageIndex = gltfScene.textures[material.emissiveTexture.index].source;
+            textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
+        }
+        if (material.occlusionTexture.index != -1)
+        {
+            // glTF usually packs occlusion with metallic and roughness, so it's saved the same way
+            ToolkitUtil::TextureResourceT tex;
+            tex.target_format = ToolkitUtil::TexturePixelFormat_BC7;
+            tex.color_space = ToolkitUtil::TextureColorSpace_Linear;
+
+            int32_t imageIndex = gltfScene.textures[material.occlusionTexture.index].source;
             textureSave(tex, gltfScene.images[imageIndex], gltfScene, this->sourceDir, imageIndex);
         }
     }

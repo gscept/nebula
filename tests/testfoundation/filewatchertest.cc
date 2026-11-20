@@ -26,12 +26,11 @@ using namespace Util;
 void
 FileWatcherTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
+    IO::StartupFilesystem({});
     AssignRegistry* assignRegistry = AssignRegistry::Instance();
-    
-
-    ioServer->CreateDirectory("temp");
-    ioServer->CreateDirectory("temp2");
+  
+    IO::CreateDirectory("temp");
+    IO::CreateDirectory("temp2");
         
     int fileAdded = 0;
     int fileModified = 0;
@@ -61,7 +60,7 @@ FileWatcherTest::Run()
         }
     });
     Core::SysFunc::Sleep(0.2);
-    Ptr<Stream> stream = ioServer->Instance()->CreateStream("temp/test.txt");
+    Ptr<Stream> stream = IO::CreateStream("temp/test.txt");
     Ptr<TextWriter> writer = TextWriter::Create();
     writer->SetStream(stream);
     writer->Open();
@@ -69,20 +68,16 @@ FileWatcherTest::Run()
     writer->Close();        
     stream = nullptr;
     
-    stream = ioServer->Instance()->CreateStream("temp/test.txt");    
+    stream = IO::CreateStream("temp/test.txt");    
     writer->SetStream(stream);
     writer->Open();
     writer->WriteLine("Testline2");
     writer->Close();    
     stream = nullptr;
 
-    ioServer->Instance()->CopyFile("temp/test.txt", "temp2/test.txt");
-   
-    ioServer->Instance()->DeleteFile("temp/test.txt");  
-
-    
-    ioServer->Instance()->DeleteFile("temp2/test.txt");
-    
+    IO::CopyFile("temp/test.txt", "temp2/test.txt");
+    IO::DeleteFile("temp/test.txt");  
+    IO::DeleteFile("temp2/test.txt");
     
     // loop for a while to give thread time to trigger events
     for (int i = 0; i < 100; i++)
@@ -93,8 +88,8 @@ FileWatcherTest::Run()
 
     watcher->Unwatch("temp2");
     watcher->Unwatch("temp");
-    ioServer->Instance()->DeleteDirectory("temp");       
-    ioServer->Instance()->DeleteDirectory("temp2");
+    IO::DeleteDirectory("temp");       
+    IO::DeleteDirectory("temp2");
     
     // with low priority we only get a modify per file sometimes (which is fine for normal use)
     //VERIFY(fileAdded == 2);

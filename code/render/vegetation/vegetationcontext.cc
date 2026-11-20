@@ -910,8 +910,8 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(ViewGetCamera(view));
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(ViewGetCamera(view)));
     VegetationGenerateUniforms::STRUCT uniforms;
-    cameraTransform.position.store(uniforms.CameraPosition);
-    cameraTransform.z_axis.store(uniforms.CameraForward);
+    cameraTransform.position().store(uniforms.CameraPosition);
+    cameraTransform.z_axis().store(uniforms.CameraForward);
     uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(vegetationState.heightMap);
     uniforms.WorldSize[0] = vegetationState.worldSize.x;
     uniforms.WorldSize[1] = vegetationState.worldSize.y;
@@ -919,7 +919,7 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     uniforms.InvWorldSize[1] = 1.0f / vegetationState.worldSize.y;
     uniforms.GenerateQuadSize[0] = VegetationDistributionRadius;
     uniforms.GenerateQuadSize[1] = VegetationDistributionRadius;
-    Math::vec4 forwardxz = cameraTransform.z_axis;
+    Math::vec4 forwardxz = cameraTransform.z_axis();
     forwardxz.y = 0.0f;
     forwardxz = normalize(forwardxz);
     uniforms.GenerateDirection[0] = forwardxz.x;

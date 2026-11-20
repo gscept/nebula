@@ -69,10 +69,8 @@ Sqlite3Database::Open()
     n_assert(!this->uri.IsEmpty());
     if (Database::Open())
     {
-        IoServer* ioServer = IoServer::Instance();
-
         // check if database file exists'
-        if (!ioServer->FileExists(this->uri))
+        if (!IO::FileExists(this->uri))
         {
             // if we are in read only mode, fail
             if ((ReadOnly == this->accessMode) || (ReadWriteExisting == this->accessMode))
@@ -85,7 +83,7 @@ Sqlite3Database::Open()
             else
             {
                 // if database is created, make sure directory path is valid
-                bool dirSuccess = ioServer->CreateDirectory(this->uri.AsString().ExtractDirName());
+                bool dirSuccess = IO::CreateDirectory(this->uri.AsString().ExtractDirName());
                 if (!dirSuccess)
                 {
                     String err;
@@ -162,7 +160,9 @@ Sqlite3Database::Open()
 
         // compile begin and end transaction commands
         this->beginTransactionCmd = DbFactory::Instance()->CreateCommand();
-        this->beginTransactionCmd->Compile(this, "BEGIN DEFERRED");
+        // IMMEDIATE takes the write lock up front. With DEFERRED two connections that read and then write inside a
+        // transaction deadlock (each waits for the other to release its lock), and Execute() retries SQLITE_BUSY forever.
+        this->beginTransactionCmd->Compile(this, "BEGIN IMMEDIATE");
         this->endTransactionCmd = DbFactory::Instance()->CreateCommand();
         this->endTransactionCmd->Compile(this, "COMMIT");
         
@@ -237,7 +237,7 @@ Sqlite3Database::BeginTransaction()
     n_assert(!this->inTransaction);
     if (!this->beginTransactionCmd->IsValid())
     {
-        this->beginTransactionCmd->Compile(this, "BEGIN");
+        this->beginTransactionCmd->Compile(this, "BEGIN IMMEDIATE");
     }
     bool beginTransactionExecuted = this->beginTransactionCmd->Execute();
     n_assert(beginTransactionExecuted);
@@ -363,7 +363,7 @@ Sqlite3Database::AttachDatabase(const URI& uri, const String& dbName)
     n_assert(dbName.IsValid());
 
     // first check if the file actually exists
-    if (IoServer::Instance()->FileExists(uri))
+    if (FileExists(uri))
     {
         // SQLite wants a native path in UTF-8 format
         String nativePath = this->uri.GetTail();

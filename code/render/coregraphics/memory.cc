@@ -81,12 +81,15 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
     }
     if (deleteBlock)
     {
+        // A dedicated block is exactly as big as its allocation, not blockSize
+        const DeviceSize freedSize = alloc.nodeIndex == DedicatedBlockNodeIndex ? alloc.size : this->blockSize;
         this->DestroyBlock(this->blocks[alloc.blockIndex]);
         this->blockPool.Dealloc(alloc.blockIndex);
         this->blocks[alloc.blockIndex] = DeviceMemory(0);
         this->blockMappedPointers[alloc.blockIndex] = nullptr;
-        this->heap->space += this->blockSize;
-        this->size -= this->blockSize;  
+        this->heap->space += freedSize;
+        n_assert(this->size >= freedSize);
+        this->size -= freedSize;
     }
 
     return true;
@@ -103,9 +106,10 @@ MemoryPool::Clear()
         {
             this->DestroyBlock(this->blocks[i]);
             this->heap->space += this->blockSize;
-            this->size -= this->blockSize;
         }
 
+    // Dedicated blocks aren't blockSize big, so don't subtract per block
+    this->size = 0;
     this->blocks.Clear();
     this->allocators.Clear();
 }
@@ -125,7 +129,10 @@ MemoryPool::GetMappedMemory(const Alloc& alloc)
 Alloc
 MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
 {
-     // store old block size and reset it after block allocation
+    n_assert(this->size + size <= this->maxSize);
+    this->size += size;
+
+    // store old block size and reset it after block allocation
     uint oldSize = this->blockSize;
     this->blockSize = size;
 

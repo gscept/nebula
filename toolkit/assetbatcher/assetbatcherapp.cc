@@ -85,8 +85,7 @@ AssetBatcherApp::Open()
 void
 AssetBatcherApp::OnBeforeRunLocal()
 {
-    IO::IoServer* ioServer = IO::IoServer::Instance();
-    ioServer->CreateDirectory("phys:");
+    IO::CreateDirectory("phys:");
     const String flatBufferRoot = "tool:syswork/data/flatbuffer/";
     auto printname = [](const String& name, const String& folder)
     {
@@ -99,7 +98,7 @@ AssetBatcherApp::OnBeforeRunLocal()
         target.ChangeFileExtension("bfbs");
         Flat::FlatbufferInterface::CompileSchema(source, target);
     };
-    ioServer->IterateFolders("tool:syswork/data/flatbuffer/", "*.fbs", printname);
+    IO::IterateFolders("tool:syswork/data/flatbuffer/", "*.fbs", printname);
     IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
     CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/physicsmaterials.json","phys:");
@@ -249,14 +248,14 @@ AssetBatcherApp::DoWork()
     // which case all assets have to be rebuilt. The stamp is kept per project,
     // so a batcher run in one project cannot invalidate another project's
     // assets.
-    IO::FileTime cmdBinModifiedTime = IO::IoServer::Instance()->GetFileWriteTime(this->args.GetCmdName());
+    IO::FileTime cmdBinModifiedTime = IO::GetFileWriteTime(this->args.GetCmdName());
     IO::URI intermediateDir = IO::AssignRegistry::Instance()->ResolveAssigns(IO::URI("intermediate:"));
     IO::URI stampFile = IO::URI(Util::String::AppendPath(intermediateDir.LocalPath(), "assetbatcher.stamp"));
 
     bool stampChanged = true;
-    if (IO::IoServer::Instance()->FileExists(stampFile))
+    if (IO::FileExists(stampFile))
     {
-        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(stampFile);
+        Ptr<IO::Stream> stream = IO::CreateStream(stampFile);
         if (stream.isvalid())
         {
             Ptr<IO::TextReader> reader = IO::TextReader::Create();
@@ -270,11 +269,11 @@ AssetBatcherApp::DoWork()
 
     if (stampChanged)
     {
-        if (!IO::IoServer::Instance()->DirectoryExists(intermediateDir))
+        if (!IO::DirectoryExists(intermediateDir))
         {
-            IO::IoServer::Instance()->CreateDirectory(intermediateDir);
+            IO::CreateDirectory(intermediateDir);
         }
-        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(stampFile);
+        Ptr<IO::Stream> stream = IO::CreateStream(stampFile);
         if (stream.isvalid())
         {
             Ptr<IO::TextWriter> writer = IO::TextWriter::Create();
@@ -316,7 +315,7 @@ AssetBatcherApp::DoWork()
             {
                 if (importMode != AssetBatchProcessor::ImportModes::None)
                 {
-                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    int files = IO::ListDirectories("src:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files* PRECISION);
                     exporter->ProcessAll("src:");
@@ -324,7 +323,7 @@ AssetBatcherApp::DoWork()
                 }
                 if (packageMode != AssetBatchProcessor::PackageModes::None)
                 {
-                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
+                    int files = IO::ListDirectories("work:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files * PRECISION);
                     exporter->ProcessAll("work:");
@@ -336,7 +335,7 @@ AssetBatcherApp::DoWork()
             {
                 if (importMode != AssetBatchProcessor::ImportModes::None)
                 {
-                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    int files = IO::ListDirectories("src:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files* PRECISION);
                     exporter->ProcessDir("src:" + dir);
@@ -344,7 +343,7 @@ AssetBatcherApp::DoWork()
                 }
                 if (packageMode != AssetBatchProcessor::PackageModes::None)
                 {
-                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
+                    int files = IO::ListDirectories("work:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files * PRECISION);
                     exporter->ProcessDir("work:" + dir);
@@ -360,7 +359,7 @@ AssetBatcherApp::DoWork()
                 Util::String relativePath = dir.StripSubstring(basePath.LocalPath());
                 exporter->SetFolder(relativePath);
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                if (!IO::IoServer::Instance()->FileExists("work:" + relativePath + "/" + file))
+                if (!IO::FileExists("work:" + relativePath + "/" + file))
                 {
                     this->logger.Error("File '%s' not found in work folder '%s'\n", file.AsCharPtr(), relativePath.AsCharPtr());
                     break;
@@ -461,7 +460,7 @@ AssetBatcherApp::CreateFileList()
         URI listUri(this->listfileArg);
 
         // open stream and reader
-        Ptr<Stream> readStream = IoServer::Instance()->CreateStream(listUri);
+        Ptr<Stream> readStream = CreateStream(listUri);
         readStream->SetAccessMode(Stream::ReadAccess);
         Ptr<TextReader> reader = TextReader::Create();
         reader->SetStream(readStream);
@@ -483,13 +482,13 @@ AssetBatcherApp::CreateFileList()
     else
     {
         String workDir = "proj:work/assets";
-        Array<String> directories = IoServer::Instance()->ListDirectories(workDir, "*");
+        Array<String> directories = ListDirectories(workDir, "*");
         for (int directoryIndex = 0; directoryIndex < directories.Size(); directoryIndex++)
         {
             String category = workDir + "/" + directories[directoryIndex];
             
-            Array<String> filesInFolder = IoServer::Instance()->ListFiles(category, "*");
-            filesInFolder.AppendArray(IoServer::Instance()->ListDirectories(category, "*"));
+            Array<String> filesInFolder = ListFiles(category, "*");
+            filesInFolder.AppendArray(ListDirectories(category, "*"));
             for (auto& f : filesInFolder)
             {
                 f = category + "/" + f;

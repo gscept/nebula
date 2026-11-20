@@ -24,16 +24,16 @@ using namespace Util;
 void
 DatasetTest::Run()
 {
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();    
+    IO::StartupFilesystem({});
     //ioServer->RegisterUriScheme("file", IO::FileStream::RTTI);
     Ptr<Db::DbFactory> dbFactory = Db::Sqlite3Factory::Create();
     const URI uri("temp:nebula-db-test/datasettest.db3");
 
     // first make sure we start from a fresh database
-    if (ioServer->FileExists(uri))
+    if (IO::FileExists(uri))
     {
-        ioServer->DeleteFile(uri);
-        n_assert(!ioServer->FileExists(uri));
+        IO::DeleteFile(uri);
+        n_assert(!IO::FileExists(uri));
     }
 
     // create and populate a database

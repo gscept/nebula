@@ -115,6 +115,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -153,6 +158,11 @@
         "desc": "Standard material for skinned GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",
@@ -193,6 +203,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -231,6 +246,11 @@
         "desc": "Standard material for doublesided skinned GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",
@@ -271,6 +291,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -309,6 +334,11 @@
         "desc": "Standard material for skinned, alpha-masked GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",
@@ -349,6 +379,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -387,6 +422,11 @@
         "desc": "Standard material for skinned, alpha-masked, double-sided GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",
@@ -427,6 +467,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -445,6 +490,11 @@
         "desc": "Standard material for skinned, alpha-blended GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",
@@ -465,6 +515,11 @@
         "group": "Standard",
         "passes": [
           {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Static"
+          },
+          {
             "batch": "Picking",
             "shader": "system_shaders/picking",
             "variation": "Static"
@@ -483,6 +538,11 @@
         "desc": "Standard material for skinned, alpha-blended, double-sided GLTF models",
         "group": "Standard",
         "passes": [
+          {
+            "batch": "Wireframe",
+            "shader": "system_shaders/editor/editor_wireframe",
+            "variation": "Skinned"
+          },
           {
             "batch": "Picking",
             "shader": "system_shaders/picking",

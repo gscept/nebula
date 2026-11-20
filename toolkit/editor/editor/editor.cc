@@ -87,7 +87,7 @@ Create()
     ToolkitUtil::ProjectInfo::Result res = projectInfo.Setup();
     n_assert(res == ToolkitUtil::ProjectInfo::Success);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("int", projectInfo.GetAttr("IntermediateDir")));
-    IO::IoServer::Instance()->CreateDirectory("int:");
+    IO::CreateDirectory("int:");
 
     // Setup URN
     IO::Path::SetWorkRoot("proj:work");
@@ -219,7 +219,7 @@ bool
 LoadLevel(const Util::String& path, bool instantiate)
 {
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    reader->SetStream(IO::CreateStream(path));
     if (!reader->Open() || !reader->HasNode("/level"))
     {
         n_warning("Could not open JSON level '%s'\n", path.AsCharPtr());
@@ -309,7 +309,7 @@ SaveLevelWithDialog(bool saveAs)
 
     static Util::String localPath = IO::URI("proj:work/levels").LocalPath();
     Util::String path;
-    IO::IoServer::Instance()->CreateDirectory(localPath);
+    IO::CreateDirectory(localPath);
     if (!IO::FileDialog::SaveFile("Save Nebula Level", localPath, {"*.json"}, path))
     {
         return false;

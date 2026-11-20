@@ -36,10 +36,12 @@ public:
     void Update();
     void Run(SaveMode save) override;
 
-    /// Pick file (using assigns, like work:system/white)
-    void PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
+    /// Pick file (using assigns, like work:system/white). With a type (tex, mat, mdl, ...) only files of it are shown
+    void PickFile(const IO::Path& path, std::function<void(const IO::Path& path)> picker, const Util::String& type = "");
     /// Pick folder
     void PickFolder(const IO::Path& path, std::function<void(const IO::Path& path)> picker);
+    /// Get the folder selected in the folder tree, returns false if none is selected
+    bool GetSelectedFolder(IO::Path& outFolder) const;
 
 private:
     
@@ -71,7 +73,7 @@ private:
     /// Determine file type from file extension
     static ToolkitUtil::FileType DetermineFileType(const Util::String& extension);
     /// Recursively scan a directory and sync entries to FileDB
-    void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::IoServer* ioServer, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
+    void ScanFolder(ToolkitUtil::FileDB& fileDB, const IO::URI& folderPath, bool useArchive, uint64_t parent, bool recursive);
     /// replace this folder's files in the search index after a disk scan
     void IndexFolderForSearch(uint64_t folderId, const Util::Array<ToolkitUtil::FileDB::FileInfo>& files);
     friend class ScanFolderJob;
@@ -83,6 +85,66 @@ private:
 
     /// set active folder from selection and trigger watcher and sync updates if necessary
     void SetActiveFolder(uint64_t folderId);
+
+    /// inline name editing in the folder tree and the file view, nothing touches the disk until the name is committed with Enter
+    enum class FolderEditMode
+    {
+        None,
+        NewFolder,      ///< folderId is the parent the new folder will be created in
+        Rename,         ///< folderId is the folder being renamed
+        NewAsset,       ///< folderId is the folder the new asset of assetType will be created in
+        RenameFile      ///< fileId is the file being renamed in folderId, the name is edited without the extension
+    };
+    struct FolderEdit
+    {
+        FolderEditMode mode = FolderEditMode::None;
+        uint64_t folderId = 0;
+        uint64_t fileId = 0;
+        ToolkitUtil::FileType assetType = ToolkitUtil::FileType::Unknown;
+        char name[256] = { 0 };
+        Util::String error;
+        bool requestFocus = false;
+        int focusRequestFrame = 0;
+        bool openParent = false;
+        bool scrollIntoView = false;
+        bool wasActive = false;
+        bool drawn = false;
+        bool commitRequested = false;
+    };
+    FolderEdit folderEdit;
+    /// folder the tree context menu was opened on
+    uint64_t contextFolder = 0;
+
+    /// start editing the name of a new, not yet created, subfolder of parentId
+    void BeginNewFolder(uint64_t parentId);
+    /// start editing the name of an existing folder
+    void BeginRenameFolder(uint64_t folderId);
+    /// start editing the name of a new, not yet created, asset in the folder, shown at the end of the file view
+    void BeginNewAsset(uint64_t folderId, ToolkitUtil::FileType type, const Util::String& defaultName);
+    /// start editing the name of a file in the folder shown
+    void BeginRenameFile(uint64_t fileId);
+    /// draw the inline name editor at the current cursor position, handles commit and cancel. A width of 0 fills the available space
+    void DisplayFolderNameEditor(float width = 0.0f);
+    /// draw a file view entry with the name editor in place of its name, for a new asset or a file being renamed
+    void DisplayFileNameEditorEntry(ToolkitUtil::FileType type, float itemSize);
+    /// try to apply the edited name, returns false and sets an error if the name can't be used
+    bool CommitFolderEdit();
+    /// drop the current edit without touching anything
+    void CancelFolderEdit();
+    /// create a folder on disk and in the FileDB
+    bool CreateSubFolder(uint64_t parentId, const Util::String& name, Util::String& outError);
+    /// create the work file of a new asset, add it to the FileDB and batch it so it can be referenced right away
+    bool CreateAsset(uint64_t folderId, ToolkitUtil::FileType type, const Util::String& name, Util::String& outError);
+    /// rename a file on disk, keeping its extension, resync the FileDB and batch it under its new name
+    bool RenameFile(uint64_t fileId, const Util::String& newName, Util::String& outError);
+    /// open the import window to import a model or texture asset again from its source files, with the settings it was imported with
+    void ReimportAsset(const IO::Path& asset);
+    /// rename a folder on disk and resync the FileDB, folder ids are derived from parent and name so the subtree gets new ids
+    bool RenameFolder(uint64_t folderId, const Util::String& newName, Util::String& outError);
+    /// load a folder subtree from the FileDB into the folder caches and search index
+    void CacheFolderSubtree(uint64_t folderId);
+    /// remove a folder subtree from the folder caches and search index
+    void UncacheFolderSubtree(uint64_t folderId);
 
     struct FolderScanResult
     {
@@ -111,6 +173,10 @@ private:
 
     std::function<void(const IO::Path& path)> pickFileFunction, pickFolderFunction;
     IO::Path pendingPickPath;
+    /// the type of the files shown while picking one, all are shown when it's empty
+    Util::String pickType;
+    /// the search field is focused when the picker opens, so typing filters right away
+    bool focusSearch = false;
     bool fileTreeReady = false;
     bool backgroundScanFinished = false;
     bool showProgress = false;

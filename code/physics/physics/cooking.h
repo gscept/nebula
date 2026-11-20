@@ -31,7 +31,8 @@ bool CookMesh(const MeshGeometryInput& input, physx::PxGeometryHolder& out);
 Util::Array<CookedConvex> CookApproxSkin(const MeshGeometryInput& input);
 
 /// Cook height field samples into a physx height field. heightRange is the vertical span
-/// in meters and targetSizeX / targetSizeZ the world extent of the field
+/// in meters, sample 0 sits at the field origin and sample 65535 heightRange above it.
+/// targetSizeX / targetSizeZ are the world extent of the field
 bool CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ, physx::PxGeometryHolder& out);
 
 } // namespace Physics

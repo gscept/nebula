@@ -22,7 +22,6 @@ using namespace Http;
 void
 HttpClientTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
     Ptr<HttpClient> httpClient = HttpClient::Create();
 
     // build a few URIs we're interested in

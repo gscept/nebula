@@ -54,7 +54,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > DecalUniforms.NumDecalClusters) { return; }
+    if (index1D >= DecalUniforms.NumDecalClusters) { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -111,7 +111,7 @@ csDebug() void
 
     const viewDepth = CalculateViewDepth(ViewConstants.View, worldPos.xyz);
 
-    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     const flag = bufferLoad(ClusterAABBs, idx).featureFlags; // add 0 so we can read the value
@@ -172,7 +172,7 @@ psRenderPBR(in UV : f32x2) void
     const viewVec = -normalize(viewPos.xyz);
     const viewNormal = (ViewConstants.View * f32x4(normal, 0)).xyz;
 
-    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var totAlbedo = f32x3(0);
@@ -286,7 +286,7 @@ psRenderEmissive(in UV : f32x2) void
     const viewNormal = normalize(cross(viewPos_ddx, viewPos_ddy));
     const normal = (ViewConstants.InvView * f32x4(viewNormal.xyz, 0)).xyz;
 
-    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias, ClusterUniforms.NumCells);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     var totEmissive = f32x4(0);

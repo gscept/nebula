@@ -28,7 +28,6 @@ AssetUpdater::Update(Logger& logger, const AssetRegistry& diffSet)
 {
     logger.Print(">> Synchronizing local files...\n");
 
-    IoServer* ioServer = IoServer::Instance();
     if (this->localRootPath.IsEmpty())
     {
         logger.Error("No local root path set!\n");
@@ -58,14 +57,14 @@ AssetUpdater::Update(Logger& logger, const AssetRegistry& diffSet)
         {
             // need to copy file from server
             logger.Print("COPY %s\n", curEntry.GetPath().Value());
-            if (!ioServer->DirectoryExists(localDirUri))
+            if (!IO::DirectoryExists(localDirUri))
             {
-                ioServer->CreateDirectory(localDirUri);
+                IO::CreateDirectory(localDirUri);
             }
-            if (ioServer->CopyFile(remoteFileUri, localFileUri))
+            if (IO::CopyFile(remoteFileUri, localFileUri))
             {
                 // set the local file's time stamp to the remote file's time stamp
-                ioServer->SetFileWriteTime(localFileUri, curEntry.GetTimeStamp());
+                IO::SetFileWriteTime(localFileUri, curEntry.GetTimeStamp());
                 numFilesCopied++;
             }
             else
@@ -78,14 +77,14 @@ AssetUpdater::Update(Logger& logger, const AssetRegistry& diffSet)
         {
             // only update the local time stamp
             // logger.Print("TOUCH %s\n", curEntry.GetPath().Value().AsCharPtr());
-            ioServer->SetFileWriteTime(localFileUri, curEntry.GetTimeStamp());
+            IO::SetFileWriteTime(localFileUri, curEntry.GetTimeStamp());
             numFilesTouched++;
         }
         else if (curEntry.GetState() == AssetFile::Deleted)
         {
             // need to delete local copy
             logger.Print("DELETE %s\n", curEntry.GetPath().Value());
-            if (ioServer->DeleteFile(localFileUri))
+            if (IO::DeleteFile(localFileUri))
             {
                 numFilesDeleted++;
             }

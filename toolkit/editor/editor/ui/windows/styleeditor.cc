@@ -6,6 +6,8 @@
 #include "styleeditor.h"
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
+#include "dynui/imguicontext.h"
+#include "core/cvar.h"
 
 using namespace Editor;
 
@@ -54,7 +56,10 @@ StyleEditor::Run(SaveMode save)
     ImGuiStyle* ref = nullptr;
     // You can pass in a reference ImGuiStyle structure to compare to, revert to and save to
     // (without a reference style pointer, we will use one compared locally as a reference)
-    ImGuiStyle& style = ImGui::GetStyle();
+    // Edit the unscaled base style, the content scale is applied on top when the style changes
+    ImGuiStyle& style = Dynui::ImguiContext::GetBaseStyle();
+    ImGuiStyle styleBefore;
+    memcpy(&styleBefore, &style, sizeof(ImGuiStyle));
     static ImGuiStyle ref_saved_style;
 
     // Default to using internal storage as reference
@@ -66,9 +71,14 @@ StyleEditor::Run(SaveMode save)
         ref = &ref_saved_style;
 
     ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+    ImGui::Text("Content scale being applied: %.2f", Dynui::ImguiContext::GetStyleScale());
 
     if (ImGui::ShowStyleSelector("Colors##Selector"))
+    {
+        // The selector writes the preset colors into the active style, pull them into the base style
+        memcpy(style.Colors, ImGui::GetStyle().Colors, sizeof(style.Colors));
         ref_saved_style = style;
+    }
     ImGui::ShowFontSelector("Fonts##Selector");
 
     // Simplified Settings (expose floating-pointer border sizes as boolean representing 0.0f or 1.0f)
@@ -187,10 +197,10 @@ StyleEditor::Run(SaveMode save)
                     // Tips: in a real user application, you may want to merge and use an icon font into the main font,
                     // so instead of "Save"/"Revert" you'd use icons!
                     // Read the FAQ and docs/FONTS.md about using icon fonts. It's really easy and super convenient!
-                    ImGui::SameLine(0.0f, style.ItemInnerSpacing.x); if (ImGui::Button("Save")) { ref->Colors[i] = style.Colors[i]; }
-                    ImGui::SameLine(0.0f, style.ItemInnerSpacing.x); if (ImGui::Button("Revert")) { style.Colors[i] = ref->Colors[i]; }
+                    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x); if (ImGui::Button("Save")) { ref->Colors[i] = style.Colors[i]; }
+                    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x); if (ImGui::Button("Revert")) { style.Colors[i] = ref->Colors[i]; }
                 }
-                ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
+                ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
                 ImGui::TextUnformatted(name);
                 ImGui::PopID();
             }
@@ -237,7 +247,14 @@ StyleEditor::Run(SaveMode save)
             ImGui::SameLine();
             HelpMarker("When drawing circle primitives with \"num_segments == 0\" tesselation will be calculated automatically.");
 
-            ImGui::DragFloat("Global Alpha", &style.Alpha, 0.005f, 0.20f, 1.0f, "%.2f"); // Not exposing zero here so user doesn't "lose" the UI (zero alpha clips all widgets). But application code could have a toggle to switch between zero and non-zero.
+            // Global alpha is driven by the ui_opacity cvar, which is applied to the style every frame
+            static Core::CVar* uiOpacity = Core::CVarGet("ui_opacity");
+            if (uiOpacity != nullptr)
+            {
+                float opacity = Core::CVarReadFloat(uiOpacity);
+                if (ImGui::DragFloat("Global Alpha", &opacity, 0.005f, 0.20f, 1.0f, "%.2f"))
+                    Core::CVarWriteFloat(uiOpacity, opacity);
+            } // Not exposing zero here so user doesn't "lose" the UI (zero alpha clips all widgets). But application code could have a toggle to switch between zero and non-zero.
             ImGui::PopItemWidth();
 
             ImGui::EndTabItem();
@@ -247,6 +264,9 @@ StyleEditor::Run(SaveMode save)
     }
 
     ImGui::PopItemWidth();
+
+    if (memcmp(&styleBefore, &style, sizeof(ImGuiStyle)) != 0)
+        Dynui::ImguiContext::ApplyBaseStyle();
 }
 
 } // namespace Presentation

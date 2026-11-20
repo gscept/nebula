@@ -105,10 +105,31 @@ operator delete(void* p) noexcept
 
 //------------------------------------------------------------------------------
 /**
+    Sized global delete operator. The size is not used, the heap knows the block,
+    but the overload has to exist for the sized deallocation to be used.
+*/
+void
+operator delete(void* p, size_t size) noexcept
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+
+//------------------------------------------------------------------------------
+/**
     Replacement global delete[] operator.
 */
 void
 operator delete[](void* p) noexcept
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sized global delete[] operator. See the sized delete operator above.
+*/
+void
+operator delete[](void* p, size_t size) noexcept
 {
     Memory::Free(Memory::ObjectArrayHeap, p);
 }

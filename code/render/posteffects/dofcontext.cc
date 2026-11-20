@@ -28,8 +28,12 @@ struct
     CoreGraphics::ShaderProgramId compositeProgram;
     CoreGraphics::ShaderId shader;
 
-    CoreGraphics::ResourceTableId resourceTable;
-    CoreGraphics::BufferId constants;
+    // One table per buffered frame, a table is only rewritten once the GPU is done with its frame
+    CoreGraphics::ResourceTableSet resourceTables;
+    // Set for every table on resize or a new dirt mask, cleared when that table is rebound
+    Util::FixedArray<bool> tablesDirty;
+    // One per buffered frame, written by the CPU while that frame is recorded
+    Util::FixedArray<CoreGraphics::BufferId> constants;
     CoreGraphics::TextureId bokehMask;
     CoreGraphics::TextureId dirtMask;
     bool bokehDirty;
@@ -71,19 +75,36 @@ WriteDofSizes()
     ColorSource is LightBuffer. BokehOutput is BokehBuffer.
 */
 static void
-BindDofResources()
+BindDofResources(const CoreGraphics::ResourceTableId table, const CoreGraphics::BufferId constants)
 {
     using namespace CoreGraphics;
-    ResourceTableSetTexture(dofState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Dof::ColorSource::BINDING });
-    ResourceTableSetRWTexture(dofState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Dof::ColorTarget::BINDING });
-    ResourceTableSetRWTexture(dofState.resourceTable, { FrameScript_default::Texture_HalfColor(), Dof::HalfColor::BINDING });
-    ResourceTableSetRWTexture(dofState.resourceTable, { FrameScript_default::Texture_BokehBuffer(), Dof::BokehOutput::BINDING });
-    ResourceTableSetTexture(dofState.resourceTable, { FrameScript_default::Texture_BokehBuffer(), Dof::BokehInput::BINDING });
-    ResourceTableSetTexture(dofState.resourceTable, { dofState.dirtMask, Dof::DirtMask::BINDING });
-    ResourceTableSetTexture(dofState.resourceTable, { dofState.bokehMask, Dof::BokehMask::BINDING });
-    ResourceTableSetRWTexture(dofState.resourceTable, { dofState.bokehMask, Dof::BokehMaskWrite::BINDING });
-    ResourceTableSetConstantBuffer(dofState.resourceTable, { dofState.constants, Dof::DofUniforms::BINDING });
-    ResourceTableCommitChanges(dofState.resourceTable);
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_LightBuffer(), Dof::ColorSource::BINDING });
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_LightBuffer(), Dof::ColorTarget::BINDING });
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_HalfColor(), Dof::HalfColor::BINDING });
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_BokehBuffer(), Dof::BokehOutput::BINDING });
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_BokehBuffer(), Dof::BokehInput::BINDING });
+    ResourceTableSetTexture(table, { dofState.dirtMask, Dof::DirtMask::BINDING });
+    ResourceTableSetTexture(table, { dofState.bokehMask, Dof::BokehMask::BINDING });
+    ResourceTableSetRWTexture(table, { dofState.bokehMask, Dof::BokehMaskWrite::BINDING });
+    ResourceTableSetConstantBuffer(table, { constants, Dof::DofUniforms::BINDING });
+    ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Rebind the table for this buffered frame if a resize or a new dirt mask marked it.
+    The GPU has finished the previous frame using this table, so it is safe to rewrite it.
+*/
+static CoreGraphics::ResourceTableId
+UpdateDofResources(const IndexT bufferIndex)
+{
+    const CoreGraphics::ResourceTableId table = dofState.resourceTables.tables[bufferIndex];
+    if (dofState.tablesDirty[bufferIndex])
+    {
+        BindDofResources(table, dofState.constants[bufferIndex]);
+        dofState.tablesDirty[bufferIndex] = false;
+    }
+    return table;
 }
 
 //------------------------------------------------------------------------------
@@ -113,14 +134,18 @@ DofContext::Setup()
     dofState.setupProgram = ShaderGetProgram(dofState.shader, ShaderFeatureMask("Setup"));
     dofState.gatherProgram = ShaderGetProgram(dofState.shader, ShaderFeatureMask("Gather"));
     dofState.compositeProgram = ShaderGetProgram(dofState.shader, ShaderFeatureMask("Composite"));
-    dofState.resourceTable = ShaderCreateResourceTable(dofState.shader, NEBULA_BATCH_GROUP);
+    dofState.resourceTables = ShaderCreateResourceTableSet(dofState.shader, NEBULA_BATCH_GROUP, 1, "DoF");
+    dofState.tablesDirty.Resize(dofState.resourceTables.tables.Size());
+    dofState.tablesDirty.Fill(true);
 
     BufferCreateInfo bufInfo;
     bufInfo.byteSize = sizeof(Dof::DofUniforms::STRUCT);
-    bufInfo.usageFlags = BufferUsage::ConstantBuffer | BufferUsage::TransferDestination;
+    bufInfo.usageFlags = BufferUsage::ConstantBuffer;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = GraphicsQueueSupport | ComputeQueueSupport;
-    dofState.constants = CreateBuffer(bufInfo);
+    dofState.constants.Resize(dofState.resourceTables.tables.Size());
+    for (IndexT i = 0; i < dofState.constants.Size(); i++)
+        dofState.constants[i] = CreateBuffer(bufInfo);
 
     // Aperture.xyzw: blade count, rotation in radians, roundness, unused.
     // A blade count outside 3..8 is a disk. The first DofMask writes that disk.
@@ -131,7 +156,8 @@ DofContext::Setup()
     dofState.uniforms.Aperture[3] = dofState.dirtMask == CoreGraphics::White2D ? 0.0f : 1.0f;
     dofState.bokehDirty = true;
     WriteDofSizes();
-    BufferUpdate(dofState.constants, dofState.uniforms);
+    for (IndexT i = 0; i < dofState.constants.Size(); i++)
+        BufferUpdate(dofState.constants[i], dofState.uniforms);
 
     TextureCreateInfo maskInfo;
     maskInfo.name = "BokehMask";
@@ -141,14 +167,12 @@ DofContext::Setup()
     maskInfo.usage = TextureUsage::ReadWrite;
     dofState.bokehMask = CreateTexture(maskInfo);
 
-    BindDofResources();
+    for (IndexT i = 0; i < dofState.resourceTables.tables.Size(); i++)
+        UpdateDofResources(i);
 
     // DofMask. 31 threads, one per mask row. Compute Prepass, before Scene.
     FrameScript_default::RegisterSubgraph_DoFMask_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        CmdSetShaderProgram(cmdBuf, dofState.maskProgram, queue);
-        CmdSetResourceTable(cmdBuf, dofState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-
         // DofUniforms.Aperture from the view camera. SetBokeh rebuilds the mask when it changes.
         const Graphics::ViewId view = Graphics::GraphicsServer::Instance()->GetCurrentView();
         n_assert(view != Graphics::InvalidViewId);
@@ -159,8 +183,15 @@ DofContext::Setup()
             dirt = CoreGraphics::TextureId(dof.dirtMask);
         SetDirtMask(dirt);
 
+        // DofMask is the first DoF subgraph recorded each frame, so descriptors are updated here, before any binding
+        const ResourceTableId table = UpdateDofResources(bufferIndex);
+        CmdSetShaderProgram(cmdBuf, dofState.maskProgram, queue);
+        CmdSetResourceTable(cmdBuf, table, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+
+        // This frame's buffer is no longer read by the GPU, so the CPU writes it directly
         WriteDofSizes();
-        CmdUpdateBuffer(cmdBuf, dofState.constants, 0, sizeof(dofState.uniforms), &dofState.uniforms);
+        BufferUpdate(dofState.constants[bufferIndex], dofState.uniforms);
+        BufferFlush(dofState.constants[bufferIndex]);
 
         // Shader-read outside this store. General only for the write, then back.
         // This dispatch is on the compute queue, so the read stage is ComputeShaderRead.
@@ -183,7 +214,7 @@ DofContext::Setup()
     FrameScript_default::RegisterSubgraph_DoFSetup_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, dofState.setupProgram, queue);
-        CmdSetResourceTable(cmdBuf, dofState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, dofState.resourceTables.tables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         uint dispatchX = Math::divandroundup(uint(viewport.width()), 16);
         uint dispatchY = Math::divandroundup(uint(viewport.height()), 16);
@@ -198,7 +229,7 @@ DofContext::Setup()
     FrameScript_default::RegisterSubgraph_DoFGather_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, dofState.gatherProgram, queue);
-        CmdSetResourceTable(cmdBuf, dofState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, dofState.resourceTables.tables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         // BokehMask is already shader-read. Acquire the store before the fetch.
         CmdBarrier(cmdBuf, PipelineStage::AllShadersRead, PipelineStage::ComputeShaderRead, BarrierDomain::Global,
@@ -218,7 +249,7 @@ DofContext::Setup()
     FrameScript_default::RegisterSubgraph_DoFComposite_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, dofState.compositeProgram, queue);
-        CmdSetResourceTable(cmdBuf, dofState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, dofState.resourceTables.tables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         uint dispatchX = Math::divandroundup(uint(viewport.width()), 16);
         uint dispatchY = Math::divandroundup(uint(viewport.height()), 16);
@@ -259,22 +290,23 @@ DofContext::SetDirtMask(const CoreGraphics::TextureId texture)
         return;
     dofState.dirtMask = texture;
     dofState.uniforms.Aperture[3] = texture == CoreGraphics::White2D ? 0.0f : 1.0f;
-    if (dofState.resourceTable != CoreGraphics::InvalidResourceTableId)
-    {
-        CoreGraphics::ResourceTableSetTexture(dofState.resourceTable, { texture, Dof::DirtMask::BINDING });
-        CoreGraphics::ResourceTableCommitChanges(dofState.resourceTable);
-    }
+    // Each table is rebound when its frame is recorded next, see UpdateDofResources
+    dofState.tablesDirty.Fill(true);
 }
 
 //------------------------------------------------------------------------------
 /**
+    Called after the frame script recreated its textures and recorded this frame.
+    This frame isn't submitted yet and the table bindings are update-after-bind, so its table is rebound now.
+    The other buffered frames may still be on the GPU, their tables are rebound when they are recorded next.
 */
 void
 DofContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 {
     if (framescriptHash == FrameScript_default::ID)
     {
-        BindDofResources();
+        dofState.tablesDirty.Fill(true);
+        UpdateDofResources(CoreGraphics::GetBufferedFrameIndex());
     }
 }
 
@@ -295,8 +327,9 @@ DofContext::Create()
 void
 DofContext::Discard()
 {
-    CoreGraphics::DestroyResourceTable(dofState.resourceTable);
-    CoreGraphics::DestroyBuffer(dofState.constants);
+    dofState.resourceTables.Destroy();
+    for (const CoreGraphics::BufferId constants : dofState.constants)
+        CoreGraphics::DestroyBuffer(constants);
     CoreGraphics::DestroyTexture(dofState.bokehMask);
 }
 

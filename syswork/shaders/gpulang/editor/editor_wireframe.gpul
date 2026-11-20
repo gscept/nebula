@@ -1,0 +1,121 @@
+//------------------------------------------------------------------------------
+//  editor_wireframe.gpul
+//
+//  Wireframe rendering for the editor viewports.
+//
+//  Static and Skinned are used by the Wireframe batch of the material templates
+//  and draw the edges of a mesh in a single color.
+//  Background fills the render target with a flat color and resets depth to the
+//  far plane, which hides the shaded scene in the wireframe-only render mode.
+//
+//  (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/skinning.gpuh>
+
+#include <material_interfaces.gpul>
+
+struct WireframeConstants
+{
+    Color : f32x4;
+};
+
+@Visibility("VS|PS")
+inline WireframeUniforms : *WireframeConstants;
+
+render_state WireframeState
+{
+    Rasterize = RasterizationMode.Line;
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.LessEqual;
+
+    // Pull the edges towards the camera so they don't z-fight with the shaded surface
+    DepthBiasEnabled = true;
+    DepthBiasFactor = -1.0f;
+    DepthBiasSlopeFactor = -1.0f;
+};
+
+render_state BackgroundState
+{
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = true;
+    DepthTestFunction = CompareMode.Always;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStatic(
+    binding(0) in position : f32x3
+) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinned(
+    binding(0) in position : f32x3,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4
+) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * skinnedPos);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Fullscreen quad placed on the far plane, so depth is reset to 1
+*/
+entry_point
+vsBackground(
+    binding(0) in position : f32x3
+) void
+{
+    vertexExportCoordinates(f32x4(position.xy, 1, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psColor() void
+{
+    pixelExportColor(WireframeUniforms.Color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Static
+{
+    VertexShader = vsStatic;
+    PixelShader = psColor;
+    RenderState = WireframeState;
+};
+
+@Mask("Skinned")
+program Skinned
+{
+    VertexShader = vsSkinned;
+    PixelShader = psColor;
+    RenderState = WireframeState;
+};
+
+@Mask("Background")
+program Background
+{
+    VertexShader = vsBackground;
+    PixelShader = psColor;
+    RenderState = BackgroundState;
+};

@@ -17,6 +17,8 @@
 #include "flat/skeleton.h"
 #include "flat/particle.h"
 #include "flat/anim.h"
+#include "coreanimation/naxfileformatstructs.h"
+#include "coreanimation/curvetype.h"
 #include "flat/texture.h"
 #include "flat/physics/actor.h"
 
@@ -31,6 +33,31 @@
 
 namespace ToolkitUtil
 {
+
+//------------------------------------------------------------------------------
+/**
+    Node names have to be unique within a model
+*/
+Util::Array<Util::String>
+GetSkinNodeNames(const ToolkitUtil::SceneResourceT* model)
+{
+    Util::Array<Util::String> names;
+    for (const auto& skinFragment : model->skins)
+    {
+        Util::String name = skinFragment->shape != nullptr && skinFragment->shape->transform != nullptr ? skinFragment->shape->transform->name : Util::String();
+        if (name.IsEmpty())
+            name = "character";
+        if (names.FindIndex(name) != InvalidIndex)
+        {
+            IndexT number = 1;
+            while (names.FindIndex(Util::Format("%s_%d", name.AsCharPtr(), number)) != InvalidIndex)
+                number++;
+            name = Util::Format("%s_%d", name.AsCharPtr(), number);
+        }
+        names.Append(name);
+    }
+    return names;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -81,7 +108,7 @@ PackageModel(
     };
 
     IO::URI output = Util::String::Sprintf("%s/%s.n3", destinationFolder.LocalPath().AsCharPtr(), fileName.AsCharPtr());
-    Ptr<IO::Stream> modelStream = IO::IoServer::Instance()->CreateStream(output);
+    Ptr<IO::Stream> modelStream = IO::CreateStream(output);
     modelStream->SetAccessMode(IO::Stream::WriteAccess);
     if (modelStream->Open())
     {
@@ -142,33 +169,33 @@ PackageModel(
 
         writer->BeginModelNode("TransformNode", 'TRFN', "root");
 
-            if (model->skins.size() > 0)
+            // Each skin fragment is a node of its own, a node draws one primitive group with one material and joint palette
+            const Util::Array<Util::String> skinNodeNames = GetSkinNodeNames(model);
+            for (size_t skinIndex = 0; skinIndex < model->skins.size(); skinIndex++)
             {
-                writer->BeginModelNode("CharacterSkinNode", 'CHSN', "character");
+                const auto& skinFragment = model->skins[skinIndex];
+                const Util::String& nodeName = skinNodeNames[(IndexT)skinIndex];
+                writer->BeginModelNode("CharacterSkinNode", 'CHSN', nodeName);
                 writer->BeginTag("Number of skin fragments", 'NSKF');
-                writer->WriteInt((uint)model->skins.size());
+                writer->WriteInt(1);
                 writer->EndTag();
 
-                // Write skins
-                for (const auto& skinFragment : model->skins)
+                // write the used skin fragment
+                writer->BeginTag("Used skin fragments", 'SFRG');
+                writer->WriteInt(skinFragment->shape->prim_group);
+
+                // write the used joints for the fragment
+                writer->WriteInt((uint)skinFragment->joints.size());
+
+                IndexT j;
+                for (j = 0; j < skinFragment->joints.size(); j++)
                 {
-                    // write the used skin fragments
-                    writer->BeginTag("Used skin fragments", 'SFRG');
-                    writer->WriteInt(skinFragment->shape->prim_group);
-
-                    // write the used joints for the fragment
-                    writer->WriteInt((uint)skinFragment->joints.size());
-
-                    IndexT j;
-                    for (j = 0; j < skinFragment->joints.size(); j++)
-                    {
-                        writer->WriteInt(skinFragment->joints[j]);
-                    }
-                    writer->EndTag();
-
-                    writeTransform(writer, skinFragment->shape->transform);
-                    writeShape(writer, skinFragment->shape);
+                    writer->WriteInt(skinFragment->joints[j]);
                 }
+                writer->EndTag();
+
+                writeTransform(writer, skinFragment->shape->transform);
+                writeShape(writer, skinFragment->shape);
 
                 // end skin node
                 writer->EndModelNode();
@@ -212,6 +239,354 @@ PackageModel(
         return true;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The name of a clip is stored in a fixed size buffer in the nax file
+*/
+static const SizeT MaxClipNameLength = sizeof(CoreAnimation::Nax3Clip::name) - 1;
+
+//------------------------------------------------------------------------------
+/**
+*/
+static bool
+FindClip(const ToolkitUtil::AnimResourceT* anim, const Util::String& name, IndexT& outAnimation, IndexT& outClip)
+{
+    for (size_t a = 0; a < anim->animations.size(); a++)
+    {
+        const auto& clips = anim->animations[a]->clips;
+        for (size_t c = 0; c < clips.size(); c++)
+        {
+            if (clips[c]->name == name)
+            {
+                outAnimation = (IndexT)a;
+                outClip = (IndexT)c;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ValidateClipSection(const ToolkitUtil::AnimResourceT* anim, const ToolkitUtil::AnimClipSectionT& section, Util::String& outError)
+{
+    IndexT animIndex, clipIndex;
+    if (section.name.IsEmpty())
+        outError = "it has no name";
+    else if (section.name.Length() > MaxClipNameLength)
+        outError.Format("its name is longer than %d characters", MaxClipNameLength);
+    else if (anim == nullptr || !FindClip(anim, section.clip, animIndex, clipIndex))
+        outError.Format("there's no clip '%s' to cut it from", section.clip.AsCharPtr());
+    else if (FindClip(anim, section.name, animIndex, clipIndex))
+        outError.Format("there's a clip named '%s' already", section.name.AsCharPtr());
+    else if (section.start >= section.end)
+        outError = "it doesn't end after it starts";
+    else
+    {
+        FindClip(anim, section.clip, animIndex, clipIndex);
+        const uint duration = anim->animations[animIndex]->clips[clipIndex]->duration;
+        if (section.end > duration)
+            outError.Format("it ends after the clip, which is %.3f s long", duration / 1000.0f);
+        else
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sample a curve like the runtime does, linearly between the keys around the time, holding the first and last key
+    outside of them
+*/
+static void
+SampleCurve(const ToolkitUtil::AnimInstanceT& anim, const ToolkitUtil::AnimCurve& curve, const uint time, float* outValue)
+{
+    const uint stride = curve.type() == CoreAnimation::CurveType::Rotation ? 4 : 3;
+    const uint* times = anim.key_times.data() + curve.first_time_offset();
+    const float* keys = anim.keys.data() + curve.first_key_offset();
+    const uint numKeys = curve.num_keys();
+
+    uint key = 0;
+    while (key + 1 < numKeys && times[key + 1] <= time)
+        key++;
+    if (key + 1 >= numKeys || time <= times[key])
+    {
+        Memory::Copy(keys + key * stride, outValue, stride * sizeof(float));
+        return;
+    }
+
+    const float weight = float(time - times[key]) / float(times[key + 1] - times[key]);
+    const float* key0 = keys + key * stride;
+    const float* key1 = keys + (key + 1) * stride;
+    if (stride == 4)
+    {
+        Math::quat q0, q1;
+        q0.loadu(key0);
+        q1.loadu(key1);
+        Math::slerp(q0, q1, weight).storeu(outValue);
+    }
+    else
+    {
+        for (uint i = 0; i < stride; i++)
+            outValue[i] = key0[i] + (key1[i] - key0[i]) * weight;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The keys of a section of a curve, with keys added where the section starts and ends unless there are keys there,
+    and the times moved so it starts at 0
+*/
+static ToolkitUtil::AnimCurve
+CutCurve(const ToolkitUtil::AnimInstanceT& anim, const ToolkitUtil::AnimCurve& curve, const uint start, const uint end, std::vector<float>& keys, std::vector<uint>& times)
+{
+    const uint stride = curve.type() == CoreAnimation::CurveType::Rotation ? 4 : 3;
+    const uint firstKey = (uint)keys.size();
+    const uint firstTime = (uint)times.size();
+    float value[4];
+
+    if (curve.num_keys() == 0)
+    {
+        // an inactive curve, the runtime uses the idle pose
+        return ToolkitUtil::AnimCurve(0, 0, 0, curve.type(), curve.pre_infinity(), curve.post_infinity());
+    }
+    else if (curve.num_keys() == 1)
+    {
+        SampleCurve(anim, curve, start, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(0);
+    }
+    else
+    {
+        SampleCurve(anim, curve, start, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(0);
+        for (uint i = 0; i < curve.num_keys(); i++)
+        {
+            const uint time = anim.key_times[curve.first_time_offset() + i];
+            if (time > start && time < end)
+            {
+                const float* key = anim.keys.data() + curve.first_key_offset() + i * stride;
+                keys.insert(keys.end(), key, key + stride);
+                times.push_back(time - start);
+            }
+        }
+        SampleCurve(anim, curve, end, value);
+        keys.insert(keys.end(), value, value + stride);
+        times.push_back(end - start);
+    }
+    return ToolkitUtil::AnimCurve(firstKey, firstTime, (uint)times.size() - firstTime, curve.type(), curve.pre_infinity(), curve.post_infinity());
+}
+
+//------------------------------------------------------------------------------
+/**
+    The nax file has no curve or event offsets per clip, a clip's curves and events follow the ones of the clip before it.
+    The velocity curves come after the curves of all clips, so the curves of the sections go in before them
+*/
+void
+CutClipSections(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, ToolkitUtil::Logger* logger)
+{
+    if (anim == nullptr)
+        return;
+
+    // validate them all first, cutting adds clips the next ones are checked against
+    std::vector<const ToolkitUtil::AnimClipSectionT*> valid;
+    for (const auto& section : sections)
+    {
+        Util::String error;
+        bool unique = true;
+        for (const ToolkitUtil::AnimClipSectionT* other : valid)
+            unique &= other->name != section->name;
+        if (!unique)
+            error.Format("there's another section named '%s'", section->name.AsCharPtr());
+        if (unique && ValidateClipSection(anim, *section, error))
+            valid.push_back(section.get());
+        else
+            logger->Warning("Clip section '%s' is skipped, %s\n", section->name.AsCharPtr(), error.AsCharPtr());
+    }
+
+    for (const ToolkitUtil::AnimClipSectionT* section : valid)
+    {
+        IndexT animIndex, clipIndex;
+        FindClip(anim, section->clip, animIndex, clipIndex);
+        ToolkitUtil::AnimInstanceT& instance = *anim->animations[animIndex];
+        const ToolkitUtil::AnimClipT source = *instance.clips[clipIndex];
+
+        // where the curves and events of a clip added after the others go
+        uint curveEnd = 0, eventEnd = 0;
+        for (const auto& clip : instance.clips)
+        {
+            curveEnd += clip->num_curves;
+            eventEnd += clip->num_events;
+        }
+
+        std::vector<float> keys;
+        std::vector<uint> times;
+        std::vector<ToolkitUtil::AnimCurve> curves;
+        const size_t keyBase = instance.keys.size(), timeBase = instance.key_times.size();
+        for (uint i = 0; i < source.num_curves; i++)
+        {
+            ToolkitUtil::AnimCurve curve = CutCurve(instance, instance.curves[source.first_curve_offset + i], section->start, section->end, keys, times);
+            if (curve.num_keys() > 0)
+                curve = ToolkitUtil::AnimCurve(curve.first_key_offset() + (uint)keyBase, curve.first_time_offset() + (uint)timeBase, curve.num_keys(), curve.type(), curve.pre_infinity(), curve.post_infinity());
+            curves.push_back(curve);
+        }
+        instance.keys.insert(instance.keys.end(), keys.begin(), keys.end());
+        instance.key_times.insert(instance.key_times.end(), times.begin(), times.end());
+        instance.curves.insert(instance.curves.begin() + curveEnd, curves.begin(), curves.end());
+
+        // the events in the section, at their time in it
+        uint numEvents = 0;
+        for (uint i = 0; i < source.num_events; i++)
+        {
+            const ToolkitUtil::AnimEventT& event = *instance.events[source.first_event_offset + i];
+            if (event.time >= section->start && event.time <= section->end)
+            {
+                auto copy = std::make_unique<ToolkitUtil::AnimEventT>(event);
+                copy->time = event.time - section->start;
+                instance.events.insert(instance.events.begin() + eventEnd + numEvents, std::move(copy));
+                numEvents++;
+            }
+        }
+
+        auto clip = std::make_unique<ToolkitUtil::AnimClipT>();
+        clip->name = section->name;
+        clip->first_curve_offset = curveEnd;
+        clip->num_curves = source.num_curves;
+        clip->first_event_offset = eventEnd;
+        clip->num_events = numEvents;
+        clip->first_velocity_curve_offset = 0;
+        clip->num_velocity_curves = 0;
+        clip->duration = section->end - section->start;
+        instance.clips.push_back(std::move(clip));
+
+        logger->Print("Cut clip '%s' from '%s' (%.3f s - %.3f s)\n", section->name.AsCharPtr(), section->clip.AsCharPtr(), section->start / 1000.0f, section->end / 1000.0f);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The event names and categories are stored in fixed size buffers in the nax file, and the time as a 16 bit number
+*/
+static const SizeT MaxEventNameLength = sizeof(CoreAnimation::Nax3AnimEvent::name) - 1;
+static const SizeT MaxEventCategoryLength = sizeof(CoreAnimation::Nax3AnimEvent::category) - 1;
+static const uint MaxEventTime = 0xFFFF;
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ValidateClipEvent(const ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const ToolkitUtil::AnimClipEventT& event, Util::String& outError)
+{
+    // the clip is one of the animation, or one a section is cut into
+    IndexT animIndex, clipIndex;
+    uint duration = 0;
+    bool found = anim != nullptr && FindClip(anim, event.clip, animIndex, clipIndex);
+    if (found)
+        duration = anim->animations[animIndex]->clips[clipIndex]->duration;
+    for (size_t i = 0; i < sections.size() && !found; i++)
+    {
+        if (sections[i]->name == event.clip)
+        {
+            found = true;
+            duration = sections[i]->end > sections[i]->start ? sections[i]->end - sections[i]->start : 0;
+        }
+    }
+
+    if (event.name.IsEmpty())
+        outError = "it has no name";
+    else if (event.name.Length() > MaxEventNameLength)
+        outError.Format("its name is longer than %d characters", MaxEventNameLength);
+    else if (event.category.Length() > MaxEventCategoryLength)
+        outError.Format("its category is longer than %d characters", MaxEventCategoryLength);
+    else if (!found)
+        outError.Format("there's no clip or section '%s'", event.clip.AsCharPtr());
+    else if (event.time > duration)
+        outError.Format("it's after the end of the clip, which is %.3f s long", duration / 1000.0f);
+    else if (event.time > MaxEventTime)
+        outError.Format("it's after %.3f s, events can't be later in a clip", MaxEventTime / 1000.0f);
+    else
+        return true;
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The events of a clip follow the ones of the clip before it, in the order of their time
+*/
+static void
+AddClipEvent(ToolkitUtil::AnimResourceT* anim, const ToolkitUtil::AnimClipEventT& event)
+{
+    IndexT animIndex, clipIndex;
+    if (!FindClip(anim, event.clip, animIndex, clipIndex))
+        return;
+    ToolkitUtil::AnimInstanceT& instance = *anim->animations[animIndex];
+
+    uint offset = 0;
+    for (IndexT i = 0; i < clipIndex; i++)
+        offset += instance.clips[i]->num_events;
+    ToolkitUtil::AnimClipT& clip = *instance.clips[clipIndex];
+    uint insert = offset;
+    while (insert < offset + clip.num_events && instance.events[insert]->time <= event.time)
+        insert++;
+
+    auto added = std::make_unique<ToolkitUtil::AnimEventT>();
+    added->name = event.name;
+    added->category = event.category;
+    added->time = event.time;
+    instance.events.insert(instance.events.begin() + insert, std::move(added));
+    clip.num_events++;
+
+    // the offsets of the clips after it move
+    uint running = 0;
+    for (auto& other : instance.clips)
+    {
+        other->first_event_offset = running;
+        running += other->num_events;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BuildClips(ToolkitUtil::AnimResourceT* anim, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipSectionT>>& sections, const std::vector<std::unique_ptr<ToolkitUtil::AnimClipEventT>>& events, ToolkitUtil::Logger* logger)
+{
+    if (anim == nullptr)
+        return;
+
+    // the events of the clips first, so the sections cut from them get them too
+    std::vector<const ToolkitUtil::AnimClipEventT*> sectionEvents;
+    for (const auto& event : events)
+    {
+        Util::String error;
+        if (!ValidateClipEvent(anim, sections, *event, error))
+        {
+            logger->Warning("Event '%s' of '%s' is skipped, %s\n", event->name.AsCharPtr(), event->clip.AsCharPtr(), error.AsCharPtr());
+            continue;
+        }
+        IndexT animIndex, clipIndex;
+        if (FindClip(anim, event->clip, animIndex, clipIndex))
+            AddClipEvent(anim, *event);
+        else
+            sectionEvents.push_back(event.get());
+    }
+
+    CutClipSections(anim, sections, logger);
+
+    for (const ToolkitUtil::AnimClipEventT* event : sectionEvents)
+    {
+        IndexT animIndex, clipIndex;
+        if (FindClip(anim, event->clip, animIndex, clipIndex))
+            AddClipEvent(anim, *event);
+        else
+            logger->Warning("Event '%s' is skipped, the section '%s' wasn't cut\n", event->name.AsCharPtr(), event->clip.AsCharPtr());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -302,7 +677,7 @@ static bool
 WriteTextureFile(const IO::URI& path, const std::vector<uint8_t>& data)
 {
     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-    writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    writer->SetStream(IO::CreateStream(path));
     if (writer->Open())
     {
         writer->WriteRawData(data.data(), (uint)data.size());
@@ -335,7 +710,7 @@ StripSRGBFormat(const IO::URI& dds)
     const SizeT FourCCOffset = 84, DXGIFormatOffset = 128;
 
     std::vector<uint8_t> data;
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(dds);
+    Ptr<IO::Stream> stream = IO::CreateStream(dds);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (!stream->Open())
     {
@@ -415,11 +790,11 @@ AssembleCubeTexture(
     if (written)
     {
         // '--' ends the options, texassemble would take absolute linux paths for options otherwise
-        Util::String args = Util::Format(" %s -y -nologo -o \"%s\" --", LayoutCommand[tex->cube_layout], IO::IoServer::NativePath(IO::URI(output).LocalPath()).AsCharPtr());
+        Util::String args = Util::Format(" %s -y -nologo -o \"%s\" --", LayoutCommand[tex->cube_layout], IO::NativePath(IO::URI(output).LocalPath()).AsCharPtr());
         for (const Util::String& input : inputs)
         {
             args.Append(" \"");
-            args.Append(IO::IoServer::NativePath(IO::URI(input).LocalPath()));
+            args.Append(IO::NativePath(IO::URI(input).LocalPath()));
             args.Append("\"");
         }
 
@@ -447,7 +822,7 @@ AssembleCubeTexture(
 
     for (const Util::String& input : inputs)
     {
-        IO::IoServer::Instance()->DeleteFile(input);
+        IO::DeleteFile(input);
     }
     return res;
 }
@@ -503,7 +878,7 @@ PackageTexture(
         }
         if (!written)
         {
-            IO::IoServer::Instance()->DeleteFile(tmpFile);
+            IO::DeleteFile(tmpFile);
             logger->Print("%s\n", Util::Format("%s %s", Text("Failed to package texture:").Color(TextColor::Red).AsCharPtr(), Text(fileName).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
             return false;
         }
@@ -524,7 +899,7 @@ PackageTexture(
         info.tmpDir = "temp:texturepackager";
         info.texture = tex;
         bool res = ConvertTexture(info);
-        IO::IoServer::Instance()->DeleteFile(tmpFile);
+        IO::DeleteFile(tmpFile);
         if (res)
             logger->Print("%s\n", Util::Format("Packaged texture: %s", Text(output.LocalPath()).Color(TextColor::Blue).Style(FontMode::Underline).AsCharPtr()).AsCharPtr());
         else
@@ -635,7 +1010,7 @@ PackagePhysics(
 bool 
 PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -664,7 +1039,7 @@ PackageTextureFile(const IO::URI& file, const IO::URI& destinationFolder, Toolki
 bool 
 PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -689,7 +1064,7 @@ PackageAudioFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitU
 bool 
 PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {
@@ -714,7 +1089,7 @@ PackageMaterialFile(const IO::URI& file, const IO::URI& destinationFolder, Toolk
 bool 
 PackageParticleFile(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil::Platform::Code platform, ToolkitUtil::Logger* logger)
 {
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    Ptr<IO::Stream> stream = IO::CreateStream(file);
     stream->SetAccessMode(IO::Stream::ReadAccess);
     if (stream->Open())
     {

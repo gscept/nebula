@@ -98,8 +98,8 @@ MayaCameraUtil::Update(float deltaTime)
     }
 
     // handle panning
-    vec3 horiMove = xyz(this->cameraTransform.row0 * panHori * panVelocity);
-    vec3 vertMove = xyz(this->cameraTransform.row1 * panVert * panVelocity);
+    vec3 horiMove = xyz(this->cameraTransform.row0() * panHori * panVelocity);
+    vec3 vertMove = xyz(this->cameraTransform.row1() * panVert * panVelocity);
     this->centerOfInterest += horiMove + vertMove;
 
     // handle zooming
@@ -120,7 +120,7 @@ MayaCameraUtil::Update(float deltaTime)
     // avoid that the camera slips past the center of interest
     if (this->viewDistance < 1.0f)
     {
-        this->centerOfInterest -= xyz(this->cameraTransform.row2 * (1.0f-this->viewDistance));
+        this->centerOfInterest -= xyz(this->cameraTransform.row2() * (1.0f-this->viewDistance));
         this->viewDistance = 1.0f;
     }
 

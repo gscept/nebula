@@ -409,9 +409,14 @@ Win32FSWrapper::RenameFile(const Util::String& source, const Util::String& targe
         const String tmpPath = source.ExtractToLastSlash() + guid.AsString();
         ushort wideTmpPath[1024];
         Win32::Win32StringConverter::UTF8ToWide(tmpPath, wideTmpPath, sizeof(wideTmpPath));
-        if (0 == ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTmpPath, 0))
+        if (0 != ::MoveFileExW((LPCWSTR)wideSourcePath, (LPCWSTR)wideTmpPath, 0))
         {
-            return (0 != ::MoveFileExW((LPCWSTR)wideTmpPath, (LPCWSTR)wideTargetPath, 0));
+            if (0 != ::MoveFileExW((LPCWSTR)wideTmpPath, (LPCWSTR)wideTargetPath, 0))
+            {
+                return true;
+            }
+            // don't leave it behind under the temp name
+            ::MoveFileExW((LPCWSTR)wideTmpPath, (LPCWSTR)wideSourcePath, 0);
         }
         return false;
     }

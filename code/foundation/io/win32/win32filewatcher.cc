@@ -52,7 +52,7 @@ AddWatchRecursive(const Util::String& folder, const Util::String& relativePath, 
     QueryDirectoryChanges(handle, &overlap, buffer.Begin(), buffer.ByteSize(), p.notifyFilter);
     p.relativePathLookup.Add(handle, relativePath);
 
-    Util::Array<Util::String> dirs = IO::ListDirectories(folder);
+    Util::Array<Util::String> dirs = IO::ListDirectories(folder, "*");
     for (const Util::String& dir : dirs)
     {
         AddWatchRecursive(Util::String::AppendPath(folder, dir), Util::String::AppendPath(relativePath, dir), handle, data);

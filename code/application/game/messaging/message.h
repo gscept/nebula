@@ -86,8 +86,8 @@ public:
     Message();
     ~Message();
 
-    Message<MSG, TYPES...>(const Message<MSG, TYPES...>&) = delete;
-    void operator=(const Message<MSG, TYPES...>&) = delete;
+    Message(const Message&) = delete;
+    void operator=(const Message&) = delete;
 
     /// Type definition for this message's delegate
     using Delegate = Util::Delegate<void(TYPES...)>;
@@ -234,7 +234,7 @@ Message<MSG, TYPES...>::Deregister(MessageListener listener)
         instance->callbacks.EraseIndexSwap(index);
         if (instance->callbacks.Size() != 0)
         {
-            instance->listenerMap[instance->callbacks.Get<0>(index)] = index;
+            instance->listenerMap[instance->callbacks.template Get<0>(index)] = index;
         }
     }
 }

@@ -427,17 +427,53 @@ ComponentDrawFuncT<Game::Orientation>(Game::Entity owner, ComponentId component,
     else
     {
         // The component holds a quaternion, so the angles are converted on the way in and back on the way out.
-        // They are shown in degrees, because that is what an editor shows
-        Math::quat q;
-        q.loadu((float*)data);
-        Math::vec3 euler = Math::to_euler(q);
-        float angles[3] = { Math::rad2deg(euler.x), Math::rad2deg(euler.y), Math::rad2deg(euler.z) };
+        // They are shown in degrees, because that is what an editor shows.
+        //
+        // to_euler() only ever gives back one decomposition, with y limited to [-90, 90]. Deriving the angles from the
+        // quaternion every frame turns a y of 91 into (180, 89, 180), the drag then continues from 89 and the rotation
+        // bounces around 90 instead of reaching 180. So the angles last entered are kept for as long as the quaternion
+        // is still the one they produced, and only re-derived once something else (gizmo, undo) has changed it.
+        static struct
+        {
+            Game::Entity owner = Game::Entity::Invalid();
+            float orientation[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            float angles[3] = { 0.0f, 0.0f, 0.0f };
+        } entered;
+
+        float const* current = (float const*)data;
+        bool isEntered = entered.owner == owner;
+        for (int i = 0; i < 4 && isEntered; i++)
+            isEntered = Math::abs(current[i] - entered.orientation[i]) < 1e-5f;
+
+        float angles[3];
+        if (isEntered)
+        {
+            angles[0] = entered.angles[0];
+            angles[1] = entered.angles[1];
+            angles[2] = entered.angles[2];
+        }
+        else
+        {
+            Math::quat q;
+            q.loadu(current);
+            Math::vec3 euler = Math::to_euler(q);
+            angles[0] = Math::rad2deg(euler.x);
+            angles[1] = Math::rad2deg(euler.y);
+            angles[2] = Math::rad2deg(euler.z);
+        }
 
         if (ImGui::DragFloat3("##euler", angles, 1.0f))
         {
             Math::vec3 rad(Math::deg2rad(angles[0]), Math::deg2rad(angles[1]), Math::deg2rad(angles[2]));
-            *(Math::quat*)data = Math::from_euler(rad);
+            Math::quat q = Math::from_euler(rad);
+            q.storeu((float*)data);
             *commit = true;
+
+            entered.owner = owner;
+            q.storeu(entered.orientation);
+            entered.angles[0] = angles[0];
+            entered.angles[1] = angles[1];
+            entered.angles[2] = angles[2];
         }
     }
 

@@ -263,7 +263,7 @@ print(v2);
     // normalize
     v0.set(2.5f, 0.0f, 0.0f, 0.0f);
     v1 = normalize(v0);
-    VERIFY(v1 == vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    VERIFY(nearequal(v1, vec4(1.0f, 0.0f, 0.0f, 0.0f), E4));
 
     v0.set(4.0f, 2.0f, 3.0f, 2.0f);
     v1 = normalize3(v0);

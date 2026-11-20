@@ -95,7 +95,7 @@ VkTextRenderer::Open()
     unsigned char* ttf_buffer = nullptr;
 
     // load font
-    Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
+    Ptr<IO::Stream> fontStream = IO::CreateStream(fontPath);
     fontStream->SetAccessMode(IO::Stream::ReadAccess);
     if (fontStream->Open())
     {

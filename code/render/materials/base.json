@@ -306,6 +306,11 @@
                 "group": "Standard",
                 "passes": [
                     {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
+                    {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
                         "variation": "Static"
@@ -344,6 +349,11 @@
                 "desc": "PBR + IBL based dielectric/metal material, but with added alpha testing.",
                 "group": "Standard",
                 "passes": [
+                    {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
                     {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
@@ -384,6 +394,11 @@
                 "group": "Standard",
                 "passes": [
                     {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
+                    {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
                         "variation": "Static"
@@ -402,6 +417,11 @@
                 "desc": "Skinned version PBR + IBL based dielectric/metal material, but with added alpha testing.",
                 "group": "Standard",
                 "passes": [
+                    {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Skinned"
+                    },
                     {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
@@ -442,6 +462,11 @@
                 "group": "Standard",
                 "passes": [
                     {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Skinned"
+                    },
+                    {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
                         "variation": "Skinned"
@@ -480,6 +505,11 @@
                 "desc": "Skinned material which uses a mesh with joint indices and joint weights, and is also alpha-blended. Useful for characters. Affected by lights.",
                 "group": "Standard",
                 "passes": [
+                    {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Skinned"
+                    },
                     {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
@@ -524,6 +554,11 @@
                 "group": "No lighting",
                 "passes": [
                     {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
+                    {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
                         "variation": "Static"
@@ -542,6 +577,11 @@
                 "desc": "Static material for standard meshes but with support for alpha-blending. Is not affected by lights.",
                 "group": "No lighting",
                 "passes": [
+                    {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
                     {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
@@ -936,6 +976,11 @@
                         "variation": "Static"
                     },
                     {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
+                    },
+                    {
                         "batch": "Picking",
                         "shader": "system_shaders/picking",
                         "variation": "Static"
@@ -958,6 +1003,11 @@
                     {
                         "batch": "DirectToColor",
                         "shader": "system_shaders/placeholder",
+                        "variation": "Skinned"
+                    },
+                    {
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
                         "variation": "Skinned"
                     },
                     {
@@ -990,25 +1040,11 @@
                         "batch": "FlatGeometryLit",
                         "shader": "system_shaders/editor/editor_preview",
                         "variation": "Fill"
-                    }
-                ]
-            },
-            {
-                "name": "EditorPreviewWireframe",
-                "inherits": "DefaultBRDF",
-                "vertexType": "VertexLayoutType::Normal",
-                "desc": "Preview material for editor",
-                "group": "Standard",
-                "passes": [
-                    {
-                        "batch": "FlatGeometryDepth",
-                        "shader": "system_shaders/static",
-                        "variation": "Static|Depth"
                     },
                     {
-                        "batch": "FlatGeometryLit",
-                        "shader": "system_shaders/editor/editor_preview",
-                        "variation": "Wireframe"
+                        "batch": "Wireframe",
+                        "shader": "system_shaders/editor/editor_wireframe",
+                        "variation": "Static"
                     }
                 ]
             }

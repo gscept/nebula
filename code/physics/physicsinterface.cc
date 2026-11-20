@@ -69,7 +69,12 @@ Setup()
     Physics::RegisterDefaultGeometryLoader();
     state.Setup();
     actorLoader = Physics::StreamActorPool::Create(); actorLoader->Setup();
+
+    // actors are addressed with URNs in the phys namespace, folder:file:phys, which resolves to phys:folder/file.actor.
+    // Like the graphics loaders the loader is also registered by its file extension, which resource reloads look it up by
+    Resources::ResourceServer::Instance()->RegisterStreamLoader("phys", actorLoader);
     Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", actorLoader);
+    IO::Path::AddExportMapping("phys", "actor");
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamLoader<Physics::StreamActorPool>();
@@ -241,7 +246,7 @@ LoadCollisionFilters()
     const IO::URI collisionTable("phys:CollisionFilters.filt");
     Util::String collisionsString;
 
-    if (IO::IoServer::Instance()->ReadFile(collisionTable, collisionsString))
+    if (IO::ReadFile(collisionTable, collisionsString))
     {
         Physics::FilterBehavioursT behaviours;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::FilterBehaviours>(behaviours, (uint8_t*)collisionsString.AsCharPtr());
@@ -261,7 +266,7 @@ LoadMaterialTable(const IO::URI & materialTable)
     const IO::URI materialtable(materialTable);
     Util::String materialsString;
 
-    if (IO::IoServer::Instance()->ReadFile(materialtable, materialsString))
+    if (IO::ReadFile(materialtable, materialsString))
     {
         Physics::MaterialsT materials;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());

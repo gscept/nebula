@@ -48,7 +48,7 @@ SafeFileStream::Open()
         if (FSWrapper::FileExists(this->uri.LocalPath()))
         {
             String folder = this->uri.LocalPath().ExtractToLastSlash();
-            this->tmpUri = IoServer::Instance()->CreateTemporaryFilename(URI(folder));
+            this->tmpUri = CreateTemporaryFilename(URI(folder));
             this->handle = FSWrapper::OpenFile(this->tmpUri.GetHostAndLocalPath(), this->accessMode, this->accessPattern);
         }
         else

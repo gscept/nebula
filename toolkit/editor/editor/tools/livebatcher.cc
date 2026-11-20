@@ -28,25 +28,35 @@ class LiveBatcherThread : public Threading::Thread
         while (!this->ThreadStopRequested())
         {
             this->jobQueue.Wait();
-            this->waitEvent.Reset();
 
             this->jobQueue.DequeueAll(this->curWorkRequests);
             for (const auto& job : this->curWorkRequests)
             {
                 bool res = job.func();
                 n_assert(res);
-            }
 
-            this->waitEvent.Signal();
+                // Count every job, so LiveBatcher::Wait can tell when the jobs it waits for are done
+                this->numCompleted.Increment(1);
+                this->completedEvent.Signal();
+            }
         }
         // empty
     }
 
 public:
+    /// queue a job and count it, so LiveBatcher::Wait knows what it has to wait for
+    void Enqueue(LiveBatchJob&& job)
+    {
+        this->numEnqueued.Increment(1);
+        this->jobQueue.Enqueue(std::move(job));
+    }
+
     Util::Array<LiveBatchJob> curWorkRequests;
 
     Threading::SafeQueue<LiveBatchJob> jobQueue;
-    Threading::Event waitEvent;
+    Threading::Interlocked::AtomicInt numEnqueued;
+    Threading::Interlocked::AtomicInt numCompleted;
+    Threading::Event completedEvent;
 };
 __ImplementClass(Editor::LiveBatcherThread, 'LiBt', Threading::Thread);
 
@@ -121,7 +131,7 @@ LiveBatcher::BatchAssets()
     Presentation::BatcherWindow->Open() = true;
     Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
     uint32_t jobMessage = windowServer->PushLoadingMessage("[Packaging] All assets");
-    livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
+    livebatcherState.batchThread->Enqueue(LiveBatchJob{
         [windowServer, jobMessage]() -> bool
         {
             Util::String args;
@@ -149,12 +159,11 @@ void
 LiveBatcher::BatchAsset(const IO::Path& assetPath)
 {
     Presentation::BatcherWindow->Open() = true;
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     WorkCounter.Increment();
     Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
     uint32_t jobMessage = windowServer->PushLoadingMessage(Util::Format("[Packaging] %s", assetPath.AsString().AsCharPtr()));
     livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        [assetPath, ioServer, jobMessage, windowServer]() -> bool
+        [assetPath, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -183,7 +192,7 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
                 for (SizeT i = 0; i < lengthof(exportFolders); i++)
                 {
                     const char* basePath = exportFolders[i];
-                    Util::Array<Util::String> files = ioServer->ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
+                    Util::Array<Util::String> files = IO::ListFiles(Util::Format("%s:%s", basePath, assetPath.GetFolder().AsCharPtr()), "*");
                     for (const auto& file : files)
                     {
                         livebatcherState.filesToReload.Enqueue(Util::Format("%s:%s/%s", basePath, assetPath.GetFolder().AsCharPtr(), file.AsCharPtr()));
@@ -209,8 +218,16 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
     WorkCounter.Increment();
     Presentation::WindowServer* windowServer = Presentation::WindowServer::Instance();
     uint32_t jobMessage = windowServer->PushLoadingMessage(Util::Format("[Packaging] %s", filePath.AsString().AsCharPtr()));
-    livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
-        [filePath, jobMessage, windowServer]() -> bool
+
+    // Loaders look resources up by their resolved path, so the reload needs the full export URI, not just folder/file.ext
+    const Util::String exportFile = filePath.ExportURI().AsString();
+    // a model asset packages its animation under the model's name, with the clip sections cut from it, which characters
+    // set up from the model play
+    const Util::String animationFile = filePath.GetType() == "mdl" && IO::Path::ExportExtensions.Contains("ani")
+        ? IO::Path::File(filePath.GetFolder(), filePath.GetFile(), "ani").ExportURI().AsString()
+        : Util::String();
+    livebatcherState.batchThread->Enqueue(LiveBatchJob{
+        [filePath, exportFile, animationFile, jobMessage, windowServer]() -> bool
         {
             Util::String args;
             args.Append("-rawlog ");
@@ -229,7 +246,9 @@ LiveBatcher::BatchFile(const IO::Path& filePath)
                 WorkCounter.Decrement();
                 windowServer->RemoveLoadingMessage(jobMessage);
 
-                livebatcherState.filesToReload.Enqueue(filePath.GetExportFile());
+                livebatcherState.filesToReload.Enqueue(exportFile);
+                if (!animationFile.IsEmpty())
+                    livebatcherState.filesToReload.Enqueue(animationFile);
 
                 return true;
             }
@@ -245,7 +264,7 @@ void
 LiveBatcher::BatchModes(Editor::BatchModes modes)
 {
     WorkCounter.Increment();
-    livebatcherState.batchThread->jobQueue.Enqueue(LiveBatchJob{
+    livebatcherState.batchThread->Enqueue(LiveBatchJob{
         [modes]() -> bool
         {
             Util::String args;
@@ -293,10 +312,15 @@ LiveBatcher::BatchModes(Editor::BatchModes modes)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LiveBatcher::Wait()
 {
-    livebatcherState.batchThread->waitEvent.Wait();
+    // Wait for every job queued so far. The event can't tell us that on its own: on posix it's a
+    // counting semaphore, so it still holds a signal for each earlier job nobody waited for (like saves)
+    const Ptr<LiveBatcherThread>& thread = livebatcherState.batchThread;
+    const int target = thread->numEnqueued.Add(0);
+    while (thread->numCompleted.Add(0) < target)
+        thread->completedEvent.Wait();
 }
 
 } // namespace Editor

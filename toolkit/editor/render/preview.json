@@ -270,6 +270,28 @@
                         }
                     },
                     {
+                        "render": {
+                            "name": "Wireframe Preview",
+                            "targets": [
+                                {
+                                    "name": "PreviewOutput",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "depth": {
+                                "name": "ZBufferPreview",
+                                "flags": "Load"
+                            },
+                            "ops": [
+                                {
+                                    "subgraph": {
+                                        "name": "Wireframe"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
                         "transition": {
                             "name": "PreviewOutput",
                             "stage": "TransferRead"

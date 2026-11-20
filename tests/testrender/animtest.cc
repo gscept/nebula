@@ -105,7 +105,7 @@ AnimTest::Run()
     Util::FixedArray<AnimCurve> curves = { posCurve, nullScale, nullRotation };
 
     // Run anim sample with one active (pos) and two dead (scale rotation) curves
-    float value[10];
+    NEBULA_ALIGN16 float value[10];
     uchar count[3] = { 0, 0, 0 };
     AnimSampleStep(clip, curves, 0, Math::vec4{ 1 }, idleSamples, keySampleBuffer, keyIntervalBuffer, sampleIndexBuffer, value, count);
     VERIFY(value[0] == 0.0f);

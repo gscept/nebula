@@ -122,7 +122,7 @@ Float4Test::Run()
     // normalize
     v0.set(2.5f, 0.0f, 0.0f, 0.0f);
     v1 = normalize(v0);
-    VERIFY(v1 == vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    VERIFY(nearequal(v1, vec4(1.0f, 0.0f, 0.0f, 0.0f), vec4(0.00001f)));
 
     // transform (point and vector)
     mat4 m = translation(1.0f, 2.0f, 3.0f);

@@ -62,7 +62,7 @@ vsSkinnedShadow(
 ) void
 {
 	const skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    ProjPos = ShadowViewConstants.ShadowViewProjection[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
 	vertexExportCoordinates(ProjPos);
     UV = UnpackUV(uv);
 }

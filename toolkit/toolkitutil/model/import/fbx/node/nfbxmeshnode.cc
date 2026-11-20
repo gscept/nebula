@@ -71,7 +71,9 @@ NFbxMeshNode::ExtractMesh(
     }
     else
     {
-        node->mesh.material = "system/placeholder";
+        // FBX materials aren't extracted, so their names don't resolve to anything, use the placeholder instead.
+        // Full path, the scene writer would otherwise put it in the asset's folder
+        node->mesh.material = "system:placeholder:mat";
     }
 
     if (fbxMesh->uv_sets.count > 1)

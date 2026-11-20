@@ -142,10 +142,9 @@ DbServer::DeleteCurrentGame(const String& profileURI)
     }
 
     // delete current database
-    IO::IoServer* ioServer = IO::IoServer::Instance();
-    if (ioServer->FileExists(profileURI))
+    if (IO::FileExists(profileURI))
     {
-        bool dbDeleted = ioServer->DeleteFile(profileURI);
+        bool dbDeleted = IO::DeleteFile(profileURI);
         n_assert(dbDeleted);
     }
 }
@@ -170,23 +169,22 @@ DbServer::OpenNewGame(const String& profileURI, const String& dbURI)
     if (!this->workDbInMemory)
     {        
         // make sure the target directory exists
-        IO::IoServer* ioServer = IO::IoServer::Instance();
-        ioServer->CreateDirectory(profileURI);
+        IO::CreateDirectory(profileURI);
         
         // delete current database
-        if (ioServer->FileExists(dbURI))
+        if (IO::FileExists(dbURI))
         {
-            bool dbDeleted = ioServer->DeleteFile(dbURI);
+            bool dbDeleted = IO::DeleteFile(dbURI);
             n_assert(dbDeleted);
         }
         IO::URI journalURI = dbURI + String("-journal");
         // delete current database journalfile
-        if (ioServer->FileExists(journalURI))
+        if (IO::FileExists(journalURI))
         {
-            bool dbDeleted = ioServer->DeleteFile(journalURI);
+            bool dbDeleted = IO::DeleteFile(journalURI);
             n_assert(dbDeleted);
         }
-        bool dbCopied = ioServer->CopyFile("export:db/game.db4", dbURI);
+        bool dbCopied = IO::CopyFile("export:db/game.db4", dbURI);
         n_assert(dbCopied);
         // open the copied database file
         return this->OpenGameDatabase(dbURI);       
@@ -226,7 +224,7 @@ bool
 DbServer::CurrentGameExists(const String& profileURI) const
 {
     n_assert(profileURI.IsValid());
-    return IO::IoServer::Instance()->FileExists(profileURI);
+    return IO::FileExists(profileURI);
 }
 
 //------------------------------------------------------------------------------
@@ -246,15 +244,14 @@ DbServer::OpenLoadGame(const String& profileURI, const String& dbURI, const Stri
         this->CloseGameDatabase();
     }
     
-    IO::IoServer* ioServer = IO::IoServer::Instance();
     if (!this->workDbInMemory)
     {
         // make sure the target directory exists        
-        ioServer->CreateDirectory(profileURI);
+        IO::CreateDirectory(profileURI);
     }
     
     // check if save game exists
-    if (!ioServer->FileExists(saveGameURI))
+    if (!IO::FileExists(saveGameURI))
     {
         return false;
     }
@@ -262,12 +259,12 @@ DbServer::OpenLoadGame(const String& profileURI, const String& dbURI, const Stri
     if (!this->workDbInMemory)
     {
         // delete current database
-        if (ioServer->FileExists(dbURI))
+        if (IO::FileExists(dbURI))
         {
-            bool dbDeleted = ioServer->DeleteFile(dbURI);
+            bool dbDeleted = IO::DeleteFile(dbURI);
             n_assert(dbDeleted);
         }
-        bool dbCopied = ioServer->CopyFile(saveGameURI, dbURI);
+        bool dbCopied = IO::CopyFile(saveGameURI, dbURI);
         n_assert(dbCopied);
     }
     
@@ -288,27 +285,26 @@ DbServer::CreateSaveGame(const String& profileURI, const String& dbURI, const St
     n_assert2(!this->workDbInMemory, "TODO: Savegame from memory db not implemented yet!");
     
     // make sure the target directory exists
-    IO::IoServer* ioServer = IO::IoServer::Instance();
-    ioServer->CreateDirectory(profileURI);
+    IO::CreateDirectory(profileURI);
 
     // check if current world database exists
-    if (!ioServer->FileExists(dbURI))
+    if (!IO::FileExists(dbURI))
     {
         return false;
     }
 
     // delete save game file if already exists
-    if (ioServer->FileExists(saveGameURI))
+    if (IO::FileExists(saveGameURI))
     {
-        bool saveGameDeleted = ioServer->DeleteFile(saveGameURI);
+        bool saveGameDeleted = IO::DeleteFile(saveGameURI);
         n_assert(saveGameDeleted);
     }
     else
     {
         String saveGamePath = saveGameURI.ExtractDirName();        
-        ioServer->CreateDirectory(saveGamePath);
+        IO::CreateDirectory(saveGamePath);
     }
-    bool saveGameCopied = ioServer->CopyFile(dbURI, saveGameURI);
+    bool saveGameCopied = IO::CopyFile(dbURI, saveGameURI);
     n_assert(saveGameCopied);
     return true;
 }

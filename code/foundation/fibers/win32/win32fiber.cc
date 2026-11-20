@@ -34,6 +34,8 @@ Fiber::Fiber(void(*function)(void*), void* context)
     : handle(nullptr)
     , context(nullptr)
 {
+    // FIXME: Fibers shouldn't actually own the fiber handle, instead should be 
+    //        fetched from the pool
     this->handle = CreateFiber(0, { function }, context);
     this->context = context;
 }
@@ -43,8 +45,8 @@ Fiber::Fiber(void(*function)(void*), void* context)
 */
 Fiber::Fiber(const Fiber& rhs)
 {
-    if (this->handle != nullptr)
-        DeleteFiber(this->handle);
+    // BUG: We're moving/sharing ownership here potentially and the destructor of
+    //      one fiber might destroy it for the other, leading to double-free
     this->handle = rhs.handle;
     this->context = rhs.context;
 }
@@ -54,6 +56,7 @@ Fiber::Fiber(const Fiber& rhs)
 */
 Fiber::~Fiber()
 {
+    // BUG: We might not own this handle!
     if (this->handle != nullptr)
         DeleteFiber(this->handle);
     this->handle = nullptr;
@@ -66,6 +69,7 @@ Fiber::~Fiber()
 void
 Fiber::operator=(const Fiber& rhs)
 {
+    // BUG: Might not own this handle!
     if (this->handle != nullptr)
         DeleteFiber(this->handle);
     this->handle = rhs.handle;

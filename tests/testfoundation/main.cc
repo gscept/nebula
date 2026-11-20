@@ -7,6 +7,7 @@
 #include "core/coreserver.h"
 #include "core/sysfunc.h"
 #include "io/gamecontentserver.h"
+#include "io/ioserver.h"
 #include "testbase/testrunner.h"
 #include "stringtest.h"
 #include "arraytest.h"
@@ -27,6 +28,7 @@
 #include "filewatchertest.h"
 #include "uritest.h"
 #include "urntest.h"
+#include "pathtest.h"
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
 #include "pinnedarraytest.h"
@@ -70,6 +72,8 @@ __cdecl main(int argc, const char** argv)
     coreServer->SetAppName(Util::StringAtom("Nebula Foundation Tests"));
     coreServer->Open();
 
+    IO::StartupFilesystem({});
+
     Ptr<IO::GameContentServer> gameContentServer = IO::GameContentServer::Create();
     gameContentServer->SetTitle("RL Test Title");
     gameContentServer->SetTitleId("RLTITLEID");
@@ -107,6 +111,7 @@ __cdecl main(int argc, const char** argv)
     testRunner->AttachTestCase(MediaTypeTest::Create());
     testRunner->AttachTestCase(URITest::Create());
     testRunner->AttachTestCase(URNTest::Create());
+    testRunner->AttachTestCase(PathTest::Create());
     testRunner->AttachTestCase(StringTest::Create());   
     testRunner->AttachTestCase(ArrayTest::Create());
     testRunner->AttachTestCase(PinnedArrayTest::Create());
@@ -141,6 +146,8 @@ __cdecl main(int argc, const char** argv)
     coreServer->Close();
     testRunner = nullptr;
     coreServer = nullptr;
+
+    IO::ShutdownFilesystem();
     
     Core::SysFunc::Exit(result ? 0 : -1);
 }

@@ -167,6 +167,15 @@ CookApproxSkin(const MeshGeometryInput& input)
 
 //------------------------------------------------------------------------------
 /**
+    The samples are unsigned, 0 is the bottom of the field and 65535 is heightRange above it, the
+    same as a unorm heightmap. Physx stores signed 16 bit heights, so the samples are halved into
+    0..32767 instead of being reinterpreted, which would turn the upper half of the range negative.
+    Halving costs one bit of precision but keeps the field origin at the bottom, so shape poses
+    need no hidden vertical offset.
+
+    The input is laid out like an image, samples[z * width + x]. Physx rows run along x and
+    columns along z, with sample(row, column) at row * nbColumns + column, so the samples are
+    transposed into width rows of height columns.
 */
 bool
 CookHeightField(const HeightFieldInput& input, float heightRange, float targetSizeX, float targetSizeZ, PxGeometryHolder& out)
@@ -177,19 +186,25 @@ CookHeightField(const HeightFieldInput& input, float heightRange, float targetSi
         return false;
     }
 
+    static constexpr PxReal MaxStoredHeight = 32767.0f;
+
     Util::Array<physx::PxHeightFieldSample> heightSamples(input.width * input.height, 10);
     heightSamples.Resize(input.width * input.height);
-    for (SizeT i = 0; i < input.samples.Size(); i++)
+    for (SizeT x = 0; x < input.width; x++)
     {
-        heightSamples[i].height = (PxI16)input.samples[i];
-        heightSamples[i].materialIndex0 = PxBitAndByte(0);
-        heightSamples[i].materialIndex1 = PxBitAndByte(0);
+        for (SizeT z = 0; z < input.height; z++)
+        {
+            PxHeightFieldSample& sample = heightSamples[x * input.height + z];
+            sample.height = (PxI16)(input.samples[z * input.width + x] >> 1);
+            sample.materialIndex0 = PxBitAndByte(0);
+            sample.materialIndex1 = PxBitAndByte(0);
+        }
     }
 
     PxHeightFieldDesc hfDesc;
     hfDesc.format = PxHeightFieldFormat::eS16_TM;
-    hfDesc.nbColumns = (PxU32)input.width;
-    hfDesc.nbRows = (PxU32)input.height;
+    hfDesc.nbRows = (PxU32)input.width;
+    hfDesc.nbColumns = (PxU32)input.height;
     hfDesc.samples.data = heightSamples.ConstBegin();
     hfDesc.samples.stride = (PxU32)sizeof(PxHeightFieldSample);
 
@@ -200,7 +215,7 @@ CookHeightField(const HeightFieldInput& input, float heightRange, float targetSi
         return false;
     }
 
-    float sh = heightRange / 65536.0f;
+    float sh = heightRange / MaxStoredHeight;
     float sx = targetSizeX / (float)input.width;
     float sz = targetSizeZ / (float)input.height;
 

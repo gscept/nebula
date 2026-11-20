@@ -185,6 +185,12 @@ MeshLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>
                 const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
                 group.SetBaseIndex(nvxGroup->firstIndex);
                 group.SetNumIndices(nvxGroup->numIndices);
+                // Visibility culls against this box, without it the group keeps the default unit box around the node's origin
+                const Nvx3BBox& nvxBox = nvxGroup->boundingBox;
+                Math::bbox bbox;
+                bbox.pmin = Math::point(nvxBox.min[0], nvxBox.min[1], nvxBox.min[2]);
+                bbox.pmax = Math::point(nvxBox.max[0], nvxBox.max[1], nvxBox.max[2]);
+                group.SetBoundingBox(bbox);
                 primGroups.Append(group);
             }
             MeshCreateInfo mshInfo;

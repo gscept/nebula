@@ -39,9 +39,9 @@ void
 SurfaceBuilder::ExportBinary(Util::String const& dstFile)
 {
     // create folder if it doesn't exist
-    if (!IoServer::Instance()->DirectoryExists(this->dstDir))
+    if (!DirectoryExists(this->dstDir))
     {
-        IoServer::Instance()->CreateDirectory(this->dstDir);
+        CreateDirectory(this->dstDir);
     }
 
     Ptr<MemoryStream> stream = MemoryStream::Create();

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  graphicsfeature/graphicsfeatureunit.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ GraphicsFeatureUnit::OnActivate()
 
     const IO::URI levelSetupPath("tbl:app/base_level.nlst");
     App::LevelSettingsT levelSettings;
-    if (IO::IoServer::Instance()->ReadFile(levelSetupPath, contents))
+    if (IO::ReadFile(levelSetupPath, contents))
     {
         Flat::FlatbufferInterface::DeserializeFlatbuffer<App::LevelSettings>(levelSettings, (byte*)contents.AsCharPtr());
     }
@@ -359,6 +359,7 @@ GraphicsFeatureUnit::OnBeginFrame()
     {
     case 2:
         this->gfxServer->RenderDebug(0);
+        [[fallthrough]];
     case 1:
         Game::GameServer::Instance()->RenderDebug();
     default:

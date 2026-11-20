@@ -70,8 +70,7 @@ FibersTest::Run()
 {
     App::Application app;
 
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
-
+    IO::StartupFilesystem({});
     app.SetAppTitle("Fibers test!");
     app.SetCompanyName("gscept");
     app.Open();

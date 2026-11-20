@@ -507,7 +507,7 @@ public:
     static Math::half max()
     {
         Math::half ret;
-        ret.ieee.frac = ~0;
+        ret.ieee.frac = 0x3FF;  // all 10 fraction bits, ~0 would overflow the bitfield
         ret.ieee.exp = Math::half::MAX_EXPONENT_VALUE - 1;
         ret.ieee.sign = 0;
         return ret;

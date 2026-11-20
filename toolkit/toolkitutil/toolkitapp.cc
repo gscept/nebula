@@ -38,7 +38,7 @@ ToolkitApp::Open()
     if (ConsoleApplication::Open())
     {
         // need to disable ZIP file system in tools!
-        IoServer::Instance()->SetArchiveFileSystemEnabled(false);
+        SetArchiveFileSystemEnabled(false);
 
         Util::String toolDir = ProjectLocator::GetToolkitRoot();
         if (!toolDir.IsEmpty())

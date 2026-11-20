@@ -20,6 +20,25 @@
 //------------------------------------------------------------------------------
 namespace Util
 {
+
+// Template magic to automatically use the smallest type possible
+template <size_t S> struct BitFieldBitType
+{
+    using T = uint8_t;
+};
+template <> struct BitFieldBitType<16>
+{
+    using T = uint16_t;
+};
+template <> struct BitFieldBitType<32>
+{
+    using T = uint32_t;
+};
+template <> struct BitFieldBitType<64>
+{
+    using T = uint64_t;
+};
+
 template <unsigned int NUMBITS> class BitField
 {
     static_assert(NUMBITS > 0);
@@ -72,36 +91,18 @@ private:
     static constexpr uint64_t BASE = NUMBITS > 32 ? 64 : NUMBITS > 16 ? 32 : NUMBITS > 8 ? 16 : 8;
     static const int size = ((NUMBITS + BASE - 1) / BASE);
 
-    // Template magic to automatically use the smallest type possible
-    template <size_t S> struct BitType
-    {
-        using T = uint8_t;
-    };
-    template <> struct BitType<16>
-    {
-        using T = uint16_t;
-    };
-    template <> struct BitType<32>
-    {
-        using T = uint32_t;
-    };
-    template <> struct BitType<64>
-    {
-        using T = uint64_t;
-    };
-
-    using TYPE = typename BitType<BASE>::T;
+    using TYPE = typename BitFieldBitType<BASE>::T;
 
     TYPE bits[size];
 
 public:
-    BitType<BASE>::T GetBits(size_t index) const
+    typename BitFieldBitType<BASE>::T GetBits(size_t index) const
     {
         n_assert(index < size);
         return this->bits[index];
     }
 
-    void SetBits(size_t index, BitType<BASE>::T value)
+    void SetBits(size_t index, typename BitFieldBitType<BASE>::T value)
     {
         n_assert(index < size);
         this->bits[index] = value;

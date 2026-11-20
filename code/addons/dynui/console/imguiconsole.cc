@@ -229,14 +229,14 @@ ImguiConsole::Setup()
     // load persistent history
     auto reader = IO::TextReader::Create();
     Util::String history = App::Application::Instance()->GetAppTitle() + "_history.txt";    
-    reader->SetStream(IO::IoServer::Instance()->CreateStream("bin:" + history));
+    reader->SetStream(IO::CreateStream("bin:" + history));
     if (reader->Open())
     {
         this->previousCommands = reader->ReadAllLines();
         reader->Close();
     }
     this->persistentHistory = IO::TextWriter::Create();
-    auto stream = IO::IoServer::Instance()->CreateStream("bin:" + history);
+    auto stream = IO::CreateStream("bin:" + history);
     stream->SetAccessMode(IO::Stream::AppendAccess);
     if (stream->Open())
     {
@@ -390,7 +390,9 @@ ImguiConsole::RenderContent()
     if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, &TextEditCallback, (void*)this))
     {
         char* input_end = this->command + strlen(this->command);
-        while (input_end > this->command && input_end[-1] == ' ') input_end--; *input_end = 0;
+        while (input_end > this->command && input_end[-1] == ' ')
+            input_end--;
+        *input_end = 0;
         if (this->command[0])
         {
             this->AppendToLog({ LogMessageType::N_INPUT, this->command });

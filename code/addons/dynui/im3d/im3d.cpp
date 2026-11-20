@@ -3248,23 +3248,20 @@ Mat4 Im3d::Translation(const Vec3& _t)
 }
 Mat4 Im3d::AlignZ(const Vec3& _axis, const Vec3& _up)
 {
-	Vec3 x, y;
-	y = _up - _axis * Dot(_up, _axis);
-	float ylen = Length(y);
-	if_unlikely (ylen < FLT_EPSILON)
+ // derive x from a cross product instead of projecting _up onto the plane of _axis, the projection cancels out when
+ // _axis is a few ulps off _up and leaves a y that is nearly parallel to _axis (a rotation gizmo ring around a local
+ // y axis that has picked up float noise collapses into a line along that axis)
+	Vec3 x = Cross(_up, _axis);
+	float xlen = Length(x);
+	if_unlikely (xlen < 1e-3f)
 	{
-		Vec3 k = Vec3(1.0f, 0.0f, 0.0f);
-		y = k - _axis * Dot(k, _axis);
-		ylen = Length(y);
-		if_unlikely (ylen < FLT_EPSILON)
-		{
-			k = Vec3(0.0f, 0.0f, 1.0f);
-			y = k - _axis * Dot(k, _axis);
-			ylen = Length(y);
-		}
+	 // _axis is (anti)parallel to _up, pick another reference
+		Vec3 k = fabs(_axis.x) < 0.9f ? Vec3(1.0f, 0.0f, 0.0f) : Vec3(0.0f, 0.0f, 1.0f);
+		x = Cross(k, _axis);
+		xlen = Length(x);
 	}
-	y = y / ylen;
-	x = Cross(y, _axis);
+	x = x / xlen;
+	Vec3 y = Cross(_axis, x);
 
 	return Mat4(
 		x.x,    y.x,    _axis.x,    0.0f,

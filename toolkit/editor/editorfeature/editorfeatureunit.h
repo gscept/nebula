@@ -9,6 +9,7 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "game/featureunit.h"
+#include "editor/ui/uimanager.h"
 
 namespace EditorFeature
 {

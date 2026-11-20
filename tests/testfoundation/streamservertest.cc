@@ -21,7 +21,6 @@ using namespace IO;
 void
 StreamServerTest::Run()
 {
-    Ptr<IoServer> ioServer = IoServer::Create();
     SchemeRegistry* schemeRegistry = SchemeRegistry::Instance();
 
     // register some classes with the stream server
@@ -37,9 +36,9 @@ StreamServerTest::Run()
     URI absFileURI("file:///c:/temp");
     URI relFileURI("temp/bla.txt");
     URI memURI("memory:///test");
-    Ptr<Stream> absFileStream = ioServer->CreateStream(absFileURI);
-    Ptr<Stream> relFileStream = ioServer->CreateStream(relFileURI);
-    Ptr<Stream> memStream = ioServer->CreateStream(memURI);
+    Ptr<Stream> absFileStream = IO::CreateStream(absFileURI);
+    Ptr<Stream> relFileStream = IO::CreateStream(relFileURI);
+    Ptr<Stream> memStream = IO::CreateStream(memURI);
     VERIFY(absFileStream->IsInstanceOf(FileStream::RTTI));
     VERIFY(relFileStream->IsInstanceOf(FileStream::RTTI));
     VERIFY(memStream->IsInstanceOf(MemoryStream::RTTI));

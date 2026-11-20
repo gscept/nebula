@@ -1234,8 +1234,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         0,
         (uint32_t)queueInfos.Size(),
         queueInfos.Begin(),
-        (uint32_t)numLayers,
-        layers,
+        0,                                          // device layers are deprecated, layers are enabled on the instance
+        nullptr,
         state.numCaps[state.currentDevice],
         state.deviceFeatureStrings[state.currentDevice].Begin(),
         &features2.features
@@ -1490,7 +1490,7 @@ DestroyGraphicsDevice()
     uint8_t* data = (uint8_t*)Memory::Alloc(Memory::ScratchHeap, size);
     vkGetPipelineCacheData(state.devices[0], state.cache, &size, data);
     Util::String path = Util::String::Sprintf("bin:%s_vkpipelinecache", App::Application::Instance()->GetAppTitle().AsCharPtr());
-    Ptr<IO::Stream> cachedData = IO::IoServer::Instance()->CreateStream(path);
+    Ptr<IO::Stream> cachedData = IO::CreateStream(path);
     cachedData->SetAccessMode(IO::Stream::WriteAccess);
     if (cachedData->Open())
     {

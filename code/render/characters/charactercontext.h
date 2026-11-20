@@ -28,6 +28,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "resources/resourceid.h"
+#include "io/path.h"
 #include "coreanimation/animclip.h"
 #include "coreanimation/animsamplemask.h"
 #include "characters/skeleton.h"
@@ -59,6 +60,14 @@ class CharacterContext : public Graphics::GraphicsContext
     __DeclareContext();
 public:
 
+    /// an event a clip played on a track passed
+    struct FiredEvent
+    {
+        CoreAnimation::AnimEvent event;
+        IndexT clip;
+        IndexT track;
+    };
+
     /// constructor
     CharacterContext();
     /// destructor
@@ -77,6 +86,11 @@ public:
         , const Util::StringAtom& tag
         , bool supportBlending = true
     );
+
+    /// if the entity's model is skinned, register and setup the entity as a character using the skeleton and animation packaged
+    /// with the model (folder:file:ske and folder:file:ani), and play its first clip. Call when the model is loaded and the entity
+    /// is observable. Returns false if the model isn't skinned or doesn't have both
+    static bool SetupFromModel(const Graphics::GraphicsEntityId id, const IO::Path& model, const Util::StringAtom& tag);
 
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
@@ -116,6 +130,25 @@ public:
 
     /// retrieve animation clip names and lengths
     static void QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArray<CoreAnimation::AnimClip>& outClips);
+    /// get the skeleton, invalid until it's loaded
+    static const SkeletonId GetSkeleton(const Graphics::GraphicsEntityId id);
+    /// get the animation, invalid until it's loaded
+    static const CoreAnimation::AnimationId GetAnimation(const Graphics::GraphicsEntityId id);
+    /// get the model space transforms of the joints in the last evaluated pose, one per joint of the skeleton
+    static const Util::FixedArray<Math::mat4>& GetJointTransforms(const Graphics::GraphicsEntityId id);
+    /// get the clip playing on a track, InvalidIndex if none is
+    static const IndexT GetPlayingClip(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// check if the clip playing on a track is paused
+    static bool IsTrackPaused(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// get the time in the clip playing on a track in seconds, within its duration for looped clips, 0 if none is playing
+    static Timing::Time GetTrackTime(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// move the clip playing on a track to a time in it in seconds, it plays on from there, a paused one shows the pose at that time.
+    /// The events between the time it was at and the time it's moved to aren't fired
+    static void SeekTrack(const Graphics::GraphicsEntityId id, const IndexT track, const Timing::Time time);
+    /// get the events the clips played on the tracks passed in the last update that finished, in the order of the tracks.
+    /// A clip fires the events at its start when it starts, and every time it passes them while looping, a clip that
+    /// stops fires the ones up to its end. Paused clips fire none
+    static const Util::Array<FiredEvent>& GetFiredEvents(const Graphics::GraphicsEntityId id);
 
     /// runs before frame is updated
     static void UpdateAnimations(const Graphics::FrameContext& ctx);
@@ -158,6 +191,8 @@ private:
         float timeFactor;
         float blend;
         bool paused;
+        /// the base time is set once the clip starts playing, a clip replacing the playing one starts on the next update
+        bool started;
 #if NEBULA_DEBUG
         Util::String name;
 #endif
@@ -189,7 +224,11 @@ private:
         SampleBuffer,
         SupportMix,
         EntityId,
-        CharacterSkinNodeIndexOffset
+        CharacterSkinNodeIndexOffset,
+        AnimationResource,
+        AnimationIndex,
+        FiredEvents,
+        PendingFiredEvents
     };
 
     typedef Ids::IdAllocator<
@@ -205,7 +244,11 @@ private:
         CoreAnimation::AnimSampleBuffer,
         bool,
         Graphics::GraphicsEntityId,
-        IndexT
+        IndexT,
+        Resources::ResourceId,
+        IndexT,
+        Util::Array<FiredEvent>,
+        Util::Array<FiredEvent>
     > CharacterContextAllocator;
     static CharacterContextAllocator characterContextAllocator;
 

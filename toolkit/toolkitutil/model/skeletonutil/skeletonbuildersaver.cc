@@ -48,9 +48,9 @@ bool
 SkeletonBuilderSaver::SaveBinary(const IO::URI& uri, const ToolkitUtil::SkeletonResourceT* resource, Platform::Code platform)
 {
     // make sure the target directory exists
-    IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
+    CreateDirectory(uri.LocalPath().ExtractDirName());
 
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(uri);
+    Ptr<Stream> stream = CreateStream(uri);
     stream->SetAccessMode(Stream::WriteAccess);
     if (stream->Open())
     {
@@ -58,7 +58,13 @@ SkeletonBuilderSaver::SaveBinary(const IO::URI& uri, const ToolkitUtil::Skeleton
         SkeletonBuilderSaver::WriteHeader(stream, resource, byteOrder);
         SkeletonBuilderSaver::WriteSkeletons(stream, resource, byteOrder);
         SkeletonBuilderSaver::WriteJoints(stream, resource, byteOrder);
+
+        stream->Close();
+        stream = nullptr;
+        return true;
     }
+
+    // failed to open write stream
     return false;
 }
 

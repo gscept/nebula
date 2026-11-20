@@ -103,7 +103,7 @@ World::PreloadLevel(Util::String const& path)
     level->world = this;
 
     Ptr<IO::BinaryReader> reader = IO::BinaryReader::Create();
-    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    reader->SetStream(IO::CreateStream(path));
     reader->SetMemoryMappingEnabled(true);
     if (!reader->Open())
     {
@@ -487,14 +487,14 @@ World::ExportLevel(Util::String const& path)
 
     FinishLevelBuffer(builder, flat_level);
 
-    if (!IO::IoServer::Instance()->EnsureDirectoriesForFile(path))
+    if (!IO::EnsureDirectoriesForFile(path))
     {
         n_warning("Could not create output directory for packed level '%s'\n", path.AsCharPtr());
         return false;
     }
 
     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-    writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    writer->SetStream(IO::CreateStream(path));
     if (!writer->Open())
     {
         n_warning("Could not open packed level '%s' for writing\n", path.AsCharPtr());
