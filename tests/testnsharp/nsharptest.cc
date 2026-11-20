@@ -14,6 +14,15 @@
 #include "game/timesource.h"
 #include "components/nsharpcomponents.h"
 
+#include "nsharp/api/input.h"
+#include "input/inputserver.h"
+#include "input/inputevent.h"
+#include "input/inputhandler.h"
+#include "input/keyboard.h"
+#include "input/mouse.h"
+#include "input/key.h"
+#include "input/mousebutton.h"
+
 namespace Test
 {
 __ImplementClass(Test::NSharpTest, 'nshT', Test::TestCase);
@@ -94,6 +103,164 @@ AdvanceTestTimeSource(double delta)
         return;
 
     Game::Time::AdvanceTimeSource(Game::Time::GetTimeSource(testTimeSourceHash), delta);
+}
+
+// The input mirror test
+static Ptr<Input::InputServer> testInputServer;
+
+NEBULA_EXPORT void
+OpenTestInputServer()
+{
+    testInputServer = Input::InputServer::Create();
+    testInputServer->Open();
+}
+
+NEBULA_EXPORT void
+CloseTestInputServer()
+{
+    if (!testInputServer.isvalid())
+        return;
+
+    testInputServer->Close();
+    testInputServer = nullptr;
+}
+
+// The layout contract has nothing but the field order, so both sides state the size and the test compares
+// the two statements
+NEBULA_EXPORT int
+InputTestSnapshotSize()
+{
+    return (int)sizeof(Scripting::Api::InputSnapshot);
+}
+
+NEBULA_EXPORT int
+InputTestKeyCount()
+{
+    return (int)Input::Key::NumKeyCodes;
+}
+
+NEBULA_EXPORT int
+InputTestMouseButtonCount()
+{
+    return (int)Input::MouseButton::NumMouseButtons;
+}
+
+// A key code as the engine's own dictionary reads it. The managed enum is written out by hand, so this is
+// where the test checks that the two agree
+NEBULA_EXPORT int
+InputTestKeyCode(const char* name)
+{
+    return (int)Input::Key::FromString(Util::String(name));
+}
+
+NEBULA_EXPORT int
+InputTestMouseButtonCode(const char* name)
+{
+    return (int)Input::MouseButton::FromString(Util::String(name));
+}
+
+NEBULA_EXPORT void
+InputTestBeginFrame()
+{
+    testInputServer->BeginFrame();
+}
+
+NEBULA_EXPORT void
+InputTestEndFrame()
+{
+    testInputServer->EndFrame();
+}
+
+NEBULA_EXPORT void
+InputTestPutKey(int code, bool down)
+{
+    Input::InputEvent e;
+    e.SetType(down ? Input::InputEvent::KeyDown : Input::InputEvent::KeyUp);
+    e.SetKey((Input::Key::Code)code);
+    testInputServer->PutEvent(e);
+}
+
+NEBULA_EXPORT void
+InputTestPutMouseButton(int button, bool down)
+{
+    Input::InputEvent e;
+    e.SetType(down ? Input::InputEvent::MouseButtonDown : Input::InputEvent::MouseButtonUp);
+    e.SetMouseButton((Input::MouseButton::Code)button);
+
+    // The window sends the position it has with a button event, and the handler updates its position from
+    // that, so the test carries the position the frame already has
+    e.SetAbsMousePos(testInputServer->GetDefaultMouse()->GetPixelPosition());
+    e.SetNormMousePos(testInputServer->GetDefaultMouse()->GetScreenPosition());
+
+    testInputServer->PutEvent(e);
+}
+
+NEBULA_EXPORT void
+InputTestPutMouseMove(float x, float y)
+{
+    Input::InputEvent e;
+    e.SetType(Input::InputEvent::MouseMove);
+    e.SetAbsMousePos(Math::vec2(x, y));
+    e.SetNormMousePos(Math::vec2(x, y));
+    testInputServer->PutEvent(e);
+}
+
+NEBULA_EXPORT void
+InputTestPutMouseWheel(int clicks)
+{
+    Input::InputEvent e;
+    e.SetType(clicks >= 0 ? Input::InputEvent::MouseWheelForward : Input::InputEvent::MouseWheelBackward);
+
+    // A window sends the position it has with a wheel event, and the handler takes its position from any
+    // event it gets, so the test carries the position the frame already has rather than an empty one
+    e.SetAbsMousePos(testInputServer->GetDefaultMouse()->GetPixelPosition());
+    e.SetNormMousePos(testInputServer->GetDefaultMouse()->GetScreenPosition());
+
+    testInputServer->PutEvent(e);
+}
+
+NEBULA_EXPORT void
+InputTestPutFocus(bool focus)
+{
+    Input::InputEvent e;
+    e.SetType(focus ? Input::InputEvent::AppObtainFocus : Input::InputEvent::AppLoseFocus);
+    testInputServer->PutEvent(e);
+}
+
+// The character the keyboard produced during the frame. Text is the one part of the keyboard state that
+// cannot come through the mirror, because a DllImport that returns a string makes the marshaler free the
+// pointer it was given, so the managed side reads it through a buffer it owns
+NEBULA_EXPORT void
+InputTestPutChar(int chr)
+{
+    Input::InputEvent e;
+    e.SetType(Input::InputEvent::Character);
+    e.SetChar((Input::Char)chr);
+    testInputServer->PutEvent(e);
+}
+
+// Capture is a handler state rather than an event, so this goes through the server directly. The handler that
+// holds the capture is the one the events go to, which is the state the mirror reports
+NEBULA_EXPORT void
+InputTestCaptureMouse(bool capture)
+{
+    Ptr<Input::InputHandler> mouse = testInputServer->GetDefaultMouse().upcast<Input::InputHandler>();
+
+    if (capture)
+        testInputServer->ObtainMouseCapture(mouse);
+    else
+        testInputServer->ReleaseMouseCapture(mouse);
+}
+
+NEBULA_EXPORT void
+InputTestCaptureKeyboard(bool capture)
+{
+    Ptr<Input::InputHandler> keyboard = testInputServer->GetDefaultKeyboard().upcast<Input::InputHandler>();
+
+    if (capture)
+        testInputServer->ObtainKeyboardCapture(keyboard);
+    else
+        testInputServer->ReleaseKeyboardCapture(keyboard);
 }
 
 // How many times the managed property's OnBeginFrame and OnMessage run. A property that belongs
@@ -434,6 +601,10 @@ NSharpTest::Run()
     // through a callback. The scene is not here, so the test answers for it
     Scripting::PropertyLevelExtension::SetAuthoredCallback(&TestIsAuthored);
 
+    // The input server the managed mirror reads. Opening it is what creates the default keyboard and mouse
+    // handlers the mirror reports, and there is no window here to pump events into them
+    OpenTestInputServer();
+
     // Entities created by the test runner for the managed side to discover through the entity
     // callback. This is what a plugin needs in the editor: entities are authored by C++, not by
     // the script, so the managed World has to mirror the native one.
@@ -499,11 +670,21 @@ NSharpTest::Run()
     StepFrame();
     StepFrame();  // the text a revert composes from
 
+    StepFrame();  // the input mirror, one frame per phase
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();  // the text the keyboard produced, and the server is closed after it
+
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);
 
     Scripting::PropertyLevelExtension::SetChangeCallback(nullptr);
     Scripting::PropertyLevelExtension::SetAuthoredCallback(nullptr);
+
+    CloseTestInputServer();
 }
 
 } // namespace Test

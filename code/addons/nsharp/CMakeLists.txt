@@ -34,14 +34,15 @@ add_library(nsharpbindings OBJECT
     api/audio.cc
     api/render.cc
     api/game.cc
+    api/input.cc
 )
-target_link_libraries(nsharpbindings PRIVATE foundation application)
+target_link_libraries(nsharpbindings PRIVATE foundation application input)
 target_include_directories(nsharpbindings PUBLIC ${CODE_ROOT}/foundation ${DOTNET_NETHOST_INCLUDE_DIR})
 target_precompile_headers(nsharpbindings REUSE_FROM foundation)
 set_target_properties(nsharpbindings PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 fips_begin_lib(nsharp)
-    fips_libs(foundation application ${DOTNET_NETHOST_LIBRARIES})
+    fips_libs(foundation application input ${DOTNET_NETHOST_LIBRARIES})
 
     fips_files(
         assemblyid.h
@@ -60,6 +61,7 @@ fips_begin_lib(nsharp)
             audio.h
             render.h
             game.h
+            input.h
         )
     fips_dir(conversion)
         fips_files(

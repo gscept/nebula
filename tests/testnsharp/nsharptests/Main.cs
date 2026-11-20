@@ -489,6 +489,53 @@ namespace NST
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool RecordedPathMatches(string expected);
 
+        // The input mirror. There is no window in the test runner, so the test drives the frame and the events
+        // through these and reads the result through the mirror
+        [DllImport("__Internal", EntryPoint = "InputTestSnapshotSize")]
+        public static extern int InputTestSnapshotSize();
+
+        [DllImport("__Internal", EntryPoint = "InputTestKeyCount")]
+        public static extern int InputTestKeyCount();
+
+        [DllImport("__Internal", EntryPoint = "InputTestMouseButtonCount")]
+        public static extern int InputTestMouseButtonCount();
+
+        [DllImport("__Internal", EntryPoint = "InputTestKeyCode")]
+        public static extern int InputTestKeyCode(string name);
+
+        [DllImport("__Internal", EntryPoint = "InputTestMouseButtonCode")]
+        public static extern int InputTestMouseButtonCode(string name);
+
+        [DllImport("__Internal", EntryPoint = "InputTestBeginFrame")]
+        public static extern void InputTestBeginFrame();
+
+        [DllImport("__Internal", EntryPoint = "InputTestEndFrame")]
+        public static extern void InputTestEndFrame();
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutKey")]
+        public static extern void InputTestPutKey(int code, [MarshalAs(UnmanagedType.I1)] bool down);
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutMouseButton")]
+        public static extern void InputTestPutMouseButton(int button, [MarshalAs(UnmanagedType.I1)] bool down);
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutMouseMove")]
+        public static extern void InputTestPutMouseMove(float x, float y);
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutMouseWheel")]
+        public static extern void InputTestPutMouseWheel(int clicks);
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutFocus")]
+        public static extern void InputTestPutFocus([MarshalAs(UnmanagedType.I1)] bool focus);
+
+        [DllImport("__Internal", EntryPoint = "InputTestPutChar")]
+        public static extern void InputTestPutChar(int chr);
+
+        [DllImport("__Internal", EntryPoint = "InputTestCaptureMouse")]
+        public static extern void InputTestCaptureMouse([MarshalAs(UnmanagedType.I1)] bool capture);
+
+        [DllImport("__Internal", EntryPoint = "InputTestCaptureKeyboard")]
+        public static extern void InputTestCaptureKeyboard([MarshalAs(UnmanagedType.I1)] bool capture);
+
 
         public static void Verify(bool test,
         [CallerFilePath] string filePath = "",
@@ -1419,6 +1466,133 @@ namespace NST
             {
                 Tests.TestPropertyResolve();
                 this.syncPhase = 25;
+            }
+            else if (this.syncPhase == 25)
+            {
+                // The contract between the two sides is the field order and the code values, and both sides
+                // state them. This is where the test compares the two statements
+                Tests.Verify(Input.SnapshotSize == Tests.InputTestSnapshotSize());
+                Tests.Verify((int)Key.NumKeyCodes == Tests.InputTestKeyCount());
+                Tests.Verify((int)MouseButton.NumMouseButtons == Tests.InputTestMouseButtonCount());
+                Tests.Verify((int)Key.W == Tests.InputTestKeyCode("W"));
+                Tests.Verify((int)Key.F11 == Tests.InputTestKeyCode("F11"));
+                Tests.Verify((int)MouseButton.LeftButton == Tests.InputTestMouseButtonCode("LeftButton"));
+
+                // A key pressed during the frame. The frame is what an edge belongs to
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutKey((int)Key.W, true);
+                Input.Sync();
+                Tests.Verify(Input.IsKeyPressed(Key.W));
+                Tests.Verify(Input.IsKeyHeld(Key.W));
+                Tests.Verify(!Input.IsKeyReleased(Key.W));
+                Tests.InputTestEndFrame();
+
+                this.syncPhase = 26;
+            }
+            else if (this.syncPhase == 26)
+            {
+                // A frame with nothing in it. The held state is the handler's state, so it survives the frame,
+                // and the edge is cleared at the start of it
+                Tests.InputTestBeginFrame();
+                Input.Sync();
+                Tests.Verify(Input.IsKeyHeld(Key.W));
+                Tests.Verify(!Input.IsKeyPressed(Key.W));
+                Tests.Verify(!Input.IsKeyReleased(Key.W));
+                Tests.InputTestEndFrame();
+
+                this.syncPhase = 27;
+            }
+            else if (this.syncPhase == 27)
+            {
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutKey((int)Key.W, false);
+                Input.Sync();
+
+                // The release is the edge for this frame, and the held state is still true in it: the engine
+                // keeps the pressed state for the frame a key was tapped in, so a press and a release inside
+                // one frame is not missed
+                Tests.Verify(Input.IsKeyReleased(Key.W));
+                Tests.Verify(Input.IsKeyHeld(Key.W));
+
+                // A code the mirror has no word for reads as no bit rather than as a read outside the buffer
+                Tests.Verify(!Input.IsKeyHeld(Key.InvalidKey));
+
+                Tests.InputTestEndFrame();
+                this.syncPhase = 28;
+            }
+            else if (this.syncPhase == 28)
+            {
+                // The frame after a release is where the held state goes
+                Tests.InputTestBeginFrame();
+                Input.Sync();
+                Tests.Verify(!Input.IsKeyHeld(Key.W));
+                Tests.Verify(!Input.IsKeyReleased(Key.W));
+                Tests.InputTestEndFrame();
+
+                this.syncPhase = 29;
+            }
+            else if (this.syncPhase == 29)
+            {
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutMouseButton((int)MouseButton.LeftButton, true);
+                Tests.InputTestPutMouseMove(100.0f, 50.0f);
+                Tests.InputTestPutMouseWheel(-1);
+                Input.Sync();
+
+                Tests.Verify(Input.IsMousePressed(MouseButton.LeftButton));
+                Tests.Verify(Input.IsMouseHeld(MouseButton.LeftButton));
+                Tests.Verify(!Input.IsMouseReleased(MouseButton.LeftButton));
+                Tests.Verify(Input.PixelPosition == new Vector2(100.0f, 50.0f));
+                Tests.Verify(Input.ScreenPosition == new Vector2(100.0f, 50.0f));
+                Tests.Verify(Input.Wheel == -1);
+
+                // The engine builds the movement as the position the frame started at minus the position the
+                // event carried, which is the negative of the delta. See ISSUES.md
+                Tests.Verify(Input.Movement == new Vector2(-100.0f, -50.0f));
+
+                Tests.InputTestEndFrame();
+                this.syncPhase = 30;
+            }
+            else if (this.syncPhase == 30)
+            {
+                // Focus and the two capture flags are the server's state rather than the handler's, and they
+                // are what tell a caller that a key is missing because the UI took it
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutFocus(false);
+                Input.Sync();
+                Tests.Verify(!Input.HasFocus);
+                Tests.Verify(!Input.KeyCaptured);
+                Tests.Verify(!Input.MouseCaptured);
+                Tests.InputTestEndFrame();
+
+                Tests.InputTestCaptureKeyboard(true);
+                Input.Sync();
+                Tests.Verify(Input.KeyCaptured);
+
+                Tests.InputTestCaptureMouse(true);
+                Input.Sync();
+                Tests.Verify(Input.MouseCaptured);
+
+                Tests.InputTestCaptureKeyboard(false);
+                Tests.InputTestCaptureMouse(false);
+                Input.Sync();
+                Tests.Verify(!Input.KeyCaptured);
+                Tests.Verify(!Input.MouseCaptured);
+
+                this.syncPhase = 31;
+            }
+            else if (this.syncPhase == 31)
+            {
+                // Text is the one part of the keyboard state that cannot come through the mirror, so it comes
+                // through a buffer this side owns
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutChar((int)'h');
+                Tests.InputTestPutChar((int)'i');
+                Input.Sync();
+                Tests.Verify(Input.CharInput() == "hi");
+                Tests.InputTestEndFrame();
+
+                this.syncPhase = 32;
             }
             base.OnFrame();
         }

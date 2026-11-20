@@ -160,8 +160,14 @@ namespace Nebula
                 // frame's values and the fixed steps are still all there
                 TimeManager.Instance.Sync();
 
-                // TODO: loop over all worlds and collect garbage
-                World.Get(World.DEFAULT_WORLD).CollectGarbage();
+                // The events for this frame have been pumped by the render feature unit, which is attached
+                // before the script feature unit, so the input mirror reads this frame's state
+                Input.Sync();
+
+                foreach (World world in World.AllWorlds())
+                {
+                    world.CollectGarbage();
+                }
 
                 foreach (World world in World.AllWorlds())
                 {

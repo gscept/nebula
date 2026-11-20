@@ -27,7 +27,7 @@ nebula_begin_app(testnsharp windowed)
 
     fips_dir(.)
 
-    fips_deps(foundation testbase nsharp)
+    fips_deps(foundation testbase nsharp input)
     target_precompile_headers(testnsharp PRIVATE [["foundation/stdneb.h"]])
     add_dependencies(testnsharp NSharpTestsManaged)
 
