@@ -199,6 +199,115 @@ namespace NST
         public int value;
     }
 
+    /// <summary>
+    /// A property with only plain fields, which is what the level format writes and reads back. The
+    /// fields are written in name order, so the file the format produces is the same for the same
+    /// values no matter where the fields are declared in the class.
+    /// </summary>
+    [ExportType]
+    public class FormatTestProperty : Property
+    {
+        public int id;
+        public string name;
+        public Vector3 position;
+        public float scale;
+    }
+
+    /// <summary>
+    /// A property with a field named the same as one on FormatTestProperty. A change says which property it is
+    /// about, and a field name on its own does not, so a change to one of them has to leave the other alone.
+    /// </summary>
+    [ExportType]
+    public class SameFieldProperty : Property
+    {
+        public int id;
+    }
+
+    /// <summary>
+    /// A property whose field is a reference to another entity, which is what the level format writes as the
+    /// guid the file names the target by.
+    /// </summary>
+    public class RefTestProperty : Property
+    {
+        public Entity target;
+    }
+
+    /// <summary>
+    /// A property that records what the runtime calls on it, which is what the sim world test checks: a
+    /// property only runs in a world that is simulating, and its activation happens when the world starts
+    /// simulating rather than when it is attached.
+    /// </summary>
+    [ExportType]
+    public class SimTestProperty : Property, IMessageHandler<TestMsg>
+    {
+        public int activateCalls;
+        public int deactivateCalls;
+        public int frameCalls;
+        public int messageCalls;
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+        }
+
+        public override void OnDeactivate()
+        {
+            this.deactivateCalls++;
+        }
+
+        public override void OnFrame()
+        {
+            this.frameCalls++;
+        }
+
+        public void OnMessage(in TestMsg msg)
+        {
+            this.messageCalls++;
+        }
+
+        protected override void RegisterMessages()
+        {
+            this.RegisterMessage<TestMsg>();
+        }
+
+        public override Nebula.Game.FrameEvent[] AcceptedEvents()
+        {
+            return new[]
+            {
+                Nebula.Game.FrameEvent.OnFrame
+            };
+        }
+    }
+
+    /// <summary>
+    /// A property that counts its fixed calls. It runs on the test runner's fixed time source rather than the
+    /// game logic one, so the number of steps is something the test decides rather than something the frame
+    /// time gives.
+    /// </summary>
+    [ExportType]
+    public class FixedTestProperty : Property
+    {
+        public int fixedCalls;
+
+        public override void OnFixedFrame()
+        {
+            this.fixedCalls++;
+        }
+
+        public override uint FixedTimeSource()
+        {
+            return Tests.TestTimeSourceHash;
+        }
+
+        public override Nebula.Game.FrameEvent[] AcceptedEvents()
+        {
+            return new[]
+            {
+                Nebula.Game.FrameEvent.OnFixedFrame
+            };
+        }
+    }
+
     [ExportType]
     public class ExportedState : IHotReloadManaged
     {
@@ -302,6 +411,18 @@ namespace NST
         [DllImport("__Internal", EntryPoint = "DestroyTestWorld")]
         public static extern void DestroyTestWorld();
 
+        [DllImport("__Internal", EntryPoint = "SetTestWorldSimulating")]
+        public static extern void SetTestWorldSimulating(uint worldId, [MarshalAs(UnmanagedType.I1)] bool simulating);
+
+        [DllImport("__Internal", EntryPoint = "CreateTestTimeSource")]
+        public static extern uint CreateTestTimeSource(double fixedFrameTime, int maxStepsPerFrame);
+
+        [DllImport("__Internal", EntryPoint = "AdvanceTestTimeSource")]
+        public static extern void AdvanceTestTimeSource(double delta);
+
+        // The hash the test runner's fixed time source is created with
+        public static readonly uint TestTimeSourceHash = TimeSourceHash.FourCC("TST1");
+
         [DllImport("__Internal", EntryPoint = "RecordPropertyFrameCall")]
         public static extern void RecordPropertyFrameCall();
 
@@ -319,6 +440,55 @@ namespace NST
 
         [DllImport("__Internal", EntryPoint = "GetPropertyMessageCalls")]
         public static extern int GetPropertyMessageCalls();
+
+        [DllImport("__Internal", EntryPoint = "GetPropertySourceEntityId")]
+        public static extern UInt64 GetPropertySourceEntityId();
+
+        [DllImport("__Internal", EntryPoint = "GetPropertyTargetEntityId")]
+        public static extern UInt64 GetPropertyTargetEntityId();
+
+        [DllImport("__Internal", EntryPoint = "GetInstancelessEntityId")]
+        public static extern UInt64 GetInstancelessEntityId();
+
+        [DllImport("__Internal", EntryPoint = "CaptureEntityJson")]
+        public static extern void CaptureEntityJson(UInt64 entityId);
+
+        [DllImport("__Internal", EntryPoint = "ApplyPropertyJson")]
+        public static extern void ApplyPropertyJson(UInt64 entityId);
+
+        [DllImport("__Internal", EntryPoint = "ApplyEntityText")]
+        public static extern void ApplyEntityText(UInt64 entityId, string text);
+
+        // The same text read through the extension's hooks, which is the path the editor's revert takes. This is
+        // what checks that the entry points the extension caches actually resolve
+        [DllImport("__Internal", EntryPoint = "ResolveThroughExtension")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool ResolveThroughExtension(string baseText, string keys, string expected);
+
+        // The override marker, read through the callback the test installed. A row asks for one key at a time,
+        // and this is the only way this side can see which key it asked about
+        [DllImport("__Internal", EntryPoint = "SetAuthoredAnswer")]
+        public static extern void SetAuthoredAnswer(string path, [MarshalAs(UnmanagedType.I1)] bool answer);
+
+        [DllImport("__Internal", EntryPoint = "AuthoredPathMatches")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool AuthoredPathMatches(string expected);
+
+        // The managed side cannot read what the native side recorded, and a string returned from C++ is one
+        // the marshaler would free, so the test hands the text it expects here and the comparison is done
+        // on the native side
+        [DllImport("__Internal", EntryPoint = "CapturedJsonMatches")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool CapturedJsonMatches(string expected);
+
+        [DllImport("__Internal", EntryPoint = "RecordedChangeMatches")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool RecordedChangeMatches(string path, string oldText, string newText);
+
+        [DllImport("__Internal", EntryPoint = "RecordedPathMatches")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool RecordedPathMatches(string expected);
+
 
         public static void Verify(bool test,
         [CallerFilePath] string filePath = "",
@@ -372,6 +542,367 @@ namespace NST
         /// Verify that the IDL generator maps component types to blittable mirrors of the native
         /// layout, and that a component round-trips through native with that layout.
         /// </summary>
+        /// <summary>
+        /// The round trip through the level format for managed properties. The native side owns the
+        /// buffer the json is written into and only ever sees text, which is the shape a level format
+        /// has for a feature it cannot interpret. The property is put on one entity, written as text,
+        /// and that text is applied to another entity that has nothing on it.
+        /// </summary>
+        public static void TestPropertyLevelFormat()
+        {
+            World world = World.Get(World.DEFAULT_WORLD);
+            UInt64 sourceId = GetPropertySourceEntityId();
+            UInt64 targetId = GetPropertyTargetEntityId();
+
+            Entity source = world.GetEntity(sourceId);
+            Entity target = world.GetEntity(targetId);
+            Verify(source != null);
+            Verify(target != null);
+
+            // The name is longer than the buffer the native capture starts with, so the capture has to
+            // answer with the length it needs and be made again
+            FormatTestProperty property = new();
+            property.id = 7;
+            property.name = new string('x', 1200);
+            property.position = new Vector3(1.5f, -2.0f, 3.0f);
+            property.scale = 2.5f;
+            source.AddProperty(property);
+
+            CaptureEntityJson(sourceId);
+
+            ApplyPropertyJson(targetId);
+
+            FormatTestProperty applied = target.GetProperty<FormatTestProperty>();
+            Verify(applied != null);
+            if (applied != null)
+            {
+                Verify(applied.id == property.id);
+                Verify(applied.name == property.name);
+                Verify(applied.position == property.position);
+                Verify(applied.scale == property.scale);
+            }
+
+            // The apply is exact: the properties the text names are the ones the entity has afterwards
+            ApplyEntityText(targetId, "{\"FormatTestProperty\":{\"id\":3}}");
+
+            FormatTestProperty kept = target.GetProperty<FormatTestProperty>();
+            Verify(kept != null);
+            if (kept != null)
+            {
+                Verify(kept.id == 3);
+            }
+
+            // A property the text names but the assembly does not have is skipped rather than guessed at, and the
+            // ones it does name are put back
+            ApplyEntityText(targetId, "{\"FormatTestProperty\":{\"id\":4},\"NoSuchProperty\":{\"x\":1}}");
+
+            Verify(PropertyLevelFormat.HasProperty(targetId, "NoSuchProperty") == 0);
+            Verify(PropertyLevelFormat.HasProperty(targetId, "FormatTestProperty") == 1);
+        }
+
+        /// <summary>
+        /// The merge, the way the level format uses it: the keys one text carries, and what the base text
+        /// gives when those keys are put over it. The scene cannot read either text, so this is the only place
+        /// a merge can happen, and presence is the key being in the text rather than a bit in a mask.
+        /// </summary>
+        public static void TestPropertyMerge()
+        {
+            string baseText = "{\"FormatTestProperty\":{\"id\":1,\"name\":\"prefab\",\"position\":[1,2,3],\"scale\":2.5}}";
+            string overText = "{\"FormatTestProperty\":{\"id\":7}}";
+
+            List<string> keys = PropertyLevelFormat.CollectKeys(overText);
+            Verify(keys.Count == 1);
+            Verify(keys.Count > 0 && keys[0] == "FormatTestProperty.id");
+
+            // Sorted, because every writer here produces the same order and the level format compares texts as
+            // bytes. An order that differed between the writers would read as a change no value made
+            keys = PropertyLevelFormat.CollectKeys("{\"B\":{\"y\":2},\"A\":{\"x\":1}}");
+            Verify(keys.Count == 2);
+            Verify(keys.Count > 1 && keys[0] == "A.x" && keys[1] == "B.y");
+
+            // The key the instance authored takes its value and the rest still comes from the prefab. A diff
+            // would not do this: a field the instance set to the same value as the prefab would start
+            // following the prefab, which is not what an authored field means
+            string merged = PropertyLevelFormat.MergeJson(baseText, overText);
+            Verify(merged == "{\"FormatTestProperty\":{\"id\":7,\"name\":\"prefab\",\"position\":[1,2,3],\"scale\":2.5}}");
+
+            // A key the base does not have joins it, which is what a property the instance added on its own
+            // looks like. The names come out sorted, which is what makes a merge read as the same bytes the
+            // text the entity would be written with when nothing changed
+            merged = PropertyLevelFormat.MergeJson("{\"B\":{\"y\":2},\"A\":{\"x\":1}}", "{\"A\":{\"x\":3}}");
+            Verify(merged == "{\"A\":{\"x\":3},\"B\":{\"y\":2}}");
+
+            // A text with nothing in it changes nothing
+            Verify(PropertyLevelFormat.MergeJson(baseText, "") == baseText);
+            Verify(PropertyLevelFormat.MergeJson("", overText) == overText);
+            Verify(PropertyLevelFormat.MergeJson("", "") == "");
+
+            // The level format answers with null for a text it does not have, which is what a merge with
+            // nothing on one side is. The marshaler throws on a null pointer, so the entry points read text
+            // through this rather than directly
+            Verify(PropertyLevelFormat.Utf8(IntPtr.Zero, 0) == "");
+
+            // The partial write is what a linked entity writes, and it has to answer with the same text the
+            // merge would put over the prefab. The source still holds the property the level format test put
+            // on it, so this is the same value read through one key
+            World world = World.Get(World.DEFAULT_WORLD);
+            Entity source = world.GetEntity(GetPropertySourceEntityId());
+            Verify(source != null);
+
+            FormatTestProperty property = source == null ? null : source.GetProperty<FormatTestProperty>();
+            Verify(property != null);
+            if (property != null)
+            {
+                HashSet<string> only = new();
+                only.Add("FormatTestProperty.id");
+
+                string partial = PropertyLevelFormat.BuildJsonText(source, only);
+                Verify(partial == "{\"FormatTestProperty\":{\"id\":7}}");
+
+                // A property with none of its keys authored has nothing to say, which is what keeps an
+                // instance that changed nothing from carrying the prefab's whole value
+                only.Clear();
+                Verify(PropertyLevelFormat.BuildJsonText(source, only) == "{}");
+            }
+        }
+
+        /// <summary>
+        /// What a revert to the prefab gives for a named key: the value the base text carries for it, or the
+        /// field's default when the base has nothing. A field the chain never mentioned has no value to put
+        /// back, and this is the only side that knows what its default is.
+        /// </summary>
+        public static void TestPropertyResolve()
+        {
+            string baseText = "{\"FormatTestProperty\":{\"id\":1,\"name\":\"prefab\",\"position\":[1,2,3],\"scale\":2.5}}";
+
+            // The key the base carries is read from it
+            Verify(PropertyLevelFormat.Resolve(baseText, "FormatTestProperty.id") == "{\"FormatTestProperty\":{\"id\":1}}");
+
+            // A key the base does not carry falls back to the field's default, which is what a revert to a
+            // prefab that never mentioned the field gives back
+            Verify(PropertyLevelFormat.Resolve("", "FormatTestProperty.id") == "{\"FormatTestProperty\":{\"id\":0}}");
+
+            // The fields come out in the order a property is written with, not the order the keys were given in
+            Verify(PropertyLevelFormat.Resolve(baseText, "FormatTestProperty.scale\nFormatTestProperty.id")
+                == "{\"FormatTestProperty\":{\"id\":1,\"scale\":2.5}}");
+
+            // A property the assembly does not have cannot be answered for, so it is left out of the object the
+            // keys are written into, and keys that name nothing answer with nothing
+            Verify(PropertyLevelFormat.Resolve(baseText, "NoSuchProperty.x") == "{}");
+            Verify(PropertyLevelFormat.Resolve(baseText, "") == "");
+
+            // The same through the extension's hook, which is the path the editor's revert takes. A name that
+            // does not match an entry point answers with nothing, so this is what checks the cache
+            Verify(ResolveThroughExtension(baseText, "FormatTestProperty.id", "{\"FormatTestProperty\":{\"id\":1}}"));
+
+            // A revert of one field is the chain's value for that key put over what the entity still has for the
+            // rest of itself. The source still holds the property the level format test put on it, so the capture
+            // side is the same value read through one key
+            World world = World.Get(World.DEFAULT_WORLD);
+            Entity source = world.GetEntity(GetPropertySourceEntityId());
+            Verify(source != null);
+
+            if (source != null)
+            {
+                // Every key the entity carries, not only the ones the marker has, because an exact apply takes
+                // off whatever the composed text does not name
+                HashSet<string> remaining = new();
+                remaining.Add("FormatTestProperty.id");
+
+                string merged = PropertyLevelFormat.MergeJson(
+                    PropertyLevelFormat.Resolve(baseText, "FormatTestProperty.name"),
+                    PropertyLevelFormat.BuildJsonText(source, remaining));
+                Verify(merged == "{\"FormatTestProperty\":{\"id\":7,\"name\":\"prefab\"}}");
+
+                // Taking the last key back leaves nothing to write, which is what the command reads as the
+                // property being gone
+                Verify(PropertyLevelFormat.MergeJson(PropertyLevelFormat.Resolve(baseText, "FormatTestProperty.id"),
+                    PropertyLevelFormat.BuildJsonText(source, new HashSet<string>()))
+                    == "{\"FormatTestProperty\":{\"id\":1}}");
+            }
+
+            // The override marker is the scene's own, so a row asks for the key it is drawing rather than being
+            // handed the whole set. The test installs its own answer in C++, because the scene is not here, and
+            // this is the only way to see that the path reaches the callback and the answer comes back
+            UInt64 sourceId = GetPropertySourceEntityId();
+
+            SetAuthoredAnswer("FormatTestProperty.id", true);
+            Verify(PropertyLevelFormat.IsAuthored(sourceId, "FormatTestProperty.id"));
+            Verify(AuthoredPathMatches("FormatTestProperty.id"));
+
+            // A path with no field asks whether any field of the property is authored, which is what a section
+            // row asks with
+            SetAuthoredAnswer("FormatTestProperty", true);
+            Verify(PropertyLevelFormat.IsAuthored(sourceId, "FormatTestProperty"));
+            Verify(AuthoredPathMatches("FormatTestProperty"));
+
+            SetAuthoredAnswer("FormatTestProperty.scale", false);
+            Verify(!PropertyLevelFormat.IsAuthored(sourceId, "FormatTestProperty.scale"));
+            Verify(AuthoredPathMatches("FormatTestProperty.scale"));
+        }
+
+        /// <summary>
+        /// An entity reference inside a property, as the level format writes it. The format cannot resolve it
+        /// on its own, because it does not read this text, so it hands the file's guid map over as the pairs
+        /// this side can read.
+        /// </summary>
+        public static void TestPropertyRefs()
+        {
+            World world = World.Get(World.DEFAULT_WORLD);
+            Entity source = world.CreateEntity();
+            Entity target = world.CreateEntity();
+            Verify(source != null);
+            Verify(target != null);
+            if (source == null || target == null)
+            {
+                return;
+            }
+
+            // The guids are the file's records. They are made up here, because these entities were created by
+            // the test runner and not by a file
+            const string sourceGuid = "11111111-1111-1111-1111-111111111111";
+            const string targetGuid = "22222222-2222-2222-2222-222222222222";
+
+            PropertyLevelFormat.SetRefContext(sourceGuid + ":" + source.Id + ";" + targetGuid + ":" + target.Id);
+
+            RefTestProperty property = new();
+            property.target = source;
+            source.AddProperty(property);
+
+            string text = PropertyLevelFormat.BuildJsonText(source, null);
+            Verify(text == "{\"RefTestProperty\":{\"target\":\"" + sourceGuid + "\"}}");
+
+            // The same reference, put onto the entity the file's other record was made as. The apply is exact and
+            // works on the entity's shape, and the reference follows the map rather than the entity it was
+            // written from, which is what a merged text needs when it names guids from several files
+            PropertyLevelFormat.SetRefContext(targetGuid + ":" + target.Id);
+
+            ApplyEntityText(target.Id, "{\"RefTestProperty\":{\"target\":\"" + targetGuid + "\"}}");
+
+            RefTestProperty applied = target.GetProperty<RefTestProperty>();
+            Verify(applied != null);
+            Verify(applied != null && Object.ReferenceEquals(applied.target, target));
+
+            // A reference the map has nothing for is nothing the file can name, and it reads as no entity
+            PropertyLevelFormat.SetRefContext("");
+            Verify(PropertyLevelFormat.BuildJsonText(source, null) == "{\"RefTestProperty\":{\"target\":null}}");
+        }
+
+        /// <summary>
+        /// The mutation contract, on the entity shape the level format writes. The apply is exact, so the
+        /// properties the text names are the ones the entity has afterwards, and a text that names nothing is an
+        /// entity with nothing on it.
+        ///
+        /// The write path does not write. It works out the text before and after and hands both to the
+        /// recorder, which is what runs the change. The test installs its own recorder in C++, and that
+        /// recorder applies the text it is given the way a command does.
+        /// </summary>
+        public static void TestPropertyMutation()
+        {
+            World world = World.Get(World.DEFAULT_WORLD);
+            UInt64 sourceId = GetPropertySourceEntityId();
+            UInt64 targetId = GetPropertyTargetEntityId();
+
+            Entity source = world.GetEntity(sourceId);
+            Entity target = world.GetEntity(targetId);
+            Verify(source != null);
+            Verify(target != null);
+
+            // The entity shape is the only shape, and it is the shape a command holds. The source still has the
+            // long name the level format test put on it
+            CaptureEntityJson(sourceId);
+            Verify(CapturedJsonMatches("{\"FormatTestProperty\":{\"id\":7,\"name\":\"" + new string('x', 1200) + "\",\"position\":[1.5,-2,3],\"scale\":2.5}}"));
+
+            // The apply is exact, so the entity's properties afterwards are the ones this text names
+            ApplyEntityText(targetId, "{\"FormatTestProperty\":{\"id\":7,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5}}");
+
+            FormatTestProperty applied = target.GetProperty<FormatTestProperty>();
+            Verify(applied != null);
+            if (applied == null)
+            {
+                return;
+            }
+
+            Verify(applied.id == 7);
+            Verify(applied.name == "mutated");
+            Verify(applied.position == new Vector3(1, 2, 3));
+            Verify(applied.scale == 4.5f);
+
+            // The write path. The recorder is what applies the change, so the field only moves because the
+            // recorder ran it
+            PropertyLevelFormat.RecordChange(targetId, typeof(FormatTestProperty), "id", "9");
+
+            Verify(RecordedChangeMatches("FormatTestProperty.id",
+                "{\"FormatTestProperty\":{\"id\":7,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5}}",
+                "{\"FormatTestProperty\":{\"id\":9,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5}}"));
+            Verify(applied.id == 9);
+
+            // The path is the key inside the text the change is about, and it is the only thing the editor's
+            // override marker is built from
+            Verify(RecordedPathMatches("FormatTestProperty.id"));
+
+            // The removal is the same shape with the property left out of the after text. An entity with nothing
+            // left has nothing to say, which is the same as what a capture answers with
+            PropertyLevelFormat.RecordChange(targetId, typeof(FormatTestProperty), null, null);
+
+            Verify(RecordedChangeMatches("FormatTestProperty",
+                "{\"FormatTestProperty\":{\"id\":9,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5}}",
+                ""));
+            Verify(target.GetProperty<FormatTestProperty>() == null);
+
+            // A path with no field is the whole property, which is what a removal reports
+            Verify(RecordedPathMatches("FormatTestProperty"));
+
+            // The add. The entity has nothing, so the after text is built from a throwaway instance with one
+            // field overridden, and the recorder is what creates the property because the write path never
+            // creates one itself
+            PropertyLevelFormat.RecordChange(targetId, typeof(FormatTestProperty), "id", "1");
+
+            Verify(RecordedChangeMatches("FormatTestProperty", "",
+                "{\"FormatTestProperty\":{\"id\":1,\"name\":null,\"position\":[0,0,0],\"scale\":0}}"));
+
+            FormatTestProperty added = target.GetProperty<FormatTestProperty>();
+            Verify(added != null);
+            if (added != null)
+            {
+                Verify(added.id == 1);
+                Verify(added.name == null);
+            }
+
+            // Undo is the same apply with the before text, which is what the command's Unexecute does
+            ApplyEntityText(targetId, "{\"FormatTestProperty\":{\"id\":7,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5}}");
+            Verify(added != null && added.id == 7);
+            Verify(added != null && added.name == "mutated");
+
+            // Two properties with a field of the same name. The path is what says which property the change is
+            // about, and the field name on its own does not, so the other property has to keep its value
+            SameFieldProperty other = new() { id = 5 };
+            target.AddProperty(other);
+
+            PropertyLevelFormat.RecordChange(targetId, typeof(FormatTestProperty), "id", "11");
+
+            Verify(RecordedChangeMatches("FormatTestProperty.id",
+                "{\"FormatTestProperty\":{\"id\":7,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5},\"SameFieldProperty\":{\"id\":5}}",
+                "{\"FormatTestProperty\":{\"id\":11,\"name\":\"mutated\",\"position\":[1,2,3],\"scale\":4.5},\"SameFieldProperty\":{\"id\":5}}"));
+
+            Verify(added != null && added.id == 11);
+            Verify(other.id == 5);
+        }
+
+        /// <summary>
+        /// An entity can be valid without having an instance, because an id can be held by something that
+        /// has taken the instance out and is waiting to put it back. This is the state an editor command is
+        /// in while it is on the undo stack, and it is why a property that reads the world has to check the
+        /// instance rather than only the id.
+        /// </summary>
+        public static void TestInstancelessEntity()
+        {
+            UInt64 id = GetInstancelessEntityId();
+
+            Verify(Api.IsValid(id));
+            Verify(!Api.HasInstance(id));
+        }
+
         public static void TestTypeMappings()
         {
             Verify(typeof(TestFlags).GetField("flags32").FieldType == typeof(uint));
@@ -552,6 +1083,17 @@ namespace NST
         private WorldProperty worldProperty;
         private Entity worldPropertyEntity;
 
+        // Sim world test, same shape. A property only runs in a world that is simulating, so the mode is
+        // what decides it, and the test runner flips the mode while the managed side reads it at the
+        // beginning of the frame
+        private uint simWorld;
+        private SimTestProperty simProperty;
+
+        // Time source test. The mirror is refreshed at the beginning of the frame, so a check made here sees
+        // the values the engine produced for this frame
+        private double inputTimeBeforePause;
+        private FixedTestProperty fixedProperty;
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
@@ -716,6 +1258,167 @@ namespace NST
             {
                 Tests.Verify(Tests.GetLoadAttempts() == 4);
                 this.syncPhase = 12;
+            }
+            else if (this.syncPhase == 12)
+            {
+                // The property types of the reloaded assembly are registered again, so this is also
+                // where the format is checked after a reload
+                Tests.TestPropertyLevelFormat();
+                this.syncPhase = 13;
+            }
+            else if (this.syncPhase == 13)
+            {
+                Tests.TestPropertyMutation();
+                this.syncPhase = 14;
+            }
+            else if (this.syncPhase == 14)
+            {
+                Tests.TestInstancelessEntity();
+                this.syncPhase = 15;
+            }
+            else if (this.syncPhase == 15)
+            {
+                // A world the plugin did not create is simulating by default, which is the plain game case:
+                // a property attached to it is activated right away
+                Tests.DestroyTestWorld();
+                this.simWorld = Tests.CreateTestWorld();
+                World world = World.Get(this.simWorld);
+                Tests.Verify(world.IsSimulating());
+
+                Entity entity = world.CreateEntity();
+                this.simProperty = new SimTestProperty();
+                entity.AddProperty(this.simProperty);
+                Tests.Verify(this.simProperty.Active);
+                Tests.Verify(this.simProperty.activateCalls == 1);
+
+                // The mode is read at the beginning of the frame, so the change is seen on the next one
+                Tests.SetTestWorldSimulating(this.simWorld, false);
+                this.syncPhase = 16;
+            }
+            else if (this.syncPhase == 16)
+            {
+                World world = World.Get(this.simWorld);
+                Tests.Verify(!world.IsSimulating());
+
+                // The property was active, so the mode change deactivated it. Nothing runs against a property
+                // in a world that is not simulating, neither the update method nor a message. The count here is
+                // the frame it was attached in, which was a simulating one
+                Tests.Verify(!this.simProperty.Active);
+                Tests.Verify(this.simProperty.deactivateCalls == 1);
+                Tests.Verify(this.simProperty.frameCalls == 1);
+
+                this.simProperty.Entity.Send(new TestMsg { f = 1 });
+                Tests.Verify(this.simProperty.messageCalls == 0);
+
+                Tests.SetTestWorldSimulating(this.simWorld, true);
+                this.syncPhase = 17;
+            }
+            else if (this.syncPhase == 17)
+            {
+                World world = World.Get(this.simWorld);
+                Tests.Verify(world.IsSimulating());
+
+                // Activation runs again when the world starts simulating. The frame event for this frame has
+                // not happened yet, because the checks here run before the property events, and the frame
+                // before did not call it while the world was not simulating
+                Tests.Verify(this.simProperty.Active);
+                Tests.Verify(this.simProperty.activateCalls == 2);
+                Tests.Verify(this.simProperty.frameCalls == 1);
+
+                this.simProperty.Entity.Send(new TestMsg { f = 1 });
+                Tests.Verify(this.simProperty.messageCalls == 1);
+
+                this.syncPhase = 18;
+            }
+            else if (this.syncPhase == 18)
+            {
+                // The update method runs again in the frame after the world started simulating
+                Tests.Verify(this.simProperty.frameCalls == 2);
+
+                Tests.DestroyTestWorld();
+                this.syncPhase = 19;
+            }
+            else if (this.syncPhase == 19)
+            {
+                // The mirror is refreshed at the beginning of the frame, so these are this frame's values
+                TimeSource gameplay = TimeManager.Instance.Gameplay;
+                TimeSource system = TimeManager.Instance.System;
+                TimeSource input = TimeManager.Instance.Input;
+                Tests.Verify(gameplay != null);
+                Tests.Verify(system != null);
+                Tests.Verify(input != null);
+                Tests.Verify(gameplay.FrameTime > 0.0);
+                Tests.Verify(gameplay.Ticks > 0);
+
+                // A hash the mirror has not seen is null rather than an assert
+                Tests.Verify(TimeManager.Instance.Get(Tests.TestTimeSourceHash) == null);
+
+                // The write goes through the api and the mirror keeps the same value, so a read in the same
+                // frame agrees with what was just written
+                gameplay.TimeFactor = 0.5f;
+                system.TimeFactor = 1.0f;
+                Tests.Verify(gameplay.TimeFactor == 0.5f);
+
+                input.Pause();
+                Tests.Verify(input.IsPaused);
+                this.inputTimeBeforePause = input.Time;
+
+                this.fixedProperty = new FixedTestProperty();
+                World.Get(World.DEFAULT_WORLD).CreateEntity().AddProperty(this.fixedProperty);
+
+                // Three steps for the next frame. The source is capped at three, so the frame time the engine
+                // adds on top cannot make the count larger
+                Tests.CreateTestTimeSource(0.01, 3);
+                Tests.AdvanceTestTimeSource(0.03);
+
+                this.syncPhase = 20;
+            }
+            else if (this.syncPhase == 20)
+            {
+                TimeSource gameplay = TimeManager.Instance.Gameplay;
+                TimeSource system = TimeManager.Instance.System;
+                TimeSource input = TimeManager.Instance.Input;
+
+                // Both sources follow the frame time, so the factor is what makes them differ
+                Tests.Verify(Math.Abs(gameplay.FrameTime - system.FrameTime * 0.5) < 1e-9);
+
+                // A paused source does not advance
+                Tests.Verify(input.IsPaused);
+                Tests.Verify(input.FrameTime == 0.0);
+                Tests.Verify(input.Time == this.inputTimeBeforePause);
+
+                TimeSource test = TimeManager.Instance.Get(Tests.TestTimeSourceHash);
+                Tests.Verify(test != null);
+                Tests.Verify(test.FixedFrameTime == 0.01);
+                Tests.Verify(test.MaxStepsPerFrame == 3);
+
+                // The fixed event has not run for this frame yet, and the mirror had no steps when it was
+                // synced, because the advance happened after the sync
+                Tests.Verify(this.fixedProperty.fixedCalls == 0);
+
+                input.Resume();
+                this.syncPhase = 21;
+            }
+            else if (this.syncPhase == 21)
+            {
+                // The three steps the test runner put on the source are what the fixed event ran on
+                Tests.Verify(this.fixedProperty.fixedCalls == 3);
+                this.syncPhase = 22;
+            }
+            else if (this.syncPhase == 22)
+            {
+                Tests.TestPropertyMerge();
+                this.syncPhase = 23;
+            }
+            else if (this.syncPhase == 23)
+            {
+                Tests.TestPropertyRefs();
+                this.syncPhase = 24;
+            }
+            else if (this.syncPhase == 24)
+            {
+                Tests.TestPropertyResolve();
+                this.syncPhase = 25;
             }
             base.OnFrame();
         }

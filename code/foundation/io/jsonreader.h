@@ -80,6 +80,10 @@ public:
     /// get name of current node
     Util::String GetCurrentNodeName() const;
 
+    /// the current node as json text. This is what lets a feature read a node the reader has no
+    /// type knowledge of
+    Util::String GetRawJson() const;
+
     /// get string attribute value from current node
     Util::String GetString(const char* attr =  0) const;
     /// get stringatom attribute value from current node
@@ -142,6 +146,8 @@ private:
     Util::Stack<IndexT> parentIdx;
     // 0 terminated buffer containing the raw json file
     char * buffer = nullptr;
+    // the size of that buffer, which is the upper bound for re-serializing any node in it
+    SizeT bufferSize = 0;
 };
 
 template<> void JsonReader::Get<bool>(bool& ret, const char* attr);

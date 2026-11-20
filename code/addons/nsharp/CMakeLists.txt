@@ -51,6 +51,8 @@ fips_begin_lib(nsharp)
         nsharpserver.cc
         nsharpserver.h
         nsbindings.h
+        propertyextension.h
+        propertyextension.cc
     )
     fips_dir(api)
         fips_files(

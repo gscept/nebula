@@ -718,4 +718,102 @@ JsonWriter::Add(const Util::Array<Util::String>& value, const Util::String& name
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+    pjson parses in place, and a parsed string's size does not include the null terminator it wrote
+    over the delimiter. pjson's own copy keeps that size, which is what leaves the copied string
+    unterminated, so a parsed node has to be copied through the string text instead.
+*/
+static void
+CopyRawNode(pjson::value_variant& dst, const pjson::value_variant& src, pjson::pool_allocator& alloc)
+{
+    if (src.is_object())
+    {
+        dst.set_to_object();
+
+        const pjson::key_value_vec_t& obj = src.get_object();
+        for (pjson::uint i = 0; i < obj.size(); i++)
+        {
+            pjson::value_variant child;
+            CopyRawNode(child, obj[i].get_value(), alloc);
+            dst.add_key_value(obj[i].get_key().get_ptr(), child, alloc);
+        }
+        return;
+    }
+
+    if (src.is_array())
+    {
+        dst.set_to_array();
+
+        const pjson::value_variant_vec_t& arr = src.get_array();
+        for (pjson::uint i = 0; i < arr.size(); i++)
+        {
+            pjson::value_variant child;
+            CopyRawNode(child, arr[i], alloc);
+            dst.add_value(child, alloc);
+        }
+        return;
+    }
+
+    if (src.is_string())
+    {
+        dst.set(src.get_string().get_ptr(), alloc);
+        return;
+    }
+
+    // bool, int, double and null are the value itself, so pjson's own copy is enough
+    dst.assign(src, alloc);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Parse the text into its own document and copy the resulting subtree into this writer's
+    allocator. pjson parses in place, so the text needs a mutable copy that outlives the parse
+    until the subtree has been copied.
+*/
+void
+JsonWriter::AddRaw(const char* jsonText, const Util::String& name)
+{
+    n_assert(this->IsOpen());
+    if (jsonText == nullptr)
+        return;
+
+    const SizeT length = (SizeT)Util::String::StrLen(jsonText);
+    char* buffer = (char*)Memory::Alloc(Memory::StreamDataHeap, length + 1);
+    Memory::Copy(jsonText, buffer, length + 1);
+
+    pjson::document parsed;
+    if (!parsed.deserialize_in_place(buffer))
+    {
+        n_warning("JsonWriter::AddRaw(): could not parse json: %s\n", jsonText);
+        Memory::Free(Memory::StreamDataHeap, buffer);
+        return;
+    }
+
+    auto& alloc = this->document->get_allocator();
+
+    pjson::value_variant copied;
+    CopyRawNode(copied, parsed, alloc);
+
+    if (name.IsEmpty())
+    {
+        if (this->hierarchy.Peek()->is_null())
+        {
+            this->hierarchy.Peek()->set_to_array();
+        }
+        this->hierarchy.Peek()->add_value(copied, alloc);
+    }
+    else
+    {
+        if (this->hierarchy.Peek()->is_null())
+        {
+            this->hierarchy.Peek()->set_to_object();
+        }
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), copied, alloc);
+    }
+
+    // the parsed strings point into the buffer, so it is released only after the copy
+    Memory::Free(Memory::StreamDataHeap, buffer);
+}
+
 } // namespace IO

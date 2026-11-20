@@ -23,6 +23,20 @@ namespace Nebula
             private readonly List<Entity> entities;
             private readonly Dictionary<UInt64, Entity> entityMap;
 
+            // The mode as of the last frame, kept only to know when it changed. The mode itself is read from
+            // the native world rather than cached, because the editor changes it between frames and then
+            // applies the properties it copied in the same call, and an activation decided there has to see
+            // the mode that is actually set
+            private bool lastSimulating;
+
+            /// <summary>
+            /// Whether this world is simulating
+            /// </summary>
+            public bool IsSimulating()
+            {
+                return Api.IsSimulating(this.id);
+            }
+
             // Native world ids to World objects
             private static readonly Dictionary<uint, World> worlds = [];
 
@@ -118,6 +132,55 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Reads the mode from the native world and runs the activation pass when it changed. This is
+            /// where a property is activated when its world starts simulating and deactivated when it stops,
+            /// because a property that was asked to be active only actually runs in a simulating world.
+            /// </summary>
+            public void RefreshMode()
+            {
+                bool simulating = this.IsSimulating();
+                if (simulating == this.lastSimulating)
+                {
+                    return;
+                }
+
+                this.lastSimulating = simulating;
+
+                for (int i = 0; i < this.entities.Count; i++)
+                {
+                    Entity entity = this.entities[i];
+                    List<Property> properties = entity.GetProperties();
+                    if (properties == null)
+                    {
+                        continue;
+                    }
+
+                    // Activation can read a component, so it does not run against an entity that has no
+                    // instance, which is an id something is holding rather than an entity in the world
+                    if (!entity.HasInstance())
+                    {
+                        continue;
+                    }
+
+                    for (int j = 0; j < properties.Count; j++)
+                    {
+                        Property property = properties[j];
+                        if (simulating)
+                        {
+                            if (property.RequestedActive)
+                            {
+                                property.Activate();
+                            }
+                        }
+                        else
+                        {
+                            property.Deactivate();
+                        }
+                    }
+                }
+            }
+
             public void DeregisterEntity(Entity entity)
             {
                 this.entities.EraseSwap(entity);
@@ -137,6 +200,10 @@ namespace Nebula
                 this.id = id;
                 this.entities = [];
                 this.entityMap = [];
+
+                // Read the mode at construction, so a property attached before the first frame is activated
+                // in a world that is already simulating
+                this.lastSimulating = Api.IsSimulating(id);
             }
 
             /// <summary>

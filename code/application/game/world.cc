@@ -1625,7 +1625,10 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
 void
 World::RenderDebug()
 {
-    ImGui::Text("World Hash: %s", Util::FourCC(this->hash.id).AsString().AsCharPtr());
+    Util::String str = Util::FourCC(this->hash.id).AsString();
+    bool ascii = Util::String::IsAlNum(str[0]) && Util::String::IsAlNum(str[1]) && Util::String::IsAlNum(str[2]) && Util::String::IsAlNum(str[3]);
+    
+    ImGui::Text("World Hash: %s", ascii ? str.AsCharPtr() : Util::String::Hex(this->hash.id).AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
     ImGui::Checkbox("Show Frame Pipeline", &showProcessors);

@@ -62,6 +62,7 @@ JsonReader::Open()
         this->buffer = (char*)Memory::Alloc(Memory::StreamDataHeap, fileSize + 1);
         this->stream->Read(buffer, fileSize);
         this->buffer[fileSize] = '\0';
+        this->bufferSize = (SizeT)fileSize;
         if (!this->document->deserialize_in_place(buffer))
         {
             const URI& uri = this->stream->GetURI();
@@ -100,6 +101,7 @@ JsonReader::Close()
     this->curNode = 0;
     Memory::Free(Memory::StreamDataHeap, this->buffer);
     this->buffer = nullptr;
+    this->bufferSize = 0;
     StreamReader::Close();
 }
 
@@ -435,6 +437,33 @@ JsonReader::GetCurrentNodeName() const
     auto parent = this->parents.Peek();
     // auto parentIdx = this->parentIdx.Peek();
     return parent->get_key_name_at_index(this->childIdx);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Serialize the current node back to text. Written unformatted, which is what keeps the result
+    no longer than the text the node was parsed from, and what makes the read buffer a safe bound.
+*/
+Util::String
+JsonReader::GetRawJson() const
+{
+    n_assert(this->IsOpen());
+    n_assert(0 != this->curNode);
+
+    const SizeT capacity = this->bufferSize + 64;
+    char* out = (char*)Memory::Alloc(Memory::StreamDataHeap, capacity);
+
+    size_t written = 0;
+    if (!this->curNode->serialize(out, capacity, &written, false, false))
+    {
+        n_warning("JsonReader::GetRawJson(): could not serialize node\n");
+        Memory::Free(Memory::StreamDataHeap, out);
+        return Util::String();
+    }
+
+    Util::String result(out, written);
+    Memory::Free(Memory::StreamDataHeap, out);
+    return result;
 }
 
 //------------------------------------------------------------------------------

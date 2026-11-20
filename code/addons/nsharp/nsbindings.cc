@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "nsbindings.h"
+#include "propertyextension.h"
 #include "core/debug.h"
 
 namespace Scripting
@@ -50,6 +51,51 @@ void
 N_Assert(bool value)
 {
     n_assert(value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RecordPropertyChange(uint64_t entityId, const char* path, const char* oldText, const char* newText)
+{
+    Scripting::PropertyLevelExtension::RecordChange(Game::Entity(entityId), path, oldText, newText);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RequestPropertyRevert(uint64_t entityId, const char* path)
+{
+    Scripting::PropertyLevelExtension::RequestRevert(Game::Entity(entityId), path);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PropertyExtension_IsAuthored(uint64_t entityId, const char* path)
+{
+    return Scripting::PropertyLevelExtension::IsAuthored(Game::Entity(entityId), path);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PropertyExtension_AddName(const char* propertyName)
+{
+    Scripting::PropertyLevelExtension::AddPropertyName(propertyName);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PropertyExtension_ClearNames()
+{
+    Scripting::PropertyLevelExtension::ClearPropertyNames();
 }
 
 } // namespace Scripting

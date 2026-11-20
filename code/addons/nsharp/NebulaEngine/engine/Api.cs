@@ -54,6 +54,10 @@ namespace Nebula
             [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool IsValid(UInt64 entityId);
 
+            [DllImport("__Internal", EntryPoint = "EntityHasInstance")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool HasInstance(UInt64 entityId);
+
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
             public static extern void DeleteEntity(UInt64 entityId);
 
@@ -105,6 +109,28 @@ namespace Nebula
             [DllImport("__Internal", EntryPoint = "WorldHasWorld")]
             [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool HasWorld(uint worldId);
+
+            [DllImport("__Internal", EntryPoint = "WorldIsSimulating")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool IsSimulating(uint worldId);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSync")]
+            public static extern int SyncTimeSources(IntPtr buffer, int maxEntries);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSetTimeFactor")]
+            public static extern void SetTimeSourceTimeFactor(uint hash, float factor);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSetPauseCounter")]
+            public static extern void SetTimeSourcePauseCounter(uint hash, int counter);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceCreate")]
+            public static extern uint CreateTimeSource(uint hash, double fixedFrameTime, int maxStepsPerFrame);
+
+            [DllImport("__Internal", EntryPoint = "TimeSetGlobalTimeFactor")]
+            public static extern void SetGlobalTimeFactor(float factor);
+
+            [DllImport("__Internal", EntryPoint = "TimeGetGlobalTimeFactor")]
+            public static extern float GetGlobalTimeFactor();
         }
 
         public class NebulaApp
@@ -130,14 +156,24 @@ namespace Nebula
 
             public virtual void OnBeginFrame()
             {
+                // The engine has already advanced the time sources for this frame, so the mirror reads this
+                // frame's values and the fixed steps are still all there
+                TimeManager.Instance.Sync();
+
                 // TODO: loop over all worlds and collect garbage
                 World.Get(World.DEFAULT_WORLD).CollectGarbage();
+
+                foreach (World world in World.AllWorlds())
+                {
+                    world.RefreshMode();
+                }
 
                 PropertyManager.Instance.OnBeginFrame();
             }
 
             public virtual void OnFrame()
             {
+                PropertyManager.Instance.OnFixedFrame();
                 PropertyManager.Instance.OnFrame();
             }
 

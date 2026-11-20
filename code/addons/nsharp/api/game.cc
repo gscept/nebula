@@ -34,6 +34,24 @@ EntityIsValid(uint64_t entity)
 
 //------------------------------------------------------------------------------
 /**
+    Whether the entity has an instance. IsValid only says the id is allocated, and an id can be held by
+    something that has taken the instance out of the world, which is what an editor command does while it
+    waits for a redo. A mirror entity that is only an id has nothing for a component access to read.
+*/
+bool
+EntityHasInstance(uint64_t entity)
+{
+    Game::Entity e = Game::Entity::FromId(entity);
+    Game::World* world = Game::GetWorld(e.world);
+
+    if (world == nullptr)
+        return false;
+
+    return world->IsValid(e) && world->HasInstance(e);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 uint64_t
 EntityCreate(uint32_t worldId)
@@ -247,6 +265,134 @@ bool
 WorldHasWorld(uint32_t worldId)
 {
     return Game::GetWorld(worldId) != nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Whether the world is simulating. A world that is not simulating is one the editor is only authoring,
+    and nothing that runs gameplay should run against it
+*/
+bool
+WorldIsSimulating(uint32_t worldId)
+{
+    Game::World* world = Game::GetWorld(worldId);
+    if (world == nullptr)
+        return false;
+
+    return world->mode == Game::PlayMode;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The layout the managed time source mirror is built from. The eight byte fields come first and then the
+    four byte ones, which is the order C# declares as well and the only order that puts the entry at 64
+    bytes without padding on either side. Ticks and the time factor are widened here, because Timing::Tick
+    is 32 bit and a source that runs long enough wraps.
+*/
+struct TimeSourceSnapshot
+{
+    double frameTime;
+    double time;
+    int64_t ticks;
+    double fixedFrameTime;
+    double accumulator;
+    double timeFactor;
+    uint32_t hash;
+    int32_t availableSteps;
+    int32_t maxStepsPerFrame;
+    int32_t pauseCounter;
+};
+
+static_assert(sizeof(TimeSourceSnapshot) == 64, "managed time source mirror layout");
+
+//------------------------------------------------------------------------------
+/**
+*/
+int
+TimeSourceSync(void* buffer, int maxEntries)
+{
+    TimeSourceSnapshot* out = (TimeSourceSnapshot*)buffer;
+
+    uint32_t num = Game::Time::GetNumTimeSources();
+    if ((int)num > maxEntries)
+        num = (uint32_t)maxEntries;
+
+    for (uint32_t i = 0; i < num; i++)
+    {
+        Game::TimeSource* source = Game::Time::GetTimeSourceByIndex(i);
+
+        out[i].frameTime = source->frameTime;
+        out[i].time = source->time;
+        out[i].ticks = int64_t(source->ticks);
+        out[i].fixedFrameTime = source->fixedFrameTime;
+        out[i].accumulator = source->accumulator;
+        out[i].timeFactor = source->timeFactor;
+        out[i].hash = source->hash;
+        out[i].availableSteps = source->availableSteps;
+        out[i].maxStepsPerFrame = source->maxStepsPerFrame;
+        out[i].pauseCounter = source->pauseCounter;
+    }
+
+    return (int)num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TimeSourceSetTimeFactor(uint32_t hash, float factor)
+{
+    if (!Game::Time::HasTimeSource(hash))
+        return;
+
+    Game::Time::GetTimeSource(hash)->timeFactor = factor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TimeSourceSetPauseCounter(uint32_t hash, int counter)
+{
+    if (!Game::Time::HasTimeSource(hash))
+        return;
+
+    Game::Time::GetTimeSource(hash)->pauseCounter = counter;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+TimeSourceCreate(uint32_t hash, double fixedFrameTime, int maxStepsPerFrame)
+{
+    if (Game::Time::HasTimeSource(hash))
+        return hash;
+
+    Game::TimeSourceCreateInfo info;
+    info.hash = hash;
+    info.fixedFrameTime = fixedFrameTime;
+    info.maxStepsPerFrame = maxStepsPerFrame;
+    Game::Time::CreateTimeSource(info);
+    return hash;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TimeSetGlobalTimeFactor(float factor)
+{
+    Game::Time::SetGlobalTimeFactor(factor);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+TimeGetGlobalTimeFactor()
+{
+    return Game::Time::GetGlobalTimeFactor();
 }
 
 } // namespace Api

@@ -119,6 +119,11 @@ namespace Nebula
             /// <summary>
             /// Adds a property to the entity
             /// </summary>
+            /// <remarks>
+            /// The property is activated here when this world is simulating. In a world that is only being
+            /// authored the value is recorded and OnActivate happens when the world starts simulating, which
+            /// is what an editor's play button does.
+            /// </remarks>
             public void AddProperty(Property property, bool active = true)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
@@ -159,6 +164,40 @@ namespace Nebula
             }
 
             /// <summary>
+            /// The properties of the entity, in the order they were added.
+            /// </summary>
+            /// <remarks>
+            /// This is what the level format writes, because the order the properties were added in is the
+            /// order the file gets.
+            /// </remarks>
+            internal IReadOnlyList<Property> Properties => this.properties;
+
+            /// <summary>
+            /// Gets the property by its type, for a type that is only known at runtime.
+            /// </summary>
+            /// <remarks>
+            /// This is what the level format reads with, since a property named by a file has no type to
+            /// name in the generic version.
+            /// </remarks>
+            internal Property GetProperty(Type type)
+            {
+                if (this.properties == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < this.properties.Count; i++)
+                {
+                    if (this.properties[i]?.GetType() == type)
+                    {
+                        return this.properties[i];
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
             /// Gets the position of the entity.
             /// </summary>
             public Vector3 GetPosition()
@@ -166,6 +205,12 @@ namespace Nebula
                 return Api.GetPosition(this.id);
             }
 
+            public Vector3 Position
+            {
+                get { return Api.GetPosition(this.id); }
+                set { Api.SetPosition(this.id, value ); }
+            }
+            
             /// <summary>
             /// Sets the position of the entity.
             /// </summary>
@@ -256,6 +301,23 @@ namespace Nebula
             }
 
             /// <summary>
+            /// Removes one property from this entity. This is the single property version of ClearProperties,
+            /// and it is what an undo of an add takes: the command removes the property it added.
+            /// </summary>
+            internal bool RemoveProperty(Property property)
+            {
+                if (this.properties == null || !this.properties.Remove(property))
+                {
+                    return false;
+                }
+
+                PropertyManager.Instance.UnregisterProperty(property);
+                property.DetachMessages();
+                property.Destroy();
+                return true;
+            }
+
+            /// <summary>
             /// Schedule the entity for destruction.
             /// Note that this does not immediately remove the entity from the native backend.
             /// </summary>
@@ -309,6 +371,24 @@ namespace Nebula
             public static bool IsValid([NotNullWhen(true)] this Entity? entity)
             {
                 return entity != null && Api.IsValid(entity.Id);
+            }
+
+            //--------------------------------------------------------------------------
+            /** <summary>
+                Returns true if the entity has an instance in the world.
+
+                An entity can be valid without having one, because an id can be held by something that has
+                taken the instance out and is waiting to put it back, which is what an editor command does
+                while it is on the undo stack. Nothing that reads the world should run against one.
+
+                This is safe to call even if the entity == null.
+                </summary>
+            */
+#nullable enable
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool HasInstance([NotNullWhen(true)] this Entity? entity)
+            {
+                return entity != null && Api.HasInstance(entity.Id);
             }
         }
     }

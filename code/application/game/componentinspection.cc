@@ -396,7 +396,7 @@ ComponentDrawFuncT<Game::Position>(Game::Entity owner, ComponentId component, vo
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Position");
+    ImGui::TextDisabled("Position");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragFloat3("##pos", (float*)data, 0.01f))
@@ -413,7 +413,7 @@ ComponentDrawFuncT<Game::Orientation>(Game::Entity owner, ComponentId component,
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Orientation");
+    ImGui::TextDisabled("Orientation");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
 
@@ -456,7 +456,7 @@ ComponentDrawFuncT<Game::Scale>(Game::Entity owner, ComponentId component, void*
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Scale");
+    ImGui::TextDisabled("Scale");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
 

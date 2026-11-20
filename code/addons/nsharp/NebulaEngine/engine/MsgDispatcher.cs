@@ -39,6 +39,13 @@ namespace Nebula
                 {
                     for (int i = 0; i < this.handlers.Count; i++)
                     {
+                        // A property in a world that is not simulating is inert, which is the same rule the
+                        // update methods have. A handler that is not a property has no world to ask
+                        if (this.handlers[i] is Property property && !property.IsSimulating())
+                        {
+                            continue;
+                        }
+
                         this.handlers[i].OnMessage(in message);
                     }
                 }

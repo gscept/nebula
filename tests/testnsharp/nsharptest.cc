@@ -5,11 +5,13 @@
 #include "stdneb.h"
 #include "nsharptest.h"
 #include "nsharp/nsconfig.h"
+#include "nsharp/propertyextension.h"
 #include "timing/timer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
 #include "game/api.h"
 #include "game/world.h"
+#include "game/timesource.h"
 #include "components/nsharpcomponents.h"
 
 namespace Test
@@ -58,6 +60,42 @@ DestroyTestWorld()
     Game::GameServer::Instance()->DestroyWorld(testWorldHash);
 }
 
+// The mode a world runs in is what decides whether a managed property runs, so the test runner flips it
+// here and the managed side reads it through the api
+NEBULA_EXPORT void
+SetTestWorldSimulating(uint32_t worldId, bool simulating)
+{
+    Game::World* world = Game::GetWorld(worldId);
+    if (world == nullptr)
+        return;
+
+    world->mode = simulating ? Game::PlayMode : Game::EditorMode;
+}
+
+// The managed time source test needs a source that advances in fixed steps, and the test runner is the side
+// that can drive the rate explicitly. The hash is the one the managed test asks the mirror for
+static const uint32_t testTimeSourceHash = uint32_t('TST1');
+
+NEBULA_EXPORT uint32_t
+CreateTestTimeSource(double fixedFrameTime, int maxStepsPerFrame)
+{
+    Game::TimeSourceCreateInfo info;
+    info.hash = testTimeSourceHash;
+    info.fixedFrameTime = fixedFrameTime;
+    info.maxStepsPerFrame = maxStepsPerFrame;
+    Game::Time::CreateTimeSource(info);
+    return testTimeSourceHash;
+}
+
+NEBULA_EXPORT void
+AdvanceTestTimeSource(double delta)
+{
+    if (!Game::Time::HasTimeSource(testTimeSourceHash))
+        return;
+
+    Game::Time::AdvanceTimeSource(Game::Time::GetTimeSource(testTimeSourceHash), delta);
+}
+
 // How many times the managed property's OnBeginFrame and OnMessage run. A property that belongs
 // to a retired plugin assembly must not keep being called after a reload, so the test counts the
 // calls against the per-instance state the property itself keeps.
@@ -99,6 +137,174 @@ NEBULA_EXPORT int
 GetPropertyMessageCalls()
 {
     return propertyMessageCalls;
+}
+
+// The level format's contribution for managed properties, driven from the test runner. The managed
+// side cannot call the extension itself, so the capture and the apply go through here, and the capture
+// is checked here as well, because this is where the buffer the managed side writes into is. The
+// results are recorded and verified at the end of the run, since the exports are not test methods.
+static uint64_t propertySourceEntity = 0;
+static uint64_t propertyTargetEntity = 0;
+
+// An entity whose instance is taken back out while its id is still held. This is what an editor command
+// holds while it is on the undo stack, and it is why a valid entity is not necessarily one a component
+// access can read
+static uint64_t instancelessEntity = 0;
+static Util::String capturedExtensionJson;
+static bool capturedJsonLengthOk = false;
+static bool capturedJsonTextOk = false;
+
+// The mutation contract. The recorder is the same hook the editor installs; here the test installs its own,
+// because the managed write path does not write anything itself. What the recorder does is what a command does:
+// apply the text it is given, exact, which is what makes an empty text the removal
+static Util::String recordedPath;
+static Util::String recordedOldText;
+static Util::String recordedNewText;
+static bool recordedChangeApplied = false;
+
+void
+TestPropertyChange(uint64_t entityId, const char* path, const char* oldText, const char* newText)
+{
+    recordedPath.SetCharPtr(path);
+    recordedOldText.SetCharPtr(oldText);
+    recordedNewText.SetCharPtr(newText);
+
+    Scripting::PropertyLevelExtension::Apply(Game::Entity(entityId), newText);
+    recordedChangeApplied = true;
+}
+
+// The path the recorder was told about. The editor builds its override marker from this, and it is the only
+// place the editor learns what a key inside the text means
+NEBULA_EXPORT bool
+RecordedPathMatches(const char* expected)
+{
+    return recordedPath == Util::String(expected);
+}
+
+NEBULA_EXPORT uint64_t
+GetPropertySourceEntityId()
+{
+    return propertySourceEntity;
+}
+
+NEBULA_EXPORT uint64_t
+GetPropertyTargetEntityId()
+{
+    return propertyTargetEntity;
+}
+
+NEBULA_EXPORT uint64_t
+GetInstancelessEntityId()
+{
+    return instancelessEntity;
+}
+
+NEBULA_EXPORT void
+CaptureEntityJson(uint64_t entityId)
+{
+    capturedExtensionJson.Clear();
+    Scripting::PropertyLevelExtension::Capture(Game::Entity(entityId), capturedExtensionJson);
+
+    // The property the managed side writes has a name longer than the buffer the capture starts with,
+    // so this is the path where the managed side answers with the length it needs and the call is made
+    // again with a bigger buffer
+    capturedJsonLengthOk = capturedExtensionJson.Length() > 1024;
+
+    Util::String longName;
+    for (int i = 0; i < 1200; i++)
+        longName.Append("x");
+
+    const Util::String expected =
+        "{\"FormatTestProperty\":{\"id\":7,\"name\":\"" + longName + "\",\"position\":[1.5,-2,3],\"scale\":2.5}}";
+    capturedJsonTextOk = capturedExtensionJson == expected;
+}
+
+NEBULA_EXPORT void
+ApplyPropertyJson(uint64_t entityId)
+{
+    Scripting::PropertyLevelExtension::Apply(Game::Entity(entityId), capturedExtensionJson.AsCharPtr());
+}
+
+NEBULA_EXPORT void
+ApplyEntityText(uint64_t entityId, const char* text)
+{
+    Scripting::PropertyLevelExtension::Apply(Game::Entity(entityId), text);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The text a revert composes, read through the extension's hooks rather than through the managed methods
+    directly. This is the path the editor takes, and it is the only way a test can see that the entry points the
+    extension cached actually resolved.
+*/
+NEBULA_EXPORT bool
+ResolveThroughExtension(const char* baseText, const char* keys, const char* expected)
+{
+    Util::Array<Util::String> parsed;
+    const char* pos = keys;
+    while (*pos != 0)
+    {
+        const char* stop = pos;
+        while (*stop != 0 && *stop != '\n')
+            stop++;
+
+        Util::String name;
+        name.Set(pos, (SizeT)(stop - pos));
+        if (!name.IsEmpty())
+            parsed.Append(name);
+
+        pos = stop + 1;
+    }
+
+    Util::String out;
+    Scripting::PropertyLevelExtension::Resolve(baseText, parsed, out);
+    return out == Util::String(expected);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The override marker. The marker is the editor's own and this side cannot read it, so a row asks for one key at
+    a time through a callback. The scene's marker is not reachable from a test, so the test installs its own
+    answer here and records which key the row asked about.
+*/
+static Util::String recordedAuthoredPath;
+static bool recordedAuthoredAnswer = false;
+
+bool
+TestIsAuthored(uint64_t entityId, const char* path)
+{
+    recordedAuthoredPath.SetCharPtr(path);
+    return recordedAuthoredAnswer;
+}
+
+NEBULA_EXPORT void
+SetAuthoredAnswer(const char* path, bool answer)
+{
+    recordedAuthoredPath.Clear();
+    recordedAuthoredAnswer = answer;
+}
+
+NEBULA_EXPORT bool
+AuthoredPathMatches(const char* expected)
+{
+    return recordedAuthoredPath == Util::String(expected);
+}
+
+// The managed side cannot read what the native side recorded, and a string returned from C++ is one the
+// marshaler would free, so the test hands the text it expects here and the comparison is done on this side
+NEBULA_EXPORT bool
+CapturedJsonMatches(const char* expected)
+{
+    return capturedExtensionJson == Util::String(expected);
+}
+
+NEBULA_EXPORT bool
+RecordedChangeMatches(const char* path, const char* oldText, const char* newText)
+{
+    return recordedPath == Util::String(path) &&
+        recordedOldText == Util::String(oldText) &&
+        recordedNewText == Util::String(newText) &&
+        recordedChangeApplied;
 }
 
 typedef struct _Vector2
@@ -219,6 +425,15 @@ NSharpTest::Run()
     verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
     { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
 
+    // The recorder the managed write path reports to. In the editor this is the function that builds the
+    // command, and the command is the only thing that changes a property, so the test installs its own and
+    // applies the change the way a command would
+    Scripting::PropertyLevelExtension::SetChangeCallback(&TestPropertyChange);
+
+    // The override marker. The marker is the scene's own and the managed side cannot read it, so a row asks
+    // through a callback. The scene is not here, so the test answers for it
+    Scripting::PropertyLevelExtension::SetAuthoredCallback(&TestIsAuthored);
+
     // Entities created by the test runner for the managed side to discover through the entity
     // callback. This is what a plugin needs in the editor: entities are authored by C++, not by
     // the script, so the managed World has to mirror the native one.
@@ -234,6 +449,17 @@ NSharpTest::Run()
     world->AddComponent<Test::TestAtom>(componentEntity);
     world->ExecuteAddComponentCommands();
     componentEntityForManaged = uint64_t(componentEntity);
+
+    // Two entities for the level format test: the managed side puts a property on the first, the
+    // format writes it as text, and that text is applied to the second, which has nothing on it
+    propertySourceEntity = uint64_t(world->CreateEntity(true));
+    propertyTargetEntity = uint64_t(world->CreateEntity(true));
+
+    // An entity with an instance, and then the instance taken back out again while the id is kept. This
+    // is the state an editor command is in while it is on the undo stack
+    Game::Entity instanceless = world->CreateEntity(true);
+    world->DeallocateInstance(instanceless);
+    instancelessEntity = uint64_t(instanceless);
 
     StepFrame();
 
@@ -259,6 +485,25 @@ NSharpTest::Run()
         StepFrame();
     StepFrame();
     StepFrame();
+    StepFrame();  // the property level format round trip
+    StepFrame();  // the mutation contract
+    StepFrame();  // the entity that is an id without an instance
+    StepFrame();  // the sim world test, one frame per phase
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();  // the time source mirror, one frame per phase
+    StepFrame();
+    StepFrame();
+    StepFrame();  // the merge, and the entity reference inside the extension text
+    StepFrame();
+    StepFrame();  // the text a revert composes from
+
+    VERIFY(capturedJsonLengthOk);
+    VERIFY(capturedJsonTextOk);
+
+    Scripting::PropertyLevelExtension::SetChangeCallback(nullptr);
+    Scripting::PropertyLevelExtension::SetAuthoredCallback(nullptr);
 }
 
 } // namespace Test

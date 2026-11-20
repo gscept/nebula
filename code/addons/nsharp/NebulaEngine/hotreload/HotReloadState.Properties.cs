@@ -11,7 +11,10 @@ namespace Nebula
             internal Nebula.Game.Entity Entity;
             internal Nebula.Game.Property OldProperty;
             internal Nebula.Game.Property NewProperty;
-            internal bool Active;
+            // What the old property was asked to be, rather than whether it was actually running. A
+            // property in a world that is not simulating is not running, and the reattached one has to
+            // still activate when that world starts simulating
+            internal bool RequestedActive;
         }
 
         internal void PrepareProperties()
@@ -46,7 +49,7 @@ namespace Nebula
                 this.properties.Add(new PropertyReplacement {
                     Entity = entity,
                     NewProperty = oldProperty,
-                    Active = oldProperty.Active
+                    RequestedActive = oldProperty.RequestedActive
                 });
                 return;
             }
@@ -62,7 +65,7 @@ namespace Nebula
                 Entity = entity,
                 OldProperty = oldProperty,
                 NewProperty = newProperty,
-                Active = oldProperty.Active
+                RequestedActive = oldProperty.RequestedActive
             });
         }
     }

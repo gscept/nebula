@@ -84,7 +84,7 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
             fieldName.Capitalize();
             ImGui::TableSetColumnIndex(0);
             ImGui::AlignTextToFramePadding();
-            ImGui::Text(fieldName.AsCharPtr());
+            ImGui::TextDisabled(fieldName.AsCharPtr());
             if (TYPE::Traits::field_descriptions[i] != nullptr)
             {
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))

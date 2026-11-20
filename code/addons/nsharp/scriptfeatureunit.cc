@@ -8,6 +8,7 @@
 #include "io/filewatcher.h"
 #include "game/gameserver.h"
 #include "coreclr_delegates.h"
+#include "propertyextension.h"
 
 namespace Scripting
 {
@@ -150,6 +151,10 @@ ScriptFeatureUnit::OnActivate()
         this->flushEntityCreates = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->flushEntityCreateQueueEntry);
         this->collectGarbage = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->collectGarbageEntry);
         this->clearWorld = this->server->GetUnmanagedFuncPointer(this->engineAssemblyId, this->clearWorldEntry);
+
+        // Registered before the plugin is loaded, so the level formats have the hook before anything the
+        // plugin does can write a level
+        PropertyLevelExtension::Register(this->server, this->engineAssemblyId);
 
         // Worlds that already exist when the feature unit is attached are not reported by
         // OnWorldCreated, so mirror them here.

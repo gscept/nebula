@@ -92,6 +92,11 @@ namespace Nebula
                     }
                 }
             }
+
+            if (currentAssembly == engineAssembly)
+            {
+                PropertyLevelFormat.RegisterAssembly(currentAssembly);
+            }
         }
 
         /// <summary>
@@ -309,6 +314,108 @@ namespace NebulaEngine
 
             world.Clear();
             return 0;
+        }
+
+        /// <summary>
+        /// Called by the level format for every entity it writes. The json is written into a buffer the
+        /// native side owns, and the length needed is answered when that buffer was too small.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int SerializeProperties(ulong entityId, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.SerializeEntity(entityId, outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// Called by the level format for every entity it reads.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int ApplyProperties(ulong entityId, IntPtr jsonUtf8, int length)
+        {
+            return PropertyLevelFormat.ApplyEntity(entityId, jsonUtf8, length);
+        }
+
+        /// <summary>
+        /// The property section the inspector draws. Called from inside the editor's ImGui frame, through the
+        /// editor's surface.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static void DrawProperties(ulong entityId)
+        {
+            PropertyLevelFormat.DrawProperties(entityId);
+        }
+
+        /// <summary>
+        /// Whether the entity has the property, which is what makes the editor's dropdown row read as already
+        /// added.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int HasProperty(ulong entityId, IntPtr nameUtf8, int nameLen)
+        {
+            return PropertyLevelFormat.HasProperty(entityId, PropertyLevelFormat.Utf8(nameUtf8, nameLen));
+        }
+
+        /// <summary>
+        /// The text a default instance of the property produces, which is what the editor's add writes.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int DefaultPropertyJson(IntPtr nameUtf8, int nameLen, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.DefaultPropertyJson(PropertyLevelFormat.Utf8(nameUtf8, nameLen), outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// The entity's text with only the keys it authored. The keys are newline separated paths, because the
+        /// level format holds them as strings and cannot see inside the text it is writing.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int SerializeKeys(ulong entityId, IntPtr keysUtf8, int keysLen, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.SerializeKeys(entityId, PropertyLevelFormat.Utf8(keysUtf8, keysLen), outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// The keys one text carries, answered as newline separated paths. This is what lets the level format
+        /// know which part of an entity's text it authored, without reading it.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int JsonKeys(IntPtr textUtf8, int length, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.JsonKeys(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// What one text gives when the keys another text carries are put over it.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int MergeJson(IntPtr baseJsonUtf8, int baseLen, IntPtr overJsonUtf8, int overLen, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.MergeJson(
+                PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
+                PropertyLevelFormat.Utf8(overJsonUtf8, overLen),
+                outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// The file's guid map, as "guid:entityId" pairs, for the duration of the call that needs it.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static void SetRefContext(IntPtr pairsUtf8, int length)
+        {
+            PropertyLevelFormat.SetRefContext(PropertyLevelFormat.Utf8(pairsUtf8, length));
+        }
+
+        /// <summary>
+        /// The text for the named keys, each value read from the base text, or the field's default when the
+        /// base has nothing. This is what a revert to the prefab writes.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int ResolveJson(IntPtr baseJsonUtf8, int baseLen, IntPtr keysUtf8, int keysLen, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.Resolve(
+                PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
+                PropertyLevelFormat.Utf8(keysUtf8, keysLen),
+                outBuffer, maxLen);
         }
     }
 }

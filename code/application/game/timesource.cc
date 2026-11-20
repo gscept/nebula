@@ -29,6 +29,7 @@ namespace Time
         IndexT maxStepsPerFrame = 5;
         int pauseCounter = 0;
         float timeFactor = 1.0f;
+        uint32_t hash = 0;
     };
 
     static_assert(sizeof(TimeSource) == sizeof(TimeSourceState));
@@ -118,6 +119,7 @@ Time::CreateTimeSource(TimeSourceCreateInfo const& info)
     timesource.frameTime = Timing::TicksToSeconds(state->frameTime);
     timesource.fixedFrameTime = info.fixedFrameTime;
     timesource.maxStepsPerFrame = info.maxStepsPerFrame;
+    timesource.hash = info.hash;
     return reinterpret_cast<TimeSource*>(&timesource);
 }
 
@@ -128,6 +130,34 @@ TimeSource* const
 Time::GetTimeSource(uint32_t TIMESOURCE_HASH)
 {
     return reinterpret_cast<TimeSource*>(&state->timeSources[state->timeSourceTable[TIMESOURCE_HASH]]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+Time::GetNumTimeSources()
+{
+    return state->numTimeSources;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+Time::HasTimeSource(uint32_t TIMESOURCE_HASH)
+{
+    return state != nullptr && state->timeSourceTable.Contains(TIMESOURCE_HASH);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TimeSource* const
+Time::GetTimeSourceByIndex(uint32_t index)
+{
+    n_assert(index < state->numTimeSources);
+    return reinterpret_cast<TimeSource*>(&state->timeSources[index]);
 }
 
 //------------------------------------------------------------------------------

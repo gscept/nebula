@@ -46,6 +46,8 @@ nebula_begin_module(application)
             componentserialization.cc
             componentinspection.h
             componentinspection.cc
+            levelextension.h
+            levelextension.cc
             world.h
             world.cc
             editorstate.h

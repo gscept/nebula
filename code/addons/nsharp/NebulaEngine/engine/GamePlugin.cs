@@ -85,6 +85,10 @@ namespace Nebula
                 Nebula.Runtime.Setup(context.assembly);
                 context.plugin.OnLoad(context);
 
+                // Registered after the load has actually succeeded. A load that fails leaves the previous
+                // plugin running, and registering before that would replace the types it is still using
+                PropertyLevelFormat.RegisterAssembly(context.assembly);
+
                 if (context.application == null)
                 {
                     throw new InvalidOperationException("The game plugin did not configure a NebulaApp.");
@@ -123,7 +127,7 @@ namespace Nebula
             for (int i = 0; i < state.Properties.Count; i++)
             {
                 HotReloadState.PropertyReplacement replacement = state.Properties[i];
-                replacement.Entity.AddProperty(replacement.NewProperty, replacement.Active);
+                replacement.Entity.AddProperty(replacement.NewProperty, replacement.RequestedActive);
             }
         }
 
@@ -151,6 +155,7 @@ namespace Nebula
                 TryCleanup(Nebula.Game.World.ClearAllProperties, "property detach");
                 TryCleanup(Game.PropertyManager.Instance.Clear, "property manager cleanup");
                 TryCleanup(() => Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly), "component cleanup");
+                TryCleanup(() => PropertyLevelFormat.ClearAssembly(this.assembly), "property level format");
                 TryCleanup(Runtime.ResetNebulaApp, "application reset");
             }
             finally
@@ -180,6 +185,7 @@ namespace Nebula
                 if (this.assembly != null)
                 {
                     TryCleanup(() => Nebula.Game.ComponentManager.Instance.ClearPluginComponents(this.assembly), "component cleanup");
+                    TryCleanup(() => PropertyLevelFormat.ClearAssembly(this.assembly), "property level format");
                 }
             }
             finally
