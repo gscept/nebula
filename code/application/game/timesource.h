@@ -74,6 +74,8 @@ struct TimeSource
     int pauseCounter;
     /// time factor for this time source
     float timeFactor;
+    /// the hash this source was created with
+    uint32_t const hash;
 };
 
 //------------------------------------------------------------------------------
@@ -93,6 +95,15 @@ namespace Time
 
     /// get a time source by hash
     TimeSource* const GetTimeSource(uint32_t TIMESOURCE_HASH);
+
+    /// how many time sources have been created
+    uint32_t GetNumTimeSources();
+
+    /// true when a time source with this hash exists. GetTimeSource asserts on one that does not
+    bool HasTimeSource(uint32_t TIMESOURCE_HASH);
+
+    /// the time source at an index. The hash table only maps hash to index, so this is what enumerates them
+    TimeSource* const GetTimeSourceByIndex(uint32_t index);
 
     /// set global time scale. This should be used sparingly. You can usually set individual time sources time factor instead.
     void SetGlobalTimeFactor(float factor);

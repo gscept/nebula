@@ -1,9 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
-using Nebula.Game;
 
 namespace Nebula
 {
@@ -11,7 +9,7 @@ namespace Nebula
     {
         public class ComponentManager
         {
-            private Dictionary<Type, uint> componentRegistry = new Dictionary<Type, uint>();
+            private readonly Dictionary<Type, uint> componentRegistry = [];
 
             private static readonly ComponentManager instance = new ComponentManager();
             // Explicit static constructor to tell C# compiler
@@ -25,21 +23,14 @@ namespace Nebula
             /// <summary>
             /// Gets the manager instance
             /// </summary>
-            public static ComponentManager Instance
-            {
-                get
-                {
-                    return instance;
-                }
-            }
+            public static ComponentManager Instance => instance;
 
             /// <summary>
             /// Retrieve the component id for a given NativeComponent
             /// </summary>
             public uint GetComponentId<T>() where T : NativeComponent
             {
-                uint id = 0xFFFFFFFF;
-                bool res = componentRegistry.TryGetValue(typeof(T), out id);
+                bool res = this.componentRegistry.TryGetValue(typeof(T), out uint id);
                 Debug.Assert(res, "Could not find component id of provided component type!");
                 return id;
             }
@@ -50,6 +41,28 @@ namespace Nebula
             public void RegisterComponent(Type type, uint id)
             {
                 this.componentRegistry[type] = id;
+            }
+
+
+            /// <summary>
+            /// Clears all registered components that belong to a specific assembly.
+            /// </summary>
+            internal void ClearPluginComponents(System.Reflection.Assembly assembly)
+            {
+                List<Type> remove = [];
+
+                foreach (KeyValuePair<Type, uint> entry in this.componentRegistry)
+                {
+                    if (entry.Key.Assembly == assembly)
+                    {
+                        remove.Add(entry.Key);
+                    }
+                }
+
+                for (int i = 0; i < remove.Count; i++)
+                {
+                    _ = this.componentRegistry.Remove(remove[i]);
+                }
             }
         }
 
@@ -67,7 +80,7 @@ namespace Nebula
         /// </summary>
         [NativeCppClass]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ResourceDescriptor
+        public readonly struct ResourceDescriptor
         {
             // represented in native code as Util::StringAtom
             public readonly IntPtr descriptor;

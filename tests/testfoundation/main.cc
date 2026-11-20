@@ -35,6 +35,7 @@
 #include "stackarraytest.h"
 #include "xmlreaderwritertest.h"
 // #include "jsonreaderwritertest.h"
+#include "jsonrawtest.h"
 #include "binaryreaderwritertest.h"
 #include "uritest.h"
 #include "mediatypetest.h"
@@ -131,6 +132,7 @@ __cdecl main(int argc, const char** argv)
     testRunner->AttachTestCase(MessageReaderWriterTest::Create());
     testRunner->AttachTestCase(XmlReaderWriterTest::Create());
     // testRunner->AttachTestCase(JSonReaderWriterTest::Create());
+    testRunner->AttachTestCase(JsonRawTest::Create());
     testRunner->AttachTestCase(BinaryReaderWriterTest::Create());
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());

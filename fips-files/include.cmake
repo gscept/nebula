@@ -214,6 +214,7 @@ IF (USE_DOTNET)
     cmake_policy(SET CMP0074 NEW)
     find_package(Dotnet REQUIRED)
     cmake_policy(POP)
+    add_compile_definitions(NEBULA_DOTNET)
 ENDIF (USE_DOTNET)
 
 macro(nebula_flatc root)
@@ -328,10 +329,12 @@ macro(compile_gpulang_intern)
 endmacro()
 
 macro(nebula_add_script_library target)
-    fips_deps(nsharp ${target})
-    IF(WIN32)
-        set_target_properties(${CurTargetName} PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
-    ENDIF(WIN32)
+    IF (USE_DOTNET)
+        fips_deps(nsharp ${target})
+        IF(WIN32)
+            set_target_properties(${CurTargetName} PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
+        ENDIF(WIN32)
+    ENDIF (USE_DOTNET)
 endmacro()
 
 macro(nebula_idl_compile)
@@ -550,12 +553,21 @@ function(nebula_dotnet_project)
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>\n\
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>\n\
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>\n\
-    <LangVersion>7.2</LangVersion>\n\
+    <LangVersion>latestMajor</LangVersion>\n\
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n\
+    <EnableRoslynAnalyzers>true</EnableRoslynAnalyzers>\n\
+  </PropertyGroup>\n\
+  <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">\n\
+    <DebugSymbols>true</DebugSymbols>\n\
+    <DebugType>portable</DebugType>\n\
   </PropertyGroup>\n\
   <ItemGroup>\n\
-${compile_items}  </ItemGroup>\n\
+${compile_items} </ItemGroup>\n\
+<ItemGroup>\n\
+    <Compile Remove=\"obj/**/*.cs\" />\n\
+</ItemGroup>\n\
   <ItemGroup>\n\
+  
 ${project_references}  </ItemGroup>\n\
 </Project>\n")
 
@@ -791,7 +803,13 @@ macro(nebula_end_app)
     if (target_has_frame_script)
         nebula_framescript_compile()
     endif()
-    set_target_properties(${curtarget} PROPERTIES ENABLE_EXPORTS false)
+    IF (USE_DOTNET)
+        # Managed code resolves [DllImport("__Internal")] against the main program handle, which
+        # requires the app to keep a dynamic symbol table for the NEBULA_EXPORT bindings.
+        set_target_properties(${curtarget} PROPERTIES ENABLE_EXPORTS true)
+    ELSE()
+        set_target_properties(${curtarget} PROPERTIES ENABLE_EXPORTS false)
+    ENDIF()
     if (TARGET system_resources-res)
         target_link_libraries(${curtarget} $<TARGET_OBJECTS:system_resources-res>)
     endif()

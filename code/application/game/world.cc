@@ -888,6 +888,49 @@ World::GetEntityMapping(Game::Entity entity) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+SizeT
+World::GetNumEntities() const
+{
+    return this->numEntities;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::SetEntityCreatedCallback(EntityCreatedCallback const& callback)
+{
+    this->entityCreatedCallback = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::EnumerateEntities(EntityCreatedCallback const& callback)
+{
+    // The entity map covers every index the pool has ever allocated, so freed indices and indices
+    // without an instance have to be skipped. The generation is read from the pool, which is what
+    // makes an index belong to a live entity.
+    for (IndexT i = 0; i < this->entityMap.Size(); i++)
+    {
+        EntityMapping mapping = this->entityMap[i];
+        if (mapping.table == MemDb::InvalidTableId || mapping.instance == MemDb::InvalidRow)
+            continue;
+
+        Entity entity;
+        entity.index = i;
+        entity.generation = this->pool.generations[i];
+        entity.world = this->worldId;
+
+        if (this->pool.IsValid(entity))
+            callback(this, entity);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
    TODO: This is not thread safe!
 */
 bool
@@ -1275,6 +1318,9 @@ World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* c
     Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[instance.index] = entity;
 
+    if (this->entityCreatedCallback.IsValid())
+        this->entityCreatedCallback(this, entity);
+
     return instance;
 }
 
@@ -1579,7 +1625,10 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
 void
 World::RenderDebug()
 {
-    ImGui::Text("World Hash: %s", Util::FourCC(this->hash.id).AsString().AsCharPtr());
+    Util::String str = Util::FourCC(this->hash.id).AsString();
+    bool ascii = Util::String::IsAlNum(str[0]) && Util::String::IsAlNum(str[1]) && Util::String::IsAlNum(str[2]) && Util::String::IsAlNum(str[3]);
+    
+    ImGui::Text("World Hash: %s", ascii ? str.AsCharPtr() : Util::String::Hex(this->hash.id).AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
     ImGui::Checkbox("Show Frame Pipeline", &showProcessors);

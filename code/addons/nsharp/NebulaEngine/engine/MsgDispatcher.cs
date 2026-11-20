@@ -1,10 +1,5 @@
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
-
-using System.Reflection;
 
 namespace Nebula
 {
@@ -20,7 +15,7 @@ namespace Nebula
 
             private sealed class MessageChannel<T> : IMessageChannel where T : Msg
             {
-                private List<IMessageHandler<T>> handlers = new List<IMessageHandler<T>>();
+                private readonly List<IMessageHandler<T>> handlers = [];
 
                 public void Add(IMessageHandler<T> handler)
                 {
@@ -32,16 +27,27 @@ namespace Nebula
                     for (int i = this.handlers.Count - 1; i >= 0; i--)
                     {
                         if (Object.ReferenceEquals(this.handlers[i], property))
+                        {
                             this.handlers.RemoveAt(i);
+                        }
                     }
                 }
 
-                public bool IsEmpty { get { return this.handlers.Count == 0; } }
+                public bool IsEmpty => this.handlers.Count == 0;
 
                 public void Dispatch(in T message)
                 {
                     for (int i = 0; i < this.handlers.Count; i++)
+                    {
+                        // A property in a world that is not simulating is inert, which is the same rule the
+                        // update methods have. A handler that is not a property has no world to ask
+                        if (this.handlers[i] is Property property && !property.IsSimulating())
+                        {
+                            continue;
+                        }
+
                         this.handlers[i].OnMessage(in message);
+                    }
                 }
             }
 
@@ -50,12 +56,10 @@ namespace Nebula
 
             public void Register<T>(IMessageHandler<T> handler) where T : Msg
             {
-                if (this.channels == null)
-                    this.channels = new Dictionary<Type, IMessageChannel>();
+                this.channels ??= [];
 
                 Type messageType = typeof(T);
-                IMessageChannel channel;
-                if (!this.channels.TryGetValue(messageType, out channel))
+                if (!this.channels.TryGetValue(messageType, out IMessageChannel channel))
                 {
                     MessageChannel<T> typedChannel = new MessageChannel<T>();
                     this.channels.Add(messageType, typedChannel);
@@ -68,33 +72,39 @@ namespace Nebula
             public void Unregister(Property property)
             {
                 if (this.channels == null)
+                {
                     return;
+                }
 
-                if (this.emptyChannels == null)
-                    this.emptyChannels = new List<Type>();
+                this.emptyChannels ??= [];
                 this.emptyChannels.Clear();
 
                 foreach (KeyValuePair<Type, IMessageChannel> entry in this.channels)
                 {
                     entry.Value.Remove(property);
                     if (entry.Value.IsEmpty)
+                    {
                         this.emptyChannels.Add(entry.Key);
+                    }
                 }
 
                 for (int i = 0; i < this.emptyChannels.Count; i++)
                 {
-                    this.channels.Remove(this.emptyChannels[i]);
+                    _ = this.channels.Remove(this.emptyChannels[i]);
                 }
             }
 
             public void Dispatch<T>(in T message) where T : Msg
             {
                 if (this.channels == null)
+                {
                     return;
+                }
 
-                IMessageChannel channel;
-                if (this.channels.TryGetValue(typeof(T), out channel))
+                if (this.channels.TryGetValue(typeof(T), out IMessageChannel channel))
+                {
                     ((MessageChannel<T>)channel).Dispatch(in message);
+                }
             }
         }
     }

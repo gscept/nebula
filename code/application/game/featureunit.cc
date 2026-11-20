@@ -115,6 +115,26 @@ FeatureUnit::OnStart(World* world)
 
 //------------------------------------------------------------------------------
 /**
+    Called from GameServer::CreateWorld().
+*/
+void
+FeatureUnit::OnWorldCreated(World* world)
+{
+    // Override in subclass if needed
+}
+
+//------------------------------------------------------------------------------
+/**
+    Called from GameServer::DestroyWorld() before the world is deleted.
+*/
+void
+FeatureUnit::OnWorldDestroyed(World* world)
+{
+    // Override in subclass if needed
+}
+
+//------------------------------------------------------------------------------
+/**
     This method is called from within Game::GameServer::NotifyGameSave().
 */
 void

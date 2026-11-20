@@ -46,6 +46,22 @@
 		"TestHealth": {
 			"value": "uint"
 		},
+		"TestFlags": {
+			"flags32": {
+				"type": "bitfield32",
+				"default": 0
+			},
+			"flags64": {
+				"type": "bitfield64",
+				"default": 0
+			}
+		},
+		"TestAtom": {
+			"atom": {
+				"type": "util::stringatom",
+				"default": ""
+			}
+		},
 		"MyFlag": {},
 		"TestEmptyStruct": {}
 	}

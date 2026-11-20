@@ -2,8 +2,6 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
-using System.Collections.Generic;
 
 /*
 Entities are only ids as per usual, pointing into their respective tables in unmanaged code
@@ -29,6 +27,11 @@ namespace Nebula
             }
         }
 
+        public static void Log<T>(T value)
+        {
+            Log(value?.ToString() ?? "null");
+        }
+
         [DllImport("__Internal", EntryPoint = "N_Assert")]
         public static extern void Assert([MarshalAs(UnmanagedType.I1)] bool value);
 
@@ -51,6 +54,10 @@ namespace Nebula
             [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool IsValid(UInt64 entityId);
 
+            [DllImport("__Internal", EntryPoint = "EntityHasInstance")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool HasInstance(UInt64 entityId);
+
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
             public static extern void DeleteEntity(UInt64 entityId);
 
@@ -70,7 +77,7 @@ namespace Nebula
             public static extern Vector3 GetScale(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntitySetScale")]
-            public static extern void SetScale(UInt64 entityId, Vector3 position);
+            public static extern void SetScale(UInt64 entityId, Vector3 scale);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
             [return: MarshalAs(UnmanagedType.I1)]
@@ -98,13 +105,39 @@ namespace Nebula
 
             [DllImport("__Internal", EntryPoint = "WorldGetDefaultWorldId")]
             public static extern uint GetDefaultWorldId();
+
+            [DllImport("__Internal", EntryPoint = "WorldHasWorld")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool HasWorld(uint worldId);
+
+            [DllImport("__Internal", EntryPoint = "WorldIsSimulating")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool IsSimulating(uint worldId);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSync")]
+            public static extern int SyncTimeSources(IntPtr buffer, int maxEntries);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSetTimeFactor")]
+            public static extern void SetTimeSourceTimeFactor(uint hash, float factor);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceSetPauseCounter")]
+            public static extern void SetTimeSourcePauseCounter(uint hash, int counter);
+
+            [DllImport("__Internal", EntryPoint = "TimeSourceCreate")]
+            public static extern uint CreateTimeSource(uint hash, double fixedFrameTime, int maxStepsPerFrame);
+
+            [DllImport("__Internal", EntryPoint = "TimeSetGlobalTimeFactor")]
+            public static extern void SetGlobalTimeFactor(float factor);
+
+            [DllImport("__Internal", EntryPoint = "TimeGetGlobalTimeFactor")]
+            public static extern float GetGlobalTimeFactor();
         }
 
         public class NebulaApp
         {
             private bool isRunning = false;
 
-            public bool IsRunning { get { return isRunning; } }
+            public bool IsRunning => this.isRunning;
 
             public virtual void OnStart()
             {
@@ -116,16 +149,37 @@ namespace Nebula
                 this.isRunning = false;
             }
 
+            internal void Resume()
+            {
+                this.isRunning = true;
+            }
+
             public virtual void OnBeginFrame()
             {
-                // TODO: loop over all worlds and collect garbage
-                World.Get(World.DEFAULT_WORLD).CollectGarbage();
+                // The engine has already advanced the time sources for this frame, so the mirror reads this
+                // frame's values and the fixed steps are still all there
+                TimeManager.Instance.Sync();
+
+                // The events for this frame have been pumped by the render feature unit, which is attached
+                // before the script feature unit, so the input mirror reads this frame's state
+                Input.Sync();
+
+                foreach (World world in World.AllWorlds())
+                {
+                    world.CollectGarbage();
+                }
+
+                foreach (World world in World.AllWorlds())
+                {
+                    world.RefreshMode();
+                }
 
                 PropertyManager.Instance.OnBeginFrame();
             }
 
             public virtual void OnFrame()
             {
+                PropertyManager.Instance.OnFixedFrame();
                 PropertyManager.Instance.OnFrame();
             }
 

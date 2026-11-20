@@ -574,6 +574,12 @@ GameServer::CreateWorld(WorldHash hash)
     World*& world = this->state.worlds[slot];
     world = new World(hash, (WorldId) slot);
     this->state.numWorlds++;
+
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
+    {
+        this->gameFeatures[i]->OnWorldCreated(world);
+    }
+
     return world;
 }
 
@@ -592,6 +598,9 @@ GameServer::GetWorld(WorldHash worldHash)
 World*
 GameServer::GetWorld(WorldId worldId)
 {
+    if (worldId >= MaxWorlds)
+        return nullptr;
+
     return this->state.worlds[worldId];
 }
 
@@ -603,7 +612,14 @@ void
 GameServer::DestroyWorld(WorldHash worldHash)
 {
     WorldId index = this->state.worldTable[worldHash];
-    delete this->state.worlds[index];
+    World* world = this->state.worlds[index];
+
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
+    {
+        this->gameFeatures[i]->OnWorldDestroyed(world);
+    }
+
+    delete world;
     this->state.worlds[index] = nullptr;
     this->state.worldTable.Erase(worldHash);
     this->state.numWorlds--;

@@ -8,6 +8,9 @@
 #include "appgame/gameapplication.h"
 #include "nsharp/scriptfeatureunit.h"
 
+// generated components
+#include "components/nsharpcomponents.h"
+
 // tests
 #include "nsharptest.h"
 
@@ -24,6 +27,12 @@ private:
     SetupGameFeatures() override
     {
         scriptFeature = Scripting::ScriptFeatureUnit::Create();
+
+        // The managed tests read and write these components through the component api, which
+        // requires them to be registered in the attribute registry.
+        scriptFeature->RegisterComponentType<Test::TestFlags>();
+        scriptFeature->RegisterComponentType<Test::TestAtom>();
+
         scriptFeature->SetScriptAssembly("bin:NSharpTests.dll");
         Game::GameServer::Instance()->AttachGameFeature(scriptFeature);
     }

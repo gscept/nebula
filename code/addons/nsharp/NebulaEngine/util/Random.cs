@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Nebula;
 
 namespace Util
@@ -41,10 +42,22 @@ namespace Util
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Seed(ulong seed)
         {
-            s0 = SplitMix32(ref seed);
-            s1 = SplitMix32(ref seed);
-            s2 = SplitMix32(ref seed);
-            s3 = SplitMix32(ref seed);
+            s0 = SplitMix64(ref seed);
+            s1 = SplitMix64(ref seed);
+            s2 = SplitMix64(ref seed);
+            s3 = SplitMix64(ref seed);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint SplitMix64(ref ulong state)
+        {
+            state += 0x9E3779B97F4A7C15UL;
+
+            ulong z = state;
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+
+            return (uint)(z ^ (z >> 31));
         }
 
         //--------------------------------------------------------------------------
@@ -56,10 +69,10 @@ namespace Util
         public static void RandomizeSeed()
         {
             System.Random random = new System.Random();
-            ulong seed = random.NextInt64;
+            ulong seed = (ulong)random.NextInt64();
             Seed(seed);
         }
-        
+
         //--------------------------------------------------------------------------
         /** <summary>
             Random float in [min, max).
@@ -70,7 +83,7 @@ namespace Util
         {
             // Top 24 bits -> exactly representable float fraction [0, 1).
             float t = (Next() >> 8) * (1.0f / 16777216.0f);
-            return min + (max - min) * t;
+            return min + ((max - min) * t);
         }
 
         //--------------------------------------------------------------------------
@@ -93,7 +106,10 @@ namespace Util
         public static float Value
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (Next() >> 8) * (1.0f / 16777216.0f);
+            get
+            {
+                return (Next() >> 8) * (1.0f / 16777216.0f);
+            }
         }
 
         //--------------------------------------------------------------------------
@@ -108,7 +124,7 @@ namespace Util
         {
             float azimuth = Range(0, Mathf.Pi * 2.0f);
             float zenith = Range(0, Mathf.Pi);
-            float distance = Value();
+            float distance = Value;
 
             float x = distance * Mathf.Sin(zenith) * Mathf.Cos(azimuth);
             float y = distance * Mathf.Sin(zenith) * Mathf.Sin(azimuth);
@@ -137,9 +153,9 @@ namespace Util
             const float piFactor = 1.9f;
             const float piScale = 0.7f;
 
-            return factor * (alphaFactor * Mathf.Sin(alphaScale * seed) +
-                             eFactor * Mathf.Sin(eScale * seed * Mathf.E) +
-                             piFactor * Mathf.Sin(piScale * seed * Mathf.Pi)
+            return factor * ((alphaFactor * Mathf.Sin(alphaScale * seed)) +
+                             (eFactor * Mathf.Sin(eScale * seed * Mathf.E)) +
+                             (piFactor * Mathf.Sin(piScale * seed * Mathf.Pi))
                             );
         }
     }

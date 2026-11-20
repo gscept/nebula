@@ -75,7 +75,7 @@ namespace Nebula
         */
         public static float Barycentric(float value1, float value2, float value3, float amount1, float amount2)
         {
-            return value1 + (value2 - value1) * amount1 + (value3 - value1) * amount2;
+            return value1 + ((value2 - value1) * amount1) + ((value3 - value1) * amount2);
         }
 
         //--------------------------------------------------------------------------
@@ -95,10 +95,10 @@ namespace Nebula
             // Internally using doubles not to lose precission
             double amountSquared = amount * amount;
             double amountCubed = amountSquared * amount;
-            return (float)(0.5 * (2.0 * value2 +
-                (value3 - value1) * amount +
-                (2.0 * value1 - 5.0 * value2 + 4.0 * value3 - value4) * amountSquared +
-                (3.0 * value2 - value1 - 3.0 * value3 + value4) * amountCubed));
+            return (float)(0.5 * ((2.0 * value2) +
+                ((value3 - value1) * amount) +
+                (((2.0 * value1) - (5.0 * value2) + (4.0 * value3) - value4) * amountSquared) +
+                (((3.0 * value2) - value1 - (3.0 * value3) + value4) * amountCubed)));
         }
 
         //--------------------------------------------------------------------------
@@ -171,14 +171,21 @@ namespace Nebula
             double sSquared = s * s;
 
             if (amount == 0f)
+            {
                 result = value1;
+            }
             else if (amount == 1f)
+            {
                 result = value2;
+            }
             else
-                result = (2 * v1 - 2 * v2 + t2 + t1) * sCubed +
-                    (3 * v2 - 3 * v1 - 2 * t1 - t2) * sSquared +
-                    t1 * s +
+            {
+                result = ((2 * v1 - (2 * v2) + t2 + t1) * sCubed) +
+                    (((3 * v2) - (3 * v1) - (2 * t1) - t2) * sSquared) +
+                    (t1 * s) +
                     v1;
+            }
+
             return (float)result;
         }
 
@@ -346,12 +353,21 @@ namespace Nebula
         public static float WrapAngle(float angle)
         {
             if ((angle > -Pi) && (angle <= Pi))
+            {
                 return angle;
+            }
+
             angle %= TwoPi;
             if (angle <= -Pi)
+            {
                 return angle + TwoPi;
+            }
+
             if (angle > Pi)
+            {
                 return angle - TwoPi;
+            }
+
             return angle;
         }
 

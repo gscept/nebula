@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using Api = Nebula.Game.NebulaApiV1;
 
@@ -24,7 +24,7 @@ namespace Nebula
         /// </summary>
         public class Entity
         {
-            private World world = null;
+            private readonly World world;
             private UInt64 id = 0xFFFFFFFFFFFFFFFF;
             private List<Property> properties;
             private MsgDispatcher dispatcher;
@@ -32,11 +32,11 @@ namespace Nebula
             /// <summary>
             /// The world that this entity belongs to
             /// </summary>
-            public World World { get { return this.world; } }
+            public World World => this.world;
             /// <summary>
             /// Unique identifier for the entity
             /// </summary>
-            public UInt64 Id { get { return this.id; } }
+            public UInt64 Id => this.id;
 
             /// <remarks>
             /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
@@ -46,11 +46,6 @@ namespace Nebula
                 this.world = world;
                 this.id = entityId;
             }
-
-            /// <summary>
-            /// Check if entity is valid (not destroyed)
-            /// </summary>
-            public bool IsValid() { return Api.IsValid(this.id); }
 
             /// <summary>
             /// Check if entity has some unmanaged component
@@ -107,7 +102,9 @@ namespace Nebula
             public bool HasProperty<T>() where T : Property
             {
                 if (this.properties == null)
+                {
                     return false;
+                }
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {
@@ -122,17 +119,21 @@ namespace Nebula
             /// <summary>
             /// Adds a property to the entity
             /// </summary>
-            public void AddProperty(Property property)
+            /// <remarks>
+            /// The property is activated here when this world is simulating. In a world that is only being
+            /// authored the value is recorded and OnActivate happens when the world starts simulating, which
+            /// is what an editor's play button does.
+            /// </remarks>
+            public void AddProperty(Property property, bool active = true)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
-                if (this.properties == null)
-                    this.properties = new List<Property>();
+                this.properties ??= [];
 
                 property.Entity = this;
                 this.properties.Add(property);
                 PropertyManager.Instance.RegisterProperty(property);
                 property.AttachMessages();
-                property.Active = true;
+                property.Active = active;
             }
 
             /// <summary>
@@ -147,13 +148,49 @@ namespace Nebula
             public T GetProperty<T>() where T : Property
             {
                 if (this.properties == null)
+                {
                     return null;
+                }
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {
                     if (this.properties[i] is T)
                     {
                         return this.properties[i] as T;
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            /// The properties of the entity, in the order they were added.
+            /// </summary>
+            /// <remarks>
+            /// This is what the level format writes, because the order the properties were added in is the
+            /// order the file gets.
+            /// </remarks>
+            internal IReadOnlyList<Property> Properties => this.properties;
+
+            /// <summary>
+            /// Gets the property by its type, for a type that is only known at runtime.
+            /// </summary>
+            /// <remarks>
+            /// This is what the level format reads with, since a property named by a file has no type to
+            /// name in the generic version.
+            /// </remarks>
+            internal Property GetProperty(Type type)
+            {
+                if (this.properties == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < this.properties.Count; i++)
+                {
+                    if (this.properties[i]?.GetType() == type)
+                    {
+                        return this.properties[i];
                     }
                 }
 
@@ -168,6 +205,12 @@ namespace Nebula
                 return Api.GetPosition(this.id);
             }
 
+            public Vector3 Position
+            {
+                get { return Api.GetPosition(this.id); }
+                set { Api.SetPosition(this.id, value ); }
+            }
+            
             /// <summary>
             /// Sets the position of the entity.
             /// </summary>
@@ -215,20 +258,63 @@ namespace Nebula
             public void Send<T>(in T msg) where T : Msg
             {
                 if (this.dispatcher != null)
+                {
                     this.dispatcher.Dispatch(in msg);
+                }
             }
 
             internal void RegisterMessage<T>(IMessageHandler<T> handler) where T : Msg
             {
-                if (this.dispatcher == null)
-                    this.dispatcher = new MsgDispatcher();
+                this.dispatcher ??= new MsgDispatcher();
                 this.dispatcher.Register(handler);
             }
 
             internal void UnregisterMessages(Property property)
             {
                 if (this.dispatcher != null)
+                {
                     this.dispatcher.Unregister(property);
+                }
+            }
+
+            internal List<Property> GetProperties()
+            {
+                return this.properties;
+            }
+
+            internal void ClearProperties()
+            {
+                if (this.properties == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < this.properties.Count; i++)
+                {
+                    Property property = this.properties[i];
+                    PropertyManager.Instance.UnregisterProperty(property);
+                    property.DetachMessages();
+                    property.Destroy();
+                }
+                this.properties.Clear();
+                this.dispatcher = null;
+            }
+
+            /// <summary>
+            /// Removes one property from this entity. This is the single property version of ClearProperties,
+            /// and it is what an undo of an add takes: the command removes the property it added.
+            /// </summary>
+            internal bool RemoveProperty(Property property)
+            {
+                if (this.properties == null || !this.properties.Remove(property))
+                {
+                    return false;
+                }
+
+                PropertyManager.Instance.UnregisterProperty(property);
+                property.DetachMessages();
+                property.Destroy();
+                return true;
             }
 
             /// <summary>
@@ -237,24 +323,26 @@ namespace Nebula
             /// </summary>
             public static void Destroy(Entity entity)
             {
+                entity.world.DeregisterEntity(entity);
+
                 if (entity.id == 0xFFFFFFFFFFFFFFFF)
-                    return; // Already destroyed
-
-                Api.DeleteEntity(entity.id);
-                entity.id = 0xFFFFFFFFFFFFFFFF;
-
-                if (entity.properties == null)
-                    return;
-
-                for (int i = 0; i < entity.properties.Count; i++)
                 {
-                    Property property = entity.properties[i];
-                    PropertyManager.Instance.UnregisterProperty(property);
-                    property.DetachMessages();
-                    property.Destroy();
+                    return; // Already destroyed
                 }
 
-                entity.properties.Clear();
+                Api.DeleteEntity(entity.id);
+                entity.Detach();
+            }
+
+            /// <summary>
+            /// Release the managed side of the entity without touching the native one. Used when the
+            /// world the entity belongs to goes away, because the native entities are gone with it and
+            /// there is nothing left to delete through the api.
+            /// </summary>
+            internal void Detach()
+            {
+                this.id = 0xFFFFFFFFFFFFFFFF;
+                this.ClearProperties();
             }
 
             /// <summary>
@@ -262,7 +350,45 @@ namespace Nebula
             /// </summary>
             public override string ToString()
             {
-                return id.ToString();
+                return this.id.ToString();
+            }
+        }
+
+        //--------------------------------------------------------------------------
+        /**
+        */
+        public static class EntityExtensions
+        {
+            //--------------------------------------------------------------------------
+            /** <summary>
+                Returns true if entity is valid (not destroyed).
+
+                This is safe to call even if the entity == null.
+                </summary>
+            */
+#nullable enable
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsValid([NotNullWhen(true)] this Entity? entity)
+            {
+                return entity != null && Api.IsValid(entity.Id);
+            }
+
+            //--------------------------------------------------------------------------
+            /** <summary>
+                Returns true if the entity has an instance in the world.
+
+                An entity can be valid without having one, because an id can be held by something that has
+                taken the instance out and is waiting to put it back, which is what an editor command does
+                while it is on the undo stack. Nothing that reads the world should run against one.
+
+                This is safe to call even if the entity == null.
+                </summary>
+            */
+#nullable enable
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool HasInstance([NotNullWhen(true)] this Entity? entity)
+            {
+                return entity != null && Api.HasInstance(entity.Id);
             }
         }
     }

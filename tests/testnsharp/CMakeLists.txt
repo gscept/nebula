@@ -27,18 +27,9 @@ nebula_begin_app(testnsharp windowed)
 
     fips_dir(.)
 
-    fips_deps(foundation testbase nsharp)
+    fips_deps(foundation testbase nsharp input)
     target_precompile_headers(testnsharp PRIVATE [["foundation/stdneb.h"]])
     add_dependencies(testnsharp NSharpTestsManaged)
-
-    IF(FIPS_POSIX)
-        target_link_options(testnsharp PRIVATE "-Wl,--export-dynamic")
-        target_link_options(testnsharp PRIVATE
-            "-Wl,--whole-archive"
-            "$<TARGET_FILE:nsharp>"
-            "-Wl,--no-whole-archive"
-        )
-    ENDIF(FIPS_POSIX)
 
 nebula_end_app()
 

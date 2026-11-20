@@ -18,6 +18,7 @@
 #include "processor.h"
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
+#include "util/delegate.h"
 #include "util/fourcc.h"
 #include "basegamefeature/components/basegamefeature.h"
 
@@ -56,6 +57,9 @@ PhaseForMode(WorldMode mode)
 {
     return mode == PlayMode ? PlayPhase : EditorPhase;
 }
+
+/// Called for every entity instance allocated in a world.
+using EntityCreatedCallback = Util::Delegate<void(World*, Entity)>;
 
 //------------------------------------------------------------------------------
 /**
@@ -112,6 +116,17 @@ public:
 
     /// Returns the entity mapping of an entity
     EntityMapping GetEntityMapping(Entity entity) const;
+
+    /// Number of entity ids currently allocated in this world
+    SizeT GetNumEntities() const;
+
+    /// Set the callback invoked for every entity instance allocated in this world.
+    /// Pass an invalid delegate to clear it.
+    void SetEntityCreatedCallback(EntityCreatedCallback const& callback);
+
+    /// Call callback for every entity in the world that has an instance in the database.
+    /// Freed indices and indices without an instance (deferred allocation) are skipped.
+    void EnumerateEntities(EntityCreatedCallback const& callback);
 
     /// Create a component. This queues the component in a command buffer to be added later
     template <typename TYPE>
@@ -286,6 +301,8 @@ private:
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;
+    /// Callback invoked for every entity instance allocated in this world
+    EntityCreatedCallback entityCreatedCallback;
     /// maps entity index to table+row pair
     Util::Array<EntityMapping> entityMap;
     /// contains all entity instances

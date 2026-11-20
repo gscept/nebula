@@ -50,6 +50,9 @@ public:
     
     /// add a value to the current array node
     template <typename T> void Add(const T & value, const Util::String & name = "");
+    /// add a json subtree that was built elsewhere and is only known as text. This is what lets a
+    /// feature contribute a node the writer has no type knowledge of
+    void AddRaw(const char* jsonText, const Util::String & name = "");
     /// add std::array values to the current node
     template <typename T, size_t N> void Add(std::array<T, N> const& values, const Util::String& name = "");
 	/// add bitfield of N size
