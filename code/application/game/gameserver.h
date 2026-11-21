@@ -70,8 +70,8 @@ public:
 
     /// call OnBeforeLoad on all game features
     virtual void NotifyBeforeLoad();
-    /// call OnBeforeCleanup on all game features
-    virtual void NotifyBeforeCleanup();
+    /// call OnBeforeCleanup on all game features for the world which is cleaned up
+    virtual void NotifyBeforeCleanup(World* world);
    
     /// call OnLoad on all game features
     virtual void NotifyGameLoad();

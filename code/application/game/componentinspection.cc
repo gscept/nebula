@@ -94,6 +94,42 @@ ComponentInspection::OverrideInspector(ComponentId component, DrawFunc func)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ComponentInspection::OverrideField(ComponentId component, const Util::StringAtom& field, DrawFunc func)
+{
+    ComponentInspection* reg = Instance();
+    for (FieldOverride& fieldOverride : reg->fieldOverrides)
+    {
+        if (fieldOverride.component == component && fieldOverride.field == field)
+        {
+            fieldOverride.func = func;
+            return;
+        }
+    }
+    reg->fieldOverrides.Append({ component, field, func });
+}
+
+//------------------------------------------------------------------------------
+/**
+    Few fields are overridden, a linear search is cheaper than a lookup structure
+*/
+ComponentInspection::DrawFunc
+ComponentInspection::GetFieldOverride(ComponentId component, const char* field)
+{
+    ComponentInspection* reg = Instance();
+    for (const FieldOverride& fieldOverride : reg->fieldOverrides)
+    {
+        if (fieldOverride.component == component && fieldOverride.field == field)
+        {
+            return fieldOverride.func;
+        }
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ComponentInspection::ComponentInspection()
 {
     // empty

@@ -17,8 +17,6 @@ Threading::CriticalSection RefCounted::criticalSection;
 ThreadLocal bool RefCounted::isInCreate = false;
 RefCountedList RefCounted::list;
 
-#endif
-
 //------------------------------------------------------------------------------
 /**
     Add the object to the debug list. The critical section is only held for the
@@ -32,6 +30,7 @@ RefCounted::RegisterInDebugList()
     this->listIterator = list.AddBack(this);
     criticalSection.Leave();
 }
+#endif
 
 //------------------------------------------------------------------------------
 /**

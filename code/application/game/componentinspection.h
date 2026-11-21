@@ -41,6 +41,10 @@ public:
 
     /// Set a custom component inspector draw function
     static void OverrideInspector(ComponentId component, DrawFunc func);
+    /// Set a custom draw function for one field of a component, it gets the field data instead of the component data
+    static void OverrideField(ComponentId component, const Util::StringAtom& field, DrawFunc func);
+    /// Get the custom draw function of a field, null if it has none
+    static DrawFunc GetFieldOverride(ComponentId component, const char* field);
 
     // set to true if you want full information to be displayed in the inspector
     bool debug = false;
@@ -52,6 +56,14 @@ private:
     static ComponentInspection* Singleton;
 
     Util::Array<DrawFunc> inspectors;
+
+    struct FieldOverride
+    {
+        ComponentId component;
+        Util::StringAtom field;
+        DrawFunc func;
+    };
+    Util::Array<FieldOverride> fieldOverrides;
 };
 
 //------------------------------------------------------------------------------
@@ -141,6 +153,10 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
                         *(field_type*)fieldData = (field_type)value;
                     }
                 }
+            }
+            else if (ComponentInspection::DrawFunc fieldOverride = ComponentInspection::GetFieldOverride(component, TYPE::Traits::field_names[i]))
+            {
+                fieldOverride(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
             }
             else
             {

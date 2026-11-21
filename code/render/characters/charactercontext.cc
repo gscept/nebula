@@ -666,6 +666,24 @@ CharacterContext::GetTrackTime(const Graphics::GraphicsEntityId id, const IndexT
 
 //------------------------------------------------------------------------------
 /**
+    The weight the clip was mixed with in the last update, without the track's weight. A clip that hasn't started
+    yet is at the start of its fade in
+*/
+float
+CharacterContext::GetTrackFadeWeight(const Graphics::GraphicsEntityId id, const IndexT track)
+{
+    n_assert(track < MaxNumTracks);
+    const ContextEntityId cid = GetContextId(id);
+    const AnimationRuntime& playing = characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track];
+    if (playing.clip == -1)
+    {
+        return 0.0f;
+    }
+    return FadeWeight(playing);
+}
+
+//------------------------------------------------------------------------------
+/**
     The clip's start is moved, the next update gets the time since the clip started from it. That keeps the time a
     clip that isn't looped stops at in step with the time it's moved to
 */
