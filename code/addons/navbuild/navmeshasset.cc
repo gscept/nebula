@@ -341,7 +341,7 @@ BakeNavMesh(const IO::URI& workFile, const IO::URI& exportFile, bool force)
         return BakeResult::Failed;
     }
 
-    const uint64_t hash = InputHash(workData.GetPtr(), workData.Size(), areas, input);
+    const uint64_t hash = InputHash(workData.GetPtr(), (SizeT)workData.Size(), areas, input);
     uint64_t exportedHash = 0;
     if (!force && ReadInputHash(exportFile, exportedHash) && exportedHash == hash)
     {
