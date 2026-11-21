@@ -36,14 +36,16 @@ public:
         Materials = 1 << 2,                                            // checking this will cause surfaces to get exported
         Particles = 1 << 3,
         Audio = 1 << 4,
-        All = Assets | Textures | Materials | Particles | Audio,    // shortcut for exporting everything
+        Navigation = 1 << 10,                                         // bakes .nanav files, after everything else is packaged
+        All = Assets | Textures | Materials | Particles | Audio | Navigation,    // shortcut for exporting everything
 
         ForceAssets = 1 << 5,           // will force exporting .nasset
         ForceTextures = 1 << 6,         // will force the texture converter to convert textures despite time stamps
         ForceMaterials = 1 << 7,         // will force the surface exporter to convert surfaces despite time stamps
         ForceParticles = 1 << 8,         // will force the surface exporter to convert surfaces despite time stamps
         ForceAudio = 1 << 9,
-        ForceAll = ForceAssets | ForceTextures | ForceMaterials | ForceParticles | ForceAudio
+        ForceNavigation = 1 << 11,      // will bake navmeshes even if their inputs didn't change
+        ForceAll = ForceAssets | ForceTextures | ForceMaterials | ForceParticles | ForceAudio | ForceNavigation
     };
 
     enum class ImportModes
@@ -80,6 +82,9 @@ public:
 
     /// exports list of files, used for parallel jobs
     void ProcessList(const Util::Array<Util::String>& files);
+    /// bakes the navmeshes the processed files queued. Navmeshes read the exported meshes and textures,
+    /// so call this after everything else is processed
+    void ProcessNavMeshes();
 
     /// Set import mode
     void SetImportMode(unsigned int mode);
@@ -92,6 +97,8 @@ public:
 private:
     unsigned int importMode, packageMode;
     Util::Array<ToolLog> messages;
+    /// work file and export file of every navmesh waiting for ProcessNavMeshes
+    Util::Array<Util::KeyValuePair<IO::URI, Util::String>> pendingNavMeshes;
 };
 
 __ImplementEnumBitOperators(AssetBatchProcessor::PackageModes);

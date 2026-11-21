@@ -14,6 +14,7 @@
 #include "input/inputserver.h"
 #include "input/keyboard.h"
 #include "io/filedialog.h"
+#include "navigationfeature/components/navigation.h"
 #include "editor/entityloader.h"
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
@@ -267,6 +268,22 @@ WindowServer::RunAll()
             if (ImGui::MenuItem("Entity", "Ctrl+A"))
             {
                 Edit::CreateEntity();
+            }
+            if (ImGui::BeginMenu("Navigation"))
+            {
+                if (ImGui::MenuItem("Area Volume"))
+                {
+                    Edit::CommandManager::BeginMacro("Create navigation area", true);
+                    Editor::Entity newEntity = Edit::CreateEntity();
+                    Edit::AddComponent(newEntity, Game::GetComponentId<NavigationFeature::NavArea>());
+                    Util::String name = "Nav Area ";
+                    name.AppendInt(newEntity.index);
+                    Edit::SetEntityName(newEntity, name);
+                    Edit::SetSelection({ newEntity });
+                    Edit::CommandManager::EndMacro();
+                }
+                ImGui::SetItemTooltip("A box which gives the walkable surface inside it an area when navmeshes are baked");
+                ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Light"))
             {

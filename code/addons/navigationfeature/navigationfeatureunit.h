@@ -10,6 +10,7 @@
 #include "game/featureunit.h"
 #include "graphics/graphicsentity.h"
 #include "streamnavmeshcache.h"
+#include "navbuild/navareas.h"
 
 //------------------------------------------------------------------------------
 namespace NavigationFeature
@@ -27,6 +28,8 @@ public:
     /// destructor
     ~NavigationFeatureUnit();
 
+    /// register the components
+    void OnAttach() override;
     /// Called upon activation of feature unit
     void OnActivate();
     /// Called upon deactivation of feature unit
@@ -44,6 +47,14 @@ private:
 
 /// render editor ui 
 void RenderUI(Graphics::GraphicsEntityId camera);
+/// the loader of the baked navmeshes, null before the feature is activated
+Navigation::StreamNavMeshCache* GetNavMeshCache();
+/// the area table of the project, loaded when the feature is activated
+const Navigation::Build::AreaTable& GetAreaTable();
+/// load the compiled area table again
+void ReloadAreaTable();
+/// intersect a ray with the surface of every loaded navmesh, t is in units of dir. Returns false if it misses all
+bool RaycastNavMeshes(const Math::point& start, const Math::vector& dir, float& outT);
 
 } // namespace NavigationFeature
 //------------------------------------------------------------------------------

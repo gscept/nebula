@@ -3,6 +3,7 @@
 //  @copyright (C) 2021-2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "world.h"
+#include "profiling/profiling.h"
 #include "gameserver.h"
 #include "api.h"
 #include "category.h"
@@ -550,7 +551,9 @@ void
 World::BeginFrame()
 {
     this->pipeline.RunThru("OnBeginFrame");
+    N_MARKER_BEGIN(WorldComponentCommands, Game);
     ExecuteAddComponentCommands();
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
@@ -560,7 +563,9 @@ void
 World::SimFrame()
 {
     this->pipeline.RunThru("OnFrame");
+    N_MARKER_BEGIN(WorldComponentCommands, Game);
     ExecuteAddComponentCommands();
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
@@ -572,8 +577,10 @@ World::EndFrame()
     this->pipeline.RunThru("OnEndFrame");
 
     // remove first, then add
+    N_MARKER_BEGIN(WorldComponentCommands, Game);
     ExecuteRemoveComponentCommands();
     ExecuteAddComponentCommands();
+    N_MARKER_END();
 
     this->pipeline.RunRemaining();
     this->pipeline.Reset();

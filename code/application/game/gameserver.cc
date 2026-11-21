@@ -403,20 +403,15 @@ GameServer::NotifyBeforeLoad()
 /**
 */
 void
-GameServer::NotifyBeforeCleanup()
+GameServer::NotifyBeforeCleanup(World* world)
 {
-    // call the SetupDefault method on all gameFeatures
+    // only the world which is cleaned up. The managers release what belongs to the entities of the world
+    // they are given, in another world, like the one of the editor, they would release what isn't theirs
     int i;
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        for (uint32_t worldIndex = 0; worldIndex < MaxWorlds; worldIndex++)
-        {
-            if (this->state.worlds[worldIndex] != nullptr)
-            {
-                this->gameFeatures[i]->OnBeforeCleanup(this->state.worlds[worldIndex]);
-            }
-        }
+        this->gameFeatures[i]->OnBeforeCleanup(world);
     }
 }
 
@@ -544,7 +539,7 @@ GameServer::SetupEmptyWorld(World* world)
 void
 GameServer::CleanupWorld(World* world)
 {
-    Game::GameServer::Instance()->NotifyBeforeCleanup();
+    Game::GameServer::Instance()->NotifyBeforeCleanup(world);
     world->Reset();
 }
 

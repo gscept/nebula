@@ -32,6 +32,8 @@ public:
     CoreGraphics::MeshId GetMesh() const { return this->mesh; }
     /// Get mesh resource
     Resources::ResourceId GetMeshResource() const { return this->res; }
+    /// Get the URN of the mesh, folder:file:msh, as the model file names it
+    const IO::Path& GetMeshPath() const { return this->meshResource; }
 
 
 protected:

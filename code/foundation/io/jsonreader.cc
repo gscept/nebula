@@ -1098,19 +1098,16 @@ JsonReader::Get<uint32_t>(uint32_t& ret, const char* attr)
 {
     const value_variant* node = this->GetChild(attr);
     n_assert(node->is_int());
-    int32_t val = node->as_int32();
 
-#if NEBULA_DEBUG
-    if (val < 0)
+    // read wide, a value above INT_MAX doesn't fit an int32 and would read as 0. The writer writes the
+    // whole unsigned range, like 4294967295 for an invalid id
+    const int64_t val = node->as_int64();
+    if (val < INT32_MIN || val > (int64_t)UINT32_MAX)
     {
-        n_warning("JsonReader::Get<uint32_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+        n_warning("JsonReader::Get<uint32_t>: '%s' is out of range (%lld)\n", attr, (long long)val);
     }
-#endif
-#if NEBULA_BOUNDSCHECKS
-    n_assert(val >= 0 && val <= INT_MAX)
-#endif
-
-        ret = (uint32_t)val;
+    // a negative value written as a signed int wraps around, -1 is the invalid id like 4294967295
+    ret = (uint32_t)val;
 }
 
 //------------------------------------------------------------------------------

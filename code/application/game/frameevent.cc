@@ -8,6 +8,7 @@
 #include "world.h"
 #include "memdb/database.h"
 #include "jobs2/jobs2.h"
+#include "profiling/profiling.h"
 
 namespace Game
 {
@@ -50,6 +51,8 @@ FrameEvent::~FrameEvent()
 void
 FrameEvent::Run(World* world)
 {
+    // a fixed event, like the physics frame, shows once for every step it runs
+    N_SCOPE_DYN(this->name.Value(), Game);
     IndexT batchIndex = 0;
     IndexT callbackIndex = 0;
 
@@ -340,6 +343,8 @@ FrameEvent::Batch::GetProcessors() const
 void
 FrameEvent::Batch::ExecuteAsync(World* world)
 {
+    // the processors run as jobs, this is the time the frame waits for them
+    N_SCOPE(AsyncProcessors, Game);
     Util::FixedArray<Dataset> datasets(this->processors.Size());
 
     uint32_t numJobs = 0;
@@ -433,6 +438,7 @@ FrameEvent::Batch::ExecuteSequential(World* world)
         if (!(processor->phase & PhaseForMode(world->mode)))
             continue;
 
+        N_SCOPE_DYN(processor->name.AsCharPtr(), Game);
 #ifdef NEBULA_ENABLE_PROFILING
         processor->timer.Reset();
         processor->timer.Start();

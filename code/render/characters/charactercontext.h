@@ -146,6 +146,8 @@ public:
     static bool IsTrackPaused(const Graphics::GraphicsEntityId id, const IndexT track);
     /// get the time in the clip playing on a track in seconds, within its duration for looped clips, 0 if none is playing
     static Timing::Time GetTrackTime(const Graphics::GraphicsEntityId id, const IndexT track);
+    /// get how far the clip playing on a track is faded in, or out as it ends or stops, from 0 to 1 as of the last update, 0 if none is playing
+    static float GetTrackFadeWeight(const Graphics::GraphicsEntityId id, const IndexT track);
     /// move the clip playing on a track to a time in it in seconds, it plays on from there, a paused one shows the pose at that time.
     /// The events between the time it was at and the time it's moved to aren't fired
     static void SeekTrack(const Graphics::GraphicsEntityId id, const IndexT track, const Timing::Time time);
