@@ -36,7 +36,7 @@ NearlyEqual(float a, float b)
     A loader that fills a small tetrahedron, the way a format reader would
 */
 static bool
-LoadTestMesh(Util::StringAtom resource, IndexT primGroup, Physics::MeshGeometryInput& out)
+LoadTestMesh(Util::StringAtom resource, IndexT meshIndex, IndexT primGroup, Physics::MeshGeometryInput& out)
 {
     if (resource == Util::StringAtom("test:bad_indices"))
     {

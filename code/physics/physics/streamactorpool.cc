@@ -212,7 +212,7 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform c
 
     MeshGeometryInput input;
     input.topology = colliderNode->type;
-    if (!loader.LoadMesh(resource, colliderNode->prim_group, input))
+    if (!loader.LoadMesh(resource, 0, colliderNode->prim_group, input))
     {
         return;
     }

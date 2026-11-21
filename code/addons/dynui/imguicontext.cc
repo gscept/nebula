@@ -398,8 +398,6 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + VertexBufferOffset, vertexBufferSize);
         Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + IndexBufferOffset, indexBufferSize);
         IndexT j;
-        IndexT primitiveIndexOffset = 0;
-
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
         {
             const ImDrawCmd* command = &commandList->CmdBuffer[j];
@@ -479,18 +477,16 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.exposureConstant, sizeof(float), &tex.exposure);
                 }
 
-                // setup primitive
+                // setup primitive. The indices are 16 bit, a draw list with more vertices than they reach is split
+                // into chunks, the vertex offset of the command is where its chunk starts
                 CoreGraphics::PrimitiveGroup primitive;
                 primitive.SetNumIndices(command->ElemCount);
-                primitive.SetBaseIndex(primitiveIndexOffset + IndexOffset);
-                primitive.SetBaseVertex(VertexOffset);
+                primitive.SetBaseIndex(IndexOffset + command->IdxOffset);
+                primitive.SetBaseVertex(VertexOffset + command->VtxOffset);
 
                 // prepare render device and draw
                 CoreGraphics::CmdDraw(cmdBuf, primitive);
             }
-
-            // increment vertex offset
-            primitiveIndexOffset += command->ElemCount;
         }
 
         // bump vertices
@@ -999,6 +995,8 @@ ImguiContext::Create()
 #endif
 
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+    // large windows, like the profiler with many threads, have more vertices than 16 bit indices reach
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
 #ifdef IMGUI_HAS_VIEWPORT
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;

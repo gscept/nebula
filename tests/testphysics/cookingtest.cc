@@ -95,7 +95,7 @@ CookingTest::Run()
 
     // hand built geometry loader
     Physics::GeometryLoader loader;
-    loader.LoadMesh = [](Util::StringAtom resource, IndexT primGroup, Physics::MeshGeometryInput& out) -> bool
+    loader.LoadMesh = [](Util::StringAtom resource, IndexT meshIndex, IndexT primGroup, Physics::MeshGeometryInput& out) -> bool
     {
         if (resource != Util::StringAtom("test:tetrahedron"))
         {
@@ -127,10 +127,10 @@ CookingTest::Run()
 
     // the delegate fills the neutral description
     Physics::MeshGeometryInput mesh;
-    VERIFY(Physics::GetGeometryLoader().LoadMesh("test:tetrahedron", 0, mesh));
+    VERIFY(Physics::GetGeometryLoader().LoadMesh("test:tetrahedron", 0, 0, mesh));
     VERIFY(mesh.vertexCount == 4);
     VERIFY(mesh.indexCount == 12);
-    VERIFY(Physics::GetGeometryLoader().LoadMesh("test:unknown", 0, mesh) == false);
+    VERIFY(Physics::GetGeometryLoader().LoadMesh("test:unknown", 0, 0, mesh) == false);
 
     // cook the geometry as a triangle mesh
     physx::PxGeometryHolder triangles;

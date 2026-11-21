@@ -27,6 +27,7 @@
 
 #include "editor/tools/livebatcher.h"
 #include "io/ioserver.h"
+#include "navbuild/navmeshasset.h"
 
 
 #include "materials/gpulang/material_interfaces.h"
@@ -56,6 +57,7 @@ AssetEditor::AssetEditor()
     IO::Path::AddWorkMapping("tex", "natex");
     IO::Path::AddWorkMapping("par", "napar");
     IO::Path::AddWorkMapping("mat", "namat");
+    Navigation::Build::RegisterPathMappings();
     
 }
 

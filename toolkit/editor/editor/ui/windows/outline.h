@@ -57,6 +57,12 @@ private:
     Mode mode = Mode::Collections;
     Util::Guid selectedCollection;
     bool collectionSelected = false;
+
+    /// entities in the order they are listed this frame, and the last frame, which shift clicks select ranges in
+    Util::Array<Editor::Entity> listedEntities;
+    Util::Array<Editor::Entity> lastListedEntities;
+    /// the entity a shift click selects a range from, the last one clicked without shift
+    Editor::Entity rangeAnchor = Editor::Entity::Invalid();
     Util::Guid renameCollection;
     bool openRenamePopup = false;
     char renameBuffer[128] = {};

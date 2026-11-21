@@ -1,10 +1,72 @@
 {
   "namespace": "NavigationFeature",
+  "includes": [
+    "util/stringatom.h",
+    "math/vec3.h",
+    "array"
+  ],
   "components": {
-  "navigationAgent": {
-      "AgentKind": "string",
-      "MaxSpeed": "float",
-      "MaxTurnSpeed": "float"
+    "NavMesh": {
+      "resource": {
+        "type": "resource",
+        "default": "",
+        "description": "The baked navmesh, a folder:file:nav URN. It is loaded while the entity exists, agents of the agent kind it was baked for use it."
+      }
+    },
+    "NavAgent": {
+      "agentKind": {
+        "type": "Util::StringAtom",
+        "default": "",
+        "description": "The agent kind the agent walks the navmesh of, the loaded navmesh baked for it is used."
+      },
+      "maxSpeed": {
+        "type": "float",
+        "default": 3.5,
+        "description": "Units per second."
+      },
+      "maxAcceleration": {
+        "type": "float",
+        "default": 8.0,
+        "description": "Units per second squared."
+      },
+      "turnSpeed": {
+        "type": "float",
+        "default": 10.0,
+        "description": "Radians per second the entity turns its +z axis towards where it walks, 0 leaves the orientation alone."
+      },
+      "arrivalDistance": {
+        "type": "float",
+        "default": 0.2,
+        "description": "How close to the target the agent stops."
+      }
+    },
+    "NavArea": {
+      "area": {
+        "type": "Util::StringAtom",
+        "default": "default",
+        "description": "Name of the area in work/data/tables/navareas.json. The walkable surface inside the box gets this area when a navmesh is baked."
+      },
+      "extents": {
+        "type": "vec3",
+        "default": [1, 1, 1],
+        "description": "Half extents of the box, scaled by the entity scale. Only the outline seen from above and the height span matter, a navmesh marks areas in vertical prisms. With an outline, only the height counts, the outline points are covered give or take half of it."
+      },
+      "priority": {
+        "type": "int",
+        "default": 0,
+        "description": "Where area volumes overlap, the one with the higher priority wins."
+      },
+      "points": {
+        "type": "std::array<Math::vec3, 32>",
+        "hideInInspector": true,
+        "description": "The outline of the area seen from above, in order, replacing the footprint of the box when there are at least three. Relative to the entity position and orientation, not scaled with the box. May be concave, edges must not cross."
+      },
+      "pointCount": {
+        "type": "uint",
+        "default": 0,
+        "hideInInspector": true,
+        "description": "How many of the points are used, fewer than three means the box is the area."
+      }
     }
   }
 }

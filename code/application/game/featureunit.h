@@ -119,6 +119,7 @@ FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
 {
     uint32_t componentFlags = 0;
     componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
+    componentFlags |= (uint32_t)COMPONENTFLAG_RUNTIME * (uint32_t)info.runtime;
 
     ComponentInterface* cInterface = new ComponentInterface(COMPONENT_TYPE::Traits::name, COMPONENT_TYPE(), componentFlags);
     cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);

@@ -19,9 +19,10 @@ namespace Physics
 //------------------------------------------------------------------------------
 /**
     The resource is a mesh URN, folder:file:msh, which is read from the exported nvx file.
+    meshIndex selects the vertex range in the file, primGroup the group within that range.
 */
 bool
-NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out)
+NvxMeshGeometry(Util::StringAtom resource, IndexT meshIndex, IndexT primGroup, MeshGeometryInput& out)
 {
     const IO::Path path = IO::Path::Parse(resource.AsString());
     if (!path.IsFile() || path.GetType() != "msh")
@@ -49,19 +50,32 @@ NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& 
 
     if (header->magic != NEBULA_NVX_MAGICNUMBER)
     {
-        // not a nvx3 file, break hard
-        n_error("NvxMeshGeometry: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
+        n_warning("NvxMeshGeometry: '%s' is not a nvx file\n", stream->GetURI().AsString().AsCharPtr());
         stream->MemoryUnmap();
         nvx3Reader->Close();
         return false;
     }
 
-    n_assert(header->numMeshes > 0);
+    if (meshIndex < 0 || (uint)meshIndex >= header->numMeshes)
+    {
+        n_warning("NvxMeshGeometry: '%s' has %u meshes, mesh %d requested\n", resource.Value(), header->numMeshes, meshIndex);
+        stream->MemoryUnmap();
+        nvx3Reader->Close();
+        return false;
+    }
 
     CoreGraphics::Nvx3Elements elements;
     CoreGraphics::Nvx3::FillNvx3Elements(basePtr, header, elements);
 
-    const CoreGraphics::Nvx3VertexRange& range = elements.ranges[0];
+    const CoreGraphics::Nvx3VertexRange& range = elements.ranges[meshIndex];
+    if (primGroup < 0 || (uint)primGroup >= range.numGroups)
+    {
+        n_warning("NvxMeshGeometry: mesh %d of '%s' has %u groups, group %d requested\n", meshIndex, resource.Value(), range.numGroups, primGroup);
+        stream->MemoryUnmap();
+        nvx3Reader->Close();
+        return false;
+    }
+
     const CoreGraphics::Nvx3Group* group =
         (const CoreGraphics::Nvx3Group*)(basePtr + range.firstGroupOffset + sizeof(CoreGraphics::Nvx3Group) * primGroup);
 
@@ -80,7 +94,8 @@ NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& 
 
     out.indexCount = group->numIndices;
     SizeT indexByteSize = out.indexCount * Physics::IndexSize(out.indexType);
-    const ubyte* indexBuffer = elements.indexData + range.indexByteOffset;
+    // firstIndex counts indices from the start of the range's index data, the same as the mesh loader's base index
+    const ubyte* indexBuffer = elements.indexData + range.indexByteOffset + group->firstIndex * Physics::IndexSize(out.indexType);
     out.indices.Reserve(indexByteSize);
     for (SizeT i = 0; i < indexByteSize; i++)
     {

@@ -4,8 +4,16 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "navigationmanager.h"
-#include "game/gameserver.h"
+#include "agentmanager.h"
 #include "components/navigation.h"
+#include "resources/resourceserver.h"
+#include "io/path.h"
+#include "profiling/profiling.h"
+
+namespace Navigation
+{
+extern StreamNavMeshCache* navMeshCache;
+}
 
 namespace NavigationFeature
 {
@@ -31,163 +39,204 @@ NavigationManager::~NavigationManager()
 //------------------------------------------------------------------------------
 /**
 */
-void NavigationManager::InitCreateAgentProcessor()
+static IndexT
+FindActive(const Util::Array<ActiveNavMesh>& navMeshes, Game::World* world, Game::Entity entity)
 {
-#if 0
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
-    filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetComponentId("AgentKind");
-    filterInfo.access[2] = Game::AccessMode::READ;
-    filterInfo.numInclusive = 3;
-
-    filterInfo.exclusive[0] = this->pids.navigationActor;
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "NavigationManager.CreateAgents"_atm;
-    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
+    for (IndexT i = 0; i < navMeshes.Size(); i++)
     {
-        Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
-        
-        for (int v = 0; v < data.numViews; v++)
+        if (navMeshes[i].world == world && navMeshes[i].entity == entity)
         {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-            Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
-            Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
-            Util::String const* const kinds = (Util::String*)view.buffers[2];
-            
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Game::Entity const& entity = owners[i];
-                Math::mat4 const& trans = transforms[i];
-                Util::String const& kind = kinds[i];
-                /*
-
-                Resources::CreateResource(res, "PHYS",
-                    [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
-                    {
-                        bool const dynamic = !Game::HasProperty(world, entity, staticPID);
-                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic, Ids::Id32(entity));
-                        
-                        Game::Op::RegisterProperty regOp;
-                        regOp.entity = entity;
-                        regOp.pid = PhysicsManager::Singleton->pids.physicsActor;
-                        regOp.value = &actorid;
-                        Game::AddOp(opBuffer, regOp);
-
-                    }, nullptr, true);
-
-                */
-            }
+            return i;
         }
+    }
+    return InvalidIndex;
+}
 
-        // execute ops
-        Game::Dispatch(opBuffer);
-    };
-    
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-#endif
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+ReleaseNavMesh(ActiveNavMesh& navMesh)
+{
+    if (navMesh.resource != Resources::InvalidResourceId)
+    {
+        // the navmesh may go with the resource, crowds which step on it in a job are done first
+        AgentManager::WaitForCrowds();
+        Resources::DiscardResource(navMesh.resource);
+        navMesh.resource = Resources::InvalidResourceId;
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-NavigationManager::OnDecay()
+NavigationManager::InitNavMesh(Game::World* world, Game::Entity entity, NavMesh* component)
 {
-    /*
-    Game::PropertyDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.physicsActor);
-    Physics::ActorId* data = (Physics::ActorId*)decayBuffer.buffer;
-    for (int i = 0; i < decayBuffer.size; i++)
+    N_SCOPE(NavMeshInit, Navigation);
+    if (!NavigationManager::HasInstance())
     {
-        Physics::DestroyActorInstance(data[i]);
+        return;
     }
-    */
+
+    Util::Array<ActiveNavMesh>& navMeshes = Singleton->navMeshes;
+
+    // a component is initialized again without a decay when it is replaced, let go of what it had
+    const IndexT existing = FindActive(navMeshes, world, entity);
+    if (existing != InvalidIndex)
+    {
+        ReleaseNavMesh(navMeshes[existing]);
+        navMeshes.EraseIndex(existing);
+    }
+
+    // an entity which was just created in the editor has no navmesh yet
+    if (!component->resource.IsValid() || component->resource.Value()[0] == '\0')
+    {
+        return;
+    }
+
+    const IO::Path path = IO::Path::Parse(component->resource.Value());
+    if (!path.IsFile() || path.GetType() != "nav")
+    {
+        n_warning("NavigationManager: '%s' is not a navmesh URN (folder:file:nav)\n", component->resource.Value());
+        return;
+    }
+
+    ActiveNavMesh navMesh;
+    navMesh.world = world;
+    navMesh.entity = entity;
+    navMesh.name = component->resource;
+    navMesh.resource = Resources::CreateResource(path, "NavMesh", nullptr, nullptr, true);
+    if (navMesh.resource == Resources::InvalidResourceId)
+    {
+        n_warning("NavigationManager: could not load navmesh '%s'\n", component->resource.Value());
+        return;
+    }
+    // a failed load is kept, it is released with the component like a loaded one
+    if (!IsNavMeshLoaded(navMesh))
+    {
+        n_warning("NavigationManager: navmesh '%s' failed to load, is it baked?\n", component->resource.Value());
+    }
+    navMeshes.Append(navMesh);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void NavigationManager::InitUpdateAgentTransformProcessor()
+void
+NavigationManager::DecayNavMesh(Game::World* world, Game::Entity entity, NavMesh*)
 {
-#if 0
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.navigationActor;
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
-    filterInfo.access[1] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 2;
-
-    filterInfo.exclusive[0] = Game::GetComponentId("Static");
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "NavigationManager.PollTransforms"_atm;
-    processorInfo.OnFrame = [](Game::World* world, Game::Dataset data)
+    if (!NavigationManager::HasInstance())
     {
-        /*
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
-            Physics::ActorId const* const actorIdBuffer = (Physics::ActorId*)view.buffers[0];
-            Math::mat4* const transforms = (Math::mat4*)view.buffers[1];
+        return;
+    }
 
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Physics::ActorId const actorid = actorIdBuffer[i];
-                Math::mat4& transform = transforms[i];
-                transform = Physics::ActorContext::GetTransform(actorid);
-            }
-        }
-        */
-    };
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-#endif
+    Util::Array<ActiveNavMesh>& navMeshes = Singleton->navMeshes;
+    const IndexT index = FindActive(navMeshes, world, entity);
+    if (index != InvalidIndex)
+    {
+        ReleaseNavMesh(navMeshes[index]);
+        navMeshes.EraseIndex(index);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+NavigationManager::OnDeactivate()
+{
+    for (ActiveNavMesh& navMesh : this->navMeshes)
+    {
+        ReleaseNavMesh(navMesh);
+    }
+    this->navMeshes.Clear();
+    Game::Manager::OnDeactivate();
+}
+
+//------------------------------------------------------------------------------
+/**
+    Removing the entities of a world doesn't decay their components
 */
 void
 NavigationManager::OnCleanup(Game::World* world)
 {
-#if 0
-    n_assert(NavigationManager::HasInstance());
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Singleton->pids.navigationActor;
-    filterInfo.access[0] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(world, filter);
-    for (int v = 0; v < data.numViews; v++)
+    for (IndexT i = this->navMeshes.Size() - 1; i >= 0; i--)
     {
-        /*
-        Game::Dataset::CategoryTableView const& view = data.views[v];
-        Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
-
-        for (IndexT i = 0; i < view.numInstances; ++i)
+        if (this->navMeshes[i].world == world)
         {
-            Physics::ActorId const& actorid = actors[i];
-            Physics::DestroyActorInstance(actorid);
+            ReleaseNavMesh(this->navMeshes[i]);
+            this->navMeshes.EraseIndex(i);
         }
-        */
     }
-
-    Game::DestroyFilter(filter);
-#endif
 }
 
-} // namespace PhysicsFeature
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<ActiveNavMesh>&
+GetActiveNavMeshes()
+{
+    static const Util::Array<ActiveNavMesh> none;
+    if (!NavigationManager::HasInstance())
+    {
+        return none;
+    }
+    return NavigationManager::Instance()->navMeshes;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+IsNavMeshLoaded(const ActiveNavMesh& navMesh)
+{
+    if (navMesh.resource == Resources::InvalidResourceId || Navigation::navMeshCache == nullptr)
+    {
+        return false;
+    }
+    if (Resources::ResourceServer::Instance()->GetState(navMesh.resource) != Resources::Resource::Loaded)
+    {
+        return false;
+    }
+    return Navigation::navMeshCache->GetDetourMesh(navMesh.resource) != nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Navigation::NavMeshId
+FindNavMesh(Game::World* world, const Util::StringAtom& agentKind)
+{
+    for (const ActiveNavMesh& navMesh : GetActiveNavMeshes())
+    {
+        if (navMesh.world != world || !IsNavMeshLoaded(navMesh))
+        {
+            continue;
+        }
+        const Navigation::AgentT& agent = Navigation::navMeshCache->GetAgent(navMesh.resource);
+        if (agentKind == Util::StringAtom(agent.name.c_str()))
+        {
+            return navMesh.resource;
+        }
+    }
+    return Navigation::InvalidNavMeshId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Navigation::NavMeshId
+GetNavMesh(Game::World* world, Game::Entity entity)
+{
+    for (const ActiveNavMesh& navMesh : GetActiveNavMeshes())
+    {
+        if (navMesh.world == world && navMesh.entity == entity)
+        {
+            return IsNavMeshLoaded(navMesh) ? Navigation::NavMeshId(navMesh.resource) : Navigation::InvalidNavMeshId;
+        }
+    }
+    return Navigation::InvalidNavMeshId;
+}
+
+} // namespace NavigationFeature

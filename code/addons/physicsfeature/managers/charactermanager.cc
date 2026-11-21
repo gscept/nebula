@@ -49,6 +49,12 @@ CharacterManager::~CharacterManager()
 void
 MoveCharacters(Game::World* world, Game::Position& position, Game::Velocity& velocity, Character& character)
 {
+    // the game makes the controller, a character which has none, or whose world was cleaned up, stays put
+    if (!Physics::CharacterContext::IsValid(character.characterId))
+    {
+        return;
+    }
+
     character.displacement = velocity * time->frameTime;
     Physics::CharacterCollision collision = Physics::CharacterContext::MoveCharacter(character.characterId, character.displacement, 0.00001f, time->frameTime);
     if (collision.IsSet(Physics::CharacterCollisionBits::Down))
@@ -150,12 +156,14 @@ CharacterManager::OnCleanup(Game::World* world)
     for (int v = 0; v < data.numViews; v++)
     {
         Game::Dataset::View const& view = data.views[v];
-        Physics::Character* const characters = (Physics::Character*)view.buffers[0];
+        // the column holds the component, not the controller record of the physics context
+        PhysicsFeature::Character* const characters = (PhysicsFeature::Character*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)
         {
-            Physics::Character const& character = characters[i];
-            Physics::CharacterContext::DestroyCharacter(character.id);
+            PhysicsFeature::Character& character = characters[i];
+            Physics::CharacterContext::DestroyCharacter(character.characterId);
+            character.characterId = Physics::CharacterId();
         }
     }
 

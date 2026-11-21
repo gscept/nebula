@@ -141,6 +141,12 @@ fips_dir(editor)
             camera.h
             livebatcher.cc
             livebatcher.h
+            navmeshsources.cc
+            navmeshsources.h
+            navareapointtool.cc
+            navareapointtool.h
+            navpathtool.cc
+            navpathtool.h
             toolinterface.h
             toolinterface.cc
             selectioncontext.h

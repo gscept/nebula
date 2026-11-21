@@ -267,13 +267,17 @@ template<unsigned int N>
 inline void
 JsonReader::Get(Util::BitField<N>& ret, const char* attr)
 {
+    // the field is a list of the bits which are set, read from the attribute, not the current node
     Util::Array<int> arr;
-    this->Get<Util::Array<int>>(arr);
+    this->Get<Util::Array<int>>(arr, attr);
 
+    // the list replaces the value, a bit the list leaves out is clear even if the default sets it
+    ret = Util::BitField<N>();
     unsigned int count = arr.Size();
     n_assert(count <= N);
     for (unsigned int i = 0; i < count; i++)
     {
+        n_assert(arr[i] >= 0 && arr[i] < (int)N);
         ret.SetBit(arr[i]);
     }
 }

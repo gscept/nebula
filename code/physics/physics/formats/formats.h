@@ -15,8 +15,8 @@ namespace Physics
 {
 
 #if WITH_NEBULA_PHYSICS_FORMAT_NVX
-/// Fill a mesh geometry description from a nvx3 mesh file
-bool NvxMeshGeometry(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out);
+/// Fill a mesh geometry description from a primitive group of a mesh in a nvx3 file
+bool NvxMeshGeometry(Util::StringAtom resource, IndexT meshIndex, IndexT primGroup, MeshGeometryInput& out);
 #endif
 
 #if WITH_NEBULA_PHYSICS_FORMAT_DDS

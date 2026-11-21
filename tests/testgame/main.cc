@@ -8,6 +8,7 @@
 #include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
 #include "physicsfeature/physicsfeatureunit.h"
+#include "navigationfeature/navigationfeatureunit.h"
 
 // tests
 #include "idtest.h"
@@ -15,6 +16,7 @@
 #include "entitysystemtest.h"
 #include "hierarchytransformtest.h"
 #include "physicstest.h"
+#include "navigationtest.h"
 
 #include "testcomponents.h"
 
@@ -64,30 +66,34 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
-        gameFeature = BaseGameFeature::BaseGameFeatureUnit::Instance();
+        this->gameFeature = BaseGameFeature::BaseGameFeatureUnit::Instance();
 
-        gameFeature->RegisterComponentType<TestResource>({
+        this->gameFeature->RegisterComponentType<TestResource>({
             .decay = true,
             .OnInit = &InitializeTestResource
         });
 
-        gameFeature->RegisterComponentType<TestVec4>({
+        this->gameFeature->RegisterComponentType<TestVec4>({
             .decay = true,
             .OnInit = &InitializeTestVec4
         });
         
-        gameFeature->RegisterComponentType<TestStruct>();
-        gameFeature->RegisterComponentType<TestHealth>();
-        gameFeature->RegisterComponentType<MyFlag>();
-        gameFeature->RegisterComponentType<TestEmptyStruct>();
-        gameFeature->RegisterComponentType<TestAsyncComponent>();
-        gameFeature->RegisterComponentType<DecayTestComponent>({.decay = true, .OnDecay = &DecayTestComponentDecay});
+        this->gameFeature->RegisterComponentType<TestStruct>();
+        this->gameFeature->RegisterComponentType<TestHealth>();
+        this->gameFeature->RegisterComponentType<MyFlag>();
+        this->gameFeature->RegisterComponentType<TestEmptyStruct>();
+        this->gameFeature->RegisterComponentType<TestAsyncComponent>();
+        this->gameFeature->RegisterComponentType<DecayTestComponent>({.decay = true, .OnDecay = &DecayTestComponentDecay});
 
         // the physics feature drives actors and shapes from the component inits, pings and decay
         // callbacks of the entities which the physics tests set up
-        physicsFeature = PhysicsFeature::PhysicsFeatureUnit::Create();
-        physicsFeature->SetCmdLineArgs(this->GetCmdLineArgs());
-        this->gameServer->AttachGameFeature(physicsFeature);
+        this->physicsFeature = PhysicsFeature::PhysicsFeatureUnit::Create();
+        this->physicsFeature->SetCmdLineArgs(this->GetCmdLineArgs());
+        this->gameServer->AttachGameFeature(this->physicsFeature);
+
+        // the navigation feature loads the navmeshes of NavMesh components
+        this->navigationFeature = NavigationFeature::NavigationFeatureUnit::Create();
+        this->gameServer->AttachGameFeature(this->navigationFeature);
     }
 
     /// cleanup game features
@@ -98,6 +104,7 @@ private:
 
     Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
     Ptr<PhysicsFeature::PhysicsFeatureUnit> physicsFeature;
+    Ptr<NavigationFeature::NavigationFeatureUnit> navigationFeature;
 };
 
 //------------------------------------------------------------------------------
@@ -126,6 +133,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(EntitySystemTest::Create());
     testRunner->AttachTestCase(HierarchyTransformTest::Create());
     testRunner->AttachTestCase(PhysicsManagerTest::Create());
+    testRunner->AttachTestCase(NavigationManagerTest::Create());
     
     bool result = testRunner->Run(); 
 

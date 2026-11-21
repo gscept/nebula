@@ -1,33 +1,72 @@
+//------------------------------------------------------------------------------
+//
+//    Navmesh work file, describes what a navmesh is baked from.
+//    The asset batcher bakes it into a BakedNavMesh, see bakednavmesh.fbs.
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 include "foundation/math.fbs";
 include "navigation/agentkinds.fbs";
 include "navigation/navmeshsettings.fbs";
 
 namespace Navigation;
 
-table NavAreaModifier
+// a primitive group of an exported mesh, read like a MeshCollider reads it
+table MeshSource
 {
-	area_id : ubyte;
-	convex_area_points : [Flat.Vec3];
+	resource : string;		// mesh URN, folder:file:msh
+	mesh_index : uint;
+	prim_group : uint;
+}
+
+// an exported R16 heightmap, read and placed like a HeightFieldCollider
+table HeightFieldSource
+{
+	resource : string;		// texture URN, folder:file:tex
+	height_range : float = 1.0;
+	size_x : float = 1.0;
+	size_z : float = 1.0;
+}
+
+union SourceGeometry
+{
+	MeshSource, HeightFieldSource
 }
 
 table GeometryEntry
 {
-	resource : string;
+	geometry : SourceGeometry;
+	// world transform of the geometry, for a height field the origin is its corner
 	transform : Flat.Mat4 (native_inline);
+	// editor entity the source was gathered from, empty if it was placed by hand
+	entity_guid : string;
+}
+
+// assigns an area to the walkable surface inside a convex prism
+table NavAreaModifier
+{
+	area_id : ubyte;		// 0 cuts the surface out, 1 to 62 are project areas, 63 is the default walkable area. Used if area is empty
+	convex_area_points : [Flat.Vec3];	// world space, only x and z are used
+	min_y : float = -100000.0;
+	max_y : float = 100000.0;
+	area : string;			// name in the area table, resolved when the navmesh is baked
+	priority : int;			// modifiers are applied from low to high priority, a later one wins where they overlap
+	entity_guid : string;	// NavArea entity the modifier was gathered from, empty if it was placed by hand
 }
 
 table NavMesh
 {
 	name : string;
-	agent_kind : Agent (cpp_ptr_type: "std::shared_ptr");
-	navmesh_settings : NavMeshSettings (cpp_ptr_type: "std::shared_ptr");
-	sources : [GeometryEntry] (cpp_ptr_type: "std::shared_ptr");
-	area_modifiers : [NavAreaModifier] (cpp_ptr_type: "std::shared_ptr");
+	agent_kind : Agent;
+	navmesh_settings : NavMeshSettings;
+	sources : [GeometryEntry];
+	area_modifiers : [NavAreaModifier];
+	// build in the bounds of the sources instead of bounds_center and bounds_extents
+	use_source_bounds : bool = true;
 	bounds_center : Flat.Vec3 (native_inline);
 	bounds_extents : Flat.Vec3 (native_inline);
-	file : string;
 }
 
 root_type NavMesh;
 file_identifier "NAVM";
-file_extension "navmesh";
+file_extension "nanav";

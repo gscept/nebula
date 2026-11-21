@@ -295,7 +295,7 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
                 std::unique_ptr<flatbuffers::RealFileSaver> file_saver(new flatbuffers::RealFileSaver());
                 parser->opts.file_saver = file_saver.get();
                 std::unique_ptr<flatbuffers::CodeGenerator> generator = flatbuffers::NewBinaryCodeGenerator();
-                result = generator->GenerateCode(*parser, target.AsCharPtr(), filename.AsCharPtr());
+                result = generator->GenerateCode(*parser, target.AsCharPtr(), filename.AsCharPtr()) == flatbuffers::CodeGenerator::Status::OK;
                 parser->opts.file_saver = nullptr;
             }
         }

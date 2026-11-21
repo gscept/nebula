@@ -18,6 +18,7 @@
 #include "flat/model.h"
 #include "assetpackager.h"
 #include "assetimporter.h"
+#include "navbuild/navmeshasset.h"
 
 using namespace Util;
 using namespace IO;
@@ -230,6 +231,22 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
     }
+    else if ((this->packageMode & PackageModes::Navigation) && ext == "nanav")
+    {
+        // baked by ProcessNavMeshes, once the meshes and textures the navmesh reads are exported
+        const Util::String dstFile = relativeFolderPathForWork.IsEmpty()
+            ? Util::String::Sprintf("nav:%s.navmesh", fileName.AsCharPtr())
+            : Util::String::Sprintf("nav:%s/%s.navmesh", relativeFolderPathForWork.AsCharPtr(), fileName.AsCharPtr());
+        bool queued = false;
+        for (const auto& pending : this->pendingNavMeshes)
+        {
+            queued |= pending.Key() == file;
+        }
+        if (!queued)
+        {
+            this->pendingNavMeshes.Append(Util::KeyValuePair<IO::URI, Util::String>(file, dstFile));
+        }
+    }
 
     // print progress per file instead of collecting everything until the end
     this->logger->Flush();
@@ -257,7 +274,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
 
     Array<String> files = IO::ListFiles(dir, "*");
 
-    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles;
+    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles, navMeshFiles;
     for (const auto& file : files)
     {
         if (file.GetFileExtension() == "fbx")
@@ -304,6 +321,10 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         else if (file.GetFileExtension() == "naaud")
         {
             audioFiles.Append(file);
+        }
+        else if (file.GetFileExtension() == "nanav")
+        {
+            navMeshFiles.Append(file);
         }
     }
     if (this->importMode & ImportModes::FBX)
@@ -456,9 +477,50 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         }
     }
 
+    if (this->packageMode & PackageModes::Navigation)
+    {
+        // only queued here, ProcessNavMeshes bakes them
+        for (fileIndex = 0; fileIndex < navMeshFiles.Size(); fileIndex++)
+        {
+            this->ProcessFile(dir + "/" + navMeshFiles[fileIndex]);
+        }
+    }
+
     this->messages.Append(log);
     this->sourceDir = "";
     this->logger->Flush();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBatchProcessor::ProcessNavMeshes()
+{
+    if (this->pendingNavMeshes.IsEmpty())
+    {
+        return;
+    }
+    this->logger->Print("\nNavmeshes ---------------\n");
+    const bool force = this->force || (this->packageMode & PackageModes::ForceNavigation);
+    for (const auto& pending : this->pendingNavMeshes)
+    {
+        const IO::URI& workFile = pending.Key();
+        switch (Navigation::Build::BakeNavMesh(workFile, pending.Value(), force))
+        {
+            case Navigation::Build::BakeResult::Baked:
+                this->logger->Print("Baked %s\n", Text(workFile.LocalPath()).Color(TextColor::Green).AsCharPtr());
+                break;
+            case Navigation::Build::BakeResult::UpToDate:
+                this->logger->Print("Skipping %s\n", Text(workFile.LocalPath()).Color(TextColor::Blue).AsCharPtr());
+                break;
+            case Navigation::Build::BakeResult::Failed:
+                this->logger->Error("Failed to bake %s\n", workFile.LocalPath().AsCharPtr());
+                break;
+        }
+        this->logger->Flush();
+    }
+    this->pendingNavMeshes.Clear();
 }
 
 //------------------------------------------------------------------------------

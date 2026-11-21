@@ -1071,6 +1071,173 @@ FuzzyMatch(const Util::String& search, const Util::String& name, const Util::Str
 
 //------------------------------------------------------------------------------
 /**
+    The types offered by the type filter, in the order they're listed. Assets people look for most come first,
+    Unknown is left out as no file in the FileDB has it
+*/
+static const ToolkitUtil::FileType FilterableFileTypes[] =
+{
+    ToolkitUtil::FileType::Asset,
+    ToolkitUtil::FileType::Texture,
+    ToolkitUtil::FileType::Surface,
+    ToolkitUtil::FileType::Particle,
+    ToolkitUtil::FileType::Audio,
+    ToolkitUtil::FileType::Physics,
+    ToolkitUtil::FileType::NavMesh,
+    ToolkitUtil::FileType::Shader,
+    ToolkitUtil::FileType::Frame,
+    ToolkitUtil::FileType::Text,
+    ToolkitUtil::FileType::Other,
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+static uint32_t
+FileTypeFilterBit(ToolkitUtil::FileType type)
+{
+    return 1u << (uint32_t)type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+AssetBrowser::IsTypeFilterActive() const
+{
+    // a picker asking for one type shows only that one, the filter can't widen or narrow it
+    const bool pickerRestricts = this->pickFileFunction && !this->pickType.IsEmpty();
+    return this->typeFilter != 0 && !pickerRestricts;
+}
+
+//------------------------------------------------------------------------------
+/**
+    A button showing the types shown (their icons, or "All types"), opening a popup with a checkbox per type.
+    The popup stays open while types are toggled, so several can be picked in one go. Right of it a button
+    clears the filter in one click, it's only there while a filter is set
+*/
+void
+AssetBrowser::DisplayTypeFilter(float width)
+{
+    const bool pickerRestricts = this->pickFileFunction && !this->pickType.IsEmpty();
+    const bool active = this->IsTypeFilterActive();
+    const float clearWidth = ImGui::GetFrameHeight();
+    const float buttonWidth = active ? Math::max(width - clearWidth - ImGui::GetStyle().ItemSpacing.x, clearWidth) : width;
+
+    Util::String label;
+    if (pickerRestricts)
+    {
+        label = "Picker type";
+    }
+    else if (!active)
+    {
+        label = "All types";
+    }
+    else
+    {
+        // one type reads best with its name, several only fit as icons
+        uint32_t count = 0;
+        ToolkitUtil::FileType single = ToolkitUtil::FileType::Unknown;
+        for (ToolkitUtil::FileType type : FilterableFileTypes)
+        {
+            if (this->typeFilter & FileTypeFilterBit(type))
+            {
+                if (count > 0)
+                {
+                    label.Append(" ");
+                }
+                label.Append(FileTypeIcon(type));
+                single = type;
+                count++;
+            }
+        }
+        if (count == 1)
+        {
+            label = Util::Format("%s %s", FileTypeIcon(single), ToolkitUtil::FileTypeNames[single]);
+        }
+    }
+    label.Append("##typefilter");
+
+    ImGui::BeginDisabled(pickerRestricts);
+    if (active)
+    {
+        // tinted so it's clear at a glance that files are hidden
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+    }
+    if (ImGui::Button(label.AsCharPtr(), ImVec2(buttonWidth, 0.0f)))
+    {
+        ImGui::OpenPopup("TypeFilterPopup");
+    }
+    if (active)
+    {
+        ImGui::PopStyleColor();
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        if (pickerRestricts)
+        {
+            ImGui::SetTooltip("Only %s files can be picked here", this->pickType.AsCharPtr());
+        }
+        else if (active)
+        {
+            ImGui::SetTooltip("Only some asset types are shown, click to change them");
+        }
+        else
+        {
+            ImGui::SetTooltip("Show only some asset types");
+        }
+    }
+
+    if (active)
+    {
+        ImGui::SameLine();
+        const Util::String clearLabel = Util::Format("%s##cleartypefilter", ICON_ttf_REMOVE);
+        if (ImGui::Button(clearLabel.AsCharPtr(), ImVec2(clearWidth, 0.0f)))
+        {
+            this->typeFilter = 0;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Show all types");
+        }
+    }
+
+    if (ImGui::BeginPopup("TypeFilterPopup"))
+    {
+        if (ImGui::Selectable("All types", this->typeFilter == 0, ImGuiSelectableFlags_NoAutoClosePopups))
+        {
+            this->typeFilter = 0;
+        }
+        ImGui::Separator();
+        for (ToolkitUtil::FileType type : FilterableFileTypes)
+        {
+            bool shown = (this->typeFilter & FileTypeFilterBit(type)) != 0;
+            const Util::String itemLabel = Util::Format("%s  %s", FileTypeIcon(type), ToolkitUtil::FileTypeNames[type]);
+            if (ImGui::Checkbox(itemLabel.AsCharPtr(), &shown))
+            {
+                if (ImGui::GetIO().KeyCtrl)
+                {
+                    // ctrl-click shows just this type, quicker than unchecking the others
+                    this->typeFilter = FileTypeFilterBit(type);
+                }
+                else if (shown)
+                {
+                    this->typeFilter |= FileTypeFilterBit(type);
+                }
+                else
+                {
+                    this->typeFilter &= ~FileTypeFilterBit(type);
+                }
+            }
+        }
+        ImGui::Separator();
+        ImGui::TextDisabled("Ctrl-click to show only one type");
+        ImGui::EndPopup();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
@@ -1204,6 +1371,30 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
                 }
             }
             visibleFiles.Resize(write);
+        }
+        SizeT hiddenByTypeFilter = 0;
+        if (this->IsTypeFilterActive())
+        {
+            // applied to the folder listing and the search results alike, so it narrows a search too
+            IndexT write = 0;
+            for (IndexT read = 0; read < visibleFiles.Size(); read++)
+            {
+                if (this->typeFilter & FileTypeFilterBit(visibleFiles[read].type))
+                {
+                    if (write != read)
+                    {
+                        visibleFiles[write] = visibleFiles[read];
+                    }
+                    write++;
+                }
+            }
+            hiddenByTypeFilter = visibleFiles.Size() - write;
+            visibleFiles.Resize(write);
+        }
+        if (visibleFiles.IsEmpty() && hiddenByTypeFilter > 0)
+        {
+            // otherwise an empty view looks like an empty folder
+            ImGui::TextDisabled("%d file(s) hidden by the type filter", hiddenByTypeFilter);
         }
 
 
@@ -1736,8 +1927,13 @@ AssetBrowser::DisplayFileTree()
         ImGui::SetKeyboardFocusHere();
         this->focusSearch = false;
     }
+    // the type filter sits right of the search, both narrow the same file view
+    const float typeFilterWidth = Math::min(ImGui::GetFontSize() * 10.0f, ImGui::GetContentRegionAvail().x * 0.4f);
+    ImGui::SetNextItemWidth(Math::max(ImGui::GetContentRegionAvail().x - typeFilterWidth - ImGui::GetStyle().ItemSpacing.x, 1.0f));
     ImGui::InputTextWithHint("##search", "Fuzzy search, or a pattern with * and ?", this->searchFilter, sizeof(this->searchFilter));
-    
+    ImGui::SameLine();
+    this->DisplayTypeFilter(typeFilterWidth);
+
      
     ImGui::PopItemWidth();
 
@@ -2421,8 +2617,8 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
         return ToolkitUtil::FileType::Physics;
     }
     
-    // NavMesh files
-    if (ext == "nav")
+    // NavMesh work files, baked to nav:folder/file.navmesh
+    if (ext == "nanav")
     {
         return ToolkitUtil::FileType::NavMesh;
     }

@@ -129,6 +129,15 @@ CharacterContext::DestroyCharacter(CharacterId id)
     return;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+CharacterContext::IsValid(CharacterId id)
+{
+    return id.id != Ids::InvalidId32 && controllerIdPool.IsValid(id.id);
+}
+
 //--------------------------------------------------------------------------
 /**
 */

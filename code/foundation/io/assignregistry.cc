@@ -171,8 +171,8 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("gui",   "data:gui"));
     this->SetAssign(Assign("tbl", "export:data/tables"));
     
-    // assign for nav meshes
-    this->SetAssign(Assign("nav",   "data:navigation"));
+    // baked nav meshes are exported like every other asset, tools that never run the navigation feature resolve them too
+    this->SetAssign(Assign("nav",   "export:navigation"));
 
     // setup special system assigns (for placeholders, etc...)
     this->SetAssign(Assign("sysmsh",    "msh:system"));

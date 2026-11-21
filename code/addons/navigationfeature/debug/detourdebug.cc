@@ -3,6 +3,7 @@
 #include "math/mat4.h"
 #include "coregraphics/shaperenderer.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "navigationfeature/navigationfeatureunit.h"
 
 using namespace Math;
 namespace Navigation
@@ -15,6 +16,16 @@ namespace Navigation
 DebugDraw::DebugDraw() : current(duDebugDrawPrimitives::DU_DRAW_POINTS), flag(CoreGraphics::RenderShape::Wireframe)
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+unsigned int
+DebugDraw::areaToCol(unsigned int area)
+{
+    const Math::vec4 color = NavigationFeature::GetAreaTable().GetColor((unsigned char)area);
+    return duRGBA((int)(color.x * 255.0f), (int)(color.y * 255.0f), (int)(color.z * 255.0f), 255);
 }
 
 //------------------------------------------------------------------------------

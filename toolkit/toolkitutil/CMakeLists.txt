@@ -278,5 +278,5 @@ fips_begin_lib(toolkitutil)
 	fips_dir(flatbuffers)
 		nebula_flatc(LOCAL anim.fbs audio.fbs material.fbs mesh.fbs model.fbs particle.fbs physics.fbs scene.fbs skeleton.fbs texture.fbs)
 
-    fips_deps(foundation render physics application db)
+    fips_deps(foundation render physics navbuild application db)
 fips_end_lib()

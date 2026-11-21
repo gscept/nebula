@@ -35,7 +35,10 @@ enum ComponentFlags : uint32_t
     COMPONENTFLAG_NONE = 0,
     /// Component will decay. This will delay the deletion of this component by
     /// one frame, allowing managers to clean up externally allocated resources
-    COMPONENTFLAG_DECAY = 1 << 0
+    COMPONENTFLAG_DECAY = 1 << 0,
+    /// Component only holds state of a running world, like handles to what a manager created for
+    /// the entity. It is not saved with levels
+    COMPONENTFLAG_RUNTIME = 1 << 1
 };
 
 //------------------------------------------------------------------------------
@@ -64,6 +67,8 @@ struct ComponentRegisterInfo
 
     /// Set to true if the component should end up in the decay buffer before being completely destroyed.
     bool decay = false;
+    /// Set to true if the component only holds state of a running world, it is left out when levels are saved
+    bool runtime = false;
     /// initialization function to run for the component, or nullptr if not needed.
     OnInitFunc OnInit = nullptr;
     /// function to run when the component is removed from a live entity, or when the entity is

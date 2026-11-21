@@ -11,6 +11,8 @@ table NavMeshSettings
 	max_edge_length : int = 12;
 	region_min_size : int = 8;
 	region_merge_size : int = 20;
+	// tile edge length in cells, a navmesh is built from tiles of tile_size * cell_size meters
+	tile_size : int = 64;
 }
 
 root_type NavMeshSettings;
