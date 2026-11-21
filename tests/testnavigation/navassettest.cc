@@ -126,7 +126,7 @@ static bool
 WriteDescription(const IO::URI& file, const NavMeshT& description)
 {
     Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<Navigation::NavMesh>(description);
-    return WriteFile(file, data.GetPtr(), data.Size());
+    return WriteFile(file, data.GetPtr(), (SizeT)data.Size());
 }
 
 //------------------------------------------------------------------------------
@@ -304,7 +304,7 @@ NavAssetTest::Run()
         Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<Navigation::NavAreas>(table);
 
         AreaTable areas;
-        VERIFY(!areas.Load(data.GetPtr(), data.Size()));
+        VERIFY(!areas.Load(data.GetPtr(), (SizeT)data.Size()));
         VERIFY(areas.Areas().Size() == 4);
         VERIFY(areas.Find("none") != nullptr && areas.Find("none")->id == NoArea);
         VERIFY(areas.Find("default") != nullptr && areas.Find("default")->id == DefaultWalkableArea);
@@ -321,8 +321,8 @@ NavAssetTest::Run()
         table.areas.pop_back();
         table.areas.pop_back();
         data = Flat::FlatbufferInterface::SerializeFlatbuffer<Navigation::NavAreas>(table);
-        VERIFY(areas.Load(data.GetPtr(), data.Size()));
-        VERIFY(WriteFile(tableFile, data.GetPtr(), data.Size()));
+        VERIFY(areas.Load(data.GetPtr(), (SizeT)data.Size()));
+        VERIFY(WriteFile(tableFile, data.GetPtr(), (SizeT)data.Size()));
     }
 
     // area modifiers name their area, the bake resolves it with the table and rebakes when the table changes
@@ -366,7 +366,7 @@ NavAssetTest::Run()
         roadArea->flags = (NavAreaFlags)(NavAreaFlags_Walk | NavAreaFlags_Door);
         table.areas.push_back(std::move(roadArea));
         Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<Navigation::NavAreas>(table);
-        VERIFY(WriteFile(tableFile, data.GetPtr(), data.Size()));
+        VERIFY(WriteFile(tableFile, data.GetPtr(), (SizeT)data.Size()));
         VERIFY(BakeNavMesh(workFile, exportFile, false) == BakeResult::Baked);
 
         // an area the table doesn't have, a removed or renamed one, is baked as the default area
