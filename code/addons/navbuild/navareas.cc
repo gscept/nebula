@@ -78,7 +78,7 @@ AreaTable::Load(const IO::URI& file)
         return false;
     }
     const void* mapped = stream->MemoryMap();
-    const bool loaded = this->Load(mapped, stream->GetSize());
+    const bool loaded = this->Load(mapped, (SizeT)stream->GetSize());
     stream->MemoryUnmap();
     stream->Close();
     return loaded;

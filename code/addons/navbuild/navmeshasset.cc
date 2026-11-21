@@ -224,7 +224,7 @@ ReadInputHash(const IO::URI& exportFile, uint64_t& hash)
     }
     bool found = false;
     const void* data = stream->MemoryMap();
-    if (IsBakedNavMesh(data, stream->GetSize()))
+    if (IsBakedNavMesh(data, (SizeT)stream->GetSize()))
     {
         hash = GetBakedNavMesh(data)->input_hash();
         found = true;
@@ -247,7 +247,7 @@ ReadWorkFile(const IO::URI& workFile, Util::Blob& data, NavMeshT& description)
         n_warning("BakeNavMesh: could not open '%s'\n", workFile.LocalPath().AsCharPtr());
         return false;
     }
-    const SizeT size = stream->GetSize();
+    const SizeT size = (SizeT)stream->GetSize();
     const void* mapped = stream->MemoryMap();
     if (mapped != nullptr && size > 0)
     {

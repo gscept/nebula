@@ -107,7 +107,7 @@ StreamNavMeshCache::LoadNavMesh(const Ptr<IO::Stream>& stream, const char* name,
 
     const void* buf = stream->MemoryMap();
     const IO::Stream::Size size = stream->GetSize();
-    if (!Build::IsBakedNavMesh(buf, size))
+    if (!Build::IsBakedNavMesh(buf, (SizeT)size))
     {
         n_warning("StreamNavMeshCache: '%s' is not a baked navmesh\n", name);
         stream->MemoryUnmap();

@@ -144,7 +144,7 @@ GatherNavMeshSources(
         return false;
     }
 
-    const SizeT before = out.size();
+    const size_t before = out.size();
     const Math::vec3 position = world->GetComponent<Game::Position>(gameEntity);
     const Math::quat orientation = world->GetComponent<Game::Orientation>(gameEntity);
 

@@ -144,7 +144,7 @@ LoadBaked(const IO::URI& file, int& tileCount, Util::String& agentName)
     }
     dtNavMesh* navMesh = nullptr;
     const void* data = stream->MemoryMap();
-    if (IsBakedNavMesh(data, stream->GetSize()))
+    if (IsBakedNavMesh(data, (SizeT)stream->GetSize()))
     {
         const BakedNavMesh* baked = GetBakedNavMesh(data);
         tileCount = baked->tiles()->size();
