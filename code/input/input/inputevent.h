@@ -15,6 +15,7 @@
 #include "input/key.h"
 #include "input/char.h"
 #include "input/mousebutton.h"
+#include "input/modifier.h"
 #include "math/vec2.h"
 
 //------------------------------------------------------------------------------
@@ -74,6 +75,10 @@ public:
     void SetMouseButton(MouseButton::Code button);
     /// get button code
     MouseButton::Code GetMouseButton() const;
+    /// set the modifiers held when the event happened
+    void SetMods(Modifier::Code mods);
+    /// get the modifiers held when the event happened
+    Modifier::Code GetMods() const;
     /// set optional device index (e.g. player index for game pads)
     void SetDeviceIndex(IndexT i);
     /// get device index
@@ -95,6 +100,7 @@ private:
     Char character;
     IndexT deviceIndex;
     MouseButton::Code mouseButton;
+    Modifier::Code mods;
     //CoreGraphics::WindowId window;
     Math::vec2 absMousePos;
     Math::vec2 normMousePos;
@@ -110,6 +116,7 @@ InputEvent::InputEvent() :
     character(0),
     deviceIndex(0),
     mouseButton(MouseButton::InvalidMouseButton),
+    mods(Modifier::NoModifier),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f)
 {
@@ -204,6 +211,24 @@ inline MouseButton::Code
 InputEvent::GetMouseButton() const
 {
     return this->mouseButton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+InputEvent::SetMods(Modifier::Code mods)
+{
+    this->mods = mods;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Modifier::Code
+InputEvent::GetMods() const
+{
+    return this->mods;
 }
 
 //------------------------------------------------------------------------------

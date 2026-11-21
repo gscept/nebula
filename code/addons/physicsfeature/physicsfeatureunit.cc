@@ -13,6 +13,9 @@
 #include "game/world.h"
 #include "components/physicsfeature.h"
 #include "managers/charactermanager.h"
+#if WITH_NEBULA_EDITOR
+#include "physicsfeature/editor/physicseditor.h"
+#endif
 
 namespace PhysicsFeature
 {
@@ -57,6 +60,12 @@ PhysicsFeatureUnit::OnAttach()
     this->RegisterComponentType<PlaneCollider>({ .OnInit = &PhysicsManager::InitPlaneCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::PlaneCollider> });
     this->RegisterComponentType<MeshCollider>({ .OnInit = &PhysicsManager::InitMeshCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::MeshCollider> });
     this->RegisterComponentType<HeightFieldCollider>({ .OnInit = &PhysicsManager::InitHeightFieldCollider, .OnDecay = &PhysicsManager::OnColliderComponentDecay<PhysicsFeature::HeightFieldCollider> });
+
+#if WITH_NEBULA_EDITOR
+    // The feature's own contribution. It is registered at attach, because the editor reads the
+    // registry at open
+    RegisterEditorContributions();
+#endif
 }
 
 //------------------------------------------------------------------------------

@@ -1,0 +1,44 @@
+# The icons the editor draws. One name per line, in the Lucide naming.
+# The build runs fips-files/generators/lucide_icons.py over this and writes the table to
+# base/iconregistry.h and .cc.
+# A name here has to be a glyph the font has, otherwise the generator reports it and skips it.
+
+arrow-up
+axis-3-d
+box
+boxes
+file
+folder
+network
+unlink
+upload
+
+check
+circle-dot
+chevron-down
+chevron-right
+copy
+keyboard
+minus
+pencil-line
+play
+plus
+redo-2
+refresh-cw
+rotate-ccw
+save
+save-all
+search
+settings
+square
+square-terminal
+trash-2
+undo-2
+x
+mouse-pointer-2
+move-3-d
+rotate-3-d
+scale-3-d
+grid-3-x-3
+magnet
+sliders-horizontal

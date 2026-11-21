@@ -8,6 +8,7 @@
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "input/key.h"
+#include "input/modifier.h"
 #include "input/mousebutton.h"
 
 namespace Scripting
@@ -55,6 +56,7 @@ InputSync(void* buffer, int bufferSize)
             if (keyboard->KeyUp((Input::Key::Code)i))
                 out->keys[word].up |= bit;
         }
+        out->mods = keyboard->GetMods();
     }
 
     Ptr<Input::Mouse> mouse = server->GetDefaultMouse();

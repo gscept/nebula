@@ -46,8 +46,9 @@ struct KeyWords
 //------------------------------------------------------------------------------
 /**
 	The layout the managed input mirror is built from. The eight byte fields come first and then the four byte
-	ones, which is the order C# declares as well. In this order the entry is 128 bytes on both sides with no
-	padding, and the field order is what makes that true.
+	ones, which is the order C# declares as well. In this order the entry is 136 bytes on both sides:
+	132 of fields and 4 bytes of padding at the end, because the eight byte fields put the entry on an
+	eight byte boundary. The field order is what makes the two sides agree.
 */
 struct InputSnapshot
 {
@@ -62,6 +63,7 @@ struct InputSnapshot
     uint32_t hasFocus;
     uint32_t mouseCaptured;
     uint32_t keyCaptured;
+    uint32_t mods;
 
     float pixelX;
     float pixelY;
@@ -71,7 +73,7 @@ struct InputSnapshot
     float moveY;
 };
 
-static_assert(sizeof(InputSnapshot) == 128, "managed input mirror layout");
+static_assert(sizeof(InputSnapshot) == 136, "managed input mirror layout");
 
 //------------------------------------------------------------------------------
 /**

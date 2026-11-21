@@ -7,6 +7,7 @@
 #include "glfwwindow.h"
 #include "glfwdisplaydevice.h"
 #include "input/key.h"
+#include "input/modifier.h"
 #include "coregraphics/displayevent.h"
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
@@ -77,6 +78,28 @@ GLFWWindow::Reopen()
 //------------------------------------------------------------------------------
 /**
 */
+Input::Modifier::Code
+ModsFromGlfw(int flags, Input::Key::Code key)
+{
+    Input::Modifier::Code mods = Input::Modifier::NoModifier;
+    if (flags & GLFW_MOD_CONTROL)
+        mods |= Input::Modifier::ControlModifier;
+    if (flags & GLFW_MOD_SHIFT)
+        mods |= Input::Modifier::ShiftModifier;
+    if (flags & GLFW_MOD_ALT)
+        mods |= Input::Modifier::AltModifier;
+    if (flags & GLFW_MOD_SUPER)
+        mods |= Input::Modifier::SuperModifier;
+
+    if (Input::Modifier::IsModifier(key))
+        mods |= Input::Modifier::FromKey(key);
+
+    return mods;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods)
 {
@@ -96,7 +119,7 @@ KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int
     }
     if (Input::Key::InvalidKey != keyCode)
     {
-        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(evtype, keyCode));
+        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(evtype, keyCode, ModsFromGlfw(mods, keyCode)));
     }
 }
 
@@ -154,7 +177,7 @@ MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mo
 
     vec2 pos;
     pos.set((float)x / float(mode.GetWidth()), (float)y / float(mode.GetHeight()));
-    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(act, but, vec2((float)x, (float)y), pos));
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(act, but, vec2((float)x, (float)y), pos, ModsFromGlfw(mods, Input::Key::InvalidKey)));
 }
 
 //------------------------------------------------------------------------------

@@ -1487,6 +1487,18 @@ namespace NST
                 Tests.Verify(!Input.IsKeyReleased(Key.W));
                 Tests.InputTestEndFrame();
 
+                // A modifier key on its own. The mirror's bits are built from the handler's key states, so
+                // the side that was pressed is the bit that comes back, and the group answers for either side.
+                // The code is taken from the engine rather than from this side's enum, so the test does not
+                // depend on the two enums agreeing
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutKey(Tests.InputTestKeyCode("LeftControl"), true);
+                Input.Sync();
+                Tests.Verify(Input.Modifiers == Modifier.LeftControlModifier);
+                Tests.Verify(Input.HasModifier(Modifier.ControlModifier));
+                Tests.Verify(!Input.HasModifier(Modifier.ShiftModifier));
+                Tests.InputTestEndFrame();
+
                 this.syncPhase = 26;
             }
             else if (this.syncPhase == 26)

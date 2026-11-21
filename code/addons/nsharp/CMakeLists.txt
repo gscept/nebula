@@ -43,6 +43,10 @@ set_target_properties(nsharpbindings PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 fips_begin_lib(nsharp)
     fips_libs(foundation application input ${DOTNET_NETHOST_LIBRARIES})
+    if(N_EDITOR)
+        # The feature defines its own editor contribution, so it needs the editor's registry
+        fips_libs(neweditor)
+    endif()
 
     fips_files(
         assemblyid.h
@@ -67,6 +71,11 @@ fips_begin_lib(nsharp)
         fips_files(
             entity.h
             entity.cc
+        )
+    fips_dir(editor)
+        fips_files(
+            scripteditor.h
+            scripteditor.cc
         )
 fips_end_lib()
 

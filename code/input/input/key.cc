@@ -92,6 +92,7 @@ Key::ToString(Code code)
     case Comma:         return "Comma";
     case Underbar:      return "Underbar";
     case Period:        return "Period";
+    case Minus:         return "Minus";
     case Equality:      return "Equality";
     case LeftShift:     return "LeftShift";
     case RightShift:    return "RightShift";
@@ -634,6 +635,7 @@ Key::ToChar(Code key)
     case Comma:         return ',';
     case Underbar:      return '_';
     case Period:        return '.';
+    case Minus:         return '-';
     case Equality:      return '=';
     case Key0:          return '0';
     case Key1:          return '1';
@@ -841,6 +843,7 @@ Key::SetupDict()
     dict.Add("Comma", Comma);
     dict.Add("Underbar", Underbar);
     dict.Add("Period", Period);
+    dict.Add("Minus", Minus);
     dict.Add("Equality", Equality);
     dict.Add("LeftShift", LeftShift);
     dict.Add("RightShift", RightShift);

@@ -9,6 +9,9 @@
 #include "game/gameserver.h"
 #include "coreclr_delegates.h"
 #include "propertyextension.h"
+#if WITH_NEBULA_EDITOR
+#include "editor/scripteditor.h"
+#endif
 
 namespace Scripting
 {
@@ -108,6 +111,21 @@ ScriptFeatureUnit::OnEntityCreated(Game::World* world, Game::Entity entity)
 /**
 */
 void
+ScriptFeatureUnit::OnAttach()
+{
+    FeatureUnit::OnAttach();
+
+#if WITH_NEBULA_EDITOR
+    // The feature's own contribution. It is registered at attach, because the editor reads the
+    // registry at open
+    Scripting::RegisterEditorContributions();
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ScriptFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
@@ -175,6 +193,11 @@ ScriptFeatureUnit::OnActivate()
 void
 ScriptFeatureUnit::OnDeactivate()
 {
+#if WITH_NEBULA_EDITOR
+    // The extension holds these as plain function pointers, so this side takes them back
+    ClearEditorContributions();
+#endif
+
     if (IO::FileWatcher::HasInstance() && !this->reloadWatchPath.IsEmpty())
     {
         IO::FileWatcher::Instance()->Unwatch(this->reloadWatchPath);

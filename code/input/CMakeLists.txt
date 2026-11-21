@@ -24,6 +24,8 @@ fips_files(
 	mouse.h
 	mousebutton.cc
 	mousebutton.h
+	modifier.cc
+	modifier.h
 )
 fips_dir(input/base GROUP "input/base")
 	fips_files(

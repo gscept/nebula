@@ -167,6 +167,29 @@ namespace Nebula
         }
 
         /// <summary>
+        /// The modifier bits the engine's Input::Modifier::Code has. The values are the contract between
+        /// the two sides, same as the key codes. A group is the pair of sides, and a side is one bit.
+        /// </summary>
+        public enum Modifier : uint
+        {
+            NoModifier = 0,
+
+            LeftControlModifier = 1 << 0,
+            RightControlModifier = 1 << 1,
+            LeftShiftModifier = 1 << 2,
+            RightShiftModifier = 1 << 3,
+            LeftAltModifier = 1 << 4,
+            RightAltModifier = 1 << 5,
+            LeftSuperModifier = 1 << 6,
+            RightSuperModifier = 1 << 7,
+
+            ControlModifier = LeftControlModifier | RightControlModifier,
+            ShiftModifier = LeftShiftModifier | RightShiftModifier,
+            AltModifier = LeftAltModifier | RightAltModifier,
+            SuperModifier = LeftSuperModifier | RightSuperModifier,
+        }
+
+        /// <summary>
         /// The mirror of the engine's default keyboard and mouse handlers. The engine has authority over the
         /// state, and this holds what the last sync saw, so a read is a field read rather than a call through
         /// the api.
@@ -200,7 +223,8 @@ namespace Nebula
 
             /// <summary>
             /// The layout the engine writes with. The eight byte fields come first and then the four byte ones,
-            /// which is the order that puts the entry at 128 bytes on both sides without padding.
+            /// which is the order that puts the entry at 136 bytes on both sides: 132 of fields and 4 bytes of
+            /// padding at the end, because the eight byte fields put the entry on an eight byte boundary.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
             private struct Snapshot
@@ -218,6 +242,7 @@ namespace Nebula
                 internal uint hasFocus;
                 internal uint mouseCaptured;
                 internal uint keyCaptured;
+                internal uint mods;
 
                 internal float pixelX;
                 internal float pixelY;
@@ -369,6 +394,17 @@ namespace Nebula
             public static bool MouseCaptured => buffer[0].mouseCaptured != 0;
 
             public static bool KeyCaptured => buffer[0].keyCaptured != 0;
+
+            /// <summary>
+            /// The modifiers held at the time of the sync. The engine builds this from its own key states,
+            /// which is what answers for a modifier key on its own.
+            /// </summary>
+            public static Modifier Modifiers => (Modifier)buffer[0].mods;
+
+            /// <summary>
+            /// Held at the time of the sync. A group is held when either side of it is.
+            /// </summary>
+            public static bool HasModifier(Modifier mod) => (buffer[0].mods & (uint)mod) != 0;
 
             /// <summary>
             /// The text the keyboard produced during this frame. Text only crosses through a buffer this side

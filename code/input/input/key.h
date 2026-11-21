@@ -97,6 +97,7 @@ public:
         Comma,
         Underbar,
         Period,
+        Minus,
         Equality,
         LeftShift,
         RightShift,

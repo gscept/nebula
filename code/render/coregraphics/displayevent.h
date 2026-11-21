@@ -14,6 +14,7 @@
 #include "input/key.h"
 #include "input/char.h"
 #include "input/mousebutton.h"
+#include "input/modifier.h"
 #include "math/vec2.h"
 #include "coregraphics/window.h"
 
@@ -61,11 +62,11 @@ public:
     /// constructor with event code and mouse pos
     DisplayEvent(Code c, CoreGraphics::WindowId wnd, const Math::vec2& absPos, const Math::vec2& normPos);
     /// constructor with key code
-    DisplayEvent(Code c, Input::Key::Code k);
+    DisplayEvent(Code c, Input::Key::Code k, Input::Modifier::Code mods = Input::Modifier::NoModifier);
     /// constructor with character
     DisplayEvent(Code c, Input::Char chr);
     /// constructor with mouse button and mouse pos
-    DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos);
+    DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos, Input::Modifier::Code mods = Input::Modifier::NoModifier);
     /// constructor with file drop
     DisplayEvent(Code c, const Util::Array<Util::String>& files);
 
@@ -83,6 +84,8 @@ public:
     Input::Char GetChar() const;
     /// get mouse button code
     Input::MouseButton::Code GetMouseButton() const;
+    /// get the modifiers held when the event happened
+    Input::Modifier::Code GetMods() const;
     /// Get files
     const Util::Array<Util::String>& GetFiles() const;
 
@@ -94,6 +97,7 @@ private:
     Input::Key::Code keyCode;
     Input::Char charCode;
     Input::MouseButton::Code mouseButtonCode;
+    Input::Modifier::Code mods;
     Util::Array<Util::String> files;
 };
 
@@ -108,7 +112,8 @@ DisplayEvent::DisplayEvent() :
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
     charCode(0),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier)
 {
     // empty
 }
@@ -124,7 +129,8 @@ DisplayEvent::DisplayEvent(Code c) :
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
     charCode(0),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier)
 {
     // empty
 }
@@ -141,7 +147,8 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
     charCode(0),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier)
 {
     // empty
 }
@@ -157,7 +164,8 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd, const Math::vec2&
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),
     charCode(0),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier)
 {
     // empty
 }
@@ -166,14 +174,15 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd, const Math::vec2&
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, Input::Key::Code k) :
+DisplayEvent::DisplayEvent(Code c, Input::Key::Code k, Input::Modifier::Code m) :
     code(c),
     windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(k),
     charCode(0),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(m)
 {
     // empty
 }
@@ -189,7 +198,8 @@ DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
     charCode(chr),
-    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier)
 {
     // empty
 }
@@ -198,14 +208,15 @@ DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos) :
+DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos, Input::Modifier::Code m) :
     code(c),
     windowId(Ids::InvalidId32),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),
     charCode(0),
-    mouseButtonCode(b)
+    mouseButtonCode(b),
+    mods(m)
 {
     // empty
 }
@@ -222,6 +233,7 @@ DisplayEvent::DisplayEvent(Code c, const Util::Array<Util::String>& files) :
     keyCode(Input::Key::InvalidKey),
     charCode(0),
     mouseButtonCode(Input::MouseButton::InvalidMouseButton),
+    mods(Input::Modifier::NoModifier),
     files(files)
 {
     // empty
@@ -288,6 +300,15 @@ inline Input::MouseButton::Code
 DisplayEvent::GetMouseButton() const
 {
     return this->mouseButtonCode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Input::Modifier::Code
+DisplayEvent::GetMods() const
+{
+    return this->mods;
 }
 
 //------------------------------------------------------------------------------

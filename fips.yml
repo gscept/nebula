@@ -61,6 +61,7 @@ exports:
         - code/input
         - code/options
         - toolkit/editor
+        - toolkit
     modules:
         foundation: code/foundation
         render: code/render

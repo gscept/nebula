@@ -22,6 +22,9 @@ InputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     InputEvent inputEvent;
     InputServer* inputServer = InputServer::Instance();
+    
+    inputEvent.SetMods(displayEvent.GetMods());
+    
     switch (displayEvent.GetEventCode())
     {
         case DisplayEvent::CloseRequested:

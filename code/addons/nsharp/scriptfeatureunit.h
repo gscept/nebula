@@ -35,6 +35,8 @@ public:
     void SetScriptAssembly(IO::URI const& path);
     Scripting::AssemblyId GetAssemblyId() const;
 
+    void OnAttach() override;
+
     void OnActivate() override;
     void OnDeactivate() override;
     void OnStart(Game::World* world) override;

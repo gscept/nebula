@@ -1227,14 +1227,21 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
     {
     case InputEvent::KeyDown:
         io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], true);
-        if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = true;
-        if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = true;
+        io.KeyCtrl = (event.GetMods() & Modifier::ControlModifier) != 0;
+        io.KeyShift = (event.GetMods() & Modifier::ShiftModifier) != 0;
+        io.KeyAlt = (event.GetMods() & Modifier::AltModifier) != 0;
+        io.KeySuper = (event.GetMods() & Modifier::SuperModifier) != 0;
         return io.WantCaptureKeyboard;
     case InputEvent::KeyUp:
+    {
         io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], false);
-        if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = false;
-        if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = false;
+        const Modifier::Code held = event.GetMods() & ~Modifier::FromKey(event.GetKey());
+        io.KeyCtrl = (held & Modifier::ControlModifier) != 0;
+        io.KeyShift = (held & Modifier::ShiftModifier) != 0;
+        io.KeyAlt = (held & Modifier::AltModifier) != 0;
+        io.KeySuper = (held & Modifier::SuperModifier) != 0;
         return io.WantCaptureKeyboard;                                  // not a bug, this allows keys to be let go even if we are over the UI
+    }
     case InputEvent::Character:
     {
         char c = event.GetChar();

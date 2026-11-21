@@ -11,6 +11,7 @@
 */
 #include "input/inputhandler.h"
 #include "input/key.h"
+#include "input/modifier.h"
 
 //------------------------------------------------------------------------------
 namespace Base
@@ -42,6 +43,10 @@ public:
     bool KeyUp(Input::Key::Code keyCode) const;
     /// get character input in current frame
     const Util::String& GetCharInput() const;
+    /// the modifiers held right now
+    Input::Modifier::Code GetMods() const;
+    /// return true when the held state satisfies the modifiers
+    bool ModifierDown(Input::Modifier::Code mods) const;
 
 protected:
     /// called when the handler is attached to the input server
@@ -131,6 +136,34 @@ inline const Util::String&
 KeyboardBase::GetCharInput() const
 {
     return this->charInput;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The state is built from the key states rather than from what a window reported with an event,
+    because a window's flags do not include the modifier key that is itself being pressed or
+    released.
+*/
+inline Input::Modifier::Code
+KeyboardBase::GetMods() const
+{
+    Input::Modifier::Code mods = Input::Modifier::NoModifier;
+    for (IndexT i = 0; i < Input::Modifier::NumKeys; i++)
+    {
+        const Input::Key::Code key = Input::Modifier::Keys[i];
+        if (this->keyStates[key].pressed)
+            mods |= Input::Modifier::FromKey(key);
+    }
+    return mods;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+KeyboardBase::ModifierDown(Input::Modifier::Code mods) const
+{
+    return Input::Modifier::Matches(mods, this->GetMods());
 }
 
 } // namespace Input
