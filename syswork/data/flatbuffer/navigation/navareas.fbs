@@ -1,0 +1,43 @@
+//------------------------------------------------------------------------------
+//
+//    Navigation area table, work/data/tables/navareas.json in a project.
+//
+//    Areas classify the walkable surface of a navmesh. Area 0, "none", is not walkable
+//    and area 63, "default", is what every surface is unless something marks it, both
+//    exist without being listed. A project defines areas 1 to 62. Ids are stored in baked
+//    navmeshes, so an area keeps its id, names are what levels and work files refer to.
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+include "foundation/math.fbs";
+
+namespace Navigation;
+
+// Detour polygon flags of an area, agents include or exclude polygons by them
+enum NavAreaFlags : ushort (bit_flags)
+{
+	Walk,
+	Swim,
+	Door,
+	Disabled
+}
+
+table NavAreaDefinition
+{
+	id : ubyte;
+	name : string;
+	// traversal cost multiplier of the default query filter
+	cost : float = 1.0;
+	flags : NavAreaFlags = Walk;
+	// debug draw and editor color, rgba
+	color : Flat.Vec4 (native_inline);
+}
+
+table NavAreas
+{
+	areas : [NavAreaDefinition];
+}
+
+root_type NavAreas;
+file_identifier "NAVR";
+file_extension "navareas";

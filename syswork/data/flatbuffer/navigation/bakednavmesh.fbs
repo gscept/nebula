@@ -1,0 +1,41 @@
+//------------------------------------------------------------------------------
+//
+//    Baked navmesh, the exported form of a navmesh work file.
+//    Holds the Detour tiles as dtCreateNavMeshData produced them.
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+include "foundation/math.fbs";
+include "navigation/agentkinds.fbs";
+
+namespace Navigation;
+
+table BakedNavTile
+{
+	x : int;
+	y : int;
+	layer : int;
+	data : [ubyte];
+}
+
+table BakedNavMesh
+{
+	name : string;
+	agent_kind : Agent;
+
+	// dtNavMeshParams
+	origin : Flat.Vec3 (native_inline);
+	tile_width : float;
+	tile_height : float;
+	max_tiles : int;
+	max_polys : int;
+
+	tiles : [BakedNavTile];
+
+	// hash of the work file and the geometry of all sources, the batcher bakes again when it changes
+	input_hash : ulong;
+}
+
+root_type BakedNavMesh;
+file_identifier "NAVB";
+file_extension "navmesh";

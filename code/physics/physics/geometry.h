@@ -75,7 +75,8 @@ struct HeightFieldInput
 /// folder:file:type, which the default readers in physics/formats resolve to the exported file.
 struct GeometryLoader
 {
-    std::function<bool(Util::StringAtom resource, IndexT primGroup, MeshGeometryInput& out)> LoadMesh = nullptr;
+    /// meshIndex selects the mesh in a file holding several, primGroup the primitive group within that mesh
+    std::function<bool(Util::StringAtom resource, IndexT meshIndex, IndexT primGroup, MeshGeometryInput& out)> LoadMesh = nullptr;
     std::function<bool(Util::StringAtom resource, HeightFieldInput& out)> LoadHeightField = nullptr;
 };
 

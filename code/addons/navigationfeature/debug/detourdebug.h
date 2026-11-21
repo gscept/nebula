@@ -16,6 +16,9 @@ virtual void depthMask(bool state);
 
 virtual void texture(bool state){}
 
+/// color of an area, from the area table
+unsigned int areaToCol(unsigned int area) override;
+
 /// Begin drawing primitives.
 ///  @param prim [in] primitive type to draw, one of rcDebugDrawPrimitives.
 ///  @param size [in] size of a primitive, applies to point size and line width only.

@@ -141,8 +141,10 @@ BuildGeometry(const ColliderDescription& desc, PxGeometryHolder& out)
                 return false;
             }
             MeshGeometryInput input;
-            if (!loader.LoadMesh(desc.resource, desc.primGroup, input))
+            if (!loader.LoadMesh(desc.resource, 0, desc.primGroup, input))
+            {
                 return false;
+            }
 
             input.topology = desc.topology;
             return CookMesh(input, out);

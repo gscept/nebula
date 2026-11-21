@@ -48,10 +48,13 @@ DdsHeightField(Util::StringAtom resource, HeightFieldInput& out)
         int depth = ctx.image_depth(0, 0);
         int width = ctx.image_width(0, 0);
         int height = ctx.image_height(0, 0);
-        n_assert(depth == 1);
 
         // decode the format locally instead of going through CoreGraphics::Gliml
-        if (ctx.image_format() == GLIML_FOURCC_DXT10 && ctx.image_internal_format() == gliml::DXGI_FORMAT_R16_UNORM)
+        if (depth != 1)
+        {
+            n_warning("DdsHeightField: '%s' is a volume texture, a heightmap must be 2D\n", resource.Value());
+        }
+        else if (ctx.image_format() == GLIML_FOURCC_DXT10 && ctx.image_internal_format() == gliml::DXGI_FORMAT_R16_UNORM)
         {
             const ushort* heightBuffer = (const ushort*)ctx.image_data(0, 0);
 
@@ -67,8 +70,13 @@ DdsHeightField(Util::StringAtom resource, HeightFieldInput& out)
         }
         else
         {
-            n_error("DdsHeightField: '%s' is not an R16 heightmap", resource.Value());
+            // offline tools read heightmaps too, a texture exported with the wrong format must not take them down
+            n_warning("DdsHeightField: '%s' is not an R16 heightmap\n", resource.Value());
         }
+    }
+    else
+    {
+        n_warning("DdsHeightField: '%s' is not a dds file\n", resource.Value());
     }
 
     stream->MemoryUnmap();
