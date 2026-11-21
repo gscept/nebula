@@ -41,7 +41,9 @@ public:
         TOOL_TRANSLATE,
         TOOL_ROTATE,
         TOOL_SCALE,
-        TOOL_TERRAIN
+        TOOL_TERRAIN,
+        TOOL_NAVAREA_POINTS,
+        TOOL_NAV_PATH
     };
 
     void SetTool(ToolType type);
@@ -50,7 +52,7 @@ private:
 
     Tools::ToolInterface* currentTool;
 
-    Tools::ToolInterface* allTools[5];
+    Tools::ToolInterface* allTools[7];
 };
 
 

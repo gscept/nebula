@@ -17,6 +17,7 @@
 #include "jobs2/jobs2.h"
 #include "system/cpu.h"
 #include "toolkitutil/text.h"
+#include "navbuild/navareas.h"
 
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"
@@ -102,6 +103,8 @@ AssetBatcherApp::OnBeforeRunLocal()
     IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
     CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/physicsmaterials.json","phys:");
+    // navmeshes resolve their areas with the compiled table when they are baked
+    Navigation::Build::CompileAreaTable();
 }
 
 //------------------------------------------------------------------------------
@@ -224,11 +227,30 @@ AssetBatcherApp::DoWork()
         packageMode = (AssetBatchProcessor::PackageModes)0;
         Util::String exportMode = this->args.GetString("-package_mode");
         Util::Array<Util::String> modeFlags = exportMode.Tokenize(",");
-        if (modeFlags.Find("assets")) packageMode |= AssetBatchProcessor::PackageModes::Assets;
-        if (modeFlags.Find("surfaces")) packageMode |= AssetBatchProcessor::PackageModes::Materials;
-        if (modeFlags.Find("particles")) packageMode |= AssetBatchProcessor::PackageModes::Particles;
-        if (modeFlags.Find("textures")) packageMode |= AssetBatchProcessor::PackageModes::Textures;
-        if (modeFlags.Find("audio")) packageMode |= AssetBatchProcessor::PackageModes::Audio;
+        if (modeFlags.Find("assets"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Assets;
+        }
+        if (modeFlags.Find("surfaces"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Materials;
+        }
+        if (modeFlags.Find("particles"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Particles;
+        }
+        if (modeFlags.Find("textures"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Textures;
+        }
+        if (modeFlags.Find("audio"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Audio;
+        }
+        if (modeFlags.Find("navigation"))
+        {
+            packageMode |= AssetBatchProcessor::PackageModes::Navigation;
+        }
     }
 
     if (this->args.HasArg("-import_mode"))
@@ -236,10 +258,22 @@ AssetBatcherApp::DoWork()
         importMode = (AssetBatchProcessor::ImportModes)0;
         Util::String importModeStr = this->args.GetString("-import_mode");
         Util::Array<Util::String> modeFlags = importModeStr.Tokenize(",");
-        if (modeFlags.Find("fbx")) importMode |= AssetBatchProcessor::ImportModes::FBX;
-        if (modeFlags.Find("gltf")) importMode |= AssetBatchProcessor::ImportModes::GLTF;
-        if (modeFlags.Find("images")) importMode |= AssetBatchProcessor::ImportModes::Images;
-        if (modeFlags.Find("sound")) importMode |= AssetBatchProcessor::ImportModes::Sound;
+        if (modeFlags.Find("fbx"))
+        {
+            importMode |= AssetBatchProcessor::ImportModes::FBX;
+        }
+        if (modeFlags.Find("gltf"))
+        {
+            importMode |= AssetBatchProcessor::ImportModes::GLTF;
+        }
+        if (modeFlags.Find("images"))
+        {
+            importMode |= AssetBatchProcessor::ImportModes::Images;
+        }
+        if (modeFlags.Find("sound"))
+        {
+            importMode |= AssetBatchProcessor::ImportModes::Sound;
+        }
     }
 
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
@@ -371,6 +405,8 @@ AssetBatcherApp::DoWork()
         }
     }
     
+    // navmeshes read the meshes and textures packaged above
+    exporter->ProcessNavMeshes();
     exporter->Close();
     this->logger.Flush();
     Jobs2::JobSystemUninit();

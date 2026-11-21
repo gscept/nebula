@@ -26,7 +26,8 @@
 #include "viewerapp.h"
 #include "graphics/cameracontext.h"
 #include "navigationfeature/navigationfeatureunit.h"
-#include "navigationfeature/recast/recastutil.h"
+#include "navbuild/navmeshbuilder.h"
+#include "navbuild/geometrysources.h"
 #include "DetourDebugDraw.h"
 #include "navigationfeature/debug/detourdebug.h"
 
@@ -156,8 +157,7 @@ DeleteRandom(int amount)
     }
 }
 
-dtNavMesh* dt;
-Util::Blob navmesh;
+dtNavMesh* dt = nullptr;
 //------------------------------------------------------------------------------
 /**
     Open scene, load resources
@@ -209,31 +209,25 @@ void OpenScene()
 
     gfxServer = Graphics::GraphicsServer::Instance();
     camera = Tests::SimpleViewerApplication::Instance()->GetDefaultCamera();
-    Navigation::NavMeshT mesh;
-    Navigation::AgentT agent;
-    agent.agent_height = 2.0f;
-    agent.agent_radius = 0.5f;
-    agent.agent_max_climb = 0.5f;
-    agent.name = "test";
-
-    mesh.agent_kind = std::make_unique<Navigation::AgentT>(agent);
-    auto source = std::make_unique<Navigation::GeometryEntryT>();
-    source->resource = "msh:test/groundplane.nvx";
-    mesh.sources.push_back(std::move(source));
-    mesh.name = "test";
-    mesh.file = "nav:test.navmesh";
-    mesh.bounds_center = Math::vec3(0.0f, 0.0f, 0.0f);
-    mesh.bounds_extents = Math::vec3(400.0f, 50.0f, 400.0f);
-    
-    mesh.navmesh_settings = std::make_unique<Navigation::NavMeshSettingsT>();
-
-    Navigation::Recast::GenerateNavMesh(mesh, navmesh);
-    if (navmesh.IsValid())
+    // the ground is static at the origin, the navmesh source uses the same placement as its collider
+    Navigation::Build::BuildInput navInput;
+    navInput.agent.agent_height = 2.0f;
+    navInput.agent.agent_radius = 0.5f;
+    navInput.agent.agent_max_climb = 0.5f;
+    navInput.agent.name = "test";
+    Navigation::Build::MeshSource groundSource;
+    if (Navigation::Build::LoadMeshSource("test:groundplane:msh", 0, 0, Math::mat4::identity, groundSource))
     {
-        dt = dtAllocNavMesh();
-        dt->init((unsigned char*)navmesh.GetPtr(), (int)navmesh.Size(), 0);
-        v = 0.0f;
+        navInput.meshes.Append(std::move(groundSource));
+        Navigation::Build::BuildOutput navOutput;
+        Navigation::Build::BuildStats stats;
+        if (Navigation::Build::BuildNavMesh(navInput, navOutput, &stats))
+        {
+            dt = Navigation::Build::CreateDetourNavMesh(navOutput);
+            n_printf("Navmesh: %d of %d x %d tiles, %d polygons\n", stats.builtTiles, stats.tilesX, stats.tilesZ, stats.polygons);
+        }
     }
+    v = 0.0f;
 };
 
 static void RemoveEntity(Graphics::GraphicsEntityId Id)
@@ -248,6 +242,8 @@ static void RemoveEntity(Graphics::GraphicsEntityId Id)
 */
 void CloseScene()
 {
+    dtFreeNavMesh(dt);
+    dt = nullptr;
     RemoveEntity(tower);
     RemoveEntity(ground);
     Physics::DestroyActorInstance(groundActor);
@@ -281,8 +277,11 @@ void StepFrame()
             Shoot(1);
         }
     }
-    Navigation::DebugDraw dd;
-    duDebugDrawNavMesh(&dd, *dt, 0);
+    if (dt != nullptr)
+    {
+        Navigation::DebugDraw dd;
+        duDebugDrawNavMesh(&dd, *dt, 0);
+    }
     
 };
 

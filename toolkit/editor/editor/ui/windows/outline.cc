@@ -198,6 +198,7 @@ Outline::DrawEntitySelectable(Editor::Entity entity, bool hasChildren, bool pare
     bool isOpen = parentOpen && ImGui::TreeNodeEx("##hierarchyEntity", flags, label.AsCharPtr());
     if (parentOpen)
     {
+        this->listedEntities.Append(entity);
         if (ImGui::IsItemHovered())
         {
             Tools::SelectionContext::SetHovered(entity);
@@ -205,8 +206,29 @@ Outline::DrawEntitySelectable(Editor::Entity entity, bool hasChildren, bool pare
         if (ImGui::IsItemClicked(0))
         {
             Util::Array<Editor::Entity> selection;
-            if (ImGui::GetIO().KeyCtrl)
+            IndexT const anchorIndex = this->rangeAnchor != Editor::Entity::Invalid() ? this->lastListedEntities.FindIndex(this->rangeAnchor) : InvalidIndex;
+            IndexT const clickedIndex = this->lastListedEntities.FindIndex(entity);
+            if (ImGui::GetIO().KeyShift && anchorIndex != InvalidIndex && clickedIndex != InvalidIndex)
             {
+                // everything listed between the anchor and the clicked entity, added to the selection with ctrl
+                if (ImGui::GetIO().KeyCtrl)
+                {
+                    selection = Tools::SelectionContext::Selection();
+                }
+                IndexT const first = Math::min(anchorIndex, clickedIndex);
+                IndexT const last = Math::max(anchorIndex, clickedIndex);
+                for (IndexT i = first; i <= last; i++)
+                {
+                    Editor::Entity const listed = this->lastListedEntities[i];
+                    if (selection.FindIndex(listed) == InvalidIndex)
+                    {
+                        selection.Append(listed);
+                    }
+                }
+            }
+            else if (ImGui::GetIO().KeyCtrl)
+            {
+                this->rangeAnchor = entity;
                 selection = Tools::SelectionContext::Selection();
                 IndexT const selectionIndex = selection.BinarySearchIndex(entity);
                 if (selectionIndex == InvalidIndex)
@@ -220,15 +242,28 @@ Outline::DrawEntitySelectable(Editor::Entity entity, bool hasChildren, bool pare
             }
             else if (!selected)
             {
+                this->rangeAnchor = entity;
                 selection.Append(entity);
             }
             else
             {
+                // kept whole so the selection can be dragged, a click without dragging narrows it on release
+                this->rangeAnchor = entity;
                 selection = Tools::SelectionContext::Selection();
             }
             Edit::SetSelection(selection);
             Editor::state.activeCollection = editable.collection;
             this->collectionSelected = false;
+        }
+
+        // a plain click on an entity of a multi-selection selects only it, unless it started a drag
+        ImGuiIO const& io = ImGui::GetIO();
+        if (selected && Tools::SelectionContext::Selection().Size() > 1 && ImGui::IsItemHovered() &&
+            ImGui::IsMouseReleased(0) && !io.KeyCtrl && !io.KeyShift &&
+            io.MouseDragMaxDistanceSqr[0] < io.MouseDragThreshold * io.MouseDragThreshold)
+        {
+            this->rangeAnchor = entity;
+            Edit::SetSelection({ entity });
         }
 
         if (ImGui::BeginDragDropTarget())
@@ -678,6 +713,10 @@ void
 Outline::Run(SaveMode save)
 {
     static char nameFilterBuffer[256];
+
+    // ranges are taken from what was listed last frame, the list of this frame is still being built
+    this->lastListedEntities = std::move(this->listedEntities);
+    this->listedEntities.Clear();
 
     if (this->collectionSelected &&
         this->selectedCollection.IsValid() &&

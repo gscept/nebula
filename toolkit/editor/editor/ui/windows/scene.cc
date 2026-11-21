@@ -28,6 +28,8 @@
 #include "flat/model.h"
 
 #include "editor/tools/selectiontool.h"
+#include "editor/tools/navareapointtool.h"
+#include "editor/tools/navpathtool.h"
 #include "editor/tools/translatetool.h"
 #include "editor/tools/rotatetool.h"
 #include "editor/tools/scaletool.h"
@@ -47,13 +49,15 @@ namespace Presentation
 */
 Scene::Scene()
 {
-    allTools[0] = new Tools::SelectionTool();
-    allTools[1] = new Tools::TranslateTool();
-    allTools[2] = new Tools::RotateTool();
-    allTools[3] = new Tools::ScaleTool();
-    allTools[4] = new Tools::TerrainEditorTool();
+    this->allTools[0] = new Tools::SelectionTool();
+    this->allTools[1] = new Tools::TranslateTool();
+    this->allTools[2] = new Tools::RotateTool();
+    this->allTools[3] = new Tools::ScaleTool();
+    this->allTools[4] = new Tools::TerrainEditorTool();
+    this->allTools[5] = new Tools::NavAreaPointTool();
+    this->allTools[6] = new Tools::NavPathTool();
 
-    currentTool = allTools[0];
+    this->currentTool = this->allTools[0];
 
     this->viewPort.Init(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultView());
     this->viewPort.SetFrameBuffer("ColorBufferNoGUI");
@@ -72,12 +76,14 @@ Scene::Scene()
 */
 Scene::~Scene()
 {
-    delete allTools[0];
-    delete allTools[1];
-    delete allTools[2];
-    delete allTools[3];
-    delete allTools[4];
-    currentTool = nullptr;
+    delete this->allTools[0];
+    delete this->allTools[1];
+    delete this->allTools[2];
+    delete this->allTools[3];
+    delete this->allTools[4];
+    delete this->allTools[5];
+    delete this->allTools[6];
+    this->currentTool = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -277,6 +283,21 @@ Scene::Run(SaveMode save)
         {
             this->currentTool = this->allTools[TOOL_TERRAIN];
         }
+    }
+
+    // placing navigation area points is started from the inspector, the tool ends itself
+    if (Tools::NavAreaPointTool::Target() != Editor::Entity::Invalid())
+    {
+        this->currentTool = this->allTools[TOOL_NAVAREA_POINTS];
+    }
+    // so is testing paths, from the navigation window
+    else if (Tools::NavPathTool::Active())
+    {
+        this->currentTool = this->allTools[TOOL_NAV_PATH];
+    }
+    else if (this->currentTool == this->allTools[TOOL_NAVAREA_POINTS] || this->currentTool == this->allTools[TOOL_NAV_PATH])
+    {
+        this->currentTool = this->allTools[TOOL_SELECTION];
     }
 }
 

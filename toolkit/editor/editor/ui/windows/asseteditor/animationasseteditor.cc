@@ -244,6 +244,39 @@ FadeRamps(const float fadeIn, const float fadeOut, const float duration)
 
 //------------------------------------------------------------------------------
 /**
+    Draw the weight the playing clip is faded to over the time slider, the last item: a dot at the clip's time, as
+    high as its weight, with a line down to the bottom. It rides the fade ramps while the clip fades as they show
+*/
+static void
+FadeWeightMarker(const float weight, const float time, const float duration)
+{
+    if (duration <= 0.0f)
+    {
+        return;
+    }
+
+    // where the slider puts the center of its grab for a time, like the marker handles
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    const float grabPadding = 2.0f;
+    const float grabSize = Math::min(style.GrabMinSize, max.x - min.x - grabPadding * 2.0f);
+    const float x0 = min.x + grabPadding + grabSize * 0.5f;
+    const float x1 = max.x - grabPadding - grabSize * 0.5f;
+    const float x = x0 + (x1 - x0) * Math::clamp(time / duration, 0.0f, 1.0f);
+    const float top = min.y + 2.0f;
+    const float bottom = max.y - 2.0f;
+    const ImVec2 point(x, Math::lerp(bottom, top, Math::clamp(weight, 0.0f, 1.0f)));
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    const ImU32 color = IM_COL32(255, 210, 60, 255);
+    drawList->AddLine(ImVec2(x, bottom), point, color, 1.5f);
+    drawList->AddCircleFilled(point, 3.5f, color);
+    drawList->AddCircle(point, 3.5f, IM_COL32(0, 0, 0, 200), 0, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
     The times a clip has keys at in milliseconds, of all its curves, in order. A baked clip has one per frame
 */
 static Util::Array<Timing::Tick>
@@ -422,10 +455,13 @@ AnimationClips(const Graphics::GraphicsEntityId character, ClipPlayback& playbac
     {
         const float duration = (float)Timing::TicksToSeconds(clips[clip].duration);
         float time = playing != InvalidIndex ? (float)Characters::CharacterContext::GetTrackTime(character, 0) : 0.0f;
+        // the weight the playing clip is faded to, shown while it's below its full weight
+        const float fadeWeight = playing != InvalidIndex ? Characters::CharacterContext::GetTrackFadeWeight(character, 0) : 1.0f;
+        const bool fading = fadeWeight < 0.999f;
         ImGui::SetNextItemWidth(-FLT_MIN);
         // the marker handles are drawn over the slider and get the mouse first
         ImGui::SetNextItemAllowOverlap();
-        const bool changed = ImGui::SliderFloat("##time", &time, 0.0f, duration, "%.2f s");
+        const bool changed = ImGui::SliderFloat("##time", &time, 0.0f, duration, fading ? Util::Format("%%.2f s, weight %.2f", fadeWeight).AsCharPtr() : "%.2f s");
         const ImGuiID resumeId = ImGui::GetItemID();
         if (ImGui::IsItemActivated())
             BeginScrub(character, clip, loop, speed, resumeId);
@@ -440,6 +476,10 @@ AnimationClips(const Graphics::GraphicsEntityId character, ClipPlayback& playbac
         {
             const float fade = playback.fade * speed;
             FadeRamps(fade, loop ? 0.0f : fade, duration);
+        }
+        if (fading)
+        {
+            FadeWeightMarker(fadeWeight, time, duration);
         }
 
         const Util::StringAtom clipName = clips[clip].GetName();

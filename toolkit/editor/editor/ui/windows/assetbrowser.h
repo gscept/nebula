@@ -177,6 +177,13 @@ private:
     Util::String pickType;
     /// the search field is focused when the picker opens, so typing filters right away
     bool focusSearch = false;
+    /// one bit per ToolkitUtil::FileType of the types shown in the file view, all are shown when it's 0.
+    /// Kept per browser, so the picker's filter doesn't change what the main browser shows
+    uint32_t typeFilter = 0;
+    /// draw the type filter button and its popup on the current line, filling the given width
+    void DisplayTypeFilter(float width);
+    /// true if the type filter is set and isn't overridden by the picker's own type
+    bool IsTypeFilterActive() const;
     bool fileTreeReady = false;
     bool backgroundScanFinished = false;
     bool showProgress = false;

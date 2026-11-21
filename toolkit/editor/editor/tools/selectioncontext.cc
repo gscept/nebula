@@ -21,6 +21,8 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
+#include "navmeshsources.h"
+#include "navigationfeature/components/navigation.h"
 
 namespace Tools
 {
@@ -117,7 +119,9 @@ SelectionContext::PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
-    SelectionMode mode = (keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl))
+    // ctrl or shift toggle the picked entity in the selection, a plain click replaces it
+    SelectionMode mode = (keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl) ||
+                          keyboard->KeyPressed(Input::Key::LeftShift) || keyboard->KeyPressed(Input::Key::RightShift))
                              ? SelectionMode::Append
                              : SelectionMode::Replace;
 
@@ -159,6 +163,15 @@ SelectionContext::PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 
         }
     }
 
+    // navigation area volumes have no model, they are picked by their box
+    for (const Editor::NavAreaVolume& volume : Editor::GetNavAreaVolumes())
+    {
+        Editor::EditorEntity editorEntity;
+        editorEntity.id = (uint64_t)volume.entity;
+        editorEntities.Append(editorEntity);
+        bboxes.Append(Editor::NavAreaWorldBounds(volume));
+    }
+
     if (bboxes.Size() > 0)
     {
         // TODO: pretty unnecessary to build a bvh for just a single raycast. Maybe cache it and do incremental updates when moving and adding things.
@@ -170,23 +183,45 @@ SelectionContext::PerformPicking(Math::vec2 const& viewPortPosition, Math::vec2 
         if (mode == SelectionMode::Append)
             newSelection = Singleton->selection;
 
-        float closestDist = 1e30f;
-        Editor::Entity closestEntity = Editor::Entity::Invalid();
-
+        // the boxes the ray hits, with the distance it enters them at
+        Util::Array<uint32_t> hits;
+        Util::Array<float> hitDistances;
         for (IndexT i = 0; i < intersectionIndices.Size(); i++)
         {
             uint32_t const idx = intersectionIndices[i];
-            Editor::EditorEntity const& editorEntity = editorEntities[idx];
-            Math::bbox const& bbox = bboxes[idx];
-
             float t;
-            if (bbox.intersects(ray, t))
+            if (bboxes[idx].intersects(ray, t))
             {
-                if (t < closestDist)
-                {
-                    closestEntity = editorEntity.id;
-                    closestDist = t;
-                }
+                hits.Append(idx);
+                hitDistances.Append(t);
+            }
+        }
+
+        // A large box, like the one of a terrain, holds the boxes of everything placed on it and is
+        // usually entered first, or holds the camera. Pick the nearest of the boxes which hold no other
+        // hit box, so an object wins over the ground it stands on. Holding is checked by the center, an
+        // object may reach out of the ground's box, below a valley floor for instance
+        auto volume = [](Math::bbox const& box)
+        {
+            Math::vec3 const size = box.size();
+            return size.x * size.y * size.z;
+        };
+        float closestDist = 1e30f;
+        Editor::Entity closestEntity = Editor::Entity::Invalid();
+        for (IndexT i = 0; i < hits.Size(); i++)
+        {
+            Math::bbox const& box = bboxes[hits[i]];
+            bool holdsOther = false;
+            for (IndexT j = 0; j < hits.Size() && !holdsOther; j++)
+            {
+                Math::bbox const& other = bboxes[hits[j]];
+                Math::point const center = other.center();
+                holdsOther = j != i && box.contains(Math::vec3(center.x, center.y, center.z)) && volume(box) > volume(other);
+            }
+            if (!holdsOther && hitDistances[i] < closestDist)
+            {
+                closestEntity = editorEntities[hits[i]].id;
+                closestDist = hitDistances[i];
             }
         }
 
@@ -294,6 +329,16 @@ SelectionContext::GetSelectedEntityUnderMouse(
             Graphics::GraphicsEntityId const gfxEntity =
                 defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
             bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+        }
+        else if (defaultWorld->HasComponent<NavigationFeature::NavArea>(gameEntity))
+        {
+            for (const Editor::NavAreaVolume& volume : Editor::GetNavAreaVolumes())
+            {
+                if (volume.gameEntity == gameEntity)
+                {
+                    bbox = Editor::NavAreaWorldBounds(volume);
+                }
+            }
         }
 
         float dist;

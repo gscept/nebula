@@ -98,6 +98,8 @@ JsonRawTest::Run()
         bitWriter->BeginObject("component");
         bitWriter->Add(Util::BitField<16>({ 0, 1, 9 }), "stages");
         bitWriter->Add(7, "after");
+        bitWriter->Add((uint32_t)0xFFFFFFFF, "invalid");
+        bitWriter->Add((uint32_t)0x80000001, "high");
         bitWriter->End();
         bitWriter->Close();
 
@@ -110,6 +112,13 @@ JsonRawTest::Run()
         VERIFY(stages.IsSet(0) && stages.IsSet(1) && stages.IsSet(9));
         VERIFY(!stages.IsSet(2) && !stages.IsSet(3));
         VERIFY(bitReader->GetInt("after") == 7);
+
+        // unsigned values above INT_MAX read back as written, like the invalid id
+        uint32_t invalid = 0, high = 0;
+        bitReader->Get<uint32_t>(invalid, "invalid");
+        bitReader->Get<uint32_t>(high, "high");
+        VERIFY(invalid == 0xFFFFFFFF);
+        VERIFY(high == 0x80000001);
         bitReader->Close();
     }
 }

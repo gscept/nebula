@@ -186,7 +186,8 @@ LiveBatcher::BatchAsset(const IO::Path& assetPath)
                     "mdl",
                     "msh",
                     "tex",
-                    "phys"
+                    "phys",
+                    "nav"
                 };
 
                 for (SizeT i = 0; i < lengthof(exportFolders); i++)
