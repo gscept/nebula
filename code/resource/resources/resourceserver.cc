@@ -99,9 +99,21 @@ void
 ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Ptr<ResourceLoader>& loader)
 {
     n_assert(this->open);
-    this->loaders.Append(loader);
-    this->extensionMap.Add(ext, this->loaders.Size() - 1);
-    this->typeMap.Add(loader->GetRtti(), this->loaders.Size() - 1);
+
+    // a loader may be registered for several extensions, like an URN type and a file extension,
+    // it keeps one slot so every extension resolves to the same loader
+    IndexT index = this->loaders.FindIndex(loader);
+    if (index == InvalidIndex)
+    {
+        this->loaders.Append(loader);
+        index = this->loaders.Size() - 1;
+        this->typeMap.Add(loader->GetRtti(), index);
+    }
+    this->extensionMap.Add(ext, index);
+
+    // resource ids name their loader by its slot here, which is only known now. The counter Setup
+    // assigns matches it only if every loader is set up and registered once, in the same order
+    loader->uniqueId = index;
 }
 
 //------------------------------------------------------------------------------
@@ -114,10 +126,19 @@ ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Ptr<Re
     n_assert(this->extensionMap.Contains(ext));
 
     IndexT loaderIdx = this->extensionMap[ext];
-    this->loaders[loaderIdx] = nullptr;
     this->extensionMap.Erase(ext);
+
+    // the loader stays while another extension still uses it
+    for (IndexT i = 0; i < this->extensionMap.Size(); i++)
+    {
+        if (this->extensionMap.ValueAtIndex(i) == loaderIdx)
+        {
+            return;
+        }
+    }
+    this->loaders[loaderIdx] = nullptr;
     this->typeMap.Erase(loader->GetRtti());
-    
+
     loader->ClearPendingUnloads();
     for (auto& kvp : loader->ids)
     {

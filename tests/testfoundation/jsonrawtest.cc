@@ -87,6 +87,31 @@ JsonRawTest::Run()
     VERIFY(resaveReader->GetRawJson() == extensionJson);
 
     resaveReader->Close();
+
+    // a bitfield is written as the list of its set bits, and read back from its attribute, with the
+    // list replacing whatever the field held
+    {
+        Ptr<MemoryStream> bitStream = MemoryStream::Create();
+        Ptr<JsonWriter> bitWriter = JsonWriter::Create();
+        bitWriter->SetStream(bitStream);
+        VERIFY(bitWriter->Open());
+        bitWriter->BeginObject("component");
+        bitWriter->Add(Util::BitField<16>({ 0, 1, 9 }), "stages");
+        bitWriter->Add(7, "after");
+        bitWriter->End();
+        bitWriter->Close();
+
+        Ptr<JsonReader> bitReader = JsonReader::Create();
+        bitReader->SetStream(bitStream);
+        VERIFY(bitReader->Open());
+        VERIFY(bitReader->SetToNode("/component"));
+        Util::BitField<16> stages({ 2, 3 });
+        bitReader->Get<16>(stages, "stages");
+        VERIFY(stages.IsSet(0) && stages.IsSet(1) && stages.IsSet(9));
+        VERIFY(!stages.IsSet(2) && !stages.IsSet(3));
+        VERIFY(bitReader->GetInt("after") == 7);
+        bitReader->Close();
+    }
 }
 
 } // namespace Test

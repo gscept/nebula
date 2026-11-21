@@ -44,9 +44,10 @@ PhysicsFeatureUnit::OnAttach()
     // the PhysicsActor component is the handle which owns the physx actor of an entity. The body and
     // collider components ensure a handle on init and release their actor and shapes on decay,
     // everything in between setup and teardown is a change, and changes are pinged by whoever made them
-    this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
+    this->RegisterComponentType<PhysicsActor>({ .decay = true, .runtime = true, .OnInit = &PhysicsManager::InitPhysicsActor });
     this->RegisterComponentType<IsKinematic>();
-    this->RegisterComponentType<Character>({ .decay = true });
+    // the controller is made by the game, a saved id would point at a controller of another session
+    this->RegisterComponentType<Character>({ .decay = true, .runtime = true });
 
     this->RegisterComponentType<PhysicsResource>({ .OnInit = &PhysicsManager::InitPhysicsResource, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::PhysicsResource> });
     this->RegisterComponentType<Rigidbody>({ .OnInit = &PhysicsManager::InitRigidbody, .OnDecay = &PhysicsManager::OnBodyComponentDecay<PhysicsFeature::Rigidbody> });

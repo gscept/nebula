@@ -22,6 +22,8 @@ public:
     static void DestroyCharacter(CharacterId characterId);
     ///
     static Character& GetCharacter(CharacterId id);
+    ///
+    static bool IsValid(CharacterId id);
 
     /// Sets the characters half extents. Character needs to be of box type.
     static void SetCharacterBoxSize(CharacterId characterId, Math::vec3 const& halfExtents);
