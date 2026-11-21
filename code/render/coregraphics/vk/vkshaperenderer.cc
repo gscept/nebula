@@ -94,7 +94,7 @@ VkShapeRenderer::Open()
 
     for (IndexT i = 0; i < RenderShape::Primitives - 1; i++)
     {
-        this->shapeMeshResources[types[i]] = CreateResource(meshResourceNames[i], "render_system", nullptr, nullptr, true);
+        this->shapeMeshResources[types[i]] = CreateResource(meshResourceNames[i], "render_system", nullptr, nullptr, { .immediate = true });
         this->meshes[types[i]] = MeshResourceGetMesh(this->shapeMeshResources[i], 0);
     }
 

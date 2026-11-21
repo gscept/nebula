@@ -246,7 +246,7 @@ TerrainEditor::TerrainEditor()
         CoreGraphics::CmdDraw(cmdBuf, CoreGraphics::MeshGetPrimitiveGroup(mesh, 0));
     });
 
-    terrainEditorState.brushMeshResource = Resources::CreateResource("sysmsh:cube.nvx", "system", nullptr, nullptr, true, false);
+    terrainEditorState.brushMeshResource = Resources::CreateResource("sysmsh:cube.nvx", "system", nullptr, nullptr, { .immediate = true, .stream = false });
     terrainEditorState.brushMesh = CoreGraphics::MeshResourceId(terrainEditorState.brushMeshResource);
 }
 
@@ -477,7 +477,7 @@ TerrainEditor::Run(SaveMode save)
             CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::GraphicsQueueType);
 
 
-        }, nullptr, false, false);
+        }, nullptr, { .stream = false });
 
         for (IndexT i = 0; i < selectedTerrainResource.biomes.size(); i++)
         {
@@ -525,22 +525,24 @@ TerrainEditor::Run(SaveMode save)
                 CoreGraphics::CmdBlit(copyCmdBuf, tex.resource, {fromCpy}, mask, {toCpy});
                 CoreGraphics::BarrierPop(copyCmdBuf);
                 CoreGraphics::BarrierPop(copyCmdBuf);
-            }, false);
+
+                CoreGraphics::UnlockGraphicsSetupCommandBuffer(copyCmdBuf);
+            }, { .stream = false });
             Dynui::ImguiTextureId imguiHandle{ .nebulaHandle = biomeTextures.maskTex, .splat = true };
             biomeTextures.imguiMaskId = Dynui::AllocateImguiTextureId(imguiHandle);
 
             for (IndexT j = 0; j < 4; j++)
             {
                 biomeTextures.albedoPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
-                biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.albedoResources[j] = Resources::CreateResource(biomeTextures.albedoPaths[j], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 biomeTextures.imguiAlbedoId[j] = Dynui::AllocateImguiTextureId({biomeTextures.albedoResources[j].resource});
 
                 biomeTextures.normalsPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->normals);
-                biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.normalsResources[j] = Resources::CreateResource(biomeTextures.normalsPaths[j], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 biomeTextures.imguiNormalId[j] = Dynui::AllocateImguiTextureId({biomeTextures.normalsResources[j].resource});
 
                 biomeTextures.materialPaths[j] = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->material);
-                biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, true, false);
+                biomeTextures.materialResources[j] = Resources::CreateResource(biomeTextures.materialPaths[j], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 biomeTextures.imguiMaterialId[j] = Dynui::AllocateImguiTextureId({biomeTextures.materialResources[j].resource});
 
                 biomeSettings.materials[j].albedo = IO::Path::FolderAndFile("tex", biomeComp->materials[j]->albedo);
@@ -560,7 +562,7 @@ TerrainEditor::Run(SaveMode save)
             const std::unique_ptr<Render::VegetationMeshT>& vegetationComp = selectedTerrainResource.vegetation[i];
             EditorVegetationMesh editorVegetationMesh;
 
-            editorVegetationMesh.maskTex = Resources::CreateResource(IO::Path::FolderAndFile("tex", vegetationComp->mask), "editor", nullptr, nullptr, true, false);
+            editorVegetationMesh.maskTex = Resources::CreateResource(IO::Path::FolderAndFile("tex", vegetationComp->mask), "editor", nullptr, nullptr, { .immediate = true, .stream = false });
             Dynui::ImguiTextureId imguiHandle{ .nebulaHandle = editorVegetationMesh.maskTex, .splat = true };
             editorVegetationMesh.imguiMaskId = Dynui::AllocateImguiTextureId(imguiHandle);
 
@@ -597,8 +599,10 @@ TerrainEditor::Run(SaveMode save)
                     CoreGraphics::CmdBlit(copyCmdBuf, tex.resource, {fromCpy}, mask, {toCpy});
                     CoreGraphics::BarrierPop(copyCmdBuf);
                     CoreGraphics::BarrierPop(copyCmdBuf);
+
+                    CoreGraphics::UnlockGraphicsSetupCommandBuffer(copyCmdBuf);
                 },
-                false
+                { .stream = false }
             );
         }
 
@@ -805,17 +809,17 @@ TerrainEditor::Run(SaveMode save)
                 auto& matT = biomeT->materials.back();
                 textures.albedoPaths[i] = IO::Path::FolderAndFile("tex", "system/white");
                 matT->albedo = textures.albedoPaths[i].AsString();
-                textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, true, false);
+                textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 textures.imguiAlbedoId[i] = Dynui::AllocateImguiTextureId({textures.albedoResources[i].resource});
 
                 textures.normalsPaths[i] = IO::Path::FolderAndFile("tex", "system/nobump");
                 matT->normals = textures.normalsPaths[i].AsString();
-                textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, true, false);
+                textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 textures.imguiNormalId[i] = Dynui::AllocateImguiTextureId({textures.normalsResources[i].resource});
 
                 textures.materialPaths[i] = IO::Path::FolderAndFile("tex", "system/default_material");
                 matT->material = textures.materialPaths[i].AsString();
-                textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, true, false);
+                textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, { .immediate = true, .stream = false });
                 textures.imguiMaterialId[i] = Dynui::AllocateImguiTextureId({textures.materialResources[i].resource});
             }
             biomeT->name = Util::String::Sprintf("Biome %d", terrainEditorState.biomes.Size() - 1);
@@ -907,28 +911,36 @@ TerrainEditor::Run(SaveMode save)
                                 {
                                     case 0:
                                         biomeTextureSet.albedoPaths[i] = filePath;
-                                        biomeTextureSet.albedoResources[i] = Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
+                                        Resources::CreateResource(biomeTextureSet.albedoPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
                                         {
-                                                Dynui::SetImguiTextureIdData(
-                                                    biomeTextureSet.imguiAlbedoId[i], {id.resource}
-                                                );
-                                        }, nullptr, true, false);
+                                            biomeTextureSet.albedoResources[i] = id;
+                                            Dynui::SetImguiTextureIdData(
+                                                biomeTextureSet.imguiAlbedoId[i], {id.resource}
+                                            );
+                                        }, nullptr, { .immediate = true, .stream = false });
                                             
                                         break;
                                     case 1:
                                         biomeTextureSet.normalsPaths[i] = filePath;
-                                        biomeTextureSet.normalsResources[i] = Resources::CreateResource(biomeTextureSet.normalsPaths[i], "terrain", nullptr, nullptr, true, false);
-                                        Dynui::SetImguiTextureIdData(
-                                            biomeTextureSet.imguiNormalId[i], {biomeTextureSet.normalsResources[i].resource}
-                                        );
+                                        Resources::CreateResource(biomeTextureSet.normalsPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
+                                        {
+                                            biomeTextureSet.normalsResources[i];
+                                            Dynui::SetImguiTextureIdData(
+                                                biomeTextureSet.imguiNormalId[i], { biomeTextureSet.normalsResources[i].resource }
+                                            );
+                                        }, nullptr, { .immediate = true, .stream = false });
+                                        
                                         break;
                                     case 2:
                                         biomeTextureSet.materialPaths[i] = filePath;
-                                        biomeTextureSet.materialResources[i] = Resources::CreateResource(biomeTextureSet.materialPaths[i], "terrain", nullptr, nullptr, true, false);
-                                        Dynui::SetImguiTextureIdData(
-                                            biomeTextureSet.imguiMaterialId[i],
-                                            {biomeTextureSet.materialResources[i].resource}
-                                        );
+                                        Resources::CreateResource(biomeTextureSet.materialPaths[i], "terrain", [i, &biomeTextureSet](const Resources::ResourceId id)
+                                        {
+                                            biomeTextureSet.materialResources[i] = id;
+                                            Dynui::SetImguiTextureIdData(
+                                                biomeTextureSet.imguiMaterialId[i], { biomeTextureSet.materialResources[i].resource }
+                                            );
+                                        }, nullptr, { .immediate = true, .stream = false });
+                                        
                                         break;
                                     default:
                                         n_error("Can't happen");

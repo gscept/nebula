@@ -135,7 +135,7 @@ DDGIContext::Create()
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = DDGIContext::OnRenderDebug;
 
-    state.debugMeshResource = Resources::CreateResource("sysmsh:sphere.nvx", "GI", nullptr, nullptr, true, false);
+    state.debugMeshResource = Resources::CreateResource("sysmsh:sphere.nvx", "GI", nullptr, nullptr, { .immediate = true, .stream = false });
     state.debugMesh = CoreGraphics::MeshResourceGetMesh(state.debugMeshResource, 0);
 #endif
 

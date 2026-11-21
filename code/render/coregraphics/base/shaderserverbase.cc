@@ -232,7 +232,7 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 		[shdName](const ResourceId id)
 	{
 		n_error("Failed to load shader '%s'!\n", shdName.Value());
-	}, true);
+	}, { .immediate = true });
 	
 	this->shaders.Add(shdName, sid);
 }

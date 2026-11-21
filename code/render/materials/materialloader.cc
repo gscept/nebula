@@ -480,7 +480,7 @@ LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const M
             {
                 MaterialSetTexture(id, value->hashedName, rid);
             }
-        }, immediate);
+        }, { .immediate = immediate });
 
         CoreGraphics::TextureIdLock _0(tex);
         if (value->bindlessOffset != 0xFFFFFFFF)
