@@ -1300,6 +1300,7 @@ CmdCopy(
     for (IndexT i = 0; i < copies.Size(); i++)
     {
         n_assert(from[i].bits != ImageBits::Auto && to[i].bits != ImageBits::Auto);
+        n_assert(from[i].region.width() == to[i].region.width() && from[i].region.height() == to[i].region.height());
         VkImageCopy& copy = copies[i];
         copy.srcSubresource = { VkTypes::AsVkImageAspectFlags(from[i].bits), (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
         copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
