@@ -117,6 +117,15 @@ ViewportPanel::BeginWindow()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     if (!EditorPanel::BeginWindow())
     {
+        // A closed panel does not draw, so a drag that was held when it closed has no frame to
+        // read its release on and keeps the cursor locked. It lets go here instead
+        if (this->cameraButton >= 0)
+        {
+            this->cameraButton = -1;
+            this->core->SetCameraCapture(false);
+            this->OnLockMouse(false);
+        }
+
         this->OnCanvasClosed();
         return false;
     }
@@ -259,7 +268,7 @@ ViewportPanel::Draw()
     {
         // Escape lets go of the camera rather than running the tool chain on a frame the camera
         // drag owns the cursor on
-        if (ImGui::IsMouseReleased(this->cameraButton) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+        if (!ImGui::IsMouseDown(this->cameraButton) || ImGui::IsKeyPressed(ImGuiKey_Escape))
         {
             this->cameraButton = -1;
             this->core->SetCameraCapture(false);
