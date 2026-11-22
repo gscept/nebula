@@ -1,0 +1,194 @@
+{
+    "Nebula": {
+        "version": 3,
+        "LocalTextures": [
+            {
+                "name": "EditorScene",
+                "format": "R11G11B10F",
+                "usage": "Render|TransferSource",
+                "relativeSize": [
+                    1.0,
+                    1.0
+                ],
+                "type": "Texture2D"
+            },
+            {
+                "name": "ZBufferEditor",
+                "format": "D32",
+                "usage": "Render|Sample",
+                "relativeSize": [
+                    1.0,
+                    1.0
+                ],
+                "type": "Texture2D"
+            },
+            {
+                "name": "EditorOutput",
+                "format": "SRGBA8",
+                "usage": "Render|Sample",
+                "relativeSize": [
+                    1.0,
+                    1.0
+                ],
+                "type": "Texture2D"
+            }
+        ],
+        "Submissions": [
+            {
+                "name": "EditorView",
+                "queue": "Graphics",
+                "last_submit": true,
+                "_comment": "The scene the editor's canvas shows. The canvas is the viewport, so the scene is drawn at the canvas size",
+                "ops": [
+                    {
+                        "render": {
+                            "name": "Opaque Pass Editor",
+                            "depth": {
+                                "name": "ZBufferEditor",
+                                "clear_depth": 1,
+                                "clear_stencil": 0,
+                                "flags": "Store|StoreStencil"
+                            },
+                            "targets": [
+                                {
+                                    "name": "EditorScene",
+                                    "clear": [
+                                        0.0,
+                                        0.0,
+                                        0.0,
+                                        0.0
+                                    ],
+                                    "flags": "Store"
+                                }
+                            ],
+                            "ops": [
+                                {
+                                    "batch": {
+                                        "name": "FlatGeometryLit"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "render": {
+                            "name": "Sky Pass Editor",
+                            "targets": [
+                                {
+                                    "name": "EditorScene",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "depth": {
+                                "name": "ZBufferEditor",
+                                "flags": "Load|Store"
+                            },
+                            "ops": [
+                                {
+                                    "batch": {
+                                        "name": "Background"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "render": {
+                            "name": "Alpha Pass Editor",
+                            "targets": [
+                                {
+                                    "name": "EditorScene",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "depth": {
+                                "name": "ZBufferEditor",
+                                "flags": "Load|Store"
+                            },
+                            "ops": [
+                                {
+                                    "batch": {
+                                        "name": "FlatGeometryAlphaLit"
+                                    }
+                                },
+                                {
+                                    "batch": {
+                                        "name": "ParticleLit"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "render": {
+                            "name": "Finalize Editor",
+                            "targets": [
+                                {
+                                    "name": "EditorOutput",
+                                    "clear": [
+                                        0.0,
+                                        0.0,
+                                        0.0,
+                                        0.0
+                                    ],
+                                    "flags": "Clear|Store"
+                                }
+                            ],
+                            "ops": [
+                                {
+                                    "fullscreen_effect": {
+                                        "name": "Finalize",
+                                        "shader": "system_shaders/editor/editor_preview_finalize",
+                                        "mask": "Main",
+                                        "namespace": "EditorPreviewFinalize",
+                                        "constantBlockName": "FinalizeUniforms",
+                                        "variables": [
+                                            {
+                                                "semantic": "DepthTexture",
+                                                "value": "ZBufferEditor",
+                                                "type": "textureHandle"
+                                            },
+                                            {
+                                                "semantic": "ColorTexture",
+                                                "value": "EditorScene",
+                                                "type": "textureHandle"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "render": {
+                            "name": "Im3D Editor",
+                            "targets": [
+                                {
+                                    "name": "EditorOutput",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "depth": {
+                                "name": "ZBufferEditor",
+                                "flags": "Load"
+                            },
+                            "ops": [
+                                {
+                                    "subgraph": {
+                                        "name": "Im3D"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "transition": {
+                            "name": "EditorOutput",
+                            "stage": "PixelShaderRead"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

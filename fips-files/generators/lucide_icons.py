@@ -7,9 +7,9 @@ hundred of them resolve to a different glyph than the name says. The font is wha
 the font is the source of truth.
 
 The input is the name list in the module. The font comes as an argument, because it lives in the
-engine's font folder.
+engine's font folder. The output is the table and the codepoint ranges ImGui bakes.
 """
-Version = 1
+Version = 2
 
 import pathlib
 
@@ -50,6 +50,23 @@ def codepoints(names, font_path) :
     return sorted((name, by_name[name]) for name in names)
 
 
+def glyph_ranges(entries) :
+    """the codepoints as the range list ImGui reads. Two values per range, values inclusive, the list
+    ends with zero. Consecutive codepoints become one range"""
+    cps = sorted(set(cp for _, cp in entries))
+    ranges = []
+    i = 0
+    while i < len(cps) :
+        start = cps[i]
+        end = start
+        while i + 1 < len(cps) and cps[i + 1] == end + 1 :
+            end = cps[i + 1]
+            i += 1
+        ranges.append((start, end))
+        i += 1
+    return ranges
+
+
 def generateHeader(hdrPath, entries) :
     with open(hdrPath, 'w') as f :
         f.write(TAG + '\n')
@@ -67,6 +84,7 @@ def generateHeader(hdrPath, entries) :
             BANNER,
             '#pragma once',
             '#include "foundation/stdneb.h"',
+            '#include "imgui.h"',
             '',
             'namespace Editor',
             '{',
@@ -84,6 +102,11 @@ def generateHeader(hdrPath, entries) :
             '',
             '/// the glyph for an icon name, or nullptr when the name is not in the table',
             'const char* IconGlyph(const char* name);',
+            '',
+            '/// the codepoints as the range list ImGui reads. Two values per range, values inclusive,',
+            '/// the list ends with zero. The codepoints are in the private use area, which is outside',
+            '/// the range ImGui bakes by default',
+            'extern const ImWchar IconGlyphRanges[];',
             '',
             '} // namespace Editor',
             ''
@@ -113,6 +136,11 @@ def generateSource(srcPath, entries) :
             '};',
             '',
             'const IndexT NumIcons = %d;' % len(entries),
+            '',
+            'const ImWchar IconGlyphRanges[] = {',
+        ] + ['    0x%04X, 0x%04X,' % (start, end) for start, end in glyph_ranges(entries)] + [
+            '    0,',
+            '};',
             '',
             BANNER,
             '/**',

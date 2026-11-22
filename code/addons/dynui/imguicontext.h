@@ -19,6 +19,7 @@
 #include "imguiinputhandler.h"
 #include "memory/arenaallocator.h"
 #include "frame/framecode.h"
+#include "util/delegate.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
@@ -64,7 +65,6 @@ void DeallocateImguiTextureId(Ids::Id32 id);
 extern ImFont* ImguiFont;
 extern ImFont* ImguiBoldFont;
 extern ImFont* ImguiItFont;
-extern ImFont* ImguiIconFont;
 
 class ImguiContext : public Graphics::GraphicsContext
 {
@@ -86,6 +86,10 @@ public:
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);
 
+    /// the keys a text field did not take. The callback answers whether it took one, and the event
+    /// does not go on to the input server when it did
+    static void SetKeyCallback(Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)> callback);
+
     /// called if the window size has changed
     static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);
     /// called before frame
@@ -103,6 +107,9 @@ public:
 
 private:
     static void RecoverImGuiContextErrors();
+
+    /// the keys a text field did not take
+    static Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)> keyCallback;
 };
 
 /// Helper function to recreate the ImGUI close button used for windows and tabs

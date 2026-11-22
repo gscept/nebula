@@ -187,6 +187,9 @@ private:
     void DrawGridButton();
     /// the snapping button, which is the snapping's on or off, and the popup of what it snaps to
     void DrawSnapButton();
+    /// the panels button, which is the list of every panel the game registered and the dropdown that
+    /// opens or closes each one
+    void DrawPanelsButton(const char* glyph);
     /// run the actions the panels queued during the draw
     void FlushActions();
 

@@ -66,6 +66,9 @@ public:
 
     /// called before frame
     static void OnPrepareView(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
+    /// the view the gizmos are drawn into. The app data is prepared for this view only, because the
+    /// draw list is finished once per frame
+    static void SetView(const Graphics::ViewId view);
     /// called when rendering a frame batch
     static void Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex);
            

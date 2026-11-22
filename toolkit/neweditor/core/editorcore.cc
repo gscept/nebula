@@ -20,6 +20,7 @@
 #include "neweditor/widgets/commandpalette.h"
 #include "neweditor/widgets/keybindsmodal.h"
 #include "neweditor/base/drawsurface.h"
+#include "neweditor/base/iconfont.h"
 #include "neweditor/base/iconregistry.h"
 #include "neweditor/base/palette.h"
 #include "appgame/gameapplication.h"
@@ -50,6 +51,7 @@ static const char* const ToolIconNames[NumToolIds] = { "mouse-pointer-2", "move-
 // and not the labels
 static const char* GridSettingsPopup = "grid_settings";
 static const char* SnapSettingsPopup = "snap_settings";
+static const char* PanelsPopup = "panels";
 
 //------------------------------------------------------------------------------
 /**
@@ -201,6 +203,10 @@ EditorCore::Open()
 {
     // The parts that nothing injected read the shell through the registry
     EditorFeatureRegistry::SetShell(this);
+
+    // The face the glyphs draw with. It needs an ImGui context, which a host has made before the
+    // editor opens
+    LoadIconFont();
 
     // The panels the features pushed. Every feature is attached before the editor opens, so this is
     // the point
@@ -491,17 +497,21 @@ EditorCore::DrawShell()
 
         ImGui::SameLine();
 
+        const char* panelsGlyph = IconGlyph("layout-panel-left");
         const char* paletteGlyph = IconGlyph("square-terminal");
         const char* keybindGlyph = IconGlyph("keyboard");
 
-        if (paletteGlyph != nullptr && keybindGlyph != nullptr)
+        if (panelsGlyph != nullptr && paletteGlyph != nullptr && keybindGlyph != nullptr)
         {
+            // An icon button costs the glyph plus the frame padding on one side, and the group is put
+            // at the right end of the bar by what the three measure. The last button has the window
+            // padding after it
             const ImGuiStyle& style = ImGui::GetStyle();
-            const float paletteWidth = ImGui::CalcTextSize(paletteGlyph).x + style.FramePadding.x;
-            const float keybindWidth = ImGui::CalcTextSize(keybindGlyph).x + style.FramePadding.x;
+            const float groupWidth = ImGui::CalcTextSize(panelsGlyph).x + ImGui::CalcTextSize(paletteGlyph).x +
+                ImGui::CalcTextSize(keybindGlyph).x + 3 * style.FramePadding.x + 2 * style.ItemSpacing.x +
+                style.WindowPadding.x + style.FramePadding.x;
 
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
-                paletteWidth - keybindWidth - style.ItemSpacing.x - style.WindowPadding.x - style.FramePadding.x);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - groupWidth);
 
             // The glyph is what the button is drawn as, so each is id by what it opens rather than
             // by the glyph
@@ -515,6 +525,12 @@ EditorCore::DrawShell()
             ImGui::PushID("keybinds");
             if (IconButton(keybindGlyph, "Keybinds"))
                 this->ExecuteCommand("keybinds");
+            ImGui::PopID();
+
+            ImGui::SameLine();
+
+            ImGui::PushID("panels");
+            this->DrawPanelsButton(panelsGlyph);
             ImGui::PopID();
         }
     }
@@ -876,6 +892,39 @@ EditorCore::DrawSnapButton()
     }
 
     ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+    The panels button and the dropdown it opens. The rows are the core's panel list rather than a set
+    written for a particular game, because a game can add a panel at its own attach and the core
+    cannot know which ones it has. Each row is that panel's window, and the tick is whether the core
+    draws it this frame.
+
+    Closing a row does not take the panel out of the layout, it only stops the core from drawing it,
+    which is the same thing the Window menu does, and both read the same flag, so the two agree.
+*/
+void
+EditorCore::DrawPanelsButton(const char* glyph)
+{
+    if (IconButton(glyph, "Panels"))
+        ImGui::OpenPopup(PanelsPopup);
+
+    if (!ImGui::BeginPopup(PanelsPopup))
+        return;
+
+    for (IndexT i = 0; i < this->panels.Size(); i++)
+    {
+        Ptr<EditorPanel> panel = this->panels[i];
+
+        // The value is read into a local and written back when the row is ticked, because the panel
+        // keeps its own open flag and there is nothing here to write through
+        bool open = panel->IsOpen();
+        if (ImGui::Checkbox(panel->GetName().AsCharPtr(), &open))
+            panel->SetOpen(open);
+    }
+
+    ImGui::EndPopup();
 }
 
 //------------------------------------------------------------------------------

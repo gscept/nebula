@@ -23,6 +23,10 @@
 #include "imgui.h"
 
 #include "frame/default.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorview.h"
+#include "appgame/gameapplication.h"
+#endif
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -60,6 +64,9 @@ struct Im3dState
     byte* vertexPtr;
     Math::vec2 viewPortPosition{ 0.0f, 0.0f };
     Math::vec2 viewPortSize{ 1.0f, 1.0f };
+
+    /// the view the shapes are drawn into
+    Graphics::ViewId view;
 };
 static Im3dState imState;
 
@@ -78,6 +85,44 @@ Im3dContext::Im3dContext()
 Im3dContext::~Im3dContext()
 {
     //empty
+}
+
+//------------------------------------------------------------------------------
+/**
+    The shapes for the script instance that draws them. Im3d's draw list is finished inside, so this
+    runs once per frame
+*/
+static void
+DrawShapes(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+{
+    Im3d::Im3dContext::Render(cmdBuf, frame);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+CreatePipelines(const CoreGraphics::RenderPassId pass)
+{
+    if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
+        CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
+    imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+
+    if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
+        CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
+    imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
+
+    if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
+        CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
+    imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+
+    if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
+        CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
+    imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
+
+    if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
+        CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
+    imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
 }
 
 //------------------------------------------------------------------------------
@@ -116,32 +161,21 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    FrameScript_default::RegisterSubgraph_Im3D_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    // The shapes are drawn by one script instance per frame. The editor's canvas is its own
+    // instance, so the shapes go there while the editor is open
+    imState.view = Graphics::GraphicsServer::Instance()->GetView("mainview");
+#if WITH_NEBULA_EDITOR
+    if (App::GameApplication::IsEditorEnabled())
     {
-        Render(cmdBuf, frame);
-    });
-    FrameScript_default::RegisterSubgraphPipelines_Im3D_Render([](const CoreGraphics::RenderPassId pass)
+        FrameScript_editorview::RegisterSubgraph_Im3D_Render(DrawShapes);
+        FrameScript_editorview::RegisterSubgraphPipelines_Im3D_Render(CreatePipelines);
+    }
+    else
+#endif
     {
-        if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
-        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
-
-        if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
-        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
-
-        if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
-        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
-
-        if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
-        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
-
-        if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
-        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, CoreGraphics::InvalidPassId, 0, pass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
-    });
+        FrameScript_default::RegisterSubgraph_Im3D_Render(DrawShapes);
+        FrameScript_default::RegisterSubgraphPipelines_Im3D_Render(CreatePipelines);
+    }
     Im3d::NewFrame();
 
 }
@@ -156,6 +190,15 @@ Im3dContext::Discard()
 
     CoreGraphics::DestroyBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetView(const Graphics::ViewId view)
+{
+    imState.view = view;
 }
 
 //------------------------------------------------------------------------------
@@ -385,7 +428,7 @@ Im3dContext::OnPrepareView(const Graphics::ViewId view, const Graphics::FrameCon
 {
     AppData& ad = GetAppData();
 
-    if (view != GraphicsServer::Instance()->GetView("mainview"))
+    if (view != imState.view)
         return;
 
     const Math::rectangle<int>& viewport = ViewGetViewport(view);

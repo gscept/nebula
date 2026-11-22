@@ -7,6 +7,9 @@
     core. A feature contributes at its own attach, so the editor is attached before the features it
     contributes to.
 
+    The panels draw at the start of the frame. The draw context is opened there and closed before the
+    views run, so the draw has to be between those.
+
     The host gives the draw context and the keys. This part does not know which renderer owns the
     context, and it calls nothing on one.
 
@@ -40,7 +43,7 @@ public:
     void OnAttach() override;
     void OnActivate() override;
     void OnDeactivate() override;
-    void OnFrame() override;
+    void OnBeginFrame() override;
 
 private:
     /// console command for play-in-editor

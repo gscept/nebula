@@ -16,6 +16,7 @@
 #include "neweditor/panels/filebrowserpanel.h"
 #include "neweditor/panels/inspectorpanel.h"
 #include "neweditor/panels/outlinepanel.h"
+#include "neweditor/panels/profilerpanel.h"
 #include "input/inputserver.h"
 #include "util/delegate.h"
 
@@ -84,6 +85,7 @@ EditorFeatureUnit::OnAttach()
     EditorFeatureRegistry::RegisterPanel(InspectorPanel::Create());
     EditorFeatureRegistry::RegisterPanel(OutlinePanel::Create());
     EditorFeatureRegistry::RegisterPanel(FileBrowserPanel::Create());
+    EditorFeatureRegistry::RegisterPanel(ProfilerPanel::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -154,9 +156,9 @@ EditorFeatureUnit::OnActivate()
 /**
 */
 void
-EditorFeatureUnit::OnFrame()
+EditorFeatureUnit::OnBeginFrame()
 {
-    FeatureUnit::OnFrame();
+    FeatureUnit::OnBeginFrame();
 
     if (this->core == nullptr)
         return;

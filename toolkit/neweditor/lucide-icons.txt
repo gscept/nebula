@@ -19,6 +19,7 @@ chevron-down
 chevron-right
 copy
 keyboard
+layout-panel-left
 minus
 pencil-line
 play

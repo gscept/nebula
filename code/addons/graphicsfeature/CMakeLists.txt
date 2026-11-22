@@ -1,5 +1,9 @@
 nebula_begin_module(graphicsfeature)
 fips_deps(render application dynui nflatbuffer)
+if(N_EDITOR)
+    # The feature defines its own editor contribution, so it needs the editor's registry
+    fips_deps(neweditor)
+endif()
 add_addon_hook(tbui)
 target_precompile_headers(graphicsfeature PRIVATE <application/stdneb.h>)
 fips_ide_group(features)
@@ -22,6 +26,13 @@ fips_dir(components)
 		lighting.json
 		model.json
         terrain.json
+	)
+fips_dir(editor)
+	fips_files(
+		graphicseditor.h
+		graphicseditor.cc
+		graphicsprofilerpanel.h
+		graphicsprofilerpanel.cc
 	)
 nebula_end_module()
 

@@ -24,8 +24,12 @@ fips_dir(base)
         drawsurface.cc
         editorlog.h
         editorlog.cc
+        iconfont.h
+        iconfont.cc
         palette.h
         palette.cc
+        timeline.h
+        timeline.cc
     )
 
 fips_dir(api)
@@ -169,6 +173,10 @@ fips_dir(panels)
         inspectorpanel.cc
         outlinepanel.h
         outlinepanel.cc
+        profilerpanel.h
+        profilerpanel.cc
+        viewportpanel.h
+        viewportpanel.cc
     )
 
 fips_dir(extensions)

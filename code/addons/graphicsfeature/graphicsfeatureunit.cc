@@ -23,6 +23,9 @@
 #include "posteffects/ssaocontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
+#if WITH_NEBULA_EDITOR
+#include "graphicsfeature/editor/graphicseditor.h"
+#endif
 #include "terrain/terraincontext.h"
 #include "vegetation/vegetationcontext.h"
 #include "posteffects/histogramcontext.h"
@@ -95,6 +98,10 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
     this->RegisterComponentType<Terrain>({ .decay = true, .OnInit = &GraphicsManager::InitTerrain });
     this->RegisterComponentType<Camera>();
+
+#if WITH_NEBULA_EDITOR
+    RegisterEditorContributions();
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -306,6 +313,12 @@ GraphicsFeatureUnit::OnActivate()
 void
 GraphicsFeatureUnit::OnDeactivate()
 {
+#if WITH_NEBULA_EDITOR
+    // The delegates are taken back before the contexts they draw through go away. The panel itself is
+    // released by the editor, which has to be deactivated before this feature for that to be in order
+    ClearEditorContributions();
+#endif
+
     this->RemoveManager(this->cameraManager);
     this->RemoveManager(this->graphicsManager);
     this->cameraManager = nullptr;
