@@ -23,6 +23,7 @@
 #include "neweditor/api/editorfeature.h"
 #include "neweditor/api/shell.h"
 #include "neweditor/input/editorkeybinds.h"
+#include "neweditor/core/panelsettings.h"
 #include "neweditor/base/editorlog.h"
 #include "neweditor/model/scene.h"
 #include "neweditor/model/selectioncontext.h"
@@ -190,6 +191,8 @@ private:
     /// the panels button, which is the list of every panel the game registered and the dropdown that
     /// opens or closes each one
     void DrawPanelsButton(const char* glyph);
+    /// put the panels' open states into the settings and write the file when one of them changed
+    void UpdatePanelSettings();
     /// run the actions the panels queued during the draw
     void FlushActions();
 
@@ -270,6 +273,8 @@ private:
     Util::Array<Util::Delegate<void()>> actions;
     Ptr<EditorLog> log;
     Ptr<StatusBar> statusBar;
+    /// which panels were open the last time the editor ran
+    Ptr<PanelSettings> panelSettings;
     Ptr<ToolContext> tools;
     /// the file dialog the File menu opens. It is part of the shell, not a window a user docks.
     Ptr<FileBrowserModal> fileBrowserModal;

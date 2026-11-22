@@ -161,6 +161,8 @@ fips_dir(core)
         editorfeatureunit.cc
         editorpanel.h
         editorpanel.cc
+        panelsettings.h
+        panelsettings.cc
     )
 
 fips_dir(panels)

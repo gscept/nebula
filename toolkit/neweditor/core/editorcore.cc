@@ -94,6 +94,10 @@ EditorCore::Setup()
 
     this->statusBar = StatusBar::Create();
 
+    // Which panels were open the last time the editor ran. The file is read at Open, because that is
+    // the point where the editor knows which panels it has
+    this->panelSettings = PanelSettings::Create();
+
     this->commands = EditorCommandSystem::Create();
     this->commands->Setup(this);
 
@@ -227,6 +231,17 @@ EditorCore::Open()
             n_warning("Could not setup panel '%s'\n", panel->GetName().AsCharPtr());
     }
 
+    // The open states are read here, once the panels are known, because a panel the file does not have
+    // is open: a file written by a game with a different set of panels should not close this game's
+    // panels
+    this->panelSettings->Setup(this);
+    this->panelSettings->Load();
+    for (IndexT i = 0; i < this->panels.Size(); i++)
+    {
+        Ptr<EditorPanel> panel = this->panels[i];
+        panel->SetOpen(this->panelSettings->IsOpen(panel->GetName()));
+    }
+
     this->opened = true;
     return true;
 }
@@ -300,6 +315,8 @@ EditorCore::Close()
         this->keybinds->Discard();
     if (this->clipboard != nullptr)
         this->clipboard->Discard();
+    if (this->panelSettings != nullptr)
+        this->panelSettings->Discard();
 
     this->focusedPanel = nullptr;
     this->log = nullptr;
@@ -958,6 +975,10 @@ EditorCore::Draw()
             panel->EndWindow();
     }
 
+    // The open flags are the panels' own, and ImGui's window close button changes one while the panel
+    // is drawing, so the settings are written from what the panels are after the frame has drawn
+    this->UpdatePanelSettings();
+
     // The file dialog draws after the panels so its popup ends up above them, and before the status
     // bar so a
     // message the dialog makes this frame shows this frame
@@ -982,6 +1003,33 @@ EditorCore::Draw()
     this->statusBar->Draw();
 
     this->FlushActions();
+}
+
+//------------------------------------------------------------------------------
+/**
+    The panels' open flags against what the file has. A panel the file does not have is open, so the
+    first time one is closed it is added to the records. The file is written only when a flag is
+    different from what it has, which is what keeps a session nobody touched from writing anything.
+*/
+void
+EditorCore::UpdatePanelSettings()
+{
+    if (this->panelSettings == nullptr)
+        return;
+
+    bool changed = false;
+    for (IndexT i = 0; i < this->panels.Size(); i++)
+    {
+        Ptr<EditorPanel> panel = this->panels[i];
+        if (this->panelSettings->IsOpen(panel->GetName()) == panel->IsOpen())
+            continue;
+
+        this->panelSettings->SetOpen(panel->GetName(), panel->IsOpen());
+        changed = true;
+    }
+
+    if (changed)
+        this->panelSettings->Save();
 }
 
 //------------------------------------------------------------------------------
