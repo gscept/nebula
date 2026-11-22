@@ -83,6 +83,11 @@ protected:
     /// so the render side hands its target back here
     virtual void OnCanvasClosed() {}
 
+    /// the camera the canvas shows in game mode. The render side answers with the entity it renders
+    /// through, the view it draws with, and the projection for the aspect the canvas has. False when it
+    /// has no game camera, and the panel keeps its own view
+    virtual bool OnGameView(Game::Entity& camera, Math::mat4& view, Math::mat4& projection, float aspect) { return false; }
+
 private:
     enum ViewMode
     {
@@ -112,6 +117,18 @@ private:
     bool mouseDownOnCanvas;
 
     bool focused;
+
+    /// the game camera the canvas is showing. Kept between frames so the name is only looked up when a
+    /// different camera becomes the active one
+    Game::Entity gameCamera;
+    /// the name the overlay shows for that camera
+    Util::String gameCameraName;
+
+    /// the view mode play switched the panel from, so a stop gives it back. -1 when the panel did not
+    /// move on its own
+    int autoViewMode;
+    /// whether the active scene was playing last frame, which is what a transition is measured against
+    bool wasPlaying;
 
     /// A file dragged in from the file browser. Invalid means no drop is in progress.
     Ptr<Editor::InstantiatePrefabCommand> fileDrop;
@@ -145,6 +162,10 @@ private:
 
     void SetViewMode(int mode);
     const char* ViewModeName(int mode) const;
+
+    /// the frame play started or stopped, which is what the cvar acts on. Returns true when the view
+    /// mode moved, which is the frame the window gets focused
+    bool OnPlayTransition();
 
     /// commands
     void CommandView(const Util::Array<Util::String>& args);

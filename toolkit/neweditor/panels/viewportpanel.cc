@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "neweditor/panels/viewportpanel.h"
 #include "neweditor/base/palette.h"
+#include "core/cvar.h"
 #include "neweditor/commands/setcomponentcommand.h"
 #include "neweditor/console/editorcommands.h"
 #include "neweditor/core/editorcore.h"
@@ -40,6 +41,9 @@ static const float ZoomSpeed = 0.6f;
 static const float FocusMargin = 1.5f;
 static const float MinFocusDistance = 1.0f;
 
+// pie will switch to game view if true, and reset to last view when stopped
+static Core::CVar* ed_focus_game_on_play = nullptr;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -51,6 +55,9 @@ ViewportPanel::ViewportPanel() :
     dragAnchor(Math::vec2(0, 0)),
     mouseDownOnCanvas(false),
     focused(false),
+    gameCamera(Game::Entity::Invalid()),
+    autoViewMode(-1),
+    wasPlaying(false),
     fileDropPoint(Math::vec3(0, 0, 0)),
     targetWidth(0),
     targetHeight(0)
@@ -100,6 +107,9 @@ ViewportPanel::OnSetup()
     this->core->GetKeybinds().Register("view.scene", Input::Key::F3, Input::Modifier::NoModifier, "view scene");
     this->core->GetKeybinds().Register("view.game", Input::Key::F4, Input::Modifier::NoModifier, "view game");
 
+    ed_focus_game_on_play = Core::CVarCreate(Core::CVarType::CVar_Int, "ed_focus_game_on_play", "1",
+        "Switch the viewport to game view when play starts");
+
     return true;
 }
 
@@ -111,6 +121,10 @@ ViewportPanel::OnSetup()
 bool
 ViewportPanel::BeginWindow()
 {
+    // The transition is read here rather than in Draw, because a collapsed panel does not draw but its
+    // mode still has to follow play
+    const bool moved = this->OnPlayTransition();
+
     if (!this->open && this->fileDrop.isvalid())
         this->AbortFileDrop();
 
@@ -129,6 +143,13 @@ ViewportPanel::BeginWindow()
         this->OnCanvasClosed();
         return false;
     }
+
+    // The frame the panel moves to game view is also the frame it takes the keyboard on, because the
+    // keys the panel no longer reads are the game's. Without the focus they stay with whichever panel
+    // has it
+    if (moved)
+        ImGui::SetWindowFocus();
+
     return true;
 }
 
@@ -235,7 +256,31 @@ ViewportPanel::Draw()
     // The projection follows the canvas, not the window, so the scene is not stretched inside the
     // panel
     const float aspect = float(width) / float(height);
-    const Math::mat4 projection = Math::perspfovrh(Math::deg2rad(this->fieldOfView), aspect, 0.01f, 1000.0f);
+
+    // Scene mode draws with the panel's camera. Game mode draws with the game's, which the render side
+    // answers for. A scene with no game camera keeps the panel's own view, and the overlay says so
+    Math::mat4 view = cam.view;
+    Math::mat4 projection = Math::perspfovrh(Math::deg2rad(this->fieldOfView), aspect, 0.01f, 1000.0f);
+
+    if (this->viewMode == ViewGame)
+    {
+        Game::Entity camera = Game::Entity::Invalid();
+        if (!this->OnGameView(camera, view, projection, aspect))
+            camera = Game::Entity::Invalid();
+
+        // The name is a lookup through the scene's records, so it is read again only when a different
+        // camera becomes the active one
+        if (camera != this->gameCamera)
+        {
+            this->gameCamera = camera;
+            this->gameCameraName = "";
+            if (camera != Game::Entity::Invalid())
+            {
+                Editor::Scene* scene = this->core->GetScene();
+                this->gameCameraName = scene->GetEditable(scene->ToEditorEntity(camera)).name;
+            }
+        }
+    }
 
     ImGui::Image(id, canvas);
 
@@ -245,16 +290,19 @@ ViewportPanel::Draw()
     this->dragAnchor = Math::vec2((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f);
 
     // The world basis in the top right corner of the canvas. It goes after the image, because the
-    // draw list is ordered by the calls made in the frame and the canvas would cover it
-    Editor::AxisIndicator::Draw(cam.view);
+    // draw list is ordered by the calls made in the frame and the canvas would cover it. Game view is
+    // the game's view, so the editor draws nothing over its canvas
+    if (this->viewMode != ViewGame)
+        Editor::AxisIndicator::Draw(view);
 
     const bool rightClicked = hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
     const bool middleClicked = hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle);
 
     // A camera drag does not need focus, because neither a right nor a middle click focuses a
     // window in ImGui. Without this the drag would only work in a panel that a left click had
-    // already focused
-    if (rightClicked || middleClicked)
+    // already focused. Game view does not take the drag, because the view it shows is the game's and
+    // not one the panel can turn
+    if (this->viewMode != ViewGame && (rightClicked || middleClicked))
     {
         // The cursor is hidden and locked while the drag runs, so it does not stop at the edge of
         // the window
@@ -300,7 +348,7 @@ ViewportPanel::Draw()
     // own: the cursor being over the canvas is the whole condition. While a camera drag holds the
     // cursor ImGui reports no position for it, so the drag that began over the canvas stands in for
     // the hover
-    const bool wheelOnCanvas = hovered || this->cameraButton >= 0;
+    const bool wheelOnCanvas = (hovered || this->cameraButton >= 0) && this->viewMode != ViewGame;
     if (wheelOnCanvas)
     {
         const float wheel = ImGui::GetIO().MouseWheel;
@@ -319,7 +367,7 @@ ViewportPanel::Draw()
     Editor::ToolView toolView;
     toolView.canvasMin = Math::vec2(min.x, min.y);
     toolView.canvasSize = Math::vec2(canvas.x, canvas.y);
-    toolView.view = cam.view;
+    toolView.view = view;
     toolView.projection = projection;
     toolView.frame = tools->GetFrame();
     toolView.hovered = hovered;
@@ -340,7 +388,9 @@ ViewportPanel::Draw()
             this->mouseDownOnCanvas = hovered;
 
         toolView.pressed = hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-        toolView.held = this->mouseDownOnCanvas && ImGui::IsMouseDown(ImGuiMouseButton_Left);
+        // Game view is a viewer: the click picks, but nothing is held, so a drag cannot arm and the
+        // tools cannot move the scene while the game is running
+        toolView.held = this->viewMode != ViewGame && this->mouseDownOnCanvas && ImGui::IsMouseDown(ImGuiMouseButton_Left);
         toolView.released = this->mouseDownOnCanvas && ImGui::IsMouseReleased(ImGuiMouseButton_Left);
 
         // a button that is up is not holding any gesture, seen on the canvas or not
@@ -402,10 +452,14 @@ ViewportPanel::Draw()
 
     // The tool's lines get queued here and go into the canvas when this frame renders. The handle
     // widget is an immediate ImGui control, so its pass both draws and reads this frame's drag, and
-    // the tools act on what it reported right after
-    ImGuizmo::BeginFrame();
+    // the tools act on what it reported right after. Game view draws nothing on the canvas and reads no
+    // drag, so only the pick pass runs
+    if (this->viewMode != ViewGame)
+    {
+        ImGuizmo::BeginFrame();
+        tools->DrawView(toolView);
+    }
 
-    tools->DrawView(toolView);
     tools->UpdateView(toolView);
 
     ImGui::SetCursorPosX(margin);
@@ -416,13 +470,19 @@ ViewportPanel::Draw()
     // hold and says so
     const bool invertSnap = ImGui::GetIO().KeyCtrl;
     Util::String overlay;
-    if (tools->SnapsToGrid() || tools->SnapsToIncrements() || invertSnap)
-        overlay.Format("%s   %s gizmo   snap %s%s   %.0f fps", this->viewMode == ViewGame ? "Game" : "Viewport",
-            tools->FrameName(tools->GetFrame()), tools->SnapSourceName(invertSnap), invertSnap ? " (ctrl)" : "",
-            ImGui::GetIO().Framerate);
+    if (this->viewMode == ViewGame)
+    {
+        // A viewer has no gizmo to name, so the line says which camera it is looking through instead
+        if (this->gameCamera == Game::Entity::Invalid())
+            overlay.Format("Game   no camera   %.0f fps", ImGui::GetIO().Framerate);
+        else
+            overlay.Format("Game   %s   %.0f fps", this->gameCameraName.AsCharPtr(), ImGui::GetIO().Framerate);
+    }
+    else if (tools->SnapsToGrid() || tools->SnapsToIncrements() || invertSnap)
+        overlay.Format("Viewport   %s gizmo   snap %s%s   %.0f fps", tools->FrameName(tools->GetFrame()),
+            tools->SnapSourceName(invertSnap), invertSnap ? " (ctrl)" : "", ImGui::GetIO().Framerate);
     else
-        overlay.Format("%s   %s gizmo   %.0f fps", this->viewMode == ViewGame ? "Game" : "Viewport",
-            tools->FrameName(tools->GetFrame()), ImGui::GetIO().Framerate);
+        overlay.Format("Viewport   %s gizmo   %.0f fps", tools->FrameName(tools->GetFrame()), ImGui::GetIO().Framerate);
     ImGui::TextUnformatted(overlay.AsCharPtr());
 
     const Game::TimeSource* time = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
@@ -434,11 +494,15 @@ ViewportPanel::Draw()
     // does not have the keyboard, and the frames the feedback loop takes to get there are drawn
     // here
     Editor::EditorCameraInput input = this->GatherInput();
-    cam.Update(input, (float)time->frameTime);
+
+    // Game view does not move the panel's camera, because the view it shows is the game's. The camera
+    // stays where the author left it for when the panel comes back to scene mode
+    if (this->viewMode != ViewGame)
+        cam.Update(input, (float)time->frameTime);
 
     // The render side draws with the view this frame's state produced. The render happens after the
     // panels have drawn, so this is the frame the image shows
-    this->OnRender(cam.view, projection);
+    this->OnRender(view, projection);
 }
 
 //------------------------------------------------------------------------------
@@ -476,10 +540,10 @@ ViewportPanel::CenterMouse()
 bool
 ViewportPanel::CanNavigate() const
 {
-    // Scene mode navigates when the panel has focus. Game mode navigates regardless of focus, which
-    // is how the game behaves. The camera drag is not part of this, because neither a right nor a
-    // middle click focuses a window
-    return this->viewMode == ViewGame || this->focused;
+    // Game view shows the game's camera, so the panel does not move it: the keys belong to the game.
+    // Scene mode navigates when the panel has focus. The camera drag is not part of this, because
+    // neither a right nor a middle click focuses a window
+    return this->viewMode != ViewGame && this->focused;
 }
 
 //------------------------------------------------------------------------------
@@ -492,7 +556,7 @@ ViewportPanel::GatherInput()
 {
     Editor::EditorCameraInput input = this->pendingInput;
 
-    if (this->viewMode == ViewGame || this->cameraButton >= 0)
+    if (this->CanNavigate() || this->cameraButton >= 0)
     {
         const float speed = this->moveSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? ShiftSpeedFactor : 1.0f);
 
@@ -540,6 +604,38 @@ ViewportPanel::ViewModeName(int mode) const
         break;
     }
     return "scene";
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ViewportPanel::OnPlayTransition()
+{
+    const bool playing = this->core->GetScene()->IsPlaying();
+    if (playing == this->wasPlaying)
+        return false;
+
+    this->wasPlaying = playing;
+
+    if (ed_focus_game_on_play == nullptr || Core::CVarReadInt(ed_focus_game_on_play) <= 0)
+        return false;
+
+    if (playing)
+    {
+        this->autoViewMode = this->viewMode;
+        this->SetViewMode(ViewGame);
+        return true;
+    }
+
+    if (this->autoViewMode >= 0)
+    {
+        this->SetViewMode(this->autoViewMode);
+        this->autoViewMode = -1;
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------

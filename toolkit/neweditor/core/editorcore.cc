@@ -459,8 +459,18 @@ EditorCore::DrawShell()
         ImGui::TextDisabled("|");
         ImGui::SameLine();
 
+        // Play. The button carries the accent color while the scene is simulating, the same way the
+        // tool row marks the active tool, so the bar says which tab is running
+        const bool playing = this->GetScene()->IsPlaying();
+        if (playing)
+            ImGui::PushStyleColor(ImGuiCol_Text, ColorFromHex(PaletteAccent));
+
         if (IconButton(IconGlyph("play"), "Play"))
             this->ExecuteCommand("pie start");
+
+        if (playing)
+            ImGui::PopStyleColor();
+
         ImGui::SameLine();
         if (IconButton(IconGlyph("square"), "Stop"))
             this->ExecuteCommand("pie stop");
