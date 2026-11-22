@@ -979,26 +979,37 @@ World::ExecuteAddComponentCommands()
         this->hierarchy->ResolvePending();
         return;
     }
-    this->addStagedQueue.QuickSortWithFunc(sortFunc);
-
-    auto* currentCmd = this->addStagedQueue.Begin();
-    auto* end = this->addStagedQueue.End();
-    while (currentCmd != end)
+    
+    // Loop and copy the queue for each iteration, as the queue might reallocate while iterating due to OnInit adding new components
+    // and we still want to add all component in a single frame
+    while (!this->addStagedQueue.IsEmpty())
     {
-        Entity currentEntity = currentCmd->entity;
-        auto* firstCmdOfEntity = currentCmd;
-        SizeT numEntityCmds = 0;
-        while (currentCmd != end && currentCmd->entity == currentEntity)
+        Util::Array<AddStagedComponentCommand> addCommands = this->addStagedQueue;
+        // sort by entity, so we can batch add components cheaply
+        addCommands.QuickSortWithFunc(sortFunc);
+        
+        // clear the add queue. this doesn't mean it's going to be empty after all OnInits have been executed, so we have to run another check
+        this->addStagedQueue.Reset();
+
+        auto* currentCmd = addCommands.Begin();
+        auto* end = addCommands.End();
+        while (currentCmd != end)
         {
-            numEntityCmds++;
-            currentCmd++;
+            Entity currentEntity = currentCmd->entity;
+            auto* firstCmdOfEntity = currentCmd;
+            SizeT numEntityCmds = 0;
+            while (currentCmd != end && currentCmd->entity == currentEntity)
+            {
+                numEntityCmds++;
+                currentCmd++;
+            }
+            AddStagedComponentsToEntity(currentEntity, firstCmdOfEntity, numEntityCmds);
         }
-        AddStagedComponentsToEntity(currentEntity, firstCmdOfEntity, numEntityCmds);
     }
+
     // release all memory of the staged components
     componentStageAllocator.Release();
-    addStagedQueue.Reset();
-
+    
     // An instance could not be computed when it was added because its components, or its parent's, were not in a
     // table yet. They are now, so resolve them
     this->hierarchy->ResolvePending();
