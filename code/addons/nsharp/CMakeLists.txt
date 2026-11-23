@@ -41,7 +41,7 @@ target_include_directories(nsharpbindings PUBLIC ${CODE_ROOT}/foundation ${DOTNE
 target_precompile_headers(nsharpbindings REUSE_FROM foundation)
 set_target_properties(nsharpbindings PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
-fips_begin_lib(nsharp)
+nebula_begin_lib(nsharp)
     fips_libs(foundation application input ${DOTNET_NETHOST_LIBRARIES})
     if(N_EDITOR)
         # The feature defines its own editor contribution, so it needs the editor's registry
@@ -77,7 +77,7 @@ fips_begin_lib(nsharp)
             scripteditor.h
             scripteditor.cc
         )
-fips_end_lib()
+nebula_end_lib()
 
 target_include_directories(nsharp PUBLIC ${CODE_ROOT}/foundation ${DOTNET_NETHOST_INCLUDE_DIR})
 target_precompile_headers(nsharp REUSE_FROM foundation)
