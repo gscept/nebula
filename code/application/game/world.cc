@@ -391,7 +391,7 @@ World::ExportLevel(Util::String const& path)
                     }
 
                     auto vector_fields = builder.CreateVector(fields);
-                    auto component_name = builder.CreateString(cInterface->GetName());
+                    auto component_name = builder.CreateString(cInterface->GetFullyQualifiedName());
                     auto component_description =
                         CreateComponentDescription(builder, component_name, cInterface->typeSize, vector_fields);
 

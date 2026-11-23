@@ -536,6 +536,27 @@ namespace NST
         [DllImport("__Internal", EntryPoint = "InputTestCaptureKeyboard")]
         public static extern void InputTestCaptureKeyboard([MarshalAs(UnmanagedType.I1)] bool capture);
 
+        // The layout the engine has for a component. The generator builds the managed struct from its
+        // own size table, so the test compares that table against these numbers, which come from the
+        // compiler. An id that was never registered has no layout to read, so the caller checks it first
+        [DllImport("__Internal", EntryPoint = "ComponentTypeSizeForManaged")]
+        public static extern uint ComponentTypeSize(uint componentId);
+
+        [DllImport("__Internal", EntryPoint = "ComponentNumFieldsForManaged")]
+        public static extern uint ComponentNumFields(uint componentId);
+
+        [DllImport("__Internal", EntryPoint = "ComponentFieldOffsetForManaged")]
+        public static extern uint ComponentFieldOffset(uint componentId, uint fieldIndex);
+
+        // The name comes into a buffer this side owns, because a DllImport that returns a string makes
+        // the marshaler free the pointer it was given, and that pointer is the engine's string
+        [DllImport("__Internal", EntryPoint = "ComponentFieldNameForManaged")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool ComponentFieldName(uint componentId, uint fieldIndex, StringBuilder buffer, int bufferSize);
+
+        // MemDb::AttributeId::Invalid(), which is what a name that was never registered answers with
+        public const uint InvalidComponentId = 0xFFFF;
+
 
         public static void Verify(bool test,
         [CallerFilePath] string filePath = "",
@@ -968,6 +989,58 @@ namespace NST
             TestFlags read = entity.GetComponent<TestFlags>();
             Verify(read.flags32 == 0x80000000);
             Verify(read.flags64 == 0x8000000000000000);
+        }
+
+        /// <summary>
+        /// Every component type in the engine assembly and in the plugin assembly, checked against the
+        /// layout the engine reports. The managed struct is built from the generator's own size table,
+        /// so a type that is not blittable, or a field whose size or alignment the table gets wrong,
+        /// comes out as a struct that is the wrong size or that reads a field at the wrong offset, and
+        /// nothing notices until a component is copied through Marshal. The numbers here come from the
+        /// compiler, so this is the check that the two sides still agree.
+        /// </summary>
+        public static void TestComponentLayout()
+        {
+            Assembly[] assemblies = { typeof(NativeComponent).Assembly, Assembly.GetExecutingAssembly() };
+
+            foreach (Assembly assembly in assemblies)
+            {
+                foreach (Type type in assembly.GetTypes())
+                {
+                    // The interface itself answers to IsAssignableFrom, and it is not a component
+                    if (!type.IsValueType || !typeof(NativeComponent).IsAssignableFrom(type))
+                        continue;
+
+                    uint id = Api.GetComponentId(type.FullName);
+                    Verify(id != InvalidComponentId);
+                    if (id == InvalidComponentId)
+                        continue;
+
+                    Verify(Marshal.SizeOf(type) == ComponentTypeSize(id));
+
+                    // The generator adds a padding field when its own fields do not reach the native
+                    // size, and that field has no counterpart on the native side
+                    List<FieldInfo> fields = new List<FieldInfo>();
+                    foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        if (field.Name != "__pad")
+                            fields.Add(field);
+                    }
+
+                    Verify((uint)fields.Count == ComponentNumFields(id));
+
+                    // The names are compared too, because the level format and the inspector look a
+                    // field up by name rather than by position, so a field that moved is a different
+                    // field even when the offset happens to be right
+                    StringBuilder name = new StringBuilder(64);
+                    for (int i = 0; i < fields.Count; i++)
+                    {
+                        Verify(ComponentFieldName(id, (uint)i, name, name.Capacity));
+                        Verify(name.ToString() == fields[i].Name);
+                        Verify(Marshal.OffsetOf(type, fields[i].Name) == ComponentFieldOffset(id, (uint)i));
+                    }
+                }
+            }
         }
 
         static public TestProperty PerformTests()
@@ -1605,6 +1678,14 @@ namespace NST
                 Tests.InputTestEndFrame();
 
                 this.syncPhase = 32;
+            }
+            else if (this.syncPhase == 32)
+            {
+                // The component mirror is a layout contract between the two sides, and nothing in the
+                // build says the generator's table still matches the C++ type. This is the check
+                Tests.TestComponentLayout();
+
+                this.syncPhase = 33;
             }
             base.OnFrame();
         }

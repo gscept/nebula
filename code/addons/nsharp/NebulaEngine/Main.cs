@@ -67,7 +67,9 @@ namespace Nebula
                     {
                         if (interfaces[i] == typeof(NativeComponent))
                         {
-                            string name = type.Name;
+                            // The registry is keyed on the fully qualified name, which is what
+                            // ComponentInterface hands it, and C#'s FullName is the same string
+                            string name = type.FullName;
                             uint id = Api.GetComponentId(name);
                             componentManager.RegisterComponent(type, id);
                         }
@@ -85,7 +87,7 @@ namespace Nebula
                     {
                         if (interfaces[i] == typeof(NativeComponent))
                         {
-                            string name = type.Name;
+                            string name = type.FullName;
                             uint id = Api.GetComponentId(name);
                             componentManager.RegisterComponent(type, id);
                         }

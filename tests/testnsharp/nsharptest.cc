@@ -10,8 +10,10 @@
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
 #include "game/api.h"
+#include "game/component.h"
 #include "game/world.h"
 #include "game/timesource.h"
+#include "memdb/attributeregistry.h"
 #include "components/nsharpcomponents.h"
 
 #include "nsharp/api/input.h"
@@ -579,6 +581,74 @@ TestArrayOfVec4(Math::vec4* arr, int size)
     }
 }
 
+// The layout the engine has for a component, which is what a managed mirror has to match. The
+// generator builds the managed struct from its own size table, so the managed test compares that
+// table against these, and these come from the compiler rather than from the table.
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT uint32_t
+ComponentTypeSizeForManaged(uint32_t componentId)
+{
+    return (uint32_t)MemDb::AttributeRegistry::TypeSize(componentId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT uint32_t
+ComponentNumFieldsForManaged(uint32_t componentId)
+{
+    Game::ComponentInterface* cInterface =
+        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(componentId));
+    if (cInterface == nullptr)
+        return 0;
+
+    return (uint32_t)cInterface->GetNumFields();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT uint32_t
+ComponentFieldOffsetForManaged(uint32_t componentId, uint32_t fieldIndex)
+{
+    Game::ComponentInterface* cInterface =
+        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(componentId));
+    if (cInterface == nullptr || fieldIndex >= (uint32_t)cInterface->GetNumFields())
+        return 0;
+
+    return (uint32_t)cInterface->GetFieldByteOffsets()[fieldIndex];
+}
+
+//------------------------------------------------------------------------------
+/**
+    The name is copied into a buffer the caller owns. A DllImport that returns a string makes the
+    marshaler free the pointer it was given, and that pointer is the engine's string.
+*/
+NEBULA_EXPORT bool
+ComponentFieldNameForManaged(uint32_t componentId, uint32_t fieldIndex, char* outBuffer, uint32_t bufferSize)
+{
+    if (bufferSize == 0)
+        return false;
+
+    Game::ComponentInterface* cInterface =
+        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(componentId));
+    if (cInterface == nullptr || fieldIndex >= (uint32_t)cInterface->GetNumFields())
+        return false;
+
+    const char* name = cInterface->GetFieldNames()[fieldIndex];
+    uint32_t i = 0;
+    while (i + 1 < bufferSize && name[i] != 0)
+    {
+        outBuffer[i] = name[i];
+        i++;
+    }
+    outBuffer[i] = 0;
+    return true;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -677,6 +747,8 @@ NSharpTest::Run()
     StepFrame();
     StepFrame();
     StepFrame();  // the text the keyboard produced, and the server is closed after it
+
+    StepFrame();  // the layout the generator assumed for every component, against the engine's own
 
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);

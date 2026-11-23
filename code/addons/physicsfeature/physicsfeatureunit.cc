@@ -118,7 +118,7 @@ PhysicsFeatureUnit::OnActivate()
         // FIXME: This assumes all actors are in the default world.
         //        This might not be true and we should allow multiple physics stages as well.
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        Game::ComponentId staticPid = Game::GetComponentId("Static"_atm);
+        Game::ComponentId staticPid = Game::GetComponentId("Game.Static"_atm);
         for (IndexT i = 0; i < num; i++)
         {
             n_assert(Physics::ActorContext::IsValid(actors[i]));

@@ -29,9 +29,17 @@ private:
         scriptFeature = Scripting::ScriptFeatureUnit::Create();
 
         // The managed tests read and write these components through the component api, which
-        // requires them to be registered in the attribute registry.
+        // requires them to be registered in the attribute registry. All of them are registered,
+        // because the layout test walks every component type the plugin has and compares it against
+        // the registry, and a type that is not registered has nothing to compare
+        scriptFeature->RegisterComponentType<Test::TestResource>();
+        scriptFeature->RegisterComponentType<Test::TestVec4>();
+        scriptFeature->RegisterComponentType<Test::TestStruct>();
+        scriptFeature->RegisterComponentType<Test::TestHealth>();
         scriptFeature->RegisterComponentType<Test::TestFlags>();
         scriptFeature->RegisterComponentType<Test::TestAtom>();
+        scriptFeature->RegisterComponentType<Test::MyFlag>();
+        scriptFeature->RegisterComponentType<Test::TestEmptyStruct>();
 
         scriptFeature->SetScriptAssembly("bin:NSharpTests.dll");
         Game::GameServer::Instance()->AttachGameFeature(scriptFeature);

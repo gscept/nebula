@@ -392,3 +392,85 @@ def DefaultToString(default):
         return str(default).lower()
     elif type(default) is str:
         return '"{}"'.format(default)
+
+#------------------------------------------------------------------------------
+##
+#   Native size and alignment per IDL type, measured from the engine headers.
+#   The managed mirror has to reproduce these exactly, because the component api
+#   copies the whole struct through Marshal, and Marshal cannot align a field to
+#   16 the way Math::mat4 and the SIMD vector types do.
+#
+NativeLayout = {
+    "byte": (1, 1),
+    "short": (2, 2),
+    "ushort": (2, 2),
+    "int16": (2, 2),
+    "int16_t": (2, 2),
+    "uint16": (2, 2),
+    "uint16_t": (2, 2),
+    "int": (4, 4),
+    "uint": (4, 4),
+    "int32": (4, 4),
+    "int32_t": (4, 4),
+    "uint32": (4, 4),
+    "uint32_t": (4, 4),
+    "float": (4, 4),
+    "scalar": (4, 4),
+    "math::scalar": (4, 4),
+    "int64": (8, 8),
+    "int64_t": (8, 8),
+    "uint64": (8, 8),
+    "uint64_t": (8, 8),
+    "double": (8, 8),
+    "bool": (1, 1),
+    "int2": (8, 4),
+    "math::int2": (8, 4),
+    "vec2": (8, 4),
+    "math::vec2": (8, 4),
+    "vec3": (16, 16),
+    "math::vec3": (16, 16),
+    "vec4": (16, 16),
+    "math::vec4": (16, 16),
+    "vector": (16, 16),
+    "math::vector": (16, 16),
+    "point": (16, 16),
+    "math::point": (16, 16),
+    "quat": (16, 16),
+    "math::quat": (16, 16),
+    "mat4": (64, 16),
+    "math::mat4": (64, 16),
+    "util::stringatom": (8, 8),
+    "resource": (8, 8),
+    "resources::resourcename": (8, 8),
+    "entity": (8, 8),
+    "game::entity": (8, 8),
+    "physics::characterid": (4, 4),
+    "color": (16, 16),
+    "util::color": (16, 16),
+    "bitfield16": (2, 2),
+    "util::bitfield<16>": (2, 2),
+    "bitfield32": (4, 4),
+    "util::bitfield<32>": (4, 4),
+    "bitfield64": (8, 8),
+    "util::bitfield<64>": (8, 8),
+}
+
+#------------------------------------------------------------------------------
+##
+#   Return (size, align) for an IDL type, or None when the type has no blittable
+#   managed mirror. Util::String is 32 bytes natively and a C# string field is a
+#   pointer, and Util::Array is not blittable at all, so neither is in the table.
+#
+def GetNativeLayout(attrType, document=None):
+    T = attrType.lower().replace(" ", "")
+    if T in NativeLayout:
+        return NativeLayout[T]
+
+    # An enum declared by the document. C# enums and enum class both default to int
+    if document is not None and "enums" in document:
+        name = T.split("::")[-1]
+        for enumName in document["enums"]:
+            if enumName.lower() == name:
+                return (4, 4)
+
+    return None

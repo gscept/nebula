@@ -776,14 +776,16 @@ InspectorPanel::DrawAdd(Game::Entity entity)
         if (!this->IsAddableComponent(component))
             continue;
 
-        if (!FuzzyNameMatches(attr->name.Value(), this->filterBuffer))
-            continue;
-
         Game::ComponentInterface* interface = static_cast<Game::ComponentInterface*>(attr);
+
+        // attr->name is the registry key, which is the full name. The panel shows and
+        // filters on the component name on its own, with the namespace as the group
+        if (!FuzzyNameMatches(interface->GetName(), this->filterBuffer))
+            continue;
 
         InspectorEntry entry;
         entry.component = component;
-        entry.name = attr->name.Value();
+        entry.name = interface->GetName();
         const char* ns = interface->GetNamespace();
         entry.group = ns != nullptr ? ns : "";
         entry.isComponent = true;

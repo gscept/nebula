@@ -295,9 +295,9 @@ EntitySystemTest::Run()
 
     {
         Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId("TestHealth");
+        filterInfo.inclusive[0] = Game::GetComponentId("Test.TestHealth");
         filterInfo.access[0] = Game::AccessMode::READ;
-        filterInfo.inclusive[1] = Game::GetComponentId("TestStruct");
+        filterInfo.inclusive[1] = Game::GetComponentId("Test.TestStruct");
         filterInfo.access[1] = Game::AccessMode::WRITE;
         filterInfo.numInclusive = 2;
         Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);

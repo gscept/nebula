@@ -34,10 +34,11 @@ class VariableDefinition:
             return '{} {} = {};'.format(typeName, self.name, self.defaultValue)
     pass
 
+    def CsType(self):
+        return IDLTypes.GetCsTypeString(self.type).replace("::", ".")
+
     def AsCsString(self):
-        t = IDLTypes.GetCsTypeString(self.type)
-        t = t.replace("::", ".")
-        return '{} {};'.format(t, self.name)
+        return '{} {};'.format(self.CsType(), self.name)
     pass
 
 #------------------------------------------------------------------------------
@@ -68,13 +69,129 @@ class ComponentDefinition:
         return retVal
     pass
 
-    def AsCsTypeDefString(self):
-        retVal = 'public struct {} : NativeComponent\n{{\n'.format(self.componentName)
-        for v in self.variables:
-            retVal += '    public {}\n'.format(v.AsCsString())
-        retVal += "}\n"
-        return retVal
-    pass
+#------------------------------------------------------------------------------
+##
+#
+def AlignUp(value, align):
+    return ((value + align - 1) // align) * align
+
+#------------------------------------------------------------------------------
+##
+#   The largest power of two that fits in n. Marshal.SizeOf is the highest field
+#   offset plus that field's size, and a field cannot be split across bytes, so the
+#   trailing padding that brings a managed struct up to the native size has to be a
+#   single field of that size.
+#
+def LargestPowerOfTwo(n):
+    p = 0
+    while (1 << p) <= n:
+        p += 1
+    return 1 << (p - 1) if p > 0 else 0
+
+#------------------------------------------------------------------------------
+##
+#
+def PadCsType(size):
+    if size == 8:
+        return "ulong"
+    elif size == 4:
+        return "uint"
+    elif size == 2:
+        return "ushort"
+    return "byte"
+
+#------------------------------------------------------------------------------
+##
+#   The native field offsets for a component, using the C struct layout rules.
+#   Returns (entries, nativeSize) where entries is (variable, offset, size), or None
+#   when a field has no blittable managed mirror and the layout cannot be computed.
+#
+def ComputeCsLayout(comp, document):
+    entries = list()
+    cursor = 0
+    maxAlign = 1
+    for v in comp.variables:
+        nat = IDLTypes.GetNativeLayout(v.type, document)
+        if nat is None:
+            return None
+        size, align = nat
+        cursor = AlignUp(cursor, align)
+        entries.append((v, cursor, size))
+        cursor += size
+        if align > maxAlign:
+            maxAlign = align
+
+    # An empty component is still one byte in C++, and Marshal.SizeOf of an empty
+    # struct is 0, so the padding below covers it the same way it covers the rest
+    return entries, max(1, AlignUp(cursor, maxAlign))
+
+#------------------------------------------------------------------------------
+##
+#   The field description as an XML doc comment, which is what IntelliSense shows.
+#   A doc comment is XML, so the markup characters have to come through as text,
+#   and a description that spans lines becomes one /// line per line.
+#
+def EscapeCsDocText(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+#------------------------------------------------------------------------------
+##
+#
+def WriteCsFieldComment(f, v):
+    if not v.description:
+        return
+
+    lines = [EscapeCsDocText(line.strip()) for line in v.description.splitlines()]
+    lines = [line for line in lines if line]
+    if not lines:
+        return
+
+    if len(lines) == 1:
+        f.WriteLine("/// <summary>{}</summary>".format(lines[0]))
+    else:
+        f.WriteLine("/// <summary>")
+        for line in lines:
+            f.WriteLine("/// {}".format(line))
+        f.WriteLine("/// </summary>")
+
+#------------------------------------------------------------------------------
+##
+#   Emit a struct with the native layout. C# cannot align a field to 16 the way
+#   Math::mat4 and the SIMD vector types do, and Marshal treats a bool as 4 bytes
+#   where native bool is 1, so the offsets have to be stated rather than derived.
+#
+def WriteCsStructLayout(f, comp, document, declaration):
+    layout = ComputeCsLayout(comp, document)
+    if layout is None:
+        # A field the generator cannot size is not blittable, so there is no layout
+        # to reproduce and the sequential form is left as it was
+        f.WriteLine("[StructLayout(LayoutKind.Sequential)]")
+        f.WriteLine(declaration)
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        for v in comp.variables:
+            WriteCsFieldComment(f, v)
+            f.WriteLine("public {}".format(v.AsCsString()))
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        return
+
+    entries, nativeSize = layout
+    managedMax = max([off + size for (_, off, size) in entries], default=0)
+
+    f.WriteLine("[StructLayout(LayoutKind.Explicit)]")
+    f.WriteLine(declaration)
+    f.WriteLine("{")
+    f.IncreaseIndent()
+    for v, off, size in entries:
+        WriteCsFieldComment(f, v)
+        marshal = "[MarshalAs(UnmanagedType.U1)] " if v.CsType() == "bool" else ""
+        f.WriteLine("[FieldOffset({})] {}public {} {};".format(off, marshal, v.CsType(), v.name))
+    if managedMax < nativeSize:
+        pad = LargestPowerOfTwo(nativeSize - managedMax)
+        f.WriteLine("[FieldOffset({})] public {} __pad;".format(nativeSize - pad, PadCsType(pad)))
+    f.DecreaseIndent()
+    f.WriteLine("}")
 
 #------------------------------------------------------------------------------
 ##
@@ -167,6 +284,27 @@ def ContainsBitfieldTypes():
 
 #------------------------------------------------------------------------------
 ##
+#   The layout the generator assumed, checked against the compiler. The size table in
+#   idltypes.py is a hand-maintained guess about the C++ type, and the generated C#
+#   struct is built from the same numbers, so these asserts are what says the two
+#   sides still agree. The message is what the build prints when they stop agreeing.
+#
+def WriteNativeLayoutAsserts(f, comp, document, namespace):
+    layout = ComputeCsLayout(comp, document)
+    if layout is None:
+        # A field the generator cannot size has no layout to check
+        return
+
+    entries, nativeSize = layout
+    sizeMessage = "NIDL expected {} for {}.{}. If this assert fails, the size and alignment table GetNativeLayout in fips-files/generators/IDLC/idltypes.py does not match the C++ type: a field changed size or alignment, or a type used by this component is missing from the table. The generated C# struct is built from the same numbers, so the managed mirror is not byte-identical to this component.".format(nativeSize, namespace, comp.componentName)
+    f.WriteLine('static_assert(sizeof({}) == {}, "{}");'.format(comp.componentName, nativeSize, sizeMessage))
+
+    for v, off, size in entries:
+        fieldMessage = "NIDL expected {} for {}.{}.{}. If this assert fails, the size and alignment table GetNativeLayout in fips-files/generators/IDLC/idltypes.py does not match the C++ type for this field or for a field before it. The generated C# struct is built from the same numbers, so the managed mirror reads this field at the wrong offset.".format(off, namespace, comp.componentName, v.name)
+        f.WriteLine('static_assert(offsetof({}, {}) == {}, "{}");'.format(comp.componentName, v.name, off, fieldMessage))
+
+#------------------------------------------------------------------------------
+##
 #
 def WriteComponentHeaderDeclarations(f, document):
     for c in components:
@@ -178,6 +316,7 @@ def WriteComponentHeaderDeclarations(f, document):
         f.WriteLine("{")
         f.IncreaseIndent()
         f.WriteLine('static_assert(std::is_standard_layout<{}>());'.format(c.componentName))
+        WriteNativeLayoutAsserts(f, c, document, namespace)
         f.WriteLine("Traits() = delete;")
         f.WriteLine('using type = {};'.format(c.componentName))
         f.WriteLine('static constexpr auto name = "{}";'.format(c.componentName))
@@ -437,7 +576,7 @@ def WriteEnumeratedCppTypes(f, document):
     if "enums" in document:
         for enumName, enum in document["enums"].items():
             # Declare Enums
-            f.WriteLine("enum class {}".format(enumName))
+            f.WriteLine("enum class {} : int32_t".format(enumName))
             f.WriteLine("{")
             f.IncreaseIndent()
             numValues = 0
@@ -518,14 +657,7 @@ def WriteStructCsTypes(f, document):
 	if 'structs' in document:
 		for structName, struct in document['structs'].items():
 			f.WriteLine("[NativeCppClass]")
-			f.WriteLine("[StructLayout(LayoutKind.Sequential)]")
-			f.WriteLine("public struct {} \n{{".format(structName))
-			f.IncreaseIndent()
-			for varName, var in struct.items():
-				varDef = GetVariableFromEntry(varName, var)
-				f.WriteLine("public {};".format(varDef.AsCsString()))
-			f.DecreaseIndent()
-			f.WriteLine("};")
+			WriteCsStructLayout(f, ComponentDefinition(structName, struct), document, "public struct {}".format(structName))
 			f.WriteLine("")
 
 #------------------------------------------------------------------------------
@@ -534,5 +666,4 @@ def WriteStructCsTypes(f, document):
 def WriteComponentCsDeclarations(f, document):
     for c in components:
         f.WriteLine("[NativeCppClass]")
-        f.WriteLine("[StructLayout(LayoutKind.Sequential)]")
-        f.WriteLine(c.AsCsTypeDefString())
+        WriteCsStructLayout(f, c, document, "public struct {} : NativeComponent".format(c.componentName))

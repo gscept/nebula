@@ -121,7 +121,7 @@ FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
     componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
     componentFlags |= (uint32_t)COMPONENTFLAG_RUNTIME * (uint32_t)info.runtime;
 
-    ComponentInterface* cInterface = new ComponentInterface(COMPONENT_TYPE::Traits::name, COMPONENT_TYPE(), componentFlags);
+    ComponentInterface* cInterface = new ComponentInterface(COMPONENT_TYPE::Traits::fully_qualified_name, COMPONENT_TYPE(), componentFlags);
     cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
     cInterface->Decay = reinterpret_cast<ComponentInterface::ComponentDecayFunc>(info.OnDecay);
     Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
