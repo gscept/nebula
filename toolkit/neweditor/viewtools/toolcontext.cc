@@ -96,7 +96,7 @@ ToolContext::Setup(Shell* core)
     core->GetCommands().Register("tool", "tool [select|translate|rotate|scale] - print or set the active viewport tool",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ToolContext, &ToolContext::CommandTool>(this));
 
-    core->GetCommands().Register("gizmo", "gizmo [world|local|toggle] - cycle or set the frame the gizmo works in",
+    core->GetCommands().Register("gizmo", "gizmo [world|local|toggle|list] - cycle or set the frame the gizmo works in, or print the components that have one",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ToolContext, &ToolContext::CommandGizmo>(this));
 
     core->GetCommands().Register("grid", "grid [on|off|toggle|step <units>|subdiv <n>|size <units>|color <r> <g> <b> [a]|minor <r> <g> <b> [a>] - print or set the canvas' grid",
@@ -174,6 +174,9 @@ ToolContext::AbortActiveTool()
     // next scene. Disabling the widget is what cancels its interaction
     ImGuizmo::Enable(false);
     ImGuizmo::Enable(true);
+
+    // A component gizmo handle is a drag of its own, and it has previews of its own to put back
+    Gizmo::AbortDrag();
 }
 
 //------------------------------------------------------------------------------
@@ -314,6 +317,13 @@ ToolContext::DrawView(ToolView& view)
     // the widget's own math reads it even when no handle is drawn
     ImGuizmo::SetRect(view.canvasMin.x, view.canvasMin.y, view.canvasSize.x, view.canvasSize.y);
     ImGuizmo::SetDrawlist();
+
+    if (Gizmo::DrawComponentGizmos(view))
+    {
+        // Tell the tools which handle has this frame
+        view.gizmoUsed = true;
+        return;
+    }
 
     if (this->activeTool == SelectToolId)
         return;
@@ -988,6 +998,26 @@ ToolContext::CommandGizmo(const Util::Array<Util::String>& args)
         return;
     }
 
+    if (args[0] == "list")
+    {
+        const Util::Array<Gizmo::ComponentGizmo>& gizmos = Gizmo::GetRegisteredGizmos();
+        if (gizmos.IsEmpty())
+        {
+            this->core->Log(LogMessageType::N_SYSTEM, "no component gizmos are registered");
+            return;
+        }
+
+        Util::String msg;
+        for (IndexT i = 0; i < gizmos.Size(); i++)
+        {
+            if (i > 0)
+                msg += "\n";
+            msg += Util::String("  ") + gizmos[i].name;
+        }
+        this->core->Log(LogMessageType::N_SYSTEM, msg);
+        return;
+    }
+
     for (IndexT i = 0; i < NumFrames; i++)
     {
         if (args[0] == FrameNames[i])
@@ -1004,7 +1034,7 @@ ToolContext::CommandGizmo(const Util::Array<Util::String>& args)
             list += ", ";
         list += FrameNames[i];
     }
-    this->core->Log(LogMessageType::N_WARNING, list);
+    this->core->Log(LogMessageType::N_WARNING, list + ", list");
 }
 
 //------------------------------------------------------------------------------

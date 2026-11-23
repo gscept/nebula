@@ -1076,6 +1076,16 @@ namespace IMGUIZMO_NAMESPACE
       drawList->AddText(ImVec2(destinationPosOnScreen.x + 14, destinationPosOnScreen.y + 14), GetColorU32(TEXT), infoText);
    }
 
+   void DrawText(const char* text, const ImVec2& screenPos, ImU32 color)
+   {
+      ImDrawList* drawList = gContext.mDrawList;
+      if (drawList == nullptr || text == nullptr)
+         return;
+
+      drawList->AddText(ImVec2(screenPos.x + 1, screenPos.y + 1), GetColorU32(TEXT_SHADOW), text);
+      drawList->AddText(screenPos, color, text);
+   }
+
    void SetOrthographic(bool isOrthographic)
    {
       gContext.mIsOrthographic = isOrthographic;

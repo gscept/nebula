@@ -15,6 +15,7 @@
 #include "managers/charactermanager.h"
 #if WITH_NEBULA_EDITOR
 #include "physicsfeature/editor/physicseditor.h"
+#include "physicsfeature/editor/physicsgizmo.h"
 #endif
 
 namespace PhysicsFeature
@@ -66,6 +67,9 @@ PhysicsFeatureUnit::OnAttach()
     // The feature's own contribution. It is registered at attach, because the editor reads the
     // registry at open
     RegisterEditorContributions();
+
+    // The components have to be registered before their ids exist, which is what the lines above do
+    RegisterColliderGizmos();
 #endif
 }
 
@@ -178,6 +182,12 @@ void
 PhysicsFeatureUnit::OnDeactivate()
 {   
     FeatureUnit::OnDeactivate();
+
+#if WITH_NEBULA_EDITOR
+    // Taken back here rather than by the editor, because the editor never knew who registered them
+    ClearColliderGizmos();
+#endif
+
     for (auto const& scene : this->physicsWorlds)
     {
         Physics::DestroyScene(scene.Value());

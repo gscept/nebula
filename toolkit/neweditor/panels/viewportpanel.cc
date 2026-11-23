@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "neweditor/panels/viewportpanel.h"
+#include "neweditor/api/gizmo.h"
 #include "neweditor/base/palette.h"
 #include "core/cvar.h"
 #include "neweditor/commands/setcomponentcommand.h"
@@ -474,6 +475,13 @@ ViewportPanel::Draw()
     // Ctrl turns the sources the other way for as long as it is held, so the line answers for the
     // hold and says so
     const bool invertSnap = ImGui::GetIO().KeyCtrl;
+
+    // The handle the drag is on. The status line is where the author looks to see which thing the drag
+    // is moving
+    Util::String handle;
+    if (Gizmo::IsDragging())
+        handle.Format("   %s", Gizmo::ActiveGizmoName().AsCharPtr());
+
     Util::String overlay;
     if (this->viewMode == ViewGame)
     {
@@ -484,10 +492,11 @@ ViewportPanel::Draw()
             overlay.Format("Game   %s   %.0f fps", this->gameCameraName.AsCharPtr(), ImGui::GetIO().Framerate);
     }
     else if (tools->SnapsToGrid() || tools->SnapsToIncrements() || invertSnap)
-        overlay.Format("Viewport   %s gizmo   snap %s%s   %.0f fps", tools->FrameName(tools->GetFrame()),
-            tools->SnapSourceName(invertSnap), invertSnap ? " (ctrl)" : "", ImGui::GetIO().Framerate);
+        overlay.Format("Viewport   %s gizmo%s   snap %s%s   %.0f fps", tools->FrameName(tools->GetFrame()),
+            handle.AsCharPtr(), tools->SnapSourceName(invertSnap), invertSnap ? " (ctrl)" : "", ImGui::GetIO().Framerate);
     else
-        overlay.Format("Viewport   %s gizmo   %.0f fps", tools->FrameName(tools->GetFrame()), ImGui::GetIO().Framerate);
+        overlay.Format("Viewport   %s gizmo%s   %.0f fps", tools->FrameName(tools->GetFrame()),
+            handle.AsCharPtr(), ImGui::GetIO().Framerate);
     ImGui::TextUnformatted(overlay.AsCharPtr());
 
     const Game::TimeSource* time = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
@@ -561,7 +570,7 @@ ViewportPanel::GatherInput()
 {
     Editor::EditorCameraInput input = this->pendingInput;
 
-    if (this->CanNavigate() || this->cameraButton >= 0)
+    if (this->CanNavigate() && this->cameraButton >= 0)
     {
         const float speed = this->moveSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? ShiftSpeedFactor : 1.0f);
 

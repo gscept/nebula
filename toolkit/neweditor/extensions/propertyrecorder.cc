@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "neweditor/extensions/propertyrecorder.h"
 #include "neweditor/api/editorfeature.h"
+#include "neweditor/api/gizmo.h"
 #include "neweditor/commands/propertycommand.h"
 #include "neweditor/model/editcommandmanager.h"
 #include "neweditor/model/scene.h"
@@ -410,7 +411,9 @@ PropertyRecorder::ApplyPending()
     // next frame. Without that a deferred change is never run, and the widget shows a value for one
     // frame and
     // then reads it back from an entity that never got it
-    if (ImGui::IsAnyItemActive())
+    //
+    // A gizmo handle is not an ImGui item, so IsAnyItemActive() cannot see it
+    if (ImGui::IsAnyItemActive() || Gizmo::IsDragging())
     {
         core->QueueAction(Util::Delegate<void()>::FromFunction<&PropertyRecorder::ApplyPending>());
         return;

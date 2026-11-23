@@ -24,20 +24,25 @@
 // SOFTWARE.
 //
 // -------------------------------------------------------------------------------------------
-// History : LOCAL EDIT (Nebula editor): the world space translation snap rounds the position the
+// History :
+// LOCAL EDIT (Nebula editor): the world space translation snap rounds the position the
 // drag is heading for rather than the distance travelled since the handle was grabbed, so a snapped
 // drag lands on the grid the canvas draws instead of on a lattice anchored wherever the drag
-// started. See HandleTranslation in imguizmo.cc. LOCAL EDIT (Nebula editor): the translation
+// started. See HandleTranslation in imguizmo.cc.
+// LOCAL EDIT (Nebula editor): the translation
 // feedback of a dragged translate handle - the line with a ring at each end and the delta text - is
 // its own call, DrawTranslationFeedback, so the editor's selection tool can report a handleless
-// drag the same way. See DrawTranslationGizmo in imguizmo.cc. 2026/05/03 v1.9 release. CMake build
-// system, vcpkg support, many fixes and new features from contributors. 2019/11/03 View gizmo
-// 2016/09/11 Behind camera culling. Scaling Delta matrix not multiplied by source matrix scales.
-// local/world rotation and translation fixed. Display message is incorrect (X: ... Y:...) in local
-// mode. 2016/09/09 Hatched negative axis. Snapping. Documentation update. 2016/09/04 Axis switch
-// and translation plan autohiding. Scale transform stability improved 2016/09/01 Mogwai changed to
-// Manipulate. Draw debug cube. Fixed inverted scale. Mixing scale and translation/rotation gives
-// bad results. 2016/08/31 First version
+// drag the same way. See DrawTranslationGizmo in imguizmo.cc.
+// LOCAL EDIT (Nebula editor): DrawText puts a label on the gizmo's draw list, so the editor's
+// component gizmos can draw their tips without asking a renderer for text. See DrawText in
+// imguizmo.cc.
+// 2026/05/03 v1.9 release. CMake build system, vcpkg support, many fixes and new features from contributors.
+// 2019/11/03 View gizmo
+// 2016/09/11 Behind camera culling. Scaling Delta matrix not multiplied by source matrix scales. local/world rotation and translation fixed. Display message is incorrect (X: ... Y:...) in local mode.
+// 2016/09/09 Hatched negative axis. Snapping. Documentation update.
+// 2016/09/04 Axis switch and translation plan autohiding. Scale transform stability improved
+// 2016/09/01 Mogwai changed to Manipulate. Draw debug cube. Fixed inverted scale. Mixing scale and translation/rotation gives bad results.
+// 2016/08/31 First version
 //
 // -------------------------------------------------------------------------------------------
 // Future (no order):
@@ -333,6 +338,12 @@ namespace IMGUIZMO_NAMESPACE
    // in ImGui window coordinates, so a drag that does not run through the widget - the editor's
    // selection tool - can report itself the same way. Manipulate draws this for its own handles.
    IMGUI_API void DrawTranslationFeedback(const ImVec2& sourcePosOnScreen, const ImVec2& destinationPosOnScreen, const char* infoText);
+
+   // LOCAL EDIT (Nebula editor): a label on the canvas, at a position the caller has already
+   // projected. It goes on the gizmo's draw list with the same shadow as the feedback text, so a tip
+   // from the editor's component gizmos looks like the gizmo's own text. The caller projects with its
+   // own view math, because the canvas is smaller than the window and not at its origin.
+   IMGUI_API void DrawText(const char* text, const ImVec2& screenPos, ImU32 color);
 
    enum COLOR
    {

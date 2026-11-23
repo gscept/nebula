@@ -49,6 +49,11 @@ static const float MinMarqueeDistance = 4.0f;
 void
 SelectionTool::Update(const ToolView& view)
 {
+    // The frame belongs to a gizmo handle's drag. The press that took the handle and the release that
+    // lets it go are the same ones the tool would read as its own gesture, so the tool reads neither
+    if (view.gizmoUsed)
+        return;
+
     // The box lives for the length of the gesture that made it, so a release the panel could not
     // report still
     // ends it: the frame the look drag takes the cursor on, and the frames the panel returned early

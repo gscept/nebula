@@ -25,5 +25,7 @@ fips_files(
 		fips_files(
 			physicseditor.h
 			physicseditor.cc
+			physicsgizmo.h
+			physicsgizmo.cc
 		)
 nebula_end_module()

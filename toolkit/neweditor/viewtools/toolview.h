@@ -65,9 +65,10 @@ struct ToolView
     bool escape = false;
 
     /// What the transform handle did this frame. The handle pass runs before the tools and fills
-    /// this in. gizmoUsed is true while the handle holds a drag, and the fields after it say what
-    /// the drag did to the handle since it took hold: the move, the turn, and the stretch along the
-    /// handle's own axes.
+    /// this in. gizmoUsed is true when a handle has this frame's drag, which is the transform handle
+    /// or a component gizmo handle, and a tool that is not the one holding it reads nothing from the
+    /// frame. The fields after it say what the drag did since it took hold: the move, the turn, and
+    /// the stretch along the handle's own axes.
     bool gizmoUsed = false;
     Math::vec3 gizmoOffset = Math::vec3(0);
     Math::quat gizmoRotation = Math::quat(0, 0, 0, 1);
