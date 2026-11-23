@@ -18,9 +18,12 @@
 
 #include "imgui_internal.h"
 #include "frame/default.h"
+#include "frame/imguiwindow.h"
+#include "coregraphics/swapchain.h"
 #include "gpulang/dynui/imgui/shaders/imgui.h"
 
 #include "imguidisplayeventhandler.h"
+#include "imguidetach.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -179,6 +182,8 @@ struct ImguiState
     CoreGraphics::ShaderId uiShader;
     CoreGraphics::ShaderProgramId prog;
     CoreGraphics::PipelineId pipeline;
+    /// the pipeline for the pass a window that was dragged out of the main window draws in
+    CoreGraphics::PipelineId windowPipeline = CoreGraphics::InvalidPipelineId;
 
     Util::FixedArray<CoreGraphics::BufferId> vbos;
     Util::FixedArray<CoreGraphics::BufferId> ibos;
@@ -227,7 +232,7 @@ ImFont* ImguiItFont;
     Imgui rendering function
 */
 void
-ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, ImDrawData* data)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, ImDrawData* data, const CoreGraphics::PipelineId pipeline = CoreGraphics::InvalidPipelineId)
 {
     const ImVec2 clipOff = data->DisplayPos;
     const ImVec2 clipScale = data->FramebufferScale;
@@ -267,7 +272,11 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
             }
             else if (textureData->Status == ImTextureStatus_WantUpdates)
             {
-                state.pendingTextureUpdates.Append(textureData);
+                // Draw can run once per viewport per frame, only queue each texture once
+                if (state.pendingTextureUpdates.FindIndex(textureData) == InvalidIndex)
+                {
+                    state.pendingTextureUpdates.Append(textureData);
+                }
             }
         }
     }
@@ -325,7 +334,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     }
 
     // setup device
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, state.pipeline);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline != CoreGraphics::InvalidPipelineId ? pipeline : state.pipeline);
 
     // setup input buffers
     CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vlo);
@@ -567,6 +576,85 @@ Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)> ImguiContext
 
 //------------------------------------------------------------------------------
 /**
+    Draws the UI of a window ImGui made for a window dragged out of the main window, and shows it in
+    the window. The main window is presented by whoever draws the scene, this is for the others only
+*/
+void
+ImguiContext::PresentWindow(const CoreGraphics::WindowId window, IndexT frameIndex, IndexT bufferIndex)
+{
+    n_assert(CoreGraphics::WindowGetUserData(window) != nullptr);
+    const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+    const CoreGraphics::SwapchainId swapchain = CoreGraphics::WindowGetSwapchain(window);
+
+    const CoreGraphics::WindowId previous = CoreGraphics::UpdatingWindow;
+    CoreGraphics::UpdatingWindow = window;
+    FrameScript_imguiwindow::Bind_Scene(FrameScript_default::Submission_Scene);
+    FrameScript_imguiwindow::Run(Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), frameIndex, bufferIndex);
+    CoreGraphics::UpdatingWindow = previous;
+
+    CoreGraphics::SwapchainSwap(swapchain);
+    const CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+    CoreGraphics::CmdBufferBeginInfo beginInfo;
+    beginInfo.submitDuringPass = false;
+    beginInfo.resubmittable = false;
+    beginInfo.submitOnce = true;
+    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap Window");
+
+    FrameScript_imguiwindow::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { FrameScript_imguiwindow::TextureIndex::WindowBuffer, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_imguiwindow::Export_WindowBuffer.tex);
+
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdFinishQueries(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+    CoreGraphics::SubmitCommandBuffers(
+        { cmdBuf }
+        , queue
+        , { FrameScript_imguiwindow::Submission_WindowUI }
+#if NEBULA_GRAPHICS_DEBUG
+        , "Swap Window"
+#endif
+    );
+    CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
+}
+
+//------------------------------------------------------------------------------
+/**
+    A window that got its OS window when it was let go takes the keyboard with it. ImGui makes the
+    window without taking the focus, so without this the keys keep going to the main window although
+    the dropped window is the one ImGui has focused
+*/
+static void
+FocusDetachedWindow()
+{
+    if (ImguiDetach::State.focusOnShow == 0)
+    {
+        return;
+    }
+
+    ImGuiWindow* window = ImGui::FindWindowByID(ImguiDetach::State.focusOnShow);
+    if (window == nullptr)
+    {
+        ImguiDetach::State.focusOnShow = 0;
+        return;
+    }
+
+    // The OS window is made at the end of the frame the window was let go on, and is shown then
+    ImGuiViewport* viewport = window->Viewport;
+    if (!window->ViewportOwned || viewport == nullptr || !viewport->PlatformWindowCreated || viewport->PlatformHandle == nullptr)
+    {
+        return;
+    }
+
+    ImguiDetach::State.focusOnShow = 0;
+    ImGui::GetPlatformIO().Platform_SetWindowFocus(viewport);
+    ImGui::FocusWindow(window);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 ImguiContext::SetKeyCallback(Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)> callback)
@@ -598,10 +686,6 @@ struct ImGuiSecondaryWindowData
 };
 
 
-struct ImGuiWindowHandle
-{
-    CoreGraphics::WindowId wnd;
-};
 
 //------------------------------------------------------------------------------
 /**
@@ -660,17 +744,41 @@ ImguiContext::Create()
                 Util::Array<CoreGraphics::TextureCopy, 4> destinationCopies;
                 for (const ImTextureRect& rect : textureData->Updates)
                 {
+                    // The staging buffer holds the whole texture, so point each copy at its rect
                     CoreGraphics::BufferCopy& bufCpy = sourceCopies.Emplace();
                     bufCpy.imageHeight = 0;
-                    bufCpy.rowLength = 0;
-                    bufCpy.offset = 0;
+                    bufCpy.rowLength = textureData->Width;
+                    bufCpy.offset = (rect.y * textureData->Width + rect.x) * textureData->BytesPerPixel;
                     CoreGraphics::TextureCopy& texCpy = destinationCopies.Emplace();
                     texCpy.mip = 0;
                     texCpy.bits = CoreGraphics::ImageBits::ColorBits;
                     texCpy.layer = 0;
                     texCpy.region = Math::rectangle<int>(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
                 }
+                if (sourceCopies.IsEmpty())
+                {
+                    CoreGraphics::DestroyBuffer(buf);
+                    textureData->Status = ImTextureStatus_OK;
+                    continue;
+                }
+
+                // The texture is sampled by the ImGui pass, so move it to transfer layout for the copy and back after
+                const CoreGraphics::TextureSubresourceInfo subres = CoreGraphics::TextureSubresourceInfo::Color();
+                CoreGraphics::CmdBarrier(
+                    cmdBuf
+                    , CoreGraphics::PipelineStage::AllShadersRead
+                    , CoreGraphics::PipelineStage::TransferWrite
+                    , CoreGraphics::BarrierDomain::Global
+                    , { CoreGraphics::TextureBarrierInfo{ .tex = tex.nebulaHandle, .subres = subres } }
+                );
                 CoreGraphics::CmdCopy(cmdBuf, buf, sourceCopies, tex.nebulaHandle, destinationCopies);
+                CoreGraphics::CmdBarrier(
+                    cmdBuf
+                    , CoreGraphics::PipelineStage::TransferWrite
+                    , CoreGraphics::PipelineStage::AllShadersRead
+                    , CoreGraphics::BarrierDomain::Global
+                    , { CoreGraphics::TextureBarrierInfo{ .tex = tex.nebulaHandle, .subres = subres } }
+                );
                 CoreGraphics::DestroyBuffer(buf);
                 textureData->Status = ImTextureStatus_OK;
             }
@@ -826,6 +934,8 @@ ImguiContext::Create()
         ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
         Graphics::GraphicsServer::Instance()->RemoveWindow(wndHandle->wnd);
         CoreGraphics::DestroyWindow(wndHandle->wnd);
+        delete wndHandle;
+        vp->PlatformHandle = nullptr;
     };
     platform_io.Platform_GetWindowPos = [](ImGuiViewport* vp) -> ImVec2
     {
@@ -836,6 +946,7 @@ ImguiContext::Create()
     platform_io.Platform_SetWindowPos = [](ImGuiViewport* vp, ImVec2 pos)
     {
         ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        wndHandle->ownPosFrame = ImGui::GetFrameCount();
         CoreGraphics::WindowReposition(wndHandle->wnd, pos.x, pos.y);
     };
     platform_io.Platform_GetWindowSize = [](ImGuiViewport* vp) -> ImVec2
@@ -847,6 +958,7 @@ ImguiContext::Create()
     platform_io.Platform_SetWindowSize = [](ImGuiViewport* vp, ImVec2 size)
     {
         ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        wndHandle->ownSizeFrame = ImGui::GetFrameCount();
         CoreGraphics::WindowResize(wndHandle->wnd, size.x, size.y);
     };
     platform_io.Platform_SetWindowTitle = [](ImGuiViewport* vp, const char* str)
@@ -897,6 +1009,54 @@ ImguiContext::Create()
         yOffset += monitor.height;
         platform_io.Monitors.push_back(imguiMonitor);
     }
+
+    // A window dragged out of the main window draws its UI in its own script. The main window's
+    // script draws the scene with the UI over it, and copied to the other windows it shows the main
+    // window in each of them. The script is as big as the largest monitor, so a window fits on any
+    FrameScript_imguiwindow::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
+        {
+            CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+            if (state.windowPipeline != CoreGraphics::InvalidPipelineId)
+            {
+                CoreGraphics::DestroyGraphicsPipeline(state.windowPipeline);
+            }
+            state.windowPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, CoreGraphics::InvalidPassId, 0, pass, inputAssembly });
+        });
+    FrameScript_imguiwindow::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+        {
+            if (CoreGraphics::UpdatingWindow == CoreGraphics::InvalidWindowId)
+            {
+                return;
+            }
+            void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
+            if (userData == nullptr)
+            {
+                return;
+            }
+
+            N_SCOPE(DrawWindow, ImGUI)
+            ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+            for (int i = 1; i < platformIO.Viewports.Size; i++)
+            {
+                ImGuiViewport* imguiViewport = platformIO.Viewports[i];
+                if (imguiViewport->ID == *static_cast<ImGuiID*>(userData) && imguiViewport->DrawData != nullptr)
+                {
+                    ImguiDrawFunction(cmdBuf, viewport, imguiViewport->DrawData, state.windowPipeline);
+                }
+            }
+            IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+            CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
+            CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+        });
+
+    SizeT largestWidth = mode.GetWidth(), largestHeight = mode.GetHeight();
+    for (const auto& monitor : monitors)
+    {
+        largestWidth = Math::max(largestWidth, (SizeT)monitor.width);
+        largestHeight = Math::max(largestHeight, (SizeT)monitor.height);
+    }
+    FrameScript_imguiwindow::Initialize(largestWidth, largestHeight);
+    FrameScript_imguiwindow::SetupPipelines();
 
     ImGuiWindowHandle* wndHandle = new ImGuiWindowHandle;
     wndHandle->wnd = CoreGraphics::MainWindow;
@@ -1100,14 +1260,55 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
         auto* handle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
         if (handle == nullptr)
             continue;
+
+        // A viewport without inputs is the one being dragged. It is under the cursor, but the
+        // viewport that counts is the one below it, which is where the window would dock
+        if (vp->Flags & ImGuiViewportFlags_NoInputs)
+        {
+            continue;
+        }
         if (CoreGraphics::WindowIsHovered(handle->wnd))
             hovered = vp->ID;
     }
     io.AddMouseViewportEvent(hovered);
 
+    // The window manager has the last word on where a window goes, and may put it somewhere other
+    // than asked, for instance to keep it inside the screen. What it reports back can be among the
+    // events ignored as ImGui's own, and then ImGui keeps a place the window is not at. Every click is
+    // then off by the difference, which is what makes the top of a window, its title bar, miss. Once
+    // ImGui has left a window alone for a few frames, where it really is is read back
+    const int frame = ImGui::GetFrameCount();
+    for (int i = 1; i < platform_io.Viewports.Size; i++)
+    {
+        ImGuiViewport* vp = platform_io.Viewports[i];
+        auto* handle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        if (handle == nullptr || !vp->PlatformWindowCreated)
+        {
+            continue;
+        }
+
+        if (frame > handle->ownPosFrame + ImGuiWindowEchoFrames)
+        {
+            const Math::int2 pos = CoreGraphics::WindowGetPosition(handle->wnd);
+            if ((float)pos.x != vp->Pos.x || (float)pos.y != vp->Pos.y)
+            {
+                vp->PlatformRequestMove = true;
+            }
+        }
+        if (frame > handle->ownSizeFrame + ImGuiWindowEchoFrames)
+        {
+            const Math::int2 size = CoreGraphics::WindowGetSize(handle->wnd);
+            if (size.x > 0 && size.y > 0 && ((float)size.x != vp->Size.x || (float)size.y != vp->Size.y))
+            {
+                vp->PlatformRequestResize = true;
+            }
+        }
+    }
+
     io.DeltaTime = ctx.frameTime;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
     ImGui::NewFrame();
+    FocusDetachedWindow();
 
     TotalIndicesThisFrame = 0;
     TotalVerticesThisFrame = 0;

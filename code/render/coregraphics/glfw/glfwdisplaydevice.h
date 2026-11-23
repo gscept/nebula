@@ -69,6 +69,7 @@ protected:
     friend void ScrollFunc(const CoreGraphics::WindowId& id, double xs, double ys);
     friend void CloseFunc(const CoreGraphics::WindowId& id);
     friend void FocusFunc(const CoreGraphics::WindowId& id, int focus);
+    friend void FlushFocusLoss();
     friend void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
     friend void MoveFunc(const CoreGraphics::WindowId& id, int x, int y);
     friend void CoreGraphics::WindowNewFrame(const CoreGraphics::WindowId id);

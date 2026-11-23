@@ -58,7 +58,12 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
                     ImGuiViewport* viewport = platform_io.Viewports[i];
                     if (viewport->ID == *id)
                     {
-                        viewport->PlatformRequestResize = true;
+                        // ImGui's own change coming back is not a change the user made
+                        const auto* handle = static_cast<ImGuiWindowHandle*>(viewport->PlatformHandle);
+                        if (handle == nullptr || ImGui::GetFrameCount() > handle->ownSizeFrame + ImGuiWindowEchoFrames)
+                        {
+                            viewport->PlatformRequestResize = true;
+                        }
                         return true;
                     }
                 }
@@ -77,7 +82,12 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
                     ImGuiViewport* viewport = platform_io.Viewports[i];
                     if (viewport->ID == *id)
                     {
-                        viewport->PlatformRequestMove = true;
+                        // ImGui's own change coming back is not a change the user made
+                        const auto* handle = static_cast<ImGuiWindowHandle*>(viewport->PlatformHandle);
+                        if (handle == nullptr || ImGui::GetFrameCount() > handle->ownPosFrame + ImGuiWindowEchoFrames)
+                        {
+                            viewport->PlatformRequestMove = true;
+                        }
                         return true;
                     }
                 }
@@ -86,8 +96,8 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         }
         case DisplayEvent::MouseMove:
         {
-            Math::int2 pos = CoreGraphics::WindowGetPosition(displayEvent.GetWindowId());
-            io.AddMousePosEvent(displayEvent.GetAbsMousePos().x + pos.x, displayEvent.GetAbsMousePos().y + pos.y);
+            const Math::vec2 pos = CoreGraphics::WindowGetScreenCursorPosition(displayEvent.GetWindowId());
+            io.AddMousePosEvent(pos.x, pos.y);
             return io.WantCaptureMouse;
         }
         case DisplayEvent::Drop:

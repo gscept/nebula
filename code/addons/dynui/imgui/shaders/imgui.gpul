@@ -93,6 +93,16 @@ CubeFaceDirection(uv : f32x2, face : u32) f32x3
 
 //------------------------------------------------------------------------------
 /**
+    One channel from sRGB to linear, the exact curve rather than a 2.2 power
+*/
+SrgbToLinear(c : f32) f32
+{
+    if c <= 0.04045f { return c / 12.92f; }
+    return pow((c + 0.055f) / 1.055f, 2.4f);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 UnpackMask(val : u32) f32x4
 {
@@ -113,7 +123,11 @@ vsMain(
     const pos = f32x4(position, 0, 1);    
     var projPos = ImGUI.TextProjectionModel * pos;
     vertexExportCoordinates(projPos);
-    Color = color;
+
+    // ImGui colors are authored in sRGB and the UI is drawn into an sRGB target, which encodes on
+    // write. Taken to linear here, so the encode gives back the authored color instead of a lighter
+    // one. Alpha is coverage, not a color, and stays as it is
+    Color = f32x4(SrgbToLinear(color.r), SrgbToLinear(color.g), SrgbToLinear(color.b), color.a);
     UV = uv;
 }
 
@@ -168,7 +182,8 @@ psMain(
         
     const mask = UnpackMask(ImGUI.ColorMask);
 
-    // Since we are using sRGB output, remember to degamma
+    // The vertex color is already linear, see vsMain. Sampled textures are linear too: sRGB ones are
+    // decoded on read
     pixelExportColor(Color * texColor * mask, 0);
 }
 

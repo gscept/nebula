@@ -6,6 +6,7 @@
 
 #include "coregraphics/config.h"
 #include "coregraphics/glfw/glfwdisplaydevice.h"
+#include "coregraphics/glfw/glfwwindow.h"
 #include "GLFW/glfw3native.h"
 #include <GLFW/glfw3.h>
 
@@ -87,8 +88,7 @@ void
 GLFWDisplayDevice::ProcessWindowMessages()
 {
     glfwPollEvents();
-
-
+    FlushFocusLoss();
 }
 
 //------------------------------------------------------------------------------

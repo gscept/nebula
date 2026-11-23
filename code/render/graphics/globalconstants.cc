@@ -280,6 +280,23 @@ GetFrameResourceTables(uint32_t bufferIndex)
 
 //------------------------------------------------------------------------------
 /**
+    Textures registered while the frame is being recorded only have their bindless
+    writes queued, and the frame's tick tables were committed when the frame started.
+    Without this, sampling such a texture in the same frame reads whatever descriptor
+    the slot held before. The bindless arrays are update after bind, so this is valid
+    as long as the frame's command buffers haven't been submitted yet.
+*/
+void
+CommitPendingTickTables(uint32_t bufferIndex)
+{
+    for (uint i = 0; i < (uint)GlobalTables::NumQueues; i++)
+    {
+        CoreGraphics::ResourceTableCommitChanges(globalConstantState.tickResourceTables[i][bufferIndex]);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 const CoreGraphics::ResourceTableId
 GetTickResourceTable(uint32_t bufferIndex, GlobalTables table)

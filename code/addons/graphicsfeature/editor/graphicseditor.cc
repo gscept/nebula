@@ -8,6 +8,17 @@
 
 #if WITH_NEBULA_EDITOR
 #include "graphicsfeature/components/model.h"
+#include "graphicsfeature/components/decal.h"
+#include "graphicsfeature/components/lighting.h"
+#include "graphicsfeature/components/gi.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
+#include "game/processor.h"
+#include "decals/decalcontext.h"
+#include "coregraphics/resourcetable.h"
+#include "gi/ddgicontext.h"
+#include "io/assignregistry.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
 #include "lighting/lightcontext.h"
@@ -96,7 +107,17 @@ ModelBounds(Game::World* world, Game::Entity entity, Math::bbox& out)
     if (model.graphicsEntityId == uint(-1))
         return false;
 
-    out = Models::ModelContext::ComputeBoundingBox(Graphics::GraphicsEntityId(model.graphicsEntityId));
+    // ComputeBoundingBox answers in world space, and the editor puts the box where the entity stands,
+    // so it is taken back through the model's transform first. Without this an entity away from the
+    // origin is picked and outlined at twice its position
+    const Graphics::GraphicsEntityId gid(model.graphicsEntityId);
+    Math::bbox box = Models::ModelContext::ComputeBoundingBox(gid);
+    if (box.pmin == box.pmax)
+    {
+        return false;   // no nodes yet, the model is still loading
+    }
+    box.affine_transform(Math::inverse(Models::ModelContext::GetTransform(gid)));
+    out = box;
     return true;
 }
 
@@ -334,6 +355,13 @@ GraphicsViewportPanel::OnCanvasClosed()
 void
 RegisterEditorContributions()
 {
+    // The editor's file browser and dialogs start in 'work:'. A Nebula project keeps that folder under
+    // its root, which the old editor reached as 'proj:work/'
+    if (!IO::AssignRegistry::Instance()->HasAssign("work"))
+    {
+        IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", "proj:work"));
+    }
+
     Editor::Gizmo::Interface interface;
     interface.line = Editor::Gizmo::LineDelegate::FromFunction<&DrawLine>();
     interface.box = Editor::Gizmo::BoxDelegate::FromFunction<&DrawBox>();
@@ -357,6 +385,94 @@ ClearEditorContributions()
 {
     Editor::Gizmo::Clear();
     Dynui::ImguiContext::SetKeyCallback(Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)>());
+}
+
+//------------------------------------------------------------------------------
+/**
+    The graphics manager's transform processors only run while the world plays, so a move the editor
+    makes in editor mode never reaches the render contexts. These run in editor mode too. They are the
+    old editor's, which had the same problem.
+*/
+void
+RegisterEditorProcessors()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdateModelTransforms"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
+            {
+                Models::ModelContext::SetTransform(model.graphicsEntityId, Math::trs(pos, orient, scale));
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdatePointLightPositions"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, GraphicsFeature::PointLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdateSpotLightTransform"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& rot, GraphicsFeature::SpotLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdateAreaLightTransform"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& rot, Game::Scale const& scale, GraphicsFeature::AreaLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdateDecalTransform"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& rot, Game::Scale const& scale, GraphicsFeature::Decal const& decal)
+            {
+                Decals::DecalContext::SetTransform(decal.graphicsEntityId, Math::trs(pos, rot, scale));
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsEditor.UpdateDDGIVolumeTransform"_atm)
+        .On("OnEndFrame")
+        .OnlyModified()
+        .RunInEditor()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& rot, Game::Scale const& scale, GraphicsFeature::DDGIVolume const& volume)
+            {
+                GI::DDGIContext::SetPosition(volume.graphicsEntityId, pos);
+                GI::DDGIContext::SetSize(volume.graphicsEntityId, scale);
+            }
+        )
+        .Build();
 }
 
 } // namespace GraphicsFeature

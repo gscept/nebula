@@ -29,6 +29,7 @@
 #include "io/textreader.h"
 
 #include "dynui/imguicontext.h"
+#include "dynui/imguidetach.h"
 #include "toolkitutil/asset/assetimporter.h"
 #include "toolkitutil/asset/assetpackager.h"
 
@@ -440,6 +441,8 @@ WindowServer::RunAll()
             }
             else
             {
+                // A window dragged out of the main window gets its own OS window when it is let go
+                Dynui::ImguiDetach::DeferWindowDetach(it->GetName().AsCharPtr());
                 if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
                 {
                     if (it->focusThisFrame)

@@ -80,6 +80,9 @@ private:
 /// register the panel, the shapes and the key callback
 void RegisterEditorContributions();
 
+/// the transform processors that keep the render contexts in step while the world is in editor mode.
+/// Called once the world exists, at activate
+void RegisterEditorProcessors();
 /// the shapes and the key callback are taken back when the feature stops
 void ClearEditorContributions();
 

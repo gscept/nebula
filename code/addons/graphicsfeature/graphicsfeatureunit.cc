@@ -295,6 +295,10 @@ GraphicsFeatureUnit::OnActivate()
 
     this->AttachManager(this->graphicsManager);
     this->AttachManager(this->cameraManager);
+#if WITH_NEBULA_EDITOR
+    // The world exists by now, so the editor's edit-mode transform processors can go in
+    RegisterEditorProcessors();
+#endif
 
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();
@@ -354,6 +358,18 @@ GraphicsFeatureUnit::OnBeginFrame()
     const auto& windows = Graphics::GraphicsServer::Instance()->GetWindows();
     for (const auto& window : windows)
         CoreGraphics::WindowNewFrame(window);
+
+    // The main view draws to the main window, so its viewport follows the window size. The frame
+    // script grows its textures when the viewport outgrows them
+    if (this->defaultView != Graphics::InvalidViewId && this->mainWindow != CoreGraphics::InvalidWindowId)
+    {
+        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->mainWindow);
+        const Math::rectangle<int>& viewport = Graphics::ViewGetViewport(this->defaultView);
+        if (viewport.width() != mode.GetWidth() || viewport.height() != mode.GetHeight())
+        {
+            Graphics::ViewSetViewport(this->defaultView, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+        }
+    }
     N_MARKER_END()
 
     this->inputServer->BeginFrame();

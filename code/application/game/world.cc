@@ -1059,6 +1059,13 @@ World::ExecuteRemoveComponentCommands()
 void
 World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds)
 {
+    // The entity was deleted after the components were staged, for example when the editor
+    // rebuilds the world, so there is nothing to add them to
+    if (!this->IsValid(entity))
+    {
+        return;
+    }
+
     MemDb::TableSignature signature;
 
     if (this->HasInstance(entity))

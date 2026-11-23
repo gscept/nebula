@@ -128,7 +128,12 @@ ViewportPanel::BeginWindow()
     if (!this->open && this->fileDrop.isvalid())
         this->AbortFileDrop();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    // The core only calls EndWindow for an open panel, so the padding is pushed for an open one only.
+    // Pushed for a closed panel it is never popped and leaks into the next window
+    if (this->open)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    }
     if (!EditorPanel::BeginWindow())
     {
         // A closed panel does not draw, so a drag that was held when it closed has no frame to

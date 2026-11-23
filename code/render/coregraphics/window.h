@@ -84,6 +84,8 @@ void WindowTakeFocus(const WindowId id);
 void WindowSetMousePassThrough(const WindowId id, bool passthrough);
 /// Get if window is hovered
 bool WindowIsHovered(const WindowId id);
+/// Get the cursor position on the screen, read now rather than from an event
+Math::vec2 WindowGetScreenCursorPosition(const WindowId id);
 
 /// Get user data associated with window
 void* WindowGetUserData(const WindowId id);

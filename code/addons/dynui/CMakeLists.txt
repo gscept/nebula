@@ -16,7 +16,9 @@ fips_files(
 	imguidisplayeventhandler.cc
 	imguidisplayeventhandler.h
     nebula_icons.h
+    imguidetach.h
 )
+nebula_framescript_add(imguiwindow.json)
 
 fips_dir(imgui/shaders)
     compile_gpulang(imgui.gpul)

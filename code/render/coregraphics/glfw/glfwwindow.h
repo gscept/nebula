@@ -66,6 +66,8 @@ void ScrollFunc(const CoreGraphics::WindowId& id, double xs, double ys);
 void CloseFunc(const CoreGraphics::WindowId& id);
 /// window focus
 void FocusFunc(const CoreGraphics::WindowId& id, int focus);
+/// tell a focus loss that happened while polling, unless another window of the app took the focus
+void FlushFocusLoss();
 /// window resize
 void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
 /// Window move

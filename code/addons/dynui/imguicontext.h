@@ -34,6 +34,22 @@ extern ImGuiKey NebulaToImguiKeyCodes[];
 extern Util::Array<Util::String> ImguiDragAndDropFiles;
 extern const char* EditorUIPath;
 
+/// The platform side of a secondary ImGui viewport
+struct ImGuiWindowHandle
+{
+    CoreGraphics::WindowId wnd;
+
+    /// The frame the window was last moved or resized by ImGui itself. The window system reports
+    /// those changes back as move and resize events, but late, after ImGui has already moved the
+    /// window further. Taken as moves the user made, they put the window back where it was a few
+    /// frames ago, which is what makes a dragged window jump. They are ignored for a few frames
+    int ownPosFrame = -1000;
+    int ownSizeFrame = -1000;
+};
+
+/// how many frames after ImGui moved or resized a window its own change can still come back
+constexpr int ImGuiWindowEchoFrames = 3;
+
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle = 0;
@@ -97,6 +113,9 @@ public:
 
     /// called after frame
     static void EndFrame(const Graphics::FrameContext& ctx);
+
+    /// draw and show a window ImGui made for a window dragged out of the main window. Not for the main window
+    static void PresentWindow(const CoreGraphics::WindowId window, IndexT frameIndex, IndexT bufferIndex);
 
     /// get the unscaled base style, call ApplyBaseStyle after modifying it
     static ImGuiStyle& GetBaseStyle();

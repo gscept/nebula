@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "neweditor/core/editorpanel.h"
 #include "neweditor/api/shell.h"
+#include "dynui/imguidetach.h"
 
 namespace Editor
 {
@@ -61,6 +62,8 @@ EditorPanel::BeginWindow()
     if (!this->open)
         return false;
 
+    // A panel dragged out of the main window gets its own OS window when it is let go
+    Dynui::ImguiDetach::DeferWindowDetach(this->name.AsCharPtr());
     return ImGui::Begin(this->name.AsCharPtr(), &this->open);
 }
 

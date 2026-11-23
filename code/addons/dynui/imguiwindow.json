@@ -1,0 +1,68 @@
+{
+  "Nebula": {
+    "version": 3,
+    "_comment": "The UI of an ImGui window that was dragged out of the main window into its own. Only the main window shows the scene, so this draws the window's UI and nothing else",
+    "Dependencies": [
+      "Scene"
+    ],
+    "LocalTextures": [
+      {
+        "name": "WindowBuffer",
+        "format": "SRGBA8",
+        "relative": true,
+        "usage": "Render|TransferSource",
+        "relativeSize": [
+          1.0,
+          1.0
+        ],
+        "type": "Texture2D"
+      }
+    ],
+    "ExportTextures": [
+      "WindowBuffer"
+    ],
+    "Submissions": [
+      {
+        "name": "Window UI",
+        "queue": "Graphics",
+        "wait_for_submissions": [
+          "Scene"
+        ],
+        "last_submit": true,
+        "_comment": "Waits for the scene submission, because that is where the UI's textures are updated",
+        "ops": [
+          {
+            "render": {
+              "name": "Window",
+              "targets": [
+                {
+                  "name": "WindowBuffer",
+                  "clear": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ],
+                  "flags": "Store"
+                }
+              ],
+              "ops": [
+                {
+                  "subgraph": {
+                    "name": "ImGUI"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "transition": {
+              "name": "WindowBuffer",
+              "stage": "ComputeShaderRead"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

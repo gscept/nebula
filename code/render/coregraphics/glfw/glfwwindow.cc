@@ -37,6 +37,11 @@ using namespace Math;
 namespace GLFW
 {
 
+/// whether one of the app's windows has the focus, as last told to the event handlers
+static bool AppFocused = false;
+/// the window that lost the focus during this poll, if no other window of the app gained it yet
+static CoreGraphics::WindowId PendingFocusLoss = CoreGraphics::InvalidWindowId;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -231,13 +236,46 @@ FocusFunc(const CoreGraphics::WindowId& id, int focus)
 {
     if (focus)
     {
-        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::SetFocus, id));
         CoreGraphics::FocusWindow = id;
+
+        // Focus moving from one of the app's windows to another is not the app losing focus. The
+        // window that lost it reported that first, and it is taken back here
+        if (PendingFocusLoss != CoreGraphics::InvalidWindowId)
+        {
+            PendingFocusLoss = CoreGraphics::InvalidWindowId;
+            return;
+        }
+
+        if (!AppFocused)
+        {
+            AppFocused = true;
+            GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::SetFocus, id));
+        }
     }
     else
     {
-        GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::KillFocus, id));
+        // Whether the app lost focus is only known once it is clear no other window of it gained
+        // it, so it is told after the events are polled
+        PendingFocusLoss = id;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Tell the focus loss that no other window of the app took back while polling.
+*/
+void
+FlushFocusLoss()
+{
+    if (PendingFocusLoss == CoreGraphics::InvalidWindowId)
+    {
+        return;
+    }
+
+    const CoreGraphics::WindowId id = PendingFocusLoss;
+    PendingFocusLoss = CoreGraphics::InvalidWindowId;
+    AppFocused = false;
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::KillFocus, id));
 }
 
 //------------------------------------------------------------------------------
@@ -370,6 +408,15 @@ InternalSetupFunction(const WindowCreateInfo& info)
     glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GL_FALSE);
     glfwWindowHint(GLFW_FOCUSED, GL_FALSE);
+
+    // A window another system owns (an ImGui viewport) is shown by that system once it has its
+    // place and size. Shown at creation, the window manager puts it wherever it likes first, and it
+    // visibly jumps to its place a frame later. The position is a hint so the window manager uses it
+    // from the start, instead of placing the window itself
+    const bool owned = info.userData != nullptr;
+    glfwWindowHint(GLFW_VISIBLE, owned ? GL_FALSE : GL_TRUE);
+    glfwWindowHint(GLFW_POSITION_X, owned ? info.mode.GetXPos() : GLFW_ANY_POSITION);
+    glfwWindowHint(GLFW_POSITION_Y, owned ? info.mode.GetYPos() : GLFW_ANY_POSITION);
 
     // create window
     GLFWwindow* wnd = glfwCreateWindow(info.mode.GetWidth(), info.mode.GetHeight(), info.title.Value(), nullptr, nullptr);
@@ -648,6 +695,23 @@ WindowIsHovered(const WindowId id)
 
 //------------------------------------------------------------------------------
 /**
+    A cursor event is relative to where its window was when the event happened. Added to where the
+    window is now, it is off by however far the window moved since, which for a window ImGui moves
+    under the cursor is every frame. The cursor and the window are both read here, at the same time
+*/
+Math::vec2
+WindowGetScreenCursorPosition(const WindowId id)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    double x, y;
+    glfwGetCursorPos(wnd, &x, &y);
+    int wx, wy;
+    glfwGetWindowPos(wnd, &wx, &wy);
+    return Math::vec2((float)(x + wx), (float)(y + wy));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void*
 WindowGetUserData(const WindowId id)
@@ -687,6 +751,7 @@ void
 WindowPollEvents()
 {
     glfwPollEvents();
+    GLFW::FlushFocusLoss();
 }
 
 //------------------------------------------------------------------------------
