@@ -342,6 +342,25 @@ ParseLevel(IO::JsonReader* reader)
                         extensionHook->keys(extension.json.AsCharPtr(), extension.fields);
                     }
 
+                    // Which entities the text names is something only the extension can say, because the
+                    // document reads the text as bytes. This is what makes a reference inside extension
+                    // data a reference the document knows, the same way a component field's reference is,
+                    // and it is what lets the writer put this file's guids into it
+                    if (extensionHook != nullptr && extensionHook->refs != nullptr && !extension.json.IsEmpty())
+                    {
+                        Util::Array<Game::TextRef> named;
+                        extensionHook->refs(extension.json.AsCharPtr(), named);
+                        for (IndexT r = 0; r < named.Size(); r++)
+                        {
+                            DocumentEntityRef ref;
+                            ref.entity = docIndex;
+                            ref.extension = extension.name;
+                            ref.field = named[r].path;
+                            ref.target = named[r].guid;
+                            doc->entityRefs.Append(ref);
+                        }
+                    }
+
                     entity.extensions.Append(extension);
                 }
                 reader->SetToParent();
@@ -583,7 +602,49 @@ WriteLevel(const SceneDocument* doc, IO::JsonWriter* writer, const Util::Array<U
                 if (extension.json.IsEmpty())
                     continue;
 
-                writer->AddRaw(extension.json.AsCharPtr(), Util::String(extension.name.Value()));
+                // A text that names entities names them by the guids of the file it was read from, and
+                // this file can only name its own records. The writer cannot read the text, so it asks the
+                // extension that wrote it for the text with this file's guids put back. A reference this
+                // file has no record for is given with no guid, which is what the extension writes as
+                // nothing, and an extension that cannot answer for its own text is written whole
+                const Game::LevelExtension* extensionHook = Game::LevelExtensionRegistry::GetExtension(extension.name);
+                if (extensionHook == nullptr || extensionHook->remap == nullptr)
+                {
+                    writer->AddRaw(extension.json.AsCharPtr(), Util::String(extension.name.Value()));
+                    continue;
+                }
+
+                Util::String pairs;
+                for (IndexT r = 0; r < doc->entityRefs.Size(); r++)
+                {
+                    const DocumentEntityRef& ref = doc->entityRefs[r];
+                    if (ref.entity != i || ref.extension != extension.name)
+                        continue;
+
+                    const IndexT targetIndex = doc->FindEntity(ref.target);
+                    if (targetIndex == InvalidIndex)
+                    {
+                        n_warning("Scene file entity '%s' has extension reference '%s' pointing at a guid "
+                            "that is not in that file\n", entity.name.AsCharPtr(), ref.field.AsCharPtr());
+                    }
+
+                    if (!pairs.IsEmpty())
+                        pairs += "\n";
+                    pairs += ref.field;
+                    pairs += "\t";
+                    if (targetIndex != InvalidIndex)
+                        pairs += guidByEntityIndex[targetIndex].AsString();
+                }
+
+                if (pairs.IsEmpty())
+                {
+                    writer->AddRaw(extension.json.AsCharPtr(), Util::String(extension.name.Value()));
+                    continue;
+                }
+
+                Util::String text;
+                extensionHook->remap(extension.json.AsCharPtr(), pairs.AsCharPtr(), text);
+                writer->AddRaw(text.AsCharPtr(), Util::String(extension.name.Value()));
             }
             writer->End();
         }

@@ -132,16 +132,22 @@ struct DocumentCollection
 
 //------------------------------------------------------------------------------
 /**
-    An entity reference that was read out of a component value. The field is named rather than
-    offset so the scene can find it in the component's reflection, and the target is the guid the
-    file pointed at.
+    An entity reference that was read out of a value. The field is named rather than offset so the
+    scene can find it in the component's reflection, and the target is the guid the file pointed at.
+
+    A reference read out of a component value names the component and the field. A reference read out
+    of an extension's text names the extension and the path the extension names its field by, because
+    the document has no reflection of a text it cannot read. One of the two is always invalid.
 */
 struct DocumentEntityRef
 {
     /// index of the DocumentEntity the value belongs to
     IndexT entity;
+    /// the component the reference sits in. Invalid for a reference inside extension text
     Game::ComponentId component = Game::ComponentId::Invalid();
-    /// the field name the reference sits in
+    /// the extension the reference sits in. Invalid for a reference inside a component value
+    Util::StringAtom extension;
+    /// the field name the reference sits in, or the path the extension names it by
     Util::String field;
     /// the guid the file pointed at
     Util::Guid target;

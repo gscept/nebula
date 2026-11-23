@@ -18,6 +18,7 @@
 #include "neweditor/model/editcommandmanager.h"
 #include "neweditor/api/shell.h"
 #include "neweditor/base/editorlog.h"
+#include "neweditor/base/drawsurface.h"
 #include "neweditor/console/editorcommands.h"
 #include "neweditor/input/editorkeybinds.h"
 #include "neweditor/model/scene.h"
@@ -50,8 +51,9 @@ static const int IndentWidth = 14;
 
 // What the drag payload is called. It carries the entity id rather than a row index, because a
 // rebuild moves the
-// rows around while a drag is still running
-static const char* DragPayloadType = "outline_entity";
+// rows around while a drag is still running. The name is the surface's, because an entity row in the
+// inspector is the other place this drag can land
+static const char* const DragPayloadType = Editor::EntityDragPayload;
 
 // The collection payload carries the guid of the collection the drag started on, which is what a
 // drop reparents

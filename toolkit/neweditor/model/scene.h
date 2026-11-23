@@ -450,6 +450,11 @@ public:
     /// authored anything, which is what a drawn row asks. The marker is here and the extensions
     /// cannot read it
     bool IsKeyAuthored(Game::Entity entity, Util::StringAtom extension, const Util::String& path) const;
+    /// the references one extension's text names for a document entity. The ones read from the text the
+    /// new text replaces go first, because a rewritten text is not the text they were read from, and a
+    /// stale reference would be written into the file as a guid the text no longer names
+    static void RecordDocumentRefs(const Ptr<SceneDocument>& doc, IndexT docEntity,
+        Util::StringAtom extension, const Util::String& text);
 
 private:
     /// copy one entity into the sim world, and initialize it if the instance is new
@@ -510,9 +515,17 @@ private:
         Util::Array<Game::ComponentId>& chainCids, Util::Array<Util::Blob>& values, Util::Array<bool>& present) const;
     /// the extension texts the chain gives an entity, merged bottom up. The scene composes the
     /// texts without
-    /// reading them
+    /// reading them. Each text names the guids of the file it came from, so they are put as the guids
+    /// targetMap names the targets by before the merge, which is what makes the merged text name one
+    /// file's records rather than several
     void MergeChainExtensions(const DocumentEntity& record, const Util::Array<ChainHop>& hops,
-        Util::Dictionary<Util::StringAtom, Util::String>& outTexts) const;
+        Util::Dictionary<Util::StringAtom, Util::String>& outTexts,
+        Util::HashTable<Util::Guid, Game::Entity>& targetMap) const;
+    /// the text with its references put as the guids targetMap names the targets by, read through the map
+    /// the text came from. The scene cannot read a text, so only the extension can answer for its own
+    static Util::String RemapTextRefs(const Game::LevelExtension* extension, const Util::String& text,
+        const Util::HashTable<Util::Guid, Game::Entity>& fromMap,
+        const Util::Dictionary<Game::Entity, Util::Guid>& toGuids);
     /// the guid to entity map for one instance's file, which is what turns the references inside
     /// that file's
     /// values into entities of this scene

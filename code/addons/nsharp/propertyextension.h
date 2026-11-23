@@ -89,6 +89,13 @@ public:
     /// which is what makes a merged text resolve against the files it names guids from
     static void SetRefContext(const char* pairs);
 
+    /// the entity references a text names, as the paths this extension names its fields by. Only this side
+    /// can answer, because the formats cannot read the text
+    static void TextRefs(const char* text, Util::Array<Game::TextRef>& out);
+
+    /// the text with the named paths' references put as the given guids, as "path\tguid" pairs
+    static void Remap(const char* text, const char* pairs, Util::String& out);
+
     // -- The editor contract --
 
     /// the property section, drawn by the managed side through the editor's ImGui surface. Only called from
@@ -137,6 +144,8 @@ private:
     static void* mergeJson;
     static void* resolveJson;
     static void* setRefContext;
+    static void* textRefs;
+    static void* remapRefs;
 
     static ChangeFunc changeCallback;
     static RevertFunc revertCallback;

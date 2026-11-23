@@ -308,6 +308,9 @@ Clipboard::BuildDocument(Scene* scene, const Util::Array<Game::Entity>& entities
             scene->CaptureExtensions(entity, docEntity.extensions, map);
         }
 
+        for (IndexT e = 0; e < docEntity.extensions.Size(); e++)
+            Scene::RecordDocumentRefs(doc, docIndex, docEntity.extensions[e].name, docEntity.extensions[e].json);
+
         doc->entities.Append(docEntity);
     }
 

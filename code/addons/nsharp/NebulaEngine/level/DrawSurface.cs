@@ -66,6 +66,10 @@ namespace Nebula
         [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool RowComboCall(string key, IntPtr options, int index, IntPtr outIndex, string description);
 
+        [DllImport("__Internal", EntryPoint = "DrawRowEntity")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool RowEntityCall(string key, ulong value, IntPtr outValue, string description);
+
         [DllImport("__Internal", EntryPoint = "DrawRowFloats")]
         [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool RowFloatsCall(string key, IntPtr values, int count, string description);
@@ -167,6 +171,20 @@ namespace Nebula
             {
                 changed = RowFloatsCall(key, (IntPtr)valuesPtr, count, description);
             }
+            return changed;
+        }
+
+        /// <summary>
+        /// A row whose value is an entity reference. The name is drawn by the surface, because it is the
+        /// scene's and this side cannot read it, and the drop is accepted by the surface as well, because a
+        /// drop can only be accepted by the side that draws with ImGui. The entity the drop gave comes back
+        /// through the out value, and the answer is true when the value changed.
+        /// </summary>
+        public static unsafe bool RowEntity(string key, ulong value, out ulong result, string description)
+        {
+            ulong current = value;
+            bool changed = RowEntityCall(key, value, (IntPtr)(&current), description);
+            result = current;
             return changed;
         }
 

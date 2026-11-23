@@ -31,6 +31,13 @@
     its own text names. A text that names entities is written as the guids the file names them by, and
     the map is only valid for the duration of the one call that needs it.
 
+    A text that names entities is the one thing the formats cannot do on their own, because they cannot
+    read the text. They know the guids a text names only when the extension says them, and they can put
+    other guids into the text only when the extension writes them. That is what the two reference hooks
+    are, and they are what makes an extension's references go through the same document as a
+    component's: the document records them, and the scene patches and remaps them the way it does for a
+    component field.
+
     @see Game::LevelExtensionRegistry
     @copyright
     (C) 2026 Individual contributors, see AUTHORS file
@@ -39,11 +46,24 @@
 #include "game/entity.h"
 #include "util/array.h"
 #include "util/dictionary.h"
+#include "util/guid.h"
 #include "util/string.h"
 #include "util/stringatom.h"
 
 namespace Game
 {
+
+//------------------------------------------------------------------------------
+/**
+    One entity reference a text names: the path the extension names its field by, and the guid the text
+    carries for the target. The formats cannot see inside a text, so this is the shape they can hold a
+    reference in.
+*/
+struct TextRef
+{
+    Util::String path;
+    Util::Guid guid;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -71,6 +91,15 @@ public:
     using ResolveFunc = void(*)(const char* base, const Util::Array<Util::String>& keys, Util::String& out);
     /// the file's guid map as "guid:entityId" pairs, for the duration of one capture or apply
     using RefContextFunc = void(*)(const char* pairs);
+    /// the entity references the text names, as the paths the extension names its fields by. The
+    /// formats cannot read a text, so this is how they learn which parts of it name entities, and it is
+    /// what lets a document record an extension reference the way it records a component one
+    using RefsFunc = void(*)(const char* text, Util::Array<Game::TextRef>& out);
+    /// the text with the named paths' references put as the given guids, as "path\tguid" pairs. A text
+    /// that names entities can only be written into a file that has a record for them, and this is what
+    /// lets the formats move a text from one file's guids to another's. A path the text does not name is
+    /// left alone, and a path given with no guid is written as nothing
+    using RemapFunc = void(*)(const char* text, const char* pairs, Util::String& out);
 
     /// the node name the extension writes under an entity
     Util::StringAtom name;
@@ -83,6 +112,8 @@ public:
     MergeFunc merge = nullptr;
     ResolveFunc resolve = nullptr;
     RefContextFunc refContext = nullptr;
+    RefsFunc refs = nullptr;
+    RemapFunc remap = nullptr;
 };
 
 //------------------------------------------------------------------------------

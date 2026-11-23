@@ -220,6 +220,207 @@ namespace Nebula
         }
 
         /// <summary>
+        /// The entity references one text carries, as "path\tguid" lines. The level format cannot see inside
+        /// the text, so this is how it knows which parts of it name entities, and it is what lets it put its
+        /// own file's guids back into the text.
+        ///
+        /// Only the fields this side knows are entity references, so a property the text names but this build
+        /// does not have cannot be answered for.
+        /// </summary>
+        public static List<string> CollectRefs(string text)
+        {
+            List<string> lines = [];
+            JsonNode parsed = string.IsNullOrEmpty(text) ? null : JsonNode.Parse(text);
+            JsonObject obj = parsed is JsonObject o ? o : null;
+            if (obj == null)
+            {
+                return lines;
+            }
+
+            foreach (KeyValuePair<string, JsonNode> entry in obj)
+            {
+                // AsObject() throws when the node is not an object, so the type is checked rather than asked
+                // for
+                JsonObject fields = entry.Value is JsonObject f ? f : null;
+                if (fields == null)
+                {
+                    continue;
+                }
+
+                Type type = GetPropertyType(entry.Key);
+                if (type == null)
+                {
+                    continue;
+                }
+
+                foreach (FieldInfo field in GetSerializableFields(type))
+                {
+                    if (field.FieldType != typeof(Nebula.Game.Entity))
+                    {
+                        continue;
+                    }
+
+                    // A field the text does not carry names nothing, and a field it carries as null is a
+                    // reference with no target rather than a reference the text left out
+                    if (!fields.ContainsKey(field.Name))
+                    {
+                        continue;
+                    }
+
+                    JsonNode value = fields[field.Name];
+                    if (value is not JsonValue valueString || valueString.GetValueKind() != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    string guid = valueString.GetValue<string>();
+                    if (string.IsNullOrEmpty(guid))
+                    {
+                        continue;
+                    }
+
+                    lines.Add(entry.Key + "." + field.Name + "\t" + guid);
+                }
+            }
+
+            // Sorted, because every writer here produces the same order and the level format compares texts as
+            // bytes. An order that differed between the writers would read as a change no value made
+            lines.Sort((left, right) => string.CompareOrdinal(left, right));
+
+            return lines;
+        }
+
+        public static int TextRefs(string text, IntPtr outBuffer, int maxLen)
+        {
+            return WriteNames(CollectRefs(text), outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// The text with the named paths' references put as the given guids, as "path\tguid" lines. This is
+        /// what lets a text that names one file's records be written into a file that names them by its own.
+        /// A path given with no guid is written as nothing, which is what a file with no record for the target
+        /// can carry.
+        /// </summary>
+        public static string RemapRefs(string text, string pairs)
+        {
+            JsonNode node = string.IsNullOrEmpty(text) ? null : JsonNode.Parse(text);
+            JsonObject obj = node is JsonObject o ? o : null;
+            if (obj == null)
+            {
+                return text;
+            }
+
+            // The paths are grouped by the property they name, because the text is written one property at a
+            // time and a path is a property and a field rather than one key
+            Dictionary<string, Dictionary<string, string>> byProperty = [];
+            foreach (string line in SplitKeys(pairs))
+            {
+                int split = line.IndexOf('\t');
+                if (split <= 0)
+                {
+                    continue;
+                }
+
+                string path = line.Substring(0, split);
+                int dot = path.IndexOf('.');
+                if (dot <= 0)
+                {
+                    continue;
+                }
+
+                string propertyName = path.Substring(0, dot);
+                if (!byProperty.ContainsKey(propertyName))
+                {
+                    byProperty[propertyName] = [];
+                }
+                byProperty[propertyName][path.Substring(dot + 1)] = line.Substring(split + 1);
+            }
+
+            if (byProperty.Count == 0)
+            {
+                return text;
+            }
+
+            // Sorted, because every writer here produces the same order and the level format compares texts as
+            // bytes. A property is written with its fields in name order, and the properties in name order
+            List<string> names = [];
+            foreach (KeyValuePair<string, JsonNode> entry in obj)
+            {
+                names.Add(entry.Key);
+            }
+            names.Sort((left, right) => string.CompareOrdinal(left, right));
+
+            ArrayBufferWriter<byte> buffer = new();
+            using (Utf8JsonWriter writer = new Utf8JsonWriter(buffer, writerOptions))
+            {
+                writer.WriteStartObject();
+
+                foreach (string name in names)
+                {
+                    writer.WritePropertyName(name);
+
+                    JsonObject fields = obj[name] is JsonObject f ? f : null;
+                    if (fields == null)
+                    {
+                        WriteNode(writer, obj[name]);
+                        continue;
+                    }
+
+                    Dictionary<string, string> remapped =
+                        byProperty.TryGetValue(name, out Dictionary<string, string> named) ? named : null;
+
+                    List<string> fieldNames = [];
+                    foreach (KeyValuePair<string, JsonNode> field in fields)
+                    {
+                        fieldNames.Add(field.Key);
+                    }
+                    fieldNames.Sort((left, right) => string.CompareOrdinal(left, right));
+
+                    writer.WriteStartObject();
+
+                    foreach (string field in fieldNames)
+                    {
+                        writer.WritePropertyName(field);
+
+                        if (remapped == null || !remapped.ContainsKey(field))
+                        {
+                            WriteNode(writer, fields[field]);
+                            continue;
+                        }
+
+                        if (string.IsNullOrEmpty(remapped[field]))
+                        {
+                            writer.WriteNullValue();
+                        }
+                        else
+                        {
+                            writer.WriteStringValue(remapped[field]);
+                        }
+                    }
+
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndObject();
+            }
+
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+
+        public static int RemapRefs(string text, string pairs, IntPtr outBuffer, int maxLen)
+        {
+            try
+            {
+                return WriteText(RemapRefs(text, pairs), outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("[NSharp] Property level format could not remap refs: " + exception);
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// What the base text gives when the keys the other text carries are put over it. A text that is not
         /// an object carries nothing, and a key the base does not have joins it.
         /// </summary>
@@ -735,6 +936,12 @@ namespace Nebula
         private static readonly byte[] stringBuffer = new byte[1024];
         private static readonly float[] floatBuffer = new float[4];
 
+        // The id the surface reads as no entity, and the same value Editor::InvalidEntityId is. It is not
+        // Game::Entity::Invalid read back as an id, because that entity has no reserved bits and answers as
+        // 0xFFFFFFFFFF. This side has no mirror for an entity it cannot resolve, so a reference with nothing
+        // behind it is null here and the sentinel there
+        private const ulong InvalidEntityId = 0xFFFFFFFFFFFFFFFF;
+
         /// <summary>
         /// The property section the inspector draws. The panel owns the window and calls this inside it, so
         /// everything here is inside the ImGui frame.
@@ -1000,6 +1207,36 @@ namespace Nebula
                     value.B = ToByte(floatBuffer[2]);
                     value.A = ToByte(floatBuffer[3]);
                     current = value;
+                    changed = true;
+                }
+            }
+            else if (field.FieldType == typeof(Nebula.Game.Entity))
+            {
+                // The name on the row is the scene's and the drop can only be accepted by the side that draws
+                // with ImGui, so this row is the surface's. What comes back is an id, because that is the only
+                // thing that crosses the boundary
+                Nebula.Game.Entity reference = current as Nebula.Game.Entity;
+                ulong value = reference?.Id ?? InvalidEntityId;
+
+                if (DrawSurface.RowEntity(field.Name, value, out ulong dropped, null))
+                {
+                    // A reference is only something the file can name when the file has a record for the
+                    // target, and an entity of another world is not something this property can be given, so a
+                    // drop from another world is left as the value the row already had
+                    World world = World.Get((uint)(entityId >> 32));
+                    if (dropped == InvalidEntityId)
+                    {
+                        current = null;
+                    }
+                    else if (world != null && (uint)(dropped >> 32) == world.Id)
+                    {
+                        current = ResolveEntity(world, dropped);
+                    }
+                    else
+                    {
+                        return;
+                    }
+
                     changed = true;
                 }
             }

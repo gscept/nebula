@@ -1519,12 +1519,24 @@ Scene::MergeChainComponents(const DocumentEntity& record, const Util::Array<Chai
     The extension texts the chain gives an entity, merged bottom up. The scene composes them through
     the extensions that wrote them, because it cannot read them. An extension this build does not
     have contributes nothing.
+
+    A text names the entities it names by the guids of the file it was read from, and a merged text can
+    only name one file's records, so each text is put against targetMap before it joins. Without that,
+    a text composed from a chain names guids the file it is written into has no record for.
 */
 void
 Scene::MergeChainExtensions(const DocumentEntity& record, const Util::Array<ChainHop>& hops,
-    Util::Dictionary<Util::StringAtom, Util::String>& outTexts) const
+    Util::Dictionary<Util::StringAtom, Util::String>& outTexts,
+    Util::HashTable<Util::Guid, Game::Entity>& targetMap) const
 {
-    auto applyRecord = [&](const DocumentEntity& rec)
+    // The texts are read through the map they came from and written against one map, so the way back from
+    // an entity to a guid has to be built once for the whole merge. HashTable has no const iterator, which
+    // is why the map is not const here
+    Util::Dictionary<Game::Entity, Util::Guid> toGuids;
+    for (auto it = targetMap.Begin(); it != targetMap.End(); it++)
+        toGuids.Add(*it.val, *it.key);
+
+    auto applyRecord = [&](const DocumentEntity& rec, const Util::HashTable<Util::Guid, Game::Entity>& fromMap)
     {
         for (IndexT e = 0; e < rec.extensions.Size(); e++)
         {
@@ -1533,25 +1545,71 @@ Scene::MergeChainExtensions(const DocumentEntity& record, const Util::Array<Chai
             if (extension == nullptr || extension->merge == nullptr || entry.json.IsEmpty())
                 continue;
 
+            Util::String json = Scene::RemapTextRefs(extension, entry.json, fromMap, toGuids);
+
             const IndexT existing = outTexts.FindIndex(entry.name);
             const char* base = existing == InvalidIndex ? nullptr : outTexts.ValueAtIndex(existing).AsCharPtr();
 
             Util::String merged;
-            extension->merge(base, entry.json.AsCharPtr(), merged);
+            extension->merge(base, json.AsCharPtr(), merged);
             outTexts.Emplace(entry.name) = merged;
         }
     };
 
     if (hops.IsEmpty())
     {
-        applyRecord(record);
+        applyRecord(record, targetMap);
     }
     else
     {
         for (IndexT h = hops.Size() - 1; h >= 0; h--)
-            applyRecord(hops[h].doc->entities[hops[h].docEntity]);
-        applyRecord(record);
+            applyRecord(hops[h].doc->entities[hops[h].docEntity], hops[h].fileMap);
+        applyRecord(record, targetMap);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The text with its references put as the guids targetMap names the targets by. The scene cannot read a
+    text, so this is the only way it can say anything about the entities one names: it asks the extension
+    that wrote it for the references, resolves each through the map the text came from, and hands the guids
+    back. A reference whose target has no entity in the map is given with no guid, which is what the
+    extension writes as nothing.
+*/
+Util::String
+Scene::RemapTextRefs(const Game::LevelExtension* extension, const Util::String& text,
+    const Util::HashTable<Util::Guid, Game::Entity>& fromMap,
+    const Util::Dictionary<Game::Entity, Util::Guid>& toGuids)
+{
+    if (extension == nullptr || extension->refs == nullptr || extension->remap == nullptr || text.IsEmpty())
+        return text;
+
+    Util::Array<Game::TextRef> named;
+    extension->refs(text.AsCharPtr(), named);
+    if (named.IsEmpty())
+        return text;
+
+    Util::String pairs;
+    for (IndexT i = 0; i < named.Size(); i++)
+    {
+        Game::Entity target = Game::Entity::Invalid();
+        const IndexT mapIndex = fromMap.FindIndex(named[i].guid);
+        if (mapIndex != InvalidIndex)
+            target = fromMap.ValueAtIndex(named[i].guid, mapIndex);
+
+        if (!pairs.IsEmpty())
+            pairs += "\n";
+        pairs += named[i].path;
+        pairs += "\t";
+
+        const IndexT guidIndex = toGuids.FindIndex(target);
+        if (guidIndex != InvalidIndex)
+            pairs += toGuids.ValueAtIndex(guidIndex).AsString();
+    }
+
+    Util::String out;
+    extension->remap(text.AsCharPtr(), pairs.AsCharPtr(), out);
+    return out;
 }
 
 //------------------------------------------------------------------------------
@@ -1612,6 +1670,17 @@ Scene::PatchRecordEntityRefs(IndexT docEntity, Game::Entity entity, const Ptr<Sc
         if (ref.entity != docEntity)
             continue;
 
+        // A reference inside extension text is patched by the extension that wrote the text, against the
+        // same file map, because the scene cannot write into a text it cannot read. Only the warning is
+        // the scene's, and it is the same one a component reference gets
+        if (ref.extension.IsValid())
+        {
+            if (ref.target.IsValid() && !fileMap.Contains(ref.target))
+                n_warning("Entity reference in '%s' points at a guid that is not in that file\n",
+                    doc->source.AsCharPtr());
+            continue;
+        }
+
         if (!this->authoringWorld->HasComponent(entity, ref.component))
             continue;
 
@@ -1654,6 +1723,11 @@ Scene::PatchRecordValueRefs(const ChainHop& hop, const DocumentEntity& record,
     {
         const DocumentEntityRef& ref = hop.doc->entityRefs[i];
         if (ref.entity != hop.docEntity)
+            continue;
+
+        // A reference inside extension text is put into the value by the extension that wrote the text,
+        // when the scene composes the text through the chain
+        if (ref.extension.IsValid())
             continue;
 
         IndexT value = InvalidIndex;
@@ -1703,6 +1777,39 @@ Scene::DropDocumentRefs(const Ptr<SceneDocument>& doc, IndexT docEntity, Game::C
     {
         if (doc->entityRefs[i].entity == docEntity && doc->entityRefs[i].component == component)
             doc->entityRefs.EraseIndex(i);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The references one extension's text names for a document entity. The ones read from the text the new
+    text replaces go first, because a rewritten text is not the text they were read from, and a stale
+    reference would be written into the file as a guid the text no longer names.
+*/
+void
+Scene::RecordDocumentRefs(const Ptr<SceneDocument>& doc, IndexT docEntity, Util::StringAtom extension,
+    const Util::String& text)
+{
+    for (IndexT i = (IndexT)doc->entityRefs.Size() - 1; i >= 0; i--)
+    {
+        if (doc->entityRefs[i].entity == docEntity && doc->entityRefs[i].extension == extension)
+            doc->entityRefs.EraseIndex(i);
+    }
+
+    const Game::LevelExtension* extensionHook = Game::LevelExtensionRegistry::GetExtension(extension);
+    if (extensionHook == nullptr || extensionHook->refs == nullptr || text.IsEmpty())
+        return;
+
+    Util::Array<Game::TextRef> named;
+    extensionHook->refs(text.AsCharPtr(), named);
+    for (IndexT i = 0; i < named.Size(); i++)
+    {
+        DocumentEntityRef ref;
+        ref.entity = docEntity;
+        ref.extension = extension;
+        ref.field = named[i].path;
+        ref.target = named[i].guid;
+        doc->entityRefs.Append(ref);
     }
 }
 
@@ -1802,8 +1909,9 @@ Scene::SetRefContext(Util::HashTable<Util::Guid, Game::Entity>& map)
     The text and the keys one extension's chain gives an entity. The scene composes the text through
     the extension because it cannot read it. The keys come from what the records say they carry,
     which is the only way the scene can know them, and they tell a property the instance wrote from
-    one the chain gives. This scene's own record is left out, and the map is set here so the chain's
-    guids resolve.
+    one the chain gives. This scene's own record is left out, and the chain's texts are put against
+    this scene's guids, because the text composed from them is applied against this scene's map and a
+    text can only name one file's records.
 */
 void
 Scene::GetChainExtension(Game::Entity entity, Util::StringAtom extension, Util::String& outText,
@@ -1829,7 +1937,7 @@ Scene::GetChainExtension(Game::Entity entity, Util::StringAtom extension, Util::
 
     const DocumentEntity noSceneRecord;
     Util::Dictionary<Util::StringAtom, Util::String> texts;
-    this->MergeChainExtensions(noSceneRecord, hops, texts);
+    this->MergeChainExtensions(noSceneRecord, hops, texts, map);
 
     const IndexT i = texts.FindIndex(extension);
     if (i != InvalidIndex)
@@ -1960,6 +2068,11 @@ Scene::PrepareDocumentForWrite(const Ptr<SceneDocument>& doc, Util::Array<Util::
     {
         const DocumentEntityRef& ref = doc->entityRefs[i];
         if (ref.entity == InvalidIndex || ref.entity >= doc->entities.Size())
+            continue;
+
+        // A reference inside extension text is put back by the extension when the document is written,
+        // because the writer cannot read the text it sits in
+        if (ref.extension.IsValid())
             continue;
 
         const IndexT componentIndex = doc->FindComponent(ref.entity, ref.component);
@@ -2589,6 +2702,14 @@ Scene::AddRecordToDocument(Editable& editable, IndexT instanceIndex, const Ptr<S
     this->SetRefContext(map);
     this->CaptureExtensions(editable.entity, doc->entities[docIndex].extensions, map);
 
+    // The text is the one this file writes, so the references it names have to be recorded against this
+    // file's records rather than the ones the text the document held was read from
+    for (IndexT e = 0; e < doc->entities[docIndex].extensions.Size(); e++)
+    {
+        Scene::RecordDocumentRefs(doc, docIndex, doc->entities[docIndex].extensions[e].name,
+            doc->entities[docIndex].extensions[e].json);
+    }
+
     // The entity is the record now, so there is nothing left for it to be an override against. The
     // extensions are captured before this, because they read the marks the entity had.
     Util::Array<PrefabOverride> none;
@@ -3204,6 +3325,11 @@ Scene::PasteDocument(const Ptr<SceneDocument>& doc, const Util::Guid& collection
             if (ref.entity != i)
                 continue;
 
+            // A reference inside extension text is put back by the extension that wrote it, against the
+            // same map, because the scene cannot write into a text it cannot read
+            if (ref.extension.IsValid())
+                continue;
+
             Game::ComponentInterface* interface =
                 static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(ref.component));
             if (interface == nullptr)
@@ -3239,7 +3365,7 @@ Scene::PasteDocument(const Ptr<SceneDocument>& doc, const Util::Guid& collection
         if (instanceIndex != InvalidIndex)
         {
             Util::Dictionary<Util::StringAtom, Util::String> texts;
-            this->MergeChainExtensions(record, hops, texts);
+            this->MergeChainExtensions(record, hops, texts, entityMap);
 
             Util::Array<DocumentExtension> entries;
             for (IndexT t = 0; t < texts.Size(); t++)
@@ -3445,6 +3571,10 @@ Scene::Save(const Util::String& path)
                 record.extensions.Append(entry);
             }
         }
+
+        const IndexT docIndex = doc->entities.Size();
+        for (IndexT e = 0; e < record.extensions.Size(); e++)
+            Scene::RecordDocumentRefs(doc, docIndex, record.extensions[e].name, record.extensions[e].json);
 
         doc->entities.Append(record);
     }
@@ -3886,17 +4016,19 @@ Scene::UpdatePrefabInstances(const Util::String& path)
                 this->WriteComponentValue(entity, component, dst);
         }
 
+        // A merged text names guids from every file it was composed from, so the map covers all of
+        // them, plus this scene's own records for whatever the entity wrote itself. Built before the
+        // merge, because the merge puts each text against it.
+        Util::HashTable<Util::Guid, Game::Entity> map = sceneMap;
+        for (IndexT h = 0; h < hops.Size(); h++)
+            map.Merge(hops[h].fileMap);
+
         // The extension texts as the chain's files give them now. The scene composes them through
         // the
         // extensions that wrote them, because it cannot read them.
         Util::Dictionary<Util::StringAtom, Util::String> chainTexts;
-        this->MergeChainExtensions(noSceneRecord, hops, chainTexts);
+        this->MergeChainExtensions(noSceneRecord, hops, chainTexts, map);
 
-        // A merged text names guids from every file it was composed from, so the map covers all of
-        // them, plus this scene's own records for whatever the entity wrote itself.
-        Util::HashTable<Util::Guid, Game::Entity> map = sceneMap;
-        for (IndexT h = 0; h < hops.Size(); h++)
-            map.Merge(hops[h].fileMap);
         this->SetRefContext(map);
 
         const Util::Array<Game::LevelExtension>& extensions = Game::LevelExtensionRegistry::GetAllExtensions();

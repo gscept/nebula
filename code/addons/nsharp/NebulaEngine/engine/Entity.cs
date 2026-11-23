@@ -84,6 +84,12 @@ namespace Nebula
             public unsafe T GetComponent<T>() where T : struct, NativeComponent
             {
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
+
+                if (!Api.HasComponent(this.id, componentId))
+                {
+                    return default;
+                }
+
                 int size = Marshal.SizeOf<T>();
                 Span<byte> buffer = stackalloc byte[size];
                 fixed (byte* ptr = &buffer[0])

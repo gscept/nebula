@@ -465,6 +465,17 @@ namespace NST
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool ResolveThroughExtension(string baseText, string keys, string expected);
 
+        // The reference hooks, read through the extension the same way the document reads them. The references
+        // come back as the block of "path\tguid" lines the extension hands over, because this side cannot read
+        // the container C++ holds them in
+        [DllImport("__Internal", EntryPoint = "TextRefsMatch")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool TextRefsMatch(string text, string expectedPairs);
+
+        [DllImport("__Internal", EntryPoint = "RemappedTextMatches")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool RemappedTextMatches(string text, string pairs, string expected);
+
         // The override marker, read through the callback the test installed. A row asks for one key at a time,
         // and this is the only way this side can see which key it asked about
         [DllImport("__Internal", EntryPoint = "SetAuthoredAnswer")]
@@ -854,6 +865,25 @@ namespace NST
             // A reference the map has nothing for is nothing the file can name, and it reads as no entity
             PropertyLevelFormat.SetRefContext("");
             Verify(PropertyLevelFormat.BuildJsonText(source, null) == "{\"RefTestProperty\":{\"target\":null}}");
+
+            // The references the text names, as this side reports them. This is the only way the level format
+            // can know which part of a text it cannot read names an entity, and the paths it answers with are
+            // the paths it can put guids back into
+            Verify(TextRefsMatch(text, "RefTestProperty.target\t" + sourceGuid));
+
+            // The same text against the other record's guid. This is what lets a text that names one file's
+            // records be written into a file that names them by its own
+            Verify(RemappedTextMatches(text, "RefTestProperty.target\t" + targetGuid,
+                "{\"RefTestProperty\":{\"target\":\"" + targetGuid + "\"}}"));
+
+            // A path given with no guid is a target the file has no record for, and that is what a file can
+            // carry: the reference written as nothing
+            Verify(RemappedTextMatches(text, "RefTestProperty.target\t", "{\"RefTestProperty\":{\"target\":null}}"));
+
+            // A path the text does not name is left as the text had it, and a call with nothing to say comes
+            // back as the text it was given
+            Verify(RemappedTextMatches(text, "RefTestProperty.other\t" + targetGuid, text));
+            Verify(RemappedTextMatches(text, "", text));
         }
 
         /// <summary>

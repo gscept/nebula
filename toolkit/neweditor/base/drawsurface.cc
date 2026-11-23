@@ -5,6 +5,10 @@
 #include "foundation/stdneb.h"
 #include "neweditor/base/drawsurface.h"
 #include "neweditor/base/iconregistry.h"
+#include "neweditor/api/shell.h"
+#include "neweditor/api/editorfeature.h"
+#include "neweditor/model/scene.h"
+#include "game/entity.h"
 #include "imgui.h"
 
 namespace Editor
@@ -167,6 +171,90 @@ DrawRowLink(const char* key, const char* value, const char* description)
 {
     DrawRowKey(key, description);
     return ImGui::TextLink(value);
+}
+
+//------------------------------------------------------------------------------
+/**
+    A row whose value is an entity reference. The name is the scene's, because the caller cannot read it,
+    and the drop is the surface's, because a drop can only be accepted by the side that draws with ImGui.
+    The clear button is what gives a reference a way to be taken off without a drop.
+
+    The key is pushed for the row, so the value and the button are not the same item to ImGui.
+*/
+bool
+DrawRowEntity(const char* key, unsigned long long value, unsigned long long* out, const char* description)
+{
+    DrawRowKey(key, description);
+
+    Shell* core = EditorFeatureRegistry::GetShell();
+    if (core == nullptr)
+        return false;
+
+    Ptr<Scene> scene = core->GetScene();
+    if (scene == nullptr)
+        return false;
+
+    ImGui::PushID(key);
+
+    // The value is read as an entity for the name, but the sentinel is compared as the value it came in
+    // as, because an entity made from it is not the same 64 bits: the reserved bits are dropped
+    if (value == InvalidEntityId)
+    {
+        ImGui::TextDisabled("Unassigned");
+    }
+    else
+    {
+        const Game::Entity entity(value);
+
+        if (!scene->HasInstance(entity))
+        {
+            // A reference the scene has no entity for. It is still what the file carried, so it is shown
+            // rather than left out
+            ImGui::TextColored(ImVec4(1.0f, 0.1f, 0.1f, 1.0f), "Invalid");
+        }
+        else
+        {
+            ImGui::TextUnformatted(scene->GetEditable(entity).name.AsCharPtr());
+        }
+    }
+
+    // The drop lands on the item the target was put on, which is the value just drawn
+    bool changed = false;
+    if (ImGui::BeginDragDropTarget())
+    {
+        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(EntityDragPayload);
+        if (payload != nullptr && payload->DataSize == sizeof(unsigned long long))
+        {
+            const unsigned long long dropped = *(const unsigned long long*)payload->Data;
+            if (dropped != value)
+            {
+                if (out != nullptr)
+                    *out = dropped;
+                changed = true;
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    if (value != InvalidEntityId)
+    {
+        ImGui::SameLine();
+
+        // Every clear button is the same glyph, so the id has to come from the row rather than the glyph
+        ImGui::PushID("entity_ref_clear");
+        if (IconButton(IconGlyph("x"), "Clear reference"))
+        {
+            // Written as the value, not as an entity, so the caller gets the sentinel it compares against
+            if (out != nullptr)
+                *out = InvalidEntityId;
+            changed = true;
+        }
+        ImGui::PopID();
+    }
+
+    ImGui::PopID();
+
+    return changed;
 }
 
 //------------------------------------------------------------------------------

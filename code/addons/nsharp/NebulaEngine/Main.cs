@@ -408,6 +408,29 @@ namespace NebulaEngine
         }
 
         /// <summary>
+        /// The entity references one text carries, as "path\tguid" lines. This is the only way the level
+        /// format can know which parts of a text name entities, because it does not read the text.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int TextRefs(IntPtr textUtf8, int length, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.TextRefs(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+        }
+
+        /// <summary>
+        /// The text with the named paths' references put as the given guids. This is what lets a text that
+        /// names one file's records be written into a file that names them by its own.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        public static int RemapRefs(IntPtr textUtf8, int textLen, IntPtr pairsUtf8, int pairsLen, IntPtr outBuffer, int maxLen)
+        {
+            return PropertyLevelFormat.RemapRefs(
+                PropertyLevelFormat.Utf8(textUtf8, textLen),
+                PropertyLevelFormat.Utf8(pairsUtf8, pairsLen),
+                outBuffer, maxLen);
+        }
+
+        /// <summary>
         /// The text for the named keys, each value read from the base text, or the field's default when the
         /// base has nothing. This is what a revert to the prefab writes.
         /// </summary>

@@ -22,6 +22,8 @@ typedef int(CORECLR_DELEGATE_CALLTYPE* JsonKeysFn)(const char*, int, void*, int)
 typedef int(CORECLR_DELEGATE_CALLTYPE* MergeJsonFn)(const char*, int, const char*, int, void*, int);
 typedef int(CORECLR_DELEGATE_CALLTYPE* ResolveJsonFn)(const char*, int, const char*, int, void*, int);
 typedef void(CORECLR_DELEGATE_CALLTYPE* SetRefContextFn)(const char*, int);
+typedef int(CORECLR_DELEGATE_CALLTYPE* TextRefsFn)(const char*, int, void*, int);
+typedef int(CORECLR_DELEGATE_CALLTYPE* RemapRefsFn)(const char*, int, const char*, int, void*, int);
 
 void* PropertyLevelExtension::serializeProperties = nullptr;
 void* PropertyLevelExtension::applyProperties = nullptr;
@@ -33,6 +35,8 @@ void* PropertyLevelExtension::jsonKeys = nullptr;
 void* PropertyLevelExtension::mergeJson = nullptr;
 void* PropertyLevelExtension::resolveJson = nullptr;
 void* PropertyLevelExtension::setRefContext = nullptr;
+void* PropertyLevelExtension::textRefs = nullptr;
+void* PropertyLevelExtension::remapRefs = nullptr;
 PropertyLevelExtension::ChangeFunc PropertyLevelExtension::changeCallback = nullptr;
 PropertyLevelExtension::RevertFunc PropertyLevelExtension::revertCallback = nullptr;
 PropertyLevelExtension::AuthoredFunc PropertyLevelExtension::authoredCallback = nullptr;
@@ -73,6 +77,10 @@ PropertyLevelExtension::Register(Scripting::NSharpServer* server, Scripting::Ass
         server->GetUnmanagedFuncPointer(assemblyId, "NebulaEngine.AppEntry::ResolveJson()");
     PropertyLevelExtension::setRefContext =
         server->GetUnmanagedFuncPointer(assemblyId, "NebulaEngine.AppEntry::SetRefContext()");
+    PropertyLevelExtension::textRefs =
+        server->GetUnmanagedFuncPointer(assemblyId, "NebulaEngine.AppEntry::TextRefs()");
+    PropertyLevelExtension::remapRefs =
+        server->GetUnmanagedFuncPointer(assemblyId, "NebulaEngine.AppEntry::RemapRefs()");
 
     if (PropertyLevelExtension::registered)
         return;
@@ -87,6 +95,8 @@ PropertyLevelExtension::Register(Scripting::NSharpServer* server, Scripting::Ass
     extension.merge = &PropertyLevelExtension::Merge;
     extension.resolve = &PropertyLevelExtension::Resolve;
     extension.refContext = &PropertyLevelExtension::SetRefContext;
+    extension.refs = &PropertyLevelExtension::TextRefs;
+    extension.remap = &PropertyLevelExtension::Remap;
 
     Game::LevelExtensionRegistry::Register(extension);
     PropertyLevelExtension::registered = true;
@@ -370,6 +380,111 @@ PropertyLevelExtension::SetRefContext(const char* pairs)
 
     SetRefContextFn fn = (SetRefContextFn)PropertyLevelExtension::setRefContext;
     fn(pairs, pairs == nullptr ? 0 : (int)Util::String::StrLen(pairs));
+}
+
+//------------------------------------------------------------------------------
+/**
+    The entity references a text names. The managed side answers them as "path\tguid" lines, because this side
+    cannot read the text, and the buffer is the only thing that comes back across the boundary. The strings
+    have to be copied out of the buffer before it is used for anything else.
+*/
+void
+PropertyLevelExtension::TextRefs(const char* text, Util::Array<Game::TextRef>& out)
+{
+    if (PropertyLevelExtension::textRefs == nullptr)
+        return;
+
+    TextRefsFn fn = (TextRefsFn)PropertyLevelExtension::textRefs;
+
+    if (PropertyLevelExtension::buffer.Size() == 0)
+        PropertyLevelExtension::buffer.Resize(1024);
+
+    int textLen = text == nullptr ? 0 : (int)Util::String::StrLen(text);
+
+    for (;;)
+    {
+        int written = fn(text, textLen, PropertyLevelExtension::buffer.Begin(), (int)PropertyLevelExtension::buffer.Size());
+        if (written <= 0)
+            return;
+
+        if (written <= (int)PropertyLevelExtension::buffer.Size())
+        {
+            const char* begin = PropertyLevelExtension::buffer.Begin();
+            const char* end = begin + written;
+            const char* pos = begin;
+            while (pos < end)
+            {
+                const char* stop = pos;
+                while (stop < end && *stop != '\n')
+                    stop++;
+
+                const char* split = pos;
+                while (split < stop && *split != '\t')
+                    split++;
+
+                if (split == stop)
+                {
+                    pos = stop + 1;
+                    continue;
+                }
+
+                Util::String path;
+                path.Set(pos, (SizeT)(split - pos));
+
+                Util::String guid;
+                guid.Set(split + 1, (SizeT)(stop - split - 1));
+
+                Game::TextRef ref;
+                ref.path = path;
+                if (!guid.IsEmpty())
+                    ref.guid = Util::Guid::FromString(guid);
+
+                if (!ref.path.IsEmpty())
+                    out.Append(ref);
+
+                pos = stop + 1;
+            }
+            return;
+        }
+
+        PropertyLevelExtension::buffer.Resize((SizeT)written);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    The text with the named paths' references put as the given guids. The same buffer pattern as the merge is
+    what makes the length come back right when the buffer was too small.
+*/
+void
+PropertyLevelExtension::Remap(const char* text, const char* pairs, Util::String& out)
+{
+    if (PropertyLevelExtension::remapRefs == nullptr)
+        return;
+
+    RemapRefsFn fn = (RemapRefsFn)PropertyLevelExtension::remapRefs;
+
+    if (PropertyLevelExtension::buffer.Size() == 0)
+        PropertyLevelExtension::buffer.Resize(1024);
+
+    int textLen = text == nullptr ? 0 : (int)Util::String::StrLen(text);
+    int pairsLen = pairs == nullptr ? 0 : (int)Util::String::StrLen(pairs);
+
+    for (;;)
+    {
+        int written = fn(text, textLen, pairs, pairsLen,
+            PropertyLevelExtension::buffer.Begin(), (int)PropertyLevelExtension::buffer.Size());
+        if (written <= 0)
+            return;
+
+        if (written <= (int)PropertyLevelExtension::buffer.Size())
+        {
+            out.Set(PropertyLevelExtension::buffer.Begin(), (SizeT)written);
+            return;
+        }
+
+        PropertyLevelExtension::buffer.Resize((SizeT)written);
+    }
 }
 
 //------------------------------------------------------------------------------

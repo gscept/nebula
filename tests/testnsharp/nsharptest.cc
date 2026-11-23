@@ -432,6 +432,50 @@ ResolveThroughExtension(const char* baseText, const char* keys, const char* expe
 
 //------------------------------------------------------------------------------
 /**
+    The entity references a text names, read through the extension's hook rather than through the
+    managed method directly, which is the path the document takes. The answer comes back as the same
+    block of "path\tguid" lines the extension hands over, because the container C++ holds them in is
+    not something the managed side can read back.
+*/
+NEBULA_EXPORT bool
+TextRefsMatch(const char* text, const char* expectedPairs)
+{
+    Util::Array<Game::TextRef> named;
+    Scripting::PropertyLevelExtension::TextRefs(text, named);
+
+    Util::String pairs;
+    for (IndexT i = 0; i < named.Size(); i++)
+    {
+        if (!pairs.IsEmpty())
+            pairs += "\n";
+
+        pairs += named[i].path;
+        pairs += "\t";
+
+        // A reference with no target is a line with nothing after the tab, which is what the writer
+        // gives an extension for a target the file has no record for
+        if (named[i].guid.IsValid())
+            pairs += named[i].guid.AsString();
+    }
+
+    return pairs == Util::String(expectedPairs);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The text with the named paths' references put as the given guids, through the extension's hook.
+    This is the path the document takes when it writes a text it cannot read.
+*/
+NEBULA_EXPORT bool
+RemappedTextMatches(const char* text, const char* pairs, const char* expected)
+{
+    Util::String out;
+    Scripting::PropertyLevelExtension::Remap(text, pairs, out);
+    return out == Util::String(expected);
+}
+
+//------------------------------------------------------------------------------
+/**
     The override marker. The marker is the editor's own and this side cannot read it, so a row asks for one key at
     a time through a callback. The scene's marker is not reachable from a test, so the test installs its own
     answer here and records which key the row asked about.

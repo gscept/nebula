@@ -9,6 +9,9 @@
     changed and writes the new value through a pointer the caller gave. Nothing here runs in a build
     with no editor. The names are C linkage, because the managed side resolves them by name.
 
+    A row whose value is an entity reference is the one row the surface has to know the scene for: the
+    name is the scene's, and a drop can only be accepted by the side that draws with ImGui.
+
     @see
     Editor::PropertyRecorder
 
@@ -21,6 +24,16 @@
 
 namespace Editor
 {
+
+// The payload an entity drag carries. The outline panel is the source and an entity row is the target,
+// and both are the surface's, so the name has to be one the two can share
+static const char* const EntityDragPayload = "nebula.entity";
+
+// The id a row reads as no entity. It has to be the same value the managed side uses, and it cannot go
+// through Game::Entity: the constructor drops the reserved bits, so an entity made from this id answers
+// as 0xFFFFFFFFFF rather than as the full 64 bits. The row compares and writes it as the value, not as
+// an entity
+static const unsigned long long InvalidEntityId = 0xFFFFFFFFFFFFFFFFULL;
 
 extern "C"
 {
@@ -62,6 +75,13 @@ bool DrawRowFloats(const char* key, float* values, int count, const char* descri
 
 // A row whose value is a link. Return true when it was clicked. What a click means is the caller's.
 bool DrawRowLink(const char* key, const char* value, const char* description);
+
+// A row whose value is an entity reference. The name is what the scene says the entity is, because the
+// caller cannot read the scene, and the row is the only place a drop can be accepted. The value is the
+// entity id as the managed side holds it, and the entity a drop gives comes back through the pointer the
+// caller gave. Return true when the value changed, which is when something was dropped or the row's
+// clear button was pressed.
+bool DrawRowEntity(const char* key, unsigned long long value, unsigned long long* out, const char* description);
 
 // The override mark, drawn on the row after the value. It is drawn only when the caller says the
 // row is the instance's own. Return true when it was pressed.
