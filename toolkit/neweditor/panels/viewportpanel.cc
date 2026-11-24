@@ -316,6 +316,7 @@ ViewportPanel::Draw()
         this->core->SetCameraCapture(true);
         this->OnLockMouse(true);
         this->CenterMouse();
+        ImGui::SetWindowFocus();
     }
 
     if (this->cameraButton >= 0)
