@@ -58,7 +58,6 @@ struct MeshInfo
 @Visibility("CS")
 group(SYSTEM_GROUP) uniform MeshInfos : *[MAX_MESH_INFOS] mutable MeshInfo;
 
-
 sampleMask(mask: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
     return textureSampleLod(Textures2D[mask], samp, uv, 0);
@@ -223,52 +222,12 @@ csGenerateDraws() void
 /**
 */
 entry_point
-vsDrawMeshWeighted(
-    binding(0) in position : f32x3
-    , binding(1) in normal : f32x3
-    , binding(2) in uv : i32x2
-    , binding(3) in tangent : f32x4
-    , binding(5) in color : f32x4
-    , out Tangent : f32x3
-    , out Normal : f32x3
-    , out Sign : f32
-    , out UV : f32x2
-    , out WorldSpacePos : f32x3
-    , out InstanceIndex : u32
-
-) void
-{
-    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
-    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
-
-    UV = UnpackUV(uv);
-    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
-    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
-    Sign = tangent.w;
-
-    InstanceIndex = vertexGetInstanceIndex();
-    WorldSpacePos = instanceUniforms.position + rotatedPos;
-
-    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
-    {
-        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
-    }
-    else
-    {
-        vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(WorldSpacePos, 1));
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-entry_point
 vsDrawDepthWeighted(
     binding(0) in position : f32x3
     , binding(1) in normal : f32x3
     , binding(2) in uv : i32x2
     , binding(3) in tangent : f32x4
-    , binding(5) in color : f32x4
+    , binding(5) in weights : f32x4
     , out UV : f32x2
     , out InstanceIndex : u32
 
@@ -321,6 +280,47 @@ vsDrawDepth(
     else
     {
         vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(worldSpacePos, 1));
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDrawMeshWeighted(
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : i32x2
+    , binding(3) in tangent : f32x4
+    , binding(5) in weights : f32x4
+    , out Tangent : f32x3
+    , out Normal : f32x3
+    , out Sign : f32
+    , out UV : f32x2
+    , out WorldSpacePos : f32x3
+    , out InstanceIndex : u32
+
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+
+    UV = UnpackUV(uv);
+    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
+    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
+    Sign = tangent.w;
+
+    InstanceIndex = vertexGetInstanceIndex();
+    WorldSpacePos = instanceUniforms.position + rotatedPos;
+
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
+    else
+    {
+        vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(WorldSpacePos, 1));
     }
 }
 

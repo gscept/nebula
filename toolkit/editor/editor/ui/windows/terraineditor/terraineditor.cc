@@ -751,7 +751,7 @@ TerrainEditor::Run(SaveMode save)
         if (ImGui::Button("Load Heightmap"))
         {
             Presentation::AssetBrowser* picker = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-            picker->PickFile(IO::Path::Parse(selectedTerrainResource.height_map), ToolkitUtil::FileType::Texture, [](const IO::Path& newPath)
+            picker->PickFile(IO::Path::Parse(selectedTerrainResource.height_map), ToolkitUtil::FileType::Texture, [entity, this](const IO::Path& newPath)
             {
                 if (newPath.IsFile())
                 {

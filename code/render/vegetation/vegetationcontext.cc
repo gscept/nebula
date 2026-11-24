@@ -109,7 +109,7 @@ VegetationContext::Create()
             for (auto k = 0; k < MaterialInterfaceType::NumMaterialInterfaceTypes; k++)
             {
                 const Util::String name = Util::String::Sprintf(
-                    ShaderProgramFormat, ShaderPassTypeNames[k], VertexInterfaceNames[j], MaterialInterfaceNames[i]
+                    ShaderProgramFormat, ShaderPassTypeNames[i], VertexInterfaceNames[j], MaterialInterfaceNames[k]
                 );
                 vegetationState.vegetationShaders[i][j][k] =
                     CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask(name));
@@ -387,6 +387,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
                 0
             });
 
+        // Don't forget to bind materials too
         CoreGraphics::ResourceTableSetConstantBuffer(instanceInfo.argumentsTable[i],
             CoreGraphics::ResourceTableBuffer(
                 Materials::MaterialLoader::GetMaterialBindingBuffer(), Vegetation::MaterialPointers::BINDING
@@ -419,10 +420,16 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.maskSize[1] = 1;
     info.density = setup.density;
 
+    slopeThreshold = setup.slopeThreshold;
+    heightThreshold = setup.heightThreshold;
+
+    info.slopeThreshold = slopeThreshold;
+    info.heightThreshold = heightThreshold;
+    info.materialIndex = -1;
+
     // Load mask, update uniforms when ready
     Resources::CreateResource(setup.mask, "Vegetation", [&info, &instanceInfo, infoIndex](Resources::ResourceId res)
     {
-
         info.maskIndex = CoreGraphics::TextureGetBindlessHandle(res.resource);
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(res.resource);
         info.maskSize[0] = dims.width;
@@ -448,18 +455,15 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
                     mesh = pnode->GetMesh();
                     info.materialIndex = Materials::MaterialGetBufferBinding(pnode->GetMaterial());
 
-                    if (materialInterfaceType == MaterialInterfaceType::InvalidMaterialInterfaceType)
+                    const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
+                    materialInterfaceName = materialTemplate->interfaceName;
+                    if (strcmp(materialInterfaceName, "BRDF") == 0)
                     {
-                        const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
-                        materialInterfaceName = materialTemplate->interfaceName;
-                        if (strcmp(materialInterfaceName, "BRDF") == 0)
-                        {
-                            materialInterfaceType = MaterialInterfaceType::BRDF;
-                        }
-                        else if (strcmp(materialInterfaceName, "GLTF") == 0)
-                        {
-                            materialInterfaceType = MaterialInterfaceType::GLTF;
-                        }
+                        materialInterfaceType = MaterialInterfaceType::BRDF;
+                    }
+                    else if (strcmp(materialInterfaceName, "GLTF") == 0)
+                    {
+                        materialInterfaceType = MaterialInterfaceType::GLTF;
                     }
                 }
 
@@ -535,12 +539,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
     }, nullptr);
 
-    slopeThreshold = setup.slopeThreshold;
-    heightThreshold = setup.heightThreshold;
 
-    info.slopeThreshold = slopeThreshold;
-    info.heightThreshold = heightThreshold;
-    info.materialIndex = -1;
 
     return infoIndex;
 }
