@@ -428,7 +428,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.materialIndex = -1;
 
     // Load mask, update uniforms when ready
-    Resources::CreateResource(setup.mask, "Vegetation", [&info, &instanceInfo, infoIndex](Resources::ResourceId res)
+    Resources::CreateResource(setup.mask, "Vegetation", [&info, infoIndex](Resources::ResourceId res)
     {
         info.maskIndex = CoreGraphics::TextureGetBindlessHandle(res.resource);
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(res.resource);
@@ -575,14 +575,13 @@ VegetationContext::SetModel(const Graphics::GraphicsEntityId id, uint index, con
 
                         if (materialInterfaceType == MaterialInterfaceType::InvalidMaterialInterfaceType)
                         {
-                            const MaterialTemplatesGPULang::Entry* materialTemplate =
-                                Materials::MaterialGetTemplate(pnode->GetMaterial());
+                            const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(pnode->GetMaterial());
                             materialInterfaceName = materialTemplate->interfaceName;
-                            if (materialInterfaceName == "BRDF")
+                            if (strcmp(materialInterfaceName, "BRDF") == 0)
                             {
                                 materialInterfaceType = MaterialInterfaceType::BRDF;
                             }
-                            else if (materialInterfaceName == "GLTF")
+                            else if (strcmp(materialInterfaceName, "GLTF") == 0)
                             {
                                 materialInterfaceType = MaterialInterfaceType::GLTF;
                             }
