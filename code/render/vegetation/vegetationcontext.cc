@@ -122,7 +122,7 @@ VegetationContext::Create()
         CmdSetShaderProgram(cmdBuf, vegetationState.vegetationClearShader, queue);
 
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
-        for (const auto instance : instances)
+        for (const auto& instance : instances)
         {
             BarrierPush(cmdBuf, PipelineStage::AllShadersRead, PipelineStage::ComputeShaderWrite, BarrierDomain::Global,
             {
@@ -140,7 +140,7 @@ VegetationContext::Create()
     {
         CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader, queue);
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
-        for (const auto instance : instances)
+        for (const auto& instance : instances)
         {
             CmdBarrier(cmdBuf, PipelineStage::Indirect, PipelineStage::ComputeShaderWrite, BarrierDomain::Global,
             {
@@ -173,7 +173,7 @@ VegetationContext::Create()
     FrameScript_default::RegisterSubgraph_VegetationPrepass_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
-        for (const auto instance : instances)
+        for (const auto& instance : instances)
         {
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
@@ -214,7 +214,7 @@ VegetationContext::Create()
     {
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
 
-        for (const auto instance : instances)
+        for (const auto& instance : instances)
         {
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
