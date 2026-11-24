@@ -428,7 +428,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.materialIndex = -1;
 
     // Load mask, update uniforms when ready
-    Resources::CreateResource(setup.mask, "Vegetation", [&info, infoIndex](Resources::ResourceId res)
+    Resources::CreateResource(setup.mask, "Vegetation", [&info](Resources::ResourceId res)
     {
         info.maskIndex = CoreGraphics::TextureGetBindlessHandle(res.resource);
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(res.resource);
