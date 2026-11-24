@@ -751,7 +751,7 @@ TerrainEditor::Run(SaveMode save)
         if (ImGui::Button("Load Heightmap"))
         {
             Presentation::AssetBrowser* picker = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-            picker->PickFile(IO::Path::Parse(selectedTerrainResource.height_map), ToolkitUtil::FileType::Texture, [entity, this](const IO::Path& newPath)
+            picker->PickFile(IO::Path::Parse(selectedTerrainResource.height_map), [entity, this](const IO::Path& newPath)
             {
                 if (newPath.IsFile())
                 {
@@ -791,7 +791,7 @@ TerrainEditor::Run(SaveMode save)
                         this->Edit();
                     }, nullptr, { .stream = false });
                 }
-            });
+            }, "tex");
         }
 
         if (ImGui::CollapsingHeader("Brush"))
@@ -920,7 +920,7 @@ TerrainEditor::Run(SaveMode save)
             if (ImGui::Button("Load Biome Mask"))
             {
                 Presentation::AssetBrowser* picker = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                picker->PickFile(IO::Path::Parse(selectedTerrainResource.biomes[selectedBiome]->mask), ToolkitUtil::FileType::Texture, [](const IO::Path& newPath)
+                picker->PickFile(IO::Path::Parse(selectedTerrainResource.biomes[selectedBiome]->mask), [](const IO::Path& newPath)
                 {
                     if (newPath.IsFile())
                     {
@@ -956,7 +956,7 @@ TerrainEditor::Run(SaveMode save)
                             CoreGraphics::UnlockGraphicsSetupCommandBuffer(copyCmdBuf);
                         }, nullptr, { .stream = false });
                     }
-                });
+                }, "tex");
             }
             ImGui::EndGroup();
 
@@ -1008,7 +1008,7 @@ TerrainEditor::Run(SaveMode save)
                     {
                         auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
                         IO::Path folder = IO::Path::FolderAndFile("tex", path);
-                        assetBrowser->PickFile(folder, ToolkitUtil::FileType::Texture, [i, j, this, entity](const IO::Path& filePath)
+                        assetBrowser->PickFile(folder, [i, j, this, entity](const IO::Path& filePath)
                         {
                             if (filePath.IsFile())
                             {
@@ -1065,13 +1065,7 @@ TerrainEditor::Run(SaveMode save)
                                 Editor::state.editorWorld->MarkAsModified(entity);
                                 this->Edit();
                             }
-                        });
-                        const char* patterns[] = { "*.natex" };
-                        const char* sourcePath = IO::URI(Util::Format("work:assets/%s.natex", path)).LocalPath().AsCharPtr();
-
-                        /*
-
-                        */
+                        }, "tex");
 
                     }
                 }
@@ -1155,7 +1149,7 @@ TerrainEditor::Run(SaveMode save)
             if (ImGui::Button("Load Vegetation Mask"))
             {
                 Presentation::AssetBrowser* picker = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                picker->PickFile(IO::Path::Parse(selectedTerrainResource.vegetation[selectedVegetationMesh]->mask), ToolkitUtil::FileType::Texture, [](const IO::Path& newPath)
+                picker->PickFile(IO::Path::Parse(selectedTerrainResource.vegetation[selectedVegetationMesh]->mask), [](const IO::Path& newPath)
                 {
                     if (newPath.IsFile())
                     {
@@ -1191,7 +1185,7 @@ TerrainEditor::Run(SaveMode save)
                             CoreGraphics::UnlockGraphicsSetupCommandBuffer(copyCmdBuf);
                         }, nullptr, { .stream = false });
                     }
-                });
+                }, "tex");
             }
             ImGui::EndGroup();
 
@@ -1199,10 +1193,10 @@ TerrainEditor::Run(SaveMode save)
             {
                 auto assetBrowser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
                 IO::Path folder = terrainEditorState.vegetationMeshes[selectedVegetationMesh].model;
-                assetBrowser->PickFile(folder, ToolkitUtil::FileType::Asset, [entity = terrainComponent.graphicsEntityId, index = selectedVegetationMesh](const IO::Path& filePath)
+                assetBrowser->PickFile(folder, [entity = terrainComponent.graphicsEntityId, index = selectedVegetationMesh](const IO::Path& filePath)
                 {
                     Vegetation::VegetationContext::SetModel(entity, index, filePath);
-                });
+                }, "mdl");
             }
 
             static const float Density = 0.0f;

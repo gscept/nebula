@@ -53,7 +53,7 @@ PostEffectSettings::Run(SaveMode save)
         if (ImGui::Button("Set dirt"))
         {
             auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-            browser->PickFile(IO::Path(), ToolkitUtil::FileType::Texture, [this](const IO::Path& filePath)
+            browser->PickFile(IO::Path(), [this](const IO::Path& filePath)
             {
                 n_assert(filePath.IsFile());
                 Resources::CreateResource(filePath, "editor", [this](Resources::ResourceId id)

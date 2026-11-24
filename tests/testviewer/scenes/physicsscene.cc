@@ -184,11 +184,11 @@ void OpenScene()
         Characters::CharacterContext::PlayClip(knight, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
 
     });
-    knightResource = Resources::CreateResource("test:Unit_Knight:phys"_path, "Viewer", nullptr, nullptr, true);
+    knightResource = Resources::CreateResource("test:Unit_Knight:phys"_path, "Viewer", nullptr, nullptr, {.immediate = true});
     knightActor = Physics::CreateActorInstance(knightResource, Math::transform(), Physics::Kinematic, knight.id);
 
 
-    groundResource = Resources::CreateResource("test:groundplane:phys"_path, "Viewer", nullptr, nullptr, true);
+    groundResource = Resources::CreateResource("test:groundplane:phys"_path, "Viewer", nullptr, nullptr, {.immediate = true});
     groundActor = Physics::CreateActorInstance(groundResource, Math::transform(), Physics::Static, ground.id);
 
 
@@ -201,7 +201,7 @@ void OpenScene()
         Visibility::ObservableContext::Setup(tower, Visibility::VisibilityEntityType::Model);
     });
 
-    towerResource = Resources::CreateResource("test:castle_tower:phys"_path, "Viewer", nullptr, nullptr, true);
+    towerResource = Resources::CreateResource("test:castle_tower:phys"_path, "Viewer", nullptr, nullptr, {.immediate = true});
 
     towerActor = Physics::CreateActorInstance(towerResource, Math::transform(Math::vec3(4, 15, 4)), Physics::ActorType::Dynamic, tower.id);
 

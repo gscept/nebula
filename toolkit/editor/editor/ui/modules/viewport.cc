@@ -346,14 +346,9 @@ Viewport::Render()
             if (ImGui::Button("Set dirt mask"))
             {
                 auto browser = (Presentation::AssetBrowser*)Presentation::AssetBrowserPickerWindow;
-                browser->PickFile(IO::Path(), ToolkitUtil::FileType::Texture, [cameraEntity](const IO::Path& filePath)
+                browser->PickFile(IO::Path(), [cameraEntity](const IO::Path& filePath)
                 {
                     n_assert(filePath.IsFile());
-                    if (filePath.GetType() != "tex")
-                    {
-                        n_warning("Dirt mask must be a texture\n");
-                        return;
-                    }
                     Resources::CreateResource(filePath, "editor", [cameraEntity](Resources::ResourceId id)
                     {
                         Graphics::DepthOfField current = Graphics::CameraContext::GetDepthOfField(cameraEntity);

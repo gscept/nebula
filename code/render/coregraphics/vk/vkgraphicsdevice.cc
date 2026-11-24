@@ -774,7 +774,7 @@ DeviceLost()
             "Invalid Instruction Pointer",
             "Instruction Pointer Fault"
         };
-        n_log_err(Vulkan, "Device lost, GPU memory segfault: %s, address %llu, address precision %d", addressFaultLookup[deviceLostError.addressType], deviceLostError.reportedAddress, deviceLostError.addressPrecision);
+        n_log_err(Vulkan, "Device lost, GPU memory segfault: %s, address %lu, address precision %d", addressFaultLookup[deviceLostError.addressType], deviceLostError.reportedAddress, deviceLostError.addressPrecision);
     }
     for (const auto& deviceLostError : vendorErrors)
     {

@@ -170,9 +170,9 @@ void OpenScene()
             transform.position() = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
-            Resources::ResourceId albedo = Resources::CreateResource("systex:white.dds", "decal"_atm, nullptr, nullptr, true);
-            Resources::ResourceId normal = Resources::CreateResource("systex:nobump.dds", "decal"_atm, nullptr, nullptr, true);
-            Resources::ResourceId material = Resources::CreateResource("systex:default_material.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId albedo = Resources::CreateResource("systex:white.dds", "decal"_atm, nullptr, nullptr, {.immediate=true});
+            Resources::ResourceId normal = Resources::CreateResource("systex:nobump.dds", "decal"_atm, nullptr, nullptr, {.immediate=true});
+            Resources::ResourceId material = Resources::CreateResource("systex:default_material.dds", "decal"_atm, nullptr, nullptr, {.immediate=true});
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
