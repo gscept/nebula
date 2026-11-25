@@ -28,6 +28,12 @@ using namespace Test;
 void
 InitializeTestResource(Game::World* world, Game::Entity entity, TestResource* testResource)
 {
+    ++Test::componentInit.calls;
+
+    // The component is staged here, so the entity is read through its chain of staged commands. A component
+    // added in the same batch before this one is on that chain.
+    Test::componentInit.sawBatchComponent = world->HasComponent<Test::TestHealth>(entity);
+
     n_printf("Original resource: '%s'\n", testResource->resource.Value());
     testResource->resource = "gnyrf.res";
     n_printf("Changed resource to: '%s'\n", testResource->resource.Value());
@@ -42,6 +48,7 @@ InitializeTestVec4(Game::World* world, Game::Entity entity, TestVec4* testVec)
 namespace Test
 {
     ComponentDecayRecord componentDecay;
+    ComponentInitRecord componentInit;
 }
 
 // the decay callback of DecayTestComponent, see Test::EntitySystemTest. It runs outside of the frame

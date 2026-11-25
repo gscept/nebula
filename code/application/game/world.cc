@@ -516,6 +516,7 @@ World::AllocateEntityId()
     if (this->pool.Allocate(entity))
     {
         this->entityMap.Append({MemDb::InvalidTableId, MemDb::InvalidRow});
+        this->stagedHeads.Append(InvalidIndex);
     }
     entity.world = (uint32_t)this->worldId;
     this->numEntities++;
@@ -531,6 +532,10 @@ World::DeallocateEntityId(Entity entity)
     n_assert(!this->HasInstance(entity));
     this->pool.Deallocate(entity);
     this->numEntities--;
+
+    // The id goes back to the pool and can be given to another entity, so nothing may still be chained to it
+    if (entity.index < (IndexT)this->stagedHeads.Size())
+        this->stagedHeads[entity.index] = InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -791,17 +796,7 @@ World::AddComponent(Entity entity, Game::ComponentId id, const void* value)
     );
 #endif
     SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(id);
-    void* data = this->componentStageAllocator.Alloc(typeSize);
-    const void* initialValue = value != nullptr ? value : MemDb::AttributeRegistry::DefaultValue(id);
-    Memory::Copy(initialValue, data, typeSize);
-
-    AddStagedComponentCommand cmd = {
-        .entity = entity,
-        .componentId = id,
-        .dataSize = typeSize,
-        .data = data,
-    };
-    this->addStagedQueue.Append(cmd);
+    void* data = this->StageComponent(entity, id, value, typeSize);
 
     if (this->componentInitializationEnabled)
     {
@@ -817,6 +812,89 @@ World::AddComponent(Entity entity, Game::ComponentId id, const void* value)
     }
 
     return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Stage a component for an entity and put it on the entity's chain of staged commands. A staged component is
+    not in the entity's table, so the chain is what answers for it until the queue runs. It is what lets an Init
+    read a component that was staged before it
+*/
+void*
+World::StageComponent(Game::Entity entity, Game::ComponentId component, const void* value, SizeT typeSize)
+{
+    void* data = this->componentStageAllocator.Alloc(typeSize);
+    const void* initialValue = value != nullptr ? value : MemDb::AttributeRegistry::DefaultValue(component);
+    Memory::Copy(initialValue, data, typeSize);
+
+    IndexT const index = this->addStagedQueue.Size();
+
+    AddStagedComponentCommand cmd;
+    cmd.entity = entity;
+    cmd.componentId = component;
+    cmd.dataSize = typeSize;
+    cmd.data = data;
+    cmd.next = this->StagedHead(entity);
+    this->addStagedQueue.Append(cmd);
+
+    if (entity.index >= (IndexT)this->stagedHeads.Size())
+        this->stagedHeads.Resize(entity.index + 256, InvalidIndex); // grow a bit extra
+    this->stagedHeads[entity.index] = index;
+
+    return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+World::StagedHead(Game::Entity entity) const
+{
+    if (entity.index >= (IndexT)this->stagedHeads.Size())
+        return InvalidIndex;
+
+    return this->stagedHeads[entity.index];
+}
+
+//------------------------------------------------------------------------------
+/**
+    The component on the entity's chain of staged commands, or nullptr when the entity has no staged component
+    with that id
+*/
+void*
+World::FindStagedComponent(Game::Entity entity, Game::ComponentId component) const
+{
+    IndexT node = this->StagedHead(entity);
+    while (node != InvalidIndex)
+    {
+        AddStagedComponentCommand const& cmd = this->addStagedQueue[node];
+        if (cmd.componentId == component)
+            return cmd.data;
+
+        node = cmd.next;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The data of a component, read from the entity's table when it is there, otherwise from its chain of staged
+    commands. Returns nullptr when the entity has neither
+*/
+byte*
+World::FindComponentData(Game::Entity entity, Game::ComponentId component) const
+{
+    if (this->IsValid(entity) && this->HasInstance(entity))
+    {
+        EntityMapping mapping = this->GetEntityMapping(entity);
+        MemDb::Table& tbl = this->db->GetTable(mapping.table);
+        MemDb::ColumnIndex const attrIndex = tbl.GetAttributeIndex(component);
+        if (attrIndex != MemDb::ColumnIndex::Invalid())
+            return (byte*)tbl.GetValuePointer(attrIndex, mapping.instance);
+    }
+
+    return (byte*)this->FindStagedComponent(entity, component);
 }
 
 //------------------------------------------------------------------------------
@@ -943,8 +1021,16 @@ World::EnumerateEntities(EntityCreatedCallback const& callback)
 bool
 World::HasComponent(Game::Entity const entity, ComponentId const component) const
 {
-    EntityMapping mapping = this->GetEntityMapping(entity);
-    return this->db->GetTable(mapping.table).HasAttribute(component);
+    if (this->IsValid(entity) && this->HasInstance(entity))
+    {
+        EntityMapping mapping = this->GetEntityMapping(entity);
+        if (this->db->GetTable(mapping.table).HasAttribute(component))
+            return true;
+    }
+
+    // The component can be staged rather than in the entity's table. The chain is the only place it is before
+    // the queue runs, which is where an Init reads the entity
+    return this->FindStagedComponent(entity, component) != nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -990,6 +1076,15 @@ World::ExecuteAddComponentCommands()
         
         // clear the add queue. this doesn't mean it's going to be empty after all OnInits have been executed, so we have to run another check
         this->addStagedQueue.Reset();
+
+        // The chain indexes into the queue, so it goes with it. The components of this batch are in the
+        // entity's table from here on, which is where they are read from
+        for (IndexT i = 0; i < addCommands.Size(); i++)
+        {
+            Game::Entity const cmdEntity = addCommands[i].entity;
+            if (cmdEntity.index < (IndexT)this->stagedHeads.Size())
+                this->stagedHeads[cmdEntity.index] = InvalidIndex;
+        }
 
         auto* currentCmd = addCommands.Begin();
         auto* end = addCommands.End();

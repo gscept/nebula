@@ -251,6 +251,9 @@ private:
         ComponentId componentId = ComponentId::Invalid();
         SizeT dataSize = 0;
         void* data = nullptr;
+        /// The next command staged for the same entity, or InvalidIndex. A staged component is not in the
+        /// entity's table, so the chain is what answers for it until the queue runs
+        IndexT next = InvalidIndex;
     };
 
     struct RemoveComponentCommand
@@ -297,6 +300,16 @@ private:
     /// Removes all components in cmds from entity
     void RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, SizeT numCmds);
 
+    /// Stage a component for an entity and put it on the entity's chain of staged commands
+    void* StageComponent(Entity entity, ComponentId component, const void* value, SizeT typeSize);
+    /// The first command on the entity's chain of staged commands, or InvalidIndex
+    IndexT StagedHead(Entity entity) const;
+    /// A component on the entity's chain of staged commands, or nullptr
+    void* FindStagedComponent(Entity entity, ComponentId component) const;
+    /// The data of a component, read from the entity's table when it is there, otherwise from its chain of
+    /// staged commands. Returns nullptr when the entity has neither
+    byte* FindComponentData(Entity entity, ComponentId component) const;
+
     /// used to allocate entity ids for this world
     EntityPool pool;
     /// Number of entities alive
@@ -305,6 +318,9 @@ private:
     EntityCreatedCallback entityCreatedCallback;
     /// maps entity index to table+row pair
     Util::Array<EntityMapping> entityMap;
+    /// the first staged command per entity index. Read by HasComponent and GetComponent for a component that
+    /// is staged and therefore not in the entity's table yet
+    Util::Array<IndexT> stagedHeads;
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
@@ -396,9 +412,13 @@ World::GetComponent(Entity entity)
         "GetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
 #endif
-    EntityMapping mapping = this->GetEntityMapping(entity);
-    TYPE* ptr = (TYPE*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
-    return *(ptr + mapping.instance.index);
+    Game::ComponentId const id = Game::GetComponentId<TYPE>();
+
+    byte* data = this->FindComponentData(entity, id);
+#if NEBULA_DEBUG
+    n_assert2(data != nullptr, "GetComponent: Entity does not have the component, staged or in a table!");
+#endif
+    return *(TYPE*)data;
 }
 
 //------------------------------------------------------------------------------
@@ -454,17 +474,7 @@ World::AddComponent(Entity entity)
     n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
     //n_assert(!this->HasComponent<TYPE>(entity));
 #endif
-    TYPE* data = this->componentStageAllocator.Alloc<TYPE>();
-    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
-    Memory::Copy(defaultValue, data, sizeof(TYPE));
-
-    AddStagedComponentCommand cmd = {
-        .entity = entity,
-        .componentId = id,
-        .dataSize = sizeof(TYPE),
-        .data = data,
-    };
-    this->addStagedQueue.Append(cmd);
+    TYPE* data = (TYPE*)this->StageComponent(entity, id, nullptr, sizeof(TYPE));
 
     MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
     ComponentInterface* cInterface;
@@ -496,16 +506,7 @@ World::AddComponent(Entity entity, TYPE const& component)
     n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
     //n_assert(!this->HasComponent<TYPE>(entity));
 #endif
-    TYPE* data = this->componentStageAllocator.Alloc<TYPE>();
-    Memory::Copy(&component, data, sizeof(TYPE));
-
-    AddStagedComponentCommand cmd = {
-        .entity = entity,
-        .componentId = id,
-        .dataSize = sizeof(TYPE),
-        .data = data,
-    };
-    this->addStagedQueue.Append(cmd);
+    TYPE* data = (TYPE*)this->StageComponent(entity, id, &component, sizeof(TYPE));
 
     MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
     ComponentInterface* cInterface;

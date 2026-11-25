@@ -402,17 +402,26 @@ EntitySystemTest::Run()
         // these are constructed directly if it has an OnStage delegate.
         // This queues the component in a cmd buffer. all add commands should be sorted before execution, based on which entities they belong to.
         // This way, we can move the entity once, even if it gets multiple components added in a single frame.
+        Test::componentInit = Test::ComponentInitRecord();
+
         DecayTestComponent* testDecay = world->AddComponent<DecayTestComponent>(entity);
 
         TestResource* testResource = world->AddComponent<TestResource>(entity);
         // test that the OnInit function is actually executed correctly
         VERIFY(testResource->resource == "gnyrf.res"_atm);
 
+        // The entity has no instance yet, so TestHealth is only on its chain of staged commands. That is what
+        // the Init of TestResource read it from
+        VERIFY(Test::componentInit.calls == 1);
+        VERIFY(Test::componentInit.sawBatchComponent);
+
         testResource->resource = "foobar.res"_atm;
 
-        // The component should not be added immediately, but instead it should be staged in a cmd buffer and added later.
-        VERIFY(!world->HasComponent<TestResource>(entity));
-        VERIFY(!world->HasComponent<DecayTestComponent>(entity));
+        // The components are staged rather than in a table, and the chain is what answers for them until the
+        // queue runs
+        VERIFY(world->HasComponent<TestResource>(entity));
+        VERIFY(world->HasComponent<DecayTestComponent>(entity));
+        VERIFY(world->GetComponent<TestResource>(entity).resource == "foobar.res"_atm);
 
         StepFrame();
         // The memory of testResource has been freed by the World, thus it's unsafe to use now.

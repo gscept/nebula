@@ -32,6 +32,21 @@ struct ComponentDecayRecord
 
 extern ComponentDecayRecord componentDecay;
 
+//------------------------------------------------------------------------------
+/**
+    Bookkeeping for the component initialization callback, which the test application registers on
+    TestResource. The callback runs when the component is staged rather than in a table, so the entity is
+    read through the chain of staged commands. That is what lets an Init see a component added in the same
+    batch, including one added before it
+*/
+struct ComponentInitRecord
+{
+    int calls = 0;
+    bool sawBatchComponent = false;
+};
+
+extern ComponentInitRecord componentInit;
+
 class EntitySystemTest : public TestCase
 {
     __DeclareClass(EntitySystemTest);
