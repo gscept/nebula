@@ -61,7 +61,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     const Materials::MaterialId skyboxMaterial = Materials::CreateMaterial(&MaterialTemplatesGPULang::base::__Skybox.entry, "Skybox");
 
     // Create default skybox
-    const CoreGraphics::MeshResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, true, false);
+    const CoreGraphics::MeshResourceId boxMesh = Resources::CreateResource("system:box:msh"_path, "environment", nullptr, nullptr, { .immediate = true, .stream = false });
     Models::ModelContext::Setup(envState.skyBoxEntity, Math::mat4(), skyboxMaterial, CoreGraphics::MeshResourceGetMesh(boxMesh, 0), 0, Graphics::ALL_STAGE_MASK);
     Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
     Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
@@ -82,13 +82,13 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         [](const Resources::ResourceId id)
         {
             envState.defaultEnvironmentMap = id;
-        }, nullptr, false, false);
+        }, nullptr, { .stream = false });
 
     envState.defaultIrradianceMap = Resources::CreateResource("systex:sky_irr.dds"_atm, "system"_atm,
         [](const Resources::ResourceId id)
         {
             envState.defaultIrradianceMap = id;
-        }, nullptr, false, false);
+        }, nullptr, { .stream = false });
 
     envState.r_show_env_params = Core::CVarCreate(Core::CVar_Int, "r_show_env_params", "0", "Show/hide environment parameters debug ui");
 }

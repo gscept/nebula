@@ -247,6 +247,7 @@ class MaterialTemplateDefinition:
             texLookup = 0
             func += '\tthis->entry.texturesPerBatch.Resize({});\n'.format(len(self.passes))
             func += '\tthis->entry.textureBatchLookup.Resize({});\n'.format(len(self.passes))
+            func += '\tthis->entry.interfaceName = "{}";\n'.format(self.interface.name)
             defList = list()
             for var in self.variables:
                 typeStr, accessorStr, varStr = TypeToString(var.type, var.edit, var.default)

@@ -1,0 +1,570 @@
+//------------------------------------------------------------------------------
+//  vegetation.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/util.gpuh"
+#include "lib/indirectdraw.gpuh"
+#include "lib/math.gpuh"
+#include "lib/pbr.gpuh"
+#include "lib/standard_shading.gpuh"
+#include "lib/math.gpuh"
+
+//#define LOD_DEBUG 1
+
+struct VegetationGenerationData
+{
+    CameraPosition : f32x4;
+    CameraForward : f32x4;
+	WorldPosition : f32x2;
+    WorldSize : f32x2;
+    InvWorldSize : f32x2;
+    GenerateQuadSize : i32x2;
+    HeightMapSize: f32x2;
+    MinHeight : f32;
+    MaxHeight : f32;
+    HeightMap: u32;
+
+    MaxRange : f32;
+    Fov : f32;
+    NumMeshInfos : u32;
+};
+
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform VegetationGenerateUniforms : *VegetationGenerationData;
+
+const MAX_MESH_INFOS = 8;
+const MAX_DRAWS_PER_MESH = 16384;
+struct MeshInfo
+{
+    lodIndexOffsets : i32x4;          // hold max 4 lods
+    lodVertexOffsets : i32x4;
+    lodIndexCount : i32x4;
+    lodVertexCount : i32x4;
+    lodDistances : f32x4;
+    lodFlags : u32x4;
+	maskSize : f32x2;
+    numLods : i32;
+	density : f32;
+    slopeThreshold : f32;
+    heightThreshold : f32;
+    materialIndex : u32;
+	maskIndex : u32;
+    used : u32;
+};
+
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform MeshInfos : *[MAX_MESH_INFOS] mutable MeshInfo;
+
+sampleMask(mask: u32, uniform samp: *sampler, uv: f32x2) f32x4
+{
+    return textureSampleLod(Textures2D[mask], samp, uv, 0);
+}
+
+@Visibility("CS")
+group(BATCH_GROUP) uniform IndirectMeshDrawBuffer : *[] mutable DrawIndexedCommand;
+
+const LOD_DEBUG = 0x1u;
+const LOD_BILLBOARD = 0x2u;
+
+@Visibility("CS|VS")
+group(BATCH_GROUP) uniform InstanceMeshArguments : *[] mutable VegetationInstance;
+
+struct DrawCountData
+{
+    NumMeshDraws : [MAX_MESH_INFOS/4]u32x4;
+};
+
+@Visibility("CS")
+group(BATCH_GROUP) uniform DrawCount : *mutable DrawCountData;
+
+group(SYSTEM_GROUP) sampler_state TextureSampler
+{
+    Filter = FilterMode.Linear;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(1)
+entry_point
+csClearDraws() void
+{
+    for (var i = 0u; i < MAX_MESH_INFOS; i++)
+        DrawCount.NumMeshDraws[i] = u32x4(0,0,0,0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SnapToGrid(worldPos : f32x2, gridSize : f32x2) f32x2
+{
+    const fractionalPart = worldPos % gridSize;
+    return worldPos - fractionalPart;
+}
+
+//------------------------------------------------------------------------------
+/**
+    This shader outputs the draws to be consumed later
+*/
+threads_x(32)
+threads_y(32)
+entry_point
+csGenerateDraws() void
+{
+	// Calculate closest corner
+    const cameraPos = VegetationGenerateUniforms.CameraPosition.xz;
+	const quadWorldStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + VegetationGenerateUniforms.WorldPosition - VegetationGenerateUniforms.WorldSize * 0.5f;
+
+	const c0 = quadWorldStart;
+	const c1 = quadWorldStart + f32x2(VegetationGenerateUniforms.GenerateQuadSize.x, 0);
+	const c2 = quadWorldStart + f32x2(0, VegetationGenerateUniforms.GenerateQuadSize.y);
+	const c3 = quadWorldStart + f32x2(VegetationGenerateUniforms.GenerateQuadSize.x, VegetationGenerateUniforms.GenerateQuadSize.y);
+
+	const d0 = dot(cameraPos - c0, cameraPos - c0);
+	const d1 = dot(cameraPos - c1, cameraPos - c1);
+	const d2 = dot(cameraPos - c2, cameraPos - c2);
+	const d3 = dot(cameraPos - c3, cameraPos - c3);
+	const smallestD = min(d0, min(d1, min(d2, d3)));
+
+	// If closes corner is outside of range, abort generation
+	if (smallestD > VegetationGenerateUniforms.MaxRange)
+	{
+		return;
+	}
+
+    const random = hash32(computeGetWorkgroupIndices().xy + computeGetLocalThreadIndices().xy).xy;
+	const worldSpaceSamplePos = quadWorldStart + random * VegetationGenerateUniforms.GenerateQuadSize;
+	const worldSpaceSamplePosDist = dot(cameraPos - worldSpaceSamplePos, cameraPos - worldSpaceSamplePos);
+
+	// Abort if sample is too far away
+	if (worldSpaceSamplePosDist > VegetationGenerateUniforms.MaxRange)
+	{
+		return;
+	}
+
+	// Move world space pos back to (0.. WorldSize]
+	const quadLocalStart = computeGetWorkgroupIndices().xy * VegetationGenerateUniforms.GenerateQuadSize + random * VegetationGenerateUniforms.GenerateQuadSize;
+
+	// Normalize to (0..1)
+	const sampleSpacePos = quadLocalStart * VegetationGenerateUniforms.InvWorldSize;
+
+    // load height map
+    var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, 0).r;
+    height = VegetationGenerateUniforms.MinHeight + height * (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight);
+
+    const pos = f32x3(worldSpaceSamplePos.x, height, worldSpaceSamplePos.y);
+
+    const pixel = sampleSpacePos * VegetationGenerateUniforms.HeightMapSize;
+    const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
+
+    const offset = f32x3(-invHeightMapSize.x, invHeightMapSize.x, 0);
+    var normal = CalculateNormalFromHeight(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, sampleSpacePos, offset, VegetationGenerateUniforms.MinHeight, VegetationGenerateUniforms.MaxHeight);
+
+    // go through mesh types and generate uniforms and draws
+    for (var i = 0; i < VegetationGenerateUniforms.NumMeshInfos; i++)
+    {
+        const meshInfo = bufferLoad(MeshInfos, i);
+
+        if !meshInfo.used { continue; }
+
+		const draws = DrawCount.NumMeshDraws[i / 4][i%4];
+		if (draws >= MAX_DRAWS_PER_MESH) { continue; }
+
+		// TODO: Add view frustum culling
+
+        // calculate rules
+        const heightCutoff = height < meshInfo.heightThreshold;
+        const angleCutoff = dot(normal, f32x3(0, 1, 0)) <= meshInfo.slopeThreshold;
+
+        const mask = sampleMask(meshInfo.maskIndex, PointSampler, sampleSpacePos).r;
+        var lod = meshInfo.numLods - 1;
+        for (var j = 0; j < meshInfo.numLods; j++)
+        {
+            if (meshInfo.lodDistances[j] > dot(worldSpaceSamplePosDist, worldSpaceSamplePosDist))
+            {
+                lod = j;
+                break;
+            }
+        }
+
+		const instanceRandom = hash12(sampleSpacePos);
+
+        if (heightCutoff && angleCutoff && instanceRandom < mask * meshInfo.density)
+        {
+            const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
+
+            var instanceUniform : VegetationInstance;
+            instanceUniform.position.xz = worldSpaceSamplePos;
+            instanceUniform.position.y = height;
+			const rotation = QuatFromNormal(normal); 
+			const randomRotation = QuatFromAxisAngle(f32x3(0,1,0), random.y);
+			instanceUniform.rotation = QuatMul(randomRotation, rotation);
+            instanceUniform.random = random.x;
+            instanceUniform.materialIndex = meshInfo.materialIndex;
+            instanceUniform.lodFlags = meshInfo.lodFlags[lod];
+            bufferStore(InstanceMeshArguments, entry, instanceUniform);
+
+            var command : DrawIndexedCommand;
+            command.indexCount = u32(meshInfo.lodIndexCount[lod]);
+            command.instanceCount = 1u;
+            command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
+            command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
+            command.startInstance = entry;  // pretend to use instancing
+            bufferStore(IndirectMeshDrawBuffer, entry + i * MAX_MESH_INFOS, command);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDrawDepthWeighted(
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : i32x2
+    , binding(3) in tangent : f32x4
+    , binding(5) in weights : f32x4
+    , out UV : f32x2
+    , out InstanceIndex : u32
+
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+   
+    UV = UnpackUV(uv);
+
+    InstanceIndex = vertexGetInstanceIndex();
+    const worldSpacePos = instanceUniforms.position + rotatedPos;
+
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(worldSpacePos, 1));
+    }
+    else
+    {
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(worldSpacePos, 1));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDrawDepth(
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : i32x2
+    , binding(3) in tangent : f32x4
+    , out UV : f32x2
+    , out InstanceIndex : u32
+
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+
+    UV = UnpackUV(uv);
+
+    InstanceIndex = vertexGetInstanceIndex();
+    const worldSpacePos = instanceUniforms.position + rotatedPos;
+
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(worldSpacePos, 1));
+    }
+    else
+    {
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(worldSpacePos, 1));
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDrawMeshWeighted(
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : i32x2
+    , binding(3) in tangent : f32x4
+    , binding(5) in weights : f32x4
+    , out Tangent : f32x3
+    , out Normal : f32x3
+    , out Sign : f32
+    , out UV : f32x2
+    , out WorldSpacePos : f32x3
+    , out InstanceIndex : u32
+
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+
+    UV = UnpackUV(uv);
+    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
+    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
+    Sign = tangent.w;
+
+    InstanceIndex = vertexGetInstanceIndex();
+    WorldSpacePos = instanceUniforms.position + rotatedPos;
+
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
+    else
+    {
+        vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(WorldSpacePos, 1));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDrawMesh(
+    binding(0) in position : f32x3
+    , binding(2) in uv : i32x2
+    , binding(1) in normal : f32x3
+    , binding(3) in tangent : f32x4
+    , out Tangent : f32x3
+    , out Normal : f32x3
+    , out Sign : f32
+    , out UV : f32x2
+    , out WorldSpacePos : f32x3
+    , out InstanceIndex : u32
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
+    const rotatedPos = QuatRotateVector(instanceUniforms.rotation, position);
+
+    UV = UnpackUV(uv);
+    Normal = QuatRotateVector(instanceUniforms.rotation, normal);
+    Tangent = QuatRotateVector(instanceUniforms.rotation, tangent.xyz);
+    Sign = tangent.w;
+    InstanceIndex = vertexGetInstanceIndex();
+    WorldSpacePos = instanceUniforms.position + rotatedPos;
+
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
+    else
+    {
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthBRDF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
+{
+	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.BRDFMaterials[instanceUniforms.materialIndex];
+
+    const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Standard shader for conductors (metals) and dielectic materials (non-metal), using bindless materials
+*/
+early_depth
+entry_point
+psVegetationBRDF(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3,
+    in no_interpolate InstanceIndex : u32
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.BRDFMaterials[instanceUniforms.materialIndex];
+
+    const albedo   = MaskColor(sample2D(mat.AlbedoMap, MaterialSampler, UV), 1.0f) * mat.MatAlbedoIntensity;
+    var material = UnpackMaterialMap(sample2D(mat.ParameterMap, MaterialSampler, UV));
+    material[MAT_EMISSIVE] = 0.0f;
+    const N        = normalize(UnpackNormalMap(Tangent, Normal, Sign, sample2D(mat.NormalMap, NormalSampler, UV)));
+    
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, albedo.rgb, material, N);
+    
+    pixelExportColor(PackColor(light.rgb, albedo.a), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthGLTF(in UV : f32x2, in no_interpolate InstanceIndex : u32) void
+{
+	const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
+
+    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
+    if (baseColor.a == 0.0f) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Standard shader for conductors (metals) and dielectic materials (non-metal), using bindless materials
+*/
+early_depth
+entry_point
+psVegetationGLTF(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3,
+    in no_interpolate InstanceIndex : u32
+) void
+{
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, InstanceIndex);
+    const mat = MaterialPointers.GLTFMaterials[instanceUniforms.materialIndex];
+    
+    const baseColor = MaskColor(sample2D(mat.baseColorTexture, MaterialSampler, UV) * mat.baseColorFactor, mat.alphaCutoff);
+    const metallicRoughness = sample2D(mat.metallicRoughnessTexture, MaterialSampler, UV) * f32x4(1.0f, mat.roughnessFactor, mat.metallicFactor, 1.0f);
+    const emissive = sample2D(mat.emissiveTexture, MaterialSampler, UV) * mat.emissiveFactor;
+    const occlusion = sample2D(mat.occlusionTexture, MaterialSampler, UV);
+    const normals = sample2D(mat.normalTexture, NormalSampler, UV) * mat.normalScale;
+    var material : f32x4;
+    material[MAT_METALLIC] = metallicRoughness.b;
+    material[MAT_ROUGHNESS] = metallicRoughness.g;
+    material[MAT_CAVITY] = occlusion.r;
+    material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
+    const N = normalize(UnpackGLTFNormal(Tangent, Normal, Sign, mat.normalScale, normals));
+
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
+    const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
+    //light += calcEnv(baseColor, F0, N, viewVec, material);
+    light += emissive.rgb;
+    
+    pixelExportColor(PackColor(light.rgb, baseColor.a), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+render_state MeshState
+{
+    Cull = CullFace.None;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
+};
+
+render_state MeshZState
+{
+    Cull = CullFace.None;
+    DepthTestFunction = CompareMode.Less;
+};
+
+//------------------------------------------------------------------------------
+/**
+    NEBULA MATERIALS
+*/
+//------------------------------------------------------------------------------
+
+@Mask("VegetationDepthWeightedBRDF")
+program VegetationDepthWeightedBRDF
+{
+    VertexShader = vsDrawDepthWeighted;
+    PixelShader = psDepthBRDF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationDepthBRDF")
+program VegetationDepthBRDF
+{
+    VertexShader = vsDrawDepth;
+    PixelShader = psDepthBRDF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationMeshWeightedBRDF")
+program VegetationMeshWeightedBRDF
+{
+    VertexShader = vsDrawMeshWeighted;
+    PixelShader = psVegetationBRDF;
+    RenderState = MeshState;
+};
+
+@Mask("VegetationMeshBRDF")
+program VegetationMeshBRDF
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psVegetationBRDF;
+    RenderState = MeshState;
+};
+
+//------------------------------------------------------------------------------
+/**
+    GLTF MATERIALS
+*/
+//------------------------------------------------------------------------------
+
+@Mask("VegetationDepthWeightedGLTF")
+program VegetationDepthWeightedGLTF
+{
+    VertexShader = vsDrawDepthWeighted;
+    PixelShader = psDepthGLTF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationDepthGLTF")
+program VegetationDepthGLTF
+{
+    VertexShader = vsDrawDepth;
+    PixelShader = psDepthGLTF;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationMeshWeightedGLTF")
+program VegetationMeshWeightedGLTF
+{
+    VertexShader = vsDrawMeshWeighted;
+    PixelShader = psVegetationGLTF;
+    RenderState = MeshState;
+};
+
+@Mask("VegetationMeshGLTF")
+program VegetationMeshGLTF
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psVegetationGLTF;
+    RenderState = MeshState;
+};
+
+
+//------------------------------------------------------------------------------
+/**
+    System shaders
+*/
+//------------------------------------------------------------------------------
+
+
+@Mask("VegetationClear")
+program VegetationClear
+{
+    ComputeShader = csClearDraws;
+};
+
+@Mask("VegetationGenerateDraws")
+program VegetationGenerateDraws
+{
+    ComputeShader = csGenerateDraws;
+};

@@ -307,7 +307,7 @@ ModelContext::Setup(
         SetupModel(gfxId, tag, finishedCallback, stageMask, mid);
     };
 
-    Resources::CreateResource(name, tag, successCallback, successCallback, false);
+    Resources::CreateResource(name, tag, successCallback, successCallback);
 }
 
 //------------------------------------------------------------------------------
@@ -327,7 +327,7 @@ ModelContext::Setup(
         SetupModel(gfxId, tag, finishedCallback, stageMask, mid);
     };
 
-    Resources::CreateResource(path, tag, successCallback, successCallback, false);
+    Resources::CreateResource(path, tag, successCallback, successCallback);
 }
 
 //------------------------------------------------------------------------------
@@ -599,7 +599,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
         SetupModel(gfxId, tag, finishedCallback, mask, mid);
     };
 
-    Resources::ResourceId model = Resources::CreateResource(name, tag, successCallback, successCallback, true);
+    Resources::ResourceId model = Resources::CreateResource(name, tag, successCallback, successCallback, { .immediate = true });
     modelContextAllocator.Set<Model_Id>(cid.id, model);
 }
 

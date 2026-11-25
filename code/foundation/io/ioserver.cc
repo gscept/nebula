@@ -531,6 +531,16 @@ DirectoryExists(const URI& uri)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+MoveFile(const URI& oldPath, const URI& newPath)
+{
+    n_assert(oldPath.Scheme() == "file" && newPath.Scheme() == "file");
+    return FSWrapper::MoveFile(oldPath.GetHostAndLocalPath(), newPath.GetHostAndLocalPath());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 SetReadOnly(const URI& uri, bool readOnly)
 {

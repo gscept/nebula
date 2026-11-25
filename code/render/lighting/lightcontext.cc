@@ -173,8 +173,8 @@ LightContext::Create()
     clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, CoreGraphics::ShaderFeatureMask("Debug"));
 #endif
 
-    textureState.ltcLut0 = Resources::CreateResource("systex:ltc_1.dds", "system", nullptr, nullptr, true);
-    textureState.ltcLut1 = Resources::CreateResource("systex:ltc_2.dds", "system", nullptr, nullptr, true);
+    textureState.ltcLut0 = Resources::CreateResource("systex:ltc_1.dds", "system", nullptr, nullptr, { .immediate = true });
+    textureState.ltcLut1 = Resources::CreateResource("systex:ltc_2.dds", "system", nullptr, nullptr, { .immediate = true });
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "LightIndexListsBuffer";

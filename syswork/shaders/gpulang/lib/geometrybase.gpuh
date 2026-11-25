@@ -123,19 +123,11 @@ MaskColor(albedo : f32x4, cutoff : f32) f32x4
     }
     else if (ColorMaskMode == ColorMaskModes.Masked)
     {
-        if (gplIsPixelShader)
-        {
-            if (albedo.a <= cutoff) { discard; }
-        }
-        return f32x4(albedo.rgb, 1.0f);
+        return f32x4(albedo.rgb, albedo.a <= cutoff ? 0.0f : 1.0f);
     }
     else if (ColorMaskMode == ColorMaskModes.AlphaMasked)
     {
-        if (gplIsPixelShader)
-        {
-            if (albedo.a <= cutoff) { discard; }
-        }
-        return albedo;
+        return f32x4(albedo.rgb, albedo.a <= cutoff ? 0.0f : albedo.a);
     }
     return albedo;
 }
@@ -298,6 +290,21 @@ psDepthOnlyAlphaMask(in UV : f32x2) void
 
     const baseColor = sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV);
     if (baseColor.a <= BRDFConstants.AlphaSensitivity) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthAlphaMaskBindlessMaterial(in UV : f32x2, in no_interpolate MaterialIndex : u32) void
+{
+    const mat = MaterialPointers.BRDFMaterials[MaterialIndex];
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
+    const dither = hash12(seed);
+    if (dither < ObjectUniforms.DitherFactor) { discard; }
+
+    const baseColor = sample2D(mat.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= mat.AlphaSensitivity) { discard; }
 }
 
 //------------------------------------------------------------------------------

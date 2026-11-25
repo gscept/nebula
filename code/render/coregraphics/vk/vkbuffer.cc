@@ -363,6 +363,7 @@ void
 BufferUpdate(const BufferId id, const void* data, const size_t size, const size_t offset)
 {
     const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
+    n_assert(map.mappedMemory != nullptr);
 
 #if NEBULA_DEBUG
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);

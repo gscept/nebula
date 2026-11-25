@@ -21,12 +21,7 @@
             "GridFogList",
             "GridFogIndexLists",
             "RayTracingObjectBindings",
-            "HistogramCounters",
-            "VegetationDrawCountBuffer",
-            "VegetationGrassDrawsBuffer",
-            "VegetationGrassArgumentsBuffer",
-            "VegetationMeshDrawsBuffer",
-            "VegetationMeshArgumentsBuffer"
+            "HistogramCounters"
         ],
         "ImportTextures": [
             "HBAOInternal0",
@@ -240,6 +235,9 @@
             {
                 "name": "Compute Prepass",
                 "queue": "Compute",
+                "wait_for_submissions": [
+                    "Scene"
+                ],
                 "_comment": "Perform clustering AABB generation and run culling for clustering systems",
                 "ops": [
                     {
@@ -350,11 +348,6 @@
                     {
                         "subgraph": {
                             "name": "Vegetation Generate Draws"
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Vegetation Draw CPU Readback"
                         }
                     },
 

@@ -4,8 +4,8 @@
 //------------------------------------------------------------------------------
 
 #include "lib/std.gpuh"
-#include "lib/util.gpuh"
 #include "lib/shared.gpuh"
+#include "lib/util.gpuh"
 #include "lib/pbr.gpuh"
 #include "lib/clustering.gpuh"
 #include "lib/lighting_functions.gpuh"
@@ -187,33 +187,6 @@ struct TileWrite
 };
 group(BATCH_GROUP) uniform TileWrites : *[MAX_TILES_PER_FRAME] TileWrite;
 
-//------------------------------------------------------------------------------
-/**
-*/
-CalculateNormalFromHeight(uv : f32x2, offset : f32x3) f32x3
-{
-    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.xz, 0).r;
-    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.yz, 0).r;
-    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zx, 0).r;
-    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zy, 0).r;
-    const heightScale = TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight;
-    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
-}
-
-//------------------------------------------------------------------------------
-/**
-    worldXZ is in heightmap space [0, WorldSize], same units as uv * worldSize.
-    offset is in meters (typically ±1).
-*/
-CalculateNormalFromHeight(worldXZ : f32x2, offset : i32x3, scale : f32x2) f32x3
-{
-    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.xz) * scale, 0).r;
-    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.yz) * scale, 0).r;
-    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.zy) * scale, 0).r;
-    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (worldXZ + offset.zx) * scale, 0).r;
-    const heightScale = TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight;
-    return normalize(f32x3((hl - hr) * heightScale, 2.0f, (hb - ht) * heightScale));
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -511,7 +484,7 @@ EvaluateTerrainSample(worldXZ : f32x2, out outAlbedo : f32x3, out outMaterial : 
     const worldPos = f32x3(worldXZ.x, height, worldXZ.y);
 
     const offset = i32x3(-1, 1, 0);
-    const normal = CalculateNormalFromHeight(worldXZ, offset, invWorldSize);
+    const normal = CalculateNormalFromHeight(Textures2D[TerrainInstanceUniforms.HeightMap], TextureSampler, worldXZ, offset, invWorldSize, TerrainInstanceUniforms.MinHeight, TerrainInstanceUniforms.MaxHeight);
 
     var triplanarWeights = abs(normal.xyz);
     triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
@@ -534,7 +507,6 @@ EvaluateTerrainSample(worldXZ : f32x2, out outAlbedo : f32x3, out outMaterial : 
             continue;
         }
 	
-		// THIS BREAKS NORMALS
         SampleTerrain(i, normal, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, outAlbedo, outMaterial, outNormal);
     }
 }

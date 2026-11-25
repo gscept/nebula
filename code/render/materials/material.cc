@@ -139,7 +139,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
         {
             if (texture->slot != InvalidIndex)
             {
-                CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->resource, "materials", nullptr, nullptr, true, false);
+                CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->resource, "materials", nullptr, nullptr, { .immediate = true, .stream = false });
                 CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture->slot });
             }
         }

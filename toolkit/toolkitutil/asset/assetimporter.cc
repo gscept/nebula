@@ -706,6 +706,8 @@ ImportTexture(const IO::URI& file, const IO::URI& destinationFolder, ToolkitUtil
     }
     texture.source = GetSourceReference(file);
 
+    texture.source = file.LocalPath();
+
     // Save nebula texture 
     Util::String fileNameNoExt = file.LocalPath().ExtractFileName();
     fileNameNoExt.StripFileExtension();

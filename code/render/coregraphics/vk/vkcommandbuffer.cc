@@ -1143,10 +1143,30 @@ CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, Index
 /**
 */
 void
+CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    vkCmdDrawIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, maxDrawCount, stride);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdDrawIndexedIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, numDraws, stride);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, CoreGraphics::BufferId countBuffer, IndexT countBufferOffset, SizeT maxDrawCount, SizeT stride)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    vkCmdDrawIndexedIndirectCount(cmdBuf, BufferGetVk(buffer), bufferOffset, BufferGetVk(countBuffer), countBufferOffset, maxDrawCount, stride);
 }
 
 //------------------------------------------------------------------------------
@@ -1280,6 +1300,7 @@ CmdCopy(
     for (IndexT i = 0; i < copies.Size(); i++)
     {
         n_assert(from[i].bits != ImageBits::Auto && to[i].bits != ImageBits::Auto);
+        n_assert(from[i].region.width() == to[i].region.width() && from[i].region.height() == to[i].region.height());
         VkImageCopy& copy = copies[i];
         copy.srcSubresource = { VkTypes::AsVkImageAspectFlags(from[i].bits), (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
         copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };

@@ -20,7 +20,7 @@ struct DepthOfField
 {
     // Linear view depth. At focusDistance +/- focusRange the radius is maxRadius.
     float focusDistance = 0.01f;
-    float focusRange = 10.0f;
+    float focusRange = 1000.0f;
     // Full-resolution pixels. The shader caps this at 30.
     float maxRadius = 15.0f;
     // Aperture. Blade count 3..8 is a regular iris. Any other count is a disk.

@@ -229,6 +229,9 @@ Viewport::Render()
 {
     if (ImGui::BeginMenuBar())
     {
+        ImVec2 padding = ImGui::GetStyle().WindowPadding;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding + ImVec2(4, 4));
+
         if (ImGui::BeginMenu("    Camera    "))
         {
             if (ImGui::MenuItem(
@@ -308,9 +311,9 @@ Viewport::Render()
             Graphics::GraphicsEntityId cameraEntity = this->camera.GetGraphicsEntity();
             Graphics::DepthOfField dof = Graphics::CameraContext::GetDepthOfField(cameraEntity);
             static const float focusMin = 0.01f;
-            static const float focusMax = 500.0f;
+            static const float focusMax = 10000.0f;
             static const float rangeMin = 0.01f;
-            static const float rangeMax = 200.0f;
+            static const float rangeMax = 10000.0f;
             static const float radiusMin = 0.0f;
             static const float radiusMax = 30.0f;
             bool dofChanged = false;
@@ -346,11 +349,6 @@ Viewport::Render()
                 browser->PickFile(IO::Path(), [cameraEntity](const IO::Path& filePath)
                 {
                     n_assert(filePath.IsFile());
-                    if (filePath.GetType() != "tex")
-                    {
-                        n_warning("Dirt mask must be a texture\n");
-                        return;
-                    }
                     Resources::CreateResource(filePath, "editor", [cameraEntity](Resources::ResourceId id)
                     {
                         Graphics::DepthOfField current = Graphics::CameraContext::GetDepthOfField(cameraEntity);
@@ -424,6 +422,7 @@ Viewport::Render()
         ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - textSize.x - fpsTextSize.x - 100, 0));
         ImGui::Text(cameraPosStr.AsCharPtr());
 
+        ImGui::PopStyleVar();
         ImGui::EndMenuBar();
     }
 

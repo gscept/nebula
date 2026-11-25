@@ -106,7 +106,7 @@ NavigationManager::InitNavMesh(Game::World* world, Game::Entity entity, NavMesh*
     navMesh.world = world;
     navMesh.entity = entity;
     navMesh.name = component->resource;
-    navMesh.resource = Resources::CreateResource(path, "NavMesh", nullptr, nullptr, true);
+    navMesh.resource = Resources::CreateResource(path, "NavMesh", nullptr, nullptr, {.immediate=true});
     if (navMesh.resource == Resources::InvalidResourceId)
     {
         n_warning("NavigationManager: could not load navmesh '%s'\n", component->resource.Value());
