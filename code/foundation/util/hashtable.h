@@ -87,6 +87,8 @@ public:
     IndexT FindIndex(const KEYTYPE& key) const;
     /// get value from key and bucket
     VALUETYPE& ValueAtIndex(const KEYTYPE& key, IndexT i) const;
+    /// the value for a key, or nullptr when the table has no entry for it.
+    VALUETYPE* FindValue(const KEYTYPE& key) const;
     /// return array of all key/value pairs in the table (slow)
     StackArray<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> Content() const;
     /// get all keys as an Util::Array (slow)
@@ -127,11 +129,11 @@ private:
     bool inBulkAdd;
 
     /// if type is integral, just use that value directly
-    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { using UNSIGNED = typename std::make_unsigned<HASHKEY>::type; return uint32_t(UNSIGNED(key) % UNSIGNED(this->hashArray.Size())); };
+    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { using UNSIGNED = typename std::make_unsigned<HASHKEY>::type; return uint32_t(UNSIGNED(key) % UNSIGNED(TABLE_SIZE)); };
     /// if not, call the function on HashCode on HASHKEY
-    template <typename HASHKEY> const uint32_t GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size(); };
+    template <typename HASHKEY> const uint32_t GetHashCode(const HASHKEY& key) const { return key.HashCode() % TABLE_SIZE; };
     /// if type is pointer, convert using questionable method
-    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return key->HashCode() % this->hashArray.Size(); }
+    template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return key->HashCode() % TABLE_SIZE; }
 };
 
 //------------------------------------------------------------------------------
@@ -597,6 +599,25 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::ValueAtIndex(const KEYTYP
     uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
     StackArray<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
     return hashElements[i].Value();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
+VALUETYPE*
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::FindValue(const KEYTYPE& key) const
+{
+    uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
+    StackArray<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
+    IndexT hashElementIndex;
+    if (this->inBulkAdd)
+        hashElementIndex = hashElements.template FindIndex<KEYTYPE>(key);
+    else
+        hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
+    if (hashElementIndex == InvalidIndex)
+        return nullptr;
+    return &hashElements[hashElementIndex].Value();
 }
 
 //------------------------------------------------------------------------------
