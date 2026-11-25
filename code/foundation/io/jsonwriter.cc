@@ -276,7 +276,6 @@ void
 JsonWriter::Add(const uint8_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
-    n_assert(value < INT16_MAX);
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
@@ -334,7 +333,6 @@ void
 JsonWriter::Add(const uint64_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
-    n_assert(value < INT64_MAX);
     pjson::value_variant val((int64_t)value);
     if (name.IsEmpty())
     {
@@ -354,7 +352,6 @@ void
 JsonWriter::Add(const int16_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
-    n_assert(value < INT16_MAX);
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
@@ -374,7 +371,6 @@ void
 JsonWriter::Add(const uint16_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
-    n_assert(value < UINT16_MAX);
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
