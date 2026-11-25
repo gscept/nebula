@@ -337,8 +337,8 @@ IndexT GetQueueIndex(const QueueType queue);
 /// Get queue indices
 const Util::Set<uint32_t>& GetQueueIndices();
 
-/// Finish current frame
-void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores);
+/// Finish current frame, the rendering semaphores are signaled when the frame's work is done
+void FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores);
 /// Progress to next frame
 void NewFrame();
 

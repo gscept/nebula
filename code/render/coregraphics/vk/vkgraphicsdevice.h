@@ -66,6 +66,9 @@ void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>&
 /// Perform a set of sparse binding operations for buffers
 void SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
 
+/// Make the submission the command buffer ends up in wait for a binary semaphore
+void AddCmdBufferWaitSemaphore(const CoreGraphics::CmdBufferId cmdBuf, VkSemaphore sem);
+
 /// Clear pending resources
 void ClearPending();
 

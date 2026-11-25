@@ -673,6 +673,15 @@ GraphicsServer::Render()
         {
             Math::rectangle<int> viewport = ViewGetViewport(view);
 
+            // The resize handlers rewrite descriptor sets in place, some shared by all frames, and the
+            // frames still running on the GPU read them. A descriptor rewritten under a running shader
+            // can be read half old and half new, which has faulted and hung the GPU on resize. This
+            // frame's work isn't submitted until FinishFrame, so once the queues are idle nothing on
+            // the GPU uses what the handlers change
+            CoreGraphics::WaitForQueue(CoreGraphics::GraphicsQueueType);
+            CoreGraphics::WaitForQueue(CoreGraphics::ComputeQueueType);
+            CoreGraphics::WaitForQueue(CoreGraphics::TransferQueueType);
+
             // First, call the resize callback to trigger an update of the frame scripts
             if (this->resizeCall != nullptr)
             {
@@ -706,28 +715,25 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    Util::Array<CoreGraphics::SemaphoreId> displaySemaphores, renderSemaphores;
+    Util::Array<CoreGraphics::SemaphoreId> renderSemaphores;
 
     for (auto& func : this->endFrameCallbacks)
     {
         func(this->frameContext.frameIndex, this->frameContext.bufferIndex);
     }
 
+    // The waits for the acquired images are added where the images are copied to, see SwapchainCopy
     for (auto& wnd : this->windows)
     {
         CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(wnd);
-
-        CoreGraphics::SemaphoreId displaySemaphore = CoreGraphics::SwapchainGetCurrentDisplaySemaphore(swapchain);
-        CoreGraphics::SemaphoreId renderSemaphore = CoreGraphics::SwapchainGetCurrentRenderingSemaphore(swapchain);
-        displaySemaphores.Append(displaySemaphore);
-        renderSemaphores.Append(renderSemaphore);
+        renderSemaphores.Append(CoreGraphics::SwapchainGetCurrentRenderingSemaphore(swapchain));
     }
 
     // Make textures registered during this frame visible to it before anything is submitted
     Graphics::CommitPendingTickTables(this->frameContext.bufferIndex);
 
     // Finish submissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex, displaySemaphores, renderSemaphores);
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex, renderSemaphores);
 }
 
 //------------------------------------------------------------------------------

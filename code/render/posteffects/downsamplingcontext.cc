@@ -51,6 +51,22 @@ DispatchSize(SizeT numPixels)
 
 //------------------------------------------------------------------------------
 /**
+    The constants are one buffer for all frames, so the update waits for the previous frame's dispatch
+    to be done reading them, and the dispatch waits for the update
+*/
+template <typename CONSTANTS>
+void
+UpdateDownsampleConstants(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::BufferId buffer, const CONSTANTS& constants)
+{
+    using namespace CoreGraphics;
+    const BufferSubresourceInfo range(0, sizeof(CONSTANTS));
+    CmdBarrier(cmdBuf, PipelineStage::UniformCompute, PipelineStage::TransferWrite, BarrierDomain::Global, { BufferBarrierInfo{ .buf = buffer, .subres = range } });
+    CmdUpdateBuffer(cmdBuf, buffer, 0, sizeof(CONSTANTS), &constants);
+    CmdBarrier(cmdBuf, PipelineStage::TransferWrite, PipelineStage::UniformCompute, BarrierDomain::Global, { BufferBarrierInfo{ .buf = buffer, .subres = range } });
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 DownsamplingContext::DownsamplingContext()
 {
@@ -241,15 +257,15 @@ DownsamplingContext::Setup()
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
         DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));
+        // Number of mips the shader writes, the views for them are set up from the texture's own mip count
+        constants.Mips = CoreGraphics::TextureGetNumMips(FrameScript_default::Texture_LightBuffer()) - 1;
         constants.NumGroups = dispatchX * dispatchY;
         for (IndexT i = 0; i < 16; i++)
         {
             constants.Dimensions[i][0] = Math::max(1, viewport.width() >> i);
             constants.Dimensions[i][1] = Math::max(1, viewport.height() >> i);
         }
-        CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
-        CmdUpdateBuffer(cmdBuf, state.colorBufferConstants, 0, sizeof(constants), &constants);
+        UpdateDownsampleConstants(cmdBuf, state.colorBufferConstants, constants);
 
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
@@ -264,15 +280,15 @@ DownsamplingContext::Setup()
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
         DownsampleCsLight::DownsampleUniforms::STRUCT constants;
-        constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));
+        // See ColorDownsample_Compute
+        constants.Mips = CoreGraphics::TextureGetNumMips(FrameScript_default::Texture_Depth()) - 1;
         constants.NumGroups = dispatchX * dispatchY;
         for (IndexT i = 0; i < 16; i++)
         {
             constants.Dimensions[i][0] = Math::max(1, viewport.width() >> i);
             constants.Dimensions[i][1] = Math::max(1, viewport.height() >> i);
         }
-        CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
-        CmdUpdateBuffer(cmdBuf, state.depthBufferConstants, 0, sizeof(constants), &constants);
+        UpdateDownsampleConstants(cmdBuf, state.depthBufferConstants, constants);
 
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {

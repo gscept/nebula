@@ -35,8 +35,8 @@ public:
     static void* AllocateConstantMemory(SizeT size);
     /// Update GPU buffers
     static void FlushMaterialBuffers(const CoreGraphics::CmdBufferId id, const CoreGraphics::QueueType queue);
-    /// Get material binding buffer
-    static CoreGraphics::BufferId GetMaterialBindingBuffer();
+    /// Get the material binding buffer the given queue keeps up to date, use the one of the queue that reads it
+    static CoreGraphics::BufferId GetMaterialBindingBuffer(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
     /// Get material buffer
     static CoreGraphics::BufferId GetMaterialBuffer(const MaterialTemplatesGPULang::MaterialProperties type);
     /// Bit of a special way to register a terrain material

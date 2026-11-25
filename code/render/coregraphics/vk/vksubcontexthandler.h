@@ -119,8 +119,8 @@ public:
     uint64_t AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
     /// Append present signal
     void AppendSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore sem);
-    /// Append present signal
-    void AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem);
+    /// Make the pending submission with the given timeline index wait for a binary semaphore
+    void AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem, uint64_t submissionIndex);
     /// Flush submissions
     void FlushSubmissions(VkFence fence);
     /// Submit a single command buffer immediately on the queue. Use with utmost care!

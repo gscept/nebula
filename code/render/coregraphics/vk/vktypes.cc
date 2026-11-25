@@ -573,9 +573,12 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::ColorWrite:
             return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         case CoreGraphics::PipelineStage::DepthStencilRead:
-            return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            // Depth tests, and the load and clear of a depth attachment, happen in both test stages
+            return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
         case CoreGraphics::PipelineStage::DepthStencilWrite:
-            return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            // Resolving a multisampled depth attachment into its resolve target happens in the color
+            // attachment output stage, also for depth
+            return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         case CoreGraphics::PipelineStage::RayTracingShaderRead:
         case CoreGraphics::PipelineStage::RayTracingShaderWrite:
             return VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
@@ -656,11 +659,13 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::ColorRead:
             return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
         case CoreGraphics::PipelineStage::ColorWrite:
-            return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            // An attachment that is written is also read when it is loaded or blended into
+            return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         case CoreGraphics::PipelineStage::DepthStencilRead:
             return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
         case CoreGraphics::PipelineStage::DepthStencilWrite:
-            return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            // Depth testing reads the attachment it writes, and a depth resolve writes as a color attachment write
+            return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         case CoreGraphics::PipelineStage::TransferRead:
             return VK_ACCESS_TRANSFER_READ_BIT;
         case CoreGraphics::PipelineStage::TransferWrite:

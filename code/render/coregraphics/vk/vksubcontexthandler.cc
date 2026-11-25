@@ -158,7 +158,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
         {
             sub.waitIndices.Append(ev.timelineIndex);
             sub.waitSemaphores.Append(this->semaphores[ev.queue][this->currentQueue[ev.queue]]);
-            sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            sub.waitFlags.Append(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         }
     }
 
@@ -201,7 +201,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
         {
             sub.waitIndices.Append(ev.timelineIndex);
             sub.waitSemaphores.Append(this->semaphores[ev.queue][this->currentQueue[ev.queue]]);
-            sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            sub.waitFlags.Append(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         }
     }
 
@@ -310,6 +310,8 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuff
 void
 VkSubContextHandler::AppendSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore sem)
 {
+    // Loader threads append submissions at any time, so the list is only touched under the lock
+    Threading::CriticalScope _0(&this->submissionLock);
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Back();
     sub.signalIndices.Append(0);
@@ -320,13 +322,26 @@ VkSubContextHandler::AppendSignalSemaphore(CoreGraphics::QueueType type, VkSemap
 /**
 */
 void
-VkSubContextHandler::AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem)
+VkSubContextHandler::AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem, uint64_t submissionIndex)
 {
+    // A wait only holds back the submission it is on, so it goes on the one that needs it rather than
+    // the last one, which can be a loader thread's
+    Threading::CriticalScope _0(&this->submissionLock);
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
-    TimelineSubmission2& sub = submissionsForQueue.Back();
-    sub.waitIndices.Append(0);
-    sub.waitSemaphores.Append(sem);
-    sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    for (IndexT i = submissionsForQueue.Size() - 1; i >= 0; i--)
+    {
+        TimelineSubmission2& sub = submissionsForQueue[i];
+        if (sub.signalIndices.IsEmpty() || sub.signalIndices[0] != submissionIndex)
+            continue;
+
+        sub.waitIndices.Append(0);
+        sub.waitSemaphores.Append(sem);
+        // The wait stage is the set of stages held back by the wait, top of pipe would hold back nothing.
+        // The submission's first use of the image can be any stage, so all of them wait
+        sub.waitFlags.Append(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        return;
+    }
+    n_error("AppendWaitSemaphore: no pending submission with index %llu", (unsigned long long)submissionIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -335,6 +350,9 @@ VkSubContextHandler::AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemapho
 void
 VkSubContextHandler::FlushSubmissions(VkFence fence)
 {
+    // Without the lock a loader thread's submission can be cleared without being submitted, and
+    // anything waiting for its index would wait forever
+    Threading::CriticalScope _0(&this->submissionLock);
     CoreGraphics::QueueType submissionOrder[] =
     {
         CoreGraphics::TransferQueueType,

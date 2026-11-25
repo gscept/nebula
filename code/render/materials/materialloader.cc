@@ -122,7 +122,11 @@ struct
 #undef X
 
     MaterialInterfaces::MaterialPointers::STRUCT bindings;
-    CoreGraphics::BufferWithStaging materialBindingBuffer;
+
+    // Each queue copies the bindings when they change, so each has its own buffer. With one buffer the
+    // two queues' copies wrote the same memory without being ordered against each other
+    CoreGraphics::BufferWithStaging materialBindingBuffers[2];
+    uint BindingBufferIndex(const CoreGraphics::QueueType queue) const { return queue == CoreGraphics::GraphicsQueueType ? 0 : 1; }
 
     Threading::CriticalSection variantAllocatorLock;
     Memory::ArenaAllocator<4096> variantAllocator;
@@ -279,12 +283,15 @@ MaterialLoader::Setup()
 
     // Create binding buffer
     CoreGraphics::BufferCreateInfo materialBindingInfo;
-    materialBindingInfo.name = "Material Binding Buffer";
     materialBindingInfo.byteSize = sizeof(MaterialInterfaces::MaterialPointers::STRUCT);
     materialBindingInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     materialBindingInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
-    materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-    materialLoaderState.materialBindingBuffer.Create(materialBindingInfo);
+    materialBindingInfo.name = "Material Binding Buffer Graphics";
+    materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+    materialLoaderState.materialBindingBuffers[materialLoaderState.BindingBufferIndex(CoreGraphics::GraphicsQueueType)].Create(materialBindingInfo);
+    materialBindingInfo.name = "Material Binding Buffer Compute";
+    materialBindingInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+    materialLoaderState.materialBindingBuffers[materialLoaderState.BindingBufferIndex(CoreGraphics::ComputeQueueType)].Create(materialBindingInfo);
 
 #define ALLOC_MATERIAL(x) \
     Ids::Id32 id = materialLoaderState.x##s.Alloc();\
@@ -584,11 +591,12 @@ MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId cmdBuf, con
     MATERIAL_LIST
 #undef X
 
+    CoreGraphics::BufferWithStaging& bindingBuffer = materialLoaderState.materialBindingBuffers[materialLoaderState.BindingBufferIndex(queue)];
     if (materialLoaderState.dirtySet.bits & bits)
     {
-        CoreGraphics::BufferUpdate(materialLoaderState.materialBindingBuffer.HostBuffer(), materialLoaderState.bindings, 0);
-        hostBuffers.Append({ .buf = materialLoaderState.materialBindingBuffer.HostBuffer() });
-        deviceBuffers.Append({ .buf = materialLoaderState.materialBindingBuffer.DeviceBuffer() });
+        CoreGraphics::BufferUpdate(bindingBuffer.HostBuffer(), materialLoaderState.bindings, 0);
+        hostBuffers.Append({ .buf = bindingBuffer.HostBuffer() });
+        deviceBuffers.Append({ .buf = bindingBuffer.DeviceBuffer() });
         anyDirty = true;
     }
 
@@ -631,7 +639,7 @@ MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId cmdBuf, con
 
         if (materialLoaderState.dirtySet.bits & bits)
         {
-            materialLoaderState.materialBindingBuffer.Flush(cmdBuf, sizeof(MaterialInterfaces::MaterialPointers::STRUCT));
+            bindingBuffer.Flush(cmdBuf, sizeof(MaterialInterfaces::MaterialPointers::STRUCT));
             materialLoaderState.dirtySet.bits &= ~bits;
         }
 
@@ -644,9 +652,9 @@ MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId cmdBuf, con
 /**
 */
 CoreGraphics::BufferId
-MaterialLoader::GetMaterialBindingBuffer()
+MaterialLoader::GetMaterialBindingBuffer(const CoreGraphics::QueueType queue)
 {
-    return materialLoaderState.materialBindingBuffer.DeviceBuffer();
+    return materialLoaderState.materialBindingBuffers[materialLoaderState.BindingBufferIndex(queue)].DeviceBuffer();
 }
 
 //------------------------------------------------------------------------------

@@ -43,6 +43,10 @@ struct
     Math::float2 offset, size;
     int mip;
 
+    // Window as a fraction of the light buffer, offset and size above are in texels of the mip
+    Math::float2 windowOffset = { 0.0f, 0.0f };
+    Math::float2 windowSize = { 1.0f, 1.0f };
+
     float logLuminanceRange;
     Core::CVar* minLuminance;
     float logMinLuminance;
@@ -141,6 +145,8 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
     histogramState.offset = { mippedWidth * offset.x, mippedHeight * offset.y };
     histogramState.size = { mippedWidth * size.x, mippedHeight * size.y };
     histogramState.mip = mip;
+    histogramState.windowOffset = offset;
+    histogramState.windowSize = size;
 }
 
 //------------------------------------------------------------------------------
@@ -299,6 +305,20 @@ HistogramContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
             {source, HistogramCs::ColorSource::BINDING, 0, CoreGraphics::InvalidSamplerId, false, false}
         );
         CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
+
+        // The dispatch binds the per view tables, they still point to the destroyed light buffer
+        for (IndexT i = 0; i < histogramState.viewHistogramBuffers.Size(); i++)
+        {
+            CoreGraphics::ResourceTableId table = histogramState.viewHistogramBuffers.ValueAtIndex(i).res;
+            CoreGraphics::ResourceTableSetTexture(
+                table,
+                {source, HistogramCs::ColorSource::BINDING, 0, CoreGraphics::InvalidSamplerId, false, false}
+            );
+            CoreGraphics::ResourceTableCommitChanges(table);
+        }
+
+        // The window is in texels, recompute it for the new size
+        SetWindow(histogramState.windowOffset, histogramState.windowSize, histogramState.mip);
     }
 }
 

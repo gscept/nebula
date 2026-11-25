@@ -70,6 +70,7 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
     _IMP_VK(vkGetPhysicalDeviceSurfacePresentModesKHR);
     _IMP_VK(vkGetPhysicalDeviceSurfaceSupportKHR);
+    _IMP_VK(vkDestroySurfaceKHR);
     _IMP_VK(vkGetPhysicalDeviceImageFormatProperties2);
     _IMP_VK(vkCreateSwapchainKHR);
     _IMP_VK(vkGetSwapchainImagesKHR);
@@ -260,6 +261,7 @@ _DEF_VK(vkGetPhysicalDeviceSurfaceFormatsKHR);
 _DEF_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
 _DEF_VK(vkGetPhysicalDeviceSurfacePresentModesKHR);
 _DEF_VK(vkGetPhysicalDeviceSurfaceSupportKHR);
+_DEF_VK(vkDestroySurfaceKHR);
 _DEF_VK(vkGetPhysicalDeviceImageFormatProperties2);
 _DEF_VK(vkCreateSwapchainKHR);
 _DEF_VK(vkGetSwapchainImagesKHR);

@@ -769,9 +769,9 @@ WindowNewFrame(const WindowId id)
         mode.SetHeight(info.newHeight);
         mode.SetAspectRatio(info.newWidth / float(info.newHeight));
 
-        // Destroy old swap chain and make a new one
+        // Make a new swap chain from the old one, then destroy the old one. The old one has to still
+        // exist when it's passed as oldSwapchain, and the new one takes over its surface
         CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
-        CoreGraphics::DestroySwapchain(swapchain);
 
         //CoreGraphics::BeginWindowResize();
 
@@ -784,6 +784,8 @@ WindowNewFrame(const WindowId id)
         newSwapInfo.oldSwapchain = swapchain;
         glfwWindowAllocator.Set<GLFW_Swapchain>(id.id, CoreGraphics::CreateSwapchain(newSwapInfo));
         N_MARKER_END()
+
+        CoreGraphics::DestroySwapchain(swapchain);
 
         // notify event listeners we resized
         GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));

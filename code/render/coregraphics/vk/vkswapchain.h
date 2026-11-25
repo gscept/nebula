@@ -52,5 +52,7 @@ VkDevice SwapchainGetVkDevice(const CoreGraphics::SwapchainId id);
 VkSwapchainKHR SwapchainGetVkSwapchain(const CoreGraphics::SwapchainId id);
 /// Get vulkan image views
 const Util::Array<VkImageView>& SwapchainGetVkImageViews(const CoreGraphics::SwapchainId id);
+/// Get the surface the swapchain owns, null once a replacing swapchain has taken it over
+VkSurfaceKHR SwapchainGetVkSurface(const CoreGraphics::SwapchainId id);
 
 } // namespace Vulkan

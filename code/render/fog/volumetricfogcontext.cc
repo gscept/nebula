@@ -107,6 +107,11 @@ VolumetricFogContext::Create()
     rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     fogState.stagingClusterFogLists.Create(rwbInfo);
 
+    // The subgraphs below declare their use of these through the frame script, which only puts barriers
+    // on them once they are bound
+    FrameScript_default::Bind_ClusterFogList(fogState.clusterFogLists);
+    FrameScript_default::Bind_ClusterFogIndexLists(fogState.clusterFogIndexLists);
+
     fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
     fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Render"));
 
@@ -157,7 +162,7 @@ VolumetricFogContext::Create()
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
     }, {
         { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::ComputeShaderRead }
-        , { FrameScript_default::BufferIndex::ClusterLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::ClusterFogIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
 
@@ -172,7 +177,14 @@ VolumetricFogContext::Create()
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer0();
         CmdDispatch(cmdBuf, Math::divandroundup(viewport.width() * scaleX, 64), Math::ceil(viewport.height() * scaleY), 1);
     }, {
+        // Everything the fog shader reads. The light index lists were only ordered after the light culling
+        // by accident, through a write the fog culling wrongly declared on them. Read before the culling
+        // is done, they give the shader garbage light counts and indices
         { FrameScript_default::BufferIndex::ClusterFogIndexLists, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     }, {
         { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::TextureIndex::ZBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }

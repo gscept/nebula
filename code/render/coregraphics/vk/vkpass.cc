@@ -80,7 +80,15 @@ PassGetVkRenderPass(const CoreGraphics::PassId id)
 const VkRenderingInfo
 RenderPassGetVk(const CoreGraphics::RenderPassId id)
 {
-    return passRenderAllocator.Get<PassRender_BeginInfo>(id.id);
+    // The attachments live in the allocator, which moves when it grows, so the pointers
+    // are set here rather than kept in the stored info. They stay valid until the next
+    // render pass is created
+    VkRenderingInfo info = passRenderAllocator.Get<PassRender_BeginInfo>(id.id);
+    const bool hasDepth = passRenderAllocator.Get<PassRender_PipelineInfo>(id.id).depthAttachmentFormat != VK_FORMAT_UNDEFINED;
+    info.pColorAttachments = passRenderAllocator.Get<PassRender_Attachments>(id.id).Begin();
+    info.pDepthAttachment = hasDepth ? &passRenderAllocator.Get<PassRender_DepthAttachment>(id.id) : nullptr;
+    info.pStencilAttachment = nullptr;
+    return info;
 }
 
 //------------------------------------------------------------------------------
@@ -838,7 +846,11 @@ CreateRenderPass(const RenderPassCreateInfo& info)
     renderInfo.layerCount = info.layerCount;
     renderInfo.viewMask = 0x0;
     renderInfo.colorAttachmentCount = attachmentInfo.Size();
-    renderInfo.pColorAttachments = attachmentInfo.Begin();
+    // Slots are reused, so clear what an earlier pass may have left. The attachment pointers are
+    // filled in by RenderPassGetVk
+    renderInfo.pColorAttachments = nullptr;
+    renderInfo.pDepthAttachment = nullptr;
+    renderInfo.pStencilAttachment = nullptr;
 
 	if (info.depthTarget != CoreGraphics::InvalidTextureViewId)
 	{
@@ -871,7 +883,6 @@ CreateRenderPass(const RenderPassCreateInfo& info)
 		VkClearValue& clear = depthAttachmentInfo.clearValue;
         clear.depthStencil.depth = info.depthClearValue.x;
         clear.depthStencil.stencil = info.depthClearValue.y;
-        renderInfo.pDepthAttachment = &depthAttachmentInfo;
 	}
 
     // setup uniform buffer for render target information

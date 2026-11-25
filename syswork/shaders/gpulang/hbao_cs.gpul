@@ -179,7 +179,12 @@ csMainX() void
 
     // Load f32x2 samples into shared memory
     SharedMemory[computeGetLocalThreadIndices().x] = LoadXZFromTexture(x,y);
-    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
+    // The first store fills [0, HBAO_TILE_WIDTH), this one only the apron after it. Without the check the
+    // first threads would store to the same elements as the later threads' first store
+    if (2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x) >= HBAO_TILE_WIDTH)
+    {
+        SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
+    }
     memoryBarrierWorkgroup();
     executionBarrierWorkgroup();
 
@@ -222,7 +227,11 @@ csMainY() void
 
     // Load vec2 samples into shared memory
     SharedMemory[computeGetLocalThreadIndices().x] = LoadYZFromTexture(x,y);
-    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
+    // Only the apron after the tile, see csMainX
+    if (2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x) >= HBAO_TILE_WIDTH)
+    {
+        SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
+    }
     memoryBarrierWorkgroup();
     executionBarrierWorkgroup();
 

@@ -42,6 +42,15 @@ SwapchainGetVkImageViews(const CoreGraphics::SwapchainId id)
     return swapchainAllocator.Get<Swapchain_ImageViews>(id.id);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+VkSurfaceKHR
+SwapchainGetVkSurface(const CoreGraphics::SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_Surface>(id.id);
+}
+
 }
 namespace CoreGraphics
 {
@@ -66,8 +75,23 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     Util::FixedArray<SemaphoreId>& renderingSemaphores = swapchainAllocator.Get<Swapchain_RenderingSemaphores>(id);
     CoreGraphics::QueueType& queueType = swapchainAllocator.Get<Swapchain_QueueType>(id);
     swapchainAllocator.Set<Swapchain_DisplayMode>(id, info.displayMode);
-    VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), info.window, nullptr, &surface);
-    n_assert(res == VK_SUCCESS);
+
+    // A window has one surface. A swapchain made to replace another takes over its surface, so the old
+    // one doesn't destroy it, otherwise every resize made a new surface and none were destroyed
+    VkResult res = VK_SUCCESS;
+    if (info.oldSwapchain != CoreGraphics::InvalidSwapchainId)
+    {
+        // The old swapchain is still alive here, see WindowNewFrame, so this is not its slot
+        n_assert(info.oldSwapchain.id != id);
+        VkSurfaceKHR& oldSurface = swapchainAllocator.Get<Swapchain_Surface>(info.oldSwapchain.id);
+        surface = oldSurface;
+        oldSurface = VK_NULL_HANDLE;
+    }
+    else
+    {
+        res = glfwCreateWindowSurface(Vulkan::GetInstance(), info.window, nullptr, &surface);
+        n_assert(res == VK_SUCCESS);
+    }
 
     VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
     VkDevice dev = Vulkan::GetCurrentDevice();
@@ -397,6 +421,11 @@ SwapchainAllocateCmds(const SwapchainId id)
 void
 SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId source)
 {
+    // The copy can only touch the image once it has been acquired, so the submission this command
+    // buffer goes into waits for the semaphore the acquire signals
+    const CoreGraphics::SemaphoreId acquired = SwapchainGetCurrentDisplaySemaphore(id);
+    Vulkan::AddCmdBufferWaitSemaphore(cmdBuf, SemaphoreGetVk(acquired));
+
     const uint currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
     const DisplayMode& displayMode = swapchainAllocator.Get<Swapchain_DisplayMode>(id.id);

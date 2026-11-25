@@ -87,6 +87,10 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     };
     Util::Array<SparseBufferBind> sparseBufferBinds;
 
+    // Binary semaphores a command buffer's submission has to wait for, such as a swapchain image being
+    // acquired. Guarded by submitLock
+    Util::Array<Util::Pair<CoreGraphics::CmdBufferId, VkSemaphore>> cmdBufferWaitSemaphores;
+
     struct PendingDeletes
     {
         Util::Array<Util::Tuple<VkDevice, VkImageView, VkImage>> textures;
@@ -102,7 +106,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
         Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
         Util::Array<Util::Tuple<VkDevice, VkSemaphore>> semaphores;
-        Util::Array<Util::Tuple<VkDevice, VkSwapchainKHR, Util::Array<VkImageView>>> swapchains;
+        Util::Array<Util::Tuple<VkDevice, VkSwapchainKHR, Util::Array<VkImageView>, VkSurfaceKHR>> swapchains;
         Util::Array<Util::Tuple<VkDevice, VkPipeline>> pipelines;
         Util::Array<CoreGraphics::Alloc> allocs;
     };
@@ -575,6 +579,18 @@ SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& bind
 
 //------------------------------------------------------------------------------
 /**
+    The submission the command buffer ends up in waits for the semaphore. The wait has to be on that
+    submission, a wait on a later one doesn't hold back the command buffer
+*/
+void
+AddCmdBufferWaitSemaphore(const CoreGraphics::CmdBufferId cmdBuf, VkSemaphore sem)
+{
+    Threading::CriticalScope _0(&submitLock);
+    state.cmdBufferWaitSemaphores.Append(Util::MakePair(cmdBuf, sem));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 ClearPending()
@@ -650,11 +666,19 @@ ClearPending()
     }
     pendingDeletes.semaphores.Clear();
 
-    for (const auto& [dev, swapchain, views] : pendingDeletes.swapchains)
+    for (const auto& [dev, swapchain, views, surface] : pendingDeletes.swapchains)
     {
         for (const auto& view : views)
+        {
             vkDestroyImageView(dev, view, nullptr);
+        }
         vkDestroySwapchainKHR(dev, swapchain, nullptr);
+
+        // Only set when the swapchain wasn't replaced, a replacement takes the surface over
+        if (surface != VK_NULL_HANDLE)
+        {
+            vkDestroySurfaceKHR(state.instance, surface, nullptr);
+        }
     }
     pendingDeletes.swapchains.Clear();
 
@@ -781,8 +805,6 @@ DeviceLost()
 }
 
 } // namespace Vulkan
-
-#include "debug/stacktrace.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -1767,6 +1789,16 @@ SubmitCommandBuffers(
     );
     ret.queue = type;
 
+    // Waits recorded for these command buffers go on this submission
+    for (IndexT i = state.cmdBufferWaitSemaphores.Size() - 1; i >= 0; i--)
+    {
+        const auto& [waitCmdBuf, waitSem] = state.cmdBufferWaitSemaphores[i];
+        if (cmds.FindIndex(waitCmdBuf) == InvalidIndex)
+            continue;
+        state.queueHandler.AppendWaitSemaphore(type, waitSem, ret.timelineIndex);
+        state.cmdBufferWaitSemaphores.EraseIndex(i);
+    }
+
     // Add wait event
     AddSubmissionEvent(ret);
 
@@ -1953,7 +1985,7 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 /**
 */
 void
-FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& backbufferSemaphores, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores)
+FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& renderingSemaphores)
 {
     if (state.currentFrameIndex != frameIndex)
     {
@@ -1963,12 +1995,15 @@ FinishFrame(IndexT frameIndex, const Util::Array<CoreGraphics::SemaphoreId>& bac
         state.currentFrameIndex = frameIndex;
     }
 
-    for (auto& sem : backbufferSemaphores)
+    // The swapchain image waits go with the command buffers that copy to the images, see SwapchainCopy.
+    // One left here belongs to a command buffer that was never submitted
     {
-        state.queueHandler.AppendWaitSemaphore(
-            GraphicsQueueType,
-            SemaphoreGetVk(sem)
-        );
+        Threading::CriticalScope _0(&submitLock);
+        if (!state.cmdBufferWaitSemaphores.IsEmpty())
+        {
+            n_warning("FinishFrame: %d semaphore wait(s) recorded for command buffers that were not submitted\n", state.cmdBufferWaitSemaphores.Size());
+            state.cmdBufferWaitSemaphores.Clear();
+        }
     }
 
     for (auto& sem : renderingSemaphores)
@@ -2196,7 +2231,8 @@ DelayedDeleteSwapchain(const CoreGraphics::SwapchainId id)
     VkDevice dev = CoreGraphics::SwapchainGetVkDevice(id);
     VkSwapchainKHR swap = CoreGraphics::SwapchainGetVkSwapchain(id);
     const Util::Array<VkImageView>& views = CoreGraphics::SwapchainGetVkImageViews(id);
-    state.pendingDeletes[state.currentBufferedFrameIndex].swapchains.Append(Util::MakeTuple(dev, swap, views));
+    VkSurfaceKHR surface = Vulkan::SwapchainGetVkSurface(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].swapchains.Append(Util::MakeTuple(dev, swap, views, surface));
 }
 
 //------------------------------------------------------------------------------

@@ -49,7 +49,10 @@ csMain() void
 
     // clear LDS histogram chunk, since we will execute 256 threads per workgroup, each thread could clear one value
     atomicStore(&LocalHistogram[histogramIndex], 0u, MemorySemantics.Release);
+    // every bucket has to be cleared before any thread adds to it, which takes an execution barrier, not
+    // only a memory barrier
     memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
 
     // don't sample from outside the texture
     if (all(pixel < HistogramConstants.TextureSize))
@@ -68,8 +71,9 @@ csMain() void
         atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.AcquireRelease);
     }
 
-    // synchronize and add to global atomic
+    // synchronize and add to global atomic, all threads have to be done adding before a bucket is read
     memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
 
     // same as with clear, each thread will contribute exactly one bucket to the global histogram
     atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.AcquireRelease);

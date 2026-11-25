@@ -1121,6 +1121,9 @@ class RenderDefinition:
         if "depth" in node:
             self.depthAttachment = AttachmentDefinition(parser, node["depth"])
             self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = self.depthAttachment.name, stage = "DepthStencilWrite", parser = parser))
+            # The resolve target is written by the pass too, like the color resolve targets above
+            if self.depthAttachment.resolve is not None:
+                self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = self.depthAttachment.resolve, stage = "DepthStencilWrite", parser = parser))
 
         self.ops = list()
         for op in node["ops"]:

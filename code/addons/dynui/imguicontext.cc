@@ -736,6 +736,9 @@ ImguiContext::Create()
                 updateBuf.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
                 updateBuf.data = textureData->Pixels;
                 updateBuf.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+                // Host memory gets the pixels written when it's created. A device local buffer would get
+                // them from a separate upload copy, which the copy below doesn't wait for
+                updateBuf.mode = CoreGraphics::HostLocal;
                 CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(updateBuf);
 
                 const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->GetTexID());
