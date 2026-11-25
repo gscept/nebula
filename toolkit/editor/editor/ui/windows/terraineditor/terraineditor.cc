@@ -432,7 +432,7 @@ TerrainEditor::Run(SaveMode save)
         texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
 
         Util::FixedArray<uint8_t> data(selectedTerrainResource.world_size_x * selectedTerrainResource.world_size_z, 0);
-        texInfo.data = (const void*)data.Back();
+        texInfo.data = (const void*)data.Begin();
         texInfo.dataSize = data.ByteSize();
         terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
 
@@ -1116,7 +1116,7 @@ TerrainEditor::Run(SaveMode save)
             maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
 
             Util::FixedArray<uint8_t> data(selectedTerrainResource.world_size_x * selectedTerrainResource.world_size_z, 0);
-            maskTexInfo.data = (const void*)data.Back();
+            maskTexInfo.data = (const void*)data.Begin();
             maskTexInfo.dataSize = data.ByteSize();
             mesh.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
 
