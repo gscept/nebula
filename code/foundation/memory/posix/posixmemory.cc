@@ -133,3 +133,55 @@ operator delete[](void* p, size_t size) noexcept
 {
     Memory::Free(Memory::ObjectArrayHeap, p);
 }
+
+//------------------------------------------------------------------------------
+/**
+    Aligned and nothrow global delete operators. Every new operator above is
+    replaced, so every delete operator has to be too. Otherwise memory from
+    Memory::Alloc is released by the C++ runtime's own delete.
+*/
+void
+operator delete(void* p, std::align_val_t) noexcept
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+void
+operator delete(void* p, size_t, std::align_val_t) noexcept
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+void
+operator delete(void* p, const std::nothrow_t&) noexcept
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+void
+operator delete(void* p, std::align_val_t, const std::nothrow_t&) noexcept
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Aligned and nothrow global delete[] operators, see above.
+*/
+void
+operator delete[](void* p, std::align_val_t) noexcept
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}
+void
+operator delete[](void* p, size_t, std::align_val_t) noexcept
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}
+void
+operator delete[](void* p, const std::nothrow_t&) noexcept
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}
+void
+operator delete[](void* p, std::align_val_t, const std::nothrow_t&) noexcept
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}

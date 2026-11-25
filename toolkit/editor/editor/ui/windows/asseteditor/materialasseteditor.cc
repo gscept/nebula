@@ -17,6 +17,9 @@
 #include "toolkitutil/converters/binaryxmlconverter.h"
 
 #include "toolkitutil/surface/surfacebuilder.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/material.h"
 
 #include "visibility/visibilitycontext.h"
 
@@ -484,6 +487,20 @@ void
 MaterialShow(AssetEditor* assetEditor, AssetEditorItem* item, bool show)
 {
     Models::ModelContext::SetStageMask(item->previewObject, show ? 1 << 3 : 0x0);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Writes a new material work file with a template (like GLTF, the one the importer gives opaque
+    materials), using the template's defaults for all of its values
+*/
+void
+MaterialNew(const Ptr<IO::Stream>& stream, const Util::String& path, const Util::String& templateName)
+{
+    ToolkitUtil::MaterialResourceT material;
+    material.template_name = templateName;
+    Util::Blob data = Flat::FlatbufferInterface::SerializeFlatbuffer<ToolkitUtil::MaterialResource>(material);
+    stream->Write(data.GetPtr(), data.Size());
 }
 
 //------------------------------------------------------------------------------

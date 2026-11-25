@@ -15,7 +15,9 @@
 #include "util/globalstringatomtable.h"
 #include "util/localstringatomtable.h"  
 #include "system/systeminfo.h"
+#include "debug/stacktrace.h"
 #include <errno.h>
+#include <mutex>
 
 namespace Posix
 {
@@ -110,8 +112,22 @@ SysFunc::Exit(int exitCode)
 */
 void
 SysFunc::Error(const char* error)
-{                
-    fprintf(stderr, error);
+{
+    fputs(error, stderr);
+
+    // Guards against an error raised while generating the trace
+    static thread_local bool generatingTrace = false;
+    if (!generatingTrace)
+    {
+        generatingTrace = true;
+
+        // Only the first failing thread prints its trace, others wait here until abort ends the process
+        static std::mutex traceLock;
+        traceLock.lock();
+
+        // Writes the trace straight to stderr, so the returned lines aren't needed here
+        Debug::StackTrace::GenerateStackTrace();
+    }
     abort();
 }
 

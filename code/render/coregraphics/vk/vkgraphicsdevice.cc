@@ -27,12 +27,8 @@
 #include "coregraphics/vk/vkpipeline.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
+#include "debug/stacktrace.h"
 
-
-#ifdef __WIN32__
-
-#include "debug/win32/win32stacktrace.h"
-#endif
 
 #include "threading/criticalsection.h"
 
@@ -798,18 +794,8 @@ NebulaVulkanErrorDebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
     void* userData)
 {
-#if __WIN32__
-    Util::Array<Util::String> stacktrace = Win32::Win32StackTrace::GenerateStackTrace();
-    Util::String format;
-    // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup
-    for (int i = 6; i < Math::min(17,stacktrace.Size() - 6); i++)
-    {
-        format.Append(stacktrace[i]);
-        //format.Append("\n");
-    }
-#endif
-
     n_warning("%s\n", callbackData->pMessage);
+    Debug::StackTrace::GenerateStackTrace();
     return VK_FALSE;
 }
 

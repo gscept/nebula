@@ -18,5 +18,12 @@ namespace Debug
 
     { };
 }
+#elif ( __OSX__ || __APPLE__ || __linux__ )
+#include "debug/posix/posixstacktrace.h"
+namespace Debug
+{
+    class StackTrace : public Posix::PosixStackTrace
+    { };
+}
 #endif
 //------------------------------------------------------------------------------

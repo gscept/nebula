@@ -6,10 +6,6 @@ imports:
     fips-glew:
         git: https://github.com/gscept/fips-glew.git
         group: gfx
-    fips-stackwalker:
-        git: https://github.com/gscept/fips-stackwalker.git
-        cond: "FIPS_WINDOWS"
-        group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
         branch: "imgui_v1.92.8-docking"

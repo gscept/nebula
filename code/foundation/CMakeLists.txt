@@ -27,7 +27,6 @@ nebula_begin_module(foundation)
 
     if(FIPS_WINDOWS)
         fips_libs(curl)
-        fips_deps(StackWalker)
     else()
         if(CURL_FOUND)
             target_include_directories(foundation PRIVATE ${CURL_INCLUDE_DIR})
@@ -624,6 +623,11 @@ nebula_begin_module(foundation)
 				posixsingleton.h
 				posixsysfunc.cc
 				posixsysfunc.h
+			)
+		fips_dir(debug/posix)
+			fips_files(
+				posixstacktrace.cc
+				posixstacktrace.h
 			)
 		fips_dir(memory/posix)
 			fips_files(

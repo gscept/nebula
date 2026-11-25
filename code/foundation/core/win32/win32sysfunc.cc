@@ -14,7 +14,7 @@
 #include "util/globalstringatomtable.h"
 #include "util/localstringatomtable.h"  
 #include "system/systeminfo.h"
-#include "debug/win32/win32stacktrace.h"
+#include "debug/stacktrace.h"
 #include <io.h>
 
 namespace Win32
@@ -146,18 +146,21 @@ SysFunc::Error(const char* error)
         ShowWindow(hwnd, SW_MINIMIZE);
     }
     */
-    Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
-    Util::String format;
-    // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup 
-    for (int i = 6; i < Math::min(17,stacktrace.Size() - 6); i++)
+    // The trace gets written straight to stderr after the error, so both are there even if the handling below fails
+    fputs(error, stderr);
+    Util::Array<Util::String> stacktrace = Debug::StackTrace::GenerateStackTrace();
+    Util::String callstack;
+    // Leave out the first line, it's this function. stderr has the full trace, keep the message box short
+    const SizeT MaxFrames = 20;
+    for (IndexT i = 1; i < Math::min(MaxFrames + 1, stacktrace.Size()); i++)
     {
-        format.Append(stacktrace[i]);
-        //format.Append("\n");
+        callstack.Append(stacktrace[i]);
     }
+    Util::String format;
     format.Format("%s\n\
 ----- *** CALL STACK *** -----\n\
 %s\
------ *** CALL STACK *** -----\n\n", error, format.AsCharPtr());
+----- *** CALL STACK *** -----\n\n", error, callstack.AsCharPtr());
 
     if(_isatty(_fileno(stdout)))
     {
@@ -165,7 +168,6 @@ SysFunc::Error(const char* error)
         if (IsDebuggerPresent())
         {
             OutputDebugString(format.AsCharPtr());
-            fprintf(stderr, "%s", format.AsCharPtr());
             n_break();
             exit(1);
         }
@@ -183,7 +185,6 @@ SysFunc::Error(const char* error)
     {
 #ifdef _DEBUG
         OutputDebugString(format.AsCharPtr());
-        fprintf(stderr,"%s\n",format.AsCharPtr());        
         if (IsDebuggerPresent())
         { 
             n_break();
