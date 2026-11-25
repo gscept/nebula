@@ -215,7 +215,7 @@ SetAsset(const IO::Path& asset)
         // show what was baked before
         if (navState.preview == Resources::InvalidResourceId && IO::FileExists(asset.ExportURI()))
         {
-            navState.preview = Resources::CreateResource(asset, "Editor", nullptr, nullptr, true);
+            navState.preview = Resources::CreateResource(asset, "Editor", nullptr, nullptr, {.immediate=true});
         }
     }
 }
@@ -757,7 +757,7 @@ UpdatePreview()
     }
     if (navState.preview == Resources::InvalidResourceId)
     {
-        navState.preview = Resources::CreateResource(navState.asset, "Editor", nullptr, nullptr, true);
+        navState.preview = Resources::CreateResource(navState.asset, "Editor", nullptr, nullptr, {.immediate=true});
     }
     SetStatus(false, "Baked %s", navState.asset.AsString().AsCharPtr());
 }

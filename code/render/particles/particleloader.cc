@@ -170,7 +170,7 @@ ParticleLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 resource.meshes.Append(Resources::InvalidResourceId);
 
             resource.name.Append(reader->GetOptString("name", "emitter"));
-            resource.materials.Append(Resources::CreateResource(reader->GetString("material"), job.tag, nullptr, nullptr, true, false));
+            resource.materials.Append(Resources::CreateResource(reader->GetString("material"), job.tag, nullptr, nullptr, { .immediate = true, .stream = false }));
             resource.transform.Append(reader->GetOptMat4("transform", Math::mat4()));
 
             reader->SetToNode("floats");

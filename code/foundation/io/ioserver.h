@@ -87,6 +87,8 @@ bool DeleteFile(const URI& path);
 bool FileExists(const URI& path);
 /// return if file is locked
 bool IsLocked(const URI& path);
+/// Move file to new path
+bool MoveFile(const URI& oldPath, const URI& newPath);
 /// set the readonly status of a file
 void SetReadOnly(const URI& path, bool b);
 /// return read only status of a file

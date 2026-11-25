@@ -7,26 +7,14 @@
 #include <lib/standard_shading.gpuh>
 #include <lib/decals.gpuh>
 
-UnpackGLTFNormal(tangent : f32x3, normal : f32x3, sign : f32, normalMapData : f32x4) f32x3
-{
-    const tan = normalize(tangent);
-    const norm = normalize(normal);
-    const bin = cross(norm, tan) * sign;
-    const tangentViewMatrix = f32x3x3(tan, bin, norm);
-    var tNormal = f32x3(0, 0, 0);
-    tNormal.xy = (normalMapData.xy * 2.0f) - 1.0f;
-    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
-    return tangentViewMatrix * normalize((tNormal * f32x3(GLTFConstants.normalScale, GLTFConstants.normalScale, 1.0f)));
-}
-
 //------------------------------------------------------------------------------
 /**
 */
 entry_point
 psGLTFDepthOnlyAlphaMask(in UV : f32x2) void
 {
-    const baseColor = sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV);
-    if (baseColor.a <= GLTFConstants.alphaCutoff) { discard; }
+    const baseColor = MaskColor(sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV) * GLTFConstants.baseColorFactor, GLTFConstants.alphaCutoff);
+    if (baseColor.a == 0) { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +83,7 @@ entry_point
 psGLTF(
     in Tangent : f32x3,
     in Normal : f32x3,
-	in Sign : f32,
+	in no_interpolate Sign : f32,
     in UV : f32x2,
     in WorldSpacePos : f32x3
 ) void
@@ -110,7 +98,7 @@ psGLTF(
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = occlusion.r;
     material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
-    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Sign, normals));
+    const N = normalize(UnpackGLTFNormal(Tangent, Normal, Sign, GLTFConstants.normalScale, normals));
 
     const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
     const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
@@ -147,7 +135,7 @@ psGLTFTranslucent(
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = occlusion.r;
     material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
-    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Sign, normals));
+    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Sign, GLTFConstants.normalScale, normals));
 
     const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
     const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
@@ -178,6 +166,7 @@ program GLTFStaticDepthAlphaMask
     VertexShader = vsDepthStaticAlphaMask;
     PixelShader = psGLTFDepthOnlyAlphaMask;
     RenderState = DepthState;
+    ColorMaskMode = ColorMaskModes.Masked;
 };
 
 @Mask("Static|Depth|AlphaMask|DoubleSided")
@@ -186,6 +175,7 @@ program GLTFStaticDepthAlphaMaskDoubleSided
     VertexShader = vsDepthStaticAlphaMask;
     PixelShader = psGLTFDepthOnlyAlphaMask;
     RenderState = DepthStateDoubleSided;
+    ColorMaskMode = ColorMaskModes.Masked;
 };
 
 @Mask("Skinned|Depth|AlphaMask")
@@ -194,6 +184,7 @@ program GLTFSkinnedDepthAlphaMask
     VertexShader = vsDepthSkinnedAlphaMask;
     PixelShader = psGLTFDepthOnlyAlphaMask;
     RenderState = DepthState;
+    ColorMaskMode = ColorMaskModes.Masked;
 };
 
 @Mask("Skinned|Depth|AlphaMask|DoubleSided")
@@ -202,6 +193,7 @@ program GLTFSkinnedDepthAlphaMaskDoubleSided
     VertexShader = vsDepthSkinnedAlphaMask;
     PixelShader = psGLTFDepthOnlyAlphaMask;
     RenderState = DepthStateDoubleSided;
+    ColorMaskMode = ColorMaskModes.Masked;
 };
 
 @Mask("Static")

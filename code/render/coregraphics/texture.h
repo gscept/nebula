@@ -123,7 +123,6 @@ struct TextureCreateInfo
         , clearColorF4{0,0,0,0}
         , bindless(true)
         , sparse(false)
-        , allowCast(false)
         , alias(CoreGraphics::InvalidTextureId)
         , defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
         , swizzle({ TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None })
@@ -131,6 +130,7 @@ struct TextureCreateInfo
 
     Resources::ResourceName name;
     CoreGraphics::TextureUsage usage;
+    Util::FixedArray<CoreGraphics::PixelFormat::Code> castFormats;
     Util::StringAtom tag;
     const void* data;
     SizeT dataSize;
@@ -149,7 +149,6 @@ struct TextureCreateInfo
     };
     bool bindless : 1;
     bool sparse : 1;                            // use sparse memory
-    bool allowCast : 1;                         // Allow view to cast format, also enables access modes not available for original format
     CoreGraphics::TextureId alias;
     CoreGraphics::ImageLayout defaultLayout;
     CoreGraphics::TextureSwizzle swizzle;

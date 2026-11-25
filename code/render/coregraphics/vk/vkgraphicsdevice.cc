@@ -755,11 +755,30 @@ DeviceLost()
     VkDeviceFaultCountsEXT faults{ VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT };
 
     vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, nullptr);
-    Util::FixedArray<VkDeviceFaultInfoEXT> errors(faults.vendorInfoCount + faults.addressInfoCount);
-    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, errors.Begin());
-    for (const auto& deviceLostError : errors)
+    Util::FixedArray<VkDeviceFaultAddressInfoEXT> addressErrors(faults.addressInfoCount);
+    Util::FixedArray<VkDeviceFaultVendorInfoEXT> vendorErrors(faults.vendorInfoCount);
+    Util::FixedArray<byte> vendorBinaries(faults.vendorBinarySize);
+    VkDeviceFaultInfoEXT info {VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT};
+    info.pAddressInfos = addressErrors.Begin();
+    info.pVendorInfos = vendorErrors.Begin();
+    info.pVendorBinaryData = vendorBinaries.Begin();
+    vkGetDeviceFaultInfoEXT(state.devices[state.currentDevice], &faults, &info);
+    for (const auto& deviceLostError : addressErrors)
     {
-        n_log_err(Vulkan, "Device lost: %s", deviceLostError.description);
+        const char* addressFaultLookup[] = {
+            "None",
+            "Invalid Read",
+            "Invalid Write",
+            "Invalid Execution",
+            "Unknown Instruction Pointer",
+            "Invalid Instruction Pointer",
+            "Instruction Pointer Fault"
+        };
+        n_log_err(Vulkan, "Device lost, GPU memory segfault: %s, address %lu, address precision %lu", addressFaultLookup[deviceLostError.addressType], deviceLostError.reportedAddress, deviceLostError.addressPrecision);
+    }
+    for (const auto& deviceLostError : vendorErrors)
+    {
+        n_log_err(Vulkan, "Device lost, vendor message: %s", deviceLostError.description);
     }
 
     #endif
@@ -1120,6 +1139,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
         .pNext = &vk13Features,
+        .drawIndirectCount = true,
         .shaderFloat16 = true,
         .descriptorBindingUniformBufferUpdateAfterBind = true,
         .descriptorBindingSampledImageUpdateAfterBind = true,

@@ -544,7 +544,7 @@ BuildActorFromPhysicsResource(Game::World* world, Game::Entity entity, PhysicsFe
         world->GetComponent<Game::Scale>(entity)
     );
 
-    Resources::ResourceId resId = Resources::CreateResource(resource, "PHYS", nullptr, nullptr, true);
+    Resources::ResourceId resId = Resources::CreateResource(resource, "PHYS", nullptr, nullptr, { .immediate = true });
     Physics::ActorId const actorid = Physics::CreateActorInstance(
         resId, worldTransform, (Physics::ActorType)actor.actorType, Ids::Id64(entity), PhysicsFeatureUnit::Instance()->SceneForWorld(world));
     self.actorId = actorid.id;

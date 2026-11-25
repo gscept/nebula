@@ -39,6 +39,8 @@ public:
     uint Alloc();
     /// free id
     void Dealloc(uint id);
+    /// Reset to no free ids and start counting anew
+    void Clear();
     /// reserve ids
     void Reserve(uint numIds);
     /// get number of active ids
@@ -128,6 +130,16 @@ inline void
 IdPool::Dealloc(uint id)
 {
     this->free.Append(this->maxId - id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+IdPool::Clear()
+{
+    this->free.Clear();
+    this->maxId = 0xFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------

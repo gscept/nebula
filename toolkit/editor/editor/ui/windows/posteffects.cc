@@ -56,11 +56,6 @@ PostEffectSettings::Run(SaveMode save)
             browser->PickFile(IO::Path(), [this](const IO::Path& filePath)
             {
                 n_assert(filePath.IsFile());
-                if (filePath.GetType() != "tex")
-                {
-                    n_warning("Lens dirt must be a texture\n");
-                    return;
-                }
                 Resources::CreateResource(filePath, "editor", [this](Resources::ResourceId id)
                 {
                     if (this->bloomDirt != Resources::InvalidResourceId)

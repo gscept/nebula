@@ -18,6 +18,11 @@
 #include "threading/safequeue.h"
 #include "io/filewatcher.h"
 
+namespace ToolkitUtil
+{
+struct ModelAssetT;
+struct TextureResourceT;
+}
 namespace Presentation
 {
 
@@ -189,6 +194,11 @@ private:
     bool showProgress = false;
     bool ownsScanJob = false;
 };
+
+/// Helper function to create mesh resource button
+void ImGuiMeshResourceButton(const ToolkitUtil::ModelAssetT* asset);
+/// Helper function to create mesh resource button
+void ImGuiTextureResourceButton(const ToolkitUtil::TextureResourceT* asset);
 
 } // namespace Presentation
 

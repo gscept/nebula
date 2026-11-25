@@ -185,6 +185,7 @@ GraphicsFeatureUnit::OnActivate()
     Fog::VolumetricFogContext::Create();
     GI::DDGIContext::Create();
     ::Terrain::TerrainContext::Create();
+    Vegetation::VegetationContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::DofContext::Create();
     PostEffects::SSAOContext::Create();
@@ -253,7 +254,8 @@ GraphicsFeatureUnit::OnActivate()
         PostEffects::HistogramContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
         Lighting::LightContext::OnPrepareView,
-        ::Terrain::TerrainContext::CullPatches
+        ::Terrain::TerrainContext::CullPatches,
+        Vegetation::VegetationContext::UpdateViewResources
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =

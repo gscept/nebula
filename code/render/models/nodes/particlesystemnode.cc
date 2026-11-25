@@ -64,7 +64,7 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
         {
             this->meshResource = id;
             this->mesh = MeshResourceGetMesh(id, 0);
-        }, nullptr, false);
+        }, nullptr);
     }
     else
     {

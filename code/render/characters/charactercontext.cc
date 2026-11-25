@@ -220,7 +220,7 @@ CharacterContext::Setup(
                 jobJoint.parentJointIndex = joint.parentJointIndex;
             }
 
-        }, nullptr, true);
+    }, nullptr, { .immediate = true });
 
     characterContextAllocator.Get<Animation>(cid.id) = CoreAnimation::InvalidAnimationId;
     characterContextAllocator.Set<AnimationResource>(cid.id, Resources::InvalidResourceId);
@@ -235,7 +235,7 @@ CharacterContext::Setup(
             // setup sample buffer when animation is done loading
             characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(animation);
             characterContextAllocator.Set<SupportMix>(cid.id, supportBlending);
-        }, nullptr, true);
+        }, nullptr, { .immediate = true });
 
     // clear playing animation state
     IndexT i;
