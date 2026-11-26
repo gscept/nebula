@@ -239,10 +239,7 @@ ComponentSetData(uint64_t entityId, uint32_t componentId, void* data, int dataSi
         "ComponentSetData: Provided component size in bytes is not the correct size for the given ComponentId."
     );
 
-    Game::EntityMapping mapping = world->GetEntityMapping(entity);
-    byte* ptr = (byte*)world->GetInstanceBuffer(mapping.table, mapping.instance.partition, componentId);
-    ptr += (mapping.instance.index * dataSize);
-    Memory::Copy(data, ptr, dataSize);
+    world->SetComponentValue(entity, componentId, data, dataSize);
 }
 
 //------------------------------------------------------------------------------
