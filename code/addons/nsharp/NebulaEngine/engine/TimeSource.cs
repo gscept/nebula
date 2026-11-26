@@ -16,6 +16,12 @@ namespace Nebula
             public static readonly uint Input = FourCC("IPTS");
 
             /// <summary>
+            /// The source the physics feature runs its fixed event on. It is created by the feature, so
+            /// this only appears in the mirror once that feature has been attached.
+            /// </summary>
+            public static readonly uint Physics = FourCC("PHTS");
+
+            /// <summary>
             /// A fourcc as the engine writes one. The characters are read in order, which is what a multi
             /// character character constant gives on the platforms the engine builds on.
             /// </summary>
@@ -49,6 +55,19 @@ namespace Nebula
             public double FixedFrameTime { get; internal set; }
             public double Accumulator { get; internal set; }
             public int MaxStepsPerFrame { get; internal set; }
+
+            /// <summary>
+            /// The delta the current step runs on.
+            /// </summary>
+            /// <remarks>
+            /// For a source with a fixed step this is that step, which is what a fixed event runs on, and it
+            /// is the same value for every step of a frame. For a source with no fixed step it is the frame
+            /// delta. FrameTime is the whole frame and is not what a fixed event should integrate with.
+            /// </remarks>
+            public float StepDelta
+            {
+                get { return this.FixedFrameTime > 0.0 ? (float)this.FixedFrameTime : (float)this.FrameTime; }
+            }
 
             /// <summary>
             /// How fast this source runs relative to the frame time. The write goes through the api and the

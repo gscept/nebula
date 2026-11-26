@@ -12,6 +12,7 @@ namespace Nebula
             OnBeginFrame, // Called every frame before rendering (old vis results)
             OnFixedFrame, // Called every couple of frames with a fixed delta frame time. These updates are distributed and might not be called on the same frame for all components (called after OnBeginFrame)
             OnFrame, // Called every frame while rendering (up to date vis results)
+            OnPhysicsFrame, // Called once for every step the physics time source has available, from inside the physics frame event after the step (called after OnFrame)
             OnEndFrame, // Called after rendering is done
 
             // Total number of events
@@ -42,8 +43,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// The value is whether the property is really running, which is the result of OnActivate having
-            /// been called. When the world is not simulating the setter only records the intent, and the
-            /// activation happens when the world starts simulating.
+            /// been called.
             /// </remarks>
             public bool Active
             {
@@ -58,11 +58,6 @@ namespace Nebula
                         }
 
                         this.requestedActive = true;
-
-                        if (this.IsSimulating() && this.ShouldActivate())
-                        {
-                            this.Activate();
-                        }
                     }
                     else
                     {
@@ -116,8 +111,8 @@ namespace Nebula
             }
 
             /// <summary>
-            /// Runs OnActivate and records that it has run. Called by the setter when the world is
-            /// simulating, and by the world when its mode changes to simulating
+            /// Runs OnActivate and records that it has run. Called by the entity's activation pass when the
+            /// world is simulating, and by the world when its mode changes to simulating
             /// </summary>
             internal void Activate()
             {
@@ -301,6 +296,21 @@ namespace Nebula
             /// </remarks>
             /// <seealso cref="AcceptedEvents()"/>
             public virtual void OnFrame() { }
+
+            /// <summary>
+            /// Called once for every step the physics time source has available this frame.
+            /// </summary>
+            /// <remarks>
+            /// Override in subclass.
+            /// The property AcceptedEvents must return the Event code for this method to be called at all,
+            /// and the property has to be active, which only happens in a world that is simulating.
+            /// This is called from inside the physics frame event, after the step has been fetched, which is
+            /// the point where the physics engine allows a body to be read. A write here is picked up by the
+            /// next step. The event only exists when the physics feature is linked, so a property that
+            /// subscribes to it in a project without that feature is never called.
+            /// </remarks>
+            /// <seealso cref="AcceptedEvents()"/>
+            public virtual void OnPhysicsFrame() { }
 
             /// <summary>
             /// Called once every frame at the end of the frame.

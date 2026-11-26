@@ -210,6 +210,11 @@ ApplyShapeFlags(PxShape* shape, bool isTrigger)
 //------------------------------------------------------------------------------
 /**
     word0 is the collision group and word1 the feedback, which is what the simulation filter reads
+
+    The same words are put on the query filter data. Scene queries read that one, and a query
+    that filters by group has nothing to read otherwise. Note that a shape with the default
+    group 0 has zero filter data, which is why the query filter in physics/scenequery.cc does
+    not rely on PhysX's own data filter
 */
 static void
 ApplyShapeFilterData(PxShape* shape, ActorId actor)
@@ -219,6 +224,7 @@ ApplyShapeFilterData(PxShape* shape, ActorId actor)
     filter.word0 = owner.collisionGroup;
     filter.word1 = owner.feedback;
     shape->setSimulationFilterData(filter);
+    shape->setQueryFilterData(filter);
 }
 
 //------------------------------------------------------------------------------
@@ -353,6 +359,7 @@ ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
     actor.mass = 0.0f;
     actor.collisionGroup = 0;
     actor.feedback = (uint32_t)CollisionFeedback_Full;
+    actor.axisLock.Clear();
     actor.userData = 0;
     actor.shapes.Clear();
     return id;
@@ -768,10 +775,12 @@ ActorContext::UpdateBody(ActorId id, const BodyDescription& desc)
     // only have to be touched when the body values they come from changed
     bool const massChanged = actor.mass != desc.mass;
     bool const filterChanged = actor.collisionGroup != desc.collisionGroup || actor.feedback != (uint32_t)desc.feedback;
+    bool const lockChanged = actor.axisLock != desc.axisLock;
 
     actor.mass = desc.mass;
     actor.collisionGroup = desc.collisionGroup;
     actor.feedback = desc.feedback;
+    actor.axisLock = desc.axisLock;
     actor.userData = desc.userData;
 
     PxRigidActor* pxActor = ActorContext::GetPxActor(id);
@@ -784,6 +793,9 @@ ActorContext::UpdateBody(ActorId id, const BodyDescription& desc)
         body->setAngularDamping(desc.angularDamping);
         body->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, desc.ccd);
         pxActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !desc.useGravity);
+
+        if (lockChanged)
+            body->setRigidDynamicLockFlags(PxRigidDynamicLockFlags((PxU8)desc.axisLock.GetBits(0)));
     }
 
     // Filter data is stored per shape so the shapes of the actor needs to be updated as well

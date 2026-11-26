@@ -785,6 +785,7 @@ NSharpTest::Run()
     StepFrame();
     StepFrame();
     StepFrame();
+    StepFrame();
     StepFrame();  // the time source mirror, one frame per phase
     StepFrame();
     StepFrame();
@@ -809,6 +810,10 @@ NSharpTest::Run()
     // The action queue, one frame per phase
     for (IndexT i = 0; i < 9; i++)
         StepFrame();
+
+    // The activation order guarantee, one frame per phase
+    StepFrame();
+    StepFrame();
 
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);

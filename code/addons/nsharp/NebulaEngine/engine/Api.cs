@@ -188,6 +188,15 @@ namespace Nebula
                 PropertyManager.Instance.OnFrame();
             }
 
+            /// <summary>
+            /// The managed physics phase. Called from a callback inside the physics frame event, after the
+            /// step, which is the point where the physics engine allows a body to be read.
+            /// </summary>
+            public virtual void OnPhysicsFrame()
+            {
+                PropertyManager.Instance.OnPhysicsFrame();
+            }
+
             public virtual void OnEndFrame()
             {
                 PropertyManager.Instance.OnEndFrame();

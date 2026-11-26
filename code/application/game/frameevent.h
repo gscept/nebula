@@ -162,6 +162,8 @@ public:
     FrameEvent* RegisterFrameEvent(FrameEventCreateInfo const& info);
     FrameEvent* RegisterFrameEvent(int order, Util::StringAtom name);
     FrameEvent* GetFrameEvent(Util::StringAtom name);
+    /// Look a frame event up by name without asserting. Null when the pipeline does not have one
+    FrameEvent* FindFrameEvent(Util::StringAtom name);
 
     /// Start running the pipeline
     void Begin();

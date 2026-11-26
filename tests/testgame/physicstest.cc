@@ -618,6 +618,44 @@ PhysicsManagerTest::Run()
     world->DeleteEntity(lateChild);
     world->DeleteEntity(lateParent);
     StepPhysicsFrames(1);
+
+    // A handle which is only staged is not in a table, so a mark on the entity has to be written where
+    // the accessor which answered for it found it. This is the state an entity is in when the inits run
+    // without the add queue, which is what the editor's mirror does: the init of a body ensures a
+    // handle, and that handle is on the chain until the queue runs. What is written to the chain is what
+    // the queue copies into the table
+    {
+        Game::Entity const stagedBody = world->CreateEntity();
+        world->SetComponent<Game::Position>(stagedBody, Game::Position(3.0f, 0.0f, 0.0f));
+        world->SetComponent<Game::Orientation>(stagedBody, Game::Orientation(Math::quat()));
+        world->SetComponent<Game::Scale>(stagedBody, Game::Scale(Math::vec3(1.0f, 1.0f, 1.0f)));
+
+        // Initialization off keeps the handle on the chain, which is what makes the mark the only thing
+        // written to it
+        world->componentInitializationEnabled = false;
+        world->AddComponent<PhysicsFeature::StaticBody>(stagedBody);
+        world->AddComponent<PhysicsFeature::PhysicsActor>(stagedBody);
+
+        VERIFY(world->HasComponent<PhysicsFeature::PhysicsActor>(stagedBody));
+
+        // The default of the handle already has the pose bit, so the bits the mark adds are what show
+        // the write reached the handle
+        VERIFY(PendingOf(world, stagedBody) == PhysicsFeature::PendingPose);
+
+        PhysicsFeature::PhysicsManager::MarkBodyChanged(world, stagedBody);
+        VERIFY(PendingOf(world, stagedBody) ==
+            (PhysicsFeature::PendingPose | PhysicsFeature::PendingBody | PhysicsFeature::PendingShape));
+
+        world->componentInitializationEnabled = true;
+        world->ExecuteAddComponentCommands();
+
+        // The handle is in a table now, and it holds the mark which was written to the chain
+        VERIFY(PendingOf(world, stagedBody) ==
+            (PhysicsFeature::PendingPose | PhysicsFeature::PendingBody | PhysicsFeature::PendingShape));
+
+        world->DeleteEntity(stagedBody);
+        StepPhysicsFrames(1);
+    }
 }
 
 } // namespace Test

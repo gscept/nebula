@@ -51,6 +51,19 @@ enum CharacterCollisionBits
 
 using CharacterCollision = Util::BitField<CharacterCollisionBitsMax>;
 
+enum AxisLockBits
+{
+    LockLinearX  = 0, // Movement along the world X axis is locked.
+    LockLinearY  = 1, // Movement along the world Y axis is locked.
+    LockLinearZ  = 2, // Movement along the world Z axis is locked.
+    LockAngularX = 3, // Rotation around the world X axis is locked.
+    LockAngularY = 4, // Rotation around the world Y axis is locked.
+    LockAngularZ = 5, // Rotation around the world Z axis is locked.
+    AxisLockBitsMax
+};
+
+using AxisLock = Util::BitField<16>;
+
 struct Material
 {
     physx::PxMaterial * material;
@@ -105,6 +118,7 @@ struct Actor
     float mass;
     uint32_t collisionGroup;
     uint32_t feedback;
+    AxisLock axisLock;
     uint64_t userData;
 #ifdef NEBULA_DEBUG
     Util::String debugName;
@@ -275,6 +289,9 @@ struct BodyDescription
 
     uint32_t collisionGroup = 0;
     Physics::CollisionFeedback feedback = Physics::CollisionFeedback_Full;
+
+    /// the world space axes the body is locked along or around.
+    AxisLock axisLock;
 
     uint64_t userData = 0;
 };

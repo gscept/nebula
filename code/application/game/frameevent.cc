@@ -527,7 +527,7 @@ FramePipeline::RegisterFrameEvent(int order, Util::StringAtom name)
 /**
 */
 FrameEvent*
-FramePipeline::GetFrameEvent(Util::StringAtom name)
+FramePipeline::FindFrameEvent(Util::StringAtom name)
 {
     for (int i = 0; i < this->frameEvents.Size(); i++)
     {
@@ -535,8 +535,20 @@ FramePipeline::GetFrameEvent(Util::StringAtom name)
             return this->frameEvents[i];
     }
 
-    n_error("FrameEvent `%s` not found!", name.Value());
     return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameEvent*
+FramePipeline::GetFrameEvent(Util::StringAtom name)
+{
+    FrameEvent* event = this->FindFrameEvent(name);
+    if (event == nullptr)
+        n_error("FrameEvent `%s` not found!", name.Value());
+
+    return event;
 }
 
 //------------------------------------------------------------------------------

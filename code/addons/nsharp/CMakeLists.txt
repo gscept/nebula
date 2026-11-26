@@ -10,7 +10,6 @@ nebula_idl_generate_cs_target(
     ${NROOT}/code/addons/graphicsfeature/components/decal.json
     ${NROOT}/code/addons/graphicsfeature/components/lighting.json
     ${NROOT}/code/addons/graphicsfeature/components/model.json
-    ${NROOT}/code/addons/physicsfeature/components/physicsfeature.json
     ${NROOT}/code/application/basegamefeature/components/basegamefeature.json
 )
 

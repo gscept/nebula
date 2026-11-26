@@ -133,6 +133,14 @@ namespace Nebula
             }
         }
 
+        public static void OnPhysicsFrame()
+        {
+            if (runtimeData.App.IsRunning)
+            {
+                runtimeData.App.OnPhysicsFrame();
+            }
+        }
+
         public static void OnEndFrame()
         {
             if (runtimeData.App.IsRunning)
@@ -237,6 +245,12 @@ namespace NebulaEngine
         public static void OnFrame()
         {
             Nebula.Runtime.OnFrame();
+        }
+
+        [UnmanagedCallersOnly]
+        public static void OnPhysicsFrame()
+        {
+            Nebula.Runtime.OnPhysicsFrame();
         }
 
         [UnmanagedCallersOnly]

@@ -80,6 +80,12 @@ namespace Nebula
             public TimeSource Input => this.Get(TimeSourceHash.Input);
 
             /// <summary>
+            /// The source the physics feature runs its fixed event on. Null until the mirror has seen it,
+            /// which is the first sync after the physics feature has created it.
+            /// </summary>
+            public TimeSource Physics => this.Get(TimeSourceHash.Physics);
+
+            /// <summary>
             /// The mirror for a time source, or null when the runtime has not seen one with this hash.
             /// </summary>
             public TimeSource Get(uint hash)

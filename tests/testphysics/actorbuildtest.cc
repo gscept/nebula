@@ -178,6 +178,41 @@ ActorBuildTest::Run()
     VERIFY(dynamic->getActorFlags() & PxActorFlag::eDISABLE_GRAVITY);
     VERIFY(dynamic->getRigidBodyFlags() & PxRigidBodyFlag::eENABLE_CCD);
 
+    // the axis lock is the world space axes a dynamic body can not move along or around. The bit
+    // positions of the mask are the ones PxRigidDynamicLockFlag uses, so the flags come out as set
+    body.axisLock.SetBit(Physics::LockLinearY);
+    body.axisLock.SetBit(Physics::LockAngularZ);
+    body.useGravity = true;
+    Physics::ActorContext::UpdateBody(actor, body);
+    VERIFY(Physics::ActorContext::GetActor(actor).axisLock == body.axisLock);
+
+    PxRigidDynamicLockFlags expected = PxRigidDynamicLockFlag::eLOCK_LINEAR_Y | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z;
+    VERIFY(dynamic->getRigidDynamicLockFlags() == expected);
+
+    // gravity pulls along Y, which is locked, so the body stays where it is
+    for (int i = 0; i < 10; i++)
+        Physics::state.Step(0.016f, scene);
+    VERIFY(NearlyEqual(dynamic->getGlobalPose().p.y, 0.0f));
+
+    // clearing the mask clears the flags, and the same body falls
+    body.axisLock.Clear();
+    Physics::ActorContext::UpdateBody(actor, body);
+    VERIFY(!(dynamic->getRigidDynamicLockFlags()));
+    for (int i = 0; i < 10; i++)
+        Physics::state.Step(0.016f, scene);
+    VERIFY(dynamic->getGlobalPose().p.y < -0.01f);
+
+    // a static actor has no lock flags, so the mask is stored on the context entry and nothing is
+    // applied to the actor
+    Physics::BodyDescription staticLocked;
+    staticLocked.type = Physics::Static;
+    staticLocked.scene = scene;
+    staticLocked.axisLock.SetBit(Physics::LockLinearY);
+    Physics::ActorId staticLockedActor = Physics::ActorContext::CreateActor(staticLocked);
+    VERIFY(Physics::ActorContext::GetActor(staticLockedActor).axisLock.IsSet(Physics::LockLinearY));
+    VERIFY(Physics::ActorContext::GetPxActor(staticLockedActor)->is<PxRigidBody>() == nullptr);
+    Physics::ActorContext::DiscardActor(staticLockedActor);
+
     // triggers are lowered from the simulation and raised as triggers
     collider.isTrigger = true;
     Physics::ActorContext::UpdateShape(shape, collider);
@@ -341,6 +376,7 @@ ActorBuildTest::Run()
     Physics::ActorContext::DiscardActor(runningActor);
     Physics::ActorContext::DiscardActor(pausedActor);
     Physics::DestroyScene(pausedScene);
+    Physics::DestroyScene(scene);
 
     Physics::state.Shutdown();
 }

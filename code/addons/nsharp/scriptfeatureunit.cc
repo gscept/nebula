@@ -7,6 +7,7 @@
 #include "nsharpserver.h"
 #include "io/filewatcher.h"
 #include "game/gameserver.h"
+#include "game/frameevent.h"
 #include "coreclr_delegates.h"
 #include "propertyextension.h"
 #if WITH_NEBULA_EDITOR
@@ -33,6 +34,7 @@ ScriptFeatureUnit::ScriptFeatureUnit() :
     exitEntry("NebulaEngine.AppEntry::Exit()"),
     beginFrameEntry("NebulaEngine.AppEntry::OnBeginFrame()"),
     frameEntry("NebulaEngine.AppEntry::OnFrame()"),
+    physicsFrameEntry("NebulaEngine.AppEntry::OnPhysicsFrame()"),
     endFrameEntry("NebulaEngine.AppEntry::OnEndFrame()"),
     reloadEntry("NebulaEngine.AppEntry::RequestReload()"),
     flushEntityCreateQueueEntry("NebulaEngine.AppEntry::FlushEntityCreateQueue()"),
@@ -173,6 +175,21 @@ ScriptFeatureUnit::OnActivate()
         // Registered before the plugin is loaded, so the level formats have the hook before anything the
         // plugin does can write a level
         PropertyLevelExtension::Register(this->server, this->engineAssemblyId);
+
+        // The managed physics phase runs inside the physics frame event rather than at the managed frame.
+        // The managed frame events happen before the frame pipeline runs, so a property that reads a body
+        // from OnFrame sees the step of the previous frame. PhysX only allows a body to be read after
+        // fetchResults(). The callback sits after the poll
+        // processors of that event, so a read here sees this step and a write is picked up by the next one.
+        Game::FrameEvent* physicsEvent = Game::GetWorld(WORLD_DEFAULT)->GetFramePipeline().FindFrameEvent("OnPhysicsFrame"_atm);
+        if (physicsEvent != nullptr)
+        {
+            physicsEvent->AddCallback(220, Game::PlayPhase, [](Game::World* world)
+            {
+                if (ScriptFeatureUnit::HasInstance())
+                    ScriptFeatureUnit::Instance()->OnPhysicsFrame();
+            });
+        }
 
         // Worlds that already exist when the feature unit is attached are not reported by
         // OnWorldCreated, so mirror them here.
@@ -328,6 +345,18 @@ ScriptFeatureUnit::OnFrame()
         return;
 
     this->server->ExecUnmanagedCall(this->engineAssemblyId, this->frameEntry);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ScriptFeatureUnit::OnPhysicsFrame()
+{
+    if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        return;
+
+    this->server->ExecUnmanagedCall(this->engineAssemblyId, this->physicsFrameEntry);
 }
 
 //------------------------------------------------------------------------------

@@ -12,6 +12,7 @@
 // tests
 #include "cookingtest.h"
 #include "actorbuildtest.h"
+#include "scenequerytest.h"
 
 using namespace Core;
 using namespace Test;
@@ -41,6 +42,7 @@ main(int argc, char** argv)
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(CookingTest::Create());
     testRunner->AttachTestCase(ActorBuildTest::Create());
+    testRunner->AttachTestCase(SceneQueryTest::Create());
     testRunner->SetVerbose(true);
 
     bool result = testRunner->Run();

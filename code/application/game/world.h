@@ -145,11 +145,16 @@ public:
     bool HasComponent(Entity entity) const;
     /// Check if entity has a specific component. (SLOW!)
     bool HasComponent(Entity entity, ComponentId component) const;
+
+    /// The data of a component, read from the entity's table when it is there, otherwise from its chain of
+    /// staged commands. Returns nullptr when the entity has neither. Returned pointer is not safe between frames!
+    byte* FindComponentData(Entity entity, ComponentId component) const;
     
-    /// Remove a component from an entity
+    /// Remove a component from an entity. Only a component which is in the entity's table can be removed,
+    /// because decay runs through the decay record of the table column, and a staged component has none
     template <typename TYPE>
     void RemoveComponent(Entity entity);
-    /// Remove a component from an entity
+    /// Remove a component from an entity. Only a component which is in the entity's table
     void RemoveComponent(Entity entity, ComponentId component);
 
     /// Set the value of an entitys component
@@ -159,7 +164,8 @@ public:
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
 
-    /// Mark an entity as modified in its table.
+    /// Mark an entity as modified in its table. This needs a row, so a change made to a component which is only
+    /// staged cannot be recorded, and a processor built with OnlyModified() does not see it
     void MarkAsModified(Game::Entity entity);
 
     /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
@@ -306,9 +312,6 @@ private:
     IndexT StagedHead(Entity entity) const;
     /// A component on the entity's chain of staged commands, or nullptr
     void* FindStagedComponent(Entity entity, ComponentId component) const;
-    /// The data of a component, read from the entity's table when it is there, otherwise from its chain of
-    /// staged commands. Returns nullptr when the entity has neither
-    byte* FindComponentData(Entity entity, ComponentId component) const;
 
     /// used to allocate entity ids for this world
     EntityPool pool;
@@ -387,9 +390,12 @@ World::SetComponent(Entity entity, TYPE const& value)
         "SetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
 #endif
-    EntityMapping mapping = this->GetEntityMapping(entity);
-    TYPE* ptr = (TYPE*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
-    *(ptr + mapping.instance.index) = value;
+
+    TYPE* ptr = reinterpret_cast<TYPE*>(FindComponentData(entity, GetComponentId<TYPE>()));
+#if NEBULA_DEBUG
+    n_assert2(ptr != nullptr, "SetComponent: Entity does not have the component, staged or in a table!");
+#endif
+    *ptr = value;
 }
 
 //------------------------------------------------------------------------------

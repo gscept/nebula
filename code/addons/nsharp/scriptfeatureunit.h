@@ -48,6 +48,8 @@ public:
     void OnDecay() override;
     virtual void OnRenderDebug();
 
+    void OnPhysicsFrame();
+
 private:
     IO::URI engineAssemblyPath;
     IO::URI assemblyPath;
@@ -82,6 +84,7 @@ private:
     Util::String exitEntry;
     Util::String beginFrameEntry;
     Util::String frameEntry;
+    Util::String physicsFrameEntry;
     Util::String endFrameEntry;
     Util::String reloadEntry;
     Util::String flushEntityCreateQueueEntry;

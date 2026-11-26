@@ -183,6 +183,44 @@ namespace Nebula
             }
 
             /// <summary>
+            /// Calls all eventlistener properties that has subscribed to the OnPhysicsFrame event, once for
+            /// every step the physics time source has available this frame.
+            /// </summary>
+            /// <remarks>
+            /// This is called from a callback inside the physics frame event, after the step has been fetched,
+            /// which is the point where the physics engine allows a body to be read. The managed frame events
+            /// run before the frame pipeline, so a property that reads a body from OnFrame sees the previous
+            /// step, and a property that wants this frame's has to come through here.
+            /// </remarks>
+            public void OnPhysicsFrame()
+            {
+                List<Property> props = this.eventListeners[(int)FrameEvent.OnPhysicsFrame];
+                for (int i = 0; i < props.Count; i++)
+                {
+                    Property prop = props[i];
+                    if (!prop.IsValid())
+                    {
+                        // Remove invalid properties
+                        props.EraseSwap(i);
+                        i--; // rerun the same index
+                        continue;
+                    }
+
+                    // The same guard as the other events
+                    if (!prop.Entity.HasInstance())
+                    {
+                        continue;
+                    }
+
+                    // The same gate as the other events
+                    if (prop.Active)
+                    {
+                        prop.OnPhysicsFrame();
+                    }
+                }
+            }
+
+            /// <summary>
             /// Calls all eventlistener properties that has subscribed to the OnEndFrame event
             /// </summary>
             public void OnEndFrame()

@@ -567,6 +567,35 @@ EntitySystemTest::Run()
         StepFrame();
     }
 
+    // A component which is only staged is not in a table, so a write has to go to the chain, which is what
+    // answers for it. This is the state an entity is in between an add and the queue: HasComponent answers true
+    // through the chain, and a write through the table asserts. What is written to the chain is what the queue
+    // copies into the table. The write is not a modified write, because there is no row to mark, and the instance
+    // the queue makes is not flagged
+    {
+        Game::World stagingWorld(Game::WorldHash('LWRT'), 10);
+        stagingWorld.componentInitializationEnabled = false;
+
+        Game::Entity stagedEntity = stagingWorld.CreateEntity();
+        const Game::ComponentId healthId = Game::GetComponentId<TestHealth>();
+
+        stagingWorld.AddComponent<TestHealth>(stagedEntity);
+        VERIFY(stagingWorld.HasComponent(stagedEntity, healthId));
+
+        TestHealth health;
+        health.value = 42;
+        stagingWorld.SetComponentValue(stagedEntity, healthId, &health, MemDb::AttributeRegistry::TypeSize(healthId));
+
+        // The chain is the only place the component is before the queue runs
+        VERIFY(stagingWorld.GetComponent<TestHealth>(stagedEntity).value == 42);
+
+        stagingWorld.ExecuteAddComponentCommands();
+
+        // The queue copies what the chain held into the table
+        VERIFY(stagingWorld.HasComponent(stagedEntity, healthId));
+        VERIFY(stagingWorld.GetComponent<TestHealth>(stagedEntity).value == 42);
+    }
+
     t->StopTime();
 }
 

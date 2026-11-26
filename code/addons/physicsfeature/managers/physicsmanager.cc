@@ -111,7 +111,11 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
     if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
         return;
 
-    if (!world->HasComponent<PhysicsFeature::PhysicsActor>(entity))
+    n_assert(PhysicsManager::HasInstance());
+
+    PhysicsFeature::PhysicsActor* self = (PhysicsFeature::PhysicsActor*)
+        world->FindComponentData(entity, Game::GetComponentId<PhysicsFeature::PhysicsActor>());
+    if (self == nullptr)
     {
         // the entity has no handle yet, which means its body or collider components were added this
         // frame and are not in the tables yet. Their inits ensure a handle, and a fresh handle
@@ -119,14 +123,10 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
         return;
     }
 
-    n_assert(PhysicsManager::HasInstance());
-
-    PhysicsFeature::PhysicsActor self = world->GetComponent<PhysicsFeature::PhysicsActor>(entity);
-    if (self.pending == 0)
+    if (self->pending == 0)
         PhysicsManager::Instance()->rebuildQueue.Append(entity);
 
-    self.pending |= pending;
-    world->SetComponent(entity, self);
+    self->pending |= pending;
 }
 
 //------------------------------------------------------------------------------
@@ -588,6 +588,7 @@ BuildRigidbody(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsA
     desc.ccd = body.ccd;
     desc.collisionGroup = body.collisionGroup;
     desc.feedback = (Physics::CollisionFeedback)body.collisionFeedback;
+    desc.axisLock = body.axisLock;
     desc.userData = (uint64_t)Ids::Id64(entity);
     desc.transform = Math::transform(
         world->GetComponent<Game::Position>(entity),

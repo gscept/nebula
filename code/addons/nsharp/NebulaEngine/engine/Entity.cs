@@ -126,11 +126,6 @@ namespace Nebula
             /// <summary>
             /// Adds a property to the entity
             /// </summary>
-            /// <remarks>
-            /// The property is activated here when this world is simulating. In a world that is only being
-            /// authored the value is recorded and OnActivate happens when the world starts simulating, which
-            /// is what an editor's play button does.
-            /// </remarks>
             public void AddProperty(Property property, bool active = true)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);

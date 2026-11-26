@@ -4,6 +4,53 @@
 		"physicsinterface.h",
 		"game/api.h"
 	],
+	"structs": {
+		"RaycastHit": {
+			"entity": {
+				"type": "entity",
+				"description": "The entity the hit shape belongs to, which is the body the shape hangs off rather than the collider entity when the collider is on a child"
+			},
+			"shapeId": {
+				"type": "uint",
+				"default": -1,
+				"description": "The shape this side hit. 0xFFFFFFFF when the hit shape is no longer in the shape pool"
+			},
+			"distance": {
+				"type": "float",
+				"description": "Distance from the query origin to the hit"
+			},
+			"point": {
+				"type": "vec3",
+				"description": "World space hit point"
+			},
+			"normal": {
+				"type": "vec3",
+				"description": "World space surface normal at the hit"
+			},
+			"faceIndex": {
+				"type": "uint",
+				"default": -1,
+				"description": "Touched triangle for a mesh, convex or height field. 0xFFFFFFFF for other shapes"
+			}
+		},
+		"QueryFilter": {
+			"group": {
+				"type": "uint",
+				"default": 0,
+				"description": "The group this query is from. A shape with the default group 0 is accepted by every query, so 0 here means accept everything"
+			},
+			"mask": {
+				"type": "uint",
+				"default": -1,
+				"description": "The set of groups this query accepts, matched against word0 of the shape's filter data"
+			},
+			"excludeActorId": {
+				"type": "uint",
+				"default": -1,
+				"description": "The actor to skip. A ground check needs this because the ray starts inside the shape the caller owns"
+			}
+		}
+	},
 	"enums": {
 		"ActorType": {
 			"Static": 0,
@@ -123,6 +170,11 @@
 				"type": "PhysicsFeature::CollisionFeedback",
 				"default": 1,
 				"description": "Simulation filter data word1, controls which contact callbacks are sent."
+			},
+			"axisLock": {
+				"type": "bitfield16",
+				"default": 0,
+				"description": "The world space axes the body is locked along or around. Bit 0 locks movement along X, 1 along Y and 2 along Z, and bits 3, 4 and 5 lock rotation around those axes. Only a dynamic body has lock flags, so a static body reads none of them."
 			}
 		},
 		"StaticBody": {

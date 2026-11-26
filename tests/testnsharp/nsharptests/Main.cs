@@ -415,6 +415,38 @@ namespace NST
         }
     }
 
+    /// <summary>
+    /// A property that reads a sibling from OnActivate. The add does not activate, so the entity has all the
+    /// properties it was given before any of them runs OnActivate. The test adds this one before its sibling
+    /// and checks that OnActivate still saw it
+    /// </summary>
+    [ExportType]
+    public class OrderTestProperty : Property
+    {
+        public int activateCalls;
+        public bool sawSibling;
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+            this.sawSibling = this.Entity.HasProperty<SiblingTestProperty>();
+        }
+    }
+
+    /// <summary>
+    /// The sibling OrderTestProperty reads. It only has to be on the entity
+    /// </summary>
+    [ExportType]
+    public class SiblingTestProperty : Property
+    {
+        public int activateCalls;
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+        }
+    }
+
     [ExportType]
     public class ExportedState : IHotReloadManaged
     {
@@ -1400,6 +1432,11 @@ namespace NST
         private Entity queueEntity;
         private ActionQueue actionQueue;
 
+        // The activation order test. Both properties are attached before the pass runs, so the one added
+        // first sees the one added second from its OnActivate
+        private OrderTestProperty orderProperty;
+        private SiblingTestProperty siblingProperty;
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
@@ -1598,8 +1635,9 @@ namespace NST
             }
             else if (this.syncPhase == 15)
             {
-                // A world the plugin did not create is simulating by default, which is the plain game case:
-                // a property attached to it is activated right away
+                // A world the plugin did not create is simulating by default, which is the plain game case.
+                // The add does not activate by itself, it records the intent, and the entity's activation
+                // pass on the next frame is what activates it
                 Tests.DestroyTestWorld();
                 this.simWorld = Tests.CreateTestWorld();
                 World world = World.Get(this.simWorld);
@@ -1608,21 +1646,31 @@ namespace NST
                 Entity entity = world.CreateEntity();
                 this.simProperty = new SimTestProperty();
                 entity.AddProperty(this.simProperty);
-                Tests.Verify(this.simProperty.Active);
-                Tests.Verify(this.simProperty.activateCalls == 1);
+                Tests.Verify(!this.simProperty.Active);
+                Tests.Verify(this.simProperty.activateCalls == 0);
 
-                // The mode is read at the beginning of the frame, so the change is seen on the next one
-                Tests.SetTestWorldSimulating(this.simWorld, false);
                 this.syncPhase = 16;
             }
             else if (this.syncPhase == 16)
+            {
+                // The pass ran at the beginning of this frame and activated it. The event for this frame has
+                // not run yet, because these checks are before the property events
+                Tests.Verify(this.simProperty.Active);
+                Tests.Verify(this.simProperty.activateCalls == 1);
+                Tests.Verify(this.simProperty.frameCalls == 0);
+
+                // The mode is read at the beginning of the frame, so the change is seen on the next one
+                Tests.SetTestWorldSimulating(this.simWorld, false);
+                this.syncPhase = 17;
+            }
+            else if (this.syncPhase == 17)
             {
                 World world = World.Get(this.simWorld);
                 Tests.Verify(!world.IsSimulating());
 
                 // The property was active, so the mode change deactivated it. Nothing runs against a property
                 // in a world that is not simulating, neither the update method nor a message. The count here is
-                // the frame it was attached in, which was a simulating one
+                // the frame the pass activated it in, which was a simulating one
                 Tests.Verify(!this.simProperty.Active);
                 Tests.Verify(this.simProperty.deactivateCalls == 1);
                 Tests.Verify(this.simProperty.frameCalls == 1);
@@ -1631,9 +1679,9 @@ namespace NST
                 Tests.Verify(this.simProperty.messageCalls == 0);
 
                 Tests.SetTestWorldSimulating(this.simWorld, true);
-                this.syncPhase = 17;
+                this.syncPhase = 18;
             }
-            else if (this.syncPhase == 17)
+            else if (this.syncPhase == 18)
             {
                 World world = World.Get(this.simWorld);
                 Tests.Verify(world.IsSimulating());
@@ -1648,17 +1696,17 @@ namespace NST
                 this.simProperty.Entity.Send(new TestMsg { f = 1 });
                 Tests.Verify(this.simProperty.messageCalls == 1);
 
-                this.syncPhase = 18;
+                this.syncPhase = 19;
             }
-            else if (this.syncPhase == 18)
+            else if (this.syncPhase == 19)
             {
                 // The update method runs again in the frame after the world started simulating
                 Tests.Verify(this.simProperty.frameCalls == 2);
 
                 Tests.DestroyTestWorld();
-                this.syncPhase = 19;
+                this.syncPhase = 20;
             }
-            else if (this.syncPhase == 19)
+            else if (this.syncPhase == 20)
             {
                 // The mirror is refreshed at the beginning of the frame, so these are this frame's values
                 TimeSource gameplay = TimeManager.Instance.Gameplay;
@@ -1691,9 +1739,9 @@ namespace NST
                 Tests.CreateTestTimeSource(0.01, 3);
                 Tests.AdvanceTestTimeSource(0.03);
 
-                this.syncPhase = 20;
+                this.syncPhase = 21;
             }
-            else if (this.syncPhase == 20)
+            else if (this.syncPhase == 21)
             {
                 TimeSource gameplay = TimeManager.Instance.Gameplay;
                 TimeSource system = TimeManager.Instance.System;
@@ -1717,30 +1765,30 @@ namespace NST
                 Tests.Verify(this.fixedProperty.fixedCalls == 0);
 
                 input.Resume();
-                this.syncPhase = 21;
-            }
-            else if (this.syncPhase == 21)
-            {
-                // The three steps the test runner put on the source are what the fixed event ran on
-                Tests.Verify(this.fixedProperty.fixedCalls == 3);
                 this.syncPhase = 22;
             }
             else if (this.syncPhase == 22)
             {
-                Tests.TestPropertyMerge();
+                // The three steps the test runner put on the source are what the fixed event ran on
+                Tests.Verify(this.fixedProperty.fixedCalls == 3);
                 this.syncPhase = 23;
             }
             else if (this.syncPhase == 23)
             {
-                Tests.TestPropertyRefs();
+                Tests.TestPropertyMerge();
                 this.syncPhase = 24;
             }
             else if (this.syncPhase == 24)
             {
-                Tests.TestPropertyResolve();
+                Tests.TestPropertyRefs();
                 this.syncPhase = 25;
             }
             else if (this.syncPhase == 25)
+            {
+                Tests.TestPropertyResolve();
+                this.syncPhase = 26;
+            }
+            else if (this.syncPhase == 26)
             {
                 // The contract between the two sides is the field order and the code values, and both sides
                 // state them. This is where the test compares the two statements
@@ -1772,9 +1820,9 @@ namespace NST
                 Tests.Verify(!Input.HasModifier(Modifier.ShiftModifier));
                 Tests.InputTestEndFrame();
 
-                this.syncPhase = 26;
+                this.syncPhase = 27;
             }
-            else if (this.syncPhase == 26)
+            else if (this.syncPhase == 27)
             {
                 // A frame with nothing in it. The held state is the handler's state, so it survives the frame,
                 // and the edge is cleared at the start of it
@@ -1785,9 +1833,9 @@ namespace NST
                 Tests.Verify(!Input.IsKeyReleased(Key.W));
                 Tests.InputTestEndFrame();
 
-                this.syncPhase = 27;
+                this.syncPhase = 28;
             }
-            else if (this.syncPhase == 27)
+            else if (this.syncPhase == 28)
             {
                 Tests.InputTestBeginFrame();
                 Tests.InputTestPutKey((int)Key.W, false);
@@ -1803,9 +1851,9 @@ namespace NST
                 Tests.Verify(!Input.IsKeyHeld(Key.InvalidKey));
 
                 Tests.InputTestEndFrame();
-                this.syncPhase = 28;
+                this.syncPhase = 29;
             }
-            else if (this.syncPhase == 28)
+            else if (this.syncPhase == 29)
             {
                 // The frame after a release is where the held state goes
                 Tests.InputTestBeginFrame();
@@ -1814,9 +1862,9 @@ namespace NST
                 Tests.Verify(!Input.IsKeyReleased(Key.W));
                 Tests.InputTestEndFrame();
 
-                this.syncPhase = 29;
+                this.syncPhase = 30;
             }
-            else if (this.syncPhase == 29)
+            else if (this.syncPhase == 30)
             {
                 Tests.InputTestBeginFrame();
                 Tests.InputTestPutMouseButton((int)MouseButton.LeftButton, true);
@@ -1852,9 +1900,9 @@ namespace NST
                 Tests.Verify(Input.MouseMovement == new Vector2(-10.0f, -5.0f));
                 Tests.InputTestEndFrame();
 
-                this.syncPhase = 30;
+                this.syncPhase = 31;
             }
-            else if (this.syncPhase == 30)
+            else if (this.syncPhase == 31)
             {
                 // Focus and the two capture flags are the server's state rather than the handler's, and they
                 // are what tell a caller that a key is missing because the UI took it
@@ -1880,9 +1928,9 @@ namespace NST
                 Tests.Verify(!Input.KeyCaptured);
                 Tests.Verify(!Input.MouseCaptured);
 
-                this.syncPhase = 31;
+                this.syncPhase = 32;
             }
-            else if (this.syncPhase == 31)
+            else if (this.syncPhase == 32)
             {
                 // Text is the one part of the keyboard state that cannot come through the mirror, so it comes
                 // through a buffer this side owns
@@ -1893,9 +1941,9 @@ namespace NST
                 Tests.Verify(Input.CharInput() == "hi");
                 Tests.InputTestEndFrame();
 
-                this.syncPhase = 32;
+                this.syncPhase = 33;
             }
-            else if (this.syncPhase == 32)
+            else if (this.syncPhase == 33)
             {
                 // The component mirror is a layout contract between the two sides, and nothing in the
                 // build says the generator's table still matches the C++ type. This is the check
@@ -1905,9 +1953,9 @@ namespace NST
                 // order it applies its operands in is worth a check of its own
                 Tests.TestMatrixOrder();
 
-                this.syncPhase = 33;
+                this.syncPhase = 34;
             }
-            else if (this.syncPhase == 33)
+            else if (this.syncPhase == 34)
             {
                 // A property that was asked to be active but answers the activation gate with no. Attaching it
                 // records the intent without activating it, which is what the entity's pass checks on the next
@@ -1920,9 +1968,9 @@ namespace NST
                 Tests.Verify(this.gateProperty.activateCalls == 0);
 
                 this.gateProperty.gate = true;
-                this.syncPhase = 34;
+                this.syncPhase = 35;
             }
-            else if (this.syncPhase == 34)
+            else if (this.syncPhase == 35)
             {
                 // The pass ran at the beginning of this frame and activated it. The event for this frame has not
                 // run yet, because these checks are before the property events
@@ -1931,21 +1979,21 @@ namespace NST
                 Tests.Verify(this.gateProperty.deactivateCalls == 0);
                 Tests.Verify(this.gateProperty.frameCalls == 0);
 
-                this.syncPhase = 35;
-            }
-            else if (this.syncPhase == 35)
-            {
-                Tests.Verify(this.gateProperty.frameCalls == 1);
-                Tests.Verify(this.gateProperty.Active);
                 this.syncPhase = 36;
             }
             else if (this.syncPhase == 36)
             {
-                Tests.Verify(this.gateProperty.frameCalls == 2);
+                Tests.Verify(this.gateProperty.frameCalls == 1);
                 Tests.Verify(this.gateProperty.Active);
                 this.syncPhase = 37;
             }
             else if (this.syncPhase == 37)
+            {
+                Tests.Verify(this.gateProperty.frameCalls == 2);
+                Tests.Verify(this.gateProperty.Active);
+                this.syncPhase = 38;
+            }
+            else if (this.syncPhase == 38)
             {
                 // The frame count reached the number it was told to stop at, so the pass deactivated it at the
                 // beginning of this frame. The frame that ran the last event was the one that reached the count
@@ -1963,15 +2011,15 @@ namespace NST
                 Tests.Verify(this.gateProperty.activateCalls == 1);
 
                 this.gateProperty.gate = true;
-                this.syncPhase = 38;
-            }
-            else if (this.syncPhase == 38)
-            {
-                Tests.Verify(this.gateProperty.Active);
-                Tests.Verify(this.gateProperty.activateCalls == 2);
                 this.syncPhase = 39;
             }
             else if (this.syncPhase == 39)
+            {
+                Tests.Verify(this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.activateCalls == 2);
+                this.syncPhase = 40;
+            }
+            else if (this.syncPhase == 40)
             {
                 // Taking the gate property out of the running state so the queue test has an entity of its own
                 this.gateProperty.Active = false;
@@ -1993,9 +2041,9 @@ namespace NST
                 Tests.Verify(this.queueProperty.IsFrontOfQueue);
                 Tests.Verify(this.queueProperty.frontCalls == 1);
                 Tests.Verify(!this.queueProperty.Active);
-                this.syncPhase = 40;
+                this.syncPhase = 41;
             }
-            else if (this.syncPhase == 40)
+            else if (this.syncPhase == 41)
             {
                 // The pass activated it because the queue said it was at the front, and the queue did not move on
                 // because the action is still running
@@ -2004,15 +2052,15 @@ namespace NST
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Property);
                 Tests.Verify(Object.ReferenceEquals(this.actionQueue.CurrentProperty, this.queueProperty));
                 Tests.Verify(this.queueProperty.frameCalls == 0);
-                this.syncPhase = 41;
-            }
-            else if (this.syncPhase == 41)
-            {
-                Tests.Verify(this.queueProperty.frameCalls == 1);
-                Tests.Verify(this.queueProperty.Active);
                 this.syncPhase = 42;
             }
             else if (this.syncPhase == 42)
+            {
+                Tests.Verify(this.queueProperty.frameCalls == 1);
+                Tests.Verify(this.queueProperty.Active);
+                this.syncPhase = 43;
+            }
+            else if (this.syncPhase == 43)
             {
                 // It said it was done at the beginning of this frame, which is where the pass deactivated it and
                 // the queue moved on to the event. Execute loads the next action, it does not run it in the same
@@ -2025,9 +2073,9 @@ namespace NST
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Event);
                 Tests.Verify(this.queueProperty.eventCalls == 0);
                 Tests.Verify(this.actionQueue.IsEmpty());
-                this.syncPhase = 43;
+                this.syncPhase = 44;
             }
-            else if (this.syncPhase == 43)
+            else if (this.syncPhase == 44)
             {
                 // The event ran on this frame's Execute and the queue has nothing left
                 Tests.Verify(this.queueProperty.eventCalls == 1);
@@ -2042,9 +2090,9 @@ namespace NST
 
                 Tests.Verify(this.queueProperty.IsFrontOfQueue);
                 Tests.Verify(!this.queueProperty.Active);
-                this.syncPhase = 44;
+                this.syncPhase = 45;
             }
-            else if (this.syncPhase == 44)
+            else if (this.syncPhase == 45)
             {
                 // The pass activated it first, so Clear has a running property to take out
                 Tests.Verify(this.queueProperty.Active);
@@ -2058,9 +2106,9 @@ namespace NST
                 Tests.Verify(!this.queueProperty.IsFrontOfQueue);
                 Tests.Verify(this.actionQueue.IsEmpty());
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.None);
-                this.syncPhase = 45;
+                this.syncPhase = 46;
             }
-            else if (this.syncPhase == 45)
+            else if (this.syncPhase == 46)
             {
                 // An Idle with no duration is done in the frame it runs in, and the Loop after it is loaded by the
                 // same Execute but run by the next one
@@ -2069,28 +2117,57 @@ namespace NST
                 this.actionQueue.BeginExecution();
 
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Idle);
-                this.syncPhase = 46;
-            }
-            else if (this.syncPhase == 46)
-            {
-                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Loop);
-                Tests.Verify(this.queueProperty.loopCalls == 0);
                 this.syncPhase = 47;
             }
             else if (this.syncPhase == 47)
             {
-                // The loop ran once and answered true
-                Tests.Verify(this.queueProperty.loopCalls == 1);
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Loop);
+                Tests.Verify(this.queueProperty.loopCalls == 0);
                 this.syncPhase = 48;
             }
             else if (this.syncPhase == 48)
+            {
+                // The loop ran once and answered true
+                Tests.Verify(this.queueProperty.loopCalls == 1);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Loop);
+                this.syncPhase = 49;
+            }
+            else if (this.syncPhase == 49)
             {
                 // The second call answered false, which ended the action and left the queue empty
                 Tests.Verify(this.queueProperty.loopCalls == 2);
                 Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.None);
                 Tests.Verify(this.actionQueue.IsEmpty());
-                this.syncPhase = 49;
+                this.syncPhase = 50;
+            }
+            else if (this.syncPhase == 50)
+            {
+                // The activation order guarantee. The dependent property is added first, so with the add
+                // recording the intent rather than activating, the entity has both properties before the pass
+                // runs OnActivate on either of them
+                World world = World.Get(World.DEFAULT_WORLD);
+                Entity entity = world.CreateEntity();
+                this.orderProperty = new OrderTestProperty();
+                this.siblingProperty = new SiblingTestProperty();
+                entity.AddProperty(this.orderProperty);
+                entity.AddProperty(this.siblingProperty);
+                Tests.Verify(!this.orderProperty.Active);
+                Tests.Verify(!this.siblingProperty.Active);
+
+                this.syncPhase = 51;
+            }
+            else if (this.syncPhase == 51)
+            {
+                // The pass activated both. The one added first read its sibling from OnActivate and found it,
+                // even though it was added after, which is what the deferred activation is for
+                Tests.Verify(this.orderProperty.Active);
+                Tests.Verify(this.orderProperty.activateCalls == 1);
+                Tests.Verify(this.orderProperty.sawSibling);
+                Tests.Verify(Object.ReferenceEquals(this.orderProperty.Entity.GetProperty<SiblingTestProperty>(), this.siblingProperty));
+                Tests.Verify(this.siblingProperty.Active);
+                Tests.Verify(this.siblingProperty.activateCalls == 1);
+
+                this.syncPhase = 52;
             }
             base.OnFrame();
         }

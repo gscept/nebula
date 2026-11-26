@@ -212,15 +212,23 @@ ComponentGetData(uint64_t entityId, uint32_t componentId, void* outData, int dat
     if (world == nullptr)
         return;
 
-    n_assert2(
+    n_assert_fmt(
         dataSize == MemDb::AttributeRegistry::TypeSize(componentId),
-        "ComponentGetData: Provided component size in bytes is not the correct size for the given ComponentId."
+        "ComponentGetData: Provided component size (%i) bytes is not the correct size (%i) for the given ComponentId (%s).",
+        dataSize,
+        MemDb::AttributeRegistry::TypeSize(componentId),
+        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(componentId))->GetFullyQualifiedName()
     );
 
-    Game::EntityMapping mapping = world->GetEntityMapping(entity);
-    byte* ptr = (byte*)world->GetInstanceBuffer(mapping.table, mapping.instance.partition, componentId);
-    ptr += (mapping.instance.index * dataSize);
-    Memory::Copy(ptr, outData, dataSize);
+    // Read through the same accessor the write uses, so a component which is only staged is still found
+    byte* const data = world->FindComponentData(entity, componentId);
+#if NEBULA_DEBUG
+    n_assert2(data != nullptr, "ComponentGetData: Entity does not have the component, staged or in a table!");
+#endif
+    if (data == nullptr)
+        return;
+
+    Memory::Copy(data, outData, dataSize);
 }
 
 //------------------------------------------------------------------------------

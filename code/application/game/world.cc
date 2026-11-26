@@ -881,11 +881,13 @@ World::FindStagedComponent(Game::Entity entity, Game::ComponentId component) con
 /**
     The data of a component, read from the entity's table when it is there, otherwise from its chain of staged
     commands. Returns nullptr when the entity has neither
+
+    Assumes the entity is valid.
 */
 byte*
 World::FindComponentData(Game::Entity entity, Game::ComponentId component) const
 {
-    if (this->IsValid(entity) && this->HasInstance(entity))
+    if (this->HasInstance(entity))
     {
         EntityMapping mapping = this->GetEntityMapping(entity);
         MemDb::Table& tbl = this->db->GetTable(mapping.table);
@@ -1254,13 +1256,11 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
     {
         auto const* cmd = cmds + i;
 #if NEBULA_DEBUG
-        /*
-        if (!signature.IsSet(cmd->componentId))
-        {
-            Util::String errorMsg = Util::String::Sprintf("Tried to remove component '%s' from an entity does not have the given component!", MemDb::AttributeRegistry::GetAttribute(cmd->componentId)->name.Value());
-            n_error(errorMsg.AsCharPtr());
-        }
-        */
+        n_assert2(
+            signature.IsSet(cmd->componentId),
+            "RemoveComponent: Tried to remove a component from an entity which does not have it in its table. A "
+            "component which is only staged has no decay record, so it cannot be removed."
+        );
 #endif
         signature.ClearBit(cmd->componentId);
     }
@@ -1306,9 +1306,12 @@ World::GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, Compone
     MemDb::Table& tbl = this->db->GetTable(tid);
     auto attrIndex = tbl.GetAttributeIndex(component);
 #if NEBULA_DEBUG
+
+    // If you hit this assert, it might be that you're trying to read a component that has been
+    // staged, but not added to the table. In that case, read it through FindComponentData instead.
     n_assert_fmt(
         attrIndex != MemDb::ColumnIndex::Invalid(),
-        "GetInstanceBuffer: Entity table does not have component with id '%i'!\n",
+        "GetInstanceBuffer: Entity table does not have component with id '%i'!",
         component.id
     );
 #endif
@@ -1673,9 +1676,14 @@ World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void*
         "SetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
 #endif
-    EntityMapping mapping = this->GetEntityMapping(entity);
-    byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
-    byte* valuePtr = ptr + (mapping.instance.index * size);
+
+    if (size == 0)
+        return;
+
+    byte* const valuePtr = this->FindComponentData(entity, component);
+#if NEBULA_DEBUG
+    n_assert2(valuePtr != nullptr, "SetComponent: Entity does not have the component, staged or in a table!");
+#endif
     Memory::Copy(value, valuePtr, size);
 
     // A write which does not go through one of the transform specializations below has no way of knowing that the
@@ -1711,6 +1719,14 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
     EntityMapping mapping = this->GetEntityMapping(entity);
 
     MemDb::ColumnIndex const columnIndex = this->db->GetTable(mapping.table).GetAttributeIndex(component);
+
+#if NEBULA_DEBUG
+    n_assert2(
+        columnIndex != MemDb::ColumnIndex::Invalid(),
+        "ReinitializeComponent: Entity table does not have the component. A component which is only staged has no "
+        "decay record, so it cannot be reinitialized. Write it through SetComponentValue instead."
+    );
+#endif
 
     // Decay the old component, this will allow managers to clean up any resources used before reinitializing
     this->DecayComponent(component, mapping.table, columnIndex, mapping.instance, entity);

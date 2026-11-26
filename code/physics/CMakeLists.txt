@@ -22,6 +22,8 @@ fips_files(
             actorcontext.h
             charactercontext.cc
             charactercontext.h
+            scenequery.cc
+            scenequery.h
             streamactorpool.cc
             streamactorpool.h
             callbacks.cc
