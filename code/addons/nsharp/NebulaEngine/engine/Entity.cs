@@ -28,6 +28,7 @@ namespace Nebula
             private UInt64 id = 0xFFFFFFFFFFFFFFFF;
             private List<Property> properties;
             private MsgDispatcher dispatcher;
+            private ActionQueue actionQueue;
 
             /// <summary>
             /// The world that this entity belongs to
@@ -143,6 +144,64 @@ namespace Nebula
             }
 
             /// <summary>
+            /// The entity's action queue, made on the first call.
+            /// </summary>
+            public ActionQueue GetActionQueue()
+            {
+                this.actionQueue ??= new ActionQueue();
+                return this.actionQueue;
+            }
+
+            /// <summary>
+            /// The entity's activation pass, called once per frame for an entity in a world that is simulating
+            /// and has an instance.
+            /// </summary>
+            /// <remarks>
+            /// A property that is not running is asked whether it should start, and one that is running is asked
+            /// whether it should stop. This is what decides whether a property gets its frame events, so the pass
+            /// runs before them.
+            ///
+            /// The queue runs after the pass, so a property that says it is done here lets the queue move on in
+            /// the same frame. The property that becomes the front of the queue is activated by the pass on the
+            /// next frame.
+            /// </remarks>
+            internal void UpdateProperties()
+            {
+                if (this.properties == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < this.properties.Count; i++)
+                {
+                    Property property = this.properties[i];
+
+                    // A property the entity was not asked to have active is not asked what it wants
+                    if (!property.RequestedActive)
+                    {
+                        continue;
+                    }
+
+                    if (!property.Active)
+                    {
+                        if (property.ShouldActivate())
+                        {
+                            property.Activate();
+                        }
+                    }
+                    else if (property.ShouldDeactivate())
+                    {
+                        property.Deactivate();
+                    }
+                }
+
+                if (this.actionQueue != null)
+                {
+                    this.actionQueue.Execute(Time.DeltaTime);
+                }
+            }
+
+            /// <summary>
             /// Gets the property if it exists in the entity.
             /// </summary>
             /// <remarks>
@@ -173,8 +232,8 @@ namespace Nebula
             /// The properties of the entity, in the order they were added.
             /// </summary>
             /// <remarks>
-            /// This is what the level format writes, because the order the properties were added in is the
-            /// order the file gets.
+            /// This is the set of what is attached to the entity. The level format reads it, and hot reload walks
+            /// it and reattaches the properties in it.
             /// </remarks>
             internal IReadOnlyList<Property> Properties => this.properties;
 
@@ -294,6 +353,10 @@ namespace Nebula
                 {
                     return;
                 }
+
+                // The properties are taken out of the queue before they are destroyed, so a property that was at
+                // the front of it knows it is no longer
+                this.actionQueue?.Clear();
 
                 for (int i = 0; i < this.properties.Count; i++)
                 {

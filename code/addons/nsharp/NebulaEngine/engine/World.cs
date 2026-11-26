@@ -168,7 +168,7 @@ namespace Nebula
                         Property property = properties[j];
                         if (simulating)
                         {
-                            if (property.RequestedActive)
+                            if (property.RequestedActive && property.ShouldActivate())
                             {
                                 property.Activate();
                             }
@@ -178,6 +178,25 @@ namespace Nebula
                             property.Deactivate();
                         }
                     }
+                }
+            }
+
+            public void UpdateProperties()
+            {
+                if (!this.IsSimulating())
+                {
+                    return;
+                }
+
+                for (int i = 0; i < this.entities.Count; i++)
+                {
+                    Entity entity = this.entities[i];
+                    if (!entity.HasInstance())
+                    {
+                        continue;
+                    }
+
+                    entity.UpdateProperties();
                 }
             }
 

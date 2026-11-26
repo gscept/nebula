@@ -173,6 +173,11 @@ namespace Nebula
                 {
                     world.RefreshMode();
                 }
+                
+                foreach (World world in World.AllWorlds())
+                {
+                    world.UpdateProperties();
+                }
 
                 PropertyManager.Instance.OnBeginFrame();
             }

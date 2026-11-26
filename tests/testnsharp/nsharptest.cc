@@ -794,6 +794,14 @@ NSharpTest::Run()
 
     StepFrame();  // the layout the generator assumed for every component, against the engine's own
 
+    // The activation gate, one frame per phase
+    for (IndexT i = 0; i < 7; i++)
+        StepFrame();
+
+    // The action queue, one frame per phase
+    for (IndexT i = 0; i < 9; i++)
+        StepFrame();
+
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);
 

@@ -18,6 +18,13 @@ namespace Nebula
             NumEvents
         }
 
+        /// <summary>
+        /// A behaviour attached to an entity.
+        /// </summary>
+        /// <remarks>
+        /// A property runs in a world that is simulating, only if ShouldActivate returns true. 
+        /// A property can decide for itself when it starts and when it stops.
+        /// </remarks>
         public class Property
         {
             // What the property was asked to be, and what it actually is. They are not the same thing,
@@ -43,22 +50,28 @@ namespace Nebula
                 get { return this.active; }
                 set
                 {
-                    if (this.requestedActive == value)
-                    {
-                        return;
-                    }
-
-                    this.requestedActive = value;
-
                     if (value)
                     {
-                        if (this.IsSimulating())
+                        if (this.active)
+                        {
+                            return;
+                        }
+
+                        this.requestedActive = true;
+
+                        if (this.IsSimulating() && this.ShouldActivate())
                         {
                             this.Activate();
                         }
                     }
                     else
                     {
+                        if (!this.requestedActive && !this.active)
+                        {
+                            return;
+                        }
+
+                        this.requestedActive = false;
                         this.Deactivate();
                     }
                 }
@@ -69,6 +82,30 @@ namespace Nebula
             /// its properties from
             /// </summary>
             internal bool RequestedActive => this.requestedActive;
+
+            /// <summary>
+            /// Override in subclass to tell the entity whether this property should be running.
+            /// </summary>
+            /// <remarks>
+            /// Asked once per frame, for a property that is not running, in a world that is simulating. The
+            /// default is true, so a property that does not override it is activated immediately
+            /// </remarks>
+            public virtual bool ShouldActivate()
+            {
+                return true;
+            }
+
+            /// <summary>
+            /// Override in subclass to tell the entity that this property should stop running.
+            /// </summary>
+            /// <remarks>
+            /// Asked once per frame, for a property that is running, in a world that is simulating. The default
+            /// is false, so a property that does not override it is never deactivated by itself.
+            /// </remarks>
+            public virtual bool ShouldDeactivate()
+            {
+                return false;
+            }
 
             /// <summary>
             /// Whether the property's world is simulating

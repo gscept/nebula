@@ -308,6 +308,113 @@ namespace NST
         }
     }
 
+    /// <summary>
+    /// A property that answers the activation gate. The gate and the frame count are what the test sets, and the
+    /// counters are what it reads at the beginning of the frame, before that frame's events have run.
+    /// </summary>
+    [ExportType]
+    public class GateTestProperty : Property
+    {
+        public bool gate;
+        public int framesUntilDone;
+        public int activateCalls;
+        public int deactivateCalls;
+        public int frameCalls;
+
+        public override bool ShouldActivate()
+        {
+            return this.gate;
+        }
+
+        public override bool ShouldDeactivate()
+        {
+            return this.framesUntilDone > 0 && this.frameCalls >= this.framesUntilDone;
+        }
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+        }
+
+        public override void OnDeactivate()
+        {
+            this.deactivateCalls++;
+        }
+
+        public override void OnFrame()
+        {
+            this.frameCalls++;
+        }
+
+        public override FrameEvent[] AcceptedEvents()
+        {
+            return [FrameEvent.OnFrame];
+        }
+    }
+
+    /// <summary>
+    /// An ActionProperty that counts what its queue does to it. It says its action is done after a number of
+    /// frames, which is what lets the queue move on to the next action.
+    /// </summary>
+    [ExportType]
+    public class QueueTestProperty : ActionProperty
+    {
+        public int activateCalls;
+        public int deactivateCalls;
+        public int frontCalls;
+        public int removedCalls;
+        public int frameCalls;
+        public int eventCalls;
+        public int loopCalls;
+        public int framesUntilDone;
+
+        public override bool ShouldDeactivate()
+        {
+            return this.framesUntilDone > 0 && this.frameCalls >= this.framesUntilDone;
+        }
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+        }
+
+        public override void OnDeactivate()
+        {
+            this.deactivateCalls++;
+        }
+
+        public override void OnFrame()
+        {
+            this.frameCalls++;
+        }
+
+        public override void OnBecomeFrontOfQueue()
+        {
+            this.frontCalls++;
+        }
+
+        public override void OnRemovedFromQueue()
+        {
+            this.removedCalls++;
+        }
+
+        public void OnEventAction(float delta)
+        {
+            this.eventCalls++;
+        }
+
+        public bool OnLoopAction(float delta)
+        {
+            this.loopCalls++;
+            return this.loopCalls < 2;
+        }
+
+        public override FrameEvent[] AcceptedEvents()
+        {
+            return [FrameEvent.OnFrame];
+        }
+    }
+
     [ExportType]
     public class ExportedState : IHotReloadManaged
     {
@@ -1213,6 +1320,12 @@ namespace NST
     {
         public static ExportedState StaticState = new ExportedState();
         public static readonly List<ExportedState> StaticStates = new List<ExportedState>();
+
+        // The queue membership is checked across a reload, and an instance field of the app is not something the
+        // reload carries. These are the parts of the test that have to be the same objects on both sides of it
+        public static QueueTestProperty StaticQueueProperty;
+        public static Entity StaticQueueEntity;
+
         private bool testsRun;
         private int reloadCount;
         private bool reloadVerified;
@@ -1243,6 +1356,13 @@ namespace NST
         // the values the engine produced for this frame
         private double inputTimeBeforePause;
         private FixedTestProperty fixedProperty;
+
+        // The activation gate test and the action queue test. Both are read at the beginning of the frame, which
+        // is where the entity's pass has already run and where this frame's events have not
+        private GateTestProperty gateProperty;
+        private QueueTestProperty queueProperty;
+        private Entity queueEntity;
+        private ActionQueue actionQueue;
 
         public override void OnBeginFrame()
         {
@@ -1380,6 +1500,20 @@ namespace NST
                 this.worldPropertyEntity = propertyEntity;
                 this.worldProperty = new WorldProperty { value = 7 };
                 propertyEntity.AddProperty(this.worldProperty);
+
+                // A property that is at the front of its entity's queue when the reload happens. The queue is an
+                // engine object held by the entity, so nothing walks it, and the property detach that runs before
+                // the reattach empties it. VerifyReload is where the result of that is checked.
+                Entity queueEntity = World.Get(propertyWorld).CreateEntity();
+                StaticQueueProperty = new QueueTestProperty { framesUntilDone = 0 };
+                StaticQueueEntity = queueEntity;
+                queueEntity.AddProperty(StaticQueueProperty);
+                Tests.Verify(!StaticQueueProperty.Active);
+                queueEntity.GetActionQueue().Property(queueEntity, StaticQueueProperty);
+                queueEntity.GetActionQueue().BeginExecution();
+                Tests.Verify(StaticQueueProperty.IsFrontOfQueue);
+                Tests.Verify(!StaticQueueProperty.Active);
+
                 this.syncPhase = 9;
             }
             else if (this.reloadCount < 2)
@@ -1717,6 +1851,191 @@ namespace NST
 
                 this.syncPhase = 33;
             }
+            else if (this.syncPhase == 33)
+            {
+                // A property that was asked to be active but answers the activation gate with no. Attaching it
+                // records the intent without activating it, which is what the entity's pass checks on the next
+                // frame
+                World world = World.Get(World.DEFAULT_WORLD);
+                Entity entity = world.CreateEntity();
+                this.gateProperty = new GateTestProperty { gate = false, framesUntilDone = 3 };
+                entity.AddProperty(this.gateProperty);
+                Tests.Verify(!this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.activateCalls == 0);
+
+                this.gateProperty.gate = true;
+                this.syncPhase = 34;
+            }
+            else if (this.syncPhase == 34)
+            {
+                // The pass ran at the beginning of this frame and activated it. The event for this frame has not
+                // run yet, because these checks are before the property events
+                Tests.Verify(this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.activateCalls == 1);
+                Tests.Verify(this.gateProperty.deactivateCalls == 0);
+                Tests.Verify(this.gateProperty.frameCalls == 0);
+
+                this.syncPhase = 35;
+            }
+            else if (this.syncPhase == 35)
+            {
+                Tests.Verify(this.gateProperty.frameCalls == 1);
+                Tests.Verify(this.gateProperty.Active);
+                this.syncPhase = 36;
+            }
+            else if (this.syncPhase == 36)
+            {
+                Tests.Verify(this.gateProperty.frameCalls == 2);
+                Tests.Verify(this.gateProperty.Active);
+                this.syncPhase = 37;
+            }
+            else if (this.syncPhase == 37)
+            {
+                // The frame count reached the number it was told to stop at, so the pass deactivated it at the
+                // beginning of this frame. The frame that ran the last event was the one that reached the count
+                Tests.Verify(this.gateProperty.frameCalls == 3);
+                Tests.Verify(!this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.deactivateCalls == 1);
+
+                // Asking for it to be active again works after it deactivated itself, because the setter's guard
+                // is on what the property actually is rather than on what it was asked to be. With the gate closed
+                // that ask records the intent without activating it, and the pass on the next frame is what
+                // activates it when the gate opens again
+                this.gateProperty.gate = false;
+                this.gateProperty.Active = true;
+                Tests.Verify(!this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.activateCalls == 1);
+
+                this.gateProperty.gate = true;
+                this.syncPhase = 38;
+            }
+            else if (this.syncPhase == 38)
+            {
+                Tests.Verify(this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.activateCalls == 2);
+                this.syncPhase = 39;
+            }
+            else if (this.syncPhase == 39)
+            {
+                // Taking the gate property out of the running state so the queue test has an entity of its own
+                this.gateProperty.Active = false;
+                Tests.Verify(!this.gateProperty.Active);
+                Tests.Verify(this.gateProperty.deactivateCalls == 2);
+
+                // A property in a queue does not run until the queue says it is at the front of it
+                World world = World.Get(World.DEFAULT_WORLD);
+                this.queueEntity = world.CreateEntity();
+                this.queueProperty = new QueueTestProperty { framesUntilDone = 2 };
+                this.queueEntity.AddProperty(this.queueProperty);
+                Tests.Verify(!this.queueProperty.Active);
+
+                this.actionQueue = this.queueEntity.GetActionQueue();
+                this.actionQueue.Property(this.queueEntity, this.queueProperty);
+                this.actionQueue.Event(this.queueEntity, this.queueProperty.OnEventAction);
+                this.actionQueue.BeginExecution();
+
+                Tests.Verify(this.queueProperty.IsFrontOfQueue);
+                Tests.Verify(this.queueProperty.frontCalls == 1);
+                Tests.Verify(!this.queueProperty.Active);
+                this.syncPhase = 40;
+            }
+            else if (this.syncPhase == 40)
+            {
+                // The pass activated it because the queue said it was at the front, and the queue did not move on
+                // because the action is still running
+                Tests.Verify(this.queueProperty.Active);
+                Tests.Verify(this.queueProperty.activateCalls == 1);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Property);
+                Tests.Verify(Object.ReferenceEquals(this.actionQueue.CurrentProperty, this.queueProperty));
+                Tests.Verify(this.queueProperty.frameCalls == 0);
+                this.syncPhase = 41;
+            }
+            else if (this.syncPhase == 41)
+            {
+                Tests.Verify(this.queueProperty.frameCalls == 1);
+                Tests.Verify(this.queueProperty.Active);
+                this.syncPhase = 42;
+            }
+            else if (this.syncPhase == 42)
+            {
+                // It said it was done at the beginning of this frame, which is where the pass deactivated it and
+                // the queue moved on to the event. Execute loads the next action, it does not run it in the same
+                // call, so the event has not run yet
+                Tests.Verify(this.queueProperty.frameCalls == 2);
+                Tests.Verify(!this.queueProperty.Active);
+                Tests.Verify(this.queueProperty.deactivateCalls == 1);
+                Tests.Verify(!this.queueProperty.IsFrontOfQueue);
+                Tests.Verify(this.queueProperty.removedCalls == 1);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Event);
+                Tests.Verify(this.queueProperty.eventCalls == 0);
+                Tests.Verify(this.actionQueue.IsEmpty());
+                this.syncPhase = 43;
+            }
+            else if (this.syncPhase == 43)
+            {
+                // The event ran on this frame's Execute and the queue has nothing left
+                Tests.Verify(this.queueProperty.eventCalls == 1);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.None);
+                Tests.Verify(this.actionQueue.IsEmpty());
+
+                // A property that is at the front of the queue when the queue is cleared is deactivated and told
+                // it is no longer in it. The action that was still waiting behind it is taken out as well
+                this.actionQueue.Property(this.queueEntity, this.queueProperty);
+                this.actionQueue.Loop(this.queueEntity, this.queueProperty.OnLoopAction);
+                this.actionQueue.BeginExecution();
+
+                Tests.Verify(this.queueProperty.IsFrontOfQueue);
+                Tests.Verify(!this.queueProperty.Active);
+                this.syncPhase = 44;
+            }
+            else if (this.syncPhase == 44)
+            {
+                // The pass activated it first, so Clear has a running property to take out
+                Tests.Verify(this.queueProperty.Active);
+                Tests.Verify(this.queueProperty.activateCalls == 2);
+
+                this.actionQueue.Clear();
+
+                Tests.Verify(!this.queueProperty.Active);
+                Tests.Verify(this.queueProperty.deactivateCalls == 2);
+                Tests.Verify(this.queueProperty.removedCalls == 2);
+                Tests.Verify(!this.queueProperty.IsFrontOfQueue);
+                Tests.Verify(this.actionQueue.IsEmpty());
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.None);
+                this.syncPhase = 45;
+            }
+            else if (this.syncPhase == 45)
+            {
+                // An Idle with no duration is done in the frame it runs in, and the Loop after it is loaded by the
+                // same Execute but run by the next one
+                this.actionQueue.Idle(this.queueEntity, 0.0f);
+                this.actionQueue.Loop(this.queueEntity, this.queueProperty.OnLoopAction);
+                this.actionQueue.BeginExecution();
+
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Idle);
+                this.syncPhase = 46;
+            }
+            else if (this.syncPhase == 46)
+            {
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Loop);
+                Tests.Verify(this.queueProperty.loopCalls == 0);
+                this.syncPhase = 47;
+            }
+            else if (this.syncPhase == 47)
+            {
+                // The loop ran once and answered true
+                Tests.Verify(this.queueProperty.loopCalls == 1);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.Loop);
+                this.syncPhase = 48;
+            }
+            else if (this.syncPhase == 48)
+            {
+                // The second call answered false, which ended the action and left the queue empty
+                Tests.Verify(this.queueProperty.loopCalls == 2);
+                Tests.Verify(this.actionQueue.CurrentType == ActionQueue.ActionType.None);
+                Tests.Verify(this.actionQueue.IsEmpty());
+                this.syncPhase = 49;
+            }
             base.OnFrame();
         }
 
@@ -1731,6 +2050,15 @@ namespace NST
             // looks at the default world, the new instance is never attached to the entity.
             Tests.Verify(Object.ReferenceEquals(this.worldProperty.Entity, this.worldPropertyEntity));
             Tests.Verify(this.worldProperty.value == 7);
+
+            // A queue does not survive the reload. Nothing walks it, because it is an engine object held by the
+            // entity, and the unload detaches every property from every entity before the reattach, which empties
+            // it. This is the documented behaviour, and this is where it is stated: the property comes back on its
+            // entity, but it is no longer an action the queue runs
+            Tests.Verify(StaticQueueProperty != null);
+            Tests.Verify(!StaticQueueProperty.IsFrontOfQueue);
+            Tests.Verify(StaticQueueEntity.GetActionQueue().IsEmpty());
+            Tests.Verify(StaticQueueEntity.GetActionQueue().CurrentType == ActionQueue.ActionType.None);
         }
 
         public override void OnShutdown()
