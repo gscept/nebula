@@ -639,6 +639,9 @@ namespace NST
         [DllImport("__Internal", EntryPoint = "InputTestPutMouseMove")]
         public static extern void InputTestPutMouseMove(float x, float y);
 
+        [DllImport("__Internal", EntryPoint = "InputTestWarpMouse")]
+        public static extern void InputTestWarpMouse(float x, float y);
+
         [DllImport("__Internal", EntryPoint = "InputTestPutMouseWheel")]
         public static extern void InputTestPutMouseWheel(int clicks);
 
@@ -1178,6 +1181,39 @@ namespace NST
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The order the matrix product applies its operands. It has to be the engine's order, because a
+        /// Matrix here is the same 64 bytes a Math::mat4 is, and a composition that runs the other way gives
+        /// a different transform from the same two parts. This is the same case as
+        /// tests/mathtest/mat4test.cc, where trans123 * rotOneX is the transform that rotates and then
+        /// translates.
+        /// </summary>
+        public static void TestMatrixOrder()
+        {
+            Matrix trans = Matrix.CreateTranslation(1.0f, 2.0f, 3.0f);
+            Matrix rot = Matrix.CreateRotationX(Mathf.PiOver2);
+
+            // The right operand is the one applied first, so a point through trans * rot is rotated and
+            // then moved
+            Vector3 rotated = Vector3.Transform(Vector3.Zero, rot);
+            Vector3 throughProduct = Vector3.Transform(Vector3.Zero, trans * rot);
+            Verify(Near(throughProduct, rotated + new Vector3(1.0f, 2.0f, 3.0f)));
+
+            // The quaternion product has the same order, which is what makes a composed rotation agree with
+            // the quaternion it came from. XNA's product order did not agree, so this is the check that the
+            // two sides of this file still say the same thing
+            Quaternion q1 = Quaternion.CreateFromAxisAngle(Vector3.Up, 0.3f);
+            Quaternion q2 = Quaternion.CreateFromAxisAngle(Vector3.Right, 0.2f);
+            Vector3 byQuaternion = Vector3.Transform(Vector3.Zero, Quaternion.Multiply(q1, q2));
+            Vector3 byMatrix = Vector3.Transform(Vector3.Zero, Matrix.CreateFromQuaternion(q1) * Matrix.CreateFromQuaternion(q2));
+            Verify(Near(byQuaternion, byMatrix));
+        }
+
+        private static bool Near(Vector3 a, Vector3 b)
+        {
+            return Math.Abs(a.X - b.X) < 1e-4f && Math.Abs(a.Y - b.Y) < 1e-4f && Math.Abs(a.Z - b.Z) < 1e-4f;
         }
 
         static public TestProperty PerformTests()
@@ -1791,15 +1827,31 @@ namespace NST
                 Tests.Verify(Input.IsMousePressed(MouseButton.LeftButton));
                 Tests.Verify(Input.IsMouseHeld(MouseButton.LeftButton));
                 Tests.Verify(!Input.IsMouseReleased(MouseButton.LeftButton));
-                Tests.Verify(Input.PixelPosition == new Vector2(100.0f, 50.0f));
-                Tests.Verify(Input.ScreenPosition == new Vector2(100.0f, 50.0f));
+                Tests.Verify(Input.MousePixelPosition == new Vector2(100.0f, 50.0f));
+                Tests.Verify(Input.MouseScreenPosition == new Vector2(100.0f, 50.0f));
                 Tests.Verify(Input.Wheel == -1);
 
                 // The engine builds the movement as the position the frame started at minus the position the
                 // event carried, which is the negative of the delta. See ISSUES.md
-                Tests.Verify(Input.Movement == new Vector2(-100.0f, -50.0f));
+                Tests.Verify(Input.MouseMovement == new Vector2(-100.0f, -50.0f));
 
+                // A warp the application makes does not come as an event, so the handler has to be re-based by
+                // the caller that warps. The movement the frame already has is not changed by it, only the
+                // origin the next event is measured from, which is what a script that re-centers the cursor
+                // every frame depends on. Without the re-base this second frame would read the jump as its
+                // movement
+                Tests.InputTestWarpMouse(40.0f, 20.0f);
+                Input.Sync();
+                Tests.Verify(Input.MouseMovement == new Vector2(-100.0f, -50.0f));
+                Tests.Verify(Input.MousePixelPosition == new Vector2(40.0f, 20.0f));
                 Tests.InputTestEndFrame();
+
+                Tests.InputTestBeginFrame();
+                Tests.InputTestPutMouseMove(50.0f, 25.0f);
+                Input.Sync();
+                Tests.Verify(Input.MouseMovement == new Vector2(-10.0f, -5.0f));
+                Tests.InputTestEndFrame();
+
                 this.syncPhase = 30;
             }
             else if (this.syncPhase == 30)
@@ -1848,6 +1900,10 @@ namespace NST
                 // The component mirror is a layout contract between the two sides, and nothing in the
                 // build says the generator's table still matches the C++ type. This is the check
                 Tests.TestComponentLayout();
+
+                // The matrix product is the one place the managed math library does not follow XNA, so the
+                // order it applies its operands in is worth a check of its own
+                Tests.TestMatrixOrder();
 
                 this.syncPhase = 33;
             }

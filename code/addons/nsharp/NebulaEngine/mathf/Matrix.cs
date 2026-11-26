@@ -2008,28 +2008,35 @@ namespace Nebula
         /** <summary>
             Creates a new <see cref="Matrix"/> that contains a multiplication of two matrix.
             </summary>
+            <remarks>
+            The right operand is the one applied first, which is the order the engine uses in
+            Math::mat4::operator*, so this is the matrix that transforms a vector by matrix2 and then by
+            matrix1. It is also the order Quaternion's Hamilton product has, which is what makes a composed
+            rotation agree with the quaternion it came from. XNA documents the other order, so this is the
+            one place this file does not follow XNA.
+            </remarks>
             <param name="matrix1">Source <see cref="Matrix"/>.</param>
             <param name="matrix2">Source <see cref="Matrix"/>.</param>
             <returns>Result of the matrix multiplication.</returns>
         */
         public static Matrix Multiply(Matrix matrix1, Matrix matrix2)
         {
-            var m11 = (((matrix1.M11 * matrix2.M11) + (matrix1.M12 * matrix2.M21)) + (matrix1.M13 * matrix2.M31)) + (matrix1.M14 * matrix2.M41);
-            var m12 = (((matrix1.M11 * matrix2.M12) + (matrix1.M12 * matrix2.M22)) + (matrix1.M13 * matrix2.M32)) + (matrix1.M14 * matrix2.M42);
-            var m13 = (((matrix1.M11 * matrix2.M13) + (matrix1.M12 * matrix2.M23)) + (matrix1.M13 * matrix2.M33)) + (matrix1.M14 * matrix2.M43);
-            var m14 = (((matrix1.M11 * matrix2.M14) + (matrix1.M12 * matrix2.M24)) + (matrix1.M13 * matrix2.M34)) + (matrix1.M14 * matrix2.M44);
-            var m21 = (((matrix1.M21 * matrix2.M11) + (matrix1.M22 * matrix2.M21)) + (matrix1.M23 * matrix2.M31)) + (matrix1.M24 * matrix2.M41);
-            var m22 = (((matrix1.M21 * matrix2.M12) + (matrix1.M22 * matrix2.M22)) + (matrix1.M23 * matrix2.M32)) + (matrix1.M24 * matrix2.M42);
-            var m23 = (((matrix1.M21 * matrix2.M13) + (matrix1.M22 * matrix2.M23)) + (matrix1.M23 * matrix2.M33)) + (matrix1.M24 * matrix2.M43);
-            var m24 = (((matrix1.M21 * matrix2.M14) + (matrix1.M22 * matrix2.M24)) + (matrix1.M23 * matrix2.M34)) + (matrix1.M24 * matrix2.M44);
-            var m31 = (((matrix1.M31 * matrix2.M11) + (matrix1.M32 * matrix2.M21)) + (matrix1.M33 * matrix2.M31)) + (matrix1.M34 * matrix2.M41);
-            var m32 = (((matrix1.M31 * matrix2.M12) + (matrix1.M32 * matrix2.M22)) + (matrix1.M33 * matrix2.M32)) + (matrix1.M34 * matrix2.M42);
-            var m33 = (((matrix1.M31 * matrix2.M13) + (matrix1.M32 * matrix2.M23)) + (matrix1.M33 * matrix2.M33)) + (matrix1.M34 * matrix2.M43);
-            var m34 = (((matrix1.M31 * matrix2.M14) + (matrix1.M32 * matrix2.M24)) + (matrix1.M33 * matrix2.M34)) + (matrix1.M34 * matrix2.M44);
-            var m41 = (((matrix1.M41 * matrix2.M11) + (matrix1.M42 * matrix2.M21)) + (matrix1.M43 * matrix2.M31)) + (matrix1.M44 * matrix2.M41);
-            var m42 = (((matrix1.M41 * matrix2.M12) + (matrix1.M42 * matrix2.M22)) + (matrix1.M43 * matrix2.M32)) + (matrix1.M44 * matrix2.M42);
-            var m43 = (((matrix1.M41 * matrix2.M13) + (matrix1.M42 * matrix2.M23)) + (matrix1.M43 * matrix2.M33)) + (matrix1.M44 * matrix2.M43);
-           	var m44 = (((matrix1.M41 * matrix2.M14) + (matrix1.M42 * matrix2.M24)) + (matrix1.M43 * matrix2.M34)) + (matrix1.M44 * matrix2.M44);
+            var m11 = (((matrix2.M11 * matrix1.M11) + (matrix2.M12 * matrix1.M21)) + (matrix2.M13 * matrix1.M31)) + (matrix2.M14 * matrix1.M41);
+            var m12 = (((matrix2.M11 * matrix1.M12) + (matrix2.M12 * matrix1.M22)) + (matrix2.M13 * matrix1.M32)) + (matrix2.M14 * matrix1.M42);
+            var m13 = (((matrix2.M11 * matrix1.M13) + (matrix2.M12 * matrix1.M23)) + (matrix2.M13 * matrix1.M33)) + (matrix2.M14 * matrix1.M43);
+            var m14 = (((matrix2.M11 * matrix1.M14) + (matrix2.M12 * matrix1.M24)) + (matrix2.M13 * matrix1.M34)) + (matrix2.M14 * matrix1.M44);
+            var m21 = (((matrix2.M21 * matrix1.M11) + (matrix2.M22 * matrix1.M21)) + (matrix2.M23 * matrix1.M31)) + (matrix2.M24 * matrix1.M41);
+            var m22 = (((matrix2.M21 * matrix1.M12) + (matrix2.M22 * matrix1.M22)) + (matrix2.M23 * matrix1.M32)) + (matrix2.M24 * matrix1.M42);
+            var m23 = (((matrix2.M21 * matrix1.M13) + (matrix2.M22 * matrix1.M23)) + (matrix2.M23 * matrix1.M33)) + (matrix2.M24 * matrix1.M43);
+            var m24 = (((matrix2.M21 * matrix1.M14) + (matrix2.M22 * matrix1.M24)) + (matrix2.M23 * matrix1.M34)) + (matrix2.M24 * matrix1.M44);
+            var m31 = (((matrix2.M31 * matrix1.M11) + (matrix2.M32 * matrix1.M21)) + (matrix2.M33 * matrix1.M31)) + (matrix2.M34 * matrix1.M41);
+            var m32 = (((matrix2.M31 * matrix1.M12) + (matrix2.M32 * matrix1.M22)) + (matrix2.M33 * matrix1.M32)) + (matrix2.M34 * matrix1.M42);
+            var m33 = (((matrix2.M31 * matrix1.M13) + (matrix2.M32 * matrix1.M23)) + (matrix2.M33 * matrix1.M33)) + (matrix2.M34 * matrix1.M43);
+            var m34 = (((matrix2.M31 * matrix1.M14) + (matrix2.M32 * matrix1.M24)) + (matrix2.M33 * matrix1.M34)) + (matrix2.M34 * matrix1.M44);
+            var m41 = (((matrix2.M41 * matrix1.M11) + (matrix2.M42 * matrix1.M21)) + (matrix2.M43 * matrix1.M31)) + (matrix2.M44 * matrix1.M41);
+            var m42 = (((matrix2.M41 * matrix1.M12) + (matrix2.M42 * matrix1.M22)) + (matrix2.M43 * matrix1.M32)) + (matrix2.M44 * matrix1.M42);
+            var m43 = (((matrix2.M41 * matrix1.M13) + (matrix2.M42 * matrix1.M23)) + (matrix2.M43 * matrix1.M33)) + (matrix2.M44 * matrix1.M43);
+           	var m44 = (((matrix2.M41 * matrix1.M14) + (matrix2.M42 * matrix1.M24)) + (matrix2.M43 * matrix1.M34)) + (matrix2.M44 * matrix1.M44);
             matrix1.M11 = m11;
 			matrix1.M12 = m12;
 			matrix1.M13 = m13;
@@ -2053,28 +2060,31 @@ namespace Nebula
         /** <summary>
             Creates a new <see cref="Matrix"/> that contains a multiplication of two matrix.
             </summary>
+            <remarks>
+            The right operand is the one applied first, same as Math::mat4::operator*.
+            </remarks>
             <param name="matrix1">Source <see cref="Matrix"/>.</param>
             <param name="matrix2">Source <see cref="Matrix"/>.</param>
             <param name="result">Result of the matrix multiplication as an output parameter.</param>
         */
         public static void Multiply(ref Matrix matrix1, ref Matrix matrix2, out Matrix result)
         {
-            var m11 = (((matrix1.M11 * matrix2.M11) + (matrix1.M12 * matrix2.M21)) + (matrix1.M13 * matrix2.M31)) + (matrix1.M14 * matrix2.M41);
-            var m12 = (((matrix1.M11 * matrix2.M12) + (matrix1.M12 * matrix2.M22)) + (matrix1.M13 * matrix2.M32)) + (matrix1.M14 * matrix2.M42);
-            var m13 = (((matrix1.M11 * matrix2.M13) + (matrix1.M12 * matrix2.M23)) + (matrix1.M13 * matrix2.M33)) + (matrix1.M14 * matrix2.M43);
-            var m14 = (((matrix1.M11 * matrix2.M14) + (matrix1.M12 * matrix2.M24)) + (matrix1.M13 * matrix2.M34)) + (matrix1.M14 * matrix2.M44);
-            var m21 = (((matrix1.M21 * matrix2.M11) + (matrix1.M22 * matrix2.M21)) + (matrix1.M23 * matrix2.M31)) + (matrix1.M24 * matrix2.M41);
-            var m22 = (((matrix1.M21 * matrix2.M12) + (matrix1.M22 * matrix2.M22)) + (matrix1.M23 * matrix2.M32)) + (matrix1.M24 * matrix2.M42);
-            var m23 = (((matrix1.M21 * matrix2.M13) + (matrix1.M22 * matrix2.M23)) + (matrix1.M23 * matrix2.M33)) + (matrix1.M24 * matrix2.M43);
-            var m24 = (((matrix1.M21 * matrix2.M14) + (matrix1.M22 * matrix2.M24)) + (matrix1.M23 * matrix2.M34)) + (matrix1.M24 * matrix2.M44);
-            var m31 = (((matrix1.M31 * matrix2.M11) + (matrix1.M32 * matrix2.M21)) + (matrix1.M33 * matrix2.M31)) + (matrix1.M34 * matrix2.M41);
-            var m32 = (((matrix1.M31 * matrix2.M12) + (matrix1.M32 * matrix2.M22)) + (matrix1.M33 * matrix2.M32)) + (matrix1.M34 * matrix2.M42);
-            var m33 = (((matrix1.M31 * matrix2.M13) + (matrix1.M32 * matrix2.M23)) + (matrix1.M33 * matrix2.M33)) + (matrix1.M34 * matrix2.M43);
-            var m34 = (((matrix1.M31 * matrix2.M14) + (matrix1.M32 * matrix2.M24)) + (matrix1.M33 * matrix2.M34)) + (matrix1.M34 * matrix2.M44);
-            var m41 = (((matrix1.M41 * matrix2.M11) + (matrix1.M42 * matrix2.M21)) + (matrix1.M43 * matrix2.M31)) + (matrix1.M44 * matrix2.M41);
-            var m42 = (((matrix1.M41 * matrix2.M12) + (matrix1.M42 * matrix2.M22)) + (matrix1.M43 * matrix2.M32)) + (matrix1.M44 * matrix2.M42);
-            var m43 = (((matrix1.M41 * matrix2.M13) + (matrix1.M42 * matrix2.M23)) + (matrix1.M43 * matrix2.M33)) + (matrix1.M44 * matrix2.M43);
-           	var m44 = (((matrix1.M41 * matrix2.M14) + (matrix1.M42 * matrix2.M24)) + (matrix1.M43 * matrix2.M34)) + (matrix1.M44 * matrix2.M44);
+            var m11 = (((matrix2.M11 * matrix1.M11) + (matrix2.M12 * matrix1.M21)) + (matrix2.M13 * matrix1.M31)) + (matrix2.M14 * matrix1.M41);
+            var m12 = (((matrix2.M11 * matrix1.M12) + (matrix2.M12 * matrix1.M22)) + (matrix2.M13 * matrix1.M32)) + (matrix2.M14 * matrix1.M42);
+            var m13 = (((matrix2.M11 * matrix1.M13) + (matrix2.M12 * matrix1.M23)) + (matrix2.M13 * matrix1.M33)) + (matrix2.M14 * matrix1.M43);
+            var m14 = (((matrix2.M11 * matrix1.M14) + (matrix2.M12 * matrix1.M24)) + (matrix2.M13 * matrix1.M34)) + (matrix2.M14 * matrix1.M44);
+            var m21 = (((matrix2.M21 * matrix1.M11) + (matrix2.M22 * matrix1.M21)) + (matrix2.M23 * matrix1.M31)) + (matrix2.M24 * matrix1.M41);
+            var m22 = (((matrix2.M21 * matrix1.M12) + (matrix2.M22 * matrix1.M22)) + (matrix2.M23 * matrix1.M32)) + (matrix2.M24 * matrix1.M42);
+            var m23 = (((matrix2.M21 * matrix1.M13) + (matrix2.M22 * matrix1.M23)) + (matrix2.M23 * matrix1.M33)) + (matrix2.M24 * matrix1.M43);
+            var m24 = (((matrix2.M21 * matrix1.M14) + (matrix2.M22 * matrix1.M24)) + (matrix2.M23 * matrix1.M34)) + (matrix2.M24 * matrix1.M44);
+            var m31 = (((matrix2.M31 * matrix1.M11) + (matrix2.M32 * matrix1.M21)) + (matrix2.M33 * matrix1.M31)) + (matrix2.M34 * matrix1.M41);
+            var m32 = (((matrix2.M31 * matrix1.M12) + (matrix2.M32 * matrix1.M22)) + (matrix2.M33 * matrix1.M32)) + (matrix2.M34 * matrix1.M42);
+            var m33 = (((matrix2.M31 * matrix1.M13) + (matrix2.M32 * matrix1.M23)) + (matrix2.M33 * matrix1.M33)) + (matrix2.M34 * matrix1.M43);
+            var m34 = (((matrix2.M31 * matrix1.M14) + (matrix2.M32 * matrix1.M24)) + (matrix2.M33 * matrix1.M34)) + (matrix2.M34 * matrix1.M44);
+            var m41 = (((matrix2.M41 * matrix1.M11) + (matrix2.M42 * matrix1.M21)) + (matrix2.M43 * matrix1.M31)) + (matrix2.M44 * matrix1.M41);
+            var m42 = (((matrix2.M41 * matrix1.M12) + (matrix2.M42 * matrix1.M22)) + (matrix2.M43 * matrix1.M32)) + (matrix2.M44 * matrix1.M42);
+            var m43 = (((matrix2.M41 * matrix1.M13) + (matrix2.M42 * matrix1.M23)) + (matrix2.M43 * matrix1.M33)) + (matrix2.M44 * matrix1.M43);
+           	var m44 = (((matrix2.M41 * matrix1.M14) + (matrix2.M42 * matrix1.M24)) + (matrix2.M43 * matrix1.M34)) + (matrix2.M44 * matrix1.M44);
             result.M11 = m11;
 			result.M12 = m12;
 			result.M13 = m13;
@@ -2384,26 +2394,28 @@ namespace Nebula
             <returns>Result of the matrix multiplication.</returns>
             <remarks>
             Using matrix multiplication algorithm - see http://en.wikipedia.org/wiki/Matrix_multiplication.
+            The right operand is the one applied first, same as Math::mat4::operator* and as
+            Quaternion.Multiply, so matrix1 * matrix2 transforms a vector by matrix2 and then by matrix1.
             </remarks>
         */
         public static Matrix operator *(Matrix matrix1, Matrix matrix2)
         {
-            var m11 = (((matrix1.M11 * matrix2.M11) + (matrix1.M12 * matrix2.M21)) + (matrix1.M13 * matrix2.M31)) + (matrix1.M14 * matrix2.M41);
-            var m12 = (((matrix1.M11 * matrix2.M12) + (matrix1.M12 * matrix2.M22)) + (matrix1.M13 * matrix2.M32)) + (matrix1.M14 * matrix2.M42);
-            var m13 = (((matrix1.M11 * matrix2.M13) + (matrix1.M12 * matrix2.M23)) + (matrix1.M13 * matrix2.M33)) + (matrix1.M14 * matrix2.M43);
-            var m14 = (((matrix1.M11 * matrix2.M14) + (matrix1.M12 * matrix2.M24)) + (matrix1.M13 * matrix2.M34)) + (matrix1.M14 * matrix2.M44);
-            var m21 = (((matrix1.M21 * matrix2.M11) + (matrix1.M22 * matrix2.M21)) + (matrix1.M23 * matrix2.M31)) + (matrix1.M24 * matrix2.M41);
-            var m22 = (((matrix1.M21 * matrix2.M12) + (matrix1.M22 * matrix2.M22)) + (matrix1.M23 * matrix2.M32)) + (matrix1.M24 * matrix2.M42);
-            var m23 = (((matrix1.M21 * matrix2.M13) + (matrix1.M22 * matrix2.M23)) + (matrix1.M23 * matrix2.M33)) + (matrix1.M24 * matrix2.M43);
-            var m24 = (((matrix1.M21 * matrix2.M14) + (matrix1.M22 * matrix2.M24)) + (matrix1.M23 * matrix2.M34)) + (matrix1.M24 * matrix2.M44);
-            var m31 = (((matrix1.M31 * matrix2.M11) + (matrix1.M32 * matrix2.M21)) + (matrix1.M33 * matrix2.M31)) + (matrix1.M34 * matrix2.M41);
-            var m32 = (((matrix1.M31 * matrix2.M12) + (matrix1.M32 * matrix2.M22)) + (matrix1.M33 * matrix2.M32)) + (matrix1.M34 * matrix2.M42);
-            var m33 = (((matrix1.M31 * matrix2.M13) + (matrix1.M32 * matrix2.M23)) + (matrix1.M33 * matrix2.M33)) + (matrix1.M34 * matrix2.M43);
-            var m34 = (((matrix1.M31 * matrix2.M14) + (matrix1.M32 * matrix2.M24)) + (matrix1.M33 * matrix2.M34)) + (matrix1.M34 * matrix2.M44);
-            var m41 = (((matrix1.M41 * matrix2.M11) + (matrix1.M42 * matrix2.M21)) + (matrix1.M43 * matrix2.M31)) + (matrix1.M44 * matrix2.M41);
-            var m42 = (((matrix1.M41 * matrix2.M12) + (matrix1.M42 * matrix2.M22)) + (matrix1.M43 * matrix2.M32)) + (matrix1.M44 * matrix2.M42);
-            var m43 = (((matrix1.M41 * matrix2.M13) + (matrix1.M42 * matrix2.M23)) + (matrix1.M43 * matrix2.M33)) + (matrix1.M44 * matrix2.M43);
-           	var m44 = (((matrix1.M41 * matrix2.M14) + (matrix1.M42 * matrix2.M24)) + (matrix1.M43 * matrix2.M34)) + (matrix1.M44 * matrix2.M44);
+            var m11 = (((matrix2.M11 * matrix1.M11) + (matrix2.M12 * matrix1.M21)) + (matrix2.M13 * matrix1.M31)) + (matrix2.M14 * matrix1.M41);
+            var m12 = (((matrix2.M11 * matrix1.M12) + (matrix2.M12 * matrix1.M22)) + (matrix2.M13 * matrix1.M32)) + (matrix2.M14 * matrix1.M42);
+            var m13 = (((matrix2.M11 * matrix1.M13) + (matrix2.M12 * matrix1.M23)) + (matrix2.M13 * matrix1.M33)) + (matrix2.M14 * matrix1.M43);
+            var m14 = (((matrix2.M11 * matrix1.M14) + (matrix2.M12 * matrix1.M24)) + (matrix2.M13 * matrix1.M34)) + (matrix2.M14 * matrix1.M44);
+            var m21 = (((matrix2.M21 * matrix1.M11) + (matrix2.M22 * matrix1.M21)) + (matrix2.M23 * matrix1.M31)) + (matrix2.M24 * matrix1.M41);
+            var m22 = (((matrix2.M21 * matrix1.M12) + (matrix2.M22 * matrix1.M22)) + (matrix2.M23 * matrix1.M32)) + (matrix2.M24 * matrix1.M42);
+            var m23 = (((matrix2.M21 * matrix1.M13) + (matrix2.M22 * matrix1.M23)) + (matrix2.M23 * matrix1.M33)) + (matrix2.M24 * matrix1.M43);
+            var m24 = (((matrix2.M21 * matrix1.M14) + (matrix2.M22 * matrix1.M24)) + (matrix2.M23 * matrix1.M34)) + (matrix2.M24 * matrix1.M44);
+            var m31 = (((matrix2.M31 * matrix1.M11) + (matrix2.M32 * matrix1.M21)) + (matrix2.M33 * matrix1.M31)) + (matrix2.M34 * matrix1.M41);
+            var m32 = (((matrix2.M31 * matrix1.M12) + (matrix2.M32 * matrix1.M22)) + (matrix2.M33 * matrix1.M32)) + (matrix2.M34 * matrix1.M42);
+            var m33 = (((matrix2.M31 * matrix1.M13) + (matrix2.M32 * matrix1.M23)) + (matrix2.M33 * matrix1.M33)) + (matrix2.M34 * matrix1.M43);
+            var m34 = (((matrix2.M31 * matrix1.M14) + (matrix2.M32 * matrix1.M24)) + (matrix2.M33 * matrix1.M34)) + (matrix2.M34 * matrix1.M44);
+            var m41 = (((matrix2.M41 * matrix1.M11) + (matrix2.M42 * matrix1.M21)) + (matrix2.M43 * matrix1.M31)) + (matrix2.M44 * matrix1.M41);
+            var m42 = (((matrix2.M41 * matrix1.M12) + (matrix2.M42 * matrix1.M22)) + (matrix2.M43 * matrix1.M32)) + (matrix2.M44 * matrix1.M42);
+            var m43 = (((matrix2.M41 * matrix1.M13) + (matrix2.M42 * matrix1.M23)) + (matrix2.M43 * matrix1.M33)) + (matrix2.M44 * matrix1.M43);
+           	var m44 = (((matrix2.M41 * matrix1.M14) + (matrix2.M42 * matrix1.M24)) + (matrix2.M43 * matrix1.M34)) + (matrix2.M44 * matrix1.M44);
             matrix1.M11 = m11;
 			matrix1.M12 = m12;
 			matrix1.M13 = m13;

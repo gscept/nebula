@@ -207,6 +207,14 @@ InputTestPutMouseMove(float x, float y)
     testInputServer->PutEvent(e);
 }
 
+// The window is the one that re-bases the handler after a warp, and the test has no window, so the handler is
+// re-based here with the same values the window would have computed
+NEBULA_EXPORT void
+InputTestWarpMouse(float x, float y)
+{
+    testInputServer->GetDefaultMouse()->WarpPosition(Math::vec2(x, y), Math::vec2(x, y));
+}
+
 NEBULA_EXPORT void
 InputTestPutMouseWheel(int clicks)
 {

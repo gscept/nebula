@@ -48,6 +48,9 @@ public:
     /// get mouse movement
     const Math::vec2& GetMovement() const;
 
+    /// re-base the position the cursor
+    void WarpPosition(const Math::vec2& pixelPos, const Math::vec2& screenPos);
+
     /// locks the mouse to a screen position (0.0 .. 1.0)
     virtual void LockToPosition(bool locked, Math::vec2& position);
     /// return true if the mouse is locked

@@ -258,6 +258,19 @@ MouseBase::UpdateMousePositions(const Math::vec2& pixelPos, const Math::vec2& sc
 /**
 */
 void
+MouseBase::WarpPosition(const Math::vec2& pixelPos, const Math::vec2& screenPos)
+{
+    this->pixelPosition = pixelPos;
+    this->screenPosition = screenPos;
+    this->beginFramePixelPosition = pixelPos;
+    this->beginFrameScreenPosition = screenPos;
+    this->initialMouseMovement = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 MouseBase::OnReset()
 {
     // reset buttons

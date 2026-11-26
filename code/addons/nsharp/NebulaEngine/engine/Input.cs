@@ -372,19 +372,19 @@ namespace Nebula
             /// </summary>
             public static int Wheel => buffer[0].wheel;
 
-            public static Vector2 PixelPosition => new Vector2(buffer[0].pixelX, buffer[0].pixelY);
+            public static Vector2 MousePixelPosition => new Vector2(buffer[0].pixelX, buffer[0].pixelY);
 
             /// <summary>
-            /// The same position as 0.0 through 1.0.
+            /// The mouse position as 0.0 through 1.0.
             /// </summary>
-            public static Vector2 ScreenPosition => new Vector2(buffer[0].screenX, buffer[0].screenY);
+            public static Vector2 MouseScreenPosition => new Vector2(buffer[0].screenX, buffer[0].screenY);
 
             /// <summary>
             /// The movement since the frame started. The engine builds it as the position the frame started at
             /// minus the position the event carried, which is the negative of the delta, and the raw move path
-            /// assigns the delta itself. See ISSUES.md.
+            /// assigns the delta itself.
             /// </summary>
-            public static Vector2 Movement => new Vector2(buffer[0].moveX, buffer[0].moveY);
+            public static Vector2 MouseMovement => new Vector2(buffer[0].moveX, buffer[0].moveY);
 
             public static bool HasFocus => buffer[0].hasFocus != 0;
 
