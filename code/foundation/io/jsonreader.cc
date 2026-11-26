@@ -1076,17 +1076,9 @@ JsonReader::Get<uint64_t>(uint64_t& ret, const char* attr)
     n_assert(node->is_int());
     int64_t val = node->as_int64();
 
-#if NEBULA_DEBUG
-    if (val < 0)
-    {
-        n_warning("JsonReader::Get<uint64_t>: unsigned integer underflow! ('%s': %li)\n", attr, val);
-    }
-#endif
-#if NEBULA_BOUNDSCHECKS
-    n_assert(val >= 0 && val <= UINT_MAX)
-#endif
-
-        ret = (uint64_t)val;
+    // Underflow is okay, as unsigned int is unsupported in pjson. just convert
+    uint64_t conv = static_cast<uint64_t>(val);
+    ret = conv;
 }
 
 //------------------------------------------------------------------------------
