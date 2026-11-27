@@ -173,6 +173,8 @@ AssignRegistry::SetupProjectAssigns()
     
     // baked nav meshes are exported like every other asset, tools that never run the navigation feature resolve them too
     this->SetAssign(Assign("nav",   "export:navigation"));
+    // terrain files, folder:file:ter, copied there from work by the batcher
+    this->SetAssign(Assign("ter",   "export:terrain"));
 
     // setup special system assigns (for placeholders, etc...)
     this->SetAssign(Assign("sysmsh",    "msh:system"));

@@ -111,6 +111,40 @@ ComponentInspection::OverrideField(ComponentId component, const Util::StringAtom
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+ComponentInspection::SetResourceFieldDrawer(ResourceDrawFunc func)
+{
+    Instance()->resourceDrawer = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Without a drawer a resource is shown the way any string is, as text
+*/
+void
+ComponentInspection::DrawResourceField(Game::Entity owner, ComponentId component, const char* field, const char* resourceType, void* data, bool* commit)
+{
+    ComponentInspection* reg = Instance();
+    if (reg->resourceDrawer != nullptr)
+        reg->resourceDrawer(owner, component, field, resourceType, data, commit);
+    else
+        ComponentDrawFuncT<Util::StringAtom>(owner, component, data, commit);
+}
+
+//------------------------------------------------------------------------------
+/**
+    A field of type resource holds one whether or not it says which type, and a string field holds
+    one when it names the type
+*/
+bool
+ComponentInspection::IsResourceField(const char* fieldTypename, const char* resourceType)
+{
+    return resourceType != nullptr || (fieldTypename != nullptr && Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0);
+}
+
+//------------------------------------------------------------------------------
+/**
     Few fields are overridden, a linear search is cheaper than a lookup structure
 */
 ComponentInspection::DrawFunc
@@ -338,31 +372,27 @@ ComponentDrawFuncT<Util::StringAtom>(Game::Entity owner, ComponentId component, 
     }
     else
     {
+        // The text is written when the field is left or Enter is pressed, not while typing, so an
+        // edit is one change and no atom is made for every key
         ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
 
-        if (((Util::StringAtom*)data)->IsValid())
+        Util::StringAtom* atom = (Util::StringAtom*)data;
+        char buffer[1024];
+        strncpy(buffer, atom->IsValid() ? atom->Value() : "", sizeof(buffer) - 1);
+        buffer[sizeof(buffer) - 1] = '\0';
+        ImGui::InputText("##string", buffer, sizeof(buffer));
+        if (ImGui::IsItemDeactivatedAfterEdit())
         {
-            ImGui::Text(((Util::StringAtom*)data)->Value());
-        }
-        else
-        {
-            ImGui::Text("None");
-        }
-        if (ImGui::BeginDragDropTarget())
-        {
-            auto payload = ImGui::AcceptDragDropPayload("resource");
-            if (payload)
+            const Util::StringAtom edited(buffer);
+            if (edited != *atom)
             {
-                Util::String resourceName = (const char*)payload->Data;
-                *(Util::StringAtom*)data = resourceName;
+                *atom = edited;
                 *commit = true;
             }
-            ImGui::EndDragDropTarget();
         }
         ImGui::PopID();
-
     }
-    
+
 }
 
 //------------------------------------------------------------------------------

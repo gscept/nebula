@@ -435,10 +435,16 @@ public:
         Terrain::MaterialLayers::STRUCT                                 biomeMaterials;
         Util::Array<CoreGraphics::TextureId>                            biomeTextures;
         CoreGraphics::TextureId                                         biomeMasks[Terrain::MAX_BIOMES];
+        Resources::ResourceId                                           biomeMaskResources[Terrain::MAX_BIOMES];
+        Resources::ResourceId                                           biomeWeightResources[Terrain::MAX_BIOMES];
         Threading::Interlocked::AtomicInt                               biomeLoaded[Terrain::MAX_BIOMES][4];
         uint                                                            biomeLowresGenerated[Terrain::MAX_BIOMES];
         BiomeMaterial                                                   biomeResources[Terrain::MAX_BIOMES][BiomeSettings::BiomeMaterialLayer::NumLayers];
         CoreGraphics::TextureId                                         biomeWeights[Terrain::MAX_BIOMES];
+
+        /// true from SetupTerrain until the terrain is torn down. A slot the allocator keeps for
+        /// reuse is not live, and the frame's passes skip it
+        bool                                                            live = false;
     };
 private:
 
@@ -466,6 +472,9 @@ private:
         BiomeSettings
     > TerrainBiomeAllocator;
     static TerrainBiomeAllocator terrainBiomeAllocator;
+
+    /// release what SetupTerrain and CreateBiome made for a terrain, the slot stays allocated
+    static void DestroyTerrain(Ids::Id32 id);
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();

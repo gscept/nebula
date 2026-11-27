@@ -47,6 +47,8 @@ private:
 
 /// render editor ui 
 void RenderUI(Graphics::GraphicsEntityId camera);
+/// draw the loaded navmeshes and the agents walking them, for this frame
+void DrawNavMeshesAndAgents();
 /// the loader of the baked navmeshes, null before the feature is activated
 Navigation::StreamNavMeshCache* GetNavMeshCache();
 /// the area table of the project, loaded when the feature is activated

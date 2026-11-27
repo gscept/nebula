@@ -85,7 +85,8 @@ struct
     CoreGraphics::ShaderId combineShader;
     CoreGraphics::ShaderProgramId combineProgram;
     CoreGraphics::BufferId combineConstants;
-    Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
+    // One table per buffered frame, so a resize never rewrites a table a frame on the GPU still uses
+    CoreGraphics::ResourceTableSet resourceTables;
 } combineState;
 
 struct
@@ -110,6 +111,23 @@ LightContext::LightContext()
 LightContext::~LightContext()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+    Writes one of the combine tables, with the frame textures of the current size
+*/
+static void
+WriteCombineTable(const CoreGraphics::ResourceTableId table)
+{
+    using namespace CoreGraphics;
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_AlphaLightBuffer(), Combine::AlphaLighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetConstantBuffer(table, ResourceTableBuffer(combineState.combineConstants, Combine::CombineUniforms::BINDING));
+    ResourceTableCommitChanges(table);
 }
 
 //------------------------------------------------------------------------------
@@ -204,20 +222,10 @@ LightContext::Create()
     combineBufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
     combineState.combineConstants = CoreGraphics::CreateBuffer(combineBufferInfo);
     combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
-    combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-
-    for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
-    {
-        combineState.resourceTables[i] = ShaderCreateResourceTable(combineState.combineShader, NEBULA_BATCH_GROUP, combineState.resourceTables.Size());
-        //ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
-        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_AlphaLightBuffer(), Combine::AlphaLighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetConstantBuffer(combineState.resourceTables[i], ResourceTableBuffer(combineState.combineConstants, Combine::CombineUniforms::BINDING));
-        ResourceTableCommitChanges(combineState.resourceTables[i]);
-    }
+    // Each table is written when its frame is first recorded
+    combineState.resourceTables = ShaderCreateResourceTableSet(combineState.combineShader, NEBULA_BATCH_GROUP, CoreGraphics::GetNumBufferedFrames());
+    combineState.resourceTables.SetUpdate(WriteCombineTable);
+    combineState.resourceTables.Invalidate();
 
     // Update main resource table
     clusterState.resourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
@@ -333,7 +341,7 @@ LightContext::Create()
     FrameScript_default::RegisterSubgraph_LightsCombine_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, combineState.combineProgram, queue);
-        CmdSetResourceTable(cmdBuf, combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, combineState.resourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
         Combine::CombineUniforms::STRUCT combineConsts;
         combineConsts.LowresResolution[0] = 1.0f / dims.width;
@@ -1601,32 +1609,10 @@ LightContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
 #endif
         ResourceTableCommitChanges(clusterState.resourceTable);
 
-        for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
-        {
-            ResourceTableSetRWTexture(
-                combineState.resourceTables[i],
-                {FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetTexture(
-                combineState.resourceTables[i],
-                {FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetTexture(
-                combineState.resourceTables[i],
-                {FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetTexture(
-                combineState.resourceTables[i],
-                {FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId
-                }
-            );
-            ResourceTableSetTexture(
-                combineState.resourceTables[i],
-                {FrameScript_default::Texture_AlphaLightBuffer(), Combine::AlphaLighting::BINDING, 0, CoreGraphics::InvalidSamplerId
-                }
-            );
-            ResourceTableCommitChanges(combineState.resourceTables[i]);
-        }
+        // Frames still on the GPU keep their tables, which point to the old textures until those are deleted.
+        // This frame's table is written now, before the frame is submitted, the others when their frames come around
+        combineState.resourceTables.Invalidate();
+        combineState.resourceTables.Get(CoreGraphics::GetBufferedFrameIndex());
     }
 }
 

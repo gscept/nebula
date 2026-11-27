@@ -17,6 +17,7 @@
 #include "basegamefeature/components/scale.h"
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
+#include "io/ioserver.h"
 #include "lighting/lightcontext.h"
 #include "decals/decalcontext.h"
 #include "gi/ddgicontext.h"
@@ -26,6 +27,7 @@
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/render/terrainresource.h"
+#include "graphicsfeature/terrain/terrainfile.h"
 
 namespace GraphicsFeature
 {
@@ -46,6 +48,21 @@ GraphicsManager::GraphicsManager()
 GraphicsManager::~GraphicsManager()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+    The file a character resource is loaded from. A component holds a URN, folder:file:type, and the
+    loader reads the file that is exported to. A name that is not a URN of the type is taken as the
+    export path it already is
+*/
+static Resources::ResourceName
+CharacterResourceFile(const Resources::ResourceName& name, const char* type)
+{
+    const IO::Path path = IO::Path::Parse(name.Value());
+    if (path.IsFile() && path.GetType() == type)
+        return path.ExportURI().AsString();
+    return name;
 }
 
 //------------------------------------------------------------------------------
@@ -80,14 +97,20 @@ RegisterModelEntity(
                 Raytracing::RaytracingContext::RegisterEntity(gid);
                 Raytracing::RaytracingContext::SetupModel(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
             }
-            if (anim.IsValid() && skeleton.IsValid())
+            // The clip is played as soon as the character is set up, so the files have to be there.
+            // A model that names ones that are not, or none, uses the ones packaged with it
+            const Resources::ResourceName skeletonFile = anim.IsValid() && skeleton.IsValid() ? CharacterResourceFile(skeleton, "ske") : Resources::ResourceName();
+            const Resources::ResourceName animFile = anim.IsValid() && skeleton.IsValid() ? CharacterResourceFile(anim, "ani") : Resources::ResourceName();
+            if (skeletonFile.IsValid() && animFile.IsValid() && IO::FileExists(skeletonFile.Value()) && IO::FileExists(animFile.Value()))
             {
                 Characters::CharacterContext::RegisterEntity(gid);
-                Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
+                Characters::CharacterContext::Setup(gid, skeletonFile, 0, animFile, 0, "NONE");
                 Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
             }
             else
             {
+                if (skeletonFile.IsValid())
+                    n_warning("Model '%s' names the skeleton '%s' and animation '%s', which are not there\n", modelURN.AsString().AsCharPtr(), skeleton.Value(), anim.Value());
                 // a skinned model without an animation and skeleton set uses the ones packaged with it
                 Characters::CharacterContext::SetupFromModel(gid, modelURN, "NONE");
             }
@@ -155,6 +178,22 @@ DeregisterDecal(Graphics::GraphicsEntityId gfxId)
     {
         Decals::DecalContext::DeregisterEntity(gfxId);
     }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeregisterTerrain(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Vegetation::VegetationContext::IsEntityRegistered(gfxId))
+        Vegetation::VegetationContext::DeregisterEntity(gfxId);
+    if (::Terrain::TerrainContext::IsEntityRegistered(gfxId))
+        ::Terrain::TerrainContext::DeregisterEntity(gfxId);
     Graphics::DestroyEntity(gfxId);
 }
 
@@ -230,6 +269,11 @@ GraphicsManager::OnDecay()
         DDGIVolume* volume = ddgiVolumeData + i;
         DeregisterDDGIVolume(volume->graphicsEntityId);
     }
+
+    Game::ComponentDecayBuffer const terrainDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<Terrain>());
+    Terrain* terrainData = (Terrain*)terrainDecayBuffer.buffer;
+    for (int i = 0; i < terrainDecayBuffer.size; i++)
+        DeregisterTerrain((terrainData + i)->graphicsEntityId);
     N_MARKER_END();
 }
 
@@ -524,6 +568,8 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
 
 //------------------------------------------------------------------------------
 /**
+    A terrain without a file, or whose file isn't exported yet, is the flat default one, so a new
+    Terrain component shows something to edit
 */
 void
 GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* terrain)
@@ -533,20 +579,12 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     ::Terrain::TerrainCreateInfo createInfo;
 
     Render::TerrainResourceT resource;
-    if (terrain->terrainResourcePath.IsValid())
+    if (!ReadTerrainFile(terrain->resource, resource))
     {
-        Ptr<IO::Stream> resourceFile = IO::CreateStream(terrain->terrainResourcePath);
-        if (resourceFile->Open())
-        {
-            void* buf = resourceFile->MemoryMap();
-            Flat::FlatbufferInterface::DeserializeFlatbuffer<Render::TerrainResource>(resource, (uint8_t*)buf);
-        }
+        if (terrain->resource.IsValid())
+            n_warning("Terrain: '%s' could not be read, the terrain is flat\n", terrain->resource.Value());
+        DefaultTerrainResource(resource);
     }
-
-    if (resource.height_map == nullptr)
-        resource.height_map = "system/black";
-    if (resource.decision_map == nullptr)
-        resource.decision_map = "system/white";
 
     createInfo.minHeight = resource.min_height;
     createInfo.maxHeight = resource.max_height;
@@ -556,20 +594,20 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     createInfo.tileHeight = resource.tile_height;
     createInfo.width = resource.world_size_x;
     createInfo.height = resource.world_size_z;
-    createInfo.heightMap = IO::Path::FolderAndFile("tex", resource.height_map);
-    createInfo.decisionMap = IO::Path::FolderAndFile("tex", resource.decision_map);
+    createInfo.heightMap = TerrainTexture(resource.height_map, "system:black:tex");
+    createInfo.decisionMap = TerrainTexture(resource.decision_map, "system:white:tex");
     createInfo.enableRayTracing = resource.enable_ray_tracing;
     ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 
     for (auto const& biome : resource.biomes)
     {
         ::Terrain::BiomeSettings settings;
-        settings.biomeMask = IO::Path::FolderAndFile("tex", biome->mask);
-        for (uint i = 0; i < 4; i++)
+        settings.biomeMask = TerrainTexture(biome->mask, "system:white:tex");
+        for (uint i = 0; i < 4 && i < biome->materials.size(); i++)
         {
-            settings.materials[i].albedo = IO::Path::FolderAndFile("tex", biome->materials[i]->albedo);
-            settings.materials[i].material = IO::Path::FolderAndFile("tex", biome->materials[i]->material);
-            settings.materials[i].normal = IO::Path::FolderAndFile("tex", biome->materials[i]->normals);
+            settings.materials[i].albedo = TerrainTexture(biome->materials[i]->albedo, "system:white:tex");
+            settings.materials[i].material = TerrainTexture(biome->materials[i]->material, "system:default_material:tex");
+            settings.materials[i].normal = TerrainTexture(biome->materials[i]->normals, "system:nobump:tex");
         }
         settings.biomeParameters.heightThreshold = biome->height_threshold;
         settings.biomeParameters.slopeThreshold = biome->slope_threshold;
@@ -582,10 +620,11 @@ GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* t
     for (auto const& vegetation : resource.vegetation)
     {
         Vegetation::VegetationMeshSetup mesh;
-        mesh.mask = IO::Path::Parse(vegetation->mask);
-        mesh.model = IO::Path::Parse(vegetation->model);
+        mesh.mask = TerrainTexture(vegetation->mask, "system:black:tex");
+        mesh.model = TerrainModel(vegetation->model, "system:box:mdl");
         mesh.heightThreshold = vegetation->height_threshold;
         mesh.slopeThreshold = vegetation->slope_threshold;
+        mesh.density = vegetation->density;
         Vegetation::VegetationContext::SetupMesh(terrain->graphicsEntityId, mesh);
     }
 }
@@ -712,6 +751,21 @@ GraphicsManager::OnCleanup(Game::World* world)
             {
                 DeregisterDDGIVolume((componentData + i)->graphicsEntityId);
             }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Terrain cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<Terrain>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            Terrain const* const componentData = (Terrain*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+                DeregisterTerrain((componentData + i)->graphicsEntityId);
         }
 
         Game::DestroyFilter(filter);

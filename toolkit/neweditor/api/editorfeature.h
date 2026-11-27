@@ -30,7 +30,9 @@
 #include "core/ptr.h"
 #include "game/componentid.h"
 #include "game/entity.h"
+#include "io/path.h"
 #include "util/array.h"
+#include "util/blob.h"
 #include "util/delegate.h"
 #include "util/string.h"
 #include "util/stringatom.h"
@@ -41,6 +43,12 @@ namespace Editor
 class EditorPanel;
 class Scene;
 class Shell;
+struct ToolView;
+
+/// The payload of an asset dragged in the editor, out of the asset browser or an asset field. It
+/// carries the asset's URN as text, folder:file:type. The source and the targets live in different
+/// modules, so the name is the editor's
+static const char* const AssetDragPayload = "nebula.asset";
 
 //------------------------------------------------------------------------------
 /**
@@ -125,6 +133,58 @@ struct EditorStatusNumbers
 
 //------------------------------------------------------------------------------
 /**
+    A popup a feature draws itself, like a picker. It is drawn after the panels, with the core's own
+    modals, so it ends up above the panel that opened it. The popup decides when it is open.
+*/
+struct EditorModal
+{
+    Util::Delegate<void()> draw;
+};
+
+//------------------------------------------------------------------------------
+/**
+    Work a feature holds that is not saved, like an asset open in its own editor. The exit question
+    covers it along with the scenes: list names what has changes, and save writes them when the
+    question is answered with Save. A save that fails returns false and the editor stays open.
+*/
+struct EditorUnsavedWork
+{
+    Util::Delegate<void(Util::Array<Util::String>& out)> list;
+    Util::Delegate<bool()> save;
+};
+
+//------------------------------------------------------------------------------
+/**
+    What an asset dropped on the viewport is made into: one entity named after the asset, with the
+    components each feature that takes the asset's type gives it. The viewport puts the entity where
+    the drop lands, so a feature leaves the transform alone.
+*/
+struct EditorDroppedAsset
+{
+    /// the asset that was dropped, folder:file:type
+    IO::Path asset;
+    /// the components the entity is made with, and the value of each
+    Util::Array<Game::ComponentId> components;
+    Util::Array<Util::Blob> values;
+
+    /// give the entity a component with a value. A component given twice keeps the last value
+    void Add(Game::ComponentId component, const void* value, SizeT size);
+};
+
+//------------------------------------------------------------------------------
+/**
+    A feature's part of what an asset of a type becomes when it is dropped on the viewport. The
+    model asset gets its model from graphics, and its collider from physics.
+*/
+struct EditorAssetDrop
+{
+    /// the URN type of the assets it takes, like 'mdl'
+    Util::String type;
+    Util::Delegate<void(EditorDroppedAsset& entity)> contribute;
+};
+
+//------------------------------------------------------------------------------
+/**
     What the features have given the editor. A feature unit registers its parts here.
 
     A panel is the feature's own class, taken from EditorPanel, and the core draws it once per frame
@@ -145,6 +205,24 @@ public:
     static void RegisterRuntimeComponents(const Util::Array<Game::ComponentId>& components);
     static void RegisterOnComponentChangeListener(Util::Delegate<void(Scene*, Game::Entity, Game::ComponentId)> onChange);
     static void RegisterStatusNumbers(Util::Delegate<void(Util::String& out)> append);
+    /// A popup of the feature's own, like a picker. The core calls it every frame after the panels,
+    /// with its own modals, and the popup opens and draws itself.
+    static void RegisterModal(Util::Delegate<void()> draw);
+    /// Work the feature holds outside the scenes, which the exit asks about with them.
+    static void RegisterUnsavedWork(Util::Delegate<void(Util::Array<Util::String>&)> list, Util::Delegate<bool()> save);
+    /// Give the entity an asset of the type becomes, when it is dropped on the viewport, its part.
+    static void RegisterAssetDrop(const Util::String& type, Util::Delegate<void(EditorDroppedAsset&)> contribute);
+    /// Give a feature the viewport's input each frame, after the gizmo handles and before the tools.
+    /// It returns true to take the frame from the tools, which is how a mode that places points by
+    /// clicking keeps the click from selecting. It can draw on the canvas as well.
+    static void RegisterViewportInput(Util::Delegate<bool(const ToolView&)> input);
+    /// Hand a frame to the features. True when one of them took it
+    static bool OfferViewportInput(const ToolView& view);
+    /// Add settings to the viewport's View popup, how the render side draws the canvas. The draw is
+    /// given the view mode the canvas shows: scene, game, lighting or rendering
+    static void RegisterViewportSettings(Util::Delegate<void(const char*)> draw);
+    /// Draw them, inside the popup
+    static void DrawViewportSettings(const char* viewMode);
 
     static const Util::Array<Ptr<EditorPanel>>& GetPanels();
     static const Util::Array<EditorInspectorSection>& GetSections();
@@ -152,6 +230,12 @@ public:
     static const Util::Array<EditorAddComponentConstraint>& GetConstraints();
     static const Util::Array<EditorOnComponentChangeListener>& GetListeners();
     static const Util::Array<EditorStatusNumbers>& GetStatusNumbers();
+    static const Util::Array<EditorModal>& GetModals();
+    static const Util::Array<EditorUnsavedWork>& GetUnsavedWork();
+    static const Util::Array<EditorAssetDrop>& GetAssetDrops();
+    /// What the features make of a dropped asset. False when no feature takes its type, or none gave
+    /// the entity anything, so the asset can't be dropped.
+    static bool BuildAssetDrop(const IO::Path& asset, EditorDroppedAsset& out);
 
     /// Return true when an entity cannot be given this component, because a registered number is
     /// already full.
@@ -176,6 +260,11 @@ private:
     static Util::Array<Game::ComponentId> runtimeComponents;
     static Util::Array<EditorOnComponentChangeListener> listeners;
     static Util::Array<EditorStatusNumbers> statusNumbers;
+    static Util::Array<EditorModal> modals;
+    static Util::Array<EditorUnsavedWork> unsavedWork;
+    static Util::Array<EditorAssetDrop> assetDrops;
+    static Util::Array<Util::Delegate<bool(const ToolView&)>> viewportInputs;
+    static Util::Array<Util::Delegate<void(const char*)>> viewportSettings;
     static Shell* shell;
 };
 

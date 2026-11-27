@@ -122,6 +122,12 @@ PixelFormat::ToString(PixelFormat::Code code)
         case D24S8:         return "D24S8";
         case D32:           return "D32";
         case D32S8:         return "D32S8";
+        case S8:            return "S8";
+        case B8G8R8:        return "B8G8R8";
+        case B8G8R8A8:      return "B8G8R8A8";
+        case B5G6R5:        return "B5G6R5";
+        case B5G6R5A1:      return "B5G6R5A1";
+        case B4G4R4A4:      return "B4G4R4A4";
 
         default:
             n_error("Invalid pixel format code");

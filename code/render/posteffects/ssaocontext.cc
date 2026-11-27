@@ -28,8 +28,8 @@ struct
     CoreGraphics::ShaderId hbaoShader, blurShader;
     CoreGraphics::ShaderProgramId xDirectionHBAO, yDirectionHBAO, xDirectionBlur, yDirectionBlur;
 
-    Util::FixedArray<CoreGraphics::ResourceTableId> hbaoTable, blurTableX, blurTableY;
-    //CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
+    // One table per buffered frame each. A resize only rewrites the tables of frames that are not on the GPU
+    CoreGraphics::ResourceTableSet hbaoTable, blurTableX, blurTableY;
 
     // read-write textures
     CoreGraphics::TextureId internalTargets[2];
@@ -54,6 +54,45 @@ struct
         float blurFalloff;
     } vars;
 } ssaoState;
+
+//------------------------------------------------------------------------------
+/**
+    Write the internal targets of the current size into one of the HBAO tables
+*/
+static void
+WriteHbaoTable(const CoreGraphics::ResourceTableId table)
+{
+    using namespace CoreGraphics;
+    ResourceTableSetRWTexture(table, { ssaoState.internalTargets[0], HbaoCs::HBAO0::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(table, { ssaoState.internalTargets[1], HbaoCs::HBAO1::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Write the internal targets of the current size into one of the horizontal blur tables
+*/
+static void
+WriteBlurTableX(const CoreGraphics::ResourceTableId table)
+{
+    using namespace CoreGraphics;
+    ResourceTableSetTexture(table, { ssaoState.internalTargets[1], HbaoblurCs::HBAOX::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(table, { ssaoState.internalTargets[0], HbaoblurCs::HBAORG::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Write the internal target and the SSAO buffer of the current size into one of the vertical blur tables
+*/
+static void
+WriteBlurTableY(const CoreGraphics::ResourceTableId table)
+{
+    using namespace CoreGraphics;
+    ResourceTableSetTexture(table, { ssaoState.internalTargets[0], HbaoblurCs::HBAOY::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::HBAOR::BINDING, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableCommitChanges(table);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -89,13 +128,9 @@ SSAOContext::Discard()
 {
     CoreGraphics::DestroyTexture(ssaoState.internalTargets[0]);
     CoreGraphics::DestroyTexture(ssaoState.internalTargets[1]);
-    IndexT i;
-    for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
-    {
-        DestroyResourceTable(ssaoState.hbaoTable[i]);
-        DestroyResourceTable(ssaoState.blurTableX[i]);
-        DestroyResourceTable(ssaoState.blurTableY[i]);
-    }
+    ssaoState.hbaoTable.Destroy();
+    ssaoState.blurTableX.Destroy();
+    ssaoState.blurTableY.Destroy();
 }
 
 //------------------------------------------------------------------------------
@@ -131,31 +166,17 @@ SSAOContext::Setup()
     ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt0"));
     ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt1"));
 
+    // Each table is written when its frame is first recorded
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
-    ssaoState.hbaoTable.Resize(numBuffers);
-    ssaoState.blurTableX.Resize(numBuffers);
-    ssaoState.blurTableY.Resize(numBuffers);
-    IndexT i;
-    for (i = 0; i < numBuffers; i++)
-    {
-        ssaoState.hbaoTable[i] = ShaderCreateResourceTable(ssaoState.hbaoShader, NEBULA_BATCH_GROUP, numBuffers);
-        ssaoState.blurTableX[i] = ShaderCreateResourceTable(ssaoState.blurShader, NEBULA_BATCH_GROUP, numBuffers);
-        ssaoState.blurTableY[i] = ShaderCreateResourceTable(ssaoState.blurShader, NEBULA_BATCH_GROUP, numBuffers);
-
-        // setup hbao table
-        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[0], HbaoCs::HBAO0::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[1], HbaoCs::HBAO1::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.hbaoTable[i]);
-
-        // setup blur table
-        ResourceTableSetTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[1], HbaoblurCs::HBAOX::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[0], HbaoblurCs::HBAORG::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.blurTableX[i]);
-
-        ResourceTableSetTexture(ssaoState.blurTableY[i], { ssaoState.internalTargets[0], HbaoblurCs::HBAOY::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.blurTableY[i], { FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::HBAOR::BINDING, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableCommitChanges(ssaoState.blurTableY[i]);
-    }
+    ssaoState.hbaoTable = ShaderCreateResourceTableSet(ssaoState.hbaoShader, NEBULA_BATCH_GROUP, numBuffers);
+    ssaoState.hbaoTable.SetUpdate(WriteHbaoTable);
+    ssaoState.hbaoTable.Invalidate();
+    ssaoState.blurTableX = ShaderCreateResourceTableSet(ssaoState.blurShader, NEBULA_BATCH_GROUP, numBuffers);
+    ssaoState.blurTableX.SetUpdate(WriteBlurTableX);
+    ssaoState.blurTableX.Invalidate();
+    ssaoState.blurTableY = ShaderCreateResourceTableSet(ssaoState.blurShader, NEBULA_BATCH_GROUP, numBuffers);
+    ssaoState.blurTableY.SetUpdate(WriteBlurTableY);
+    ssaoState.blurTableY.Invalidate();
 
 
     ssaoState.vars.radius = 12.0f;
@@ -175,7 +196,7 @@ SSAOContext::Setup()
 
         // Compute AO in X
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO, queue);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable.Get(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::ZBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
@@ -189,7 +210,7 @@ SSAOContext::Setup()
 
         // Compute AO in Y
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionHBAO, queue);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable.Get(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::HBAOInternal0, CoreGraphics::PipelineStage::ComputeShaderRead }
@@ -203,7 +224,7 @@ SSAOContext::Setup()
 
         // Compute AO in X
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionBlur, queue, false);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableX.Get(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::HBAOInternal0, CoreGraphics::PipelineStage::ComputeShaderWrite }
@@ -217,7 +238,7 @@ SSAOContext::Setup()
 
         // Compute AO in X
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionBlur, queue, false);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableY.Get(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::HBAOInternal0, CoreGraphics::PipelineStage::ComputeShaderRead }
@@ -304,8 +325,8 @@ SSAOContext::UpdateViewDependentResources(const Graphics::ViewId view, const Gra
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoCs::HBAOParams::BINDING, 0, sizeof(HbaoCs::HBAOParams::STRUCT), hbaoOffset });
-    ResourceTableCommitChanges(ssaoState.hbaoTable[bufferIndex]);
+    ResourceTableSetConstantBuffer(ssaoState.hbaoTable.tables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoCs::HBAOParams::BINDING, 0, sizeof(HbaoCs::HBAOParams::STRUCT), hbaoOffset });
+    ResourceTableCommitChanges(ssaoState.hbaoTable.tables[bufferIndex]);
 
     HbaoblurCs::HBAOBlur::STRUCT blurBlock;
     blurBlock.BlurFalloff = ssaoState.vars.blurFalloff;
@@ -313,10 +334,10 @@ SSAOContext::UpdateViewDependentResources(const Graphics::ViewId view, const Gra
     blurBlock.PowerExponent = 1.5f;
     uint64_t blurOffset = CoreGraphics::SetConstants(blurBlock, CoreGraphics::GraphicsQueueType);
 
-    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
-    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
-    ResourceTableCommitChanges(ssaoState.blurTableX[bufferIndex]);
-    ResourceTableCommitChanges(ssaoState.blurTableY[bufferIndex]);
+    ResourceTableSetConstantBuffer(ssaoState.blurTableX.tables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableY.tables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex, CoreGraphics::GraphicsQueueType), HbaoblurCs::HBAOBlur::BINDING, 0, sizeof(HbaoblurCs::HBAOBlur::STRUCT), blurOffset });
+    ResourceTableCommitChanges(ssaoState.blurTableX.tables[bufferIndex]);
+    ResourceTableCommitChanges(ssaoState.blurTableY.tables[bufferIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -351,39 +372,15 @@ SSAOContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
         FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
         FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
 
-        IndexT i;
-        for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
-        {
-            // setup hbao table
-            ResourceTableSetRWTexture(
-                ssaoState.hbaoTable[i], {ssaoState.internalTargets[0], HbaoCs::HBAO0::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetRWTexture(
-                ssaoState.hbaoTable[i], {ssaoState.internalTargets[1], HbaoCs::HBAO1::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableCommitChanges(ssaoState.hbaoTable[i]);
-
-            // setup blur table
-            ResourceTableSetTexture(
-                ssaoState.blurTableX[i],
-                {ssaoState.internalTargets[1], HbaoblurCs::HBAOX::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetRWTexture(
-                ssaoState.blurTableX[i],
-                {ssaoState.internalTargets[0], HbaoblurCs::HBAORG::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableCommitChanges(ssaoState.blurTableX[i]);
-
-            ResourceTableSetTexture(
-                ssaoState.blurTableY[i],
-                {ssaoState.internalTargets[0], HbaoblurCs::HBAOY::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableSetRWTexture(
-                ssaoState.blurTableY[i],
-                {FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::HBAOR::BINDING, 0, CoreGraphics::InvalidSamplerId}
-            );
-            ResourceTableCommitChanges(ssaoState.blurTableY[i]);
-        }
+        // Frames still on the GPU keep their tables, which point to the old targets until those are deleted.
+        // This frame's tables are written now, before the frame is submitted, the others when their frames come around
+        const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+        ssaoState.hbaoTable.Invalidate();
+        ssaoState.hbaoTable.Get(bufferIndex);
+        ssaoState.blurTableX.Invalidate();
+        ssaoState.blurTableX.Get(bufferIndex);
+        ssaoState.blurTableY.Invalidate();
+        ssaoState.blurTableY.Get(bufferIndex);
     }
 }
 

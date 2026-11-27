@@ -56,7 +56,6 @@ exports:
         - code/audio
         - code/input
         - code/options
-        - toolkit/editor
         - toolkit
     modules:
         foundation: code/foundation

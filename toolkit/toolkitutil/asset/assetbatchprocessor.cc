@@ -231,6 +231,25 @@ AssetBatchProcessor::ProcessFile(const IO::URI& file)
         Util::String dstFile = Util::String::Sprintf("%s%s", dstFolder.AsCharPtr(), fileName.AsCharPtr());
         ToolkitUtil::PackageAudioFile(file, dstFolder, ToolkitUtil::Platform::Code::Win32, this->logger);
     }
+    else if ((this->packageMode & PackageModes::Assets) && ext == "nater")
+    {
+        // a terrain is read as it is written, the export is a copy
+        const Util::String dstFile = relativeFolderPathForWork.IsEmpty()
+            ? Util::String::Sprintf("ter:%s.nater", fileName.AsCharPtr())
+            : Util::String::Sprintf("ter:%s/%s.nater", relativeFolderPathForWork.AsCharPtr(), fileName.AsCharPtr());
+        if (needsPackaging(PackageModes::ForceAssets, dstFile))
+        {
+            IO::CreateDirectory(IO::URI(dstFile).LocalPath().ExtractDirName());
+            if (IO::CopyFile(file, dstFile))
+                this->logger->Print("%s -> %s\n", file.LocalPath().AsCharPtr(), IO::URI(dstFile).LocalPath().AsCharPtr());
+            else
+                this->logger->Error("Could not copy %s to %s\n", file.LocalPath().AsCharPtr(), IO::URI(dstFile).LocalPath().AsCharPtr());
+        }
+        else
+        {
+            logSkipped();
+        }
+    }
     else if ((this->packageMode & PackageModes::Navigation) && ext == "nanav")
     {
         // baked by ProcessNavMeshes, once the meshes and textures the navmesh reads are exported
@@ -274,7 +293,7 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
 
     Array<String> files = IO::ListFiles(dir, "*");
 
-    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles, navMeshFiles;
+    Array<String> fbxFiles, gltfFiles, imageFiles, soundFiles, modelFiles, textureFiles, materialFiles, particleFiles, audioFiles, navMeshFiles, terrainFiles;
     for (const auto& file : files)
     {
         if (file.GetFileExtension() == "fbx")
@@ -325,6 +344,10 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
         else if (file.GetFileExtension() == "nanav")
         {
             navMeshFiles.Append(file);
+        }
+        else if (file.GetFileExtension() == "nater")
+        {
+            terrainFiles.Append(file);
         }
     }
     if (this->importMode & ImportModes::FBX)
@@ -474,6 +497,15 @@ AssetBatchProcessor::ProcessDir(const Util::String& dir)
             {
                 this->ProcessFile(dir + "/" + audioFiles[fileIndex]);
             }
+        }
+    }
+
+    if ((this->packageMode & PackageModes::Assets) && !terrainFiles.IsEmpty())
+    {
+        this->logger->Print("\nTerrains -----------\n");
+        for (fileIndex = 0; fileIndex < terrainFiles.Size(); fileIndex++)
+        {
+            this->ProcessFile(dir + "/" + terrainFiles[fileIndex]);
         }
     }
 

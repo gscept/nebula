@@ -4561,6 +4561,16 @@ Scene::MirrorComponent(Game::Entity entity, Game::ComponentId component)
     if (!dstTable.HasAttribute(component))
         return;
 
+    Game::ComponentInterface* cInterface =
+        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(component));
+
+    // The authored value has none of what the old value's init made, the graphics entity of a
+    // Model, so writing it over the live one would leave that with nothing pointing at it, still
+    // drawn. The old value goes to the decay buffer first, where its manager cleans it up the way
+    // it does when the component is removed
+    if (cInterface->Init != nullptr)
+        this->simWorld->DecayComponentValue(gameEntity, component);
+
     Util::Blob value((const byte*)this->GetComponentData(entity, component), typeSize);
     this->RemapComponent(component, value.GetPtr(), true);
     this->simWorld->SetComponentValue(gameEntity, component, value.GetPtr(), typeSize);
@@ -4572,8 +4582,6 @@ Scene::MirrorComponent(Game::Entity entity, Game::ComponentId component)
     // initializes a
     // component whose value is set on a live instance. A Model component is how the registry learns
     // the entity points at a different slot.
-    Game::ComponentInterface* cInterface =
-        static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(component));
     if (cInterface->Init != nullptr)
         cInterface->Init(this->simWorld, gameEntity, dst);
 

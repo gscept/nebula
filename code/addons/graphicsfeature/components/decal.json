@@ -9,6 +9,7 @@
       },
       "texture": {
         "type": "resource",
+        "resourceType": "tex",
         "description": "The texture that should be projected"
       }
     }

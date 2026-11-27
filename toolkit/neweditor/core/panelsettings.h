@@ -55,8 +55,8 @@ public:
     /// writes every record out as it is now
     bool Save();
 
-    /// Check if a panel is open
-    bool IsOpen(const Util::String& name) const;
+    /// Check if a panel is open. A panel the file has no record of is as open as fallback says
+    bool IsOpen(const Util::String& name, bool fallback = true) const;
     /// Set panel state
     void SetOpen(const Util::String& name, bool open);
 

@@ -30,7 +30,20 @@
 #include "neweditor/api/editorfeature.h"
 #include "neweditor/api/gizmo.h"
 #include "neweditor/api/shell.h"
+#include "editorassets/assettype.h"
+#include "graphicsfeature/editor/assets/texturedocument.h"
+#include "graphicsfeature/editor/assets/materialdocument.h"
+#include "graphicsfeature/editor/assets/modeldocument.h"
+#include "graphicsfeature/editor/assets/assetpreview.h"
+#include "editorassets/asseteditorpanel.h"
+#include "editorassets/importpanel.h"
 #include "frame/editorview.h"
+#include "frame/default.h"
+#include "graphicsfeature/graphicsfeatureunit.h"
+#include "graphicsfeature/editor/rendersettings.h"
+#include "graphicsfeature/editor/environmentpanel.h"
+#include "graphicsfeature/editor/resourcespanel.h"
+#include "graphicsfeature/editor/terrain/terraineditor.h"
 #include "imgui.h"
 
 namespace GraphicsFeature
@@ -109,14 +122,16 @@ ModelBounds(Game::World* world, Game::Entity entity, Math::bbox& out)
 
     // ComputeBoundingBox answers in world space, and the editor puts the box where the entity stands,
     // so it is taken back through the model's transform first. Without this an entity away from the
-    // origin is picked and outlined at twice its position
+    // origin is picked and outlined at twice its position. The inverse is affine only up to float
+    // error in its last column, which the affine transform warns about every frame, so the box goes
+    // through the general one
     const Graphics::GraphicsEntityId gid(model.graphicsEntityId);
     Math::bbox box = Models::ModelContext::ComputeBoundingBox(gid);
     if (box.pmin == box.pmax)
     {
         return false;   // no nodes yet, the model is still loading
     }
-    box.affine_transform(Math::inverse(Models::ModelContext::GetTransform(gid)));
+    box.transform(Math::inverse(Models::ModelContext::GetTransform(gid)));
     out = box;
     return true;
 }
@@ -139,14 +154,80 @@ ForwardKey(Input::Key::Code key, bool isPress, Input::Modifier::Code mods)
 //------------------------------------------------------------------------------
 /**
 */
+GraphicsViewportPanel* GraphicsViewportPanel::instance = nullptr;
+
+//------------------------------------------------------------------------------
+/**
+*/
 GraphicsViewportPanel::GraphicsViewportPanel() :
     view(Graphics::InvalidViewId),
     camera(Graphics::InvalidGraphicsEntityId),
     directionalLight(Graphics::InvalidGraphicsEntityId),
     textureId(0),
     scriptWidth(0),
-    scriptHeight(0)
+    scriptHeight(0),
+    showsGameScript(false),
+    gameViewCamera(Graphics::InvalidGraphicsEntityId)
 {
+    GraphicsViewportPanel::instance = this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Graphics::GraphicsEntityId
+GraphicsViewportPanel::GetViewportLight()
+{
+    return GraphicsViewportPanel::instance != nullptr ? GraphicsViewportPanel::instance->directionalLight : Graphics::InvalidGraphicsEntityId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Graphics::GraphicsEntityId
+GraphicsViewportPanel::GetViewportCamera()
+{
+    return GraphicsViewportPanel::instance != nullptr ? GraphicsViewportPanel::instance->camera : Graphics::InvalidGraphicsEntityId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+GraphicsViewportPanel::ShowsFullPipeline()
+{
+    return GraphicsViewportPanel::instance != nullptr && GraphicsViewportPanel::instance->showsGameScript;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The game's view draws with the panel's camera while the mode is shown, and the editor's view,
+    which would draw the same scene again, is off. The shapes go to the view that is shown
+*/
+void
+GraphicsViewportPanel::ShowGameScript(bool show)
+{
+    if (show == this->showsGameScript)
+        return;
+    const Graphics::ViewId gameView = GraphicsFeatureUnit::Instance()->GetDefaultView();
+    if (gameView == Graphics::InvalidViewId)
+        return;
+
+    if (show)
+    {
+        this->gameViewCamera = Graphics::ViewGetCamera(gameView);
+        Graphics::ViewSetCamera(gameView, this->camera);
+        if (this->view != Graphics::InvalidViewId)
+            Graphics::ViewDisable(this->view);
+        Im3d::Im3dContext::SetView(gameView);
+    }
+    else
+    {
+        Graphics::ViewSetCamera(gameView, this->gameViewCamera);
+        this->gameViewCamera = Graphics::InvalidGraphicsEntityId;
+        Im3d::Im3dContext::SetView(this->view);
+    }
+    this->showsGameScript = show;
 }
 
 //------------------------------------------------------------------------------
@@ -154,6 +235,12 @@ GraphicsViewportPanel::GraphicsViewportPanel() :
 */
 GraphicsViewportPanel::~GraphicsViewportPanel()
 {
+    // the game's view gets its camera back before the camera goes
+    if (Graphics::GraphicsServer::HasInstance() && GraphicsFeatureUnit::HasInstance())
+        this->ShowGameScript(false);
+    if (GraphicsViewportPanel::instance == this)
+        GraphicsViewportPanel::instance = nullptr;
+
     if (this->view != Graphics::InvalidViewId && Graphics::GraphicsServer::HasInstance())
         Graphics::GraphicsServer::Instance()->DiscardView(this->view);
 
@@ -240,6 +327,7 @@ GraphicsViewportPanel::OnSetup()
         return false;
 
     FrameScript_editorview::SetupPipelines();
+    SetupWireframe();
     return true;
 }
 
@@ -256,6 +344,22 @@ GraphicsViewportPanel::OnTarget(int width, int height)
 {
     if (this->textureId == 0)
         return 0;
+
+    // the full pipeline is the game's script, at the window's size
+    const bool full = Util::String(this->GetViewModeName()) == "rendering";
+    this->ShowGameScript(full);
+    if (full)
+    {
+        const CoreGraphics::TextureId scene = FrameScript_default::Texture_SceneBuffer();
+        if (scene == CoreGraphics::InvalidTextureId)
+            return 0;
+        Dynui::ImguiTextureId data;
+        data.nebulaHandle = scene;
+        data.rangeMin = 0.0f;
+        data.rangeMax = 0.0f;
+        Dynui::SetImguiTextureIdData((Ids::Id32)this->textureId, data);
+        return this->textureId;
+    }
 
     if (width != this->scriptWidth || height != this->scriptHeight)
     {
@@ -296,8 +400,14 @@ GraphicsViewportPanel::OnRender(const Math::mat4& view, const Math::mat4& projec
     const float aspect = float(this->TargetWidth()) / float(this->TargetHeight());
 
     Graphics::CameraContext::SetView(this->camera, view);
-    Graphics::CameraContext::SetupProjectionFov(this->camera, aspect, Math::deg2rad(this->FieldOfView()),
-        NearPlane, FarPlane, Graphics::PRIMARY_STAGE_MASK);
+    // an orthographic projection has 1 in its last diagonal element, its size is in the first two
+    if (projection.r[3].w != 0.0f)
+        Graphics::CameraContext::SetupOrthographic(this->camera, 2.0f / projection.r[0].x, 2.0f / projection.r[1].y,
+            NearPlane, FarPlane, Graphics::PRIMARY_STAGE_MASK);
+    else
+        Graphics::CameraContext::SetupProjectionFov(this->camera, aspect, Math::deg2rad(this->FieldOfView()),
+            NearPlane, FarPlane, Graphics::PRIMARY_STAGE_MASK);
+    ApplyCameraEffects(this->camera);
 }
 
 //------------------------------------------------------------------------------
@@ -343,14 +453,60 @@ GraphicsViewportPanel::OnMouseDelta() const
 void
 GraphicsViewportPanel::OnCanvasClosed()
 {
+    this->ShowGameScript(false);
     if (this->view != Graphics::InvalidViewId)
         Graphics::ViewDisable(this->view);
 }
 
 //------------------------------------------------------------------------------
 /**
-    The panel is the editor's half, so this is only the render half: the shapes, the keys and the panel
-    itself.
+    The asset types the render side owns, with the work file each is authored in. The export side
+    of each mapping is the graphics server's, because a game loads the exported files without the
+    editor. A type with an editor opens its documents in the asset editor.
+*/
+static void
+RegisterAssetTypes()
+{
+    using OpenDelegate = Util::Delegate<void(const IO::Path&)>;
+    using CreateDelegate = Util::Delegate<bool(const IO::Path&, const IO::URI&, const Util::String&, Util::String&)>;
+    using VariantsDelegate = Util::Delegate<void(Util::Array<Util::String>&)>;
+    // models and textures are imported from source files, the importer takes them in again
+    using ReimportDelegate = Util::Delegate<bool(const IO::Path&, Util::String&)>;
+    // Packaging a model writes its meshes, and for a model that has them its animation, skeleton and
+    // physics, under the model's folder and file, so a field that takes one of those takes a model
+    Editor::AssetTypeRegistry::Register({ .type = "mdl", .workExtension = "nasset", .name = "Model", .icon = "box",
+        .exports = { "msh", "ani", "ske", "phys" },
+        .open = OpenDelegate::FromFunction<&ModelDocument::OpenAsset>(),
+        .reimport = ReimportDelegate::FromFunction<&Editor::ImportPanel::Reimport>() });
+    Editor::AssetTypeRegistry::Register({ .type = "tex", .workExtension = "natex", .name = "Texture", .icon = "image",
+        .open = OpenDelegate::FromFunction<&TextureDocument::OpenAsset>(),
+        .reimport = ReimportDelegate::FromFunction<&Editor::ImportPanel::Reimport>() });
+    Editor::AssetTypeRegistry::Register({ .type = "mat", .workExtension = "namat", .name = "Material", .icon = "palette",
+        .variants = VariantsDelegate::FromFunction<&MaterialDocument::ListTemplates>(),
+        .create = CreateDelegate::FromFunction<&MaterialDocument::CreateAsset>(),
+        .open = OpenDelegate::FromFunction<&MaterialDocument::OpenAsset>() });
+    Editor::AssetTypeRegistry::Register({ .type = "par", .workExtension = "napar", .name = "Particle", .icon = "sparkles" });
+}
+
+//------------------------------------------------------------------------------
+/**
+    A model asset dropped on the viewport is an entity that draws it
+*/
+static void
+DropModel(Editor::EditorDroppedAsset& entity)
+{
+    GraphicsFeature::Model model;
+    model.resource = entity.asset.AsString();
+    entity.Add(Game::GetComponentId<GraphicsFeature::Model>(), &model, sizeof(model));
+}
+
+/// the types registered above, taken back when the feature stops
+static const char* const AssetTypeNames[] = { "mdl", "tex", "mat", "par" };
+
+//------------------------------------------------------------------------------
+/**
+    The panel is the editor's half, so this is only the render half: the shapes, the keys, the
+    asset types and the panel itself.
 */
 void
 RegisterEditorContributions()
@@ -372,8 +528,15 @@ RegisterEditorContributions()
     Dynui::ImguiContext::SetKeyCallback(
         Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)>::FromFunction<&ForwardKey>());
 
+    RegisterAssetTypes();
+    Editor::EditorFeatureRegistry::RegisterAssetDrop("mdl", Util::Delegate<void(Editor::EditorDroppedAsset&)>::FromFunction<&DropModel>());
+
     Editor::EditorFeatureRegistry::RegisterPanel(GraphicsViewportPanel::Create());
     Editor::EditorFeatureRegistry::RegisterPanel(GraphicsProfilerPanel::Create());
+    Editor::EditorFeatureRegistry::RegisterPanel(EnvironmentPanel::Create());
+    Editor::EditorFeatureRegistry::RegisterPanel(ResourcesPanel::Create());
+    RegisterRenderSettings();
+    TerrainPanel::Register();
 }
 
 //------------------------------------------------------------------------------
@@ -385,6 +548,16 @@ ClearEditorContributions()
 {
     Editor::Gizmo::Clear();
     Dynui::ImguiContext::SetKeyCallback(Util::Delegate<bool(Input::Key::Code, bool, Input::Modifier::Code)>());
+    // the exit stops the features in the order they started, so the editor may still have these open.
+    // Their documents hold models and textures, which go before the contexts they are registered in
+    for (const char* type : AssetTypeNames)
+    {
+        Editor::AssetEditorPanel::CloseDocumentsOf(type);
+        Editor::AssetTypeRegistry::Unregister(type);
+    }
+    AssetPreview::Destroy();
+    ClearRenderSettings();
+    TerrainPanel::Clear();
 }
 
 //------------------------------------------------------------------------------

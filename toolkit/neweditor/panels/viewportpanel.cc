@@ -7,6 +7,9 @@
 #include "neweditor/api/gizmo.h"
 #include "neweditor/base/palette.h"
 #include "core/cvar.h"
+#include "neweditor/api/editorfeature.h"
+#include "neweditor/commands/addcomponentcommand.h"
+#include "neweditor/commands/createentitycommand.h"
 #include "neweditor/commands/setcomponentcommand.h"
 #include "neweditor/console/editorcommands.h"
 #include "neweditor/core/editorcore.h"
@@ -50,6 +53,7 @@ static Core::CVar* ed_focus_game_on_play = nullptr;
 */
 ViewportPanel::ViewportPanel() :
     fieldOfView(DefaultFieldOfView),
+    orthographic(false),
     moveSpeed(DefaultMoveSpeed),
     viewMode(ViewScene),
     cameraButton(-1),
@@ -59,7 +63,8 @@ ViewportPanel::ViewportPanel() :
     gameCamera(Game::Entity::Invalid()),
     autoViewMode(-1),
     wasPlaying(false),
-    fileDropPoint(Math::vec3(0, 0, 0)),
+    assetDrop(Game::Entity::Invalid()),
+    dropPoint(Math::vec3(0, 0, 0)),
     targetWidth(0),
     targetHeight(0)
 {
@@ -76,7 +81,7 @@ ViewportPanel::~ViewportPanel()
     // panels before it discards the scenes, so the command manager is still here to finish the
     // macro off
     if (this->core != nullptr)
-        this->AbortFileDrop();
+        this->AbortDrop();
 }
 
 //------------------------------------------------------------------------------
@@ -95,6 +100,10 @@ ViewportPanel::OnSetup()
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ViewportPanel, &ViewportPanel::CommandView>(this));
     commands.Register("fov", "fov [degrees] - print or set the viewport field of view",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ViewportPanel, &ViewportPanel::CommandFov>(this));
+    commands.Register("projection", "projection [perspective|orthographic] - print or set the viewport projection",
+        Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ViewportPanel, &ViewportPanel::CommandProjection>(this));
+    commands.Register("look", "look <top|bottom|left|right|front|back> - look at the pivot from one side",
+        Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ViewportPanel, &ViewportPanel::CommandLook>(this));
     commands.Register("speed", "speed [units per second] - print or set the viewport move speed",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<ViewportPanel, &ViewportPanel::CommandSpeed>(this));
     commands.Register("focus", "focus the camera on the selection",
@@ -126,8 +135,8 @@ ViewportPanel::BeginWindow()
     // mode still has to follow play
     const bool moved = this->OnPlayTransition();
 
-    if (!this->open && this->fileDrop.isvalid())
-        this->AbortFileDrop();
+    if (!this->open && this->IsDropping())
+        this->AbortDrop();
 
     // The core only calls EndWindow for an open panel, so the padding is pushed for an open one only.
     // Pushed for a closed panel it is never popped and leaks into the next window
@@ -182,13 +191,20 @@ ViewportPanel::Draw()
 
     // The window has no padding because of the canvas, so the header and the overlay line get their
     // own margin
+    // The content starts below the tab bar when the window is docked, and the tab bar is inside the
+    // window, so the margin is measured from where the content starts rather than from the window's
+    // corner. From the corner the header was drawn under the tab bar, out of sight
     const float margin = style.FramePadding.x;
-    ImGui::SetCursorPos(ImVec2(margin, margin));
+    const ImVec2 contentStart = ImGui::GetCursorStartPos();
+    ImGui::SetCursorPos(ImVec2(contentStart.x + margin, contentStart.y + margin));
 
     float xStart = ImGui::GetCursorPosX();
     float avail = ImGui::GetContentRegionAvail().x - margin;
 
     ImGui::Text("VIEWPORT");
+
+    ImGui::SameLine();
+    this->DrawViewMenu();
 
     ImGui::SameLine();
 
@@ -267,6 +283,12 @@ ViewportPanel::Draw()
     // answers for. A scene with no game camera keeps the panel's own view, and the overlay says so
     Math::mat4 view = cam.view;
     Math::mat4 projection = Math::perspfovrh(Math::deg2rad(this->fieldOfView), aspect, 0.01f, 1000.0f);
+    if (this->orthographic)
+    {
+        // the height the field of view shows at the pivot, so switching keeps what is framed there
+        const float height = 2.0f * cam.distance * Math::tan(Math::deg2rad(this->fieldOfView) * 0.5f);
+        projection = Math::orthorh(height * aspect, height, 0.01f, 1000.0f);
+    }
 
     if (this->viewMode == ViewGame)
     {
@@ -383,6 +405,7 @@ ViewportPanel::Draw()
     toolView.escape = this->focused && this->cameraButton < 0 && ImGui::IsKeyPressed(ImGuiKey_Escape);
     toolView.ctrl = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
     toolView.alt = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
+    toolView.shift = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
 
     const ImVec2& mousePos = ImGui::GetIO().MousePos;
     toolView.mouse = Math::vec2(mousePos.x, mousePos.y);
@@ -409,16 +432,21 @@ ViewportPanel::Draw()
     // drag takes the cursor, otherwise the cancel is swallowed by the drag
     toolView.rightPressed = rightClicked;
 
-    // A file from the file browser turns into entities here. ImGui copies the payload into its own
-    // buffer and holds it for the whole drag, so the path is read fresh every frame and only the
-    // fact that a drop is in progress has to survive between them
+    // A file from the file browser or an asset from the asset browser turns into entities here.
+    // ImGui copies the payload into its own buffer and holds it for the whole drag, so the path is
+    // read fresh every frame and only the fact that a drop is in progress has to survive between them
     const bool overCanvas = ImGui::BeginDragDropTarget();
     if (overCanvas)
     {
         ImGui::PushStyleColor(ImGuiCol_DragDropTargetBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
         const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+        const char* payloadType = nullptr;
         if (payload != nullptr && payload->IsDataType(Editor::FileDragPayload))
+            payloadType = Editor::FileDragPayload;
+        else if (payload != nullptr && payload->IsDataType(Editor::AssetDragPayload))
+            payloadType = Editor::AssetDragPayload;
+        if (payloadType != nullptr)
         {
             const ImVec2 mouse = ImGui::GetMousePos();
             Math::line ray;
@@ -433,16 +461,19 @@ ViewportPanel::Draw()
                 if (tools->SnapsToGrid())
                     point = tools->SnapToGrid(point);
 
-                if (!this->fileDrop.isvalid())
+                if (this->IsDropping())
+                    this->PreviewDrop(point);
+                else if (payloadType == Editor::FileDragPayload)
                     this->BeginFileDrop((const char*)payload->Data, point);
                 else
-                    this->PreviewFileDrop(point);
+                    this->BeginAssetDrop(IO::Path::Parse((const char*)payload->Data), point);
             }
 
             // The point the commit writes is the one stored, because a release on a frame where the
-            // ray does not reach the ground plane has no point of its own
-            if (ImGui::AcceptDragDropPayload(Editor::FileDragPayload) != nullptr && this->fileDrop.isvalid())
-                this->CommitFileDrop();
+            // ray does not reach the ground plane has no point of its own. An asset nothing is made
+            // of is not taken, so the browser it came from sees the drop go nowhere
+            if (this->IsDropping() && ImGui::AcceptDragDropPayload(payloadType) != nullptr)
+                this->CommitDrop();
         }
 
         ImGui::PopStyleColor();
@@ -451,11 +482,11 @@ ViewportPanel::Draw()
 
     // The preview instantiation belongs to the canvas. A drag that wanders off it, onto an outline
     // row or anywhere else, takes the instantiation back right away
-    if (!overCanvas && this->fileDrop.isvalid() && ImGui::GetDragDropPayload() != nullptr)
-        this->AbortFileDrop();
+    if (!overCanvas && this->IsDropping() && ImGui::GetDragDropPayload() != nullptr)
+        this->AbortDrop();
 
-    if (this->fileDrop.isvalid() && ImGui::GetDragDropPayload() == nullptr)
-        this->AbortFileDrop();
+    if (this->IsDropping() && ImGui::GetDragDropPayload() == nullptr)
+        this->AbortDrop();
 
     // The tool's lines get queued here and go into the canvas when this frame renders. The handle
     // widget is an immediate ImGui control, so its pass both draws and reads this frame's drag, and
@@ -465,6 +496,12 @@ ViewportPanel::Draw()
     {
         ImGuizmo::BeginFrame();
         tools->DrawView(toolView);
+
+        // A feature that holds the canvas' clicks for a while, like one placing points, comes after
+        // the handles, so a handle keeps the press it took, and before the tools, which skip a frame
+        // it took the way they skip one a handle took
+        if (Editor::EditorFeatureRegistry::OfferViewportInput(toolView))
+            toolView.gizmoUsed = true;
     }
 
     tools->UpdateView(toolView);
@@ -599,6 +636,104 @@ ViewportPanel::SetViewMode(int mode)
         return;
 
     this->viewMode = mode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ViewportPanel::CommandProjection(const Util::Array<Util::String>& args)
+{
+    if (!args.IsEmpty())
+    {
+        if (args[0] == "perspective")
+            this->orthographic = false;
+        else if (args[0] == "orthographic")
+            this->orthographic = true;
+        else
+        {
+            this->core->Log(Editor::LogMessageType::N_WARNING, "projection is perspective or orthographic");
+            return;
+        }
+    }
+    this->core->Log(Editor::LogMessageType::N_SYSTEM, Util::Format("projection is %s", this->orthographic ? "orthographic" : "perspective"));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ViewportPanel::CommandLook(const Util::Array<Util::String>& args)
+{
+    static const char* names[6] = { "top", "bottom", "left", "right", "front", "back" };
+    static const Math::vec3 directions[6] = { Math::vec3(0, 1, 0), Math::vec3(0, -1, 0), Math::vec3(-1, 0, 0), Math::vec3(1, 0, 0), Math::vec3(0, 0, 1), Math::vec3(0, 0, -1) };
+    for (int i = 0; i < 6 && !args.IsEmpty(); i++)
+    {
+        if (args[0] == names[i])
+        {
+            Editor::EditorCamera& cam = this->core->GetScene()->GetCamera();
+            cam.LookFrom(directions[i]);
+            const Math::vec3 p = cam.position;
+            this->core->Log(Editor::LogMessageType::N_SYSTEM, Util::Format("looking from the %s, camera at %.2f %.2f %.2f", names[i], p.x, p.y, p.z));
+            return;
+        }
+    }
+    this->core->Log(Editor::LogMessageType::N_WARNING, "look takes top, bottom, left, right, front or back");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const char*
+ViewportPanel::GetViewModeName() const
+{
+    return this->ViewModeName(this->viewMode);
+}
+
+//------------------------------------------------------------------------------
+/**
+    How the canvas looks at the scene. The render side adds how it draws it, the shading and the
+    camera effects, through the registry
+*/
+void
+ViewportPanel::DrawViewMenu()
+{
+    if (ImGui::SmallButton("View"))
+        ImGui::OpenPopup("##viewmenu");
+    ImGui::SetItemTooltip("Projection, snap views and how the canvas is drawn");
+    if (!ImGui::BeginPopup("##viewmenu"))
+        return;
+
+    ImGui::SeparatorText("Projection");
+    if (ImGui::RadioButton("Perspective", !this->orthographic))
+        this->orthographic = false;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Orthographic", this->orthographic))
+        this->orthographic = true;
+    ImGui::SetNextItemWidth(180.0f);
+    ImGui::SliderFloat("Field of view", &this->fieldOfView, 10.0f, 150.0f, "%.0f deg");
+    if (this->orthographic)
+        ImGui::SetItemTooltip("Orthographic shows what the field of view shows at the pivot, the wheel zooms");
+
+    ImGui::SeparatorText("Look from");
+    Editor::EditorCamera& cam = this->core->GetScene()->GetCamera();
+    struct Side { const char* name; Math::vec3 direction; };
+    static const Side sides[6] =
+    {
+        { "Top", Math::vec3(0, 1, 0) }, { "Front", Math::vec3(0, 0, 1) }, { "Right", Math::vec3(1, 0, 0) },
+        { "Bottom", Math::vec3(0, -1, 0) }, { "Back", Math::vec3(0, 0, -1) }, { "Left", Math::vec3(-1, 0, 0) },
+    };
+    for (int i = 0; i < 6; i++)
+    {
+        if (i % 3 != 0)
+            ImGui::SameLine();
+        if (ImGui::Button(sides[i].name, ImVec2(60.0f, 0.0f)))
+            cam.LookFrom(sides[i].direction);
+    }
+
+    // what the render side draws the canvas with
+    Editor::EditorFeatureRegistry::DrawViewportSettings(this->ViewModeName(this->viewMode));
+    ImGui::EndPopup();
 }
 
 //------------------------------------------------------------------------------
@@ -837,31 +972,48 @@ ViewportPanel::CommandReset(const Util::Array<Util::String>& args)
 
 //------------------------------------------------------------------------------
 /**
-    The command is the drop's state: it is the same one the macro holds, and the panels read what it
-    made. The roots are worked out again here each frame rather than kept on the panel, because a
-    preview is gone at the start of the next frame and the roots have to be written again anyway.
+    A file's command is that drop's state: it is the same one the macro holds, and the panels read
+    what it made. The roots are worked out again here each frame rather than kept on the panel,
+    because a preview is gone at the start of the next frame and the roots have to be written again
+    anyway.
 */
 Util::Array<Game::Entity>
-ViewportPanel::FileDropRoots() const
+ViewportPanel::DropRoots() const
 {
     Util::Array<Game::Entity> roots;
-    if (!this->fileDrop.isvalid() || !this->fileDrop->scene.isvalid())
+    if (!this->dropScene.isvalid())
         return roots;
 
-    Ptr<Editor::Scene> scene = this->fileDrop->scene;
+    Ptr<Editor::Scene> scene = this->dropScene;
     const Game::ComponentId position = Game::GetComponentId<Game::Position>();
-    for (IndexT i = 0; i < this->fileDrop->created.Size(); i++)
+    if (this->fileDrop.isvalid())
     {
-        const Game::Entity entity = this->fileDrop->created[i];
-        if (scene->GetParent(entity) != Game::Entity::Invalid())
-            continue;
-        if (!scene->HasComponent(entity, position))
-            continue;
+        for (IndexT i = 0; i < this->fileDrop->created.Size(); i++)
+        {
+            const Game::Entity entity = this->fileDrop->created[i];
+            if (scene->GetParent(entity) != Game::Entity::Invalid())
+                continue;
+            if (!scene->HasComponent(entity, position))
+                continue;
 
-        roots.Append(entity);
+            roots.Append(entity);
+        }
+    }
+    else if (this->assetDrop != Game::Entity::Invalid() && scene->HasInstance(this->assetDrop) && scene->HasComponent(this->assetDrop, position))
+    {
+        roots.Append(this->assetDrop);
     }
 
     return roots;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ViewportPanel::IsDropping() const
+{
+    return this->dropScene.isvalid();
 }
 
 //------------------------------------------------------------------------------
@@ -881,6 +1033,7 @@ ViewportPanel::BeginFileDrop(const char* path, const Math::vec3& onPlane)
     // The panel holds the same command the macro gets, which is what lets the frames after this one
     // know what the run made. A file that cannot be read leaves nothing behind, and the drop is
     // then a macro that the release closes without an entry under it
+    this->dropScene = scene;
     this->fileDrop = Editor::InstantiatePrefabCommand::Create();
     this->fileDrop->scene = scene;
     this->fileDrop->path = path;
@@ -891,7 +1044,57 @@ ViewportPanel::BeginFileDrop(const char* path, const Math::vec3& onPlane)
     manager->BeginMacro("Instantiate");
     manager->Execute(this->fileDrop);
 
-    this->PreviewFileDrop(onPlane);
+    this->PreviewDrop(onPlane);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The entity is made when the drag comes over the canvas, so the model is there to see while it is
+    moved, and the release only writes where it ends up. What it is made with is up to the features
+    that take the asset's type, the editor knows no asset.
+*/
+void
+ViewportPanel::BeginAssetDrop(const IO::Path& asset, const Math::vec3& onPlane)
+{
+    Ptr<Editor::Scene> scene = this->core->GetScene();
+    if (!scene.isvalid())
+        return;
+
+    Ptr<Editor::EditCommandManager> manager = scene->GetCommandManager();
+    if (!manager.isvalid())
+        return;
+
+    Editor::EditorDroppedAsset made;
+    if (!Editor::EditorFeatureRegistry::BuildAssetDrop(asset, made))
+        return;
+
+    manager->BeginMacro("Place asset");
+    this->dropScene = scene;
+
+    Ptr<Editor::CreateEntityCommand> create = Editor::CreateEntityCommand::Create();
+    create->scene = scene;
+    create->record.name = scene->UniqueEntityName(asset.GetFile());
+    create->record.collection = scene->GetActiveCollection();
+    manager->Execute(create);
+    if (!scene->HasInstance(create->record.entity))
+    {
+        // nothing was made, and the abort that follows takes nothing back
+        this->core->Log(Editor::LogMessageType::N_WARNING, Util::String("No entity could be made for ") + asset.AsString());
+        return;
+    }
+    this->assetDrop = create->record.entity;
+
+    for (IndexT i = 0; i < made.components.Size(); i++)
+    {
+        Ptr<Editor::AddComponentCommand> add = Editor::AddComponentCommand::Create();
+        add->scene = scene;
+        add->entity = this->assetDrop;
+        add->component = made.components[i];
+        add->value = made.values[i];
+        manager->Execute(add);
+    }
+
+    this->PreviewDrop(onPlane);
 }
 
 //------------------------------------------------------------------------------
@@ -902,22 +1105,22 @@ ViewportPanel::BeginFileDrop(const char* path, const Math::vec3& onPlane)
     root, which is what keeps the file's own layout.
 */
 void
-ViewportPanel::PreviewFileDrop(const Math::vec3& onPlane)
+ViewportPanel::PreviewDrop(const Math::vec3& onPlane)
 {
-    this->fileDropPoint = onPlane;
+    this->dropPoint = onPlane;
 
-    if (!this->fileDrop.isvalid() || !this->fileDrop->scene.isvalid())
+    if (!this->dropScene.isvalid())
         return;
 
-    Ptr<Editor::Scene> scene = this->fileDrop->scene;
-    const Util::Array<Game::Entity> roots = this->FileDropRoots();
+    Ptr<Editor::Scene> scene = this->dropScene;
+    const Util::Array<Game::Entity> roots = this->DropRoots();
     if (roots.IsEmpty())
         return;
 
     Game::World* world = scene->GetAuthoringWorld();
     const Game::ComponentId position = Game::GetComponentId<Game::Position>();
     const Math::vec3 origin = world->GetComponent<Game::Position>(roots[0]);
-    const Math::vec3 delta = this->fileDropPoint - origin;
+    const Math::vec3 delta = this->dropPoint - origin;
 
     for (IndexT i = 0; i < roots.Size(); i++)
     {
@@ -931,23 +1134,23 @@ ViewportPanel::PreviewFileDrop(const Math::vec3& onPlane)
 /**
 */
 void
-ViewportPanel::CommitFileDrop()
+ViewportPanel::CommitDrop()
 {
-    if (!this->fileDrop.isvalid() || !this->fileDrop->scene.isvalid())
+    if (!this->dropScene.isvalid())
         return;
 
-    Ptr<Editor::Scene> scene = this->fileDrop->scene;
+    Ptr<Editor::Scene> scene = this->dropScene;
     Ptr<Editor::EditCommandManager> manager = scene->GetCommandManager();
     if (!manager.isvalid())
         return;
 
-    const Util::Array<Game::Entity> roots = this->FileDropRoots();
+    const Util::Array<Game::Entity> roots = this->DropRoots();
     if (!roots.IsEmpty())
     {
         Game::World* world = scene->GetAuthoringWorld();
         const Game::ComponentId position = Game::GetComponentId<Game::Position>();
         const Math::vec3 origin = world->GetComponent<Game::Position>(roots[0]);
-        const Math::vec3 delta = this->fileDropPoint - origin;
+        const Math::vec3 delta = this->dropPoint - origin;
 
         for (IndexT i = 0; i < roots.Size(); i++)
         {
@@ -963,8 +1166,19 @@ ViewportPanel::CommitFileDrop()
         }
     }
 
+    // the asset is what was just put down, so it is what the inspector shows next, the way a
+    // created entity is selected. A prefab keeps the selection it had, as before
+    if (this->assetDrop != Game::Entity::Invalid() && scene->HasInstance(this->assetDrop) && scene == this->core->GetScene())
+    {
+        Util::Array<Game::Entity> selection;
+        selection.Append(this->assetDrop);
+        this->core->GetSelection()->SetSelection(selection);
+    }
+
     manager->EndMacro();
+    this->dropScene = nullptr;
     this->fileDrop = nullptr;
+    this->assetDrop = Game::Entity::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -973,23 +1187,27 @@ ViewportPanel::CommitFileDrop()
     than against whichever tab happens to be showing.
 */
 void
-ViewportPanel::AbortFileDrop()
+ViewportPanel::AbortDrop()
 {
-    if (this->fileDrop.isvalid() && this->fileDrop->scene.isvalid())
+    if (this->dropScene.isvalid())
     {
-        Ptr<Editor::EditCommandManager> manager = this->fileDrop->scene->GetCommandManager();
+        Ptr<Editor::EditCommandManager> manager = this->dropScene->GetCommandManager();
         if (manager.isvalid())
         {
             manager->EndMacro();
 
-            // A file that could not be read ran no command, so there is nothing under the macro to
-            // take back, and undoing here would take whatever the author did before the drop
-            if (!this->fileDrop->created.IsEmpty())
+            // A file that could not be read, or an asset no entity could be made for, ran no
+            // command, so there is nothing under the macro to take back, and undoing here would
+            // take whatever the author did before the drop
+            const bool madeSomething = this->fileDrop.isvalid() ? !this->fileDrop->created.IsEmpty() : this->assetDrop != Game::Entity::Invalid();
+            if (madeSomething)
                 manager->Undo();
         }
     }
 
+    this->dropScene = nullptr;
     this->fileDrop = nullptr;
+    this->assetDrop = Game::Entity::Invalid();
 }
 
 } // namespace Editor

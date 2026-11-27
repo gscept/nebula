@@ -7,8 +7,10 @@
                 "default": -1,
                 "hideInInspector": true
             },
-            "terrainResourcePath": {
-              "type": "string"
+            "resource": {
+                "type": "resource",
+                "resourceType": "ter",
+                "default": ""
             }
         }
     }

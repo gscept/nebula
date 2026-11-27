@@ -816,6 +816,25 @@
                         }
                     },
                     {
+                        "copy": {
+                            "name": "ColorBuffer Copy",
+                            "from": {
+                                "tex": "ColorBuffer",
+                                "bits": "ColorBits"
+                            },
+                            "to": {
+                                "tex": "SceneBuffer",
+                                "bits": "ColorBits"
+                            }
+                        }
+                    },
+                    {
+                        "transition": {
+                            "name": "SceneBuffer",
+                            "stage": "PixelShaderRead"
+                        }
+                    },
+                    {
                         "render": {
                             "name": "UI",
                             "targets": [
@@ -831,19 +850,6 @@
                                     }
                                 }
                             ]
-                        }
-                    },
-                    {
-                        "copy": {
-                            "name": "ColorBuffer Copy",
-                            "from": {
-                                "tex": "ColorBuffer",
-                                "bits": "ColorBits"
-                            },
-                            "to": {
-                                "tex": "SceneBuffer",
-                                "bits": "ColorBits"
-                            }
                         }
                     },
                     {

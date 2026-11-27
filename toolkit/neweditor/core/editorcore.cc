@@ -55,9 +55,22 @@ static const char* PanelsPopup = "panels";
 
 //------------------------------------------------------------------------------
 /**
+    True when the panel last worked in answers the edit action for what it edits. Without one, or
+    when it leaves the action alone, the action goes to the active scene
+*/
+static bool
+PanelTakes(EditorPanel* target, EditAction action)
+{
+    return target != nullptr && target->OnEditAction(action);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 EditorCore::EditorCore() :
     focusedPanel(nullptr),
+    commandTarget(nullptr),
+    echoLog(false),
     activeScene(InvalidIndex),
     pendingClose(InvalidIndex),
     pendingQuit(false),
@@ -141,6 +154,8 @@ EditorCore::Setup()
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleUndo>(this));
     this->commands->Register("redo", "redo the last undone editor action",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleRedo>(this));
+    this->commands->Register("save", "save what the panel last worked in edits, otherwise the active scene",
+        Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleSave>(this));
     this->commands->Register("copy", "copy the selection to the system clipboard as a scene document",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleCopy>(this));
     this->commands->Register("paste", "paste the system clipboard into the active scene",
@@ -159,6 +174,8 @@ EditorCore::Setup()
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleRemoveComponent>(this));
     this->commands->Register("get", "get <entity> <component> [field] - print what a component holds",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleGetComponent>(this));
+    this->commands->Register("panel", "panel [list|open <name>|close <name>|focus <name>] - the editor's panels",
+        Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandlePanel>(this));
     this->commands->Register("keybind", "keybind [list|bind <action> <combo>|unbind <action>|reset [action]|save [path]|load [path]] - the editor shortcuts",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<EditorCore, &EditorCore::HandleKeybind>(this));
 
@@ -174,7 +191,7 @@ EditorCore::Setup()
     this->keybinds->Register("paste", Input::Key::V, Input::Modifier::ControlModifier, "paste");
     this->keybinds->Register("duplicate", Input::Key::D, Input::Modifier::ControlModifier, "duplicate");
     this->keybinds->Register("delete", Input::Key::Delete, Input::Modifier::NoModifier, "delete");
-    this->keybinds->Register("scene.save", Input::Key::S, Input::Modifier::ControlModifier, "scene save");
+    this->keybinds->Register("save", Input::Key::S, Input::Modifier::ControlModifier, "save");
     this->keybinds->Register("scene.prev", Input::Key::PageUp, Input::Modifier::ControlModifier, "scene prev");
     this->keybinds->Register("scene.next", Input::Key::PageDown, Input::Modifier::ControlModifier, "scene next");
 }
@@ -239,7 +256,8 @@ EditorCore::Open()
     for (IndexT i = 0; i < this->panels.Size(); i++)
     {
         Ptr<EditorPanel> panel = this->panels[i];
-        panel->SetOpen(this->panelSettings->IsOpen(panel->GetName()));
+        // a panel the file doesn't know yet starts as the panel itself says, most are open
+        panel->SetOpen(this->panelSettings->IsOpen(panel->GetName(), panel->IsOpen()));
     }
 
     this->opened = true;
@@ -319,6 +337,7 @@ EditorCore::Close()
         this->panelSettings->Discard();
 
     this->focusedPanel = nullptr;
+    this->commandTarget = nullptr;
     this->log = nullptr;
     this->statusBar = nullptr;
     this->opened = false;
@@ -396,7 +415,9 @@ EditorCore::DrawShell()
                 // type it in quotes
                 if (ImGui::MenuItem("Open Scene..."))
                     this->SeedConsoleCommand("scene open ");
-                if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+                if (ImGui::MenuItem("Save", "Ctrl+S"))
+                    this->ExecuteCommand("save");
+                if (ImGui::MenuItem("Save Scene"))
                     this->ExecuteCommand("scene save");
                 if (ImGui::MenuItem("Save Scene As..."))
                     this->OpenSaveSceneDialog();
@@ -1006,7 +1027,14 @@ EditorCore::Draw()
     if (this->keybindsModal != nullptr)
         this->keybindsModal->Draw();
 
+    // A feature's own popups draw with the core's, above the panels they are opened from
+    const Util::Array<EditorModal>& modals = EditorFeatureRegistry::GetModals();
+    for (IndexT i = 0; i < modals.Size(); i++)
+        modals[i].draw();
+
     this->SetFocusedPanel(focused);
+    if (focused != nullptr)
+        this->commandTarget = focused;
 
     // The bar draws after the panels, so a message a panel put on it during this frame shows on
     // this frame
@@ -1318,6 +1346,30 @@ EditorPanel*
 EditorCore::GetFocusedPanel() const
 {
     return this->focusedPanel;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+EditorCore::OfferEditAction(EditAction action)
+{
+    return PanelTakes(this->commandTarget, action);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<EditCommandManager>
+EditorCore::GetTargetCommandManager() const
+{
+    if (this->commandTarget != nullptr)
+    {
+        Ptr<EditCommandManager> own = this->commandTarget->GetCommandManager();
+        if (own.isvalid())
+            return own;
+    }
+    return this->GetCommandManager();
 }
 
 //------------------------------------------------------------------------------
@@ -1758,17 +1810,45 @@ EditorCore::RequestQuit(bool force)
             dirty++;
     }
 
-    if (dirty == 0)
+    // What the features hold outside the scenes, an asset open in its editor for instance
+    Util::Array<Util::String> otherWork;
+    const Util::Array<EditorUnsavedWork>& unsaved = EditorFeatureRegistry::GetUnsavedWork();
+    for (IndexT i = 0; i < unsaved.Size(); i++)
+        unsaved[i].list(otherWork);
+
+    if (dirty == 0 && otherWork.IsEmpty())
     {
         this->QuitNow();
         return;
     }
 
     Util::String question;
-    if (dirty == 1)
-        question = "An open scene has changes that are not saved. Save before exiting?";
+    if (otherWork.IsEmpty())
+    {
+        if (dirty == 1)
+            question = "An open scene has changes that are not saved. Save before exiting?";
+        else
+            question.Format("%d open scenes have changes that are not saved. Save them before exiting?", (int)dirty);
+    }
     else
-        question.Format("%d open scenes have changes that are not saved. Save them before exiting?", (int)dirty);
+    {
+        // the names say what it is, because the core does not know what a feature's work is
+        Util::String names;
+        const IndexT shown = Math::min(otherWork.Size(), 4);
+        for (IndexT i = 0; i < shown; i++)
+        {
+            if (i > 0)
+                names.Append(", ");
+            names.Append(otherWork[i]);
+        }
+        if (otherWork.Size() > shown)
+            names.Append(Util::Format(" and %d more", (int)(otherWork.Size() - shown)));
+
+        if (dirty == 0)
+            question.Format("These have changes that are not saved: %s. Save before exiting?", names.AsCharPtr());
+        else
+            question.Format("%d open scene(s) and %s have changes that are not saved. Save before exiting?", (int)dirty, names.AsCharPtr());
+    }
 
     this->pendingQuit = true;
     this->confirmModal->Show("Exit editor", question, "Save", "Don't Save",
@@ -1788,6 +1868,18 @@ EditorCore::RequestQuit(bool force)
 void
 EditorCore::ConfirmQuitSave()
 {
+    // The features' work first, it has no dialog that would stop the walk. A save that fails keeps
+    // the editor open, like a scene that fails does
+    const Util::Array<EditorUnsavedWork>& unsaved = EditorFeatureRegistry::GetUnsavedWork();
+    for (IndexT i = 0; i < unsaved.Size(); i++)
+    {
+        if (!unsaved[i].save())
+        {
+            this->pendingQuit = false;
+            return;
+        }
+    }
+
     for (IndexT i = 0; i < this->scenes.Size(); i++)
     {
         const Ptr<Scene> scene = this->scenes[i];
@@ -2507,7 +2599,7 @@ ParseFieldValue(const char* typeName, const Util::String& text, void* field)
             return false;
         *(Math::quat*)field = Math::quat(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat());
     }
-    else if (type == "Util::StringAtom"_atm)
+    else if (type == "Util::StringAtom"_atm || type == "Resources::ResourceName"_atm)
     {
         *(Util::StringAtom*)field = Util::StringAtom(text.AsCharPtr());
     }
@@ -2562,8 +2654,11 @@ FieldValueText(const char* typeName, const void* field)
         const Math::quat v = *(const Math::quat*)field;
         out.Format("%g, %g, %g, %g", v.x, v.y, v.z, v.w);
     }
-    else if (type == "Util::StringAtom"_atm)
-        out = ((const Util::StringAtom*)field)->Value();
+    else if (type == "Util::StringAtom"_atm || type == "Resources::ResourceName"_atm)
+    {
+        const Util::StringAtom& atom = *(const Util::StringAtom*)field;
+        out = atom.IsValid() ? atom.Value() : "";
+    }
     else if (type == "Game::Entity"_atm)
     {
         const Game::Entity entity = *(const Game::Entity*)field;
@@ -2804,14 +2899,15 @@ EditorCore::HandleGetComponent(const Util::Array<Util::String>& args)
 
 //------------------------------------------------------------------------------
 /**
-    The stacks are the active scene's, so a tab that is not showing cannot be undone from here.
+    The stacks are the active scene's unless the panel last worked in has its own, so a tab that is
+    not showing cannot be undone from here.
 */
 void
 EditorCore::HandleUndo(const Util::Array<Util::String>& args)
 {
     (void)args;
 
-    if (!this->GetCommandManager()->Undo())
+    if (!this->GetTargetCommandManager()->Undo())
         this->Log(LogMessageType::N_WARNING, "Nothing to undo");
 }
 
@@ -2823,8 +2919,23 @@ EditorCore::HandleRedo(const Util::Array<Util::String>& args)
 {
     (void)args;
 
-    if (!this->GetCommandManager()->Redo())
+    if (!this->GetTargetCommandManager()->Redo())
         this->Log(LogMessageType::N_WARNING, "Nothing to redo");
+}
+
+//------------------------------------------------------------------------------
+/**
+    The panel last worked in saves what it edits. A panel that only shows the scene leaves the save
+    to the scene, which is what Ctrl+S did before panels could edit anything else
+*/
+void
+EditorCore::HandleSave(const Util::Array<Util::String>& args)
+{
+    (void)args;
+
+    if (PanelTakes(this->commandTarget, EditAction::Save))
+        return;
+    this->ExecuteCommand("scene save");
 }
 
 //------------------------------------------------------------------------------
@@ -2837,6 +2948,9 @@ EditorCore::HandleCopy(const Util::Array<Util::String>& args)
 {
     (void)args;
 
+    if (PanelTakes(this->commandTarget, EditAction::Copy))
+        return;
+
     if (!this->clipboard->Copy(this->GetSelection()->GetSelection()))
         this->Log(LogMessageType::N_WARNING, "Nothing to copy");
 }
@@ -2848,6 +2962,9 @@ void
 EditorCore::HandlePaste(const Util::Array<Util::String>& args)
 {
     (void)args;
+
+    if (PanelTakes(this->commandTarget, EditAction::Paste))
+        return;
 
     Ptr<SceneDocument> doc = this->clipboard->Read();
     if (!doc.isvalid())
@@ -2868,6 +2985,9 @@ EditorCore::HandleDuplicate(const Util::Array<Util::String>& args)
 {
     (void)args;
 
+    if (PanelTakes(this->commandTarget, EditAction::Duplicate))
+        return;
+
     if (!this->clipboard->Duplicate(this->GetSelection()->GetSelection(),
         this->GetScene()->GetActiveCollection(), Game::Entity::Invalid()))
         this->Log(LogMessageType::N_WARNING, "Nothing to duplicate");
@@ -2880,6 +3000,9 @@ void
 EditorCore::HandleDelete(const Util::Array<Util::String>& args)
 {
     (void)args;
+
+    if (PanelTakes(this->commandTarget, EditAction::Delete))
+        return;
 
     if (!this->DeleteEntities(this->GetSelection()->GetSelection()))
         this->Log(LogMessageType::N_WARNING, "Nothing to delete");
@@ -2907,6 +3030,42 @@ EditorCore::CommandDescription(const Util::String& line)
     }
 
     return Util::String();
+}
+
+//------------------------------------------------------------------------------
+/**
+    What the panels menu does, for the console, the palette and scripts
+*/
+void
+EditorCore::HandlePanel(const Util::Array<Util::String>& args)
+{
+    if (args.IsEmpty() || (args.Size() == 1 && args[0] == "list"))
+    {
+        for (IndexT i = 0; i < this->panels.Size(); i++)
+            this->Log(LogMessageType::N_SYSTEM, Util::Format("  %s%s", this->panels[i]->GetName().AsCharPtr(), this->panels[i]->IsOpen() ? " (open)" : ""));
+        return;
+    }
+    if (args.Size() != 2 || (args[0] != "open" && args[0] != "close" && args[0] != "focus"))
+    {
+        this->Log(LogMessageType::N_WARNING, "panel [list|open <name>|close <name>|focus <name>]");
+        return;
+    }
+    for (IndexT i = 0; i < this->panels.Size(); i++)
+    {
+        const Ptr<EditorPanel>& panel = this->panels[i];
+        if (panel->GetName() != args[1])
+            continue;
+        if (args[0] == "close")
+            panel->SetOpen(false);
+        else
+        {
+            panel->SetOpen(true);
+            if (args[0] == "focus")
+                panel->Focus();
+        }
+        return;
+    }
+    this->Log(LogMessageType::N_WARNING, Util::Format("No panel named '%s', 'panel list' lists them", args[1].AsCharPtr()));
 }
 
 //------------------------------------------------------------------------------
@@ -3137,8 +3296,25 @@ EditorCore::Log(LogMessageType type, const Util::String& msg)
     if (this->log != nullptr)
         this->log->Append(type, msg);
 
+    // a scripted run has nobody reading the console, the log goes to stdout as well. Straight to
+    // it, n_printf comes back here through the editor's console handler
+    if (this->echoLog)
+    {
+        fprintf(stdout, "[editor] %s\n", msg.AsCharPtr());
+        fflush(stdout);
+    }
+
     for (IndexT i = 0; i < this->panels.Size(); i++)
         this->panels[i]->OnLog(type, msg);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorCore::SetEchoLog(bool echo)
+{
+    this->echoLog = echo;
 }
 
 } // namespace Editor

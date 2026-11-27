@@ -19,6 +19,7 @@
 #include "game/entity.h"
 #include "input/key.h"
 #include "input/modifier.h"
+#include "neweditor/api/editaction.h"
 #include "neweditor/base/editorlog.h"
 #include "util/array.h"
 #include "util/delegate.h"
@@ -52,6 +53,9 @@ public:
     virtual Ptr<SelectionContext> GetSelection() const = 0;
     /// the undo and redo stacks of the active scene
     virtual Ptr<EditCommandManager> GetCommandManager() const = 0;
+    /// the undo and redo stacks undo and redo run against: those of the panel last worked in when
+    /// it has its own, an asset editor tab for one, otherwise the active scene's
+    virtual Ptr<EditCommandManager> GetTargetCommandManager() const = 0;
     /// the editor's copy, paste and duplicate
     virtual Ptr<Clipboard> GetClipboard() const = 0;
     /// the open scenes, in tab order
@@ -67,6 +71,9 @@ public:
 
     /// Queue an action to run after the frame has drawn.
     virtual void QueueAction(Util::Delegate<void()> action) = 0;
+    /// Give a shared edit action to the panel last worked in. Return true when it took it, so a
+    /// command that would act on the scene leaves it alone.
+    virtual bool OfferEditAction(EditAction action) = 0;
     /// Put a message on the status bar. An empty message clears it. Without a duration it stays
     /// until it is replaced.
     virtual void SetStatus(const Util::String& msg, float duration = 0.0f) = 0;

@@ -10,7 +10,7 @@ structs = list()
 ##
 #
 class VariableDefinition:
-    def __init__(self, T, name: str, defVal, hideInInspector: bool, description: str):
+    def __init__(self, T, name: str, defVal, hideInInspector: bool, description: str, resourceType: str = ""):
         if not isinstance(T, str) and T is not None:
             util.fmtError('"type" value is not a string value!')
         self.type = T
@@ -20,9 +20,16 @@ class VariableDefinition:
             util.fmtError('"hideInInspector" value is not a bool value!')
         if not isinstance(description, str):
             util.fmtError('"description" value is not a string value!')
+        if not isinstance(resourceType, str):
+            util.fmtError('"resourceType" value is not a string value!')
+        # The type of URN a field holds, folder:file:type, like "mdl". Only a field that holds a
+        # string can name a resource
+        if resourceType and IDLTypes.GetCppTypeString(T) not in ("Resources::ResourceName", "Util::StringAtom"):
+            util.fmtError('"resourceType" is set on {}, which is a {} and not a resource or a string'.format(name, T))
 
         self.description = description
         self.hideInInspector = hideInInspector
+        self.resourceType = resourceType
         self.name = name
         self.defaultValue = defVal
 
@@ -221,8 +228,12 @@ def GetVariableFromEntry(name, var):
 
         if "description" in var:
             description = var["description"]
+
+        resourceType = ""
+        if "resourceType" in var:
+            resourceType = var["resourceType"]
         
-        return VariableDefinition(var["type"], name, default, hideInInspector, description)
+        return VariableDefinition(var["type"], name, default, hideInInspector, description, resourceType)
     else:
         if hasattr(var, "__len__"):
             return VariableDefinition(var, name, None, False, "")
@@ -395,6 +406,16 @@ def WriteComponentHeaderDeclarations(f, document):
                 else:
                     f.WriteLine("")
             f.WriteLine('};')
+            # the URN type a resource field holds, like "mdl", nullptr for a field that is not a
+            # resource or takes any
+            f.WriteLine('static constexpr const char* field_resource_types[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                f.Write('    {}'.format('"{}"'.format(v.resourceType) if v.resourceType else "nullptr"))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
         else:
             f.WriteLine('static constexpr const char** field_names = nullptr;')
             f.WriteLine('static constexpr const char** field_typenames = nullptr;')
@@ -404,6 +425,7 @@ def WriteComponentHeaderDeclarations(f, document):
             f.WriteLine('static constexpr size_t* field_enum_counts = nullptr;')
             f.WriteLine('static constexpr const int* field_enum_values = nullptr;')
             f.WriteLine('static constexpr bool* field_hide_in_inspector = nullptr;')
+            f.WriteLine('static constexpr const char** field_resource_types = nullptr;')
 
         if c.category:  
             f.WriteLine(f'static constexpr const char* category = "{c.category}";')

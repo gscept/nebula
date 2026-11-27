@@ -17,6 +17,9 @@ target_precompile_headers(neweditor PRIVATE [["foundation/stdneb.h"]])
 fips_generate(FROM lucide-icons.txt TYPE lucide_icons OUT_OF_SOURCE
     HEADER neweditor/base/iconregistry.h SOURCE neweditor/base/iconregistry.cc
     ARGS "{ font: ${NROOT}/syswork/data/fonts/lucide.ttf }")
+# The generator only adds the build folder for this directory. A feature that draws its own panel
+# draws the same icons, so the folder goes to whatever uses the editor
+target_include_directories(neweditor PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 fips_dir(base)
     fips_files(
@@ -177,6 +180,8 @@ fips_dir(panels)
         outlinepanel.cc
         profilerpanel.h
         profilerpanel.cc
+        historypanel.h
+        historypanel.cc
         viewportpanel.h
         viewportpanel.cc
     )

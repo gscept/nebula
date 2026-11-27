@@ -30,6 +30,9 @@ class ComponentInspection
 {
 public:
     using DrawFunc = void(*)(Game::Entity, Game::ComponentId, void*, bool*);
+    /// draws a field that holds a resource, with the field's name and the URN type it takes
+    /// (nullptr for any), on the field data
+    using ResourceDrawFunc = void(*)(Game::Entity, Game::ComponentId, const char* field, const char* resourceType, void*, bool*);
     
     static ComponentInspection* Instance();
     static void Destroy();
@@ -45,6 +48,12 @@ public:
     static void OverrideField(ComponentId component, const Util::StringAtom& field, DrawFunc func);
     /// Get the custom draw function of a field, null if it has none
     static DrawFunc GetFieldOverride(ComponentId component, const char* field);
+    /// Set how resource fields are drawn, the editor sets one that picks assets. Null draws them as text
+    static void SetResourceFieldDrawer(ResourceDrawFunc func);
+    /// Draw a field that holds a resource, a field of type resource or one that names a resourceType
+    static void DrawResourceField(Game::Entity owner, ComponentId component, const char* field, const char* resourceType, void* data, bool* commit);
+    /// True if a field of this type name and resource type holds a resource
+    static bool IsResourceField(const char* fieldTypename, const char* resourceType);
 
     // set to true if you want full information to be displayed in the inspector
     bool debug = false;
@@ -64,6 +73,7 @@ private:
         DrawFunc func;
     };
     Util::Array<FieldOverride> fieldOverrides;
+    ResourceDrawFunc resourceDrawer = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -157,6 +167,20 @@ InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* 
             else if (ComponentInspection::DrawFunc fieldOverride = ComponentInspection::GetFieldOverride(component, TYPE::Traits::field_names[i]))
             {
                 fieldOverride(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+            }
+            else if constexpr (std::is_same<field_type, Util::StringAtom>())
+            {
+                // A resource is a string atom, the type name and the resource type are what tell
+                // one from a plain string. The hand written traits have no resource types
+                const char* resourceType = nullptr;
+                if constexpr (requires { TYPE::Traits::field_resource_types; })
+                    resourceType = TYPE::Traits::field_resource_types[i];
+
+                void* fieldData = (byte*)data + TYPE::Traits::field_byte_offsets[i];
+                if (ComponentInspection::IsResourceField(TYPE::Traits::field_typenames[i], resourceType))
+                    ComponentInspection::DrawResourceField(owner, component, TYPE::Traits::field_names[i], resourceType, fieldData, commit);
+                else
+                    ComponentDrawFuncT<field_type>(owner, component, fieldData, commit);
             }
             else
             {

@@ -97,8 +97,12 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 void 
 ShaderStateNode::Unload()
 {
-    // free material
-    Resources::DiscardResource(this->materialRes);
+    // free material, the use the node took when it loaded it
+    if (this->materialRes != Resources::InvalidResourceId)
+    {
+        Resources::DiscardResource(this->materialRes);
+        this->materialRes = Resources::InvalidResourceId;
+    }
 
     // destroy table and constant buffer
     for (auto table : this->resourceTables)
@@ -115,7 +119,8 @@ ShaderStateNode::OnFinishedLoading(ModelStreamingData* streamingData)
 
     // load surface immediately, however it will load textures async
     streamingData->requiredBits |= LoadBits::MaterialBit;
-    Resources::CreateResource(this->materialName, this->tag,
+    // kept so the use is let go when the model unloads
+    this->materialRes = Resources::CreateResource(this->materialName, this->tag,
         [this, streamingData](Resources::ResourceId id)
         {
             streamingData->loadedBits |= LoadBits::MaterialBit;

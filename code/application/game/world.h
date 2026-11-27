@@ -176,6 +176,12 @@ public:
 
     /// Get a decay buffer for the given component
     ComponentDecayBuffer const GetDecayBuffer(ComponentId component);
+    /// Put the value an entity's component holds into the component's decay buffer, the way
+    /// removing it would, and leave the component on the entity. Replacing the value of a live
+    /// component and initializing it again leaves what the old value's init made, a graphics entity,
+    /// with nothing pointing at it, and this is what lets its manager clean it up. Only components
+    /// flagged to decay have a buffer, the decay callbacks are not run.
+    void DecayComponentValue(Entity entity, ComponentId component);
 
     /// preload a level that can be instantiated
     PackedLevel* PreloadLevel(Util::String const& path);
@@ -297,6 +303,8 @@ private:
     /// Copies the component to the decay table and runs its decay callback. The entity is the owner
     /// of the component, which is what allows the callback to touch anything related to it
     void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity);
+    /// Copies a component value to the component's decay buffer
+    void AppendToDecayBuffer(ComponentId component, const void* value);
 
     ///  Move a instance/row within a partition
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);

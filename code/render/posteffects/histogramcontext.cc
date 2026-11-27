@@ -24,7 +24,8 @@ __ImplementPluginContext(PostEffects::HistogramContext);
 struct ViewData
 {
     CoreGraphics::BufferId buf;
-    CoreGraphics::ResourceTableId res;
+    // One table per buffered frame, so a resize never rewrites a table a frame on the GPU still uses
+    CoreGraphics::ResourceTableSet res;
 };
 
 struct
@@ -57,6 +58,36 @@ struct
     Util::Dictionary<Graphics::ViewId, ViewData> viewHistogramBuffers;
 
 } histogramState;
+
+//------------------------------------------------------------------------------
+/**
+    Writes one of a view's tables, with the light buffer of the current size
+*/
+static void
+WriteViewTable(const CoreGraphics::ResourceTableId table, const CoreGraphics::BufferId constants)
+{
+    CoreGraphics::ResourceTableSetRWBuffer(table, {
+        histogramState.histogramCounters,
+        HistogramCs::HistogramBuffer::BINDING,
+        0,
+        CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
+        0
+    });
+    CoreGraphics::ResourceTableSetConstantBuffer(table, {
+        constants,
+        HistogramCs::HistogramConstants::BINDING
+    });
+    CoreGraphics::ResourceTableSetTexture(table,
+    {
+        FrameScript_default::Texture_LightBuffer(),
+        HistogramCs::ColorSource::BINDING,
+        0,
+        CoreGraphics::InvalidSamplerId,
+        false,
+        false
+    });
+    CoreGraphics::ResourceTableCommitChanges(table);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -248,7 +279,7 @@ HistogramContext::UpdateViewResources(const Graphics::ViewId view, const Graphic
     int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex]);
 
     // Get per-view constants
-    histogramState.histogramTable = histogramState.viewHistogramBuffers[view].res;
+    histogramState.histogramTable = histogramState.viewHistogramBuffers[view].res.Get(ctx.bufferIndex);
     histogramState.histogramConstants = histogramState.viewHistogramBuffers[view].buf;
 
      HistogramContext::UpdateConstants();
@@ -306,15 +337,14 @@ HistogramContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
         );
         CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
 
-        // The dispatch binds the per view tables, they still point to the destroyed light buffer
+        // The dispatch binds the per view tables. Frames still on the GPU keep theirs, which point to the old
+        // light buffer until it is deleted. This frame's table is written now, before the frame is submitted,
+        // the others when their frames come around
         for (IndexT i = 0; i < histogramState.viewHistogramBuffers.Size(); i++)
         {
-            CoreGraphics::ResourceTableId table = histogramState.viewHistogramBuffers.ValueAtIndex(i).res;
-            CoreGraphics::ResourceTableSetTexture(
-                table,
-                {source, HistogramCs::ColorSource::BINDING, 0, CoreGraphics::InvalidSamplerId, false, false}
-            );
-            CoreGraphics::ResourceTableCommitChanges(table);
+            CoreGraphics::ResourceTableSet& tables = histogramState.viewHistogramBuffers.ValueAtIndex(i).res;
+            tables.Invalidate();
+            tables.Get(CoreGraphics::GetBufferedFrameIndex());
         }
 
         // The window is in texels, recompute it for the new size
@@ -336,29 +366,10 @@ HistogramContext::OnViewCreated(const Graphics::ViewId view)
     bufInfo.dataSize = 0;
     CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
 
-    CoreGraphics::ResourceTableId res = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
-    CoreGraphics::ResourceTableSetRWBuffer(res, {
-        histogramState.histogramCounters,
-        HistogramCs::HistogramBuffer::BINDING,
-        0,
-        CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
-        0
-    });
-    CoreGraphics::ResourceTableSetConstantBuffer(res, {
-        buf,
-        HistogramCs::HistogramConstants::BINDING
-    });
-    CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
-    CoreGraphics::ResourceTableSetTexture(res,
-    {
-        source,
-        HistogramCs::ColorSource::BINDING,
-        0,
-        CoreGraphics::InvalidSamplerId,
-        false,
-        false
-    });
-    CoreGraphics::ResourceTableCommitChanges(res);
+    // Each table is written when its frame is first recorded
+    CoreGraphics::ResourceTableSet res = CoreGraphics::ShaderCreateResourceTableSet(histogramState.histogramShader, NEBULA_BATCH_GROUP);
+    res.SetUpdate([buf](const CoreGraphics::ResourceTableId table) { WriteViewTable(table, buf); });
+    res.Invalidate();
 
     histogramState.viewHistogramBuffers.Add(view, { buf, res });
 }
@@ -372,7 +383,7 @@ HistogramContext::OnViewRemoved(const Graphics::ViewId view)
     IndexT viewIndex = histogramState.viewHistogramBuffers.FindIndex(view);
     n_assert(viewIndex != InvalidIndex);
     CoreGraphics::DestroyBuffer(histogramState.viewHistogramBuffers.ValueAtIndex(viewIndex).buf);
-    CoreGraphics::DestroyResourceTable(histogramState.viewHistogramBuffers.ValueAtIndex(viewIndex).res);
+    histogramState.viewHistogramBuffers.ValueAtIndex(viewIndex).res.Destroy();
     histogramState.viewHistogramBuffers.EraseAtIndex(viewIndex);
 }
 

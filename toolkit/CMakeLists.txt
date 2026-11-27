@@ -21,5 +21,5 @@ add_subdirectory(toolkitutil)
 add_subdirectory(assetbatcher)
 
 fips_ide_group(Editor)
-add_subdirectory(editor)
 add_subdirectory(neweditor)
+add_subdirectory(editorassets)

@@ -9,6 +9,7 @@
     "NavMesh": {
       "resource": {
         "type": "resource",
+        "resourceType": "nav",
         "default": "",
         "description": "The baked navmesh, a folder:file:nav URN. It is loaded while the entity exists, agents of the agent kind it was baked for use it."
       }

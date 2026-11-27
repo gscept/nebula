@@ -2338,6 +2338,11 @@ OutlinePanel::CommandParent(const Util::Array<Util::String>& args)
 void
 OutlinePanel::CommandRename(const Util::Array<Util::String>& args)
 {
+    // F2 is the rename key whichever panel is in front, so a panel that renames something of its own,
+    // like the asset browser, takes it before the selected entities are renamed
+    if (args.IsEmpty() && this->core->OfferEditAction(EditAction::Rename))
+        return;
+
     const Scene* scene = this->core->GetScene();
     const Util::Array<Game::Entity>& selection = this->core->GetSelection()->GetSelection();
 

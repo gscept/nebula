@@ -344,7 +344,7 @@ GameApplication::SetupAppFromCmdLineArgs()
     {
         this->SetAppTitle(args.GetString("-appname"));
     }
-    editorEnabled = args.GetBoolFlag("-editor");
+    //editorEnabled = args.GetBoolFlag("-editor");
 }
 
 } // namespace App

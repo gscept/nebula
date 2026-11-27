@@ -23,6 +23,7 @@
 #include "math/mat4.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
+#include "io/path.h"
 #include "neweditor/commands/instantiateprefabcommand.h"
 #include "neweditor/core/editorpanel.h"
 #include "neweditor/viewtools/editorcamera.h"
@@ -59,6 +60,8 @@ public:
 
     /// the field of view in degrees. A render side needs it to build its own projection
     float FieldOfView() const;
+    /// the name of the view mode the canvas shows: scene, game, lighting or rendering
+    const char* GetViewModeName() const;
 
 protected:
     bool OnSetup() override;
@@ -100,6 +103,12 @@ private:
     float fieldOfView;
     float moveSpeed;
     int viewMode;
+    /// the canvas is drawn with parallel rays. The visible height follows the orbit distance, so the
+    /// wheel still zooms
+    bool orthographic;
+
+    /// the View popup: the projection, the snap views, and what the render side adds
+    void DrawViewMenu();
 
     /// the camera drag, as the button that owns the cursor. The right button turns in place, the
     /// middle button swings the camera around the pivot, and the middle button with shift slides
@@ -130,10 +139,15 @@ private:
     /// whether the active scene was playing last frame, which is what a transition is measured against
     bool wasPlaying;
 
-    /// A file dragged in from the file browser. Invalid means no drop is in progress.
+    /// The scene a drop over the canvas is made in, a file from the file browser or an asset. Its
+    /// command manager holds the drop's open macro. Invalid means no drop is in progress.
+    Ptr<Editor::Scene> dropScene;
+    /// the instantiation of a dropped file, which knows what it made
     Ptr<Editor::InstantiatePrefabCommand> fileDrop;
+    /// the entity a dropped asset was made into
+    Game::Entity assetDrop;
     /// the cursor on the y=0 plane, as of the last frame the drag was over the canvas
-    Math::vec3 fileDropPoint;
+    Math::vec3 dropPoint;
 
     /// the size of the target the render side has now, in physical pixels
     int targetWidth;
@@ -149,16 +163,21 @@ private:
 
     /// put the dragged file's entities into the scene and open the macro the drop runs in
     void BeginFileDrop(const char* path, const Math::vec3& onPlane);
+    /// make the dragged asset into an entity with what the features give it, and open the macro
+    /// the drop runs in. An asset no feature takes makes nothing and opens nothing
+    void BeginAssetDrop(const IO::Path& asset, const Math::vec3& onPlane);
+    /// true while a drop is in progress
+    bool IsDropping() const;
     /// move the entities to the cursor as previews
-    void PreviewFileDrop(const Math::vec3& onPlane);
+    void PreviewDrop(const Math::vec3& onPlane);
     /// the release over the canvas: write the position for real and close the macro
-    void CommitFileDrop();
+    void CommitDrop();
     /// the drag ended without a release over the canvas, or the panel closed before it could
     /// commit: close the macro and undo it
-    void AbortFileDrop();
-    /// the roots of the instantiation, the entities that move under the cursor, read from the
-    /// command. The children of the instantiation follow those through the parent chain
-    Util::Array<Game::Entity> FileDropRoots() const;
+    void AbortDrop();
+    /// the entities that move under the cursor: the roots of a file's instantiation, read from the
+    /// command, whose children follow through the parent chain, or the asset's entity
+    Util::Array<Game::Entity> DropRoots() const;
 
     void SetViewMode(int mode);
     const char* ViewModeName(int mode) const;
@@ -170,6 +189,8 @@ private:
     /// commands
     void CommandView(const Util::Array<Util::String>& args);
     void CommandFov(const Util::Array<Util::String>& args);
+    void CommandProjection(const Util::Array<Util::String>& args);
+    void CommandLook(const Util::Array<Util::String>& args);
     void CommandSpeed(const Util::Array<Util::String>& args);
     void CommandFocus(const Util::Array<Util::String>& args);
     void CommandReset(const Util::Array<Util::String>& args);

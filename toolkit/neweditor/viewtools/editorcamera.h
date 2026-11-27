@@ -75,6 +75,9 @@ struct EditorCamera
 
     /// Set the pivot and the distance. A focus does this.
     void SetPivot(const Math::vec3& point, float d);
+    /// put the camera on one side of the pivot, at the distance it has, looking at the pivot. The
+    /// direction is from the pivot to the camera: +y looks down from the top
+    void LookFrom(const Math::vec3& direction);
 };
 
 //------------------------------------------------------------------------------

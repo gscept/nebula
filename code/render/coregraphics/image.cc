@@ -95,7 +95,23 @@ CreateImage(const ImageCreateInfoFile& info)
 ImageId
 CreateImage(const ImageCreateInfoData& info)
 {
-    return ImageId();
+    // the data is copied, the image owns what it holds like one made from a file or a texture
+    const CoreGraphics::PixelFormat::Code format = info.format;
+    const SizeT depth = info.depth > 0 ? info.depth : 1;
+    const SizeT byteSize = info.width * info.height * depth * CoreGraphics::PixelFormat::ToSize(format);
+    n_assert(info.data != nullptr && byteSize > 0);
+
+    Ids::Id32 image = imageAllocator.Alloc();
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(image);
+    loadInfo.width = info.width;
+    loadInfo.height = info.height * depth;
+    loadInfo.format = format;
+    loadInfo.channels = CoreGraphics::PixelFormat::ToChannels(format);
+    loadInfo.primitive = ToImagePrimitive(format);
+    void* data = Memory::Alloc(Memory::ResourceHeap, byteSize);
+    memcpy(data, info.data, byteSize);
+    loadInfo.data.stbiData8 = (unsigned char*)data;
+    return ImageId(image);
 }
 
 //------------------------------------------------------------------------------
@@ -189,6 +205,8 @@ DestroyImage(const ImageId id)
 {
     ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiData8);
+    loadInfo.data.stbiData8 = nullptr;
+    imageAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

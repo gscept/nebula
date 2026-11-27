@@ -8,6 +8,8 @@
 #if WITH_NEBULA_EDITOR
 #include "basegamefeature/managers/transformhierarchy.h"
 #include "game/world.h"
+#include "io/ioserver.h"
+#include "io/path.h"
 #include "neweditor/api/editorfeature.h"
 #include "neweditor/model/scene.h"
 #include "physicsfeature/components/physicsfeature.h"
@@ -37,6 +39,28 @@ ColliderComponents()
 
 //------------------------------------------------------------------------------
 /**
+    A model asset dropped on the viewport collides as the static mesh it is. The packager writes a
+    model's mesh under the model's folder and file, which is the mesh the collider cooks. A model
+    without a mesh is left without a body
+*/
+static void
+DropModel(Editor::EditorDroppedAsset& entity)
+{
+    const IO::Path mesh = IO::Path::File(entity.asset.GetFolder(), entity.asset.GetFile(), "msh");
+    if (!IO::Path::ExportExtensions.Contains("msh") || !IO::FileExists(mesh.ExportURI()))
+        return;
+
+    PhysicsFeature::StaticBody body;
+    entity.Add(Game::GetComponentId<PhysicsFeature::StaticBody>(), &body, sizeof(body));
+
+    PhysicsFeature::MeshCollider collider;
+    collider.resource = mesh.AsString();
+    collider.primGroup = 0;
+    entity.Add(Game::GetComponentId<PhysicsFeature::MeshCollider>(), &collider, sizeof(collider));
+}
+
+//------------------------------------------------------------------------------
+/**
     The feature registers what it has, and the editor reads the registry at open. A feature that
     registers nothing is never asked for, so this does not check whether an editor is running.
 */
@@ -44,6 +68,7 @@ void
 RegisterEditorContributions()
 {
     Editor::EditorFeatureRegistry::RegisterAddComponentConstraint(ColliderComponents(), 1);
+    Editor::EditorFeatureRegistry::RegisterAssetDrop("mdl", Util::Delegate<void(Editor::EditorDroppedAsset&)>::FromFunction<&DropModel>());
 
     Editor::EditorFeatureRegistry::RegisterOnComponentChangeListener(
         Util::Delegate<void(Editor::Scene*, Game::Entity, Game::ComponentId)>::

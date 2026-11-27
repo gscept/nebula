@@ -317,6 +317,7 @@ ToolContext::DrawView(ToolView& view)
     // the widget's own math reads it even when no handle is drawn
     ImGuizmo::SetRect(view.canvasMin.x, view.canvasMin.y, view.canvasSize.x, view.canvasSize.y);
     ImGuizmo::SetDrawlist();
+    ImGuizmo::SetOrthographic(view.projection.r[3].w != 0.0f);
 
     if (Gizmo::DrawComponentGizmos(view))
     {
@@ -346,6 +347,7 @@ ToolContext::DrawView(ToolView& view)
     ImGuizmo::Enable(true);
     ImGuizmo::SetRect(view.canvasMin.x, view.canvasMin.y, view.canvasSize.x, view.canvasSize.y);
     ImGuizmo::SetDrawlist();
+    ImGuizmo::SetOrthographic(view.projection.r[3].w != 0.0f);
 
     ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
     if (this->activeTool == RotateToolId)

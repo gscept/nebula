@@ -27,9 +27,9 @@ struct ImageCreateInfoFile
 
 struct ImageCreateInfoData
 {
-    CoreGraphics::PixelFormat format;
-    SizeT width, height, depth;
-    void* data;
+    CoreGraphics::PixelFormat::Code format;
+    SizeT width, height, depth = 1;
+    const void* data;
 };
 
 enum ImageContainer

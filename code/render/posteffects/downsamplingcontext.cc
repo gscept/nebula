@@ -19,8 +19,9 @@ __ImplementPluginContext(DownsamplingContext);
 
 struct
 {
-    CoreGraphics::ResourceTableId depthDownsampleResourceTable;
-    CoreGraphics::ResourceTableId colorDownsampleResourceTable;
+    // One table per buffered frame each, so a resize never rewrites a table a frame on the GPU still uses
+    CoreGraphics::ResourceTableSet depthDownsampleResourceTables;
+    CoreGraphics::ResourceTableSet colorDownsampleResourceTables;
 
     CoreGraphics::ShaderId downsampleDepthShader;
     CoreGraphics::ShaderProgramId downsampleDepthProgram;
@@ -29,7 +30,7 @@ struct
 
     CoreGraphics::ShaderId extractShader;
     CoreGraphics::ShaderProgramId extractProgram;
-    CoreGraphics::ResourceTableId extractResourceTable;
+    CoreGraphics::ResourceTableSet extractResourceTables;
 
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledColorBufferViews;
     CoreGraphics::BufferId colorBufferCounter;
@@ -109,19 +110,16 @@ DownsamplingContext::Discard()
 
 //------------------------------------------------------------------------------
 /**
+    Creates one view per mip of the texture
 */
-void
-SetupMipChainResources(
+static void
+CreateMipChainViews(
     CoreGraphics::TextureId tex
     , Util::FixedArray<CoreGraphics::TextureViewId>& views
-    , CoreGraphics::ResourceTableId table
     , const Util::String& name
     , bool depth
-    , IndexT input
-    , IndexT slot
 )
 {
-    // Setup resources
     auto mips = TextureGetNumMips(tex);
     views.Resize(mips);
     for (IndexT i = 0; i < mips; i++)
@@ -134,7 +132,23 @@ SetupMipChainResources(
         info.format = CoreGraphics::TextureGetPixelFormat(tex);
         info.bits = depth ? CoreGraphics::ImageBits::DepthBits : CoreGraphics::ImageBits::ColorBits;
         views[i] = CoreGraphics::CreateTextureView(info);
+    }
+}
 
+//------------------------------------------------------------------------------
+/**
+    Sets the mip views in a table, mip 0 is the input and the others are the outputs
+*/
+static void
+SetMipChainViews(
+    const CoreGraphics::ResourceTableId table
+    , const Util::FixedArray<CoreGraphics::TextureViewId>& views
+    , IndexT input
+    , IndexT slot
+)
+{
+    for (IndexT i = 0; i < views.Size(); i++)
+    {
         if (i == 0)
         {
             CoreGraphics::ResourceTableSetRWTexture(table,
@@ -154,6 +168,65 @@ SetupMipChainResources(
             });
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Writes one of the color downsample tables, with the views of the current size
+*/
+static void
+WriteColorDownsampleTable(const CoreGraphics::ResourceTableId table)
+{
+    CoreGraphics::ResourceTableSetRWBuffer(table, {
+        state.colorBufferCounter,
+        DownsampleCsLight::Counters::BINDING,
+    });
+    CoreGraphics::ResourceTableSetConstantBuffer(table, {
+        state.colorBufferConstants,
+        DownsampleCsLight::DownsampleUniforms::BINDING,
+    });
+    SetMipChainViews(table, state.downsampledColorBufferViews, DownsampleCsLight::Input::BINDING, DownsampleCsLight::Output::BINDING);
+    CoreGraphics::ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Writes one of the depth downsample tables, with the views of the current size
+*/
+static void
+WriteDepthDownsampleTable(const CoreGraphics::ResourceTableId table)
+{
+    CoreGraphics::ResourceTableSetRWBuffer(table, {
+        state.depthBufferCounter,
+        DownsampleCsDepth::Counters::BINDING,
+    });
+    CoreGraphics::ResourceTableSetConstantBuffer(table, {
+        state.depthBufferConstants,
+        DownsampleCsDepth::DownsampleUniforms::BINDING,
+    });
+    SetMipChainViews(table, state.downsampledDepthBufferViews, DownsampleCsDepth::Input::BINDING, DownsampleCsDepth::Output::BINDING);
+    CoreGraphics::ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Writes one of the depth extract tables, with the depth buffers of the current size
+*/
+static void
+WriteExtractTable(const CoreGraphics::ResourceTableId table)
+{
+    CoreGraphics::ResourceTableSetTexture(table, {
+        FrameScript_default::Texture_ZBuffer(),
+        DepthExtractCs::ZBufferInput::BINDING,
+        0,
+        CoreGraphics::InvalidSamplerId,
+        true,
+        false
+    });
+    CoreGraphics::ResourceTableSetRWTexture(table, {
+        FrameScript_default::Texture_Depth(),
+        DepthExtractCs::DepthOutput::BINDING
+    });
     CoreGraphics::ResourceTableCommitChanges(table);
 }
 
@@ -173,9 +246,12 @@ DownsamplingContext::Setup()
     state.extractShader = ShaderGet("shd:system_shaders/downsample/depth_extract_cs.gplb");
     state.extractProgram = ShaderGetProgram(state.extractShader, ShaderFeatureMask("Extract"));
 
-    state.colorDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleColorShader, NEBULA_BATCH_GROUP);
-    state.depthDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleDepthShader, NEBULA_BATCH_GROUP);
-    state.extractResourceTable = ShaderCreateResourceTable(state.extractShader, NEBULA_BATCH_GROUP);
+    state.colorDownsampleResourceTables = ShaderCreateResourceTableSet(state.downsampleColorShader, NEBULA_BATCH_GROUP);
+    state.colorDownsampleResourceTables.SetUpdate(WriteColorDownsampleTable);
+    state.depthDownsampleResourceTables = ShaderCreateResourceTableSet(state.downsampleDepthShader, NEBULA_BATCH_GROUP);
+    state.depthDownsampleResourceTables.SetUpdate(WriteDepthDownsampleTable);
+    state.extractResourceTables = ShaderCreateResourceTableSet(state.extractShader, NEBULA_BATCH_GROUP);
+    state.extractResourceTables.SetUpdate(WriteExtractTable);
 
  
     CoreGraphics::BufferCreateInfo bufInfo;
@@ -203,45 +279,13 @@ DownsamplingContext::Setup()
     uint dispatchX = DispatchSize(dims.width);
     uint dispatchY = DispatchSize(dims.height);
 
-    CoreGraphics::ResourceTableSetRWBuffer(state.colorDownsampleResourceTable, {
-        state.colorBufferCounter,
-        DownsampleCsLight::Counters::BINDING,
-    });
-
-    CoreGraphics::ResourceTableSetConstantBuffer(state.colorDownsampleResourceTable, {
-        state.colorBufferConstants,
-        DownsampleCsLight::DownsampleUniforms::BINDING,
-    });
-
-    CoreGraphics::ResourceTableSetRWBuffer(state.depthDownsampleResourceTable, {
-        state.depthBufferCounter,
-        DownsampleCsDepth::Counters::BINDING,
-    });
-
-    CoreGraphics::ResourceTableSetConstantBuffer(state.depthDownsampleResourceTable, {
-        state.depthBufferConstants,
-        DownsampleCsDepth::DownsampleUniforms::BINDING,
-    });
-
-    CoreGraphics::ResourceTableSetTexture(state.extractResourceTable, {
-        FrameScript_default::Texture_ZBuffer(),
-        DepthExtractCs::ZBufferInput::BINDING,
-        0,
-        CoreGraphics::InvalidSamplerId,
-        true,
-        false
-    });
-
-    CoreGraphics::ResourceTableSetRWTexture(state.extractResourceTable, {
-        FrameScript_default::Texture_Depth(),
-        DepthExtractCs::DepthOutput::BINDING
-    });
-    CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);
+    // Each table is written when its frame is first recorded
+    state.extractResourceTables.Invalidate();
 
     FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.extractProgram, queue, false);
-        CmdSetResourceTable(cmdBuf, state.extractResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, state.extractResourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         CmdDispatch(cmdBuf, dispatchX, viewport.height(), 1);
     }, nullptr, {
@@ -252,7 +296,7 @@ DownsamplingContext::Setup()
     FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, queue, false);
-        CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
@@ -275,7 +319,7 @@ DownsamplingContext::Setup()
     FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, queue, false);
-        CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 64);
         uint dispatchY = Math::divandroundup(viewport.height(), 64);
 
@@ -295,9 +339,11 @@ DownsamplingContext::Setup()
         { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }
     });
 
-    // Setup mip chains in resource tables
-    SetupMipChainResources(FrameScript_default::Texture_LightBuffer(), state.downsampledColorBufferViews, state.colorDownsampleResourceTable, "Color Downsample", false, DownsampleCsLight::Input::BINDING, DownsampleCsLight::Output::BINDING);
-    SetupMipChainResources(FrameScript_default::Texture_Depth(), state.downsampledDepthBufferViews, state.depthDownsampleResourceTable, "Depth Downsample", false, DownsampleCsDepth::Input::BINDING, DownsampleCsDepth::Output::BINDING);
+    // Setup mip chains, the tables get them when they are written
+    CreateMipChainViews(FrameScript_default::Texture_LightBuffer(), state.downsampledColorBufferViews, "Color Downsample", false);
+    CreateMipChainViews(FrameScript_default::Texture_Depth(), state.downsampledDepthBufferViews, "Depth Downsample", false);
+    state.colorDownsampleResourceTables.Invalidate();
+    state.depthDownsampleResourceTables.Invalidate();
 }
 
 //------------------------------------------------------------------------------
@@ -319,39 +365,18 @@ DownsamplingContext::Resize(const uint framescriptHash, SizeT width, SizeT heigh
         }
 
         // Setup new views
-        SetupMipChainResources(
-            FrameScript_default::Texture_LightBuffer(),
-            state.downsampledColorBufferViews,
-            state.colorDownsampleResourceTable,
-            "Color Downsample",
-            false,
-            DownsampleCsLight::Input::BINDING,
-            DownsampleCsLight::Output::BINDING
-        );
-        SetupMipChainResources(
-            FrameScript_default::Texture_Depth(),
-            state.downsampledDepthBufferViews,
-            state.depthDownsampleResourceTable,
-            "Depth Downsample",
-            false,
-            DownsampleCsDepth::Input::BINDING,
-            DownsampleCsDepth::Output::BINDING
-        );
+        CreateMipChainViews(FrameScript_default::Texture_LightBuffer(), state.downsampledColorBufferViews, "Color Downsample", false);
+        CreateMipChainViews(FrameScript_default::Texture_Depth(), state.downsampledDepthBufferViews, "Depth Downsample", false);
 
-        CoreGraphics::ResourceTableSetTexture(
-            state.extractResourceTable,
-            {FrameScript_default::Texture_ZBuffer(),
-             DepthExtractCs::ZBufferInput::BINDING,
-             0,
-             CoreGraphics::InvalidSamplerId,
-             true,
-             false}
-        );
-
-        CoreGraphics::ResourceTableSetRWTexture(
-            state.extractResourceTable, {FrameScript_default::Texture_Depth(), DepthExtractCs::DepthOutput::BINDING}
-        );
-        CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);
+        // Frames still on the GPU keep their tables, which point to the old views until those are deleted.
+        // This frame's tables are written now, before the frame is submitted, the others when their frames come around
+        const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+        state.colorDownsampleResourceTables.Invalidate();
+        state.colorDownsampleResourceTables.Get(bufferIndex);
+        state.depthDownsampleResourceTables.Invalidate();
+        state.depthDownsampleResourceTables.Get(bufferIndex);
+        state.extractResourceTables.Invalidate();
+        state.extractResourceTables.Get(bufferIndex);
     }
 }
 

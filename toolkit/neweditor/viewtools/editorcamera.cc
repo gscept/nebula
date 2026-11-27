@@ -94,4 +94,53 @@ Editor::EditorCamera::Update(const EditorCameraInput& input, float dt)
     this->forward = forward;
 }
 
+//------------------------------------------------------------------------------
+/**
+    The forward axis Update builds from a pitch and a yaw
+*/
+static Math::vec3
+ForwardOf(float rotx, float roty)
+{
+    const Math::mat4 rotate = Math::rotationy(roty) * Math::rotationx(rotx);
+    return Math::vec3(rotate.m[2][0], rotate.m[2][1], rotate.m[2][2]);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The pitch and the yaw are searched rather than worked out, so this agrees with Update whatever
+    the rotation functions' conventions are. The pitch stops short of straight up and down, the way
+    the drags do, so a top view looks down at 89 degrees
+*/
+void
+Editor::EditorCamera::LookFrom(const Math::vec3& direction)
+{
+    const Math::vec3 pivot = this->Pivot();
+    const Math::vec3 want = Math::normalize(direction);
+
+    float bestX = this->rotx, bestY = this->roty, bestDot = -2.0f;
+    const float pitches[3] = { 0.0f, Math::deg2rad(89.0f), Math::deg2rad(-89.0f) };
+    for (float pitch : pitches)
+    {
+        for (int quarter = 0; quarter < 4; quarter++)
+        {
+            const float yaw = Math::deg2rad(90.0f * quarter);
+            const float d = Math::dot(ForwardOf(pitch, yaw), want);
+            if (d > bestDot)
+            {
+                bestDot = d;
+                bestX = pitch;
+                bestY = yaw;
+            }
+        }
+    }
+
+    this->rotx = bestX;
+    this->roty = bestY;
+    this->forward = ForwardOf(bestX, bestY);
+    this->position = this->targetPosition = pivot + this->forward * this->distance;
+
+    const Math::mat4 rotate = Math::rotationy(this->roty) * Math::rotationx(this->rotx);
+    this->view = Math::inverse(Math::translation(this->position) * rotate);
+}
+
 } // namespace Editor

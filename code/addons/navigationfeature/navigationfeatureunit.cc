@@ -16,6 +16,9 @@
 #include "managers/navigationmanager.h"
 #include "managers/agentmanager.h"
 #include "profiling/profiling.h"
+#if WITH_NEBULA_EDITOR
+#include "navigationfeature/editor/navigationeditor.h"
+#endif
 
 namespace Navigation
 {
@@ -82,6 +85,11 @@ NavigationFeatureUnit::OnActivate()
 
     this->AttachManager(NavigationManager::Create());
     this->AttachManager(AgentManager::Create());
+
+#if WITH_NEBULA_EDITOR
+    // The feature's own contribution. The editor reads the registry when it opens, after this
+    RegisterEditorContributions();
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -90,6 +98,10 @@ NavigationFeatureUnit::OnActivate()
 void
 NavigationFeatureUnit::OnDeactivate()
 {   
+#if WITH_NEBULA_EDITOR
+    // taken back here rather than by the editor, because the editor never knew who registered it
+    ClearEditorContributions();
+#endif
     delete areaTable;
     areaTable = nullptr;
     FeatureUnit::OnDeactivate();    
@@ -208,6 +220,16 @@ RaycastNavMeshes(const Math::point& start, const Math::vector& dir, float& outT)
         }
     }
     return hit;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DrawNavMeshesAndAgents()
+{
+    DrawLoadedNavMeshes();
+    DrawAgents();
 }
 
 //------------------------------------------------------------------------------

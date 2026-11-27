@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
+#include "graphicsfeature/terrain/terrainfile.h"
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
 #include "graphics/cameracontext.h"
@@ -52,9 +53,6 @@
 #include "frame/default.h"
 #include "frame/shadows.h"
 #include "gi/ddgicontext.h"
-#if WITH_NEBULA_EDITOR
-#include "frame/editorframe.h"
-#endif
 
 using namespace Graphics;
 using namespace Visibility;
@@ -90,6 +88,8 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
+    // a Terrain names its file as folder:file:ter
+    RegisterTerrainPathMappings();
     this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
     this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
     this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
@@ -153,12 +153,6 @@ GraphicsFeatureUnit::OnActivate()
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
-#if WITH_NEBULA_EDITOR
-    if (App::GameApplication::IsEditorEnabled())
-    {
-        FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
-    }
-#endif
     this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()), 1u, [](IndexT frameIndex, IndexT bufferIndex) {
         static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
         FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
@@ -304,12 +298,6 @@ GraphicsFeatureUnit::OnActivate()
 
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();
-#if WITH_NEBULA_EDITOR
-    if (App::GameApplication::IsEditorEnabled())
-    {
-        FrameScript_editorframe::SetupPipelines();
-    }
-#endif
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
 }
 
@@ -339,6 +327,8 @@ GraphicsFeatureUnit::OnDeactivate()
     CoreGraphics::DestroyWindow(this->mainWindow);
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
+    // what the terrains loaded and made, they are still set up when the game ends
+    ::Terrain::TerrainContext::Discard();
     Lighting::LightContext::Discard();
     Decals::DecalContext::Discard();
     Fog::VolumetricFogContext::Discard();

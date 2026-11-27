@@ -63,6 +63,8 @@ public:
 
     /// Invalidate terrain related resources
     static void Invalidate(const Graphics::GraphicsEntityId id);
+    /// forget the meshes, SetupMesh starts at index 0 again. What an editor does to set the plants up anew
+    static void ClearMeshes(const Graphics::GraphicsEntityId id);
     /// update resources
     static void UpdateViewResources(const Graphics::ViewId view, const Graphics::FrameContext& ctx);
 private:
@@ -104,6 +106,10 @@ private:
         SizeT meshVertexAttributeOffsets[MAX_MESH_INFOS];
         SizeT meshIndexOffsets[MAX_MESH_INFOS];
         ShaderSet shaderSet[MAX_MESH_INFOS];
+
+        /// true from Setup until the entity is deregistered. A slot the allocator keeps for reuse
+        /// is not live, and the frame's passes skip it
+        bool live = false;
     };
 
     enum

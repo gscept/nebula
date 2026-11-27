@@ -88,11 +88,11 @@ PanelSettings::FindIndex(const Util::String& name) const
 /**
 */
 bool
-PanelSettings::IsOpen(const Util::String& name) const
+PanelSettings::IsOpen(const Util::String& name, bool fallback) const
 {
     const IndexT index = this->FindIndex(name);
     if (index == InvalidIndex)
-        return true;
+        return fallback;
 
     return this->records[index].open;
 }

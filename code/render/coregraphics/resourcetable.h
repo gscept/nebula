@@ -372,6 +372,11 @@ void ResourceTableCommitChanges(const ResourceTableId id);
 //------------------------------------------------------------------------------
 /**
     Set of buffers which creates a resource table per each buffered frame
+
+    A table can only be rewritten once the frame that last used it is done on the GPU,
+    which is the case when its buffered frame comes around again. So instead of
+    rewriting every table at once, Invalidate marks them out of date, and Get rewrites
+    a table with the update function the next time its frame asks for it.
 */
 struct ResourceTableSet
 {
@@ -388,8 +393,17 @@ struct ResourceTableSet
 
     /// Get buffer for this frame
     const CoreGraphics::ResourceTableId Get();
+    /// Get the table of a buffered frame, rewriting it first if it's out of date. Only call it while that frame is recorded
+    const CoreGraphics::ResourceTableId Get(const IndexT bufferIndex);
+
+    /// Set the function that writes a table, it should read the current state each time it runs
+    void SetUpdate(std::function<void(const ResourceTableId)> func);
+    /// Mark every table out of date, each is rewritten the next time Get returns it
+    void Invalidate();
 
     Util::FixedArray<CoreGraphics::ResourceTableId> tables;
+    Util::FixedArray<bool> outdated;
+    std::function<void(const ResourceTableId)> update;
 };
 
 //------------------------------------------------------------------------------

@@ -18,6 +18,11 @@ Util::Array<EditorAddComponentConstraint> EditorFeatureRegistry::constraints;
 Util::Array<Game::ComponentId> EditorFeatureRegistry::runtimeComponents;
 Util::Array<EditorOnComponentChangeListener> EditorFeatureRegistry::listeners;
 Util::Array<EditorStatusNumbers> EditorFeatureRegistry::statusNumbers;
+Util::Array<EditorModal> EditorFeatureRegistry::modals;
+Util::Array<EditorUnsavedWork> EditorFeatureRegistry::unsavedWork;
+Util::Array<EditorAssetDrop> EditorFeatureRegistry::assetDrops;
+Util::Array<Util::Delegate<bool(const ToolView&)>> EditorFeatureRegistry::viewportInputs;
+Util::Array<Util::Delegate<void(const char*)>> EditorFeatureRegistry::viewportSettings;
 Shell* EditorFeatureRegistry::shell = nullptr;
 
 //------------------------------------------------------------------------------
@@ -119,6 +124,19 @@ EditorFeatureRegistry::RegisterStatusNumbers(Util::Delegate<void(Util::String& o
 //------------------------------------------------------------------------------
 /**
 */
+void
+EditorFeatureRegistry::RegisterModal(Util::Delegate<void()> draw)
+{
+    n_assert(draw.IsValid());
+
+    EditorModal modal;
+    modal.draw = draw;
+    EditorFeatureRegistry::modals.Append(modal);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<Ptr<EditorPanel>>&
 EditorFeatureRegistry::GetPanels()
 {
@@ -168,6 +186,146 @@ const Util::Array<EditorStatusNumbers>&
 EditorFeatureRegistry::GetStatusNumbers()
 {
     return EditorFeatureRegistry::statusNumbers;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<EditorModal>&
+EditorFeatureRegistry::GetModals()
+{
+    return EditorFeatureRegistry::modals;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureRegistry::RegisterUnsavedWork(Util::Delegate<void(Util::Array<Util::String>&)> list, Util::Delegate<bool()> save)
+{
+    n_assert(list.IsValid());
+    n_assert(save.IsValid());
+
+    EditorUnsavedWork work;
+    work.list = list;
+    work.save = save;
+    EditorFeatureRegistry::unsavedWork.Append(work);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<EditorUnsavedWork>&
+EditorFeatureRegistry::GetUnsavedWork()
+{
+    return EditorFeatureRegistry::unsavedWork;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorDroppedAsset::Add(Game::ComponentId component, const void* value, SizeT size)
+{
+    const IndexT index = this->components.FindIndex(component);
+    if (index != InvalidIndex)
+    {
+        this->values[index] = Util::Blob(value, size);
+        return;
+    }
+    this->components.Append(component);
+    this->values.Append(Util::Blob(value, size));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureRegistry::RegisterAssetDrop(const Util::String& type, Util::Delegate<void(EditorDroppedAsset&)> contribute)
+{
+    n_assert(type.IsValid());
+    n_assert(contribute.IsValid());
+
+    EditorAssetDrop drop;
+    drop.type = type;
+    drop.contribute = contribute;
+    EditorFeatureRegistry::assetDrops.Append(drop);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<EditorAssetDrop>&
+EditorFeatureRegistry::GetAssetDrops()
+{
+    return EditorFeatureRegistry::assetDrops;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The features add their parts in the order they registered, so a later one can replace what an
+    earlier one gave a component.
+*/
+bool
+EditorFeatureRegistry::BuildAssetDrop(const IO::Path& asset, EditorDroppedAsset& out)
+{
+    out = EditorDroppedAsset();
+    out.asset = asset;
+    if (!asset.IsFile() || asset.GetType().IsEmpty())
+        return false;
+
+    for (IndexT i = 0; i < EditorFeatureRegistry::assetDrops.Size(); i++)
+    {
+        if (EditorFeatureRegistry::assetDrops[i].type == asset.GetType())
+            EditorFeatureRegistry::assetDrops[i].contribute(out);
+    }
+    return !out.components.IsEmpty();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureRegistry::RegisterViewportInput(Util::Delegate<bool(const ToolView&)> input)
+{
+    n_assert(input.IsValid());
+    EditorFeatureRegistry::viewportInputs.Append(input);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureRegistry::RegisterViewportSettings(Util::Delegate<void(const char*)> draw)
+{
+    n_assert(draw.IsValid());
+    EditorFeatureRegistry::viewportSettings.Append(draw);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EditorFeatureRegistry::DrawViewportSettings(const char* viewMode)
+{
+    for (IndexT i = 0; i < EditorFeatureRegistry::viewportSettings.Size(); i++)
+        EditorFeatureRegistry::viewportSettings[i](viewMode);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Every feature sees the frame, so each can draw, and the first that takes it has it
+*/
+bool
+EditorFeatureRegistry::OfferViewportInput(const ToolView& view)
+{
+    bool taken = false;
+    for (IndexT i = 0; i < EditorFeatureRegistry::viewportInputs.Size(); i++)
+    {
+        if (EditorFeatureRegistry::viewportInputs[i](view))
+            taken = true;
+    }
+    return taken;
 }
 
 //------------------------------------------------------------------------------
@@ -268,6 +426,11 @@ EditorFeatureRegistry::Clear()
     EditorFeatureRegistry::runtimeComponents.Clear();
     EditorFeatureRegistry::listeners.Clear();
     EditorFeatureRegistry::statusNumbers.Clear();
+    EditorFeatureRegistry::modals.Clear();
+    EditorFeatureRegistry::unsavedWork.Clear();
+    EditorFeatureRegistry::assetDrops.Clear();
+    EditorFeatureRegistry::viewportInputs.Clear();
+    EditorFeatureRegistry::viewportSettings.Clear();
     EditorFeatureRegistry::shell = nullptr;
 }
 

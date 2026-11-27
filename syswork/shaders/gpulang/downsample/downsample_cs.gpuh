@@ -404,9 +404,6 @@ Mip2_8(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice
     var pixel = LDSLoad(x, y);
     pixel = ReduceQuad(pixel, workGroupId * 16 + i32x2(x, y), mip, mip + 1);
 
-    // The store below goes to elements other threads read above, they have to be done reading first
-    executionBarrierWorkgroup();
-
     if ((localIndex % 4) == 0)
     {
         const targetTexelIndex = workGroupId * 8 + i32x2(x/2, y/2);
@@ -420,19 +417,11 @@ Mip2_8(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice
 */
 Mip3_9(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
 {
-    var pixel : dataType;
     if (localIndex < 64)
     {
-        pixel = LDSLoad(x * 2 + y % 2, y * 2);
+        var pixel = LDSLoad(x * 2 + y % 2, y * 2);
         pixel = ReduceQuad(pixel, workGroupId * 8 + i32x2(x, y), mip, mip + 1);
-    }
 
-    // The store below goes to elements other threads read above, they have to be done reading first.
-    // Every thread has to reach the barrier, so it is outside the branches
-    executionBarrierWorkgroup();
-
-    if (localIndex < 64)
-    {
         if ((localIndex % 4) == 0)
         {
             const targetTexelIndex = workGroupId * 4 + i32x2(x / 2, y / 2);
@@ -447,18 +436,11 @@ Mip3_9(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice
 */
 Mip4_10(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
 {
-    var pixel : dataType;
     if (localIndex < 16)
     {
-        pixel = LDSLoad(x * 4 + y, y * 4);
+        var pixel = LDSLoad(x * 4 + y, y * 4);
         pixel = ReduceQuad(pixel, workGroupId * 4 + i32x2(x, y), mip, mip + 1);
-    }
 
-    // See Mip3_9
-    executionBarrierWorkgroup();
-
-    if (localIndex < 16)
-    {
         if ((localIndex % 4) == 0)
         {
             const targetTexelIndex = workGroupId * 2 + i32x2(x / 2, y / 2);

@@ -736,35 +736,7 @@ void
 World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance, Entity entity)
 {
     if (MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
-    {
-        if (component.id >= this->componentDecayTable.Size())
-            this->componentDecayTable.Resize(
-                component.id + 16
-            ); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        ComponentDecayBuffer& decayBuffer = this->componentDecayTable[component.id];
-
-        uint64_t const typeSize = (uint64_t)MemDb::AttributeRegistry::TypeSize(component);
-
-        if (decayBuffer.capacity == 0)
-        {
-            decayBuffer.size = 0;
-            decayBuffer.capacity = 64;
-            decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
-        }
-
-        if (decayBuffer.capacity == decayBuffer.size)
-        {
-            void* oldBuffer = decayBuffer.buffer;
-            decayBuffer.capacity *= 2;
-            decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
-            Memory::Copy(oldBuffer, decayBuffer.buffer, typeSize * (uint64_t)decayBuffer.size);
-            Memory::Free(Memory::HeapType::DefaultHeap, oldBuffer);
-        }
-
-        void* dst = ((byte*)decayBuffer.buffer) + (typeSize * (uint64_t)decayBuffer.size);
-        decayBuffer.size++;
-        Memory::Copy(this->db->GetTable(tableId).GetValuePointer(column, instance), dst, typeSize);
-    }
+        this->AppendToDecayBuffer(component, this->db->GetTable(tableId).GetValuePointer(column, instance));
 
     // run the decay callback if one is registered, independent of the decay buffer flag. The
     // component is still readable from its table while the callback runs
@@ -773,6 +745,59 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
     {
         cInterface->Decay(this, entity, this->db->GetTable(tableId).GetValuePointer(column, instance));
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::DecayComponentValue(Entity entity, ComponentId component)
+{
+    if (!(MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY))
+        return;
+    if (!this->IsValid(entity) || !this->HasInstance(entity))
+        return;
+
+    const EntityMapping mapping = this->GetEntityMapping(entity);
+    MemDb::Table& table = this->db->GetTable(mapping.table);
+    if (!table.HasAttribute(component))
+        return;
+    this->AppendToDecayBuffer(component, table.GetValuePointer(table.GetAttributeIndex(component), mapping.instance));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::AppendToDecayBuffer(Game::ComponentId component, const void* value)
+{
+    if (component.id >= this->componentDecayTable.Size())
+        this->componentDecayTable.Resize(
+            component.id + 16
+        ); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
+    ComponentDecayBuffer& decayBuffer = this->componentDecayTable[component.id];
+
+    uint64_t const typeSize = (uint64_t)MemDb::AttributeRegistry::TypeSize(component);
+
+    if (decayBuffer.capacity == 0)
+    {
+        decayBuffer.size = 0;
+        decayBuffer.capacity = 64;
+        decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
+    }
+
+    if (decayBuffer.capacity == decayBuffer.size)
+    {
+        void* oldBuffer = decayBuffer.buffer;
+        decayBuffer.capacity *= 2;
+        decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
+        Memory::Copy(oldBuffer, decayBuffer.buffer, typeSize * (uint64_t)decayBuffer.size);
+        Memory::Free(Memory::HeapType::DefaultHeap, oldBuffer);
+    }
+
+    void* dst = ((byte*)decayBuffer.buffer) + (typeSize * (uint64_t)decayBuffer.size);
+    decayBuffer.size++;
+    Memory::Copy(value, dst, typeSize);
 }
 
 //------------------------------------------------------------------------------

@@ -147,6 +147,11 @@ public:
     EditorPanel* GetFocusedPanel() const;
     /// focus a panel and tell the panels
     void SetFocusedPanel(EditorPanel* panel);
+    /// the undo and redo stacks the undo and redo commands run against: the ones of the panel last
+    /// worked in when it has its own, otherwise the active scene's
+    Ptr<EditCommandManager> GetTargetCommandManager() const override;
+    /// print what is logged to stdout as well, for a run driven by a command script
+    void SetEchoLog(bool echo);
 
     /// Put a message on the status bar. An empty message clears it. Without a duration it stays
     /// until it is replaced.
@@ -160,6 +165,8 @@ public:
 
     /// Queue an action to run after the frame has drawn.
     void QueueAction(Util::Delegate<void()> action) override;
+    /// the panel last worked in answers the action, when it edits something of its own
+    bool OfferEditAction(EditAction action) override;
 
     /// Run a command line.
     bool ExecuteCommand(const Util::String& command) override;
@@ -252,11 +259,13 @@ private:
     void HandleGetComponent(const Util::Array<Util::String>& args);
     void HandleUndo(const Util::Array<Util::String>& args);
     void HandleRedo(const Util::Array<Util::String>& args);
+    void HandleSave(const Util::Array<Util::String>& args);
     void HandleCopy(const Util::Array<Util::String>& args);
     void HandlePaste(const Util::Array<Util::String>& args);
     void HandleDuplicate(const Util::Array<Util::String>& args);
     void HandleDelete(const Util::Array<Util::String>& args);
     void HandleKeybind(const Util::Array<Util::String>& args);
+    void HandlePanel(const Util::Array<Util::String>& args);
 
     /// the description the command registry has for the first word of a command line
     Util::String CommandDescription(const Util::String& line);
@@ -285,6 +294,10 @@ private:
     /// the keybinds table, which the 'keybinds' command and the toolbar button open
     Ptr<KeybindsModal> keybindsModal;
     EditorPanel* focusedPanel;
+    /// the panel last worked in. Unlike the focus it stays when the focus goes to a menu, a modal
+    /// or nothing, so Edit > Undo and the toolbar act on what was being edited before the click
+    EditorPanel* commandTarget;
+    bool echoLog;
     /// the open scenes, in tab order
     Util::Array<Ptr<Scene>> scenes;
     /// the tab that is showing

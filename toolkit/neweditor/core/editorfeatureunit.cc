@@ -17,6 +17,7 @@
 #include "neweditor/panels/inspectorpanel.h"
 #include "neweditor/panels/outlinepanel.h"
 #include "neweditor/panels/profilerpanel.h"
+#include "neweditor/panels/historypanel.h"
 #include "input/inputserver.h"
 #include "util/delegate.h"
 
@@ -86,6 +87,7 @@ EditorFeatureUnit::OnAttach()
     EditorFeatureRegistry::RegisterPanel(OutlinePanel::Create());
     EditorFeatureRegistry::RegisterPanel(FileBrowserPanel::Create());
     EditorFeatureRegistry::RegisterPanel(ProfilerPanel::Create());
+    EditorFeatureRegistry::RegisterPanel(HistoryPanel::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -145,6 +147,7 @@ EditorFeatureUnit::OnActivate()
     if (!scriptPath.IsEmpty())
     {
         this->script = CommandScript::Create();
+        this->core->SetEchoLog(true);
         if (!this->script->Setup(this->core, scriptPath))
             this->script = nullptr;    // Setup logs what went wrong
         else

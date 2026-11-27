@@ -38,6 +38,13 @@ namespace GraphicsFeature
     The scene data the material batches read is the game view's, because the render contexts register
     their compute subgraphs for the game's script instance only.
 
+    The Rendering view mode shows the game's own frame script instead, drawn with the panel's camera:
+    the full pipeline with shadows, fog, post effects and depth of field, which the editor's script
+    leaves out. The game's view lends its camera slot for as long as the mode is shown, and the image
+    is its scene buffer, which is the frame before the UI is drawn into it. The game's script keeps
+    the window's size, so the canvas shows its whole image squeezed to the canvas; the projection has
+    the canvas' aspect, which is what makes it come out right.
+
     @see Editor::ViewportPanel
 */
 //------------------------------------------------------------------------------
@@ -47,6 +54,15 @@ class GraphicsViewportPanel final : public Editor::ViewportPanel
 public:
     GraphicsViewportPanel();
     virtual ~GraphicsViewportPanel();
+
+    /// the light the editor's view draws the scene with, the environment panel moves it with the sun.
+    /// Invalid while there is no panel
+    static Graphics::GraphicsEntityId GetViewportLight();
+    /// the camera the panel drives, the camera effects are set on it
+    static Graphics::GraphicsEntityId GetViewportCamera();
+    /// true while the canvas shows the game's frame script, where the shading modes and the camera
+    /// effects show
+    static bool ShowsFullPipeline();
 
 protected:
     bool OnSetup() override;
@@ -75,6 +91,14 @@ private:
     /// the size the frame script has sized its textures to
     int scriptWidth;
     int scriptHeight;
+
+    /// show the game's frame script with the panel's camera, or give the game's view its camera back
+    void ShowGameScript(bool show);
+    /// the game's view while it draws with the panel's camera, and the camera it had
+    bool showsGameScript;
+    Graphics::GraphicsEntityId gameViewCamera;
+
+    static GraphicsViewportPanel* instance;
 };
 
 /// register the panel, the shapes and the key callback

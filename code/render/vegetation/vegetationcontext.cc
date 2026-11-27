@@ -93,6 +93,10 @@ VegetationContext::Create()
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
+    // the mask and model loads write into a mesh of an instance by reference, so the instances
+    // must not move when another one is allocated, which an editor does when it replaces a terrain
+    vegetationAllocator.Reserve(16);
+
     vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation/shaders/vegetation.gplb");
     vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
     vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
@@ -124,6 +128,8 @@ VegetationContext::Create()
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
         for (const auto& instance : instances)
         {
+            if (!instance.live)
+                continue;
             BarrierPush(cmdBuf, PipelineStage::AllShadersRead, PipelineStage::ComputeShaderWrite, BarrierDomain::Global,
             {
                 BufferBarrierInfo{ .buf = instance.drawCountBuffer[bufferIndex], .subres = BufferSubresourceInfo() }
@@ -142,6 +148,8 @@ VegetationContext::Create()
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
         for (const auto& instance : instances)
         {
+            if (!instance.live)
+                continue;
             CmdBarrier(cmdBuf, PipelineStage::Indirect, PipelineStage::ComputeShaderWrite, BarrierDomain::Global,
             {
                 BufferBarrierInfo{ .buf = instance.meshDrawCallsBuffer[bufferIndex], .subres = BufferSubresourceInfo() }
@@ -175,6 +183,8 @@ VegetationContext::Create()
         const Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
         for (const auto& instance : instances)
         {
+            if (!instance.live)
+                continue;
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
                 if (!instance.meshInfos[i].used)
@@ -216,6 +226,8 @@ VegetationContext::Create()
 
         for (const auto& instance : instances)
         {
+            if (!instance.live)
+                continue;
             for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
             {
                 if (!instance.meshInfos[i].used)
@@ -396,6 +408,7 @@ VegetationContext::Setup(const Graphics::GraphicsEntityId id)
 
         ResourceTableCommitChanges(instanceInfo.argumentsTable[i]);
     }
+    instanceInfo.live = true;
 }
 
 //------------------------------------------------------------------------------
@@ -697,6 +710,24 @@ VegetationContext::SetDensity(const Graphics::GraphicsEntityId id, uint index, c
 
 //------------------------------------------------------------------------------
 /**
+    The buffers stay, they are the instance's and not a mesh's
+*/
+void
+VegetationContext::ClearMeshes(const Graphics::GraphicsEntityId id)
+{
+    Graphics::ContextEntityId cid = GetContextId(id);
+    VegetationInstanceInfo& instanceInfo = vegetationAllocator.Get<Vegetation_InstanceInfo>(cid.id);
+    // the ids are given back last to first, so the next SetupMesh gets 0 again. Clear would keep
+    // the pool's capacity and go on counting from it
+    for (int i = (int)instanceInfo.meshInfoPool.GetNumUsed() - 1; i >= 0; i--)
+        instanceInfo.meshInfoPool.Dealloc(i);
+    for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
+        instanceInfo.meshInfos[i].used = false;
+    instanceInfo.meshMaskCount = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
 VegetationContext::Invalidate(const Graphics::GraphicsEntityId id)
@@ -727,6 +758,8 @@ VegetationContext::UpdateViewResources(const Graphics::ViewId view, const Graphi
     Util::Array<VegetationInstanceInfo>& instances = vegetationAllocator.GetArray<Vegetation_InstanceInfo>();
     for (auto& instance : instances)
     {
+        if (!instance.live)
+            continue;
         uniforms.NumMeshInfos = instance.meshInfoPool.GetNumUsed();
 
         uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(instance.heightMap);
@@ -772,6 +805,12 @@ void
 VegetationContext::Dealloc(Graphics::ContextEntityId id)
 {
     VegetationInstanceInfo& instance = vegetationAllocator.Get<Vegetation_InstanceInfo>(id.id);
+    if (!instance.live)
+    {
+        // registered but never set up, it made nothing
+        vegetationAllocator.Dealloc(id.id);
+        return;
+    }
 
     CoreGraphics::DestroyResourceTable(instance.systemResourceTable);
     for (auto tab : instance.argumentsTable)
@@ -788,6 +827,10 @@ VegetationContext::Dealloc(Graphics::ContextEntityId id)
         CoreGraphics::DestroyBuffer(buf);
 
     instance.meshInfoPool.Clear();
+    for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
+        instance.meshInfos[i].used = false;
+    instance.meshMaskCount = 0;
+    instance.live = false;
 
     vegetationAllocator.Dealloc(id.id);
 }

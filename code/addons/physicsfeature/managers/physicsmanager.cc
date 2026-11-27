@@ -111,11 +111,16 @@ PhysicsManager::Mark(Game::World* world, Game::Entity entity, uint32_t pending)
     if (entity == Game::Entity::Invalid() || !world->IsValid(entity))
         return;
 
+    // HasComponent also answers for a handle that is staged, and a staged one can't be written. The
+    // entity's table is what says the handle is there yet
+    const bool hasHandle = world->HasInstance(entity) &&
+        world->GetDatabase()->GetTable(world->GetEntityMapping(entity).table).HasAttribute(Game::GetComponentId<PhysicsFeature::PhysicsActor>());
+    
     n_assert(PhysicsManager::HasInstance());
 
     PhysicsFeature::PhysicsActor* self = (PhysicsFeature::PhysicsActor*)
         world->FindComponentData(entity, Game::GetComponentId<PhysicsFeature::PhysicsActor>());
-    if (self == nullptr)
+    if (!hasHandle || self == nullptr)
     {
         // the entity has no handle yet, which means its body or collider components were added this
         // frame and are not in the tables yet. Their inits ensure a handle, and a fresh handle

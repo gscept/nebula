@@ -4,6 +4,7 @@
     "Model": {
       "resource": {
         "type": "resource",
+        "resourceType": "mdl",
         "default": "system:placeholder:mdl"
       },
       "graphicsEntityId": {
@@ -21,10 +22,12 @@
       },
       "anim": {
         "type": "resource",
+        "resourceType": "ani",
         "default": ""
       },
       "skeleton": {
         "type": "resource",
+        "resourceType": "ske",
         "default": ""
       }
     }

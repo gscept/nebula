@@ -24,7 +24,8 @@ struct
     CoreGraphics::ShaderProgramId mergeProgram;
     CoreGraphics::ShaderId shader;
 
-    CoreGraphics::ResourceTableId resourceTable;
+    // One table per buffered frame, so a resize never rewrites a table a frame on the GPU still uses
+    CoreGraphics::ResourceTableSet resourceTables;
     CoreGraphics::BufferId constants;
 
     CoreGraphics::TextureId intermediateBloomTexture;
@@ -54,6 +55,26 @@ WriteDirtUniform(const CoreGraphics::TextureId texture)
 
 //------------------------------------------------------------------------------
 /**
+    Writes the textures and constants of the current size into one of the tables
+*/
+static void
+WriteBloomTable(const CoreGraphics::ResourceTableId table)
+{
+    using namespace CoreGraphics;
+    ResourceTableSetTexture(table, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
+    ResourceTableSetTexture(table, { bloomState.dirtMask, Bloom::DirtMask::BINDING });
+    ResourceTableSetRWTexture(table, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
+    ResourceTableSetTexture(table, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
+    for (IndexT i = 0; i < bloomState.intermediateBloomBufferViews.Size(); i++)
+    {
+        ResourceTableSetRWTexture(table, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
+    }
+    ResourceTableSetConstantBuffer(table, { bloomState.constants, Bloom::BloomUniforms::BINDING });
+    ResourceTableCommitChanges(table);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 BloomContext::BloomContext()
 {
@@ -77,7 +98,8 @@ BloomContext::Setup()
     bloomState.shader = ShaderGet("shd:system_shaders/bloom.gplb");
     bloomState.intermediateProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Intermediate"));
     bloomState.mergeProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Merge"));
-    bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
+    bloomState.resourceTables = ShaderCreateResourceTableSet(bloomState.shader, NEBULA_BATCH_GROUP);
+    bloomState.resourceTables.SetUpdate(WriteBloomTable);
 
     TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
 
@@ -124,24 +146,15 @@ BloomContext::Setup()
     WriteDirtUniform(bloomState.dirtMask);
     BufferUpdate(bloomState.constants, bloomState.uniforms);
 
-    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.dirtMask, Bloom::DirtMask::BINDING });
-    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
-    for (IndexT i = 0; i < mips; i++)
-    {
-        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
-    }
-
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::BloomUniforms::BINDING });
-    ResourceTableCommitChanges(bloomState.resourceTable);
+    // Each table is written when its frame is first recorded
+    bloomState.resourceTables.Invalidate();
 
     FrameScript_default::Bind_BloomIntermediate(Frame::TextureImport(bloomState.intermediateBloomTexture));
 
     FrameScript_default::RegisterSubgraph_BloomIntermediate_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, bloomState.intermediateProgram, queue);
-        CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, bloomState.resourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         TextureDimensions texDims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
         bloomState.uniforms.Mips = bloomState.numMips;
@@ -175,7 +188,7 @@ BloomContext::Setup()
     FrameScript_default::RegisterSubgraph_BloomMerge_Compute([](const CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, bloomState.mergeProgram, queue);
-        CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, bloomState.resourceTables.Get(bufferIndex), NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = Math::divandroundup(viewport.width(), 256);
         uint dispatchY = viewport.height();
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
@@ -224,32 +237,13 @@ BloomContext::Resize(const uint framescriptHash, SizeT width, SizeT height)
             bloomState.intermediateBloomBufferViews[i] = CreateTextureView(inf);
         }
 
-        bloomState.uniforms.Mips = mips;
-        for (IndexT i = 0; i < mips; i++)
-        {
-            float mipWidth = float(Math::max(1, int(dims.width >> i)));
-            float mipHeight = float(Math::max(1, int(dims.height >> i)));
-            bloomState.uniforms.Resolutions[i][0] = mipWidth;
-            bloomState.uniforms.Resolutions[i][1] = mipHeight;
-            bloomState.uniforms.Resolutions[i][2] = 1.0f / mipWidth;
-            bloomState.uniforms.Resolutions[i][3] = 1.0f / mipHeight;
-        }
-        BufferUpdate(bloomState.constants, bloomState.uniforms);
+        // The constants aren't written here: the intermediate pass writes them on the GPU every frame, and a
+        // write from the CPU would change them under frames that are still running
 
-        ResourceTableSetTexture(bloomState.resourceTable, {FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING});
-        ResourceTableSetRWTexture(
-            bloomState.resourceTable, {FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING}
-        );
-        for (IndexT i = 0; i < mips; i++)
-        {
-            ResourceTableSetRWTexture(
-                bloomState.resourceTable, {bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i}
-            );
-        }
-        ResourceTableSetTexture(bloomState.resourceTable, {bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING});
-        ResourceTableSetTexture(bloomState.resourceTable, {bloomState.dirtMask, Bloom::DirtMask::BINDING});
-        ResourceTableSetConstantBuffer(bloomState.resourceTable, {bloomState.constants, Bloom::BloomUniforms::BINDING});
-        ResourceTableCommitChanges(bloomState.resourceTable);
+        // Frames still on the GPU keep their tables, which point to the old textures until those are deleted.
+        // This frame's table is written now, before the frame is submitted, the others when their frames come around
+        bloomState.resourceTables.Invalidate();
+        bloomState.resourceTables.Get(GetBufferedFrameIndex());
 
         FrameScript_default::Bind_BloomIntermediate(Frame::TextureImport(bloomState.intermediateBloomTexture));
     }
@@ -266,10 +260,10 @@ BloomContext::SetDirtMask(const CoreGraphics::TextureId texture)
         return;
     bloomState.dirtMask = texture;
     WriteDirtUniform(texture);
-    if (bloomState.resourceTable != CoreGraphics::InvalidResourceTableId)
+    // Can be called at any time, so the tables are only rewritten when their frames are recorded next
+    if (!bloomState.resourceTables.tables.IsEmpty())
     {
-        CoreGraphics::ResourceTableSetTexture(bloomState.resourceTable, { texture, Bloom::DirtMask::BINDING });
-        CoreGraphics::ResourceTableCommitChanges(bloomState.resourceTable);
+        bloomState.resourceTables.Invalidate();
     }
 }
 
@@ -292,7 +286,7 @@ BloomContext::Create()
 void
 BloomContext::Discard()
 {
-    DestroyResourceTable(bloomState.resourceTable);
+    bloomState.resourceTables.Destroy();
 }
 
 } // namespace PostEffects

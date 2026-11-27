@@ -26,9 +26,6 @@
 
 #include "frame/default.h"
 #include "frame/shadows.h"
-#if WITH_NEBULA_EDITOR
-#include "frame/editorframe.h"
-#endif
 
 #include "app/application.h"
 #include "coregraphics/swapchain.h"
@@ -673,14 +670,11 @@ GraphicsServer::Render()
         {
             Math::rectangle<int> viewport = ViewGetViewport(view);
 
-            // The resize handlers rewrite descriptor sets in place, some shared by all frames, and the
-            // frames still running on the GPU read them. A descriptor rewritten under a running shader
-            // can be read half old and half new, which has faulted and hung the GPU on resize. This
-            // frame's work isn't submitted until FinishFrame, so once the queues are idle nothing on
-            // the GPU uses what the handlers change
-            CoreGraphics::WaitForQueue(CoreGraphics::GraphicsQueueType);
-            CoreGraphics::WaitForQueue(CoreGraphics::ComputeQueueType);
-            CoreGraphics::WaitForQueue(CoreGraphics::TransferQueueType);
+            // Frames before this one may still be running on the GPU, so the resize handlers must not
+            // change anything those frames read. A descriptor rewritten under a running shader can be read
+            // half old and half new, which has faulted and hung the GPU on resize. The handlers keep one
+            // resource table per buffered frame, write this frame's table right away and the others when
+            // their frames come around, see ResourceTableSet::Invalidate
 
             // First, call the resize callback to trigger an update of the frame scripts
             if (this->resizeCall != nullptr)

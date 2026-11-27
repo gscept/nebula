@@ -41,6 +41,20 @@ ToolView::CanvasRay(const Math::vec2& windowPos, Math::line& ray) const
         (windowPos.y - this->canvasMin.y) / this->canvasSize.y);
 
     const Math::mat4 invView = Math::inverse(this->view);
+
+    // An orthographic projection has 1 where a perspective one has 0 in its last diagonal element.
+    // Its rays are parallel: they start on the camera's plane, under the cursor, and run along the
+    // view direction
+    if (this->projection.r[3].w != 0.0f)
+    {
+        const float x = (normalized.x - 0.5f) * 2.0f / this->projection.r[0].x;
+        const float y = -(normalized.y - 0.5f) * 2.0f / this->projection.r[1].y;
+        const Math::vec4 start = invView * Math::vec4(x, y, 0.0f, 1.0f);
+        const Math::vec4 dir = invView * Math::vec4(0.0f, 0.0f, -RayLength, 0.0f);
+        ray = Math::line(Math::point(start.vec), Math::point((start + dir).vec));
+        return true;
+    }
+
     const Math::mat4 invProj = Math::inverse(this->projection);
 
     Math::vec4 screenCoord3D((normalized.x - 0.5f) * 2.0f, (normalized.y - 0.5f) * 2.0f, 1.0f, 1.0f);

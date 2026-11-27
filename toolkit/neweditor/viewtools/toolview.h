@@ -61,6 +61,8 @@ struct ToolView
     /// the left alt key is down. A selection drag moves on the y axis instead of across the plane
     /// when it is held.
     bool alt = false;
+    /// a shift key is down
+    bool shift = false;
     /// escape went down this frame
     bool escape = false;
 

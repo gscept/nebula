@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "neweditor/core/editorpanel.h"
 #include "neweditor/api/shell.h"
+#include "neweditor/model/editcommandmanager.h"
 #include "dynui/imguidetach.h"
 
 namespace Editor
@@ -174,6 +175,26 @@ void
 EditorPanel::SeedCommand(const Util::String& command)
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+    Most panels show or edit the scene, so their undo is the scene's.
+*/
+Ptr<EditCommandManager>
+EditorPanel::GetCommandManager() const
+{
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+EditorPanel::OnEditAction(EditAction action)
+{
+    (void)action;
+    return false;
 }
 
 } // namespace Editor

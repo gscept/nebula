@@ -27,6 +27,8 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
+#include "core/ptr.h"
+#include "neweditor/api/editaction.h"
 #include "neweditor/base/editorlog.h"
 #include "util/delegate.h"
 #include "util/string.h"
@@ -36,6 +38,7 @@ namespace Editor
 {
 
 class Shell;
+class EditCommandManager;
 
 class EditorPanel : public Core::RefCounted
 {
@@ -68,6 +71,14 @@ public:
     virtual void OnFocus(bool focused);
     /// the editor logged something
     virtual void OnLog(LogMessageType type, const Util::String& msg);
+
+    /// the undo and redo stacks of what the panel edits, for a panel that edits something other
+    /// than the scene. While it is the panel last worked in, undo and redo run against these. Null,
+    /// the default, leaves them on the active scene
+    virtual Ptr<EditCommandManager> GetCommandManager() const;
+    /// answer a shared edit action for what the panel edits. Return true when the panel took it.
+    /// False, the default, gives it to the active scene
+    virtual bool OnEditAction(EditAction action);
 
     /// focus the panel's window
     void Focus();

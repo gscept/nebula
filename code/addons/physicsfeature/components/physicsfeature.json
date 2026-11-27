@@ -121,6 +121,7 @@
 		"PhysicsResource": {
 			"resource": {
 				"type": "resource",
+				"resourceType": "phys",
 				"default": "system:box:phys"
 			},
 			"actorType": {
@@ -320,6 +321,7 @@
 			},
 			"resource": {
 				"type": "Util::StringAtom",
+				"resourceType": "msh",
 				"default": "",
 				"description": "Mesh URN, folder:file:msh, read by the registered Physics::GeometryLoader."
 			},
@@ -357,6 +359,7 @@
 			},
 			"resource": {
 				"type": "Util::StringAtom",
+				"resourceType": "tex",
 				"default": "",
 				"description": "Height map texture URN, folder:file:tex, read by the registered Physics::GeometryLoader."
 			},
