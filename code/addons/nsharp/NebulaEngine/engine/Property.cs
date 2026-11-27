@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
@@ -36,6 +38,22 @@ namespace Nebula
             private Entity entity;
             private FrameEvent[] acceptedEvents;
             private bool acceptedEventsCached;
+
+            // The event methods in the order the FrameEvent enum lists them, so the index of a name is the
+            // event it belongs to. These are the names the detection looks up on a property type
+            private static readonly string[] eventMethodNames =
+            [
+                nameof(OnBeginFrame),
+                nameof(OnFixedFrame),
+                nameof(OnFrame),
+                nameof(OnPhysicsFrame),
+                nameof(OnEndFrame)
+            ];
+
+            // What a property type overrides, resolved the first time a property of that type is registered
+            // and shared by every property of it afterwards. The keys are weak because a type from a retired
+            // hot reload assembly has to be collectible, and a strong cache would root it
+            private static readonly ConditionalWeakTable<Type, FrameEvent[]> detectedEvents = new();
 
             /// <summary>
             /// Activate or deactivate property
@@ -173,11 +191,23 @@ namespace Nebula
             /// <summary>
             /// Override in subclass to tell the property manager which methods to call for this class
             /// </summary>
+            /// <remarks>
+            /// The default is the event methods this class overrides, resolved once per type and shared by
+            /// every property of it. An override here is only needed to name an event the class has no
+            /// method for, or to take away one of the events the detection finds.
+            /// </remarks>
             public virtual Nebula.Game.FrameEvent[] AcceptedEvents()
             {
-                return null;
+                return DetectEvents(this.GetType());
             }
 
+            /// <summary>
+            /// The events this property is registered for, which is what the property manager calls it for
+            /// </summary>
+            /// <remarks>
+            /// Asked once per property, at registration, and not on the frame path. A type that has not been
+            /// seen before is the only time the detection runs.
+            /// </remarks>
             internal FrameEvent[] GetAcceptedEvents()
             {
                 if (!this.acceptedEventsCached)
@@ -186,6 +216,36 @@ namespace Nebula
                     this.acceptedEventsCached = true;
                 }
                 return this.acceptedEvents;
+            }
+
+            /// <summary>
+            /// The event methods a property type overrides
+            /// </summary>
+            /// <remarks>
+            /// A method declared somewhere below Property is an override the class made, and an inherited
+            /// override is still the one the first class in the chain made. A method that only hides the
+            /// base one is not a virtual slot, so the call still goes to Property and it does not count.
+            /// </remarks>
+            private static FrameEvent[] DetectEvents(Type type)
+            {
+                if (detectedEvents.TryGetValue(type, out FrameEvent[] cached))
+                {
+                    return cached;
+                }
+
+                List<FrameEvent> events = [];
+                for (int i = 0; i < eventMethodNames.Length; i++)
+                {
+                    MethodInfo method = type.GetMethod(eventMethodNames[i]);
+                    if (method != null && method.IsVirtual && method.DeclaringType != typeof(Property))
+                    {
+                        events.Add((FrameEvent)i);
+                    }
+                }
+
+                FrameEvent[] detected = events.ToArray();
+                detectedEvents.Add(type, detected);
+                return detected;
             }
 
             /// <summary>
@@ -267,8 +327,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all,
-            /// and the property has to be active, which only happens in a world that is simulating.
+            /// If this method is overridden, it will be called automatically if the property is active.
             /// </remarks>
             /// <seealso cref="AcceptedEvents()"/>
             public virtual void OnBeginFrame() { }
@@ -278,8 +337,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all,
-            /// and the property has to be active, which only happens in a world that is simulating. A source
+            /// If this method is overridden, it will be called automatically if the property is active.
             /// with no fixed step gives one call per frame.
             /// </remarks>
             /// <seealso cref="AcceptedEvents()"/>
@@ -291,8 +349,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all,
-            /// and the property has to be active, which only happens in a world that is simulating.
+            /// If this method is overridden, it will be called automatically if the property is active.
             /// </remarks>
             /// <seealso cref="AcceptedEvents()"/>
             public virtual void OnFrame() { }
@@ -302,8 +359,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all,
-            /// and the property has to be active, which only happens in a world that is simulating.
+            /// If this method is overridden, it will be called automatically if the property is active.
             /// This is called from inside the physics frame event, after the step has been fetched, which is
             /// the point where the physics engine allows a body to be read. A write here is picked up by the
             /// next step. The event only exists when the physics feature is linked, so a property that
@@ -317,8 +373,7 @@ namespace Nebula
             /// </summary>
             /// <remarks>
             /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all,
-            /// and the property has to be active, which only happens in a world that is simulating.
+            /// If this method is overridden, it will be called automatically if the property is active.
             /// </remarks>
             /// <seealso cref="AcceptedEvents()"/>
             public virtual void OnEndFrame() { }

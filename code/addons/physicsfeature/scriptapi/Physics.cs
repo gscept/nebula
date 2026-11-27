@@ -19,7 +19,7 @@ namespace PhysicsFeature
     /// PhysX only allows reads of a body before simulate() and writes after fetchResults(), which is
     /// what the physics frame event is. The managed phase runs inside that event, after the step, so a
     /// read here sees this step and a write is picked up by the next one. A property that wants this
-    /// phase has to list FrameEvent.OnPhysicsFrame in AcceptedEvents.
+    /// phase can just override OnPhysicsFrame
     /// </para>
     /// </remarks>
     public static class Physics

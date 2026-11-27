@@ -815,6 +815,11 @@ NSharpTest::Run()
     StepFrame();
     StepFrame();
 
+    // The events a property gets without saying which ones, one frame per phase
+    StepFrame();
+    StepFrame();
+    StepFrame();
+
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);
 

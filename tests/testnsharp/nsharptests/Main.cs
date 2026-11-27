@@ -447,6 +447,72 @@ namespace NST
         }
     }
 
+    /// <summary>
+    /// A property that does not say which events it wants, which is what the detection answers for: the
+    /// events it gets are the ones its class has a method for. It overrides two of them and hides a third,
+    /// and a hidden method is not a virtual slot, so the call still goes to Property and its counter stays
+    /// at zero.
+    /// </summary>
+    [ExportType]
+    public class DetectedEventProperty : Property
+    {
+        public int beginCalls;
+        public int endCalls;
+        public int frameCalls;
+
+        public override void OnBeginFrame()
+        {
+            this.beginCalls++;
+        }
+
+        public override void OnEndFrame()
+        {
+            this.endCalls++;
+        }
+
+        // Not an override, so it is not on the accepted events and this is never reached
+        public new void OnFrame()
+        {
+            this.frameCalls++;
+        }
+    }
+
+    /// <summary>
+    /// A class that inherits the overrides rather than making its own. The detection looks at where a method
+    /// is declared, so an inherited override is still an override
+    /// </summary>
+    [ExportType]
+    public class DetectedEventSubclass : DetectedEventProperty
+    {
+    }
+
+    /// <summary>
+    /// A property that still says its events. An explicit list wins over what the detection finds, which is
+    /// the case that is left for it: naming an event the class has no method for, or taking one of the
+    /// detected events away. Here OnFrame is a method the class has and the list leaves out
+    /// </summary>
+    [ExportType]
+    public class ExplicitEventProperty : Property
+    {
+        public int beginCalls;
+        public int frameCalls;
+
+        public override void OnBeginFrame()
+        {
+            this.beginCalls++;
+        }
+
+        public override void OnFrame()
+        {
+            this.frameCalls++;
+        }
+
+        public override FrameEvent[] AcceptedEvents()
+        {
+            return [FrameEvent.OnBeginFrame];
+        }
+    }
+
     [ExportType]
     public class ExportedState : IHotReloadManaged
     {
@@ -1464,6 +1530,12 @@ namespace NST
         private OrderTestProperty orderProperty;
         private SiblingTestProperty siblingProperty;
 
+        // The accepted events test. The detection runs once per type at registration, so the counters are
+        // what say which events each class was registered for
+        private DetectedEventProperty detectedProperty;
+        private DetectedEventSubclass detectedSubclass;
+        private ExplicitEventProperty explicitProperty;
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
@@ -2195,6 +2267,61 @@ namespace NST
                 Tests.Verify(this.siblingProperty.activateCalls == 1);
 
                 this.syncPhase = 52;
+            }
+            else if (this.syncPhase == 52)
+            {
+                // The events a property gets when it does not say which ones. The add records the intent
+                // without activating, so nothing has run yet and the detection has only resolved the types
+                World world = World.Get(World.DEFAULT_WORLD);
+                Entity entity = world.CreateEntity();
+                this.detectedProperty = new DetectedEventProperty();
+                this.detectedSubclass = new DetectedEventSubclass();
+                this.explicitProperty = new ExplicitEventProperty();
+                entity.AddProperty(this.detectedProperty);
+                entity.AddProperty(this.detectedSubclass);
+                entity.AddProperty(this.explicitProperty);
+
+                Tests.Verify(!this.detectedProperty.Active);
+                Tests.Verify(!this.detectedSubclass.Active);
+                Tests.Verify(!this.explicitProperty.Active);
+
+                this.syncPhase = 53;
+            }
+            else if (this.syncPhase == 53)
+            {
+                // The pass activated all three. What is read here is the frame that added them, which had
+                // nothing to run because the properties were not active yet, plus this frame's
+                // OnBeginFrame, which ran before these checks
+                Tests.Verify(this.detectedProperty.Active);
+                Tests.Verify(this.detectedProperty.beginCalls == 1);
+                Tests.Verify(this.detectedProperty.endCalls == 0);
+                Tests.Verify(this.detectedProperty.frameCalls == 0);
+
+                // The same events, found through the declaring type rather than through this class
+                Tests.Verify(this.detectedSubclass.Active);
+                Tests.Verify(this.detectedSubclass.beginCalls == 1);
+                Tests.Verify(this.detectedSubclass.endCalls == 0);
+                Tests.Verify(this.detectedSubclass.frameCalls == 0);
+
+                this.syncPhase = 54;
+            }
+            else if (this.syncPhase == 54)
+            {
+                // One frame of events later. The counters that moved are the methods the classes override,
+                // and the ones that did not are the hidden method and the event the explicit list left out
+                Tests.Verify(this.detectedProperty.beginCalls == 2);
+                Tests.Verify(this.detectedProperty.endCalls == 1);
+                Tests.Verify(this.detectedProperty.frameCalls == 0);
+                Tests.Verify(this.detectedSubclass.beginCalls == 2);
+                Tests.Verify(this.detectedSubclass.endCalls == 1);
+                Tests.Verify(this.detectedSubclass.frameCalls == 0);
+
+                // An explicit list wins over what the detection finds, so the method this class has is not
+                // called for it
+                Tests.Verify(this.explicitProperty.beginCalls == 2);
+                Tests.Verify(this.explicitProperty.frameCalls == 0);
+
+                this.syncPhase = 55;
             }
             base.OnFrame();
         }
