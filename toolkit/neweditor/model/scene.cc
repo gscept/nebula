@@ -1984,10 +1984,12 @@ Scene::IsKeyAuthored(Game::Entity entity, Util::StringAtom extension, const Util
     const IndexT dot = path.FindCharIndex('.');
     if (dot == InvalidIndex)
     {
+        // A key with no field names the node itself rather than a field of it. That is what an
+        // instance says when it took a node its chain has off: there is no value left to name
         const Util::String prefix = path + ".";
         for (IndexT i = 0; i < override.fields.Size(); i++)
         {
-            if (override.fields[i].BeginsWithString(prefix))
+            if (override.fields[i] == path || override.fields[i].BeginsWithString(prefix))
                 return true;
         }
         return false;
@@ -2588,16 +2590,13 @@ Scene::MaterializeRecord(const DocumentEntity& record, IndexT recordIndex, const
     // entities
     // those records became. The patches run in merge order, so the last one is the record the
     // entity
-    // stands in.
+    // stands in. The hops carry the entities their files were created as, so the walk that made
+    // them was given the instance.
     const IndexT ownInstance = this->editables[entity.index].prefabInstance;
     if (ownInstance != InvalidIndex)
     {
         for (IndexT h = hops.Size() - 1; h >= 0; h--)
-        {
-            Util::HashTable<Util::Guid, Game::Entity> hopMap;
-            this->BuildFileMap(ownInstance, hops[h].doc->source, hopMap);
-            this->PatchRecordEntityRefs(hops[h].docEntity, entity, hops[h].doc, hopMap);
-        }
+            this->PatchRecordEntityRefs(hops[h].docEntity, entity, hops[h].doc, hops[h].fileMap);
     }
 
     // A record's overrides' references point at records of its own file. Instantiation has no
@@ -2609,8 +2608,41 @@ Scene::MaterializeRecord(const DocumentEntity& record, IndexT recordIndex, const
     this->MirrorEntity(entity);
 
     // A record's references name records of its own file, so the text resolves through the entities
-    // those records became.
-    this->ApplyExtensions(record.name, record.extensions, entity, fileMap);
+    // those records became. A scene file's record for a linked entity carries only the keys the
+    // instance wrote, so the text is composed through the chain first, the same way the components
+    // above are. Without that, an entity that authored nothing about an extension has nothing
+    // applied, and what the chain's files give for it is gone.
+    //
+    // A merged text names guids from every file it was composed from, so the map has to cover all of
+    // them, plus this file's own records for whatever the entity wrote itself. Built before the
+    // merge, because the merge puts each text against it.
+    Util::HashTable<Util::Guid, Game::Entity> map = fileMap;
+    for (IndexT h = 0; h < hops.Size(); h++)
+        map.Merge(hops[h].fileMap);
+
+    Util::Dictionary<Util::StringAtom, Util::String> texts;
+    this->MergeChainExtensions(record, hops, texts, map);
+
+    Util::Array<DocumentExtension> entries;
+    for (IndexT t = 0; t < texts.Size(); t++)
+    {
+        DocumentExtension entry;
+        entry.name = texts.KeyAtIndex(t);
+        entry.json = texts.ValueAtIndex(t);
+        entries.Append(entry);
+    }
+
+    // An extension that cannot merge contributes nothing to the texts, which is what a feature with
+    // no authored fields gets. Its node is what this file carries for it, so it goes in as read.
+    for (IndexT e = 0; e < record.extensions.Size(); e++)
+    {
+        if (texts.FindIndex(record.extensions[e].name) != InvalidIndex)
+            continue;
+
+        entries.Append(record.extensions[e]);
+    }
+
+    this->ApplyExtensions(record.name, entries, entity, map);
     this->version++;
 }
 
@@ -3083,9 +3115,11 @@ Scene::InstantiatePrefab(const Util::String& path, const Util::Guid& collection,
         Game::Entity entity = this->prefabInstances[instanceIndex].entities[i];
 
         Util::Array<ChainHop> hops;
-        // An added record is the instance's own, so there is no chain under it to resolve
+        // An added record is the instance's own, so there is no chain under it to resolve. Walked
+        // with the instance, so the hops carry the entities this instantiation made and a reference
+        // in a chain file can answer with one of them.
         if (!record.addedToPrefab && !record.prefabSource.IsEmpty() &&
-            !this->WalkChain(record.prefabSource, record.prefabEntity, hops))
+            !this->WalkChain(record.prefabSource, record.prefabEntity, hops, instanceIndex))
         {
             n_warning("The prefab chain of '%s' from '%s' does not resolve, the entity keeps what the file has\n",
                 record.name.AsCharPtr(), path.AsCharPtr());
@@ -3771,10 +3805,14 @@ Scene::Load(const Util::String& path)
             continue;
         const Game::Entity entity = fileMap.ValueAtIndex(record.guid, mapIndex);
 
+        const IndexT instanceIndex = this->editables[entity.index].prefabInstance;
+
         Util::Array<ChainHop> hops;
-        // An added record is the instance's own, so there is no chain under it to resolve
+        // An added record is the instance's own, so there is no chain under it to resolve. Walked
+        // with the instance, so the hops carry the entities this load made and a reference in a
+        // chain file can answer with one of them.
         if (!record.addedToPrefab && !record.prefabSource.IsEmpty() &&
-            !this->WalkChain(record.prefabSource, record.prefabEntity, hops))
+            !this->WalkChain(record.prefabSource, record.prefabEntity, hops, instanceIndex))
         {
             n_warning("The prefab chain of '%s' from '%s' does not resolve, the entity keeps what the file has\n",
                 record.name.AsCharPtr(), path.AsCharPtr());
@@ -4040,9 +4078,9 @@ Scene::UpdatePrefabInstances(const Util::String& path)
 
             const PrefabOverride& overrideState = this->FindExtensionOverride(entity, extension.name);
 
-            // The instance took the extension off its chain. The merge does not put it back
-            if (overrideState.extension == extension.name && overrideState.componentRemoved)
-                continue;
+            // A node the instance took off its chain is a key with no field, which the capture writes as a
+            // null node and the merge lets win over the chain's node for it. That is what keeps the
+            // removal, so it is not a case the merge has to single out
 
             const IndexT textIndex = chainTexts.FindIndex(extension.name);
             const char* base = textIndex == InvalidIndex ? nullptr : chainTexts.ValueAtIndex(textIndex).AsCharPtr();

@@ -841,6 +841,13 @@ namespace NST
             Verify(keys.Count == 2);
             Verify(keys.Count > 1 && keys[0] == "A.x" && keys[1] == "B.y");
 
+            // A node the text carries as null names the property with nothing for it, which is what an
+            // instance says when it took a property its prefab has off. It is still a key, and the merge
+            // lets it win over the base rather than reading it as the key being missing
+            keys = PropertyLevelFormat.CollectKeys("{\"FormatTestProperty\":null}");
+            Verify(keys.Count == 1);
+            Verify(keys.Count > 0 && keys[0] == "FormatTestProperty");
+
             // The key the instance authored takes its value and the rest still comes from the prefab. A diff
             // would not do this: a field the instance set to the same value as the prefab would start
             // following the prefab, which is not what an authored field means
@@ -852,6 +859,11 @@ namespace NST
             // text the entity would be written with when nothing changed
             merged = PropertyLevelFormat.MergeJson("{\"B\":{\"y\":2},\"A\":{\"x\":1}}", "{\"A\":{\"x\":3}}");
             Verify(merged == "{\"A\":{\"x\":3},\"B\":{\"y\":2}}");
+
+            // A node the override carries as null wins over the base's node for it, which is what makes a
+            // property the instance took off its chain stay off
+            merged = PropertyLevelFormat.MergeJson(baseText, "{\"FormatTestProperty\":null}");
+            Verify(merged == "{\"FormatTestProperty\":null}");
 
             // A text with nothing in it changes nothing
             Verify(PropertyLevelFormat.MergeJson(baseText, "") == baseText);
@@ -880,6 +892,12 @@ namespace NST
                 string partial = PropertyLevelFormat.BuildJsonText(source, only);
                 Verify(partial == "{\"FormatTestProperty\":{\"id\":7}}");
 
+                // The key naming the whole node is what an instance writes when it took the property off its
+                // chain: the node as null, which is what both the merge and the apply read as absent
+                only.Clear();
+                only.Add("FormatTestProperty");
+                Verify(PropertyLevelFormat.BuildJsonText(source, only) == "{\"FormatTestProperty\":null}");
+
                 // A property with none of its keys authored has nothing to say, which is what keeps an
                 // instance that changed nothing from carrying the prefab's whole value
                 only.Clear();
@@ -906,6 +924,15 @@ namespace NST
             // The fields come out in the order a property is written with, not the order the keys were given in
             Verify(PropertyLevelFormat.Resolve(baseText, "FormatTestProperty.scale\nFormatTestProperty.id")
                 == "{\"FormatTestProperty\":{\"id\":1,\"scale\":2.5}}");
+
+            // A key with no field names the whole node, so the base's node is what the chain answers with.
+            // This is what a revert of a property the instance took off its chain puts back
+            Verify(PropertyLevelFormat.Resolve(baseText, "FormatTestProperty") == baseText);
+
+            // A base that carries the node as absent answers with that, which is not the same as a base that
+            // has nothing for it and answers with a default instance
+            Verify(PropertyLevelFormat.Resolve("{\"FormatTestProperty\":null}", "FormatTestProperty")
+                == "{\"FormatTestProperty\":null}");
 
             // A property the assembly does not have cannot be answered for, so it is left out of the object the
             // keys are written into, and keys that name nothing answer with nothing

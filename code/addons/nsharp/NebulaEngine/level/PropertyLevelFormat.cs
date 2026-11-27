@@ -464,13 +464,19 @@ namespace Nebula
             JsonObject baseObj = baseNode is JsonObject b ? b : null;
 
             // The keys are grouped by the property they name, because the text is written one property at a
-            // time and a key is a path rather than a field
+            // time and a key is a path rather than a field. A key with no field names the whole node, which
+            // is what a node the instance took off its chain is recorded as
             Dictionary<string, List<string>> byProperty = [];
+            List<string> wholeNode = [];
             foreach (string key in named)
             {
                 int split = key.IndexOf('.');
-                if (split <= 0)
+                if (split < 0)
                 {
+                    if (!wholeNode.Contains(key))
+                    {
+                        wholeNode.Add(key);
+                    }
                     continue;
                 }
 
@@ -490,6 +496,13 @@ namespace Nebula
                 names.Add(entry.Key);
                 entry.Value.Sort((left, right) => string.CompareOrdinal(left, right));
             }
+            foreach (string node in wholeNode)
+            {
+                if (!names.Contains(node))
+                {
+                    names.Add(node);
+                }
+            }
             names.Sort((left, right) => string.CompareOrdinal(left, right));
 
             ArrayBufferWriter<byte> buffer = new();
@@ -507,7 +520,27 @@ namespace Nebula
                         continue;
                     }
 
-                    JsonObject fields = baseObj != null && baseObj[name] is JsonObject f ? f : null;
+                    bool baseHas = baseObj != null && baseObj.ContainsKey(name);
+                    JsonNode baseValue = baseHas ? baseObj[name] : null;
+
+                    if (wholeNode.Contains(name))
+                    {
+                        writer.WritePropertyName(name);
+
+                        if (!baseHas)
+                        {
+                            Nebula.Game.Property instance = (Nebula.Game.Property)Activator.CreateInstance(type);
+                            WritePropertyFields(writer, type, instance, null, null, null);
+                        }
+                        else
+                        {
+                            WriteNode(writer, baseValue);
+                        }
+
+                        continue;
+                    }
+
+                    JsonObject fields = baseValue is JsonObject f ? f : null;
 
                     // A field the base does not have falls back to what a default instance holds, which is
                     // what a revert to a prefab that never mentioned the field gives back
@@ -812,10 +845,10 @@ namespace Nebula
 
         /// <summary>
         /// One entity, put back from the json the file carried for it. Exact: the entity's properties are the
-        /// nodes the text names, and what it does not name is taken off. A command holds the entity's whole text,
-        /// so this is what makes a change that took one property off read as a change rather than as an addition.
-        /// A property the text names but the assembly does not have is skipped, because there is no type to make
-        /// it from.
+        /// nodes the text names, and what it does not name is taken off. A command holds the
+        /// entity's whole text, so this is what makes a change that took one property off read as a change
+        /// rather than as an addition. A property the text names but the assembly does not have is skipped,
+        /// because there is no type to make it from.
         /// </summary>
         public static unsafe int ApplyEntity(ulong entityId, IntPtr jsonUtf8, int length)
         {
@@ -851,7 +884,7 @@ namespace Nebula
                             continue;
                         }
 
-                        if (obj == null || !obj.ContainsKey(property.GetType().Name))
+                        if (obj == null || !obj.ContainsKey(property.GetType().Name) || obj[property.GetType().Name] == null)
                         {
                             stale.Add(property);
                         }
@@ -871,7 +904,15 @@ namespace Nebula
 
                 foreach (KeyValuePair<string, JsonNode> entry in obj)
                 {
-                    ApplyProperty(entity, entry.Key, entry.Value?.ToJsonString());
+                    // A node the text carries as null names the property but has nothing for it. That is
+                    // what an instance says when it took a node its chain has off, and there is no value to
+                    // put on the entity
+                    if (entry.Value == null)
+                    {
+                        continue;
+                    }
+
+                    ApplyProperty(entity, entry.Key, entry.Value.ToJsonString());
                 }
 
                 return 1;
@@ -1474,7 +1515,25 @@ namespace Nebula
         private static byte[] BuildJson(Nebula.Game.Entity entity, HashSet<string> keys)
         {
             List<Nebula.Game.Property> properties = SortedProperties(entity);
-            if (properties.Count == 0)
+
+            // A key with no field names the whole node rather than a field of it. That is what an
+            // instance says when it took a node its chain has off: there is no value left to write for
+            // it, and the null node is what the merge reads as the node being absent
+            List<string> absent = [];
+            if (keys != null)
+            {
+                foreach (string key in keys)
+                {
+                    if (key.IndexOf('.') < 0 && !absent.Contains(key))
+                    {
+                        absent.Add(key);
+                    }
+                }
+
+                absent.Sort((left, right) => string.CompareOrdinal(left, right));
+            }
+
+            if (properties.Count == 0 && absent.Count == 0)
             {
                 return [];
             }
@@ -1484,10 +1543,29 @@ namespace Nebula
             {
                 writer.WriteStartObject();
 
+                // Sorted, because every writer here produces the same order and the level format compares
+                // texts as bytes. An absent node has no property to read its name from, so it joins the
+                // order by its name
+                int absentIndex = 0;
                 for (int i = 0; i < properties.Count; i++)
                 {
                     Nebula.Game.Property property = properties[i];
                     Type type = property.GetType();
+
+                    while (absentIndex < absent.Count && string.CompareOrdinal(absent[absentIndex], type.Name) < 0)
+                    {
+                        writer.WritePropertyName(absent[absentIndex]);
+                        writer.WriteNullValue();
+                        absentIndex++;
+                    }
+
+                    if (absentIndex < absent.Count && absent[absentIndex] == type.Name)
+                    {
+                        writer.WritePropertyName(type.Name);
+                        writer.WriteNullValue();
+                        absentIndex++;
+                        continue;
+                    }
 
                     // A property with none of its keys authored is nothing the entity has to say about it:
                     // the chain already gives it exactly what it holds
@@ -1498,6 +1576,13 @@ namespace Nebula
 
                     writer.WritePropertyName(type.Name);
                     WritePropertyFields(writer, type, property, null, null, keys);
+                }
+
+                while (absentIndex < absent.Count)
+                {
+                    writer.WritePropertyName(absent[absentIndex]);
+                    writer.WriteNullValue();
+                    absentIndex++;
                 }
 
                 writer.WriteEndObject();

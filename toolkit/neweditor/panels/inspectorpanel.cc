@@ -23,6 +23,7 @@
 #include "neweditor/model/selectioncontext.h"
 #include "neweditor/viewtools/toolcontext.h"
 #include "neweditor/base/iconregistry.h"
+#include "neweditor/extensions/propertyrecorder.h"
 #include "game/component.h"
 #include "game/componentinspection.h"
 #include "game/levelextension.h"
@@ -459,6 +460,30 @@ InspectorPanel::DrawPrefab(Game::Entity entity)
         for (IndexT i = 0; i < editable.prefabOverrides.Size(); i++)
         {
             const PrefabOverride& override = editable.prefabOverrides[i];
+
+            // A key with no field names a node the instance took off its chain. The property is not on
+            // the entity, so the managed draw has no row to put a marker on, and the removal is listed
+            // here instead
+            if (override.extension.IsValid())
+            {
+                for (IndexT f = 0; f < override.fields.Size(); f++)
+                {
+                    if (override.fields[f].FindCharIndex('.') != InvalidIndex)
+                        continue;
+
+                    this->DrawRow("Removed", override.fields[f]);
+
+                    // The button is drawn into the cell the row's name is in, because the reset belongs
+                    // to the node the row names
+                    ImGui::SameLine();
+                    ImGui::PushID(override.fields[f].AsCharPtr());
+                    if (IconButton(IconGlyph("rotate-ccw"), "Reset"))
+                        PropertyRecorder::RequestRevert(override.extension, entity, override.fields[f]);
+                    ImGui::PopID();
+                }
+                continue;
+            }
+
             if (!override.componentRemoved)
                 continue;
 
@@ -1257,6 +1282,32 @@ InspectorPanel::ApplyRevertField()
 
 //------------------------------------------------------------------------------
 /**
+    Whether the chain's keys have the node the name is. A key with no field names the node itself,
+    which is what an instance says when it took a node off its chain.
+*/
+static bool
+ChainHasProperty(const Util::Array<Util::String>& chainKeys, const Util::String& name)
+{
+    for (IndexT k = 0; k < chainKeys.Size(); k++)
+    {
+        const IndexT dot = chainKeys[k].FindCharIndex('.');
+        if (dot == InvalidIndex)
+        {
+            if (chainKeys[k] == name)
+                return true;
+            continue;
+        }
+
+        Util::String kname;
+        kname.Set(chainKeys[k].AsCharPtr(), (SizeT)dot);
+        if (kname == name)
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
     Every override in the instantiation goes back. The components are collected before any of them
     is reverted, because a revert writes the override state of the entity it works on, and the list
     is read from that same state. The reverts run as one macro, which is what makes one undo put the
@@ -1265,7 +1316,9 @@ InspectorPanel::ApplyRevertField()
     The managed properties are part of the same macro. A property is reverted through the same
     command a field change runs, with the text the chain gives for every key the entity carries and
     the marker emptied. A property the chain has nothing for is one the instance authored on its
-    own, and it goes with the marker.
+    own, and it goes with the marker. A property the instance took off the chain is not on the
+    entity, so the keys its text carries do not name it, and the marker's key with no field is what
+    puts the chain's node back.
 */
 void
 InspectorPanel::ApplyRevertInstance()
@@ -1375,24 +1428,18 @@ InspectorPanel::ApplyRevertInstance()
 
             Util::String name;
             name.Set(allKeys[f].AsCharPtr(), (SizeT)dot);
-
-            bool chainHas = false;
-            for (IndexT k = 0; k < chainKeys.Size(); k++)
-            {
-                const IndexT kdot = chainKeys[k].FindCharIndex('.');
-                if (kdot == InvalidIndex)
-                    continue;
-
-                Util::String kname;
-                kname.Set(chainKeys[k].AsCharPtr(), (SizeT)kdot);
-                if (kname == name)
-                {
-                    chainHas = true;
-                    break;
-                }
-            }
-            if (chainHas)
+            if (ChainHasProperty(chainKeys, name))
                 fromChain.Append(allKeys[f]);
+        }
+
+        // A node the instance took off its chain is not on the entity, so the keys its text carries do
+        // not name it. The marker's key with no field is what names it, and the chain's node for it is
+        // what the revert puts back
+        for (IndexT f = 0; f < override.fields.Size(); f++)
+        {
+            if (override.fields[f].FindCharIndex('.') == InvalidIndex &&
+                ChainHasProperty(chainKeys, override.fields[f]))
+                fromChain.Append(override.fields[f]);
         }
 
         Ptr<PropertyCommand> command = PropertyCommand::Create();

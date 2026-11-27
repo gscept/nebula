@@ -21,15 +21,42 @@ Util::Array<PendingPropertyChange> PropertyRecorder::pending;
 
 //------------------------------------------------------------------------------
 /**
-    The keys the entity has authored after the change. A path with no key is the whole extension:
-    either everything the new text carries for it, which is an add, or nothing, which is a removal.
+    Whether the chain has the node the path names. A removal is only something the instance has to say
+    when the node came from the chain: a node the instance authored on its own is gone with the keys
+    that named it, and there is nothing left to mark.
+*/
+static bool
+ChainHasNode(Scene* scene, Util::StringAtom extension, Game::Entity entity, const Util::String& path)
+{
+    Util::String chainText;
+    Util::Array<Util::String> chainKeys;
+    scene->GetChainExtension(entity, extension, chainText, chainKeys);
+
+    const Util::String prefix = path + ".";
+    for (IndexT i = 0; i < chainKeys.Size(); i++)
+    {
+        if (chainKeys[i] == path || chainKeys[i].BeginsWithString(prefix))
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+    The keys the entity has authored after the change. A path with no field is one node: either
+    everything the new text carries for it, which is an add, or nothing, which is a removal.
 
     Only the extension knows which keys a text carries, so this is where the editor learns what a
     key means.
+
+    Answers true when the node was there before the change and is gone after it. That is the case
+    where the instance took a node off its chain, and the caller is the one that can tell whether
+    the node was the instance's own or the chain's.
 */
-static void
+static bool
 ApplyChangeToKeys(Util::Array<Util::String>& fields, const Util::String& path,
-    const Util::String& oldText, const Util::String& newText, const Game::LevelExtension* extension)
+    const Util::String& oldText, const Util::String& newText, const Game::LevelExtension* extension,
+    bool chainHasNode)
 {
     const IndexT dot = path.FindCharIndex('.');
 
@@ -54,13 +81,31 @@ ApplyChangeToKeys(Util::Array<Util::String>& fields, const Util::String& path,
 
         if (wasThere)
         {
-            // The extension data is gone, and the keys that named it go with it
+            // The node is gone, and the keys that named it go with it
             for (IndexT i = (IndexT)fields.Size() - 1; i >= 0; i--)
             {
                 if (fields[i].BeginsWithString(prefix))
                     fields.EraseIndex(i);
             }
-            return;
+
+            // A node the chain has is still the chain's, so the instance has to keep saying it is
+            // absent. The key that says that is the path with no field
+            if (chainHasNode)
+            {
+                bool already = false;
+                for (IndexT f = 0; f < fields.Size(); f++)
+                {
+                    if (fields[f] == path)
+                    {
+                        already = true;
+                        break;
+                    }
+                }
+                if (!already)
+                    fields.Append(path);
+            }
+
+            return true;
         }
 
         // An add. Every key the new text carries is the entity's own
@@ -86,7 +131,7 @@ ApplyChangeToKeys(Util::Array<Util::String>& fields, const Util::String& path,
                     fields.Append(keys[i]);
             }
         }
-        return;
+        return false;
     }
 
     bool already = false;
@@ -100,6 +145,8 @@ ApplyChangeToKeys(Util::Array<Util::String>& fields, const Util::String& path,
     }
     if (!already)
         fields.Append(path);
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -134,6 +181,12 @@ PropertyRecorder::RecordChange(Util::StringAtom extension, Game::Entity entity, 
     // say about which part it wrote, and the command writes an empty mark for it
     const bool linked = scene->IsPrefabInstanceEntity(entity);
 
+    // A path with no field is a whole node, which is the only thing an instance can take off its
+    // chain. Whether the node came from the chain is what tells a removal from an instance's own
+    // property going away, so the chain is only asked about for that path
+    const bool chainHasNode = linked && path.FindCharIndex('.') == InvalidIndex &&
+        ChainHasNode(scene, extension, entity, path);
+
     // One entry per entity, because a drag reports on every frame. Overwriting the entry is what
     // makes a drag
     // one command, and the before text stays the one from the first frame
@@ -146,7 +199,7 @@ PropertyRecorder::RecordChange(Util::StringAtom extension, Game::Entity entity, 
             existing.path = path;
             existing.newText = newText;
             if (linked)
-                ApplyChangeToKeys(existing.newFields, path, existing.oldText, newText, ext);
+                ApplyChangeToKeys(existing.newFields, path, existing.oldText, newText, ext, chainHasNode);
             found = true;
             break;
         }
@@ -169,7 +222,7 @@ PropertyRecorder::RecordChange(Util::StringAtom extension, Game::Entity entity, 
             // the prefab
             change.oldFields = scene->FindExtensionOverride(entity, extension).fields;
             change.newFields = change.oldFields;
-            ApplyChangeToKeys(change.newFields, path, oldText, newText, ext);
+            ApplyChangeToKeys(change.newFields, path, oldText, newText, ext, chainHasNode);
         }
 
         PropertyRecorder::pending.Append(change);
@@ -190,6 +243,9 @@ PropertyRecorder::RecordChange(Util::StringAtom extension, Game::Entity entity, 
 
     When the whole extension is given back and the chain never had it, there is nothing to give it
     back to, which the command reads as the extension being gone.
+
+    A key with no field names a whole node the instance took off its chain. Reverting that key gives
+    the node back, and the key goes with it because the value is the chain's again.
 
     This runs during the draw, so the change is queued.
 */
@@ -229,7 +285,9 @@ PropertyRecorder::RequestRevert(Util::StringAtom extension, Game::Entity entity,
     {
         if (wholeProperty)
         {
-            if (!state.fields[i].BeginsWithString(prefix))
+            // The key naming the node itself is one the revert takes back too, because that is the
+            // mark saying the instance took the node off the chain
+            if (state.fields[i] != single && !state.fields[i].BeginsWithString(prefix))
                 continue;
         }
         else if (state.fields[i] != single)
@@ -272,23 +330,32 @@ PropertyRecorder::RequestRevert(Util::StringAtom extension, Game::Entity entity,
 
     // The keys the chain can answer for. The rest go back to the field's default, except a whole
     // extension the
-    // chain never had, which has nothing to go back to
+    // chain never had, which has nothing to go back to. A key with no field names the whole node, and
+    // the chain answers for it with the node it has
     Util::Array<Util::String> fromChain;
     for (IndexT i = 0; i < taken.Size(); i++)
     {
         const IndexT dot = taken[i].FindCharIndex('.');
-        if (dot == InvalidIndex)
-            continue;
 
         Util::String name;
-        name.Set(taken[i].AsCharPtr(), (SizeT)dot);
+        if (dot == InvalidIndex)
+            name = taken[i];
+        else
+            name.Set(taken[i].AsCharPtr(), (SizeT)dot);
 
         bool chainHas = false;
         for (IndexT k = 0; k < chainKeys.Size(); k++)
         {
             const IndexT kdot = chainKeys[k].FindCharIndex('.');
             if (kdot == InvalidIndex)
+            {
+                if (chainKeys[k] == name)
+                {
+                    chainHas = true;
+                    break;
+                }
                 continue;
+            }
 
             Util::String kname;
             kname.Set(chainKeys[k].AsCharPtr(), (SizeT)kdot);
@@ -309,7 +376,8 @@ PropertyRecorder::RequestRevert(Util::StringAtom extension, Game::Entity entity,
     // key it could
     // not answer for still is, because its value is the field's default, so the next save writes
     // it. A whole
-    // extension the chain never had is dropped with the keys that named it
+    // extension the chain never had is dropped with the keys that named it, except the key naming the
+    // node itself, which is the instance saying the node is absent and stays until the chain answers
     Util::Array<Util::String> newFields;
     for (IndexT i = 0; i < state.fields.Size(); i++)
     {
@@ -328,9 +396,6 @@ PropertyRecorder::RequestRevert(Util::StringAtom extension, Game::Entity entity,
             continue;
         }
 
-        if (wholeProperty)
-            continue;
-
         bool answered = false;
         for (IndexT f = 0; f < fromChain.Size(); f++)
         {
@@ -341,6 +406,9 @@ PropertyRecorder::RequestRevert(Util::StringAtom extension, Game::Entity entity,
             }
         }
         if (answered)
+            continue;
+
+        if (wholeProperty && state.fields[i].FindCharIndex('.') != InvalidIndex)
             continue;
 
         newFields.Append(state.fields[i]);
