@@ -137,7 +137,11 @@ ScriptFeatureUnit::OnActivate()
     if (this->assemblyPath.IsValid())
     {
         this->engineAssemblyId = this->server->LoadAssembly(this->engineAssemblyPath);
-        n_assert(this->engineAssemblyId != Scripting::AssemblyId::Invalid());
+        if (this->engineAssemblyId == Scripting::AssemblyId::Invalid())
+        {
+            n_warning("Could not load the script engine assembly. Scripting is disabled for this run");
+            return;
+        }
 
         Util::String pluginPath = this->assemblyPath.GetHostAndLocalPath();
         this->reloadWatchPath = pluginPath.ExtractDirName();
@@ -200,7 +204,11 @@ ScriptFeatureUnit::OnActivate()
 
         int result = this->server->ExecUnmanagedCall(this->engineAssemblyId, this->mainEntry, pluginPath);
 
-        n_assert(result == 0);
+        if (result != 0)
+        {
+            n_warning("The script plugin did not load. Scripting is disabled for this run");
+            this->engineAssemblyId = Scripting::AssemblyId::Invalid();
+        }
     }
 }
 

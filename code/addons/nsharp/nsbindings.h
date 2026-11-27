@@ -31,7 +31,12 @@ NEBULA_EXPORT void N_Log(const char* logDomain, const char* logLevel, const char
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT void N_Assert(bool value);
+NEBULA_EXPORT void N_AssertEx(const char* expression, const char* file, int32_t line, const char* message, const char* stack, bool value);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT void N_FaultReport(const char* report);
 
 //------------------------------------------------------------------------------
 /**

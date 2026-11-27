@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
 
 namespace Nebula
 {
     namespace Game
     {
+        /// <summary>
+        /// The property manager.
+        /// </summary>
         public sealed class PropertyManager
         {
             private readonly List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
@@ -100,7 +104,14 @@ namespace Nebula
                     // properties of a world the editor is only authoring from running
                     if (prop.Active)
                     {
-                        prop.OnBeginFrame();
+                        try
+                        {
+                            prop.OnBeginFrame();
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report(prop, nameof(Property.OnBeginFrame), exception);
+                        }
                     }
                 }
             }
@@ -143,9 +154,16 @@ namespace Nebula
                     // The same rule the frame pipeline has: an event with no fixed step runs once per frame,
                     // and a fixed event runs once for every step the source has available
                     int steps = source.FixedFrameTime > 0.0 ? source.AvailableSteps : 1;
-                    for (int step = 0; step < steps; step++)
+                    try
                     {
-                        prop.OnFixedFrame();
+                        for (int step = 0; step < steps; step++)
+                        {
+                            prop.OnFixedFrame();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        FaultReporter.Report(prop, nameof(Property.OnFixedFrame), exception);
                     }
                 }
             }
@@ -177,7 +195,14 @@ namespace Nebula
                     // The same gate as the other events
                     if (prop.Active)
                     {
-                        prop.OnFrame();
+                        try
+                        {
+                            prop.OnFrame();
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report(prop, nameof(Property.OnFrame), exception);
+                        }
                     }
                 }
             }
@@ -215,7 +240,14 @@ namespace Nebula
                     // The same gate as the other events
                     if (prop.Active)
                     {
-                        prop.OnPhysicsFrame();
+                        try
+                        {
+                            prop.OnPhysicsFrame();
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report(prop, nameof(Property.OnPhysicsFrame), exception);
+                        }
                     }
                 }
             }
@@ -246,7 +278,14 @@ namespace Nebula
                     // The same gate as the other events
                     if (prop.Active)
                     {
-                        prop.OnEndFrame();
+                        try
+                        {
+                            prop.OnEndFrame();
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report(prop, nameof(Property.OnEndFrame), exception);
+                        }
                     }
                 }
             }

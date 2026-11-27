@@ -3,6 +3,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using ConsoleHook;
 using Nebula;
 using Nebula.Game;
@@ -27,6 +28,7 @@ namespace Nebula
             public bool EngineSetup;
         }
         private static readonly RuntimeData runtimeData = new RuntimeData();
+        private static bool faultHandlersRegistered;
         // Explicit static constructor to tell C# compiler
         // not to mark type as beforefieldinit
         static Runtime() { }
@@ -52,6 +54,8 @@ namespace Nebula
         /// </param>
         public static void Setup(Assembly currentAssembly)
         {
+            RegisterFaultHandlers();
+
             NativeLibrary.SetDllImportResolver(currentAssembly, Nebula.Runtime.ImportResolver);
 
             Nebula.Game.ComponentManager componentManager = Nebula.Game.ComponentManager.Instance;
@@ -149,6 +153,26 @@ namespace Nebula
             }
         }
 
+        private static void RegisterFaultHandlers()
+        {
+            if (faultHandlersRegistered)
+            {
+                return;
+            }
+            faultHandlersRegistered = true;
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                FaultReporter.Report("unhandled exception", e.ExceptionObject as Exception);
+            };
+
+            TaskScheduler.UnobservedTaskException += (sender, e) =>
+            {
+                FaultReporter.Report("unobserved task exception", e.Exception);
+                e.SetObserved();
+            };
+        }
+
         // When using DLLImport, we normally cannot hardcode the application name since we don't have the name of the final binary.
         // This should solve the problem by checking what the current process name is, and then just resolving __Internal to that.
         private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
@@ -194,7 +218,7 @@ namespace NebulaEngine
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine("[NSharp] Failed to load game plugin: " + exception);
+                FaultReporter.Report("AppEntry.Main", exception);
                 return 1;
             }
         }
@@ -202,26 +226,42 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static void Exit()
         {
-#if NEBULA_HOTRELOAD
-            if (hotReloadManager != null)
+            try
             {
-                hotReloadManager.Unload();
-                hotReloadManager = null;
-            }
+#if NEBULA_HOTRELOAD
+                if (hotReloadManager != null)
+                {
+                    hotReloadManager.Unload();
+                    hotReloadManager = null;
+                }
 #endif
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.Exit", exception);
+            }
         }
 
         [UnmanagedCallersOnly]
         public static int RequestReload(IntPtr pluginPath, int pluginPathLength)
         {
-#if NEBULA_HOTRELOAD
-            if (hotReloadManager == null)
+            try
             {
-                return 0;
-            }
-            string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
-            hotReloadManager.RequestReload(path);
+#if NEBULA_HOTRELOAD
+                if (hotReloadManager == null)
+                {
+                    return 0;
+                }
+                string path = Marshal.PtrToStringUTF8(pluginPath, pluginPathLength);
+                hotReloadManager.RequestReload(path);
 #endif
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.RequestReload", exception);
+                return 1;
+            }
+
             return 0;
         }
 
@@ -238,31 +278,59 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static void OnBeginFrame()
         {
-            Nebula.Runtime.OnBeginFrame();
+            try
+            {
+                Nebula.Runtime.OnBeginFrame();
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.OnBeginFrame", exception);
+            }
         }
 
         [UnmanagedCallersOnly]
         public static void OnFrame()
         {
-            Nebula.Runtime.OnFrame();
+            try
+            {
+                Nebula.Runtime.OnFrame();
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.OnFrame", exception);
+            }
         }
 
         [UnmanagedCallersOnly]
         public static void OnPhysicsFrame()
         {
-            Nebula.Runtime.OnPhysicsFrame();
+            try
+            {
+                Nebula.Runtime.OnPhysicsFrame();
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.OnPhysicsFrame", exception);
+            }
         }
 
         [UnmanagedCallersOnly]
         public static void OnEndFrame()
         {
-            Nebula.Runtime.OnEndFrame();
-#if NEBULA_HOTRELOAD
-            if (hotReloadManager != null)
+            try
             {
-                hotReloadManager.ProcessPendingReload();
-            }
+                Nebula.Runtime.OnEndFrame();
+#if NEBULA_HOTRELOAD
+                if (hotReloadManager != null)
+                {
+                    hotReloadManager.ProcessPendingReload();
+                }
 #endif
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.OnEndFrame", exception);
+            }
         }
 
         /// <summary>
@@ -278,22 +346,30 @@ namespace NebulaEngine
                 return 0;
             }
 
-            unsafe
+            try
             {
-                ulong* buffer = (ulong*)ids;
-                for (int i = 0; i < count; i++)
+                unsafe
                 {
-                    ulong id = buffer[i];
-
-                    // Game::Entity stores the world id in bits 32-39
-                    World world = World.Get((uint)(id >> 32));
-                    if (world == null)
+                    ulong* buffer = (ulong*)ids;
+                    for (int i = 0; i < count; i++)
                     {
-                        continue;
-                    }
+                        ulong id = buffer[i];
 
-                    world.RegisterEntityFromNative(id);
+                        // Game::Entity stores the world id in bits 32-39
+                        World world = World.Get((uint)(id >> 32));
+                        if (world == null)
+                        {
+                            continue;
+                        }
+
+                        world.RegisterEntityFromNative(id);
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.FlushEntityCreateQueue", exception);
+                return 1;
             }
 
             return 0;
@@ -306,13 +382,22 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int CollectGarbage(uint worldId)
         {
-            World world = World.Get(worldId);
-            if (world == null)
+            try
             {
-                return 0;
+                World world = World.Get(worldId);
+                if (world == null)
+                {
+                    return 0;
+                }
+
+                world.CollectGarbage();
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.CollectGarbage", exception);
+                return 1;
             }
 
-            world.CollectGarbage();
             return 0;
         }
 
@@ -322,13 +407,22 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int ClearWorld(uint worldId)
         {
-            World world = World.Get(worldId);
-            if (world == null)
+            try
             {
-                return 0;
+                World world = World.Get(worldId);
+                if (world == null)
+                {
+                    return 0;
+                }
+
+                world.Clear();
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.ClearWorld", exception);
+                return 1;
             }
 
-            world.Clear();
             return 0;
         }
 
@@ -339,7 +433,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int SerializeProperties(ulong entityId, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.SerializeEntity(entityId, outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.SerializeEntity(entityId, outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.SerializeProperties", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -348,7 +450,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int ApplyProperties(ulong entityId, IntPtr jsonUtf8, int length)
         {
-            return PropertyLevelFormat.ApplyEntity(entityId, jsonUtf8, length);
+            try
+            {
+                return PropertyLevelFormat.ApplyEntity(entityId, jsonUtf8, length);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.ApplyProperties", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -358,7 +468,14 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static void DrawProperties(ulong entityId)
         {
-            PropertyLevelFormat.DrawProperties(entityId);
+            try
+            {
+                PropertyLevelFormat.DrawProperties(entityId);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.DrawProperties", exception);
+            }
         }
 
         /// <summary>
@@ -368,7 +485,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int HasProperty(ulong entityId, IntPtr nameUtf8, int nameLen)
         {
-            return PropertyLevelFormat.HasProperty(entityId, PropertyLevelFormat.Utf8(nameUtf8, nameLen));
+            try
+            {
+                return PropertyLevelFormat.HasProperty(entityId, PropertyLevelFormat.Utf8(nameUtf8, nameLen));
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.HasProperty", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -377,7 +502,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int DefaultPropertyJson(IntPtr nameUtf8, int nameLen, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.DefaultPropertyJson(PropertyLevelFormat.Utf8(nameUtf8, nameLen), outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.DefaultPropertyJson(PropertyLevelFormat.Utf8(nameUtf8, nameLen), outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.DefaultPropertyJson", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -387,7 +520,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int SerializeKeys(ulong entityId, IntPtr keysUtf8, int keysLen, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.SerializeKeys(entityId, PropertyLevelFormat.Utf8(keysUtf8, keysLen), outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.SerializeKeys(entityId, PropertyLevelFormat.Utf8(keysUtf8, keysLen), outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.SerializeKeys", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -397,7 +538,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int JsonKeys(IntPtr textUtf8, int length, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.JsonKeys(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.JsonKeys(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.JsonKeys", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -406,10 +555,18 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int MergeJson(IntPtr baseJsonUtf8, int baseLen, IntPtr overJsonUtf8, int overLen, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.MergeJson(
-                PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
-                PropertyLevelFormat.Utf8(overJsonUtf8, overLen),
-                outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.MergeJson(
+                    PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
+                    PropertyLevelFormat.Utf8(overJsonUtf8, overLen),
+                    outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.MergeJson", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -418,7 +575,14 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static void SetRefContext(IntPtr pairsUtf8, int length)
         {
-            PropertyLevelFormat.SetRefContext(PropertyLevelFormat.Utf8(pairsUtf8, length));
+            try
+            {
+                PropertyLevelFormat.SetRefContext(PropertyLevelFormat.Utf8(pairsUtf8, length));
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.SetRefContext", exception);
+            }
         }
 
         /// <summary>
@@ -428,7 +592,15 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int TextRefs(IntPtr textUtf8, int length, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.TextRefs(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.TextRefs(PropertyLevelFormat.Utf8(textUtf8, length), outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.TextRefs", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -438,10 +610,18 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int RemapRefs(IntPtr textUtf8, int textLen, IntPtr pairsUtf8, int pairsLen, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.RemapRefs(
-                PropertyLevelFormat.Utf8(textUtf8, textLen),
-                PropertyLevelFormat.Utf8(pairsUtf8, pairsLen),
-                outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.RemapRefs(
+                    PropertyLevelFormat.Utf8(textUtf8, textLen),
+                    PropertyLevelFormat.Utf8(pairsUtf8, pairsLen),
+                    outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.RemapRefs", exception);
+                return 0;
+            }
         }
 
         /// <summary>
@@ -451,10 +631,18 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         public static int ResolveJson(IntPtr baseJsonUtf8, int baseLen, IntPtr keysUtf8, int keysLen, IntPtr outBuffer, int maxLen)
         {
-            return PropertyLevelFormat.Resolve(
-                PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
-                PropertyLevelFormat.Utf8(keysUtf8, keysLen),
-                outBuffer, maxLen);
+            try
+            {
+                return PropertyLevelFormat.Resolve(
+                    PropertyLevelFormat.Utf8(baseJsonUtf8, baseLen),
+                    PropertyLevelFormat.Utf8(keysUtf8, keysLen),
+                    outBuffer, maxLen);
+            }
+            catch (Exception exception)
+            {
+                FaultReporter.Report("AppEntry.ResolveJson", exception);
+                return 0;
+            }
         }
     }
 }

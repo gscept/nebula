@@ -40,13 +40,13 @@ PosixConsoleHandler::Print(const String& s)
     if (0 == threadName)
     {
         // a message from the main thread
-        fprintf(this->stdoutHandle, s.AsCharPtr());
+        fprintf(this->stdoutHandle, "%s", s.AsCharPtr());
     }
     else
     {
         // a message from another thread, add the thread name to the message
         msg.Format("[%s] %s", Threading::Thread::GetMyThreadName(), s.AsCharPtr());
-        fprintf(this->stdoutHandle, msg.AsCharPtr());
+        fprintf(this->stdoutHandle, "%s", msg.AsCharPtr());
     }
 }
 
@@ -61,13 +61,13 @@ PosixConsoleHandler::DebugOut(const String& s)
     if (0 == threadName)
     {
         // a message from the main thread
-        fprintf(this->stderrHandle, s.AsCharPtr());
+        fprintf(this->stderrHandle, "%s", s.AsCharPtr());
     }
     else
     {
         String msg;
         msg.Format("[%s] %s", Threading::Thread::GetMyThreadName(), s.AsCharPtr());
-        fprintf(this->stderrHandle, msg.AsCharPtr());
+        fprintf(this->stderrHandle, "%s", msg.AsCharPtr());
     }
 }
 
@@ -89,7 +89,7 @@ PosixConsoleHandler::Error(const String& msg)
     }
     String str;
     str.Format("*** ERROR ***\nApplication: %s\nThread: %s\nError: %s", appName, threadName, msg.AsCharPtr());
-    fprintf(this->stderrHandle, str.AsCharPtr());
+    fprintf(this->stderrHandle, "%s", str.AsCharPtr());
     Core::SysFunc::Error(str.AsCharPtr());
 }
 
@@ -104,13 +104,13 @@ PosixConsoleHandler::Warning(const String& s)
     if (0 == threadName)
     {
         // a message from the main thread
-        fprintf(this->stderrHandle, s.AsCharPtr());
+        fprintf(this->stderrHandle, "%s", s.AsCharPtr());
     }
     else
     {
         // a message from another thread, add the thread name to the message
         msg.Format("[%s] %s", Threading::Thread::GetMyThreadName(), s.AsCharPtr());
-        fprintf(this->stderrHandle, msg.AsCharPtr());
+        fprintf(this->stderrHandle, "%s", msg.AsCharPtr());
     }
 }
 

@@ -36,11 +36,11 @@ N_Log(const char * log_domain, const char * log_level, const char * message, int
 {
 	if (fatal)
 	{
-		n_error(message);
+		n_error("%s", message);
 	}
 	else
 	{
-		n_warning(message);
+		n_warning("%s", message);
 	}
 }
 
@@ -48,9 +48,22 @@ N_Log(const char * log_domain, const char * log_level, const char * message, int
 /**
 */
 void
-N_Assert(bool value)
+N_AssertEx(const char* expression, const char* file, int32_t line, const char* message, const char* stack, bool value)
 {
-    n_assert(value);
+    if (value)
+        return;
+
+    n_warning("*** NEBULA ASSERTION (managed) ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n%s",
+        file, line, message, expression, stack);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+N_FaultReport(const char* report)
+{
+    n_warning("%s", report);
 }
 
 //------------------------------------------------------------------------------

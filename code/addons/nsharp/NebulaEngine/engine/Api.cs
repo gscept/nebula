@@ -15,6 +15,13 @@ namespace Nebula
         [DllImport("__Internal", EntryPoint = "N_Print")]
         private static extern void Print(IntPtr data, int isStdout);
 
+        [DllImport("__Internal", EntryPoint = "N_FaultReport")]
+        private static extern void FaultReport(string report);
+
+        [DllImport("__Internal", EntryPoint = "N_AssertEx")]
+        private static extern void AssertEx(string expression, string file, int line, string message, string stack,
+            [MarshalAs(UnmanagedType.I1)] bool value);
+
         public static unsafe void Log(string val)
         {
             int byteCount = Encoding.UTF8.GetByteCount(val);
@@ -32,12 +39,32 @@ namespace Nebula
             Log(value?.ToString() ?? "null");
         }
 
-        [DllImport("__Internal", EntryPoint = "N_Assert")]
-        public static extern void Assert([MarshalAs(UnmanagedType.I1)] bool value);
-
-        public static void Assert(bool value, string message)
+        /// <summary>
+        /// Reports a failure to the engine.
+        /// </summary>
+        public static void LogError(string val)
         {
-            Assert(value);
+            FaultReport(val);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Assert(bool value, string message = "",
+            [CallerMemberName] string member = "",
+            [CallerFilePath] string file = "",
+            [CallerLineNumber] int line = 0,
+            [CallerArgumentExpression("value")] string expression = "")
+        {
+            if (!value)
+            {
+                // The frame for the assert itself is skipped, so the stack starts at the code that asserted
+                FaultReporter.ReportAssert(expression, file, line, member, message,
+                    new System.Diagnostics.StackTrace(1, true).ToString());
+            }
+        }
+
+        internal static void AssertFailed(string expression, string file, int line, string message, string stack)
+        {
+            AssertEx(expression, file, line, message, stack, false);
         }
     }
 

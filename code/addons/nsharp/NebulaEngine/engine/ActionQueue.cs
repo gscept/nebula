@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Nebula
@@ -175,13 +176,28 @@ namespace Nebula
                     }
                     case ActionType.Event:
                     {
-                        this.current.eventCallback?.Invoke(delta);
+                        try
+                        {
+                            this.current.eventCallback?.Invoke(delta);
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report("ActionQueue.Event", exception);
+                        }
+
                         newAction = true;
                         break;
                     }
                     case ActionType.Duration:
                     {
-                        this.current.eventCallback?.Invoke(delta);
+                        try
+                        {
+                            this.current.eventCallback?.Invoke(delta);
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report("ActionQueue.Duration", exception);
+                        }
 
                         this.current.duration -= delta;
                         if (this.current.duration <= 0.0f)
@@ -204,7 +220,25 @@ namespace Nebula
                     }
                     case ActionType.Loop:
                     {
-                        newAction = this.current.loopCallback == null || !this.current.loopCallback.Invoke(delta);
+                        if (this.current.loopCallback == null)
+                        {
+                            newAction = true;
+                            break;
+                        }
+
+                        bool keepRunning;
+                        try
+                        {
+                            keepRunning = this.current.loopCallback.Invoke(delta);
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report("ActionQueue.Loop", exception);
+                            newAction = true;
+                            break;
+                        }
+
+                        newAction = !keepRunning;
                         break;
                     }
                 }

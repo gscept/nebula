@@ -139,7 +139,16 @@ namespace Nebula
                     return;
                 }
 
-                this.OnActivate();
+                try
+                {
+                    this.OnActivate();
+                }
+                catch (Exception exception)
+                {
+                    FaultReporter.Report(this, nameof(OnActivate), exception);
+                    return;
+                }
+
                 this.active = true;
             }
 
@@ -154,8 +163,47 @@ namespace Nebula
                     return;
                 }
 
-                this.OnDeactivate();
+                try
+                {
+                    this.OnDeactivate();
+                }
+                catch (Exception exception)
+                {
+                    FaultReporter.Report(this, nameof(OnDeactivate), exception);
+                    return;
+                }
+
                 this.active = false;
+            }
+
+            /// <summary>
+            /// The activation gate, with the fault guard around the plugin's answer. A property that throws here
+            /// is asked again on the next frame
+            /// </summary>
+            internal bool AskActivate()
+            {
+                try
+                {
+                    return this.ShouldActivate();
+                }
+                catch (Exception exception)
+                {
+                    FaultReporter.Report(this, nameof(ShouldActivate), exception);
+                    return false;
+                }
+            }
+
+            internal bool AskDeactivate()
+            {
+                try
+                {
+                    return this.ShouldDeactivate();
+                }
+                catch (Exception exception)
+                {
+                    FaultReporter.Report(this, nameof(ShouldDeactivate), exception);
+                    return false;
+                }
             }
 
             /// <summary>

@@ -820,6 +820,12 @@ NSharpTest::Run()
     StepFrame();
     StepFrame();
 
+    // The fault guard, one frame per phase
+    for (IndexT i = 0; i < 4; i++)
+        StepFrame();
+
+    StepFrame();  // the log hook with percents in the message
+
     VERIFY(capturedJsonLengthOk);
     VERIFY(capturedJsonTextOk);
 

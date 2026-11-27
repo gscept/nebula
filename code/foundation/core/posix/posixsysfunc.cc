@@ -138,7 +138,7 @@ void
 Posix::SysFunc::MessageBox(const char* msg)
 {
     // don't do anything except write message to console
-    fprintf(stdout, msg);
+    fprintf(stdout, "%s", msg);
 }
 
 //------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ SysFunc::Sleep(double sec)
 void
 SysFunc::DebugOut(const char* msg)
 {
-    fprintf(stderr, msg);
+    fprintf(stderr, "%s", msg);
 }
 
 //------------------------------------------------------------------------------

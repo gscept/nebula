@@ -168,7 +168,7 @@ namespace Nebula
                         Property property = properties[j];
                         if (simulating)
                         {
-                            if (property.RequestedActive && property.ShouldActivate())
+                            if (property.RequestedActive && property.AskActivate())
                             {
                                 property.Activate();
                             }

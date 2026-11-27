@@ -46,7 +46,14 @@ namespace Nebula
                             continue;
                         }
 
-                        this.handlers[i].OnMessage(in message);
+                        try
+                        {
+                            this.handlers[i].OnMessage(in message);
+                        }
+                        catch (Exception exception)
+                        {
+                            FaultReporter.Report(this.handlers[i], nameof(Property.OnMessage), exception);
+                        }
                     }
                 }
             }

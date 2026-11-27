@@ -179,12 +179,12 @@ namespace Nebula
 
                     if (!property.Active)
                     {
-                        if (property.ShouldActivate())
+                        if (property.AskActivate())
                         {
                             property.Activate();
                         }
                     }
-                    else if (property.ShouldDeactivate())
+                    else if (property.AskDeactivate())
                     {
                         property.Deactivate();
                     }

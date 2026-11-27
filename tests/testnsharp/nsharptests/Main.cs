@@ -513,6 +513,39 @@ namespace NST
         }
     }
 
+    /// <summary>
+    /// A property that throws on the frame path, which is the path the fault guard is on. The guard is what keeps
+    /// the engine alive: a managed exception cannot come back through the [UnmanagedCallersOnly] boundary, so
+    /// without it this test would take the process down instead of reporting.
+    /// </summary>
+    [ExportType]
+    public class FaultTestProperty : Property
+    {
+        public int frameCalls;
+        public int activateCalls;
+
+        public override bool ShouldActivate()
+        {
+            return true;
+        }
+
+        public override void OnActivate()
+        {
+            this.activateCalls++;
+        }
+
+        public override void OnFrame()
+        {
+            this.frameCalls++;
+            throw new InvalidOperationException("Simulated plugin fault");
+        }
+
+        public override FrameEvent[] AcceptedEvents()
+        {
+            return [FrameEvent.OnFrame];
+        }
+    }
+
     [ExportType]
     public class ExportedState : IHotReloadManaged
     {
@@ -782,6 +815,18 @@ namespace NST
         [CallerLineNumber] int lineNumber = 0)
         {
             VERIFY(test, filePath, lineNumber);
+        }
+
+        // The log hook. The engine has to take the message as an argument rather than as the format string,
+        // because the message is plugin text and a percent in it reads past the argument list. This is the check
+        // that a message with percents in it comes through without taking the run down
+        [DllImport("__Internal", EntryPoint = "N_Log")]
+        public static extern void LogHook(string logDomain, string logLevel, string message, int fatal, IntPtr userData);
+
+        public static void TestLogFormat()
+        {
+            LogHook("nsharp", "warning", "100%s done\n", 0, IntPtr.Zero);
+            Verify(true);
         }
 
         /// <summary>
@@ -1535,6 +1580,10 @@ namespace NST
         private DetectedEventProperty detectedProperty;
         private DetectedEventSubclass detectedSubclass;
         private ExplicitEventProperty explicitProperty;
+
+        // The fault guard. The property throws on the frame path, and the guard is what keeps the run alive
+        private FaultTestProperty faultProperty;
+        private int reportsBeforeFault;
 
         public override void OnBeginFrame()
         {
@@ -2322,6 +2371,67 @@ namespace NST
                 Tests.Verify(this.explicitProperty.frameCalls == 0);
 
                 this.syncPhase = 55;
+            }
+            else if (this.syncPhase == 55)
+            {
+                // The fault guard. The property throws from OnFrame, which is the path the engine calls through.
+                // Without the guard this frame would take the process down, so being here at all is the check
+                World world = World.Get(World.DEFAULT_WORLD);
+                Entity entity = world.CreateEntity();
+                this.faultProperty = new FaultTestProperty();
+                this.reportsBeforeFault = FaultReporter.ReportCount;
+                entity.AddProperty(this.faultProperty);
+
+                Tests.Verify(!this.faultProperty.Active);
+                Tests.Verify(this.faultProperty.activateCalls == 0);
+                Tests.Verify(this.faultProperty.frameCalls == 0);
+
+                this.syncPhase = 56;
+            }
+            else if (this.syncPhase == 56)
+            {
+                // The pass activated it. The throw happens at base.OnFrame(), after these checks, so the report is
+                // read on the next frame
+                Tests.Verify(this.faultProperty.Active);
+                Tests.Verify(this.faultProperty.activateCalls == 1);
+                Tests.Verify(this.faultProperty.frameCalls == 0);
+
+                this.syncPhase = 57;
+            }
+            else if (this.syncPhase == 57)
+            {
+                // The frame ran it once and the throw was caught on the managed side. The report names the
+                // property and the method the guard ran, which is what the guard is for
+                Tests.Verify(this.faultProperty.frameCalls == 1);
+                Tests.Verify(FaultReporter.ReportCount == this.reportsBeforeFault + 1);
+                Tests.Verify(FaultReporter.LastContext == "FaultTestProperty.OnFrame");
+                Tests.Verify(FaultReporter.LastMessage == "InvalidOperationException: Simulated plugin fault");
+
+                this.syncPhase = 58;
+            }
+            else if (this.syncPhase == 58)
+            {
+                // A property that throws keeps being called, which is what lets a hot reload pick the fix up. The
+                // same failure in the next frame is the same signature, so it is not reported again
+                Tests.Verify(this.faultProperty.frameCalls == 2);
+                Tests.Verify(FaultReporter.ReportCount == this.reportsBeforeFault + 1);
+
+                // The assert reports with the C# call site the compiler put into the assembly, and it reports and
+                // returns rather than aborting. The call is compiled out in a build without DEBUG, so this is
+                // guarded the same way
+#if DEBUG
+                Debug.Assert(false, "assert message");
+                Tests.Verify(FaultReporter.LastMessage == "assert message");
+                Tests.Verify(FaultReporter.LastContext.Contains("Main.cs"));
+                Tests.Verify(FaultReporter.ReportCount == this.reportsBeforeFault + 2);
+#endif
+
+                this.syncPhase = 59;
+            }
+            else if (this.syncPhase == 59)
+            {
+                Tests.TestLogFormat();
+                this.syncPhase = 60;
             }
             base.OnFrame();
         }
