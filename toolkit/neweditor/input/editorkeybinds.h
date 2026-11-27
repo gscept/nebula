@@ -23,6 +23,11 @@
     not in that order of size, because a list sorted by it moves its rows on every rebinding. The
     order the list is drawn in does not decide anything.
 
+    A bind is editor only unless its registration says otherwise. While the sim world is running, an
+    editor only bind does not answer the key and the key goes on to the input server, which is what
+    lets the game have its own controls. Only the key is affected: the command an editor only bind
+    names still runs when it is typed in the console or clicked on the toolbar.
+
     @copyright
     (C) 2026 Individual contributors, see AUTHORS file
 */
@@ -56,6 +61,8 @@ struct EditorKeyBind
     Input::Modifier::Code defaultMods;
     /// the command line the bind runs
     Util::String command;
+    /// set to true if the keybind should only run in editor, not while simulating
+    bool editorOnly;
 };
 
 class EditorKeybinds : public Core::RefCounted
@@ -70,8 +77,10 @@ public:
     /// Clear the registry.
     void Discard();
 
-    /// Register a keybind. The key and the modifiers are the default the file can change.
-    void Register(const Util::String& action, Input::Key::Code key, Input::Modifier::Code mods, const Util::String& command);
+    /// Register a keybind. The key and the modifiers are the default the file can change. A bind is
+    /// editor only unless it says otherwise, because while the scene is simulating the keys belong to
+    /// the game.
+    void Register(const Util::String& action, Input::Key::Code key, Input::Modifier::Code mods, const Util::String& command, bool editorOnly = true);
 
     /// Set the file the bindings are read from and written to, as an assign URI. Use
     /// 'bin:keybinds.json'.

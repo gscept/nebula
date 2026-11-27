@@ -124,9 +124,9 @@ EditorFeatureUnit::OnActivate()
     // Play-in-editor keybinds. A bind with no modifiers matches any modifier, so the modified one
     // wins the lookup
     EditorKeybinds& keybinds = this->core->GetKeybinds();
-    keybinds.Register("pie.stop", Input::Key::F5, Input::Modifier::ShiftModifier, "pie stop");
-    keybinds.Register("pie.start", Input::Key::F5, Input::Modifier::NoModifier, "pie start");
-    keybinds.Register("pie.stop.alt", Input::Key::F8, Input::Modifier::NoModifier, "pie stop");
+    keybinds.Register("pie.stop", Input::Key::F5, Input::Modifier::ShiftModifier, "pie stop", false);
+    keybinds.Register("pie.start", Input::Key::F5, Input::Modifier::NoModifier, "pie start", false);
+    keybinds.Register("pie.stop.alt", Input::Key::F8, Input::Modifier::NoModifier, "pie stop", false);
 
     // The keybind for the command registered above, which is what makes Ctrl+N the same route as
     // typing 'create'

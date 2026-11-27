@@ -105,8 +105,8 @@ ViewportPanel::OnSetup()
     this->core->GetKeybinds().Register("view.reset", Input::Key::Home, Input::Modifier::NoModifier, "reset");
     this->core->GetKeybinds().Register("view.focus", Input::Key::F, Input::Modifier::NoModifier, "focus");
     // F2 is the outline's rename key, so the view modes are on the function keys after it
-    this->core->GetKeybinds().Register("view.scene", Input::Key::F3, Input::Modifier::NoModifier, "view scene");
-    this->core->GetKeybinds().Register("view.game", Input::Key::F4, Input::Modifier::NoModifier, "view game");
+    this->core->GetKeybinds().Register("view.scene", Input::Key::F3, Input::Modifier::NoModifier, "view scene", false);
+    this->core->GetKeybinds().Register("view.game", Input::Key::F4, Input::Modifier::NoModifier, "view game", false);
 
     ed_focus_game_on_play = Core::CVarCreate(Core::CVarType::CVar_Int, "ed_focus_game_on_play", "1",
         "Switch the viewport to game view when play starts");

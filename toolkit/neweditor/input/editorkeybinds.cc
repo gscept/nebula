@@ -6,6 +6,7 @@
 #include "neweditor/input/editorkeybinds.h"
 #include "neweditor/api/shell.h"
 #include "neweditor/base/editorlog.h"
+#include "neweditor/model/scene.h"
 #include "io/ioserver.h"
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
@@ -255,7 +256,7 @@ EditorKeybinds::GetCaptureMods() const
     already had the combo, because two equal binds are settled by the order they are listed in.
 */
 void
-EditorKeybinds::Register(const Util::String& action, Input::Key::Code key, Input::Modifier::Code mods, const Util::String& command)
+EditorKeybinds::Register(const Util::String& action, Input::Key::Code key, Input::Modifier::Code mods, const Util::String& command, bool editorOnly)
 {
     n_assert(!action.IsEmpty());
     n_assert(key != Input::Key::InvalidKey);
@@ -267,6 +268,7 @@ EditorKeybinds::Register(const Util::String& action, Input::Key::Code key, Input
         this->keybinds[existing].defaultKey = key;
         this->keybinds[existing].defaultMods = mods;
         this->keybinds[existing].command = command;
+        this->keybinds[existing].editorOnly = editorOnly;
         return;
     }
 
@@ -277,6 +279,7 @@ EditorKeybinds::Register(const Util::String& action, Input::Key::Code key, Input
     keybind.defaultKey = key;
     keybind.defaultMods = mods;
     keybind.command = command;
+    keybind.editorOnly = editorOnly;
 
     this->keybinds.Append(keybind);
 
@@ -757,6 +760,13 @@ EditorKeybinds::Process(Input::Key::Code key, bool isPress, Input::Modifier::Cod
     // now that the registry is ordered by the action name. Two binds that are equally specific are
     // the same combo
     // on two actions, and the tie is left to the order they are listed in
+    //
+    // An editor only bind is not in the lookup while the sim world runs. It is filtered inside the
+    // lookup rather than after it, because the most specific bind can be the inert one and a bind that
+    // can still answer should have the key. When nothing can, this returns false, which is what lets
+    // the key reach the input server and the game
+    const bool simulating = this->core->GetScene()->IsPlaying();
+
     IndexT match = InvalidIndex;
     IndexT matchMods = 0;
 
@@ -764,6 +774,9 @@ EditorKeybinds::Process(Input::Key::Code key, bool isPress, Input::Modifier::Cod
     {
         const EditorKeyBind& keybind = this->keybinds[i];
         if (keybind.key == Input::Key::InvalidKey)
+            continue;
+
+        if (keybind.editorOnly && simulating)
             continue;
 
         if (keybind.key == key && Input::Modifier::Matches(keybind.mods, mods))

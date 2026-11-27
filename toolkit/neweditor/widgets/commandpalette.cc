@@ -148,7 +148,7 @@ CommandPalette::Setup(Shell* core)
 
     core->GetCommands().Register("palette", "open the command palette",
         Util::Delegate<void(const Util::Array<Util::String>&)>::FromMethod<CommandPalette, &CommandPalette::HandleShow>(this));
-    core->GetKeybinds().Register("palette.open", Input::Key::P, Input::Modifier::ControlModifier | Input::Modifier::ShiftModifier, "palette");
+    core->GetKeybinds().Register("palette.open", Input::Key::P, Input::Modifier::ControlModifier | Input::Modifier::ShiftModifier, "palette", false);
 
     return true;
 }
