@@ -747,8 +747,14 @@ PinnedArray<MAX_ALLOCS, TYPE>::Delete()
 
     if (this->capacity > 0)
     {
-        // If in small vector, run destructor
-        this->DestroyRange(0, this->count);
+        // Only run the destructors. DestroyRange would construct each element again so the slot
+        // stays usable, but the memory is freed right after. At exit that construction can need
+        // something already destroyed, like the string atom table a texture's create info uses
+        if constexpr (!std::is_trivially_destructible<TYPE>::value)
+        {
+            for (IndexT i = 0; i < this->count; i++)
+                this->Destroy(&this->elements[i]);
+        }
         Memory::FreeVirtual(this->elements, this->capacity * sizeof(TYPE));
     }
     this->elements = nullptr;
