@@ -130,6 +130,7 @@ OutlinePanel::OutlinePanel() :
     pressedRow(InvalidIndex),
     pressedAdditive(false),
     pressedRanged(false),
+    pressedDragged(false),
     renamingEntity(Game::Entity::Invalid()),
     renamingCollection(Util::Guid()),
     renameFocusRequested(false),
@@ -527,21 +528,24 @@ OutlinePanel::Draw()
     // the drag after
     // the mouse has moved off the row. The drag state is still the one the drag carries on the
     // frame the release
-    // comes on, because the payload is not cleared until the frame after, so this is the frame
-    // where the two can
-    // be told apart. The row the press landed on is checked against the array, because a rebuild
-    // moves the rows
-    // around while the mouse is held
+    // comes on, unless the drop landed in another panel: a delivery clears it inside that panel's
+    // draw, and that
+    // draw can come before this one, so the panel remembers the drag on the press rather than
+    // reading it back
+    // here. The row the press landed on is checked against the array, because a rebuild moves the
+    // rows around
+    // while the mouse is held
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     {
         if (this->pressedRow >= 0 && this->pressedRow < (IndexT)this->rows.Size())
         {
             const Row& row = this->rows[this->pressedRow];
-            if (!this->IsDraggedRow(row))
+            if (!this->pressedDragged && !this->IsDraggedRow(row))
                 this->SelectRow(this->pressedRow, this->pressedAdditive, this->pressedRanged);
         }
 
         this->pressedRow = InvalidIndex;
+        this->pressedDragged = false;
     }
 
     // The popup is a window of its own, so it is opened from the flag the row set and drawn after
@@ -832,6 +836,7 @@ OutlinePanel::DrawRow(IndexT rowIndex)
             this->pressedRow = rowIndex;
             this->pressedAdditive = ImGui::GetIO().KeyCtrl;
             this->pressedRanged = ImGui::GetIO().KeyShift;
+            this->pressedDragged = false;
         }
         else if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
         {
@@ -987,6 +992,13 @@ OutlinePanel::DrawRow(IndexT rowIndex)
     {
         if (ImGui::BeginDragDropSource())
         {
+            // The press that turned into this drag is not a selection click. The panel remembers that
+            // here, on the press, rather than reading the drag state back at the release, because a
+            // drop that lands in another panel clears it inside that panel's draw, and that draw can
+            // come before this one
+            if (rowIndex == this->pressedRow)
+                this->pressedDragged = true;
+
             if (this->draggedEntities.IsEmpty())
             {
                 // A drag carries the whole selection when the row it started on is part of the
@@ -1022,6 +1034,11 @@ OutlinePanel::DrawRow(IndexT rowIndex)
     {
         if (ImGui::BeginDragDropSource())
         {
+            // The same as the entity row: the press that turned into this drag is not a selection
+            // click, and the panel has to remember that on the press
+            if (rowIndex == this->pressedRow)
+                this->pressedDragged = true;
+
             if (!this->draggedCollection.IsValid())
                 this->draggedCollection = row.guid;
 

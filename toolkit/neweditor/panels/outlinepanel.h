@@ -302,6 +302,10 @@ private:
     IndexT pressedRow;
     bool pressedAdditive;
     bool pressedRanged;
+    /// true when the press turned into a drag. The drag state is gone on the frame the release comes
+    /// on when the drop landed in another panel, because a delivery clears it right there, so the
+    /// panel has to remember the drag on the press rather than read it back at the release
+    bool pressedDragged;
 
     /// the rename field. It is opened from the context menu or from the rename command and drawn on
     /// the row it
