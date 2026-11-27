@@ -14,6 +14,7 @@
 #include "graphics/view.h"
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
+#include "materials/materialloader.h"
 
 #if WITH_NEBULA_EDITOR
 #include "models/modelloader.h"
@@ -80,6 +81,30 @@ ModelContext::Create()
     TransformInstanceAllocator = Memory::RangeAllocator(0x7FFF, 0x7FFF);
     RenderInstanceAllocator = Memory::RangeAllocator(0x7FFF, 0x7FFF);
 
+    // A reloaded material can have another template. Nodes are batched by the template cached for them and sorted by
+    // its sort code, so the nodes drawing the material have to be moved to the batches of the new one
+    Materials::MaterialLoader* materialLoader = Resources::ResourceServer::Instance()->GetStreamLoader<Materials::MaterialLoader>();
+    materialLoader->AddReloadListener(
+        [](Resources::ResourceId id)
+        {
+            const Materials::MaterialId material = id;
+            const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(material);
+            const uint64_t sortCode = Materials::MaterialGetSortCode(material);
+            n_assert(sortCode < 0xFFF0000000000000);
+            for (SizeT i = 0; i < NodeInstances.renderable.nodeMaterials.Size(); i++)
+            {
+                if (NodeInstances.renderable.nodeMaterials[i] == material)
+                {
+                    NodeInstances.renderable.nodeMaterialTemplates[i] = materialTemplate;
+
+                    // The bits below the sort code identify the node, keep them
+                    const uint64_t nodeBits = NodeInstances.renderable.nodeSortId[i] & ((1ull << 52) - 1);
+                    NodeInstances.renderable.nodeSortId[i] = (sortCode << 52) | nodeBits;
+                }
+            }
+        }
+    );
+
 #if WITH_NEBULA_EDITOR
     Models::ModelLoader* loader = Resources::ResourceServer::Instance()->GetStreamLoader<Models::ModelLoader>();
     loader->AddReloadListener(
@@ -137,9 +162,18 @@ ModelContext::SetupModel(
     Resources::ResourceId mid
 )
 {
+    // The entity can be gone by the time its model has loaded, the editor removes one that is
+    // dropped and taken back again right away. Nothing holds the model for it then
+    const ContextEntityId cid = GetContextId(gfxId);
+    if (cid == InvalidContextEntityId)
+    {
+        if (mid != Resources::InvalidResourceId)
+            Resources::DiscardResource(mid);
+        return;
+    }
+
     // Go through model nodes and setup instance data
     const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
-    const ContextEntityId cid = GetContextId(gfxId);
 
     // Run through nodes and collect transform and renderable nodes
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);

@@ -83,7 +83,7 @@ public:
     template<class CLASS> const CLASS* GetObject() const;
 
     /// returns true if delegate is valid
-    bool IsValid();
+    bool IsValid() const;
 
 private:
     /// method pointer typedef
@@ -311,7 +311,7 @@ Delegate<RETTYPE(ARGTYPES...)>::GetObject() const
 */
 template<typename RETTYPE, typename ... ARGTYPES>
 bool 
-Util::Delegate<RETTYPE(ARGTYPES...)>::IsValid()
+Util::Delegate<RETTYPE(ARGTYPES...)>::IsValid() const
 {
     return (0 != this->stubPtr);
 }

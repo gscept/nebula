@@ -55,8 +55,12 @@ struct MaterialBindlessBufferBinding
 
 /// Create material
 MaterialId CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name);
+/// Rebuild a material in place for a template, for reloading, see MaterialLoader::ReinitializeResource
+void MaterialReloadTemplate(const MaterialId mat, const MaterialTemplatesGPULang::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
+/// Get the version of the material, it changes every time the material is built for a template
+uint MaterialGetVersion(const MaterialId mat);
 
 /// Set texture
 void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const Resources::ResourceId tex);
@@ -143,7 +147,8 @@ enum
     Material_Textures,
     Material_Constants,
     Material_BufferOffset,
-    Material_Template
+    Material_Template,
+    Material_Version
 #ifdef WITH_NEBULA_EDITOR
     , Material_TextureValues
     , Material_BufferPointer
@@ -162,7 +167,8 @@ typedef Ids::IdAllocator<
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
     IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
-    const MaterialTemplatesGPULang::Entry*                                                 // template
+    const MaterialTemplatesGPULang::Entry*,                                                // template
+    uint                                                                            // version, see MaterialGetVersion
 #ifdef WITH_NEBULA_EDITOR
     , Util::Array<Resources::ResourceId>
     , MaterialBindlessBufferBinding

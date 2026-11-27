@@ -307,24 +307,33 @@ ModelContext::Alloc()
 inline void
 ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
-    // clean up old stuff, but don't deallocate entity
+    // clean up old stuff, but don't deallocate entity. The slot is reused by the next entity, so
+    // what it held is cleared, and an entity whose model has not loaded yet has no model and no
+    // instance ranges to give back. Its model is discarded when the load finishes and finds the
+    // entity gone
     Resources::ResourceId rid = modelContextAllocator.Get<Model_Id>(id.id);
 
     if (rid != Resources::InvalidResourceId) // decrement model resource
         Resources::DiscardResource(rid);
-    rid = Resources::InvalidResourceId;
+    modelContextAllocator.Set<Model_Id>(id.id, Resources::InvalidResourceId);
 
     modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
     modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
 
     // Deallocate material instances
-    const auto renderableRange = modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation;
+    NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(id.id);
+    const auto renderableRange = stateRange.allocation;
     for (size_t i = renderableRange.offset; i < renderableRange.offset + renderableRange.size; i++)
     {
         Materials::DestroyMaterialInstance(NodeInstances.renderable.nodeStates[(uint)i].materialInstance);
     }
-    TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
-    RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
+    if (transformRange.allocation.size > 0)
+        TransformInstanceAllocator.Dealloc(transformRange.allocation);
+    if (stateRange.allocation.size > 0)
+        RenderInstanceAllocator.Dealloc(stateRange.allocation);
+    transformRange = NodeInstanceRange{};
+    stateRange = NodeInstanceRange{};
 
     modelContextAllocator.Dealloc(id.id);
 }

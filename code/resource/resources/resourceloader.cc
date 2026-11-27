@@ -209,10 +209,30 @@ ResourceLoader::ClearPendingUnloads()
     for (IndexT i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
+        const Ids::Id32 entry = unload.resourceId.loaderInstanceId;
 
-        // unload if loaded
-        this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
-        this->Unload(unload.resourceId);
+        // asked for again since it was discarded, it stays
+        if (this->usage[entry] > 0)
+        {
+            this->pendingUnloads.EraseIndex(i);
+            continue;
+        }
+
+        // a load still in flight lands in this entry, it is unloaded once it has
+        const Resource::State state = this->states[entry];
+        if (state == Resource::Pending)
+            continue;
+
+        // the id the discard was given is the placeholder's while the resource was loading, and the
+        // fail resource's for one that failed, neither is this entry's to unload
+        this->states[entry] = Resource::Unloaded;
+        if (state == Resource::Loaded)
+        {
+            Resources::ResourceId loaded = unload.resourceId;
+            loaded.resourceId = this->resources[entry].resourceId;
+            loaded.generation = this->resources[entry].generation;
+            this->Unload(loaded);
+        }
 
         this->streamDatas[unload.resourceId.loaderInstanceId] = {};
         this->metaData[unload.resourceId.loaderInstanceId] = {};

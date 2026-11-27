@@ -160,13 +160,20 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
         // the editor shows the material's textures from its texture values, which binding the handle doesn't set
         const uint nameHash = Util::String(name).HashCode();
 #endif
+        // A texture still loading when the material is reloaded must not write into the reloaded material
+        const uint version = MaterialGetVersion(mat);
+
+        // Use the default until the texture has loaded. A texture that is loaded already runs the callback right away, so this goes first
+        handle = CoreGraphics::TextureGetBindlessHandle(def);
         auto tmp = Resources::CreateResource(IO::Path::Parse(reader->GetString("value")), tag,
-        [&handle, &dirtyFlag, mat, data, dataSize
+        [&handle, &dirtyFlag, mat, data, dataSize, version
 #ifdef WITH_NEBULA_EDITOR
             , nameHash
 #endif
         ](Resources::ResourceId rid) mutable
         {
+            if (MaterialGetVersion(mat) != version)
+                return;
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
@@ -179,12 +186,14 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
 #endif
             dirtyFlag = true;
         },
-        [&handle, &dirtyFlag, mat, data, dataSize
+        [&handle, &dirtyFlag, mat, data, dataSize, version
 #ifdef WITH_NEBULA_EDITOR
             , nameHash
 #endif
         ](Resources::ResourceId rid) mutable
         {
+            if (MaterialGetVersion(mat) != version)
+                return;
             CoreGraphics::TextureIdLock _0(rid);
             handle = CoreGraphics::TextureGetBindlessHandle(rid);
             materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
@@ -200,7 +209,6 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
 #ifdef WITH_NEBULA_EDITOR
         MaterialSetEditorTexture(mat, nameHash, tmp);
 #endif
-        handle = CoreGraphics::TextureGetBindlessHandle(def);
         reader->SetToParent();
     }
     else
@@ -303,9 +311,11 @@ MaterialLoader::Setup()
     MaterialInterfaces::x& material = materialLoaderState.x##s.Get(id);\
     materialLoaderState.x##s.dirty = true;\
 
+    // Fills the slot the material is bound to, which a reload keeps when the material's properties stay the same, or allocates one
 #if WITH_NEBULA_EDITOR
     #define ALLOC_AND_BIND_MATERIAL(x) \
-        Ids::Id32 id = materialLoaderState.x##s.Alloc();\
+        const IndexT boundSlot = Materials::MaterialGetBufferBinding(mat);\
+        Ids::Id32 id = boundSlot != -1 ? (Ids::Id32)boundSlot : materialLoaderState.x##s.Alloc();\
         if (materialLoaderState.bindings.x##s != materialLoaderState.x##s.deviceAddress)\
         {\
             materialLoaderState.bindings.x##s = materialLoaderState.x##s.deviceAddress;\
@@ -316,8 +326,9 @@ MaterialLoader::Setup()
         Materials::MaterialSetBufferBinding(mat, id);\
         Materials::MaterialBindlessForEditor(mat, (char*)&material, &materialLoaderState.x##s.dirty);
 #else
-    #define ALLOC_AND_BIND_MATERIAL(x, editor) \
-        Ids::Id32 id = materialLoaderState.x##s.Alloc();\
+    #define ALLOC_AND_BIND_MATERIAL(x) \
+        const IndexT boundSlot = Materials::MaterialGetBufferBinding(mat);\
+        Ids::Id32 id = boundSlot != -1 ? (Ids::Id32)boundSlot : materialLoaderState.x##s.Alloc();\
         if (materialLoaderState.bindings.x##s != materialLoaderState.x##s.deviceAddress)\
         {\
             materialLoaderState.bindings.x##s = materialLoaderState.x##s.deviceAddress;\
@@ -504,6 +515,36 @@ LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const M
 
 //------------------------------------------------------------------------------
 /**
+    Apply the material's values and textures in the Params node, the reader has to be at the surface node
+*/
+static void
+LoadMaterialParams(const Ptr<IO::BXmlReader>& reader, const MaterialId id, const MaterialTemplatesGPULang::Entry* materialTemplate, const Util::StringAtom& tag, const IO::URI& uri)
+{
+    // New material upload system, the defaults and types can be discarded
+    if (reader->SetToFirstChild("Params"))
+    {
+        // This is the new-new system, using material buffers and is fully raytracing compatible
+        IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplatesGPULang::MaterialProperties)materialTemplate->properties);
+        if (loaderIndex != InvalidIndex)
+        {
+            auto loader = LoaderMap.ValueAtIndex(loaderIndex);
+            loader(reader, id, tag);
+        }
+        else
+        {
+            n_log_warn(Materials, "Material %s has no registered loader, material properties can't be applied so won't render correctly", materialTemplate->name);
+            MaterialSetBufferBinding(id, -1);
+        }
+    }
+    else
+    {
+        n_log_warn(Materials, "Material %s is of an old format and has been deprecated. Please run the surface_updater.py script locatged in fips_files", uri.LocalPath().AsCharPtr());
+        MaterialSetBufferBinding(id, -1);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 Resources::ResourceLoader::ResourceInitOutput
 MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
@@ -533,29 +574,60 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
         MaterialId id = CreateMaterial(materialTemplate, job.name);
         ret.id = id;
         materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
-
-        // New material upload system, the defaults and types can be discarded
-        if (reader->SetToFirstChild("Params"))
-        {
-            // This is the new-new system, using material buffers and is fully raytracing compatible
-            IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplatesGPULang::MaterialProperties)materialTemplate->properties);
-            if (loaderIndex != InvalidIndex)
-            {
-                auto loader = LoaderMap.ValueAtIndex(loaderIndex);
-                loader(reader, id, job.tag);
-            }
-            else
-            {
-                n_log_warn(Materials, "Material %s has no registered loader, material properties can't be applied so won't render correctly", materialTemplate->name);
-                MaterialSetBufferBinding(id, -1);
-            }
-        }
-        else
-        {
-            n_log_warn(Materials, "Material %s is of an old format and has been deprecated. Please run the surface_updater.py script locatged in fips_files", stream->GetURI().LocalPath().AsCharPtr());
-            MaterialSetBufferBinding(id, -1);
-        }
+        LoadMaterialParams(reader, id, materialTemplate, job.tag, stream->GetURI());
     }
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Rebuilds the material from the reloaded file under the same id, also for another template: the constant buffer,
+    resource tables, textures and the slot in the material buffers. Models cache the template of their materials
+    to batch their draws, the reload listener in ModelContext::Create updates them.
+
+    A file that can't be loaded keeps the material as it was. Failing the reload would turn it into the error
+    material, which can't be reloaded once the file is fixed
+*/
+Resources::ResourceLoader::ResourceInitOutput
+MaterialLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    const MaterialId id = job.id.resource;
+    Resources::ResourceLoader::ResourceInitOutput ret;
+    ret.id = id;
+
+    Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
+    reader->SetStream(stream);
+    if (!reader->Open() || !reader->HasNode("/Nebula/Surface"))
+    {
+        n_log_warn(Materials, "MaterialLoader: '%s' is not a valid surface, keeping the material as it was", stream->GetURI().AsString().AsCharPtr());
+        return ret;
+    }
+    reader->SetToNode("/Nebula/Surface");
+
+    Util::String templateName = reader->GetString("template");
+    IndexT templateIndex = MaterialTemplatesGPULang::Lookup.FindIndex(templateName.HashCode());
+    if (templateIndex == InvalidIndex)
+    {
+        n_log_warn(Materials, "MaterialLoader: '%s' has the unknown material template '%s', keeping the material as it was", stream->GetURI().AsString().AsCharPtr(), templateName.AsCharPtr());
+        return ret;
+    }
+    const MaterialTemplatesGPULang::Entry* materialTemplate = MaterialTemplatesGPULang::Lookup.ValueAtIndex(templateIndex);
+    const MaterialTemplatesGPULang::Entry* oldTemplate = MaterialGetTemplate(id);
+
+    // Textures that loaded for the old material queued its struct to be copied into its constant buffer, which gets replaced
+    materialLoaderState.pendingMaterialUpdatesSection.Enter();
+    IndexT pendingUpdate = materialLoaderState.pendingMaterialUpdates.FindIndex(id);
+    if (pendingUpdate != InvalidIndex)
+        materialLoaderState.pendingMaterialUpdates.EraseAtIndex(pendingUpdate);
+    materialLoaderState.pendingMaterialUpdatesSection.Leave();
+
+    // The slot in the material buffer of the old properties is reused if they stay the same, raytracing keeps the slot it was given.
+    // The slot of other properties is left allocated, as when a material is unloaded
+    const IndexT slot = MaterialGetBufferBinding(id);
+    MaterialReloadTemplate(id, materialTemplate);
+    MaterialSetBufferBinding(id, oldTemplate->properties == materialTemplate->properties ? slot : -1);
+    materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
+    LoadMaterialParams(reader, id, materialTemplate, job.tag, stream->GetURI());
     return ret;
 }
 

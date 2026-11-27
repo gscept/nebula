@@ -17,6 +17,11 @@ namespace IO
 class BXmlReader;
 }
 
+namespace Models
+{
+class ModelContext;
+}
+
 namespace Materials
 {
 
@@ -30,6 +35,8 @@ public:
 
     /// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
     ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
+    /// rebuild a loaded material in place from its reloaded file, also when its template changed
+    ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
 
     /// Allocate constant memory explicitly
     static void* AllocateConstantMemory(SizeT size);
@@ -42,6 +49,7 @@ public:
     /// Bit of a special way to register a terrain material
     static IndexT RegisterTerrainMaterial(const MaterialInterfaces::TerrainMaterial& terrain);
 private:
+    friend class Models::ModelContext;
 
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;

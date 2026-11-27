@@ -69,6 +69,9 @@ void
 PrimitiveNode::Unload()
 {
     Resources::DiscardResource(this->res);
+
+    // the material and the resource tables are the shader state's
+    ShaderStateNode::Unload();
 }
 
 //------------------------------------------------------------------------------

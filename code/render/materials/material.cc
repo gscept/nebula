@@ -14,19 +14,19 @@ namespace Materials
 MaterialAllocator materialAllocator;
 MaterialInstanceAllocator materialInstanceAllocator;
 Threading::CriticalSection materialTextureLoadSection;
+static uint materialVersionCounter = 0;
 
 //------------------------------------------------------------------------------
 /**
+    Build everything of a material that depends on its template: the constant buffer with the template's defaults,
+    the resource tables of the template's passes and the default textures
 */
-MaterialId
-CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name)
+static void
+MaterialSetupTemplate(const Ids::Id32 id, const MaterialTemplatesGPULang::Entry* entry)
 {
-    Ids::Id32 id = materialAllocator.Alloc();
-
-    //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
-    materialAllocator.Set<Material_MinLOD>(id, 1.0f);
-    materialAllocator.Set<Material_Name>(id, name);
-    materialAllocator.Set<Material_BufferOffset>(id, -1);
+    // Unique over all materials, so a callback can tell whether the material it was issued for is still the same
+    const uint version = ++materialVersionCounter;
+    materialAllocator.Set<Material_Version>(id, version);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
@@ -51,17 +51,21 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
         auto& value = entry->textures.ValueAtIndex(i);
         if (value->bindlessOffset != -1)
         {
-            Resources::ResourceId id = Resources::CreateResource(IO::Path::Parse(value->resource), "materials",
-                [buffer, value](Resources::ResourceId id)
+            Resources::ResourceId tex = Resources::CreateResource(IO::Path::Parse(value->resource), "materials",
+                [id, version, value](Resources::ResourceId tex)
             {
-                CoreGraphics::TextureIdLock _0(id);
-                uint handle = CoreGraphics::TextureGetBindlessHandle(id);
+                // A reload replaces the buffer, the reloaded material gets its textures set again
+                if (materialAllocator.Get<Material_Version>(id) != version)
+                    return;
+                const CoreGraphics::BufferId buffer = materialAllocator.Get<Material_Buffer>(id);
+                CoreGraphics::TextureIdLock _0(tex);
+                uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
                 CoreGraphics::BufferUpdate(buffer, &handle, sizeof(handle), value->bindlessOffset);
                 CoreGraphics::BufferFlush(buffer);
             });
 
-            CoreGraphics::TextureIdLock _0(id);
-            uint handle = CoreGraphics::TextureGetBindlessHandle(id);
+            CoreGraphics::TextureIdLock _0(tex);
+            uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
             CoreGraphics::BufferUpdate(buffer, &handle, sizeof(handle), value->bindlessOffset);
         }
     }
@@ -151,9 +155,85 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringA
         for (const auto& table : instanceTables)
             CoreGraphics::ResourceTableCommitChanges(table);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Release what MaterialSetupTemplate built. The tables and the buffer are deleted once the frames
+    in flight are done with them
+*/
+static void
+MaterialReleaseTemplate(const Ids::Id32 id)
+{
+    auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
+    for (const CoreGraphics::ResourceTableId table : tablesPerPass)
+    {
+        if (table != CoreGraphics::InvalidResourceTableId)
+            CoreGraphics::DestroyResourceTable(table);
+    }
+    tablesPerPass.Clear();
+
+    auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
+    for (const auto& instanceTables : instanceTablesPerPass)
+    {
+        for (const CoreGraphics::ResourceTableId table : instanceTables)
+        {
+            if (table != CoreGraphics::InvalidResourceTableId)
+                CoreGraphics::DestroyResourceTable(table);
+        }
+    }
+    instanceTablesPerPass.Clear();
+
+    CoreGraphics::BufferId& buffer = materialAllocator.Get<Material_Buffer>(id);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        CoreGraphics::DestroyBuffer(buffer);
+    buffer = CoreGraphics::InvalidBufferId;
+
+    // The loader adds the textures of the rebuilt material as they load
+    materialTextureLoadSection.Enter();
+    materialAllocator.Get<Material_LODTextures>(id).Clear();
+    materialTextureLoadSection.Leave();
+
+#ifdef WITH_NEBULA_EDITOR
+    materialAllocator.Get<Material_TextureValues>(id).Clear();
+
+    // Points into the loader's material struct, the loader binds the one of the rebuilt material
+    materialAllocator.Set<Material_BufferPointer>(id, MaterialBindlessBufferBinding{});
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MaterialId
+CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name)
+{
+    Ids::Id32 id = materialAllocator.Alloc();
+
+    //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
+    materialAllocator.Set<Material_MinLOD>(id, 1.0f);
+    materialAllocator.Set<Material_Name>(id, name);
+    materialAllocator.Set<Material_BufferOffset>(id, -1);
+    MaterialSetupTemplate(id, entry);
 
     MaterialId ret = id;
     return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Rebuild the material for a template under the same id, so everything holding the material keeps working with it.
+    The values and textures start out as the template's defaults, the caller applies the material's own.
+    The buffer binding and the LOD are kept, they belong to the loader and to the material's distance.
+
+    Nodes cache the template of their material, the reload listener in ModelContext::Create updates them
+*/
+void
+MaterialReloadTemplate(const MaterialId mat, const MaterialTemplatesGPULang::Entry* entry)
+{
+    n_assert(entry != nullptr);
+    MaterialReleaseTemplate(mat.id);
+    MaterialSetupTemplate(mat.id, entry);
 }
 
 //------------------------------------------------------------------------------
@@ -163,6 +243,17 @@ void
 DestroyMaterial(const MaterialId id)
 {
     materialAllocator.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Callbacks that outlive a reload of the material, like those of textures still loading, compare this
+    with the version they were issued for
+*/
+uint
+MaterialGetVersion(const MaterialId mat)
+{
+    return materialAllocator.Get<Material_Version>(mat.id);
 }
 
 //------------------------------------------------------------------------------
