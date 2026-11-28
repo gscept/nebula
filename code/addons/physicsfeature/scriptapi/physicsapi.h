@@ -44,5 +44,20 @@ NEBULA_EXPORT uint32_t Physics_GetSceneForWorld(uint32_t worldId);
 NEBULA_EXPORT bool Physics_Raycast(uint32_t scene, Math::point origin, Math::vector direction, float maxDistance, PhysicsFeature::RaycastHit* outHit, const PhysicsFeature::QueryFilter* filter);
 NEBULA_EXPORT bool Physics_SegmentCast(uint32_t scene, Math::point from, Math::point to, PhysicsFeature::RaycastHit* outHit, const PhysicsFeature::QueryFilter* filter);
 
+// ------------------------------------------------------------------------------------------
+// Character controllers
+// ------------------------------------------------------------------------------------------
+
+NEBULA_EXPORT bool Physics_IsCharacterValid(uint32_t characterId);
+
+NEBULA_EXPORT Math::vec3 Physics_GetCharacterFootPosition(uint32_t characterId);
+NEBULA_EXPORT Math::vec3 Physics_GetCharacterCenterPosition(uint32_t characterId);
+
+/// The collision bits the move answered with, as a bitfield: bit 0 sides, bit 1 up, bit 2 down
+NEBULA_EXPORT uint32_t Physics_MoveCharacter(uint32_t characterId, Math::vec3 displacement, float minDist, float timeSinceLastMove);
+
+NEBULA_EXPORT void Physics_SetCharacterPosition(uint32_t characterId, Math::vec3 footPosition);
+NEBULA_EXPORT void Physics_SetCharacterHeight(uint32_t characterId, float newHeight);
+
 } // namespace ScriptApi
 } // namespace PhysicsFeature

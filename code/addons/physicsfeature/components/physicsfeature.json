@@ -65,6 +65,10 @@
 			"Mesh": 4,
 			"HeightField": 5
 		},
+		"CharacterShape": {
+			"Box": 1,
+			"Capsule": 2
+		},
 		"MeshTopology": {
 			"Convex": 0,
 			"ConvexHull": 1,
@@ -105,17 +109,80 @@
 			"characterId": {
 				"type": "Physics::CharacterId",
 				"default": -1,
-				"hideInInspector": true
+				"hideInInspector": true,
+				"description": "The id of the controller this context holds for the entity."
 			},
-			"displacement": {
+			"shape": {
+				"type": "PhysicsFeature::CharacterShape",
+				"default": 2,
+				"description": "Capsule or axis aligned Box."
+			},
+			"radius": {
+				"type": "float",
+				"default": 0.5,
+				"description": "Radius of the capsule. Only read when the shape is a capsule."
+			},
+			"height": {
+				"type": "float",
+				"default": 0.8,
+				"description": "Height of the capsule cylinder. The total height is height + 2 * radius. Only read when the shape is a capsule."
+			},
+			"extents": {
+				"type": "vec3",
+				"default": [0.5, 0.9, 0.5],
+				"description": "Half extents of the box. Only read when the shape is a box."
+			},
+			"slopeLimit": {
+				"type": "float",
+				"default": 0.707,
+				"description": "The cosine of the steepest slope the character can walk up. 0 disables the limit."
+			},
+			"slideOnSlopes": {
+				"type": "bool",
+				"default": false,
+				"description": "Whether the character slides down a slope it cannot climb, instead of just stopping."
+			},
+			"stepOffset": {
+				"type": "float",
+				"default": 0.5,
+				"description": "The height of the tallest obstacle the character can climb."
+			},
+			"contactOffset": {
+				"type": "float",
+				"default": 0.1,
+				"description": "Skin around the character within which contacts are generated. Used to avoid numerical precision issues."
+			},
+			"constrainClimbing": {
+				"type": "bool",
+				"default": false,
+				"description": "A capsule climbs according to the impact normal when this is false, and according to the step offset when it is true."
+			},
+			"material": {
+				"type": "Util::StringAtom",
+				"default": "default",
+				"description": "Name of the physics material. Falls back to the fallback material if it is not in the material table."
+			},
+			"collisionGroup": {
+				"type": "uint",
+				"default": 0,
+				"description": "Simulation filter data word0, read by the simulation filter shader."
+			},
+			"collisionMask": {
+				"type": "uint",
+				"default": -1,
+				"description": "The set of groups the character accepts when it moves"
+			},
+			"travelled": {
 				"type": "vec3",
 				"default": [0, 0, 0],
-				"description": "The displacement for the next physics frame."
+				"hideInInspector": true,
+				"description": "The distance the controller actually moved on the last physics frame, which is shorter than what was asked for when something was in the way."
 			},
 			"isGrounded": {
 				"type": "bool",
+				"hideInInspector": true,
 				"default": false,
-				"description": "Informs if the character is touching the floor or not."
+				"description": "If the character is touching the floor or not."
 			}
 		},
 		"PhysicsResource": {
@@ -386,6 +453,13 @@
 			"args": {
 				"entity":  "Game::Entity",
 				"event": "const Physics::ContactEvent&"
+			}
+		},
+		"CharacterHitEventMessage": {
+			"fourcc": "CHEM",
+			"args": {
+				"entity":  "Game::Entity",
+				"event": "const Physics::CharacterHitEvent&"
 			}
 		}
 	}

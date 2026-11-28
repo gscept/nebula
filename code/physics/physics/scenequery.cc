@@ -35,7 +35,11 @@ public:
     PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) override
     {
         // What the actor carries is the id this context allocated for it, which is the same thing the
-        // filter names, so the comparison is against the id rather than the entity the actor belongs to
+        // filter names, so the comparison is against the id rather than the entity the actor belongs to.
+        // A character controller shape has no actor, so the guard has to come before the read
+        if (actor == nullptr)
+            return PxQueryHitType::eBLOCK;
+
         if (this->excludeActorId != Ids::InvalidId32 && actor->userData == (void*)(uintptr_t)this->excludeActorId)
             return PxQueryHitType::eNONE;
 

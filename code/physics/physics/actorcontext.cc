@@ -354,6 +354,7 @@ ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
     actor.id = id;
     actor.actor = pxActor;
     actor.res = res;
+    actor.ownsActor = true;
     pxActor->userData = (void*)(uintptr_t)id.id;
 
     actor.mass = 0.0f;
@@ -373,6 +374,15 @@ ActorContext::DiscardActor(ActorId id)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
     Actor& actor = GET_ACTOR(id);
+
+    // A character controller owns its actor. Releasing the record is all this context can do, and the
+    // controller releases the physx object itself
+    if (!actor.ownsActor)
+    {
+        UnregisterActor(id);
+        return;
+    }
+
     PxScene* scene = actor.actor->getScene();
     if (scene != nullptr)
     {
@@ -391,6 +401,50 @@ ActorContext::DiscardActor(ActorId id)
     }
     actor.shapes.Clear();
 
+    ActorContext::actorPool.Deallocate(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+ActorContext::RegisterActor(PxRigidActor* pxActor, uint64_t userData)
+{
+    ActorId id = ActorContext::AllocateActorId(pxActor);
+    Actor& actor = GET_ACTOR(id);
+    actor.ownsActor = false;
+    actor.userData = userData;
+    return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ShapeId
+ActorContext::RegisterShape(PxShape* pxShape, ActorId actor, uint64_t userData)
+{
+    return ActorContext::AllocateShapeId(pxShape, actor, 0, userData);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ActorContext::UnregisterActor(ActorId id)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+
+    Actor& actor = GET_ACTOR(id);
+    for (IndexT i = 0; i < actor.shapes.Size(); i++)
+    {
+        ShapeId sid = actor.shapes[i];
+        Shape& shape = GET_SHAPE(sid);
+        shape.shape = nullptr;
+        ActorContext::shapePool.Deallocate(sid.id);
+    }
+    actor.shapes.Clear();
+
+    state.DiscardActor(id);
     ActorContext::actorPool.Deallocate(id.id);
 }
 

@@ -112,6 +112,14 @@ public:
     /// destroy an actor and the shapes it owns
     static void DiscardActor(ActorId id);
 
+    /// take an actor which another context created into this context
+    static ActorId RegisterActor(physx::PxRigidActor* pxActor, uint64_t userData);
+    /// take a shape which is already attached to a registered actor into this context
+    static ShapeId RegisterShape(physx::PxShape* pxShape, ActorId actor, uint64_t userData);
+    /// clear the records this context holds for an actor and its shapes, without releasing the physx
+    /// objects, which belong to whoever created them
+    static void UnregisterActor(ActorId id);
+
     friend class PhysxState;
     friend class StreamActorPool;
 private:

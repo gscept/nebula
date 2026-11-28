@@ -8,6 +8,7 @@
 #include "physicsapi.h"
 #include "physicsfeature/physicsfeatureunit.h"
 #include "physics/actorcontext.h"
+#include "physics/charactercontext.h"
 #include "physics/scenequery.h"
 #include "physics/utils.h"
 #include "game/world.h"
@@ -297,6 +298,107 @@ Physics_SegmentCast(uint32_t scene, Math::point from, Math::point to, PhysicsFea
 
     CopyHit(hit, outHit);
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static Physics::CharacterId
+ResolveCharacter(uint32_t characterId)
+{
+    Physics::CharacterId const handle(characterId);
+    if (!Physics::CharacterContext::IsValid(handle))
+        return Physics::CharacterId(Ids::InvalidId32);
+
+    return handle;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+Physics_IsCharacterValid(uint32_t characterId)
+{
+    return ResolveCharacter(characterId).id != Ids::InvalidId32;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3
+Physics_GetCharacterFootPosition(uint32_t characterId)
+{
+    Physics::CharacterId const id = ResolveCharacter(characterId);
+    if (id.id == Ids::InvalidId32)
+        return Math::vec3(0.0f);
+
+    return Physics::CharacterContext::GetCharacterFootPosition(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3
+Physics_GetCharacterCenterPosition(uint32_t characterId)
+{
+    Physics::CharacterId const id = ResolveCharacter(characterId);
+    if (id.id == Ids::InvalidId32)
+        return Math::vec3(0.0f);
+
+    return Physics::CharacterContext::GetCharacterCenterPosition(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The collision bits as a plain number, because the managed side has no mirror of the engine's bitfield.
+    A character which is not in the pool answers with zero, which is no collision.
+*/
+uint32_t
+Physics_MoveCharacter(uint32_t characterId, Math::vec3 displacement, float minDist, float timeSinceLastMove)
+{
+    Physics::CharacterId const id = ResolveCharacter(characterId);
+    if (id.id == Ids::InvalidId32)
+        return 0;
+
+    Physics::CharacterCollision collision = Physics::CharacterContext::MoveCharacter(id, displacement, minDist, timeSinceLastMove);
+
+    uint32_t bits = 0;
+    if (collision.IsSet(Physics::CharacterCollisionBits::Sides))
+        bits |= 1 << 0;
+    if (collision.IsSet(Physics::CharacterCollisionBits::Up))
+        bits |= 1 << 1;
+    if (collision.IsSet(Physics::CharacterCollisionBits::Down))
+        bits |= 1 << 2;
+
+    return bits;
+}
+
+//------------------------------------------------------------------------------
+/**
+    A teleport, which is what PhysX documents this as: it does not check for collisions. The position is
+    the foot, which is the same thing the entity's Position component holds
+*/
+void
+Physics_SetCharacterPosition(uint32_t characterId, Math::vec3 footPosition)
+{
+    Physics::CharacterId const id = ResolveCharacter(characterId);
+    if (id.id == Ids::InvalidId32)
+        return;
+
+    Physics::CharacterContext::SetCharacterPosition(id, footPosition);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Physics_SetCharacterHeight(uint32_t characterId, float newHeight)
+{
+    Physics::CharacterId const id = ResolveCharacter(characterId);
+    if (id.id == Ids::InvalidId32)
+        return;
+
+    Physics::CharacterContext::SetCharacterHeight(id, newHeight);
 }
 
 } // namespace ScriptApi

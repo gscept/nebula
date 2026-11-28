@@ -35,7 +35,8 @@ enum PhysicsPending : uint32_t
     PendingShape = 1 << 1,      ///< build or update the shapes of the collider components
     PendingBody = 1 << 2,       ///< create or update the physx actor of the body component
     PendingStructural = 1 << 3, ///< the actor has to look through its shapes for owners which no longer have a component. Only needed when the handle of an entity cannot name the shape it built, because a handle which can name its shape releases that shape itself
-    PendingAll = PendingPose | PendingShape | PendingBody | PendingStructural,
+    PendingController = 1 << 4, ///< build or rebuild the character controller of the entity. A controller reads its shape parameters when it is created, so a change to them means making a new one
+    PendingAll = PendingPose | PendingShape | PendingBody | PendingStructural | PendingController,
 };
 
 class PhysicsManager : public Game::Manager
@@ -65,6 +66,13 @@ public:
     static void InitMeshCollider(Game::World*, Game::Entity, PhysicsFeature::MeshCollider*);
     static void InitHeightFieldCollider(Game::World*, Game::Entity, PhysicsFeature::HeightFieldCollider*);
 
+    /// Initialize character component. The controller is built from the component, and the entity's Position is
+    /// the foot of the character rather than the center of its shape
+    static void InitCharacter(Game::World*, Game::Entity, PhysicsFeature::Character*);
+
+    /// decay callback of the character component
+    static void OnCharacterDecay(Game::World*, Game::Entity, PhysicsFeature::Character*);
+
     /// queues up work for an entity, see PhysicsPending. An entity which is already queued keeps what is
     /// already queued, its component values are read when the queue is drained
     static void Mark(Game::World*, Game::Entity, uint32_t pending);
@@ -79,6 +87,10 @@ public:
     /// group or collision feedback. Adding or removing one is picked up on its own, by the init and
     /// the decay callback
     static void MarkBodyChanged(Game::World*, Game::Entity);
+
+    /// Marks that the character component changed. A controller reads its shape parameters when it is created, so
+    /// a change to radius, height, extents or the shape type means making a new controller
+    static void MarkCharacterChanged(Game::World*, Game::Entity);
 
     /// the entity moved. The poll processors push and pull the pose of kinematic and dynamic bodies
     /// every frame, so this is only needed to move a static body, or a collider relative to its body

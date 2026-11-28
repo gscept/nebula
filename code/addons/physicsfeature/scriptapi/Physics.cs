@@ -222,6 +222,74 @@ namespace PhysicsFeature
             return Native.SegmentCast(scene, from, to, ref hit, ref filter);
         }
 
+        // ------------------------------------------------------------------------------------------
+        // Characters
+        // ------------------------------------------------------------------------------------------
+
+        public const uint InvalidCharacterId = 0xFFFFFFFF;
+
+        /// <summary>
+        /// Whether the id is in the controller pool. An entity with a Character component that has not
+        /// been built yet is not, because the component is filled by the feature on the physics frame.
+        /// </summary>
+        public static bool IsCharacterValid(uint characterId)
+        {
+            return Native.IsCharacterValid(characterId);
+        }
+
+        /// <summary>
+        /// The lowest point of the character's collider in world space, which is what the entity's
+        /// Position component holds.
+        /// </summary>
+        public static Vector3 GetCharacterFootPosition(uint characterId)
+        {
+            return Native.GetCharacterFootPosition(characterId);
+        }
+
+        /// <summary>
+        /// The center of the character's collider in world space.
+        /// </summary>
+        public static Vector3 GetCharacterCenterPosition(uint characterId)
+        {
+            return Native.GetCharacterCenterPosition(characterId);
+        }
+
+        /// <summary>
+        /// The collision bits the move answered with. Bit 0 is sides, bit 1 up and bit 2 down, and the
+        /// down bit is what a grounded check reads.
+        /// </summary>
+        /// <remarks>
+        /// A character controller is moved by a displacement, not by a velocity, and the move happens
+        /// outside the step. The character's actor is in the actor pool, but its velocity is not what the
+        /// controller moved by, so a character is read through its component rather than through the
+        /// velocity calls.
+        /// </remarks>
+        public static uint MoveCharacter(uint characterId, Vector3 displacement, float minDist, float timeSinceLastMove)
+        {
+            return Native.MoveCharacter(characterId, displacement, minDist, timeSinceLastMove);
+        }
+
+        /// <summary>
+        /// Move the character to a foot position without checking for collisions. This is a teleport, so
+        /// a character placed inside geometry stays there until the next move.
+        /// </summary>
+        public static void SetCharacterPosition(uint characterId, Vector3 footPosition)
+        {
+            Native.SetCharacterPosition(characterId, footPosition);
+        }
+
+        /// <summary>
+        /// Resize the character. The position is adjusted so it does not pop into the air.
+        /// </summary>
+        public static void SetCharacterHeight(uint characterId, float newHeight)
+        {
+            Native.SetCharacterHeight(characterId, newHeight);
+        }
+
+        public const uint CharacterCollisionSides = 1 << 0;
+        public const uint CharacterCollisionUp = 1 << 1;
+        public const uint CharacterCollisionDown = 1 << 2;
+
         private static class Native
         {
             [DllImport("__Internal", EntryPoint = "Physics_IsActorValid")]
@@ -275,6 +343,25 @@ namespace PhysicsFeature
             [DllImport("__Internal", EntryPoint = "Physics_SegmentCast")]
             [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool SegmentCast(uint scene, Vector3 from, Vector3 to, ref RaycastHit outHit, ref QueryFilter filter);
+
+            [DllImport("__Internal", EntryPoint = "Physics_IsCharacterValid")]
+            [return: MarshalAs(UnmanagedType.I1)]
+            public static extern bool IsCharacterValid(uint characterId);
+
+            [DllImport("__Internal", EntryPoint = "Physics_GetCharacterFootPosition")]
+            public static extern Vector3 GetCharacterFootPosition(uint characterId);
+
+            [DllImport("__Internal", EntryPoint = "Physics_GetCharacterCenterPosition")]
+            public static extern Vector3 GetCharacterCenterPosition(uint characterId);
+
+            [DllImport("__Internal", EntryPoint = "Physics_MoveCharacter")]
+            public static extern uint MoveCharacter(uint characterId, Vector3 displacement, float minDist, float timeSinceLastMove);
+
+            [DllImport("__Internal", EntryPoint = "Physics_SetCharacterPosition")]
+            public static extern void SetCharacterPosition(uint characterId, Vector3 footPosition);
+
+            [DllImport("__Internal", EntryPoint = "Physics_SetCharacterHeight")]
+            public static extern void SetCharacterHeight(uint characterId, float newHeight);
         }
     }
 }

@@ -168,6 +168,15 @@ PhysicsManager::MarkPoseChanged(Game::World* world, Game::Entity entity)
 /**
 */
 void
+PhysicsManager::MarkCharacterChanged(Game::World* world, Game::Entity entity)
+{
+    PhysicsManager::Mark(world, entity, PendingController);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 PhysicsManager::MarkComponentChange(Game::World* world, Game::Entity entity, Game::ComponentId component)
 {
     if (component == Game::GetComponentId<PhysicsFeature::PhysicsResource>() ||
@@ -186,6 +195,12 @@ PhysicsManager::MarkComponentChange(Game::World* world, Game::Entity entity, Gam
         component == Game::GetComponentId<PhysicsFeature::HeightFieldCollider>())
     {
         PhysicsManager::MarkShapeChanged(world, entity);
+        return;
+    }
+
+    if (component == Game::GetComponentId<PhysicsFeature::Character>())
+    {
+        PhysicsManager::MarkCharacterChanged(world, entity);
         return;
     }
 
@@ -448,6 +463,9 @@ PhysicsManager::ReleaseShapeForEntity(Game::World* world, Game::Entity entity)
     Physics::ShapeId const shape(handle.shapeId);
     if (ShapeBelongsTo(shape, entity))
     {
+        if (world->HasComponent<PhysicsFeature::Character>(entity))
+            return;
+
         Physics::ActorContext::RemoveShape(shape);
         handle.shapeId = Ids::InvalidId32;
         world->SetComponent(entity, handle);
@@ -487,6 +505,10 @@ GarbageCollectShapes(Game::World* world, Game::Entity bodyEntity, Physics::Actor
             || !HasColliderOfType(world, owner, colliderType)
             || ResolveBodyEntity(world, owner) != bodyEntity)
         {
+            // A character's shape belongs to its controller, which is the only thing that can release it
+            if (world->HasComponent<PhysicsFeature::Character>(owner))
+                continue;
+
             Physics::ActorContext::RemoveShape(shapeId);
             ClearShapeField(world, owner);
             --i;
@@ -892,6 +914,97 @@ PushActorPose(Game::World* world, Game::Entity entity, Physics::ActorId actorId)
 
 //------------------------------------------------------------------------------
 /**
+    The center PhysX wants on the desc, from the entity's Position, which is the foot of the character.
+    The foot is the bottom of the shape, so the center is half the shape above it.
+*/
+static Math::vec3
+CharacterCenter(Game::World* world, Game::Entity entity, PhysicsFeature::Character const& character)
+{
+    Math::vec3 const position = world->GetComponent<Game::Position>(entity);
+
+    float const halfHeight = (character.shape == PhysicsFeature::CharacterShape::Capsule)
+        ? character.radius + character.height * 0.5f
+        : character.extents.y;
+
+    return position + Math::vec3(0.0f, halfHeight, 0.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+OnCharacterHit(Physics::CharacterHitEvent const& event)
+{
+    if (!Physics::CharacterContext::IsValid(event.character))
+        return;
+
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::Entity const entity = Game::Entity::FromId((Ids::Id32)Physics::CharacterContext::GetCharacter(event.character).userData);
+    if (!world->IsValid(entity))
+        return;
+
+    PhysicsFeature::CharacterHitEventMessage::Send(entity, event);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Builds the controller of an entity from its component. A controller reads its shape parameters when
+    it is created and cannot be given new ones afterwards, so a change to the shape means releasing this
+    controller and making another one.
+*/
+static void
+BuildCharacter(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor& actor)
+{
+    PhysicsFeature::Character character = world->GetComponent<PhysicsFeature::Character>(entity);
+
+    if (Physics::CharacterContext::IsValid(character.characterId))
+        Physics::CharacterContext::DestroyCharacter(character.characterId);
+
+    Physics::CharacterCreateInfo info;
+    info.type = (character.shape == PhysicsFeature::CharacterShape::Box) ? Physics::ColliderType_Box : Physics::ColliderType_Capsule;
+    info.slopeLimit = character.slopeLimit;
+    info.slideOnSlopes = character.slideOnSlopes;
+    info.contactOffset = character.contactOffset;
+    info.stepOffset = character.stepOffset;
+    info.materialId = Physics::LookupMaterial(character.material);
+    info.collisionGroup = character.collisionGroup;
+    info.collisionMask = character.collisionMask;
+    info.reportCallback = &OnCharacterHit;
+    info.userData = (uint64_t)Ids::Id64(entity);
+
+    if (info.type == Physics::ColliderType_Box)
+    {
+        info.box.halfExtents.x = character.extents.x;
+        info.box.halfExtents.y = character.extents.y;
+        info.box.halfExtents.z = character.extents.z;
+    }
+    else
+    {
+        info.capsule.radius = character.radius;
+        info.capsule.height = character.height;
+        info.capsule.constrainClimbing = character.constrainClimbing;
+    }
+
+    Physics::CharacterId const controller = Physics::CharacterContext::CreateCharacter(
+        CharacterCenter(world, entity, character), info, PhysicsFeatureUnit::Instance()->SceneForWorld(world));
+
+    if (controller.id == Ids::InvalidId32)
+        return;
+
+    character.characterId = controller;
+    world->SetComponent(entity, character);
+
+    // The controller owns its actor, but the handle names it, which is what makes a character a body to
+    // the rest of the feature: the queries, the contact callbacks and the script api all resolve it the
+    // way they resolve any other body
+    Physics::Character const& record = Physics::CharacterContext::GetCharacter(controller);
+    actor.actorId = record.actor.id;
+    actor.shapeId = record.shape.id;
+    actor.body = entity;
+}
+
+//------------------------------------------------------------------------------
+/**
     Creates, updates and releases physx actors and shapes for one entity, according to what is queued
     for it. Returns true if a shape build needs another pass.
 */
@@ -964,6 +1077,20 @@ RebuildPhysicsEntity(Game::World* world, Game::Entity entity, PhysicsFeature::Ph
         Physics::ActorId const ownActor = GetValidateActorId(entity, actor);
         if (ownActor.id != Ids::InvalidId32)
             GarbageCollectShapes(world, entity, ownActor);
+    }
+
+    if (world->HasComponent<PhysicsFeature::Character>(entity))
+    {
+        PhysicsFeature::Character const character = world->GetComponent<PhysicsFeature::Character>(entity);
+
+        if (pending & PendingController)
+        {
+            BuildCharacter(world, entity, actor);
+        }
+        else if ((pending & PendingPose) != 0 && Physics::CharacterContext::IsValid(character.characterId))
+        {
+            Physics::CharacterContext::SetCharacterPosition(character.characterId, CharacterCenter(world, entity, character));
+        }
     }
 
     return retry;
@@ -1136,6 +1263,28 @@ PhysicsManager::InitHeightFieldCollider(Game::World* world, Game::Entity entity,
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+PhysicsManager::InitCharacter(Game::World* world, Game::Entity entity, PhysicsFeature::Character* character)
+{
+    character->characterId = Physics::CharacterId(Ids::InvalidId32);
+
+    EnsureHandle(world, entity);
+    PhysicsManager::MarkCharacterChanged(world, entity);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsManager::OnCharacterDecay(Game::World*, Game::Entity, PhysicsFeature::Character* character)
+{
+    if (Physics::CharacterContext::IsValid(character->characterId))
+        Physics::CharacterContext::DestroyCharacter(character->characterId);
+}
+
+//------------------------------------------------------------------------------
+/**
     An entity whose handle goes away takes its physx actor with it. A handle which owned no actor was a
     collider belonging to another entity, and that entity is marked so that the shapes it no longer has
     a component for are released.
@@ -1278,6 +1427,7 @@ PhysicsManager::InitPhysicsFrameEvent()
         .Build();
 
     Game::ProcessorBuilder(world, "PhysicsManager.PollRigidbodyTransform"_atm)
+        .Excluding<Game::Static, PhysicsFeature::Character>()
         .On("OnPhysicsFrame")
         .Order(210)
         .Func(&PollRigidbodyTransform)

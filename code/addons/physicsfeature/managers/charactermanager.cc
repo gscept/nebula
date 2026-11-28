@@ -49,14 +49,14 @@ CharacterManager::~CharacterManager()
 void
 MoveCharacters(Game::World* world, Game::Position& position, Game::Velocity& velocity, Character& character)
 {
-    // the game makes the controller, a character which has none, or whose world was cleaned up, stays put
+    // the feature builds the controller, a character which has none, or whose world was cleaned up, stays put
     if (!Physics::CharacterContext::IsValid(character.characterId))
     {
         return;
     }
 
-    character.displacement = velocity * time->frameTime;
-    Physics::CharacterCollision collision = Physics::CharacterContext::MoveCharacter(character.characterId, character.displacement, 0.00001f, time->frameTime);
+    Math::vec3 const displacement = velocity * time->frameTime;
+    Physics::CharacterCollision collision = Physics::CharacterContext::MoveCharacter(character.characterId, displacement, 0.00001f, time->frameTime);
     if (collision.IsSet(Physics::CharacterCollisionBits::Down))
     {
         velocity.y = 0;
@@ -81,9 +81,12 @@ MoveCharacters(Game::World* world, Game::Position& position, Game::Velocity& vel
     position.y = p.y;
     position.z = p.z;
 
+    // What the controller actually moved is what the game can use, because something in the way makes
+    // it shorter than what was asked for
+    character.travelled = position - previousPosition;
+
     // Adjust velocity to account for the actual moved direction.
-    Math::vec3 travelled = position - previousPosition;
-    character.displacement = travelled;
+    Math::vec3 travelled = character.travelled;
     travelled.y = 0;
     travelled = Math::normalize(travelled);
     Math::vec3 horizontalVelocity = velocity;

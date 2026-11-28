@@ -204,6 +204,114 @@ DrawSphereColliderGizmo(const Editor::Gizmo::GizmoFrame& frame)
 
 //------------------------------------------------------------------------------
 /**
+*/
+static void
+DrawCharacterGizmo(const Editor::Gizmo::GizmoFrame& frame)
+{
+    const Character* base = (const Character*)frame.value;
+    if (base == nullptr)
+        return;
+
+    Character value = *base;
+
+    const Math::vec3 foot(Math::xyz(frame.transform.position()));
+
+    const bool capsule = base->shape == PhysicsFeature::CharacterShape::Capsule;
+
+    Math::vec3 axes[3];
+    for (int i = 0; i < 3; i++)
+    {
+        const Math::vec3 axis(Math::xyz(i == 0 ? frame.transform.x_axis() :
+            (i == 1 ? frame.transform.y_axis() : frame.transform.z_axis())));
+        axes[i] = Math::normalize(axis);
+    }
+
+    Editor::Gizmo::HandleStyle style = Editor::Gizmo::DefaultHandleStyle();
+    style.color = ColliderColor;
+
+    bool changed = false;
+
+    float out;
+
+    float halfHeight = capsule ? value.radius + value.height * 0.5f : value.extents.y;
+    float halfWidth = capsule ? value.radius : value.extents.x;
+
+    style.tip = "radius";
+    if (Editor::Gizmo::HandleFloat("radius", halfWidth, &out, foot + axes[1] * halfHeight + axes[0] * halfWidth, axes[0], style))
+    {
+        if (capsule)
+            value.radius = out;
+        else
+        {
+            value.extents.x = out;
+            value.extents.z = out;
+        }
+        changed = true;
+    }
+
+    style.tip = "height";
+
+    const float top = capsule ? value.radius + value.height : value.extents.y * 2.0f;
+    const float measure = capsule ? value.height : top;
+
+    if (Editor::Gizmo::HandleFloat("height", measure, &out, foot + axes[1] * top, axes[1], style))
+    {
+        if (capsule)
+            value.height = out;
+        else
+            value.extents.y = out * 0.5f;
+        changed = true;
+    }
+
+    halfHeight = capsule ? value.radius + value.height * 0.5f : value.extents.y;
+    halfWidth = capsule ? value.radius : value.extents.x;
+
+    const Math::vec3 center(foot + axes[1] * halfHeight);
+
+    const Math::mat4 drawn(
+        Math::vec4(axes[0], 0.0f),
+        Math::vec4(axes[1], 0.0f),
+        Math::vec4(axes[2], 0.0f),
+        Math::vec4(center, 1.0f));
+
+    if (capsule)
+    {
+        // The centers of the two end caps, which is where the caps meet the cylinder between them
+        const Math::vec3 cap0(foot + axes[1] * value.radius);
+        const Math::vec3 cap1(foot + axes[1] * (value.radius + value.height));
+
+        for (int cap = 0; cap < 2; cap++)
+        {
+            const Math::vec3 ring(cap == 0 ? cap0 : cap1);
+
+            Editor::Gizmo::DrawCircle(ring, value.radius, axes[1], ColliderColor, 1.0f,
+                Editor::Gizmo::DrawFlag_AlwaysOnTop);
+            Editor::Gizmo::DrawCircle(ring, value.radius, axes[2], ColliderColor, 1.0f,
+                Editor::Gizmo::DrawFlag_AlwaysOnTop);
+        }
+
+        for (int side = 0; side < 2; side++)
+        {
+            const float sign = side == 0 ? 1.0f : -1.0f;
+
+            Editor::Gizmo::DrawLine(cap0 + axes[0] * value.radius * sign,
+                cap1 + axes[0] * value.radius * sign,
+                ColliderColor, 1.0f, Editor::Gizmo::DrawFlag_AlwaysOnTop);
+        }
+    }
+    else
+    {
+        DrawShapeEdges(drawn, value.extents, ColliderColor);
+    }
+
+    Editor::Gizmo::DrawPoint(foot, ColliderColor, 2.0f);
+
+    if (changed)
+        Editor::Gizmo::CommitComponent(frame.scene, frame.entity, frame.component, &value, sizeof(value));
+}
+
+//------------------------------------------------------------------------------
+/**
     The feature registers what it has, and the editor reads the registry at open. A feature that
     registers nothing is never asked for.
 */
@@ -223,6 +331,13 @@ RegisterColliderGizmos()
     sphere.draw = Util::Delegate<void(const Editor::Gizmo::GizmoFrame&)>::
         FromFunction<&PhysicsFeature::DrawSphereColliderGizmo>();
     Editor::Gizmo::RegisterComponentGizmo(sphere);
+
+    Editor::Gizmo::ComponentGizmo character;
+    character.component = Game::GetComponentId<PhysicsFeature::Character>();
+    character.name = "character";
+    character.draw = Util::Delegate<void(const Editor::Gizmo::GizmoFrame&)>::
+        FromFunction<&PhysicsFeature::DrawCharacterGizmo>();
+    Editor::Gizmo::RegisterComponentGizmo(character);
 }
 
 //------------------------------------------------------------------------------
@@ -234,6 +349,7 @@ ClearColliderGizmos()
 {
     Editor::Gizmo::UnregisterComponentGizmo(Game::GetComponentId<PhysicsFeature::BoxCollider>());
     Editor::Gizmo::UnregisterComponentGizmo(Game::GetComponentId<PhysicsFeature::SphereCollider>());
+    Editor::Gizmo::UnregisterComponentGizmo(Game::GetComponentId<PhysicsFeature::Character>());
 }
 
 } // namespace PhysicsFeature

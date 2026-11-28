@@ -14,6 +14,7 @@
 #include "physicsfeature/physicsfeatureunit.h"
 #include "memdb/attributeregistry.h"
 #include "physics/actorcontext.h"
+#include "physics/charactercontext.h"
 
 namespace Test
 {
@@ -655,6 +656,34 @@ PhysicsManagerTest::Run()
 
         world->DeleteEntity(stagedBody);
         StepPhysicsFrames(1);
+    }
+
+    // A character entity has no body component, so nothing but the decay of the character component
+    // releases its controller. The controller owns the physx actor and shape the handle names, so the
+    // records go with it
+    {
+        Game::Entity const character = world->CreateEntity();
+        world->SetComponent<Game::Position>(character, Game::Position(5.0f, 0.0f, 0.0f));
+
+        PhysicsFeature::Character comp;
+        comp.shape = PhysicsFeature::CharacterShape::Capsule;
+        comp.radius = 0.4f;
+        comp.height = 1.0f;
+        world->AddComponent(character, Game::GetComponentId<PhysicsFeature::Character>(), &comp);
+
+        StepPhysicsFrames(1);
+
+        Physics::CharacterId const controller = world->GetComponent<PhysicsFeature::Character>(character).characterId;
+        VERIFY(Physics::CharacterContext::IsValid(controller));
+
+        Physics::ActorId const record = Physics::CharacterContext::GetCharacterActor(controller);
+        VERIFY(Physics::ActorContext::IsValid(record));
+
+        world->DeleteEntity(character);
+        StepPhysicsFrames(1);
+
+        VERIFY(!Physics::CharacterContext::IsValid(controller));
+        VERIFY(!Physics::ActorContext::IsValid(record));
     }
 }
 

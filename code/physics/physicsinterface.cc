@@ -166,6 +166,11 @@ DestroyScene(IndexT sceneId)
 
     Scene& scene = state.activeScenes[sceneId];
 
+    // The controller manager goes first, because a controller owns the actor it is in the scene with, and
+    // releasing a controller reads the shapes off that actor. Releasing the actors first leaves the
+    // manager pointing at an actor that is already gone
+    scene.controllerManager->release();
+
     auto actorCount = scene.scene->getNbActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC);
     if (actorCount > 0)
     {
@@ -179,7 +184,7 @@ DestroyScene(IndexT sceneId)
         }
         Memory::Free(Memory::PhysicsHeap, actorBuffer);
     }
-    scene.controllerManager->release();
+
     scene.scene->release();
     scene.dispatcher->release();
 
@@ -188,6 +193,7 @@ DestroyScene(IndexT sceneId)
     scene.scene = nullptr;
     scene.controllerManager = nullptr;
     scene.dispatcher = nullptr;
+    scene.updateFunction = nullptr;
     scene.updateFunction = nullptr;
     scene.eventCallback = nullptr;
     scene.eventBuffer.Clear();

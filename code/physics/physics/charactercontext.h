@@ -40,6 +40,12 @@ public:
     /// Get the position of the lowest point of the characters collider in worldspace.
     static Math::vec3 GetCharacterFootPosition(CharacterId characterId);
 
+    /// Set the group and mask the controller moves with
+    static void SetCharacterFilter(CharacterId characterId, uint32_t group, uint32_t mask);
+
+    static ActorId GetCharacterActor(CharacterId characterId);
+
+    static ShapeId GetCharacterShape(CharacterId characterId);
 
     /// Displace a character, and check/resolve collisions along the way.
     /// @param minDist The minimum travelled distance to consider. If travelled distance is smaller, the character doesn’t move.

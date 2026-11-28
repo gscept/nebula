@@ -558,28 +558,30 @@ RunCharacter(TestCase* test, Game::World* world)
     StepPhysicsFrame();
     StepPhysicsFrame();
 
-    // a capsule 1.8 high, its center placed so its foot is on the ground
-    Physics::CharacterCreateInfo info;
-    info.type = Physics::ColliderType_Capsule;
-    info.capsule.radius = 0.4f;
-    info.capsule.height = 1.0f;
-    info.capsule.constrainClimbing = false;
     const Math::vec3 start(202.0f, 0.0f, 202.0f);
-    const float centerHeight = info.capsule.radius + info.capsule.height * 0.5f + info.contactOffset;
-    const Physics::CharacterId controller = Physics::CharacterContext::CreateCharacter(
-        start + Math::vec3(0.0f, centerHeight, 0.0f), info, PhysicsFeature::PhysicsFeatureUnit::Instance()->SceneForWorld(world));
 
     Game::Entity const entity = world->CreateEntity();
     world->SetComponent<Game::Position>(entity, Game::Position(start.x, start.y, start.z));
     world->AddComponent<Game::Velocity>(entity);
+
+    // A capsule 1.8 high. The component builds its own controller on the physics frame, from its own
+    // parameters, and the entity's Position is the foot of the character rather than the center of its
+    // shape
     PhysicsFeature::Character character;
-    character.characterId = controller;
+    character.shape = PhysicsFeature::CharacterShape::Capsule;
+    character.radius = 0.4f;
+    character.height = 1.0f;
+    character.constrainClimbing = false;
     world->AddComponent(entity, Game::GetComponentId<PhysicsFeature::Character>(), &character);
     NavAgent agent;
     agent.agentKind = "runner";
     world->AddComponent(entity, Game::GetComponentId<NavAgent>(), &agent);
-    // the adds are executed with the next frame
+    // the adds are executed with the next frame, and the controller with the physics frame after that
     StepFrame();
+    StepPhysicsFrame();
+
+    const Physics::CharacterId controller = world->GetComponent<PhysicsFeature::Character>(entity).characterId;
+    QVERIFY(Physics::CharacterContext::IsValid(controller));
 
     // a controller only finds the ground when it moves into it, gravity does that while it stands
     auto applyGravity = [world, entity]()

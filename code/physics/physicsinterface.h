@@ -114,6 +114,10 @@ struct Actor
     ActorId id;
     ActorResourceId res;
 
+    /// false when this context only holds a record for the actor and not the actor itself, which is
+    /// the case for the actor a character controller owns
+    bool ownsActor = true;
+
     Util::Array<ShapeId> shapes;
     float mass;
     uint32_t collisionGroup;
@@ -141,11 +145,44 @@ struct Shape
 #endif
 };
 
+//------------------------------------------------------------------------------
+/**
+    A shape a character controller hit during its move.
+
+    @note Only a shape hit is reported. A controller cannot name the other controller it hit as an
+    entity, so controller against controller hits are not turned into an event.
+*/
+struct CharacterHitEvent
+{
+    CharacterId character;
+    ActorId actor;
+    ShapeId shape;
+
+    Math::point position;
+    Math::vector normal;
+    float distance;
+};
+
+using CharacterHitCallbackType = void (*) (const CharacterHitEvent&);
+
 struct Character
 {
     physx::PxController* controller;
     Physics::ColliderType type;
     CharacterId id;
+
+    /// The controller owns a physx actor internally. This context holds a record for that actor and
+    /// for the shape attached to it, which is what lets a scene query name the entity the controller
+    /// belongs to, and what lets the contact callbacks resolve it
+    ActorId actor;
+    ShapeId shape;
+
+    uint32_t collisionGroup;
+    uint32_t collisionMask;
+
+    /// the report the create info carried, kept so the hit report can be forwarded without a lookup
+    CharacterHitCallbackType reportCallback;
+
     uint64_t userData;
 #ifdef NEBULA_DEBUG
     Util::String debugName;
@@ -225,7 +262,16 @@ struct CharacterCreateInfo
     /// @see Physics::SetPhysicsMaterial
     /// @see Physics::LookupMaterial
     IndexT materialId = InvalidIndex;
-    
+
+    /// word0 of the shape's filter data, which is what the simulation filter shader reads.
+    /// A character with the default group 0 is accepted by every query and collides with everything.
+    uint32_t collisionGroup = 0;
+
+    /// The set of groups the controller accepts when it moves, matched against word0 of the hit
+    /// shape's filter data. The controller's own group is never accepted, so a character does not
+    /// collide with itself.
+    uint32_t collisionMask = 0xFFFFFFFF;
+
     union {
         /// AABB information. Make sure to set type to Box if using this.
         BoxInfo box;
@@ -235,6 +281,10 @@ struct CharacterCreateInfo
 
     /// Can be used to store application side information in the character.
     uint64_t userData = 0;
+
+    /// Called for every shape the controller hits during move. The report is only generated when
+    /// move is called, which is the physics frame.
+    CharacterHitCallbackType reportCallback = nullptr;
 };
 
 //------------------------------------------------------------------------------
