@@ -930,6 +930,13 @@ namespace NST
 
             Verify(PropertyLevelFormat.HasProperty(targetId, "NoSuchProperty") == 0);
             Verify(PropertyLevelFormat.HasProperty(targetId, "FormatTestProperty") == 1);
+
+            // A text with nothing in it names nothing, which is what an instance that authored nothing and a
+            // chain that has nothing for the extension both answer with. The exact apply takes everything off,
+            // and that is what makes a property the prefab lost disappear from an instance
+            ApplyEntityText(targetId, "");
+
+            Verify(PropertyLevelFormat.HasProperty(targetId, "FormatTestProperty") == 0);
         }
 
         /// <summary>

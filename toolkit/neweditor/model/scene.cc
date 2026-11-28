@@ -4089,16 +4089,11 @@ Scene::UpdatePrefabInstances(const Util::String& path)
             if (overrideState.extension == extension.name && !overrideState.fields.IsEmpty())
                 this->CaptureExtensionKeys(entity, extension.name, overrideState.fields, authored);
 
-            // Nothing from the chain and nothing authored is nothing to say
-            if (base == nullptr && authored.IsEmpty())
-                continue;
-
             Util::String merged;
             extension.merge(base, authored.IsEmpty() ? nullptr : authored.AsCharPtr(), merged);
 
-            // The text the entity produces is what it holds, so the merge only goes back when it
-            // answers with something else. The comparison is on the bytes, because the scene cannot
-            // read the text.
+            // The text the entity produces is what it holds, so the merge only goes back when it answers
+            // with something else. The comparison is on the bytes, because the scene cannot read the text.
             Util::String current;
             extension.capture(entity, current);
             if (merged == current)
