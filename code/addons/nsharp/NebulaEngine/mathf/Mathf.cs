@@ -64,6 +64,13 @@ namespace Nebula
 
         //--------------------------------------------------------------------------
         /** <summary>
+            Represents a tiny float number. Can be used for epsilon-esque operations.
+            </summary>
+        */
+        public const float Tiny = 1e-7f;
+
+        //--------------------------------------------------------------------------
+        /** <summary>
             Returns the Cartesian coordinate for one axis of a point that is defined by a given triangle and two normalized barycentric (areal) coordinates.
             </summary>
             <param name="value1">The coordinate on one axis of vertex 1 of the defining triangle.</param>

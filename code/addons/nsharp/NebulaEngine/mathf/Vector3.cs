@@ -986,6 +986,11 @@ namespace Nebula
         public void Normalize()
         {
             float factor = (float)Math.Sqrt((X * X) + (Y * Y) + (Z * Z));
+            if (factor <= Mathf.Tiny && factor >= -Mathf.Tiny)
+            {
+                // avoid NaN/inf values
+                return; 
+            }
             factor = 1f / factor;
             X *= factor;
             Y *= factor;
@@ -995,6 +1000,8 @@ namespace Nebula
         //--------------------------------------------------------------------------
         /** <summary>
             Creates a new <see cref="Vector3"/> that contains a normalized values from another vector.
+
+            Returns the original value if the length of the vector is 0.
             </summary>
             <param name="value">Source <see cref="Vector3"/>.</param>
             <returns>Unit vector.</returns>
@@ -1002,6 +1009,11 @@ namespace Nebula
         public static Vector3 Normalize(Vector3 value)
         {
             float factor = (float)Math.Sqrt((value.X * value.X) + (value.Y * value.Y) + (value.Z * value.Z));
+            if (factor <= Mathf.Tiny && factor >= -Mathf.Tiny)
+            {
+                // avoid NaN/inf values
+                return value; 
+            }
             factor = 1f / factor;
             return new Vector3(value.X * factor, value.Y * factor, value.Z * factor);
         }
@@ -1016,6 +1028,14 @@ namespace Nebula
         public static void Normalize(ref Vector3 value, out Vector3 result)
         {
             float factor = (float)Math.Sqrt((value.X * value.X) + (value.Y * value.Y) + (value.Z * value.Z));
+            if (factor <= Mathf.Tiny && factor >= -Mathf.Tiny)
+            {
+                // avoid NaN/inf values
+                result.X = value.X;
+                result.Y = value.Y;
+                result.Z = value.Z;
+                return;
+            }
             factor = 1f / factor;
             result.X = value.X * factor;
             result.Y = value.Y * factor;
