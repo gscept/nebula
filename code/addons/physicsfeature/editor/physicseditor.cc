@@ -18,12 +18,51 @@
 namespace PhysicsFeature
 {
 
-// The collider components, as the manager knows them. This is the set the constraint is built from,
-// and it is the feature's own list rather than something the editor has a type for.
-//
-// The ids are read at attach rather than put in a static array, because a component id only exists
-// once the component has been registered, and a namespace scope array runs before anything is
-// registered.
+//--------------------------------------------------------------------------
+/**
+*/
+void
+RigidbodyAxisLockFieldDrawFunc(Game::Entity, Game::ComponentId, void* data, bool* commit)
+{
+    Util::BitField<16>* bits = reinterpret_cast<Util::BitField<16>*>(data);
+    
+    bool linearX = bits->IsSet(0);
+    bool linearY = bits->IsSet(1);
+    bool linearZ = bits->IsSet(2);
+    bool angX = bits->IsSet(3);
+    bool angY = bits->IsSet(4);
+    bool angZ = bits->IsSet(5);
+
+    ImGui::Text("Lock movement ");
+    ImGui::PushID(8833447);
+    *(commit) = ImGui::Checkbox("X", &linearX);
+    ImGui::SameLine();
+    *(commit) |= ImGui::Checkbox("Y", &linearY);
+    ImGui::SameLine();
+    *(commit) |= ImGui::Checkbox("Z", &linearZ);
+    ImGui::PopID();
+
+    ImGui::Text("Lock rotation ");
+    ImGui::PushID(8833448);
+    *(commit) |= ImGui::Checkbox("X", &angX);
+    ImGui::SameLine();
+    *(commit) |= ImGui::Checkbox("Y", &angY);
+    ImGui::SameLine();
+    *(commit) |= ImGui::Checkbox("Z", &angZ);
+    ImGui::PopID();
+
+    bits->Clear();
+    bits->SetBitIf(0, linearX);
+    bits->SetBitIf(1, linearY);
+    bits->SetBitIf(2, linearZ);
+    bits->SetBitIf(3, angX);
+    bits->SetBitIf(4, angY);
+    bits->SetBitIf(5, angZ);
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
 static Util::Array<Game::ComponentId>
 ColliderComponents()
 {
@@ -73,6 +112,10 @@ RegisterEditorContributions()
     Editor::EditorFeatureRegistry::RegisterOnComponentChangeListener(
         Util::Delegate<void(Editor::Scene*, Game::Entity, Game::ComponentId)>::
             FromFunction<&PhysicsFeature::OnEditorComponentWritten>());
+
+    
+    // Override bitfield inspector for RB axis constraints
+    Game::ComponentInspection::OverrideField(Game::GetComponentId<Rigidbody>(), "axisLock"_atm, RigidbodyAxisLockFieldDrawFunc);
 }
 
 //------------------------------------------------------------------------------
